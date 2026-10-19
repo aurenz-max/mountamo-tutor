@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { lexWord, isVowel } from './lexicon';
 import { mulberry32, tierPick } from './pick';
 import { phonemeSpace, type PhonemeSpaceMode } from './phonemeSpaces';
-import { itemFromChallenge, itemsFromChallenges, type PhonemeChallengeLike } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
+import { itemFromChallenge, itemsFromChallenges, type PhonemeChallengeLike } from '../../primitives/visual-primitives/literacy/phonemeExplorerDomain';
 import type { SupportTier } from '../generation/generationContext';
 
 const MODES: PhonemeSpaceMode[] = ['isolate', 'ending', 'medial', 'blend', 'segment', 'manipulate'];

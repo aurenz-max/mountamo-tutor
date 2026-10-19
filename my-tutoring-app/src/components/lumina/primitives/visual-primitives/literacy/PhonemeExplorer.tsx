@@ -1,52 +1,30 @@
 'use client';
 
 /**
- * PhonemeExplorer — every mode is answered out loud. It runs only on the shared
- * tutor/JEV teaching workspace (workspace rollout C1; the scripted runner was
- * retired, LA-14, user ruling 09-23: one path). The tutor teaches in its own
- * words, the observer judges each spoken answer and the runtime owns progression.
- * An unbound mount shows the shared "needs the tutor" card. There is no advance
- * timer, no answer buttons and no Next button anywhere in this file.
+ * PhonemeExplorer — phoneme awareness on the live tutor's workspace (boss: `phonemeExplorer.boss.ts`, card:
+ * `phonemeExplorer.card.ts`). Every mode is answered out loud; the tutor teaches and judges, the workspace commits
+ * outcomes and owns progression. This file draws the page and the levers the tutor pulls. There is no advance timer,
+ * no answer button and no Next button. An unbound mount shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
  * ALL SIX MODES ARE VERBAL — the old 4-choice grid was a costume on each:
- *  - isolate: the four cards STAY as the on-screen MENU (the question side,
- *    unmarked — print is not a leak here) but the answer is SAID, not tapped.
- *    Tapping a card speaks that word (tap-to-hear, never a commit).
- *  - medial: isolate's minimal-pair sibling for the MIDDLE sound (2026-09-05,
- *    lesson-bench item 23). The four cards stay as the MENU and the answer is
- *    SAID; the stimulus word is spoken by the tutor and NEVER PRINTED, because
- *    a child who can read "cat" and "hat" matches the letter `a` on sight and
- *    never hears a vowel. Ruled a CHOICE, not "say the middle sound": producing
- *    a bare vowel is an unbenched response class.
- *  - ending: the tutor says a CVC target and four picture-card words; the child
- *    SAYS the card word with the same final phoneme. Target and card spellings
- *    stay hidden until feedback, so this remains an auditory identification.
- *  - blend: the phoneme tiles stay (stimulus; tap one to hear that sound) and
- *    the child SAYS the blended word. Picking "cat" among four printed words
- *    was word recognition, not blending.
- *  - segment: the child SAYS how many sounds they hear. The printed word is
- *    GONE deliberately — a reader counts letters, which is exactly the skill
- *    this mode is not; the word arrives by voice (+ picture, tap-to-hear).
- *  - manipulate: the child SAYS the new word (sound-swap's ruling in its
- *    sibling primitive). The original word stays printed — it is the stimulus.
+ *  - isolate: the four cards STAY as the on-screen MENU (the question side, unmarked — print is not a leak here) but
+ *    the answer is SAID, not tapped. Tapping a card asks the tutor to say that word (tap-to-hear, never a commit).
+ *  - medial: isolate's minimal-pair sibling for the MIDDLE sound. The stimulus word is spoken and NEVER PRINTED: a
+ *    child who can read "cat" and "hat" matches the letter `a` on sight and never hears a vowel.
+ *  - ending: the target and the card words are heard; their spellings stay hidden until credit.
+ *  - blend: the phoneme tiles stay (tap one to hear that sound) and the child SAYS the blended word.
+ *  - segment: the child SAYS how many sounds. The word is never printed: a reader would count letters.
+ *  - manipulate: the child SAYS the new word. The original word stays printed — it is the stimulus.
  *
- * SUPPORT TIERS SURVIVE THE PORT (L3 contract): the worked-example card and
- * its sub-label (isolate), the picture cues, the blend cue furniture and the
- * printed operation detail are still tier-withdrawn at render time from the
- * same generator-stamped flags; the read-aloud lever now governs whether the
- * scripted ask ENUMERATES the menu (phonemeExplorerScript honors it).
+ * SUPPORT TIERS (L3 contract): the worked-example card and its sub-label (isolate), the picture cues, the blend cue
+ * furniture and the printed operation detail are tier-withdrawn at render time from the generator-stamped flags; the
+ * read-aloud flag governs whether the ask reads the menu out (`askFor`).
  *
- * ANSWER-LEAK RULE: blend/manipulate answers and segment's count appear on
- * screen only after the answer is credited. Tap-to-hear asks for question-side
- * audio only (a card word or a sound).
- *
- * Items that cannot be asked or judged honestly (unsayable blend walk, the
- * answer inside the operation prose, an example word sitting in the menu) are
- * DROPPED at build time by `itemsFromChallenges` — ship nothing over a broken
- * ask.
+ * ANSWER-LEAK RULE: blend/manipulate answers and segment's count appear on screen only once the answer is credited.
+ * Tap-to-hear asks for question-side audio only (a card word or a sound).
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -57,29 +35,23 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import type { PrimitiveEvaluationResult } from '../../../evaluation';
 import type { PhonemeExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useWorkspaceRunner, type TeachingEvaluationResult }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { itemsFromChallenges, shufflePhonemeMenus, type PhonemeExplorerItem } from './phonemeExplorerScript';
-import { hearSoundRequest, hearWordRequest, phonemeAssignment, phonemeScene } from './phonemeExplorerWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace, useRunnerPip } from '../../../pip/WorkspacePip';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
+import { hearSoundRequest, hearWordRequest, phonemeScene, shufflePhonemeMenus, type PhonemeExplorerItem } from './phonemeExplorerDomain';
 import {
-  EXAMPLE_LEVER, MARK_LEVER, NAME_CARDS_LEVER, OPERATION_LEVER, POSITION_LEVER, SIMPLIFY_LEVER, SLIDE_LEVER, TOKENS_LEVER,
-  changedBox, leversOnScreen, phonemeExplorerLevers, positionModelFor, practiceItemFor,
+  EXAMPLE_LEVER, MARK_LEVER, NAME_CARDS_LEVER, OPERATION_LEVER, PHONEME_LEVERS, POSITION_LEVER, SLIDE_LEVER, TOKENS_LEVER,
+  changedBox, positionModelFor, type PhonemeLeverContext,
 } from './phonemeExplorerLevers';
 import { graphemes } from './wordWorkoutLevers';
-import { isPreReaderGrade } from '../../../utils/kindergartenMode';
-import { SoundManager } from '../../../utils/SoundManager';
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { phonemeExplorerPipPose } from '../../../pip/phonemeExplorerPipPose';
+import { phonemeExplorerBoss, phonemeExplorerItems } from './phonemeExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -188,178 +160,109 @@ const MODE_META: Record<string, { badge: string; icon: string; prompt: string; a
 // ============================================================================
 
 function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeExplorerProps) {
-  const {
-    title,
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  const stableInstanceIdRef = useRef(instanceId || `phoneme-explorer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const ctx = useLuminaAIContext();
-  const workspace = useRef<TeachingWorkspace | null>(null);
-
-  // ── Items (drop-gated) + a lookup back to the source challenge ────────────
-  const items = useMemo<PhonemeExplorerItem[]>(() => {
-    const built = itemsFromChallenges(challenges);
-    if (built.length < challenges.length) {
-      console.warn(
-        `[PhonemeExplorer] dropped ${challenges.length - built.length} unaskable challenge(s) (leak/sayability gates)`,
-      );
-    }
-    return shufflePhonemeMenus(built, resolvedInstanceId);
-  }, [challenges, resolvedInstanceId]);
-
-  const challengeById = useMemo(() => {
-    const map = new Map<string, PhonemeChallenge>();
-    for (const ch of challenges) map.set(ch.id, ch);
-    return map;
-  }, [challenges]);
-
-  // ── Evaluation ────────────────────────────────────────────────────────────
-  const evaluation = usePrimitiveEvaluation<PhonemeExplorerMetrics>({
-    primitiveType: 'phoneme-explorer',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-  const finish = (summary: TeachingEvaluationResult) => {
-    const metrics: PhonemeExplorerMetrics = {
-      type: 'phoneme-explorer',
-      challengesCorrect: summary.solvedCount,
-      challengesTotal: items.length,
-      accuracy: summary.accuracy,
-      attemptsCount: summary.attemptsCount,
-      // Every answer in the DI modality is spoken.
-      voiceAnswerCount: summary.solvedCount,
-    };
-    evaluation.submitResult(
-      summary.passed,
-      summary.accuracy,
-      metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
-      undefined,
-      summary.diagnosisEvidence,
+  const instance = useRef(data.instanceId || `phoneme-explorer-${Date.now()}`);
+  // Menus are shuffled per session, and the ask reads the cards in the order they are drawn.
+  const items = useMemo(() => shufflePhonemeMenus(phonemeExplorerItems(data), instance.current), [data]);
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
     );
-  };
+  }
+  return <ExplorerWorkspace key={data.instanceId} data={data} items={items} instanceId={instance.current}
+    className={className} runtimePlanItemId={runtimePlanItemId} />;
+}
 
-  // In-item levers (`phonemeExplorerLevers.ts`), keyed by the session item they were pulled on, the easier
-  // practice item a simplify lever put on screen in its place, and the learner's own counters (segment).
+function ExplorerWorkspace({ data, items, instanceId, className, runtimePlanItemId }:
+  PhonemeExplorerProps & { items: PhonemeExplorerItem[]; instanceId: string }) {
+  const { title, challenges = [] } = data;
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  // Levers pulled, keyed by the session item they were pulled on; the easier practice item a simplify lever put on
+  // screen in its place; the learner's own counters (segment).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<PhonemeExplorerItem | null>(null);
   const [tokens, setTokens] = useState(0);
+  const openedIndex = useRef(-1);
 
-  const runner = useWorkspaceRunner<PhonemeExplorerItem>({
-    primitiveId: 'phoneme-explorer',
-    assignment: phonemeAssignment,
-    items,
-    workspace,
-    objectiveId,
-    planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    instanceId: resolvedInstanceId,
-    onFinished: finish,
-  });
+  const assignments = useMemo(() => items.map(item => ({ ...phonemeExplorerBoss.assignment(item), checkResponse: () => null })), [items]);
+  const lesson = useTeachingWorkspace({ instanceId, primitiveId: 'phoneme-explorer',
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
+    onItemOpened: opened => {
+      if (opened !== openedIndex.current) setPractice(null);
+      openedIndex.current = opened;
+    } });
+  useTeachingEvaluation<PhonemeExplorerMetrics>({ primitiveType: 'phoneme-explorer', instanceId, data, assignments, lesson,
+    metrics: result => ({ type: 'phoneme-explorer', challengesCorrect: result.solvedCount, challengesTotal: items.length,
+      accuracy: result.accuracy, attemptsCount: result.attemptsCount,
+      // Every answer is spoken.
+      voiceAnswerCount: result.solvedCount }) });
 
-  const sessionItem = runner.currentItem;
+  const challengeById = useMemo(() => new Map(challenges.map(ch => [ch.id, ch])), [challenges]);
+  const sessionItem = items[lesson.state.index];
+  const sessionChallenge = challengeById.get(sessionItem.id);
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
-  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
-  const pulled = (id: string) => pulledLevers.includes(id);
-  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-  /** Credited: the first moment the answer may appear on screen. */
-  const revealed = runner.currentSolved;
   // A practice item has no challenge: every aid at its default.
-  const currentChallenge = currentItem && !practice ? challengeById.get(currentItem.id) : undefined;
-  const sessionChallenge = sessionItem ? challengeById.get(sessionItem.id) : undefined;
+  const currentChallenge = practice ? undefined : sessionChallenge;
+  const pulledLevers = !practice && leverState.item === sessionItem.id ? leverState.pulled : [];
+  const pulled = (id: string) => pulledLevers.includes(id);
+  const leverCtx: PhonemeLeverContext = { items, withdrawn: {
+    example: sessionChallenge?.showExampleWord === false, operation: sessionChallenge?.showOperationDetail === false } };
+  /** Credited: the first moment the answer may appear on screen. */
+  const revealed = lesson.state.phase === 'checked' && !!lesson.state.lastResponse?.correct && !lesson.state.practice && !practice;
+  useRunnerPip({ instanceId, itemId: currentItem.id, running: lesson.state.phase !== 'completed', solved: revealed });
   const isPreReader = isPreReaderGrade(data.gradeLevel ?? '');
-  const positionModel = pulled(POSITION_LEVER) && currentItem ? positionModelFor(currentItem, items) : null;
+  const positionModel = pulled(POSITION_LEVER) ? positionModelFor(currentItem, items) : null;
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own tap-to-hear; Pip
-  // never answers, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.running);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = phonemeExplorerPipPose({
-      kind: currentItem.kind,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Phoneme explorer', dock: pip.dock.current, targets, pose };
-  });
-
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem || !sessionItem) return;
-    const withdrawn = { example: sessionChallenge?.showExampleWord === false, operation: sessionChallenge?.showOperationDetail === false };
-    const levers = practice ? [] : phonemeExplorerLevers(sessionItem, pulledLevers, items, withdrawn);
-    const scene = phonemeScene(currentItem);
-    const onScreen = leversOnScreen(currentItem, pulledLevers, items);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(pulledLevers.includes(NAME_CARDS_LEVER) ? { namingCards: 'Read every card aloud, in screen order, evenly.' } : {}),
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } : {}) },
+    // No lever on a practice item: the full item's levers come back with it.
+    const levers = practice ? [] : PHONEME_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(phonemeScene(currentItem, { namingCards: pulledLevers.includes(NAME_CARDS_LEVER) }), {
+        support: practice ? '' : PHONEME_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : PHONEME_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-        if (id === SIMPLIFY_LEVER[sessionItem.kind]) {
-          const simpler = practiceItemFor(sessionItem, items);
-          if (!simpler) return 'There is no easier item here.';
-          setPractice(simpler);
-          return { practice: phonemeAssignment(simpler) };
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        const easier = PHONEME_LEVERS.simpler(sessionItem, leverCtx, id);
+        if (easier) {
+          setLeverState(next); setPractice(easier);
+          return { practice: phonemeExplorerBoss.assignment(easier) };
         }
         if (id === TOKENS_LEVER) setTokens(0);
+        setLeverState(next);
         return true;
       },
       endPractice: () => setPractice(null),
     };
   });
 
-  // ── Tap-to-hear question-side audio. Silent host requests: never a learner turn, never the answer. ──
-  const hearWord = useCallback((word: string | undefined) => {
+  // ── Tap-to-hear question-side audio: silent host requests, never a learner turn and never the answer. ──
+  const hearWord = (word: string | undefined) => {
     if (!word) return;
     SoundManager.tap();
-    ctx.sendText(hearWordRequest(word), { silent: true, author: 'host' });
-  }, [ctx]);
-
-  const hearSound = useCallback((raw: string | undefined) => {
+    lesson.requestHear(hearWordRequest(word));
+  };
+  const hearSound = (raw: string | undefined) => {
     if (!raw) return;
     SoundManager.tap();
-    ctx.sendText(hearSoundRequest(raw), { silent: true, author: 'host' });
-  }, [ctx]);
+    lesson.requestHear(hearSoundRequest(raw));
+  };
 
-  // ── Phase summary ─────────────────────────────────────────────────────────
-  const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!runner.practiceSummary) return [];
-    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
-      const meta = MODE_META[item.kind];
-      return { label: meta.badge, icon: meta.icon };
-    });
-  }, [runner.practiceSummary, items]);
+  const summary = lesson.summary;
+  const phases = summary?.outcomes.map(outcome => {
+    const item = items.find(i => i.id === outcome.id);
+    const meta = MODE_META[item?.kind ?? 'isolate'];
+    return { label: outcome.assisted ? `${meta.badge} (with help)` : meta.badge, icon: meta.icon, score: outcome.score,
+      attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1, accentColor: 'emerald' as const };
+  }) ?? [];
 
   // ============================================================================
   // Render helpers per mode
@@ -383,9 +286,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
           return (
             <button
               key={`${item.id}-${idx}`}
-              ref={pip.ref(`card-${idx}`)}
               data-pip-object={`card-${idx}`}
-              onClick={() => { pip.look(`card-${idx}`); hearWord(card.word); }}
+              onClick={() => hearWord(card.word)}
               className={`
                 rounded-xl border-2 p-4 flex flex-col items-center gap-2
                 transition-all duration-200 cursor-pointer
@@ -414,9 +316,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
       {/* Phoneme tile — the stimulus. Tap to hear the sound. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          ref={pip.ref('stimulus')}
           data-pip-object="stimulus"
-          onClick={() => { pip.look('stimulus'); hearSound(item.phonemeSound ?? item.phoneme); }}
+          onClick={() => hearSound(item.phonemeSound ?? item.phoneme)}
           className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <div className="text-5xl font-black text-blue-200 tracking-wide">{item.phoneme}</div>
@@ -428,9 +329,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
           sub-label goes first at medium. Tap to hear the example word. */}
       {(ch?.showExampleWord !== false || pulled(EXAMPLE_LEVER)) && item.exampleWord && (
         <button
-          ref={pip.ref('example')}
           data-pip-object="example"
-          onClick={() => { pip.look('example'); hearWord(item.exampleWord); }}
+          onClick={() => hearWord(item.exampleWord)}
           className="mx-auto flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3 cursor-pointer"
         >
           <span className="text-3xl">{item.exampleEmoji}</span>
@@ -461,9 +361,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-3">
         <button
-          ref={pip.ref('stimulus')}
           data-pip-object="stimulus"
-          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
+          onClick={() => hearWord(item.targetWord)}
           className="rounded-2xl bg-cyan-500/15 border-2 border-cyan-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -501,9 +400,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-3">
         <button
-          ref={pip.ref('stimulus')}
           data-pip-object="stimulus"
-          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
+          onClick={() => hearWord(item.targetWord)}
           className="rounded-2xl bg-rose-500/15 border-2 border-rose-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -538,14 +436,13 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
         {ch?.showBlendCue !== false && (
           <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
         )}
-        <div ref={pip.ref('sounds')} data-pip-object="sounds" data-lever={pulled(SLIDE_LEVER) ? 'slide-tiles' : undefined}
+        <div data-pip-object="sounds" data-lever={pulled(SLIDE_LEVER) ? 'slide-tiles' : undefined}
           className={`flex items-center transition-all duration-500 ${pulled(SLIDE_LEVER) ? 'gap-0' : 'gap-2'}`}>
           {item.phonemeSequence?.map((p, i) => (
             <React.Fragment key={i}>
               <button
-                ref={pip.ref(`sound-${i}`)}
                 data-pip-object={`sound-${i}`}
-                onClick={() => { pip.look(`sound-${i}`); hearSound(p); }}
+                onClick={() => hearSound(p)}
                 className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center cursor-pointer"
               >
                 <span className="text-2xl font-black text-purple-200">/{p.replace(/\//g, '')}/</span>
@@ -579,9 +476,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
           The picture (tier-withdrawable) + tap-to-hear carry the stimulus. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          ref={pip.ref('stimulus')}
           data-pip-object="stimulus"
-          onClick={() => { pip.look('stimulus'); hearWord(item.targetWord); }}
+          onClick={() => hearWord(item.targetWord)}
           className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center cursor-pointer"
         >
           <span className="text-5xl">
@@ -631,9 +527,8 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
       {/* Original word — the stimulus, printed (sound-swap's rule). Tap to hear. */}
       <div className="flex flex-col items-center gap-3">
         <button
-          ref={pip.ref('stimulus')}
           data-pip-object="stimulus"
-          onClick={() => { pip.look('stimulus'); hearWord(item.originalWord); }}
+          onClick={() => hearWord(item.originalWord)}
           className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center cursor-pointer"
         >
           {(ch?.showChoiceEmoji !== false) && <span className="text-4xl">{item.originalEmoji}</span>}
@@ -672,10 +567,6 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
     </div>
   );
 
-  // ============================================================================
-  // Main Render
-  // ============================================================================
-
   /** Help: another word in three sound boxes, the asked position lit. Never the item's words or sound. */
   const renderPositionModel = (model: NonNullable<typeof positionModel>, item: PhonemeExplorerItem) => {
     const at = item.kind === 'isolate' ? 0 : item.kind === 'medial' ? 1 : 2;
@@ -696,15 +587,9 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
     );
   };
 
-  if (items.length === 0 || !currentItem) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-6">
-          <p className="text-slate-400 text-center">No challenges available.</p>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+  // ============================================================================
+  // Main Render
+  // ============================================================================
 
   const modeMeta = MODE_META[currentItem.kind];
 
@@ -713,7 +598,7 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!showSummary && (
+          {!summary && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
@@ -722,42 +607,29 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!showSummary && (
+        {summary ? (
+          <PhaseSummaryPanel phases={phases} heading="Phoneme Explorer Complete!"
+            celebrationMessage="Great job hearing every sound!" className="mt-4" />
+        ) : (
           <>
             <div className="flex justify-center">
-              <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, items.length)}
-                total={items.length}
-                variant="dots"
-              />
+              <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
             </div>
+            {practice && <div className="text-center text-xs text-amber-300" data-practice-item>Practice round</div>}
 
-            {/* Pip's dock sits above the stage: the stimulus tops every mode, so
-                a pointer to it never crosses a menu card. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            {/* Pip's dock sits above the stage: the stimulus tops every mode, so a pointer to it never crosses a card. */}
+            <PipDock />
 
-            {currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
-            {currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}
-            {currentItem.kind === 'medial' && renderMedial(currentItem, currentChallenge)}
-            {currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
-            {currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
-            {currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
-            {positionModel && renderPositionModel(positionModel, currentItem)}
+            <PipWorkspace className="space-y-4">
+              {currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
+              {currentItem.kind === 'ending' && renderEnding(currentItem, currentChallenge)}
+              {currentItem.kind === 'medial' && renderMedial(currentItem, currentChallenge)}
+              {currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
+              {currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
+              {currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
+              {positionModel && renderPositionModel(positionModel, currentItem)}
+            </PipWorkspace>
           </>
-        )}
-
-        {showSummary && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
-            durationMs={evaluation.elapsedMs}
-            heading="Phoneme Explorer Complete!"
-            celebrationMessage="Great job hearing every sound!"
-            className="mt-4"
-          />
         )}
       </LuminaCardContent>
     </LuminaCard>

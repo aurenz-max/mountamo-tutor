@@ -33,8 +33,8 @@ const summary = [];
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateOralSentenceStudio } = await loader.import('/src/components/lumina/service/literacy/gemini-oral-sentence-studio.ts');
-  const { itemsFromChallenges } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/oralSentenceStudioScript.ts');
-  const { oralSentenceLevers, wordPicturesLeak } =
+  const { itemsFromChallenges } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/oralSentenceStudioDomain.ts');
+  const { ORAL_SENTENCE_LEVERS, wordPicturesLeak } =
     await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/oralSentenceStudioLevers.ts');
 
   const topics = [['garden', 'Helping in the garden'], ['beach', 'A day at the beach']];
@@ -52,7 +52,7 @@ try {
       if (items.length !== (data.challenges?.length ?? 0)) issues.push('a challenge failed the build gate');
       const rows = items.map((item) => ({ words: item.challenge.targetWords, pictures: item.challenge.wordEmojis ?? null,
         scene: [item.challenge.actorEmoji, item.challenge.actionEmoji, item.challenge.objectEmoji, item.challenge.settingEmoji],
-        leak: wordPicturesLeak(item), levers: oralSentenceLevers(item, []).map((l) => l.id) }));
+        leak: wordPicturesLeak(item), levers: ORAL_SENTENCE_LEVERS.declare(item, undefined, []).map((l) => l.id) }));
       writeFileSync(resolve(out, `${name}.json`),
         clean(JSON.stringify({ generatedAt: new Date().toISOString(), data, rows, issues }, null, 2)) + '\n');
       const row = { name, items: items.length, withPictures: rows.filter((r) => r.levers.includes('word_pictures')).length,

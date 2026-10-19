@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Genre explorer on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Genre explorer on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared boss contract
+ * (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,8 +15,7 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
-import { itemsFromPayload } from './genreExplorerScript';
+import { itemsFromPayload } from './genreExplorerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -37,8 +37,8 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   compare_genres: { title: 'Two Bear Texts', gradeLevel: '5', mode: 'compare_genres', genreOptions: ['fiction', 'nonfiction'],
     excerpts: [{ excerptId: 'e1', text: BEAR, genre: 'fiction' }, { excerptId: 'e2', text: FACTS, genre: 'nonfiction' }], features: FEATURES },
 };
-const mount = (mode: string, pipStore?: PipSurfaceStore, data = PAYLOADS[mode]) =>
-  mountWorkspace({ primitiveId: 'genre-explorer', evalMode: mode, data, instanceId: 'genre-explorer', pipStore });
+const mount = (mode: string, data = PAYLOADS[mode]) =>
+  mountWorkspace({ primitiveId: 'genre-explorer', evalMode: mode, data, instanceId: 'genre-explorer' });
 
 it.each(Object.keys(PAYLOADS))('%s binds: the build gates\' answer is the spoken key', mode => {
   const d = PAYLOADS[mode];
@@ -46,7 +46,7 @@ it.each(Object.keys(PAYLOADS))('%s binds: the build gates\' answer is the spoken
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'genre-explorer', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mount(mode);
   const task = h.state().task!;
-  expect(task.workspace!.expectedAnswer!.startsWith(first.answer)).toBe(true);
+  expect(task.workspace!.expectedAnswer!.startsWith(`"${first.answer}"`)).toBe(true);
   expect(task.task).not.toMatch(/Your turn/);
   expect(Object.values(task.demand).join(' ')).toMatch(/bear|crow/i);
 });
@@ -65,7 +65,7 @@ it('a genre badge reaches the text only after credit; a miss reopens the item', 
     h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
   }
   expect(h.state().task!.task).toMatch(/kind of writing/);
-  const answer = h.state().task!.workspace!.expectedAnswer!.split('.')[0];
+  const answer = h.state().task!.workspace!.expectedAnswer!.match(/^"([^"]+)"/)![1];
   // The printed menu carries every label once; a credited genre adds its badge on the text.
   expect(screen.getAllByText(answer)).toHaveLength(1);
   h.say('the other one'); h.feedback('incorrect', 'retry'); h.confirmVisible();
@@ -84,15 +84,6 @@ it('right answers complete once and submit the genre metrics', async () => {
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'genre-explorer', comparisonMade: true });
-});
-
-it('Pip outlines the texts and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('genre-explorer');
-  const h = mount('identify_basic', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('yes'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable', () => {

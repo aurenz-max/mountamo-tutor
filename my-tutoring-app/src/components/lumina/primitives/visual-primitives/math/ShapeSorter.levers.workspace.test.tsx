@@ -115,7 +115,7 @@ it('count: fewer_sides opens an ungraded triangle, then the full hexagon is cred
   h.say('eight'); h.feedback('incorrect', 'retry');
   h.dispatch('pull_lever', { lever: 'fewer_sides' });
   expect(h.state().task!.itemId).toBe(`${full}~simpler`);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('three or 3');
+  expect(h.state().task!.workspace!.expectedAnswer).toContain('"three" (also accept "3")');
   h.say('three'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe(full);
   h.say('six'); h.feedback('correct');

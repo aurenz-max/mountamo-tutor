@@ -12,7 +12,7 @@ import {
   STORY_RIBBON_CHALLENGE_TYPES,
   validateStoryRibbonPayload,
 } from './gemini-story-ribbon';
-import { challengeAskable } from '../../primitives/visual-primitives/literacy/storyRibbonScript';
+import { challengeAskable } from '../../primitives/visual-primitives/literacy/storyRibbonDomain';
 import { resolveProblemShape } from '../../primitives/visual-primitives/literacy/storyRibbonSupport';
 
 const validRaw = {

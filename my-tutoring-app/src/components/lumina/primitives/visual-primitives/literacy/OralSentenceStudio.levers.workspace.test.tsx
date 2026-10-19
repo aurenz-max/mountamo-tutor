@@ -14,7 +14,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromChallenges } from './oralSentenceStudioScript';
+import { itemsFromChallenges } from './oralSentenceStudioDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -33,7 +33,7 @@ it('strip and pictures change the screen in the commit; no example appears befor
   const strip = q(h, '[data-lever="sentence-strip"]')[0];
   expect(strip.textContent).toContain('Who?');
   expect(strip.textContent).toContain('What happens?');
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/nothing is filled in/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/nothing is filled in/);
 
   h.dispatch('pull_lever', { lever: 'word_pictures' });
   expect(q(h, '[data-lever="word-picture"]').map(e => e.textContent)).toEqual(item.challenge.wordEmojis);

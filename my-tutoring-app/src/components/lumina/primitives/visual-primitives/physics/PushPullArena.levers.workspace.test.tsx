@@ -42,8 +42,8 @@ it('observe: the hand is drawn in the same commit as its fact, the same on a pus
   const receipt = h.dispatch('pull_lever', { lever: 'mark_the_hand' });
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-lever="hand"]')).toHaveLength(1);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/a hand at the left edge/);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/\bpull|\bpush/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/A hand is drawn at the left edge/);
+  expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/\bpull|\bpush/);
   const pullHand = q(h, '[data-lever="hand"]')[0].outerHTML;
   const before = frozen(h);
   expect(h.dispatch('pull_lever', { lever: 'mark_the_hand' }).status).toBe('blocked');
@@ -68,7 +68,7 @@ it('compare: the weight blocks under both objects, then the same-push model on o
   h.say('the book'); h.feedback('incorrect', 'retry');
   const receipt = h.dispatch('pull_lever', { lever: 'show_the_setup' });
   expect(q(h, '[data-lever="weight-blocks"]').map(b => b.getAttribute('data-count'))).toEqual(['1', '3']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toBe('under the Tennis Ball, 1 weight block; under the Book, 3 weight blocks');
+  expect(String(receipt.state.task!.demand.onScreen)).toBe('Under the Tennis Ball, 1 weight block; under the Book, 3 weight blocks.');
   h.dispatch('pull_lever', { lever: 'same_push_model' });
   expect(q(h, '[data-lever="same-push-model"] [data-track]')).toHaveLength(2);
   expect(q(h, '[data-lever="same-push-model"]')[0].textContent).not.toMatch(/🎾|📕/);

@@ -7,8 +7,9 @@
 
 import { ComponentDefinition } from '../../../types';
 import type { PeriodicMiss, SpokenPeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
-import type { SpokenMatterMiss } from '../../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
-import type { SpokenStatesMiss } from '../../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { matterExplorerCard } from '../../../primitives/visual-primitives/chemistry/matterExplorer.card';
+import { statesOfMatterCard } from '../../../primitives/visual-primitives/chemistry/statesOfMatter.card';
 import type { MoleculeMiss } from '../../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import type { AtomMiss } from '../../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
 import type { DissolvingMiss } from '../../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace';
@@ -178,62 +179,12 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     // the generator, so it was IRT-weighted and unroutable. It is real now,
     // bound to `properties.shape`, which the generator always emitted and
     // nothing ever read.
-    // Cue lines and per-item judging contracts live in `matterExplorerScript.ts`
-    // (hand-authored, DISTAR); this block is the session-level frame.
-    // SENTINEL DISCIPLINE re-checked on every line: no sentence begins with
-    // "Yes" or with "My turn".
+    // Live-tutor wiring: `matterExplorer.card.ts` + `matterExplorer.boss.ts`
+    // (the spoken preset); asks, keys and build gates in `matterExplorerDomain.ts`.
     description: 'Live-judged Direct Instruction on states of matter and everyday change for K-2, spoken end to end. The tutor names an everyday object and the child SAYS whether it is a solid, a liquid or a gas; says what it does when you pour it into a cup; says whether a change that happened to it can go back the way it was or is changed for ever (ice melts and freezes again, a cooked egg does not); and works out the state of a secret object from clues. Requires a microphone. Every answer is spoken aloud and judged from the audio - there is nothing to drag, tap or type. ESSENTIAL for Kindergarten and Grade 1-2 science.',
     constraints: 'Best for K-2. Requires a working microphone and the live tutor - the whole activity is a spoken exchange. Use for early science lessons on states of matter, observable properties of materials, classification, and changes that can or cannot be undone. Reversible and irreversible change is taught here from what a child can picture, never from melting and boiling points - that framing belongs to states-of-matter at Grade 3-5.',
     affordances: { representation: 'pictorial', answers: ['spoken'], role: 'apply', minutes: 5 },
-    audioInput: { manual_activity: true },
-    tutoring: {
-      // Defect 12: `{{stimulus}}` goes LAST, with the never-read-aloud clause
-      // IMMEDIATELY before it. Split that clause off into its own sentence
-      // higher up and the block stops identifying itself as not-content at the
-      // point it arrives -- measured on the states-of-matter port, 2 of 6 asks
-      // read the preamble aloud until the clause moved next to the value.
-      taskDescription: 'Live-judged Direct Instruction on states of matter with a K-2 learner. The round type right now is "{{challengeType}}". The learner answers OUT LOUD every round and you judge what you hear against the exact contract in each bracketed [MEX_ITEM] message; you speak the scripted lines from those messages and nothing else. Working the answer out from what they can picture is the entire skill being practiced, so never volunteer an object\'s state, never say which bin it belongs in, never describe what it does in a cup, and never say whether a change can be undone, before they have. The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
-      // Exactly what the pack pushes through contextFor. Every key the
-      // click-era block interpolated (selectedObject, sortedCount, temperature)
-      // was the answer or the material that gives it away.
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d: every rung routes through the SCRIPTED correction. A re-spoken
-      // ask opens with neither "Yes" nor "My turn:", so the reducer records no
-      // verdict and the child waits on a lesson that cannot advance.
-      scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the item message. It already re-models the rule and hands the question back, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further - the activity moves the lesson on by itself and carries the next question to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses that produce a
-      // VERDICT (defect 7: a sentiment without the verdict line stalls a
-      // correct child).
-      commonStruggles: [
-        { pattern: 'Says the object\'s own name back instead of what state it is', response: 'Run the item\'s scripted correction line - the name is the question, not the answer - then wait in silence for their next try.' },
-        { pattern: 'Calls something that pours a liquid when it is grains or powder', response: 'Run the item\'s scripted correction line, which re-models the rule about holding its own shape, then wait in silence.' },
-        { pattern: 'Names the state when the round asked what the object DOES in a cup', response: 'Run the item\'s scripted correction line for this round - it is the right idea answering a different question - then wait in silence.' },
-        { pattern: 'Guesses what the secret object IS instead of what state it is', response: 'Run the item\'s scripted correction line, which reads the clues again and asks for the state, then wait in silence.' },
-        { pattern: 'Says what happened to the object instead of whether it can go back', response: 'Run the item\'s scripted correction line for this round - repeating the change is not yet an answer - then wait in silence.' },
-        { pattern: 'Goes quiet and does not speak for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'After an affirmation or a correction, the turn is OVER - never run on into another question, '
-            + 'another object, another clue, or a next round of your own: the application sends every next question itself. '
-            + 'A continued turn asks about an object the screen is not showing.',
-        },
-        {
-          title: 'THE PROPERTY PANEL IS THE ANSWER KEY',
-          instruction:
-            'What an object does with its shape - holds its own, takes the shape of what holds it, spreads out to fill the room - '
-            + 'is exactly what the learner is being asked to work out, in every round. '
-            + 'Never read a property list aloud, never say which bin an object belongs in, and never say how an object pours '
-            + 'unless the scripted line you were given says it.',
-        },
-      ],
-    },
+    ...bossEntry(matterExplorerCard),
     evalModes: [
       { evalMode: 'sort', label: 'Sort (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sort'], description: 'DI judged, spoken: the tutor names an everyday object and the child says whether it is a solid, a liquid or a gas. One judged item per OBJECT - the click era graded a whole screenful as one boolean. Key computed from the object\'s own state field.' },
       { evalMode: 'property', label: 'Property Inspector (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['property'], description: 'DI judged, spoken: the child says what the object DOES in a cup - keeps its own shape, takes the cup\'s shape, or spreads out and fills the room. The observation that sits one step before classification; key computed from properties.shape.' },
@@ -241,21 +192,6 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'mystery', label: 'Mystery Material (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['mystery'], description: 'DI judged, spoken: the object\'s name is withheld and the child names its state from two or three observable clues. Shape and flow clues are refused in code - they would hand over the answer.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'One everyday object at a time; every answer is said out loud and computed from the object. Sort and mystery: '
-        + 'solid, liquid or gas (mystery hides the object and gives clues; never name the secret thing before credit). '
-        + 'Property: what it does in a cup, one of the things the question offers. Change: whether what happened can go '
-        + 'back the way it was or is changed for ever. The learner does not read: say the question, the change and the clues '
-        + 'aloud. Naming the object back, or a state word on a property or change question, is not an answer. When the scene '
-        + 'has a rule you may say it before the ask; without one, add no choices beyond those in the question. Before an attempt '
-        + 'never say the answer. You cannot move or show the object.',
-      levers: true,
-      // Every item is spoken: its known wrong answers by kind (`matterSpokenMisses`, handoff 20 Part B). Every miss has a
-      // help lever on every saved item (`matterExplorerLevers.ts`), so nothing is unanswered.
-      misses: missLists<SpokenMatterMiss>({ sort: ['other_state', 'said_object_back'], mystery: ['other_state'],
-        property: ['other_shape', 'state_word'], change: ['other_way', 'said_change_back', 'state_word'] }),
-    },
   },
   {
     id: 'reaction-lab',
@@ -418,103 +354,18 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Live-judged DIRECT INSTRUCTION particle simulation. The spoken tutor puts a substance on the bench beside its particle view, asks ONE question, and the child answers OUT LOUD — what state it is, what state it will reach when the tutor heats or cools it, what the change is called, or which of two named substances melts first. The tutor judges from the audio, and its own affirmation runs the experiment and advances the lesson. With no challenges in play the same primitive is a free exploration surface: a temperature slider, a macroscopic beaker and a synchronized particle model, heating curve and substance switcher. Perfect for the particle model of matter, phase transitions, melting and boiling points, and energy transfer. ESSENTIAL for K-5 science.',
     constraints: 'Best for K-5. Use for science lessons on states of matter, the particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy. Judged sessions require the live tutor and a microphone; every answer is SPOKEN, so there is nothing to tap. The manifest must NOT supply substances, temperatures or answer keys — every challenge is drawn and keyed in code from a substance table with real melting and boiling points. Grade-appropriate complexity adjusts automatically; K-2 stays on everyday, above-freezing substances and never hears a below-zero temperature.',
     affordances: { representation: 'pictorial', answers: ['spoken'], role: ['visualize', 'apply'], minutes: 5 },
-    // ── DI MODALITY (2026-08-20) — THIRD science port, SECOND chemistry port.
-    // The tutor owns the clock in all three modes: it asks once, waits, judges
-    // the spoken answer in-band, and its own line is the advance. No advance
-    // timer, no Next button, no Check button, no push-to-talk mic anywhere.
-    // THE SPLIT (standing gate 1): EVERY mode is spoken. observe answers with a
-    // state word, predict with a state word or a phase-change word (both
-    // short_spoken_word), compare with one of two named substances
-    // (closed_set_choice). No gesture item exists, and that absence IS the
-    // port: every answer here is something a child says across a table.
-    // WHAT THE JUDGED SURFACE HIDES: the temperature slider (the ask is "what
-    // state WILL it be" — a slider beside a live beaker answers that by
-    // experiment), the state badge and the particle caption (both print the
-    // observe answer in words), the numeric temperature and the colour-zoned
-    // track with its MP/BP markers, and the substance switcher. All of them
-    // return in the reveal, after the affirmation.
-    // Cue lines and the per-item judging contracts live in
-    // `statesOfMatterScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. SENTINEL DISCIPLINE re-checked on every line below:
-    // no sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
-    tutoring: {
-      // ⚠️ THE STIMULUS GOES LAST, and the never-read-aloud clause sits
-      // IMMEDIATELY before it (solar-system's shape). This port's first drive
-      // read the [CURRENT STATE] preamble aloud on 3 of 6 observe asks, and
-      // splitting that clause off into its own sentence earlier in the block
-      // only took it to 2 of 6 — an observe ask names nothing but the
-      // substance by design, so the state line has to identify itself as
-      // not-content at the exact point it arrives.
-      taskDescription: 'Live-judged Direct Instruction on states of matter. The learner answers OUT LOUD in every round, and you judge what you hear against the exact contract in each bracketed [SOM_ITEM] message. You speak the exact scripted lines from those messages and nothing else. Reading the beaker and the particle view is the entire skill being practiced, so never volunteer the state, the temperature, or what the substance is about to do. Current round type: {{challengeType}} (the special type free_explore means there is no judged loop — the child is exploring the open particle sim, and you react briefly and warmly to the [PHASE_CHANGE] and [SUBSTANCE_CHANGED] updates as a guide). The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
-      // Exactly what the pack pushes through contextFor — every key the
-      // click-era block interpolated (currentState, currentTemperature,
-      // particleSpeed, …) was the answer or the material that gives it away.
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d: every rung routes through the SCRIPTED correction. A re-spoken ask
-      // opens with neither "Yes" nor "My turn:", so the reducer records no
-      // verdict and the child waits on a lesson that cannot advance.
-      scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the [SOM_ITEM] message. It already re-models the particle rule or the threshold rule and hands the question back, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses that produce a
-      // VERDICT (defect 7: a sentiment without the verdict line stalls a
-      // correct child).
-      commonStruggles: [
-        { pattern: 'Says the substance\'s name instead of its state', response: 'Run the item\'s scripted correction line — the question asks what state it is in, not what it is made of — then wait in silence for their next try.' },
-        { pattern: 'Names the state the substance is in right now instead of the state it will reach', response: 'Run the item\'s scripted correction line, which re-models the thresholds, then wait in silence.' },
-        { pattern: 'Answers a change question with a state word, such as "liquid" instead of "melting"', response: 'Run the item\'s scripted correction line, which names all four changes, then wait in silence.' },
-        { pattern: 'Compares two melting points and reads the comparison backwards', response: 'Run the item\'s scripted correction line, which puts the two numbers side by side, then wait in silence.' },
-        { pattern: 'Goes quiet and says nothing for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'After an affirmation or a correction, the turn is OVER — never run on into another question, '
-            + 'another substance, another temperature, or a next round of your own: the application sends '
-            + 'every next question itself. A continued turn asks about a beaker the screen is not showing.',
-        },
-        {
-          title: 'THE CHILD IS LOOKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never describe the beaker or the particles out loud, '
-            + 'and never read back any line the application sent you for your own use. The silence is theirs.',
-        },
-        {
-          title: 'PARTICLE WONDER (free exploration only)',
-          instruction:
-            'When the session is free exploration and the learner drags the temperature across a threshold, '
-            + 'celebrate what the particles just did in one short sentence — broke free and started sliding, '
-            + 'or flew apart, or locked back into place. Keep it visual and age-appropriate. '
-            + 'During judged rounds this directive is dormant — scripted lines only.',
-        },
-      ],
-    },
+    // EVERY mode is spoken (third science port, second chemistry port): observe answers with a state word, predict
+    // with a state word or a phase-change word, compare with one of two named substances. The judged surface hides the
+    // temperature slider, the state badge, the particle caption, the numeric temperature and the substance switcher
+    // until credit. Live-tutor wiring: `statesOfMatter.card.ts` + `statesOfMatter.boss.ts` (the spoken preset); asks,
+    // keys and build gates in `statesOfMatterDomain.ts`.
+    ...bossEntry(statesOfMatterCard),
     evalModes: [
       { evalMode: 'observe', label: 'Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'DI judged, spoken: read the particle view and SAY the state of matter. Beta held — the click era offered three labelled buttons and this asks for the same one-word answer unaided, which is harder in production but is still this primitive\'s easiest task identity.' },
       { evalMode: 'predict', label: 'Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'DI judged, spoken: given the thresholds aloud, say the state the substance will reach when the tutor heats or cools it — or, at Grade 3-5, name the phase change itself (melting, freezing, boiling, condensing).' },
       { evalMode: 'compare', label: 'Compare (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['compare'], description: 'DI judged, spoken: two substances with real melting points, both solid on the bench — say which melts first, or which is still solid at a stated temperature. Every key computed from the substance table.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'A substance in a beaker beside its particle view; every answer is said out loud and computed from the '
-        + 'substance table. Observe: read the particles and say the state. Predict: from the melting and boiling points in '
-        + 'the question, say the state it will reach, or name the change (melting, freezing, boiling, condensing). Compare: '
-        + 'two substances, and the learner names the one that melts first or stays solid. The screen prints no temperature '
-        + 'or state until credit, so say the numbers in the question aloud; a young learner does not read them. The '
-        + 'substance named back, the state it is in now on a predict question, or the end state on a change question is not '
-        + 'the answer. When the scene has a rule you may say it before the ask; without one add no choices beyond those in '
-        + 'the question. Before an attempt never say the answer. You cannot change the temperature.',
-      levers: true,
-      // Every item is spoken: its known wrong answers by kind (`statesSpokenMisses`, handoff 20 Part B). Every miss has a
-      // help lever on every saved item (`statesOfMatterLevers.ts`), so nothing is unanswered.
-      misses: missLists<SpokenStatesMiss>({ observe: ['other_state', 'said_substance_back'],
-        predict: ['said_start_state', 'other_state', 'said_end_state', 'opposite_change'], compare: ['other_of_pair'] }),
-    },
   },
   {
     id: 'mixing-and-dissolving',

@@ -25,7 +25,7 @@ import {
   changeFitsObject,
   isEverydayChange,
   STATE_OF_SHAPE,
-} from "../../primitives/visual-primitives/chemistry/matterExplorerScript";
+} from "../../primitives/visual-primitives/chemistry/matterExplorerDomain";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
 export type { MatterExplorerData, MatterObject, MatterChallenge };

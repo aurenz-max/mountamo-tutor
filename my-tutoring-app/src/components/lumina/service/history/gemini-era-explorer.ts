@@ -56,7 +56,7 @@ import type {
   EraPriorEra,
 } from '../../primitives/visual-primitives/history/EraExplorer';
 
-// The judged pack's leak gates and its spoken-menu builder, IMPORTED rather
+// The domain's leak gates and its spoken-menu builder, IMPORTED rather
 // than re-implemented. Two hand-synced copies of a leak rule drift —
 // letter-spotter's two sides of the wire disagreed live on what a sayable
 // sentence was until the copies were deleted — so this generator consumes
@@ -69,7 +69,7 @@ import {
   optionsEarSeparable,
   statementLeaks,
   toWords,
-} from '../../primitives/visual-primitives/history/eraExplorerScript';
+} from '../../primitives/visual-primitives/history/eraExplorerDomain';
 
 // ---------------------------------------------------------------------------
 // Constants

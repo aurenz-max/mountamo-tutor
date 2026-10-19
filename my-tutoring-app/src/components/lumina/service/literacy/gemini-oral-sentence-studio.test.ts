@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { spokenSpanOf, validateJudgedScriptPack } from '../../hooks/judgedScriptContract';
 import {
+  askFor,
   challengeAskable,
-  itemCue,
   itemsFromChallenges,
-  oralSentenceStudioPack,
-} from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
+} from '../../primitives/visual-primitives/literacy/oralSentenceStudioDomain';
 import {
   ORAL_SENTENCE_STUDIO_FALLBACKS,
   validateOralSentenceStudioPayload,
@@ -129,12 +127,11 @@ describe('gemini oral-sentence-studio contract', () => {
     }, 1, 'use_story_words')).toBeNull();
   });
 
-  it('every mode builds a valid pack whose spoken ask never carries a model sentence', () => {
+  it('every fallback builds an item whose ask never carries a model sentence', () => {
     const items = itemsFromChallenges(ORAL_SENTENCE_STUDIO_FALLBACKS);
     expect(items).toHaveLength(ORAL_SENTENCE_STUDIO_FALLBACKS.length);
-    expect(validateJudgedScriptPack(oralSentenceStudioPack(items))).toEqual([]);
     for (const item of items) {
-      const ask = spokenSpanOf(itemCue(item));
+      const ask = askFor(item);
       for (const sentence of item.challenge.acceptedSentences) expect(ask).not.toContain(sentence);
       if (item.mode === 'use_story_words') expect(ask).toContain(item.challenge.storyText);
       if (item.mode === 'guided_writing_rehearsal') expect(ask).toContain(item.challenge.priorStepLabel);

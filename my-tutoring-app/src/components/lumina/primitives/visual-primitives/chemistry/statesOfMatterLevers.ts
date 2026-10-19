@@ -1,21 +1,23 @@
 /**
- * The in-item levers on states-of-matter (`/add-support-tiers`, report qa/eval-reports/states-of-matter-levers-2026-10-08.md).
- * No real-learner evidence: the misses are what `statesSpokenMisses` names on each mode's spoken answer.
+ * The in-item levers on states-of-matter, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/states-of-matter-levers-2026-10-08.md). No real-learner evidence: the misses are what
+ * `statesSpokenMisses` names on each mode's spoken answer.
  *
  * Every answer is spoken and computed from the substance table, and nothing on screen may print this item's state,
  * target temperature or winner. So:
- * - observe: `particle_models` (help) three model particle boxes in a neutral colour, one per state, each tagged with
- *   how its particles move. Nothing marks which one the beaker's particles move like. `three_named` (simplify) a practice
+ * - observe: `particle_models` (model) three model particle boxes in a neutral colour, one per state, each tagged with
+ *   how its particles move. Nothing marks which one the beaker's particles move like. `three_named` (easier) a practice
  *   item on another substance whose ask names "solid, liquid, or gas?". None on an item already asked at the easy tier.
- * - predict: `temperature_strip` (help) a strip with the substance's melting and boiling points marked, the zones (or,
+ * - predict: `temperature_strip` (marks) a strip with the substance's melting and boiling points marked, the zones (or,
  *   on a change question, the four change names on the crossings) labelled and a "now" pointer at the start
- *   temperature. The temperature the tutor is going to is never marked. `one_point` (simplify) the same question on a
+ *   temperature. The temperature the tutor is going to is never marked. `one_point` (easier) the same question on a
  *   substance that does not boil, so only one point is compared. None when the item's substance already has one point.
- * - compare: `model_pair` (help) two model substances that are not this item's pair, heated to one temperature between
- *   their melting points, each tagged with its melting point and what it did. `far_pair` (simplify) a which-melts-first
+ * - compare: `model_pair` (model) two model substances that are not this item's pair, heated to one temperature between
+ *   their melting points, each tagged with its melting point and what it did. `far_pair` (easier) a which-melts-first
  *   practice item on a pair whose melting points are far apart. None when no such pair is left in the band.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { statesOfMatterCard } from './statesOfMatter.card';
 import {
   bandPool,
   isConfusablePair,
@@ -25,11 +27,11 @@ import {
   tempSpoken,
   TEMP_MARGIN,
   type MatterState,
+  type SpokenStatesMiss,
   type StatesBand,
   type StatesOfMatterItem,
   type SubstanceFacts,
-} from './statesOfMatterScript';
-import type { SpokenStatesMiss } from './statesOfMatterWorkspace';
+} from './statesOfMatterDomain';
 
 export const PARTICLE_MODELS_LEVER = 'particle_models';
 export const TEMPERATURE_STRIP_LEVER = 'temperature_strip';
@@ -232,77 +234,73 @@ export function practiceLeaks(p: StatesOfMatterItem, item: StatesOfMatterItem): 
   return Math.abs(p.pair[0].meltingPoint - p.pair[1].meltingPoint) < FAR_GAP;
 }
 
-// ── what is on screen ──────────────────────────────────────────────────────
 
-/** What the pulled levers put on screen, for the tutor and JEV: what is drawn, never this item's answer. */
-export function leversOnScreen(item: StatesOfMatterItem, on: readonly string[], s: StatesLeverSession): string | null {
-  const parts: string[] = [];
-  if (on.includes(PARTICLE_MODELS_LEVER) && item.kind === 'name_state') {
-    parts.push(`beside the beaker, three model particle boxes that are not the ${item.substance!.name}, in a colour of their own, `
-      + `each tagged: ${PARTICLE_MODELS.map(modelTag).join('; ')}. Nothing marks which box the beaker's particles move like`);
-  }
-  const strip = on.includes(TEMPERATURE_STRIP_LEVER) ? stripFor(item) : null;
-  if (strip) {
-    parts.push(`beside the beaker, a temperature strip for the ${strip.substance.name}: `
-      + `${strip.marks.map(m => `a mark at ${tempSpoken(m.temp)} (${m.label})`).join(' and ')}, labelled ${strip.labels.join('; ')}, `
-      + `and a "now" pointer at ${tempSpoken(strip.now)}. The temperature it is going to is not marked`);
-  }
-  const model = on.includes(MODEL_PAIR_LEVER) ? modelPairFor(item, s) : null;
-  if (model) {
-    parts.push(`under the two beakers, a model pair that is not this item, both heated to ${tempSpoken(model.temp)}: `
-      + `${model.pair.map(x => `${x.name} (${modelPairTag(x, model.temp)})`).join('; ')}. Nothing marks which of this item's two is like which model`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
+// ── the lever set ──────────────────────────────────────────────────────────
 
-// ── the levers ─────────────────────────────────────────────────────────────
-
-const MISSES: Record<StatesOfMatterItem['kind'], SpokenStatesMiss[]> = {
+/** The misses each kind's levers answer: a predict_state item never hears a change word, and the reverse. */
+const KIND_MISSES: Record<StatesOfMatterItem['kind'], readonly SpokenStatesMiss[]> = {
   name_state: ['other_state', 'said_substance_back'],
   predict_state: ['said_start_state', 'other_state'],
   predict_change: ['said_end_state', 'opposite_change'],
   melt_first: ['other_of_pair'],
   stay_solid: ['other_of_pair'],
 };
+const answersOn = (item: StatesOfMatterItem) => KIND_MISSES[item.kind];
 
-export function statesLevers(item: StatesOfMatterItem | null, s: StatesLeverSession, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const answers = MISSES[item.kind];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], when: string, does: string) =>
-    levers.push({ id, kind, carrier: 'both', pulled: pulled.includes(id), answers, when, does });
-  const simplify = practiceItem(item, s);
-  const practiceDoes = 'Once it is on screen, ask its question as shown; never make one up. Not graded; the full item comes back after it.';
-  switch (item.kind) {
-    case 'name_state':
-      add(PARTICLE_MODELS_LEVER, 'help', 'The learner names another state, or says the substance\'s name back.',
-        'Draws three model particle boxes beside the beaker, in a colour of their own, one moving like a solid, one like a liquid, '
-        + 'one like a gas, each tagged with how its particles move. Read the tags if you like. Never say which box the beaker\'s '
-        + 'particles move like, or what state the substance is.');
-      if (simplify) add(THREE_NAMED_LEVER, 'simplify', 'The learner still cannot answer after help.',
-        `Opens an easier practice item first: another substance, and the question names the three states. ${practiceDoes}`);
-      break;
-    case 'predict_state':
-    case 'predict_change':
-      add(TEMPERATURE_STRIP_LEVER, 'help', item.kind === 'predict_change'
-        ? 'The learner says the state it ends up in, or the opposite change.' : 'The learner says the state it is in now, or another state.',
-        `Draws a temperature strip beside the beaker with the points from the question marked, ${item.kind === 'predict_change'
-          ? 'each crossing labelled with its change going up and coming down' : 'each zone labelled with its state'}, and a "now" `
-        + 'pointer where it sits. The temperature it is going to is not marked: the learner places it. Never say which zone or '
-        + 'crossing the new temperature lands in, and never compare it with a marked point (above, below, past or under it): '
-        + 'that comparison is the learner\'s step.');
-      if (simplify) add(ONE_POINT_LEVER, 'simplify', 'The learner still cannot answer after help.',
-        `Opens an easier practice item first: the same question on a substance that does not boil, so there is only one point to compare. ${practiceDoes}`);
-      break;
-    case 'melt_first':
-    case 'stay_solid':
-      if (modelPairFor(item, s)) add(MODEL_PAIR_LEVER, 'help', 'The learner names the other one of the two.',
-        'Draws a model pair under the beakers, two other substances heated to one temperature, each tagged with its melting point and '
-        + 'whether it melted or is still solid. Read the model if you like. Never put the learner\'s two numbers beside the model\'s, '
-        + 'and never say which of the learner\'s two melts first or stays solid, or which model it is like.');
-      if (simplify) add(FAR_PAIR_LEVER, 'simplify', 'The learner still cannot answer after help.',
-        `Opens an easier practice item first: which of two substances melts first, with melting points far apart. ${practiceDoes}`);
-      break;
-  }
-  return levers;
-}
+const PRACTICE = 'Not graded; the full item comes back after it.';
+
+type Mode = keyof typeof statesOfMatterCard.modes;
+
+/** Every lever of the family, by type, in the order the tutor sees them. */
+export const STATES_LEVERS = leverSet<StatesOfMatterItem, StatesLeverSession>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => statesOfMatterCard.modes[mode as Mode]?.misses ?? [],
+  support: { tier: item => item.tier,
+    different: item => (item.pair ? 'a model pair of two other substances' : 'three model particle boxes'),
+    own: 'this item\'s answer' },
+  specs: [
+    { id: PARTICLE_MODELS_LEVER, type: 'model', modes: ['observe'], answers: 'all', answersOn,
+      when: 'The learner names another state, or says the substance\'s name back.',
+      does: 'Draws three model particle boxes beside the beaker, in a colour of their own, one moving like a solid, one like a '
+        + 'liquid, one like a gas, each tagged with how its particles move. Read the tags if you like. Never say which box the '
+        + 'beaker\'s particles move like, or what state the substance is.',
+      content: item => (item.kind === 'name_state' ? PARTICLE_MODELS : null),
+      fact: (models: readonly ParticleModel[], item) => `Beside the beaker, three model particle boxes that are not the `
+        + `${item.substance!.name}, in a colour of their own, each tagged: ${models.map(modelTag).join('; ')}. Nothing marks which `
+        + 'box the beaker\'s particles move like.' },
+    { id: THREE_NAMED_LEVER, type: 'easier', modes: ['observe'], answers: 'all', answersOn,
+      when: 'The learner still cannot answer after help.',
+      does: `Opens an easier practice item first: another substance, and the question names the three states. ${PRACTICE}`,
+      content: (item, s) => practiceItem(item, s) },
+    { id: TEMPERATURE_STRIP_LEVER, type: 'marks', carrier: 'both', modes: ['predict'], answers: 'all', answersOn,
+      when: item => (item.kind === 'predict_change' ? 'The learner says the state it ends up in, or the opposite change.'
+        : 'The learner says the state it is in now, or another state.'),
+      does: item => 'Draws a temperature strip beside the beaker with the points from the question marked, '
+        + `${item.kind === 'predict_change' ? 'each crossing labelled with its change going up and coming down' : 'each zone labelled with its state'}, `
+        + 'and a "now" pointer where it sits. The temperature it is going to is not marked: the learner places it. Never say '
+        + 'which zone or crossing the new temperature lands in, and never compare it with a marked point (above, below, past '
+        + 'or under it): that comparison is the learner\'s step.',
+      content: item => stripFor(item),
+      fact: (strip: TemperatureStrip) => `Beside the beaker, a temperature strip for the ${strip.substance.name}: `
+        + `${strip.marks.map(m => `a mark at ${tempSpoken(m.temp)} (${m.label})`).join(' and ')}, labelled ${strip.labels.join('; ')}, `
+        + `and a "now" pointer at ${tempSpoken(strip.now)}. The temperature it is going to is not marked.` },
+    { id: ONE_POINT_LEVER, type: 'easier', modes: ['predict'], answers: 'all', answersOn,
+      when: 'The learner still cannot answer after help.',
+      does: 'Opens an easier practice item first: the same question on a substance that does not boil, so there is only one '
+        + `point to compare. ${PRACTICE}`,
+      content: (item, s) => practiceItem(item, s) },
+    { id: MODEL_PAIR_LEVER, type: 'model', modes: ['compare'], answers: 'all', answersOn,
+      when: 'The learner names the other one of the two.',
+      does: 'Draws a model pair under the beakers, two other substances heated to one temperature, each tagged with its melting '
+        + 'point and whether it melted or is still solid. Read the model if you like. Never put the learner\'s two numbers beside '
+        + 'the model\'s, and never say which of the learner\'s two melts first or stays solid, or which model it is like.',
+      content: (item, s) => modelPairFor(item, s),
+      fact: (model: ModelPair) => `Under the two beakers, a model pair that is not this item, both heated to ${tempSpoken(model.temp)}: `
+        + `${model.pair.map(x => `${x.name} (${modelPairTag(x, model.temp)})`).join('; ')}. Nothing marks which of this item's two `
+        + 'is like which model.' },
+    { id: FAR_PAIR_LEVER, type: 'easier', modes: ['compare'], answers: 'all', answersOn,
+      when: 'The learner still cannot answer after help.',
+      does: `Opens an easier practice item first: which of two substances melts first, with melting points far apart. ${PRACTICE}`,
+      content: (item, s) => practiceItem(item, s) },
+  ],
+});

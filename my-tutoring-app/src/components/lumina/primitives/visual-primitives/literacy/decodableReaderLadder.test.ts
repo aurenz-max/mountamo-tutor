@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BENCHED_WINDOW, READER_GRADES, READER_LADDER, readerRung, sentenceWindowOf } from './decodableReaderLadder';
-import { itemsFromChallenges } from './decodableReaderScript';
+import { itemsFromChallenges } from './decodableReaderDomain';
 
 const TIERS = ['easy', 'medium', 'hard'] as const;
 const sentence = (n: number, id: string) => ({ id, words: Array.from({ length: n }, (_, i) => ({ id: `${id}w${i}`, text: i === n - 1 ? 'end.' : 'word' })) });

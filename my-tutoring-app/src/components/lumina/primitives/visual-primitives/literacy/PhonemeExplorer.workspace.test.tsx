@@ -41,7 +41,7 @@ it.each(Object.keys(BY_MODE))('%s binds: one spoken answer judged against the ke
   const d = data(challenge);
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'phoneme-explorer', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'phoneme-explorer', evalMode: mode, data: d });
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^${answer}\\b`));
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${answer}"`));
   for (const text of hidden) expect(bodyText()).not.toMatch(new RegExp(`\\b${text}\\b`, 'i'));
 });
 

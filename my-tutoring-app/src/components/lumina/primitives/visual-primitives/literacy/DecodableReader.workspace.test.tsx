@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Decodable reader on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Decodable reader on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip's is shared
+ * (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,8 +15,7 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
-import { itemsFromChallenges } from './decodableReaderScript';
+import { itemsFromChallenges } from './decodableReaderDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -88,16 +88,6 @@ it('Say that again asks silently, as the host, and never reads the line', () => 
   const [text, options] = seam.send.mock.calls.at(-1)!;
   expect(text).not.toMatch(/cat sat/);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip points at the whole line and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('reader');
-  const h = mountWorkspace({ primitiveId: 'decodable-reader', evalMode: 'main_idea', data: data('main_idea'),
-    instanceId: 'reader', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['line']);
-  h.say('The cat sat on a mat.'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a story with nothing that can be asked', () => {

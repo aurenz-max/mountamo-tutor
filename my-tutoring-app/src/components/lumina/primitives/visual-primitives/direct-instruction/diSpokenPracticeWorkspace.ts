@@ -12,7 +12,7 @@
  * gone. The generator gates (`findAnswerLeaks`, `findChoiceMenuDefects`, `findConceptDefects`) still
  * decide what ships, so the ask never contains the answer.
  */
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { DI_SPOKEN_PRACTICE_MODES } from './diSpokenPracticeModes';
@@ -25,7 +25,7 @@ const quoted = (words: readonly string[]) => words.map(word => `"${word}"`).join
 export const spokenPracticeAskFor = (item: SpokenPracticeItem): string => item.ask;
 
 /** The key as the observer judges it: the answer, what else counts, and what does not. */
-export const spokenPracticeKey = (item: SpokenPracticeItem): string => spokenKeyText({
+export const spokenPracticeKey = (item: SpokenPracticeItem): SpokenKey => ({
   answer: item.expectedAnswer, alsoAccept: item.alternates, acceptRule: item.acceptRule, signatureError: item.signatureError,
   ...(item.mode === 'compare_choice' && item.choices?.length ? { menu: item.choices } : {}),
   ...(item.mode === 'explain_concept' ? { meaning: { idea: conceptAffirmForm(item.conceptStatement ?? ''),

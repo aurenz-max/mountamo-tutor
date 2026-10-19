@@ -27,6 +27,7 @@ import { diWordProblemSetupCard } from './diWordProblemSetup.card';
 import { BIG_UNKNOWN_FRAMES, FRAME_IDS, SHAPE_WORD, familySpoken, numberWord as w, planWordProblem, shapeOfFrame, type FrameId,
   type StoryShape, type StoryTheme, type WordProblemPlan } from './diWordProblemPlan';
 import { itemsFromProblems, type WordProblemItem } from './diWordProblemScript';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_STORY = 'model_story';
 export const STORY_LINKS = 'story_links';
@@ -34,7 +35,6 @@ export const READ_ALONG = 'read_along';
 export const COUNT_DOTS = 'count_dots';
 export const WITHIN_TEN = 'within_ten';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
 /** Code-owned model themes; each passes `themeUsable`. */
 const THEMES: readonly StoryTheme[] = [

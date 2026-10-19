@@ -17,7 +17,8 @@ import {
   SHAPE_WORD, STORY_SHAPES, wrongWayAnswer, type FamilySlot, type WordProblemPlan,
 } from './diWordProblemPlan';
 import { itemsFromProblems, type DiWordProblemSetupData, type WordProblemItem } from './diWordProblemScript';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { spokenAssignment } from '../../../components/live-activity/boss';
 import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 
@@ -35,8 +36,8 @@ const SHAPE_WHY: Record<WordProblemPlan['shape'], string> = {
   comparison: 'it compares two amounts', change: 'it starts with an amount that changes', part_whole: 'two parts make one whole',
 };
 
-/** The key the tutor judges a spoken step with (`spokenKeyText`); the placing step has none (the activity checks it). */
-export function wordProblemKey(item: WordProblemItem): string | undefined {
+/** The key the tutor judges a spoken step with; the placing step has none (the activity checks it). */
+export function wordProblemKey(item: WordProblemItem): SpokenKey | null {
   const p = item.plan;
   switch (item.kind) {
     case 'classify': {
@@ -47,14 +48,14 @@ export function wordProblemKey(item: WordProblemItem): string | undefined {
         : p.shape === 'comparison'
           ? 'Calling it a change problem because a sentence says "has" is the signature error: nothing changes.'
           : 'Calling it a comparison because two kinds are named is the signature error: nothing is compared.';
-      return spokenKeyText({ answer: SHAPE_WORD[p.shape], alsoAccept: variants, menu: STORY_SHAPES.map(shape => SHAPE_WORD[shape]),
+      return ({ answer: SHAPE_WORD[p.shape], alsoAccept: variants, menu: STORY_SHAPES.map(shape => SHAPE_WORD[shape]),
         acceptRule: `Alone or in a sentence, because ${SHAPE_WHY[p.shape]}.`, signatureError: signature });
     }
     case 'big_number':
-      return undefined; // checked by the activity
+      return null; // checked by the activity
     case 'family': {
       const subtraction = familyAsSubtraction(p);
-      return spokenKeyText({ answer: familySpoken(p), alsoAccept: [familySpokenSwapped(p), familySolved(p)],
+      return ({ answer: familySpoken(p), alsoAccept: [familySpokenSwapped(p), familySolved(p)],
         acceptRule: 'Any wording that puts the right numbers in the right slots counts: "and" for plus, "makes" or "is" for '
           + 'equals, "box", "blank" or "what" for the unknown; said in pieces still counts.',
         signatureError: `The big number in a small slot ("${familyMisplaced(p)}") is the signature error${subtraction
@@ -64,11 +65,11 @@ export function wordProblemKey(item: WordProblemItem): string | undefined {
       const words = p.operation === 'add' ? ['plus', 'put them together'] : ['minus', 'take away'];
       const verb = p.verbCueOperation !== p.operation
         ? `The story's word "${p.verbCueWord}" sounds like ${p.verbCueOperation}; taking the operation from it is the signature error.` : '';
-      return spokenKeyText({ answer: p.operation, alsoAccept: words, menu: ['add', 'subtract'],
+      return ({ answer: p.operation, alsoAccept: words, menu: ['add', 'subtract'],
         acceptRule: `It is ${p.operation} because the box is ${boxRole(p)} in "${familySpoken(p)}".`, signatureError: verb });
     }
     case 'solve':
-      return spokenKeyText({ answer: w(p.answer), alsoAccept: [p.answerSentence],
+      return ({ answer: w(p.answer), alsoAccept: [p.answerSentence],
         acceptRule: 'The bare number or a sentence counts, straight away or after counting.',
         signatureError: `${w(wrongWayAnswer(p))} is the story numbers combined the wrong way.` });
   }
@@ -130,10 +131,8 @@ export function wordProblemSpokenMisses(item: WordProblemItem): KnownMiss[] {
 
 export function wordProblemAssignment(item: WordProblemItem): TeachingAssignment {
   const key = wordProblemKey(item);
-  const misses = key === undefined ? [] : wordProblemSpokenMisses(item);
-  return key === undefined
-    ? { id: item.id, task: wordProblemAskFor(item), response: 'gesture' }
-    : { id: item.id, task: wordProblemAskFor(item), response: 'speech', expectedAnswer: key, ...(misses.length ? { misses } : {}) };
+  return key ? spokenAssignment(item.id, wordProblemAskFor(item), key, wordProblemSpokenMisses(item))
+    : { id: item.id, task: wordProblemAskFor(item), response: 'gesture' };
 }
 
 /** The hands step's check, as the scripted verdict cue computed it: the card in the big slot decides, and a

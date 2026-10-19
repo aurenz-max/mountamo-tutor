@@ -1,7 +1,7 @@
 # Contract: sentence-analyzer
 
 - **Derived:** 2026-10-04 (static: lever table, QA reports, tests, git history; no live census) · evidence window: 2026-08-17 → 2026-10-04
-- **Component:** `primitives/visual-primitives/literacy/SentenceAnalyzer.tsx` · **Domain:** `sentenceAnalyzerScript.ts`, `sentenceAnalyzerWorkspace.ts`, `sentenceAnalyzerLevers.ts`, `sentenceModels.ts` · **Generator:** `service/sentence-analyzer/gemini-sentence-analyzer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (sentence-analyzer)
+- **Component:** `primitives/visual-primitives/literacy/SentenceAnalyzer.tsx` · **Domain:** `sentenceAnalyzerDomain.ts`, `sentenceAnalyzerLevers.ts`, `sentenceModels.ts` · **Boss:** `sentenceAnalyzer.card.ts`, `sentenceAnalyzer.boss.ts` · **Generator:** `service/sentence-analyzer/gemini-sentence-analyzer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (sentence-analyzer)
 - **Status:** ACTIVE
 
 ## Consumers (blast radius)
@@ -34,7 +34,7 @@
 - **Property:** `short_sentence` (3-4 words, one word to name), `short_subject` (two-word subject; refused when the item's is already two or fewer), `plain_kind` (the kind in its plainest form). Ungraded; the full item returns.
 
 ### R6 — The tier only sets where the levers start · OBSERVED
-- **Property:** easy draws the wall examples (not offered, not recorded); other tiers draw nothing. `leadInFor` serves the DI bench only.
+- **Property:** easy draws the wall examples (not offered, not recorded); other tiers draw nothing.
 - **Probe:** `g26LeverStarts.test.ts`.
 
 ## Conflicts
@@ -44,3 +44,4 @@ None open.
 ## Changelog
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.
+- 2026-10-19: moved onto the boss framework (spokenBoss). The script's cue builders, the workspace module, the live adapter, the DI drive port and the catalog `tutoring` block are deleted; the build gates, the ask, the key, the misses and the scene live in `sentenceAnalyzerDomain.ts`, the levers are one lever set (`SENTENCE_LEVERS`). Requirements unchanged: no word of the sentence is labelled before credit (scene `constraints`), models and practice stay answer-blind (R3), starting levers are still drawn and never offered (R6). The side question is now a menu key (the ask says both sides), and an ask that says any accepted answer, a classroom name included, drops its item at build. The lever set now also writes the shared `support` fact (when the model lever comes, by tier), as on every boss with a model lever.

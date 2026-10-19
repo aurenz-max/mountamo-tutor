@@ -1,9 +1,9 @@
 /**
- * The in-item levers on phoneme-explorer (`/add-support-tiers`, handoff 22 L2). Every answer is a spoken word or
- * count, so no lever turns one into a choice or a tap (R2). Help never emphasises the item's own sounds before a
- * try (contract R2): a model acts on another word, a counter counts only what the learner pushes, and the tiles
- * already on screen move but gain nothing. Simplify opens a NEW ungraded item of the same mode from code-owned
- * picture words the session never uses (R3).
+ * The in-item levers on phoneme-explorer (`/add-support-tiers`, handoff 22 L2), as one lever set (`bossLevers.ts`).
+ * Every answer is a spoken word or count, so no lever turns one into a choice or a tap (R2). Help never emphasises
+ * the item's own sounds before a try (contract R2): a model acts on another word, a counter counts only what the
+ * learner pushes, and the tiles already on screen move but gain nothing. Simplify opens a NEW ungraded item of the
+ * same mode from code-owned picture words the session never uses (R3).
  *
  * - `position_model` (isolate, ending, medial): another word in three sound boxes, the asked position lit; its
  *   sound there is never the item's.
@@ -14,14 +14,14 @@
  *   number would be the answer).
  * - `mark_position` (manipulate): the starting word's sound boxes, the one that changes emptied. Never the new sound.
  * - `two_cards_far` / `short_blend` / `two_sound_word` / `first_sound_change` (simplify).
- *
- * Misses are spoken and not emitted yet (handoff 20 Part B): the ids are declared for the ladder to come and listed
- * as unanswered for J9.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { itemFromChallenge, spokenPhonemeToken, walkFor, type PhonemeExplorerItem, type PhonemeItemKind } from './phonemeExplorerScript';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { phonemeExplorerCard } from './phonemeExplorer.card';
+import { itemFromChallenge, spokenPhonemeToken, walkFor, type PhonemeExplorerItem, type PhonemeItemKind } from './phonemeExplorerDomain';
 import { K_RHYME_FAMILIES, PRACTICE_EXTRA_FAMILIES, freeFamilies, sessionWords } from './rhymeModels';
 import { graphemes } from './wordWorkoutLevers';
+
+export { PHONEME_MISSES, type PhonemeMiss } from './phonemeExplorer.card';
 
 export const POSITION_LEVER = 'position_model';
 export const NAME_CARDS_LEVER = 'name_cards';
@@ -34,17 +34,6 @@ export const SIMPLIFY_LEVER: Record<PhonemeItemKind, string> = {
   isolate: 'two_cards_far', ending: 'two_cards_far', medial: 'two_cards_far',
   blend: 'short_blend', segment: 'two_sound_word', manipulate: 'first_sound_change',
 };
-
-/** The misses a spoken answer will name once spoken misses land (handoff 20 Part B). */
-export const PHONEME_MISSES = {
-  isolate: ['echo_stimulus', 'letter_name'],
-  ending: ['echo_stimulus', 'onset_match'],
-  medial: ['echo_stimulus', 'onset_match'],
-  blend: ['sounds_no_word', 'near_word'],
-  segment: ['word_for_count', 'count_off_one'],
-  manipulate: ['echo_original', 'other_position'],
-} as const;
-export type PhonemeMiss = typeof PHONEME_MISSES[keyof typeof PHONEME_MISSES][number];
 
 /**
  * A picturable three-sound word. `sounds` is what the model's boxes print; `phon`, when present, is what is said
@@ -84,6 +73,7 @@ export const TWO_SOUND_POOL: ReadonlyArray<{ word: string; emoji: string; segmen
 
 const CONTINUANTS = ['m', 's', 'f', 'n', 'l', 'r'];
 const POSITION = { isolate: 0, medial: 1, ending: 2 } as const;
+const PLACE = ['first', 'middle', 'last'] as const;
 const low = (w: string | undefined) => (w ?? '').trim().toLowerCase();
 
 /** Every word the session says, prints or asks for. A model or practice word may be none of them. */
@@ -181,59 +171,74 @@ export function practiceLeak(practice: PhonemeExplorerItem, item: PhonemeExplore
   return practice.kind !== item.kind || words.some(w => used.has(w)) || (!!sound && asked.has(sound));
 }
 
-/** What the pulled help levers put on screen, for the tutor. Never the item's answer or its asked sound. */
-export function leversOnScreen(item: PhonemeExplorerItem, pulled: readonly string[], items: readonly PhonemeExplorerItem[]): string | null {
-  const parts: string[] = [];
-  const model = pulled.includes(POSITION_LEVER) ? positionModelFor(item, items) : null;
-  if (model) {
-    const at = POSITION[item.kind as keyof typeof POSITION];
-    parts.push(`a model on another word, ${model.word}, in three sound boxes with the ${['first', 'middle', 'last'][at]} box lit: `
-      + `its ${['first', 'middle', 'last'][at]} sound is ${say(phon(model)[at])}. Say the model; it is not this item's sound`);
-  }
-  if (pulled.includes(NAME_CARDS_LEVER)) parts.push('a speaker mark on each card: read every card aloud in screen order, evenly');
-  if (pulled.includes(EXAMPLE_LEVER)) parts.push(`the example card for the sound (${item.exampleWord})`);
-  if (pulled.includes(OPERATION_LEVER)) parts.push('the change is printed under the starting word');
-  if (pulled.includes(SLIDE_LEVER)) parts.push('the sound tiles slid close together over an arrow. Say the sounds again with short gaps, '
-    + 'each held into the next; stop before the word');
-  if (pulled.includes(TOKENS_LEVER)) parts.push('a counter pad: the learner pushes one counter for each sound they say. It counts only their pushes');
-  if (pulled.includes(MARK_LEVER)) parts.push('the starting word\'s sound boxes, with the box of the sound that changes emptied. Never say the new word');
-  return parts.length ? parts.join('; ') : null;
+/** The lesson the levers read: its items, and which tier aids the session item's challenge withdrew. */
+export interface PhonemeLeverContext {
+  items: readonly PhonemeExplorerItem[];
+  withdrawn: { example?: boolean; operation?: boolean };
 }
 
-/**
- * The levers this item declares. `withdrawn` says which tier aids the item's challenge withdrew (the example
- * card, the printed operation): only those come back as levers.
- */
-export function phonemeExplorerLevers(item: PhonemeExplorerItem | null, pulled: readonly string[], items: readonly PhonemeExplorerItem[],
-  withdrawn: { example?: boolean; operation?: boolean } = {}): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly PhonemeMiss[], when: string, does: string,
-    carrier: WorkspaceLever['carrier'] = 'both') => levers.push({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const menu = item.kind === 'isolate' || item.kind === 'ending' || item.kind === 'medial';
-  if (menu && positionModelFor(item, items)) add(POSITION_LEVER, 'help',
-    item.kind === 'isolate' ? ['letter_name', 'echo_stimulus'] : ['onset_match'],
-    item.kind === 'isolate' ? 'The learner names a letter or says the example back.' : 'The learner matches the first sound instead.',
-    `Shows another word in three sound boxes with the ${item.kind === 'isolate' ? 'first' : item.kind === 'medial' ? 'middle' : 'last'} `
-    + 'box lit. Say the model word and that sound; never this item\'s sound.');
-  if (item.kind === 'isolate' && withdrawn.example && item.exampleWord) add(EXAMPLE_LEVER, 'help', ['letter_name'],
-    'The learner cannot hear the sound at the start of a word yet.', 'Shows the example card: a picture word that starts with the sound.');
-  if ((item.kind === 'isolate' || item.kind === 'medial') && item.enumerateMenu === false) add(NAME_CARDS_LEVER, 'help', ['echo_stimulus'],
-    'The learner says a word that is not a card.', 'Marks each card with a speaker: read every card aloud in screen order, evenly.');
-  if (item.kind === 'blend') add(SLIDE_LEVER, 'help', ['sounds_no_word', 'near_word'],
-    'The learner says the sounds but no word, or a close different word.',
-    'Slides the sound tiles together over an arrow. Say the sounds again with short gaps, each held into the next; stop before the word.');
-  if (item.kind === 'segment') add(TOKENS_LEVER, 'help', ['count_off_one', 'word_for_count'],
-    'The learner says the word back or a count one off.',
-    'Shows a counter pad: the learner pushes one counter for each sound as they say it, then counts their counters.', 'shown');
-  if (item.kind === 'manipulate' && changedBox(item) !== null) add(MARK_LEVER, 'help', ['other_position'],
-    'The learner changes a different sound.', 'Shows the starting word in sound boxes and empties the box of the sound that changes.');
-  if (item.kind === 'manipulate' && withdrawn.operation) add(OPERATION_LEVER, 'help', ['echo_original'],
-    'The learner says the starting word back.', 'Prints the change under the starting word.');
-  if (practiceItemFor(item, items)) add(SIMPLIFY_LEVER[item.kind], 'simplify', PHONEME_MISSES[item.kind],
-    'The learner still cannot do it after help.',
-    `Opens an easier practice item first: ${{ isolate: 'a held sound and two cards', ending: 'a new word and two cards', medial: 'a new word and two cards',
-      blend: 'a short word that starts with a held sound', segment: 'a word with only two sounds', manipulate: 'a change to the first sound of a new word' }[item.kind]}. `
-    + 'Not graded; the full item comes back after it.');
-  return levers;
-}
+const placeOf = (item: PhonemeExplorerItem) => PLACE[POSITION[item.kind as keyof typeof POSITION] ?? 0];
+const EASIER: Record<PhonemeItemKind, string> = {
+  isolate: 'a held sound and two cards', ending: 'a new word and two cards', medial: 'a new word and two cards',
+  blend: 'a short word that starts with a held sound', segment: 'a word with only two sounds', manipulate: 'a change to the first sound of a new word',
+};
+const MENU_MODES = ['isolate', 'ending', 'medial'] as const;
+const positionModel = (item: PhonemeExplorerItem, ctx: PhonemeLeverContext) => positionModelFor(item, ctx.items);
+const positionFact = (model: CvcWord, item: PhonemeExplorerItem) =>
+  `a model on another word, ${model.word}, in three sound boxes with the ${placeOf(item)} box lit: `
+  + `its ${placeOf(item)} sound is ${say(phon(model)[POSITION[item.kind as keyof typeof POSITION]])}. Say the model; it is not this item's sound`;
+const POSITION_WHY = 'It lights the asked position in another word\'s sound boxes: a model of where to listen, not a solved item of this task.';
+
+export const PHONEME_LEVERS = leverSet<PhonemeExplorerItem, PhonemeLeverContext>({
+  modeOf: item => item.kind,
+  missesOf: mode => phonemeExplorerCard.modes[mode].misses,
+  answersOf: item => [item.answer],
+  specs: [
+    { id: POSITION_LEVER, type: 'custom', modes: ['isolate'], carrier: 'both', why: POSITION_WHY,
+      answers: ['letter_name', 'echo_stimulus'], when: 'The learner names a letter or says the example back.',
+      does: 'Shows another word in three sound boxes with the first box lit. Say the model word and that sound; never this item\'s sound.',
+      content: positionModel, fact: positionFact },
+    { id: POSITION_LEVER, type: 'custom', modes: ['ending', 'medial'], carrier: 'both', why: POSITION_WHY,
+      answers: ['onset_match'], when: 'The learner matches the first sound instead.',
+      does: item => `Shows another word in three sound boxes with the ${placeOf(item)} box lit. Say the model word and that sound; `
+        + 'never this item\'s sound.',
+      content: positionModel, fact: positionFact },
+    { id: EXAMPLE_LEVER, type: 'clue', modes: ['isolate'], answers: ['letter_name'],
+      when: 'The learner cannot hear the sound at the start of a word yet.',
+      does: 'Shows the example card: a picture word that starts with the sound.',
+      content: (item, ctx) => (ctx.withdrawn.example && item.exampleWord) || null,
+      fact: (word: string) => `the example card for the sound (${word})` },
+    { id: NAME_CARDS_LEVER, type: 'marks', modes: ['isolate', 'medial'], carrier: 'both', answers: ['echo_stimulus'],
+      when: 'The learner says a word that is not a card.',
+      does: 'Marks each card with a speaker: read every card aloud in screen order, evenly.',
+      offer: item => item.enumerateMenu === false,
+      fact: 'a speaker mark on each card: read every card aloud in screen order, evenly' },
+    { id: SLIDE_LEVER, type: 'layout', modes: ['blend'], carrier: 'both', answers: ['sounds_no_word', 'near_word'],
+      when: 'The learner says the sounds but no word, or a close different word.',
+      does: 'Slides the sound tiles together over an arrow. Say the sounds again with short gaps, each held into the next; stop before the word.',
+      fact: 'the sound tiles slid close together over an arrow. Say the sounds again with short gaps, each held into the next; stop before the word' },
+    { id: TOKENS_LEVER, type: 'custom', modes: ['segment'], carrier: 'shown', answers: ['count_off_one', 'word_for_count'],
+      why: 'A counter pad the learner fills, one push per sound: it counts only the learner\'s own pushes, which no stock type does.',
+      when: 'The learner says the word back or a count one off.',
+      does: 'Shows a counter pad: the learner pushes one counter for each sound as they say it, then counts their counters.',
+      fact: 'a counter pad: the learner pushes one counter for each sound they say. It counts only their pushes' },
+    { id: MARK_LEVER, type: 'marks', modes: ['manipulate'], carrier: 'both', answers: ['other_position'],
+      when: 'The learner changes a different sound.',
+      does: 'Shows the starting word in sound boxes and empties the box of the sound that changes.',
+      offer: item => changedBox(item) !== null,
+      fact: 'the starting word\'s sound boxes, with the box of the sound that changes emptied. Never say the new word' },
+    { id: OPERATION_LEVER, type: 'clue', modes: ['manipulate'], answers: ['echo_original'],
+      when: 'The learner says the starting word back.', does: 'Prints the change under the starting word.',
+      offer: (_item, ctx) => !!ctx.withdrawn.operation,
+      fact: 'the change is printed under the starting word' },
+    { id: SIMPLIFY_LEVER.isolate, type: 'easier', modes: MENU_MODES, answers: 'all',
+      when: 'The learner still cannot do it after help.',
+      does: item => `Opens an easier practice item first: ${EASIER[item.kind]}. Not graded; the full item comes back after it.`,
+      content: (item, ctx) => practiceItemFor(item, ctx.items) },
+    ...(['blend', 'segment', 'manipulate'] as const).map(kind => ({
+      id: SIMPLIFY_LEVER[kind], type: 'easier' as const, modes: [kind], answers: 'all' as const,
+      when: 'The learner still cannot do it after help.',
+      does: `Opens an easier practice item first: ${EASIER[kind]}. Not graded; the full item comes back after it.`,
+      content: (item: PhonemeExplorerItem, ctx: PhonemeLeverContext) => practiceItemFor(item, ctx.items) })),
+  ],
+});

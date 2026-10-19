@@ -3,13 +3,12 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import observeP from '../../../components/live-activity/runtime/testing/w1-payloads/states-of-matter.observe.json';
 import predictP from '../../../components/live-activity/runtime/testing/w1-payloads/states-of-matter.predict.json';
 import compareP from '../../../components/live-activity/runtime/testing/w1-payloads/states-of-matter.compare.json';
-import { statesItems } from '../../../components/live-activity/adapters/statesOfMatterLive';
-import { statesAssignment, statesSpokenMisses } from './statesOfMatterWorkspace';
+import { statesItems } from './statesOfMatter.boss';
 import {
-  FAR_GAP, leversOnScreen, MODEL_COLOR, modelPairFor, modelPairLeaks, PARTICLE_MODELS, particleModelsLeak, practiceItem,
-  practiceLeaks, practiceParent, statesLevers, statesLeverSession, stripFor, stripLeaks,
+  FAR_GAP, MODEL_COLOR, modelPairFor, modelPairLeaks, PARTICLE_MODELS, particleModelsLeak, practiceItem,
+  practiceLeaks, practiceParent, STATES_LEVERS, statesLeverSession, stripFor, stripLeaks,
 } from './statesOfMatterLevers';
-import { itemFromChallenge, SUBSTANCES, tempSpoken, type StatesOfMatterItem } from './statesOfMatterScript';
+import { askFor, itemFromChallenge, statesSpokenMisses, SUBSTANCES, tempSpoken, type StatesOfMatterItem } from './statesOfMatterDomain';
 
 const PAYLOADS: Record<string, any> = {
   observe: (observeP as any).data, predict: (predictP as any).data, compare: (compareP as any).data,
@@ -24,14 +23,14 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
   it('has items', () => expect(byTier[1].length).toBeGreaterThan(0));
 
   it.each(cases)('%s: every checked miss has a lever on this item', (_id, item, s) => {
-    const levers = statesLevers(item, s, []);
+    const levers = STATES_LEVERS.declare(item, s, []);
     for (const m of statesSpokenMisses(item)) expect(levers.some(l => l.answers?.includes(m.id)), `${item.id} ${m.id}`).toBe(true);
     expect(levers.filter(l => l.kind === 'help')).toHaveLength(1);
   });
 
   it.each(cases)('%s: the help drawing passes its leak rule and its fact never says the answer', (_id, item, s) => {
-    const all = statesLevers(item, s, []).map(l => l.id);
-    const fact = leversOnScreen(item, all, s) ?? '';
+    const all = STATES_LEVERS.declare(item, s, []).map(l => l.id);
+    const fact = STATES_LEVERS.onScreen(item, s, all);
     expect(fact).not.toBe('');
     if (item.kind === 'name_state') expect(particleModelsLeak(PARTICLE_MODELS, MODEL_COLOR, item)).toBe(false);
     const strip = stripFor(item);
@@ -61,7 +60,7 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
     expect(practiceParent(p.id, items)).toBe(item);
     // Rebuilding it from the payload gives the same item (the journey row does this).
     expect(practiceItem(practiceParent(p.id, items)!, s)).toEqual(p);
-    const task = statesAssignment(p).task;
+    const task = askFor(p);
     for (const x of item.pair ?? [item.substance!]) expect(task).not.toContain(x.name);
     if (p.kind === 'name_state') expect(task).toMatch(/solid, liquid, or gas\?$/);
   });
@@ -141,7 +140,7 @@ describe('this wrong answer, then this lever', () => {
   const first = (key: string, kind?: string) => {
     const items = statesItems({ ...data[key], supportTier: 'medium' });
     const item = items.find(i => !kind || i.kind === kind)!;
-    return statesLevers(item, sessionOf(data[key], items), []);
+    return STATES_LEVERS.declare(item, sessionOf(data[key], items), []);
   };
   it.each([
     ['observe', undefined, 'other_state', 'particle_models'],

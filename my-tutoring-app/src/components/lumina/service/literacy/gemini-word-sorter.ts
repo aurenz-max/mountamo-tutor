@@ -12,12 +12,12 @@ import {
 } from '../../primitives/visual-primitives/literacy/WordSorter';
 // The judged loop's build gates, IMPORTED not copied — both sides of the wire
 // must agree on what is sayable, and hand-synced copies drift (the
-// letter-spotter 90-vs-100 defect). `wordSorterScript.ts` is the one address.
+// letter-spotter 90-vs-100 defect). `wordSorterDomain.ts` is the one address.
 import {
   isSayableLabel,
   isSayableWord,
   optionsEarSeparable,
-} from '../../primitives/visual-primitives/literacy/wordSorterScript';
+} from '../../primitives/visual-primitives/literacy/wordSorterDomain';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,

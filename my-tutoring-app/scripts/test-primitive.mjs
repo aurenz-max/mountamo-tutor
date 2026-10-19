@@ -3,8 +3,8 @@
 // to shared framework (live-activity/runtime/, the adapter contract). Free: no model calls.
 //   npm run test:primitive -- <primitive-id> [<primitive-id> ...]
 import { spawnSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename, join, relative, resolve } from 'node:path';
 
 const ids = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 if (!ids.length) { console.error('Usage: npm run test:primitive -- <primitive-id> [...]'); process.exit(2); }
@@ -16,16 +16,21 @@ const LA = 'src/components/lumina/components/live-activity';
 // Own tests: any test file whose name carries the id, kebab or camel (fraction-bar -> fractionBar, FractionBar).
 const camel = (id) => id.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 const pats = ids.flatMap((id) => [id, camel(id)].map((s) => s.toLowerCase()));
-const own = [];
+const testFiles = [];
+const cardStems = [];
 (function walk(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, e.name);
     if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); continue; }
-    if (!/\.test\.tsx?$/.test(e.name)) continue;
-    const name = e.name.toLowerCase();
-    if (pats.some((s) => name.includes(s))) own.push(relative(root, p).replace(/\\/g, '/'));
+    if (/\.test\.tsx?$/.test(e.name)) testFiles.push(p);
+    // A boss family's files are named for its card, which need not spell the id (3d-shape-explorer ->
+    // threeDShapeExplorer.card.ts): the card that declares the id adds its stem.
+    else if (e.name.endsWith('.card.ts') && ids.some((id) => readFileSync(p, 'utf8').includes(`id: '${id}'`)))
+      cardStems.push(e.name.slice(0, -'.card.ts'.length).toLowerCase());
   }
 })(src);
+const own = testFiles.filter((p) => [...pats, ...cardStems].some((s) => basename(p).toLowerCase().includes(s)))
+  .map((p) => relative(root, p).replace(/\\/g, '/'));
 
 const vitest = (files, extra = []) => {
   console.log(`\n> vitest run ${files.join(' ')} ${extra.join(' ')}`);
@@ -36,8 +41,10 @@ const vitest = (files, extra = []) => {
 
 const started = Date.now();
 let status = 0;
-// 1. Own tests + the lesson plan (unfiltered: their test names need not carry the id).
-status ||= vitest([...own, `${LA}/lessonWorkspacePlan.test.ts`, 'src/components/lumina/service/manifest/catalog/misses.test.ts']);
+// 1. Own tests, the lesson plan, the boss guards and ratchets, and the shared Pip contract (unfiltered: their test
+// names need not carry the id; a boss migration moves the ratchets and the Pip list).
+status ||= vitest([...own, `${LA}/lessonWorkspacePlan.test.ts`, 'src/components/lumina/service/manifest/catalog/misses.test.ts',
+  `${LA}/boss.test.ts`, `${LA}/activityContract.test.ts`, 'src/components/lumina/pip/WorkspacePip.surface.test.tsx']);
 // 2. Shared contract and dry journey, only this primitive's saved payloads.
 const filter = ids.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 status ||= vitest([`${LA}/runtime/workspaceContract.test.tsx`, `${LA}/runtime/journeySweep.test.tsx`], ['-t', filter]);

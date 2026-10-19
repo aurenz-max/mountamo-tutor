@@ -29,6 +29,8 @@ export const diDiceRollBoss = spokenBoss<DiDiceRollData, DiDiceRollChallenge, Sp
   speech: {
     ask: diceAskFor,
     key: diceKey,
+    // A comparison's ask says its three words ("left, right, or same"), the answer among them.
+    given: item => (item.challengeType === 'compare_dice' ? ['left, right, or same'] : []),
     misses: diceSpokenMisses,
     say: diDiceRollHarnessAnswers,
     // The dice are covered until the learner rolls them.

@@ -4,9 +4,8 @@
  * Every mode is one spoken number word the tutor judges against the key; the observer reads the tutor's feedback.
  */
 import type { SpokenFactMiss } from './diMathFactsDomain';
-import { defineCard, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { defineCard, SPOKEN, SPOKEN_AUDIO, OFF_BY } from '../../../components/live-activity/boss';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'] as const;
 // The take-away misses are named on the addition modes too; the model lever answers any wrong number.
 const ADDITION = ['said_addend', 'said_start', 'said_change', 'added_instead', 'teen_decade_swap', ...OFF_BY] as const;
 

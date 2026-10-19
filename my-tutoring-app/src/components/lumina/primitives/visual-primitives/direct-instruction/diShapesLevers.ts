@@ -40,6 +40,7 @@ import { NEAR_SHAPE } from '../math/shapeSorterDomain';
 import { REAL_WORLD_SHAPE_OBJECTS, type RealWorldShapeObjectSpec } from '../shared/realWorldShapeObjects';
 import { SHAPE_MENU } from './diShapesMenu';
 import { countNoun, isCountingType, type DiShapeName, type DiShapesChallenge } from './diShapesScript';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_SHAPE = 'model_shape';
 export const MODEL_OBJECT = 'model_object';
@@ -55,8 +56,7 @@ export const MAKE_TRIANGLE = 'make_triangle';
 
 const SHAPES = Object.keys(SHAPE_MENU) as DiShapeName[];
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-const NAME_MISSES = ['near_name', 'other_shape_name', 'described_shape'];
+const NAME_MISSES = diShapesCard.modes.name_shape.misses;
 
 /** A real object's shape word as the drawable shape ("diamond" is drawn as the rhombus). */
 const objectShape = (o: RealWorldShapeObjectSpec): DiShapeName => (o.shape === 'diamond' ? 'rhombus' : o.shape);

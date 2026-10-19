@@ -1,6 +1,7 @@
 /**
- * The in-item levers on decodable-reader (`/add-support-tiers`, handoff 22 L3). The learner reads each story line
- * cold, then answers questions about the story out loud. No lever plays audio of an unread line.
+ * The in-item levers on decodable-reader (`/add-support-tiers`, handoff 22 L3), as one lever set (`bossLevers.ts`).
+ * The learner reads each story line cold, then answers questions about the story out loud. No lever plays audio of an
+ * unread line.
  *
  * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * - `tracking_underline` (help, read line): one underline under each word, left to right (the shared kit overlay).
@@ -15,11 +16,14 @@
  *   reads it, the learner says one word from it.
  *
  * No lever on a choice question: fewer choices on the same question repeats it (R3), and a new question would spend
- * a later item. Spoken misses are declared (`DECODABLE_MISSES`) and not emitted until handoff 20 Part B lands.
+ * a later item.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { decodableReaderCard } from './decodableReader.card';
 import { practiceLine, printedSet, wordsOf } from './decodablePracticeLines';
-import { answerItemFromQuestion, contentWordsOf, passageTextFrom, sentenceText, type DecodableReaderItem, type DecodableReaderMode, type DecodableSentenceLike } from './decodableReaderScript';
+import { answerItemFromQuestion, contentWordsOf, passageTextFrom, sentenceText, type DecodableReaderItem, type DecodableSentenceLike } from './decodableReaderDomain';
+
+export { DECODABLE_MISSES } from './decodableReader.card';
 
 export const TRACK_LEVER = 'tracking_underline';
 export const DOTS_LEVER = 'sound_dots';
@@ -27,14 +31,11 @@ export const SHORT_LINE_LEVER = 'short_line';
 export const REGION_LEVER = 'story_region';
 export const SHORT_STORY_LEVER = 'short_story';
 
-/** The misses a spoken answer will name, per mode. `other_choice` and `retell` have no lever (see above). */
-export const DECODABLE_MISSES = {
-  literal: ['word_swap', 'word_skip', 'lifted_word', 'retell'],
-  sequence: ['word_swap', 'word_skip', 'other_choice', 'retell'],
-  inference: ['word_swap', 'word_skip', 'other_choice', 'retell'],
-  main_idea: ['word_swap', 'word_skip', 'other_choice', 'retell'],
-  read_along: ['lifted_word', 'retell'],
-} as const satisfies Record<DecodableReaderMode, readonly string[]>;
+/** What the levers read: the lesson's story sentences and its items. */
+export interface DecodableLeverContext {
+  sentences: readonly DecodableSentenceLike[];
+  items: readonly DecodableReaderItem[];
+}
 
 /** The easier practice line for a read line: three pool words, none of them a story word. */
 export function shortLine(item: DecodableReaderItem, sentences: readonly DecodableSentenceLike[]): DecodableReaderItem | null {
@@ -108,7 +109,7 @@ export function shortStory(item: DecodableReaderItem, sentences: readonly Decoda
   const story = pick.sentences.map(asSentence);
   const built = answerItemFromQuestion({ question: pick.question, answerWord: pick.answer }, 0, 'read_along', story);
   if (!built) return null;
-  return { ...built, id: `${item.id}~simpler`, storyText: passageTextFrom(story), storyContentWords: contentWordsOf(story) };
+  return { ...built, id: `${item.id}~simpler`, mode: 'read_along', storyText: passageTextFrom(story), storyContentWords: contentWordsOf(story) };
 }
 
 /** The practice item a simplify lever opens on this item, by kind (the component and the journey row share it). */
@@ -116,49 +117,47 @@ export const simplerFor = (item: DecodableReaderItem, sentences: readonly Decoda
   session: readonly DecodableReaderItem[] = []) =>
   item.kind === 'read_line' ? shortLine(item, sentences) : shortStory(item, sentences, session);
 
-/** What the pulled levers put on screen, for the scene. Names the marks, never a word or the answer. */
-export function leversOnScreen(pulled: readonly string[]): string | null {
-  const on: string[] = [];
-  if (pulled.includes(TRACK_LEVER)) on.push('an underline under each word of the line, left to right');
-  if (pulled.includes(DOTS_LEVER)) on.push('a dot under each sound of every word of the line');
-  if (pulled.includes(REGION_LEVER)) on.push('two sentences of the story are shown again, with nothing in them marked');
-  return on.length ? `${on.join('; ')}; nothing is said` : null;
-}
+const DECODE = ['literal', 'sequence', 'inference', 'main_idea'] as const;
+const isLine = (item: DecodableReaderItem) => item.kind === 'read_line';
+const REGION_WHY = 'Shows two whole story sentences again, the answer\'s sentence among them and nothing marked: it is '
+  + 'not a clue in words (the sentences hold the answer by design) and not a mark on what is on screen.';
+const REGION_FACT = 'Two sentences of the story are shown again, with nothing in them marked.';
 
-const lever = (id: string, kind: 'help' | 'simplify', pulled: readonly string[], answers: readonly string[], when: string,
-  does: string, carrier: WorkspaceLever['carrier'] = 'shown'): WorkspaceLever =>
-  ({ id, kind, carrier, pulled: pulled.includes(id), answers: [...answers], when, does });
-
-/** The levers this item declares, with their state. */
-export function decodableReaderLevers(item: DecodableReaderItem | null, pulled: readonly string[],
-  sentences: readonly DecodableSentenceLike[], session: readonly DecodableReaderItem[] = []): WorkspaceLever[] {
-  if (!item) return [];
-  const out: WorkspaceLever[] = [];
-  if (item.kind === 'read_line') {
-    out.push(lever(TRACK_LEVER, 'help', pulled, ['word_swap', 'word_skip'], 'The learner swaps or skips a small word.',
-      'Draws an underline under each word of the line, left to right, so every word is its own place to look. '
-      + 'Nothing is said: do not read the line or any word of it.'));
-    out.push(lever(DOTS_LEVER, 'help', pulled, ['word_swap'], 'The learner reads a word as a different word.',
-      'Puts a dot under each sound of every word of the line. Nothing is said: do not read the line or any word of it.'));
-    if (shortLine(item, sentences)) out.push(lever(SHORT_LINE_LEVER, 'simplify', pulled, ['word_swap', 'word_skip'],
-      'The learner cannot yet read a line this long.',
-      'Opens an easier practice line first: three new words, not from the story. It is not graded; the story line comes back after it.'));
-  }
-  const readAlong = !!item.storyText;
-  if (storyRegion(item, sentences)) out.push(readAlong
-    ? lever(REGION_LEVER, 'help', pulled, ['lifted_word', 'retell'],
-      'After a wrong answer: the learner says a story word that does not answer the question, or retells the story.',
-      'Shows again, set apart, the two story sentences the answer is near, whole, with nothing in them marked. Read '
-      + 'those two sentences aloud once, whole and evenly. Never stress, repeat or point to a word in them, never say '
-      + 'which word answers, and do not ask the question in a new way.', 'both')
-    : lever(REGION_LEVER, 'help', pulled, ['lifted_word'],
-      'After a wrong answer: the learner says a story word that does not answer the question.',
-      'Shows again the two story sentences the answer is near, whole, with nothing in them marked. '
-      + 'Never say which word answers or point inside them.'));
-  if (shortStory(item, sentences, session)) out.push(lever(SHORT_STORY_LEVER, 'simplify', pulled, ['lifted_word', 'retell'],
-    'The learner cannot yet hold a story this long and pick the word that answers.',
-    'Opens an easier practice story first: two short sentences, not from the lesson story, with its own question. '
-    + 'Once it is on screen, read it aloud whole, exactly as printed, then ask its question; never make one up. It is not graded; the lesson story and its question come back after '
-    + 'it. Never connect it to the lesson question or say what the two have in common.', 'both'));
-  return out;
-}
+export const DECODABLE_LEVERS = leverSet<DecodableReaderItem, DecodableLeverContext>({
+  modeOf: item => item.mode ?? 'literal',
+  missesOf: mode => decodableReaderCard.modes[mode as keyof typeof decodableReaderCard.modes].misses,
+  specs: [
+    { id: TRACK_LEVER, type: 'marks', modes: DECODE, answers: ['word_swap', 'word_skip'],
+      when: 'The learner swaps or skips a small word.',
+      does: 'Draws an underline under each word of the line, left to right, so every word is its own place to look. '
+        + 'Nothing is said: do not read the line or any word of it.',
+      offer: isLine, fact: 'An underline is under each word of the line, left to right; nothing is said.' },
+    { id: DOTS_LEVER, type: 'marks', modes: DECODE, answers: ['word_swap'],
+      when: 'The learner reads a word as a different word.',
+      does: 'Puts a dot under each sound of every word of the line. Nothing is said: do not read the line or any word of it.',
+      offer: isLine, fact: 'A dot is under each sound of every word of the line; nothing is said.' },
+    { id: SHORT_LINE_LEVER, type: 'easier', modes: DECODE, carrier: 'shown', answers: ['word_swap', 'word_skip'],
+      when: 'The learner cannot yet read a line this long.',
+      does: 'Opens an easier practice line first: three new words, not from the story. It is not graded; the story line comes back after it.',
+      content: (item, ctx) => shortLine(item, ctx.sentences) },
+    // literal only: sequence, inference and main_idea ask choice questions, which have no region.
+    { id: REGION_LEVER, type: 'custom', modes: ['literal'], carrier: 'shown', why: REGION_WHY, answers: ['lifted_word'],
+      when: 'After a wrong answer: the learner says a story word that does not answer the question.',
+      does: 'Shows again the two story sentences the answer is near, whole, with nothing in them marked. '
+        + 'Never say which word answers or point inside them.',
+      content: (item, ctx) => storyRegion(item, ctx.sentences), fact: REGION_FACT },
+    { id: REGION_LEVER, type: 'custom', modes: ['read_along'], carrier: 'both', why: REGION_WHY, answers: ['lifted_word', 'retell'],
+      when: 'After a wrong answer: the learner says a story word that does not answer the question, or retells the story.',
+      does: 'Shows again, set apart, the two story sentences the answer is near, whole, with nothing in them marked. Read '
+        + 'those two sentences aloud once, whole and evenly. Never stress, repeat or point to a word in them, never say '
+        + 'which word answers, and do not ask the question in a new way.',
+      content: (item, ctx) => storyRegion(item, ctx.sentences), fact: REGION_FACT },
+    { id: SHORT_STORY_LEVER, type: 'easier', modes: ['read_along'], answers: ['lifted_word', 'retell'],
+      when: 'The learner cannot yet hold a story this long and pick the word that answers.',
+      does: 'Opens an easier practice story first: two short sentences, not from the lesson story, with its own question. '
+        + 'Once it is on screen, read it aloud whole, exactly as printed, then ask its question; never make one up. It is '
+        + 'not graded; the lesson story and its question come back after it. Never connect it to the lesson question or '
+        + 'say what the two have in common.',
+      content: (item, ctx) => shortStory(item, ctx.sentences, ctx.items) },
+  ],
+});

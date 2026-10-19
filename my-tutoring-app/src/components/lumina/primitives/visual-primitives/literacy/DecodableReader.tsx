@@ -1,60 +1,28 @@
 'use client';
 
 /**
- * DecodableReader — the child reads a decodable story aloud, one printed line at a
- * time, then answers comprehension questions out loud. It runs only on the shared
- * tutor/JEV teaching workspace (workspace rollout C3; the scripted runner was retired,
- * LA-14, user ruling 09-23: one path). The observer judges each spoken read or answer
- * and the runtime owns progression. An unbound mount shows the shared "needs the tutor"
- * card. There is no advance timer, no "Done Reading" button, no Check button and no
- * Next/Finish in this file.
+ * DecodableReader: the child reads a decodable story aloud, one printed line at a time, then answers comprehension
+ * questions out loud. It is a boss (`decodableReader.card.ts` + `decodableReader.boss.ts`) on the spoken preset,
+ * taught only on the shared tutor/JEV teaching workspace; an unbound mount shows the shared "needs the tutor" card.
+ * The observer judges each spoken read or answer and the runtime owns progression: no advance timer, no "Done
+ * Reading" button, no Check button and no Next.
  *
- * WHAT THIS REPLACES. The READING PHASE MEASURED NOTHING. Its only signal was
- * `wordsTapped` — how often the child asked for a word — and the phase ended on
- * a button labelled "I read it!". A child who cannot read a word could tap that
- * button, guess one of three pictures and finish with a score. Pressing "Done
- * Reading" requires no reading, so it fails the costume test outright and it is
- * gone, along with the phase stepper, the words-tapped counter, the colour
- * toggle, the Check button, the "Skip to Review" escape and the score ledger.
+ * Why the reading is read: the click-era reading phase measured nothing (its only signal was how often the child
+ * tapped a word, and it ended on an "I read it!" button a non-reader can press). Now one passage sentence at a time is
+ * read aloud and judged word by word.
  *
- * THE READING IS NOW READ. One passage sentence at a time, out loud, into an
- * open microphone, judged word by word — a skipped, added or swapped word is
- * corrected, not waved through. The judged window is 3-8 words, IMPORTED from
- * di-sentence-reading (the pack that benched it), and a sentence outside it is
- * DROPPED rather than trimmed.
+ * Every answer is spoken (2026-08-13 user ruling): a literal or read-along question by one word from the story, a
+ * sequence, inference or main-idea question by saying which printed choice it is. The choice cards stay on screen
+ * because they close the set and their pictures let a pre-reader hold it, but they are a menu, not buttons.
  *
- * EVERY ANSWER IN THIS FILE IS SPOKEN (2026-08-13 user ruling, from the drive on
- * this primitive: "mode sequence/cause effect doesnt let me answer for the 2nd
- * part verbally, i need to click on the button even though im speaking, this is
- * the same issue with inference mode"). A literal / read-along question is
- * answered by SAYING one word from the story (`short_spoken_word`); a sequence /
- * inference / main-idea answer is a whole proposition, and the child SAYS which
- * of the printed choices it is (`closed_set_choice`). The cards are still on
- * screen — they are what closes the set, and their pictures are how a pre-reader
- * holds four propositions at once — but they are a menu to read from, NOT
- * buttons: nothing here commits an answer by click. Both forks, their gates and
- * every spoken line live in `decodableReaderScript.ts` (hand-authored, DISTAR).
+ * There is no per-word tap-to-hear: a channel that speaks any word on demand lets a child hear a line and echo it.
+ * "Say that again" asks the tutor for the question only.
  *
- * PER-WORD "TAP TO HEAR IT" IS GONE, and that is the answer-leak rule, not a
- * simplification: a channel that speaks any word on demand lets a child hear
- * every word of a line and echo it, which is exactly the measurement. Help
- * arrives the way DISTAR gives it — through the correction, which re-models.
- *
- * CONNECTED TEXT RAISES THE VOICE-TURN FLOOR. A reader pauses between words and
- * the family default (500ms, tuned for one-word answers) splits one read into
- * two turns — di-sentence-reading's ship-blocking bench finding. Same 1100ms.
- *
- * THE SUMMARY IS THE FAMILY'S, NOT A BESPOKE ONE. The port shipped a hand-rolled
- * completion block that counted `solvedCount` and printed "N of N done all by
- * yourself" with a ✅ per item — so a child who missed a question, was corrected
- * and then got it right read as flawless, and the first drive caught exactly
- * that. `solved` says the item closed; `corrections === 0` says it was done
- * alone, and they are not the same claim. PhaseSummaryPanel already renders that
- * distinction (score, attempts, first-try star) for seventeen literacy
- * primitives, and this one is no longer the exception.
+ * The domain (build gates, ask, key, scene) is `decodableReaderDomain.ts`; the levers `decodableReaderLevers.ts`.
+ * Nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -64,33 +32,29 @@ import {
   LuminaPanel,
   LuminaChallengeCounter,
   LuminaPrintSupport,
+  LuminaReadAloudGlyph,
   motion,
   type LuminaAccent,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import type { PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DecodableReaderMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useWorkspaceRunner, type TeachingEvaluationResult }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace, useRunnerPip } from '../../../pip/WorkspacePip';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import {
+  decodableReaderScene,
+  hearAgainRequest,
   itemsFromChallenges,
   passageTextFrom,
   type DecodableOption,
   type DecodableReaderItem,
   type DecodableReaderMode,
-} from './decodableReaderScript';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { decodableReaderPipPose } from '../../../pip/decodableReaderPipPose';
-import { decodableReaderAssignment, decodableReaderScene, hearAgainRequest } from './decodableReaderWorkspace';
-import { DOTS_LEVER, REGION_LEVER, TRACK_LEVER, decodableReaderLevers, leversOnScreen, simplerFor, storyRegion }
-  from './decodableReaderLevers';
+} from './decodableReaderDomain';
+import { DECODABLE_LEVERS, DOTS_LEVER, REGION_LEVER, TRACK_LEVER, storyRegion, type DecodableLeverContext } from './decodableReaderLevers';
+import { decodableReaderBoss } from './decodableReader.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -227,217 +191,22 @@ const ITEM_ICONS: Record<DecodableReaderItem['kind'], string> = {
  *  a wall. Length is the only variable that matters here. */
 const lineSizeClass = (wordCount: number): string =>
   wordCount <= 4 ? 'text-5xl' : wordCount <= 6 ? 'text-4xl' : 'text-3xl';
-
 // ============================================================================
 // Component
 // ============================================================================
 
 function DecodableReaderSurface({ data, className, runtimePlanItemId }: DecodableReaderProps) {
-  const {
-    title,
-    gradeLevel,
-    readingMode = 'decode',
-    passage,
-    phonicsPatternsInPassage = [],
-    comprehensionType,
-    comprehensionQuestions,
-    comprehensionQuestion,
-    sentenceWindow,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  // K/PRE and Grade-1 readers cannot decode adult chrome (legend, pattern
-  // names), so it is suppressed there — reader-fit contract rules 2-7.
-  const isEarlyBand = gradeLevel === 'K' || gradeLevel === '1';
-  const ctx = useLuminaAIContext();
-  const workspace = useRef<TeachingWorkspace | null>(null);
-
-  const stableInstanceIdRef = useRef(instanceId || `decodable-reader-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  // ── Items (drop-gated) ────────────────────────────────────────────────────
-  // The mode fork, the legacy single-question coalesce and the build gates all
-  // live at ONE boundary now, because the DI drive harness reads the same one:
-  // a harness that re-derived any of them would drive a different session from
-  // the one the child gets.
-  const sentences = useMemo(() => passage?.sentences ?? [], [passage]);
-  const { items, mode, dropped } = useMemo(
-    () => itemsFromChallenges({
-      readingMode,
-      comprehensionType,
-      passage: { sentences },
-      comprehensionQuestions,
-      comprehensionQuestion,
-      sentenceWindow,
-    }),
-    [readingMode, comprehensionType, sentences, comprehensionQuestions, comprehensionQuestion, sentenceWindow],
-  );
-
+  const instance = useRef(data.instanceId || `decodable-reader-${Date.now()}`);
+  // The mode fork, the legacy single-question coalesce and the build gates live at one boundary, the one the boss
+  // and the journey read too.
+  const built = useMemo(() => itemsFromChallenges(data), [data]);
   useEffect(() => {
-    if (dropped > 0) {
-      console.warn(
-        `[DecodableReader] dropped ${dropped} unaskable item(s) (word-window / sentinel / `
-        + 'answer-material / ear-separability / repeated-answer gates)',
-      );
+    if (built.dropped > 0) {
+      console.warn(`[DecodableReader] dropped ${built.dropped} unaskable item(s) (word-window / sentinel / `
+        + 'answer-material / ear-separability / repeated-answer gates)');
     }
-  }, [dropped]);
-
-  const passageText = useMemo(() => passageTextFrom(sentences), [sentences]);
-
-  // ── Evaluation ────────────────────────────────────────────────────────────
-  const evaluation = usePrimitiveEvaluation<DecodableReaderMetrics>({
-    primitiveType: 'decodable-reader',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-  const finish = (summary: TeachingEvaluationResult) => {
-    const lines = items.filter((i) => i.kind === 'read_line');
-    const answers = items.filter((i) => i.kind !== 'read_line');
-    const solved = new Set(summary.outcomes.filter((o) => o.solved).map((o) => o.id));
-    // Line length is this pack's structural axis; without it the metrics cannot
-    // tell a 3-word passage from an 8-word one.
-    const meanLineWords = lines.length
-      ? Math.round((lines.reduce((sum, it) => sum + it.wordCount, 0) / lines.length) * 10) / 10
-      : 0;
-    const metrics: DecodableReaderMetrics = {
-      type: 'decodable-reader',
-      evalMode: mode,
-      gradeLevel,
-      readingMode,
-      linesTotal: lines.length,
-      linesRead: lines.filter((i) => solved.has(i.id)).length,
-      questionsTotal: answers.length,
-      questionsCorrect: answers.filter((i) => solved.has(i.id)).length,
-      firstTryCount: summary.firstTryCount,
-      attemptsCount: summary.attemptsCount,
-      accuracy: summary.accuracy,
-      meanLineWords,
-      phonicsPatternsInPassage,
-    };
-    evaluation.submitResult(
-      summary.passed,
-      summary.accuracy,
-      metrics,
-      { itemResults: summary.outcomes, learningResponses: summary.learningResponses,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
-      undefined,
-      summary.diagnosisEvidence,
-    );
-  };
-
-  // In-item levers (`decodableReaderLevers.ts`), keyed by the session item they were pulled on, the easier
-  // practice line a simplify lever put on screen in its place, and the item that has had a wrong answer (the story
-  // region is offered only after one).
-  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<DecodableReaderItem | null>(null);
-  const [missedItem, setMissedItem] = useState('');
-
-  const runner = useWorkspaceRunner<DecodableReaderItem>({
-    primitiveId: 'decodable-reader',
-    assignment: decodableReaderAssignment,
-    items,
-    workspace,
-    objectiveId,
-    planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    instanceId: resolvedInstanceId,
-    onFinished: finish,
-    onItemOpened: () => setPractice(null),
-    onCorrectionRetry: (item) => setMissedItem(item.id),
-  });
-
-  const sessionItem = runner.currentItem;
-  /** What is on screen: the practice line while a simplify lever holds it, else the session item. */
-  const currentItem = practice ?? sessionItem;
-  const pulledLevers = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
-  const on = (id: string) => pulledLevers.includes(id);
-  /** Credited: the answer may appear on screen. Item-scoped, so a credit that also
-   *  advances never shows the next item solved. */
-  const revealed = runner.currentSolved;
-  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
-  useLayoutEffect(() => {
-    if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : decodableReaderLevers(sessionItem, pulledLevers, sentences, items);
-    const scene = decodableReaderScene(currentItem);
-    const onScreen = practice ? null : leversOnScreen(pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: practice.kind === 'read_line'
-          ? 'An easier practice line of three new words, not from the story, ungraded. The story line comes back after it.'
-          : 'An easier practice story of two sentences, not from the lesson story, with its own question, ungraded. The lesson story and its question come back after it.' } : {}) },
-      levers,
-      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
-      pullLever: id => {
-        const lever = levers.find(l => l.id === id);
-        if (!lever) return `No lever ${id} on this item.`;
-        if (lever.pulled) return `${id} is already pulled.`;
-        if (id === REGION_LEVER && missedItem !== sessionItem.id) return 'The story sentences come back only after a wrong answer: let the learner try first.';
-        if (lever.kind === 'simplify') {
-          const simpler = simplerFor(sessionItem, sentences, items);
-          if (!simpler) return 'There is no easier line here.';
-          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-          setPractice(simpler);
-          return { practice: decodableReaderAssignment(simpler) };
-        }
-        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-        return true;
-      },
-      endPractice: () => setPractice(null),
-    };
-  });
-
-  /** Asks the tutor to repeat the question side: a silent host request, never an answer or the line. */
-  const hearAgain = useCallback(() => {
-    if (!currentItem) return;
-    ctx.sendText(hearAgainRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the line, story or question; Pip
-  // never answers, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id === 'line' ? 'The line' : id === 'story' ? 'The story' : 'The question'));
-    const pose = decodableReaderPipPose({
-      kind: currentItem.kind,
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: false, tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Decodable reader', dock: pip.dock.current, targets, pose };
-  });
-
-  // ── Phase summary — `solved` is not `solved alone` ────────────────────────
-  const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!runner.practiceSummary) return [];
-    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
-      label: item.kind === 'read_line' ? item.text : (item.question ?? ''),
-      icon: ITEM_ICONS[item.kind],
-    }));
-  }, [runner.practiceSummary, items]);
-
-  // ============================================================================
-  // Render
-  // ============================================================================
-
-  if (items.length === 0 || !currentItem) {
+  }, [built.dropped]);
+  if (!built.items.length) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -446,50 +215,129 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
       </LuminaCard>
     );
   }
+  return <ReaderWorkspace key={data.instanceId} data={data} items={built.items} mode={built.mode}
+    instanceId={instance.current} className={className} runtimePlanItemId={runtimePlanItemId} />;
+}
+
+function ReaderWorkspace({ data, items, mode, instanceId, className, runtimePlanItemId }: DecodableReaderProps
+  & { items: DecodableReaderItem[]; mode: DecodableReaderMode; instanceId: string }) {
+  const { title, gradeLevel, readingMode = 'decode', phonicsPatternsInPassage = [] } = data;
+  // K/PRE and Grade-1 readers cannot decode adult chrome (legend, pattern names), so it is suppressed there:
+  // reader-fit contract rules 2-7.
+  const isEarlyBand = gradeLevel === 'K' || gradeLevel === '1';
+  const sentences = useMemo(() => data.passage?.sentences ?? [], [data.passage]);
+  const passageText = useMemo(() => passageTextFrom(sentences), [sentences]);
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  // Levers pulled, keyed by the session item they were pulled on; the easier practice item a simplify lever put on
+  // screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<DecodableReaderItem | null>(null);
+  const openedIndex = useRef(-1);
+
+  const assignments = useMemo(() => items.map(item => ({ ...decodableReaderBoss.assignment(item), checkResponse: () => null })), [items]);
+  const lesson = useTeachingWorkspace({ instanceId, primitiveId: 'decodable-reader',
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
+    onItemOpened: opened => {
+      if (opened !== openedIndex.current) setPractice(null);
+      openedIndex.current = opened;
+    } });
+  useTeachingEvaluation<DecodableReaderMetrics>({ primitiveType: 'decodable-reader', instanceId, data, assignments, lesson,
+    metrics: result => {
+      const lines = items.filter(i => i.kind === 'read_line');
+      const answers = items.filter(i => i.kind !== 'read_line');
+      const solved = new Set(result.outcomes.filter(o => o.solved).map(o => o.id));
+      return { type: 'decodable-reader', evalMode: mode, gradeLevel, readingMode,
+        linesTotal: lines.length, linesRead: lines.filter(i => solved.has(i.id)).length,
+        questionsTotal: answers.length, questionsCorrect: answers.filter(i => solved.has(i.id)).length,
+        firstTryCount: result.firstTryCount, attemptsCount: result.attemptsCount, accuracy: result.accuracy,
+        // Line length is this reader's structural axis; without it the metrics cannot tell a 3-word passage from an
+        // 8-word one.
+        meanLineWords: lines.length
+          ? Math.round((lines.reduce((sum, it) => sum + it.wordCount, 0) / lines.length) * 10) / 10 : 0,
+        phonicsPatternsInPassage };
+    } });
+
+  const sessionItem = items[lesson.state.index];
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = !practice && leverState.item === sessionItem.id ? leverState.pulled : [];
+  const on = (id: string) => pulledLevers.includes(id);
+  const leverCtx: DecodableLeverContext = { sentences, items };
+  /** Credited: the first moment the answer may appear on screen. A credit that also advances never shows the next
+   *  item solved. */
+  const revealed = lesson.state.phase === 'checked' && !!lesson.state.lastResponse?.correct && !lesson.state.practice && !practice;
+  useRunnerPip({ instanceId, itemId: currentItem.id, running: lesson.state.phase !== 'completed', solved: revealed });
+  /** The story region waits for a wrong answer on this item. */
+  const missed = lesson.state.attempts.some(a => a.itemId === sessionItem.id && !a.correct);
+
+  useLayoutEffect(() => {
+    // No lever on a practice item: the full item's levers come back with it.
+    const levers = practice ? [] : DECODABLE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(decodableReaderScene(currentItem, !!practice), {
+        support: practice ? '' : DECODABLE_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : DECODABLE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === REGION_LEVER && !missed) return 'The story sentences come back only after a wrong answer: let the learner try first.';
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        const easier = DECODABLE_LEVERS.simpler(sessionItem, leverCtx, id);
+        if (lever.kind === 'simplify') {
+          if (!easier) return 'There is no easier item here.';
+          setLeverState(next); setPractice(easier);
+          return { practice: decodableReaderBoss.assignment(easier) };
+        }
+        setLeverState(next);
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
+  });
+
+  const summary = lesson.summary;
+  const firstTryCount = summary?.outcomes.filter(o => o.solved && o.corrections === 0).length ?? 0;
+  const phaseResults: PhaseResult[] = summary?.outcomes.map(outcome => {
+    const item = items.find(i => i.id === outcome.id);
+    const label = item ? (item.kind === 'read_line' ? item.text : (item.question ?? '')) : outcome.id;
+    return { label: outcome.assisted ? `${label} (with help)` : label, icon: ITEM_ICONS[item?.kind ?? 'read_line'],
+      score: outcome.score, attempts: outcome.attempts, firstTry: outcome.solved && outcome.corrections === 0 };
+  }) ?? [];
+
+  // ============================================================================
+  // Render
+  // ============================================================================
 
   const meta = MODE_META[mode];
-  const firstTryCount = runner.teachingResult?.firstTryCount ?? 0;
 
-  /** The printed line, word by word — the phonics tint is the decodable-text
-   *  surface. No word is tappable: audio on demand is an echo route through the
-   *  measurement (see the header). */
+  /** The printed line, word by word: the phonics tint is the decodable-text surface. No word is tappable: audio on
+   *  demand is an echo route through the measurement (see the header). */
   const wordTint = (item: DecodableReaderItem, i: number) => revealed
     ? 'text-emerald-300'
     : isEarlyBand ? 'text-white' : PATTERN_COLORS[item.words?.[i]?.phonicsPattern ?? 'other'] ?? 'text-slate-100';
-  const renderLine = (item: DecodableReaderItem) => on(TRACK_LEVER) || on(DOTS_LEVER) ? (
-    // The pulled print marks, drawn by the shared overlay. Visual only: nothing is said.
-    <p ref={pip.ref('line')} data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
-      <LuminaPrintSupport text={item.text} trackingUnderline={on(TRACK_LEVER)} soundDots={on(DOTS_LEVER)}
-        wordClassName={(_w, i) => wordTint(item, i)} />
-    </p>
-  ) : (
-    <p ref={pip.ref('line')} data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
-      {(item.words ?? []).map((word, i) => (
+  const renderLine = (item: DecodableReaderItem) => (
+    <p data-pip-object="line" className={`font-bold leading-snug tracking-wide ${lineSizeClass(item.wordCount)}`}>
+      {on(TRACK_LEVER) || on(DOTS_LEVER) ? (
+        // The pulled print marks, drawn by the shared overlay. Visual only: nothing is said.
+        <LuminaPrintSupport text={item.text} trackingUnderline={on(TRACK_LEVER)} soundDots={on(DOTS_LEVER)}
+          wordClassName={(_w, i) => wordTint(item, i)} />
+      ) : (item.words ?? []).map((word, i) => (
         <React.Fragment key={word.id}>
-          <span
-            className={
-              revealed
-                ? 'text-emerald-300'
-                : isEarlyBand
-                  ? 'text-white'
-                  : PATTERN_COLORS[word.phonicsPattern] ?? 'text-slate-100'
-            }
-          >
-            {word.text}
-          </span>
+          <span className={wordTint(item, i)}>{word.text}</span>
           {i < (item.words?.length ?? 0) - 1 && ' '}
         </React.Fragment>
       ))}
     </p>
   );
 
-  /** The choice menu. NOT buttons — the child says which one, and nothing here
-   *  commits an answer (2026-08-13 ruling). It is on screen because it CLOSES
-   *  the set: the tutor speaks these choices in this order, and a pre-reader
-   *  holds them by picture while they think. */
+  /** The choice menu. NOT buttons: the child says which one, and nothing here commits an answer (2026-08-13 ruling).
+   *  It is on screen because it closes the set, in the order the ask says the choices. */
   const renderChoices = (item: DecodableReaderItem) => (
     <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {(item.options ?? []).map((option) => {
+      {(item.options ?? []).map((option: DecodableOption) => {
         const isTarget = option.id === item.correctOptionId;
         return (
           <li
@@ -523,26 +371,26 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
         </div>
       );
     }
-
+    const region = on(REGION_LEVER) ? storyRegion(item, sentences) : null;
     return (
       <div className="space-y-4">
-        {/* read-along keeps the story on screen while the tutor reads it — a
-            pre-reader following print IS the shared-reading task. */}
-        {on(REGION_LEVER) && storyRegion(item, sentences) && (
+        {region && (
           // story_region: two whole story sentences, nothing inside them marked.
           <LuminaPanel accent="cyan" className="p-5" data-lever="story-region">
-            {storyRegion(item, sentences)!.map((line) => (
+            {region.map((line) => (
               <p key={line} className="text-center text-2xl leading-relaxed text-slate-100">{line}</p>
             ))}
           </LuminaPanel>
         )}
+        {/* read-along keeps the story on screen while the tutor reads it: a pre-reader following print IS the
+            shared-reading task. */}
         {item.storyText && (
           <LuminaPanel accent="purple" className="p-5">
-            <p ref={pip.ref('story')} data-pip-object="story" className="text-center text-2xl leading-relaxed text-slate-100">{item.storyText}</p>
+            <p data-pip-object="story" className="text-center text-2xl leading-relaxed text-slate-100">{item.storyText}</p>
           </LuminaPanel>
         )}
         <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-6 text-center">
-          <p ref={pip.ref('question')} data-pip-object="question" className="text-xl font-semibold leading-snug text-white">{item.question}</p>
+          <p data-pip-object="question" className="text-xl font-semibold leading-snug text-white">{item.question}</p>
           <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
             {revealed ? 'yes!' : 'say your answer'}
           </div>
@@ -573,7 +421,7 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
               </div>
             )}
           </div>
-          {!showSummary && (
+          {!summary && (
             <LuminaBadge accent={meta.accent} className="text-xs">
               {meta.icon} {meta.badge}
             </LuminaBadge>
@@ -582,47 +430,12 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!showSummary && (
-          <>
-            <div className="flex justify-center">
-              <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, items.length)}
-                total={items.length}
-                variant="dots"
-              />
-            </div>
-
-            {/* Pip's dock sits above the stage: the line, story and question top
-                their stages, so a pointer never crosses a choice card. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
-
-            {currentItem && renderStage(currentItem)}
-
-            {/* Every item here is answered out loud; the tutor repeats the question on request.
-                On a read line the line itself stays unspoken — that is the mode. */}
-            <div className="text-center">
-              <button
-                onClick={hearAgain}
-                className="text-xs text-cyan-300/80 underline underline-offset-4"
-              >
-                Say that again
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Completion — the family panel (score, attempts, first-try star), then
-            the story whole, which for a decode run is the first time the child
-            sees what they read as one piece. */}
-        {showSummary && (
+        {summary ? (
+          // The family panel (score, attempts, first-try star), then the story whole, which for a decode run is the
+          // first time the child sees what they read as one piece.
           <div className="space-y-4">
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
-              durationMs={evaluation.elapsedMs}
               heading={mode === 'read_along' ? 'Great story time!' : 'Great reading today!'}
               celebrationMessage={
                 mode === 'read_along'
@@ -630,12 +443,34 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
                   : `You read the whole story — ${firstTryCount} of ${items.length} on the first try.`
               }
             />
-
             <LuminaPanel className="p-4">
               <p className="mb-2 text-[11px] uppercase tracking-widest text-slate-500">The whole story</p>
               <p className="text-base leading-relaxed text-slate-200">{passageText}</p>
             </LuminaPanel>
           </div>
+        ) : (
+          <>
+            <div className="flex justify-center">
+              <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
+            </div>
+            {practice && <div className="text-center text-xs text-amber-300" data-practice-item>Practice</div>}
+            {/* Pip's dock sits above the stage, so a pointer never crosses a choice card. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {renderStage(currentItem)}
+            </PipWorkspace>
+            {/* Every item is answered out loud; the tutor repeats the question on request. On a read line the line
+                itself stays unspoken: that is the mode. */}
+            <div className="flex items-center justify-center gap-3">
+              <LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} />
+              <button
+                onClick={() => lesson.requestHear(hearAgainRequest(currentItem))}
+                className="text-xs text-cyan-300/80 underline underline-offset-4"
+              >
+                Say that again
+              </button>
+            </div>
+          </>
         )}
       </LuminaCardContent>
     </LuminaCard>

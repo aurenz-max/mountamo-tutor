@@ -14,7 +14,7 @@ import {
   type ThreeDShapeMode,
   type ThreeDShapeName,
   type ThreeDShapeTier,
-} from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
+} from '../../primitives/visual-primitives/math/threeDShapeExplorerDomain';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from '../generation/generationContext';
 import { buildScopePromptSection } from '../scopeContext';

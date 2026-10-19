@@ -2,12 +2,11 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { getComponentById } from '../../../service/manifest/catalog';
 import { BINARY_BUCKET, GENRE_ALTERNATES, GENRE_LABEL, GENRE_SIBLING, askFor, askIsAnswerFree, choicesPhrase, isReadableAloud,
-  itemsFromPayload, namesAGenre, type GenreExplorerItem, type GenreId } from './genreExplorerScript';
-import { genreSpokenMisses } from './genreExplorerWorkspace';
-import { FAR_KINDS_LEVER, KIND_PAIR_LEVER, farKindsFor, genreExplorerLevers, kindPairFor, leversOnScreen, modelLeak,
+  genreSpokenMisses, itemsFromPayload, namesAGenre, type GenreExplorerItem, type GenreId } from './genreExplorerDomain';
+import { FAR_KINDS_LEVER, GENRE_LEVERS, KIND_PAIR_LEVER, farKindsFor, kindPairFor, modelLeak,
   pairModelFor, sentenceRows, startingLevers, textModelFor, type GenreSession } from './genreExplorerLevers';
+import { genreExplorerCard } from './genreExplorer.card';
 import { GENRE_MODELS } from './genreModels';
 
 const DIR = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
@@ -37,7 +36,7 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { mode, sessio
   const off = (k: GenreId) => !session.menu.includes(GENRE_LABEL[k]);
   it('has items', () => expect(session.items.length).toBeGreaterThan(0));
   it.each(session.items.map(i => [i.id, i] as const))('%s: levers are leak-free and answer every miss', (_id, item: GenreExplorerItem) => {
-    const levers = genreExplorerLevers(item, session, []);
+    const levers = GENRE_LEVERS.declare(item, session, []);
     const ids = levers.map(l => l.id);
     if (item.action === 'check-feature') {
       const m = textModelFor(item, session)!;
@@ -58,13 +57,13 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { mode, sessio
       const far = farKindsFor(item, session);
       if (!binary) {
         expect(far, 'a practice text').not.toBeNull();
-        const [a, b] = far!.item.choices.map(idOf);
+        const [a, b] = far!.choices.map(idOf);
         expect(off(a) && off(b)).toBe(true);
         expect(BINARY_BUCKET[a]).not.toBe(BINARY_BUCKET[b]);
         expect(GENRE_SIBLING[a] ?? []).not.toContain(b);
-        expect(far!.item.choices).toContain(far!.item.answer);
-        expect(session.excerpts.map(e => e.text)).not.toContain(far!.text);
-        expect(askIsAnswerFree(askFor(far!.item), far!.item.answer, choicesPhrase(far!.item))).toBe(true);
+        expect(far!.choices).toContain(far!.answer);
+        expect(session.excerpts.map(e => e.text)).not.toContain(far!.practiceText);
+        expect(askIsAnswerFree(askFor(far!), far!.answer, choicesPhrase(far!))).toBe(true);
       }
     }
     for (const miss of genreSpokenMisses(item)) {
@@ -73,7 +72,7 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { mode, sessio
     }
     // The scene fact never names the kind of the learner's text.
     if (item.action === 'name-genre' && !ids.includes('read_glosses')) {
-      expect(leversOnScreen(ids, item, session) ?? '').not.toContain(item.answer);
+      expect(GENRE_LEVERS.onScreen(item, session, ids)).not.toContain(item.answer);
     }
   });
 });
@@ -87,11 +86,10 @@ describe('misses and catalog', () => {
     }
   });
   it('per-mode misses, each answered by a lever on a saved payload of that mode', () => {
-    const tw = getComponentById('genre-explorer')!.teachingWorkspace!;
-    expect(tw.levers).toBe(true);
-    for (const [mode, misses] of Object.entries(tw.misses!)) {
+    expect(genreExplorerCard.levers).toBe(true);
+    for (const [mode, { misses }] of Object.entries(genreExplorerCard.modes)) {
       const answered = new Set(PAYLOADS.filter(p => p.mode === mode).flatMap(p => p.session.items
-        .flatMap(i => genreExplorerLevers(i, p.session, []).flatMap(l => l.answers ?? []))));
+        .flatMap(i => GENRE_LEVERS.declare(i, p.session, []).flatMap(l => l.answers ?? []))));
       for (const m of misses) expect(answered.has(m), `${mode} ${m}`).toBe(true);
     }
   });
@@ -100,7 +98,7 @@ describe('misses and catalog', () => {
     for (const [item, s] of all) {
       const start = startingLevers('easy', item);
       expect(start).toHaveLength(1);
-      expect(genreExplorerLevers(item, s, [], start).map(l => l.id)).not.toContain(start[0]);
+      expect(GENRE_LEVERS.declare({ ...item, tier: 'easy' }, s, []).map(l => l.id)).not.toContain(start[0]);
       expect(startingLevers('medium', item)).toEqual([]);
     }
   });

@@ -9,10 +9,12 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { PRACTICE_LINES } from './decodablePracticeLines';
-import { itemsFromChallenges, sentenceText, type DecodableSentenceLike } from './decodableReaderScript';
-import { DECODABLE_MISSES, PRACTICE_STORIES, decodableReaderLevers, regionLeak, shortLine, shortLineLeak, shortStory, shortStoryLeak,
+import { decodableSpokenMisses, itemsFromChallenges, sentenceText, type DecodableReaderItem, type DecodableSentenceLike } from './decodableReaderDomain';
+import { DECODABLE_LEVERS, DECODABLE_MISSES, PRACTICE_STORIES, regionLeak, shortLine, shortLineLeak, shortStory, shortStoryLeak,
   simplerFor, storyRegion } from './decodableReaderLevers';
-import { decodableSpokenMisses } from './decodableReaderWorkspace';
+
+const decodableReaderLevers = (item: DecodableReaderItem, pulled: string[], sentences: DecodableSentenceLike[],
+  items: DecodableReaderItem[] = []) => DECODABLE_LEVERS.declare(item, { sentences, items }, pulled);
 
 const payload = (mode: string) => JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/decodable-reader.${mode}.json`), 'utf8')).data;
@@ -61,14 +63,15 @@ describe('levers', () => {
     expect(decodableReaderLevers(choice, [], sentences)).toEqual([]);
   });
 
-  it('every lever is shown and answers only catalog misses; every spoken miss is listed unanswered', () => {
+  it('every lever is shown and answers only catalog misses; a miss no lever answers is listed unanswered', () => {
     for (const item of items) for (const l of decodableReaderLevers(item, [], sentences)) {
       expect(l.carrier).toBe('shown');
       for (const miss of l.answers ?? []) expect(entry.misses!.literal).toContain(miss);
     }
     for (const [mode, misses] of Object.entries(DECODABLE_MISSES)) {
       expect(entry.misses![mode]).toEqual(misses);
-      expect(entry.unanswered![mode]).toEqual(mode === 'read_along' ? [] : misses);
+      expect(entry.unanswered![mode]).toEqual(mode === 'read_along' ? undefined
+        : mode === 'literal' ? ['retell'] : ['other_choice', 'retell']);
     }
     expect(entry.levers).toBe(true);
   });

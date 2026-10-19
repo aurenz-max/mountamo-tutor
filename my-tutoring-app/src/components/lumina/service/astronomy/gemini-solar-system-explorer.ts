@@ -10,7 +10,7 @@ import type {
   SolarChallenge,
   SolarChallengeType,
 } from '../../primitives/visual-primitives/astronomy/SolarSystemExplorer';
-// The judged script's build gates ARE the generator's validators — one
+// The domain's build gates ARE the generator's validators — one
 // predicate per rule on both sides of the wire, imported never copied
 // (the letter-spotter hand-sync drift lesson).
 import {
@@ -20,7 +20,7 @@ import {
   type SolarItem,
   type SolarChallengeLike,
   type SolarFacet,
-} from '../../primitives/visual-primitives/astronomy/solarSystemScript';
+} from '../../primitives/visual-primitives/astronomy/solarSystemDomain';
 
 // Re-export for convenience if needed elsewhere
 export type { SolarSystemExplorerData, CelestialBody };
@@ -277,7 +277,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 //      its own answer, because the prompt is generated from the answer.
 //
 // DI port note: a challenge now carries a STRUCTURED `facet` (plus `position` /
-// `optionBodyIds` where the facet needs them) and the judged script derives the
+// `optionBodyIds` where the facet needs them) and the domain module derives the
 // spoken ask, the answer and the judging contract from facet + bodies. The
 // final filter below IS the script's own `itemsFromChallenges` — the same
 // gates the component runs, so nothing the generator emits can build an item
@@ -309,10 +309,8 @@ const CHALLENGE_COUNT_BY_RUNG: Record<SolarSystemGrade, number> = {
 
 /**
  * A structured candidate — no prose. The spoken ask, the answer key and the
- * judging contract are all derived downstream by the judged script; the
- * candidate only names WHICH ask this is. (The click-era appearance cues moved
- * into the script as SOLAR_APPEARANCE, where they season the affirm and the
- * correction instead of the ask.)
+ * spoken key are all derived downstream by the domain module; the candidate
+ * only names WHICH ask this is.
  */
 interface ChallengeCandidate {
   type: SolarChallengeType;

@@ -27,7 +27,7 @@ export const diSentenceReadingBoss = spokenBoss<DiSentenceReadingData, SentenceR
   levers: SENTENCE_LEVERS,
   speech: {
     ask: () => askFor(),
-    key: item => item.assignment,
+    key: item => item.key,
     misses: diSentenceSpokenMisses,
     // A plainly different sentence: the near-neighbour misread this pack exists to correct belongs in the JEV probe.
     say: sentenceReadingHarnessAnswers,

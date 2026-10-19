@@ -1,9 +1,8 @@
 import { expect, it } from 'vitest';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { matterSpokenMisses } from './matterExplorerWorkspace';
-import type { MatterExplorerItem } from './matterExplorerScript';
-import { statesSpokenMisses } from './statesOfMatterWorkspace';
-import type { StatesOfMatterItem } from './statesOfMatterScript';
+import { matterSpokenMisses } from './matterExplorerDomain';
+import type { MatterExplorerItem } from './matterExplorerDomain';
+import { statesSpokenMisses, type StatesOfMatterItem } from './statesOfMatterDomain';
 
 // matter-explorer and states-of-matter's known wrong answers (handoff 20 Part B): ids in precedence order, and no
 // example is an accepted answer.

@@ -5,7 +5,7 @@
  * boiling point this primitive can ask about lives in code, so an LLM in this
  * path could only add hallucination risk to facts we already hold. The draw
  * picks WHICH substances and WHICH temperatures; every answer key is computed
- * by the script module's build gates (`statesOfMatterScript.itemFromChallenge`),
+ * by the domain module's build gates (`statesOfMatterDomain.itemFromChallenge`),
  * which re-validate every challenge emitted here — both sides of the wire
  * import the same pools and the same threshold gate from ONE address (the
  * letter-spotter rule; hand-synced copies drift).
@@ -33,7 +33,7 @@ import {
   type StatesBand,
   type StatesChallengeType,
   type SubstanceFacts,
-} from '../../primitives/visual-primitives/chemistry/statesOfMatterScript';
+} from '../../primitives/visual-primitives/chemistry/statesOfMatterDomain';
 import type { StatesOfMatterChallenge } from '../../types';
 
 const SESSION_LENGTH = 6;

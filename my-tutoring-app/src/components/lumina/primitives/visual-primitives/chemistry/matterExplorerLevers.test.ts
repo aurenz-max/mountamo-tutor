@@ -4,13 +4,13 @@ import sortP from '../../../components/live-activity/runtime/testing/w1-payloads
 import propertyP from '../../../components/live-activity/runtime/testing/w1-payloads/matter-explorer.property.json';
 import changeP from '../../../components/live-activity/runtime/testing/w1-payloads/matter-explorer.change.json';
 import mysteryP from '../../../components/live-activity/runtime/testing/w1-payloads/matter-explorer.mystery.json';
-import { matterItems } from '../../../components/live-activity/adapters/matterExplorerLive';
-import { matterAssignment, matterSpokenMisses } from './matterExplorerWorkspace';
+import { matterItems } from './matterExplorer.boss';
+import { askFor, matterSpokenMisses } from './matterExplorerDomain';
 import {
-  changesFor, changesLeak, collides, leversOnScreen, matterLevers, matterLeverSession, MODEL_CHANGES, modelsFor, modelsLeak,
+  changesFor, changesLeak, collides, MATTER_LEVERS, matterLeverSession, MODEL_CHANGES, modelsFor, modelsLeak,
   practiceItem, practiceLeaks, practiceParent, PLAIN_THINGS, PLAIN_OBJECT_LEVER, THREE_MODELS_LEVER, TWO_CHANGES_LEVER,
 } from './matterExplorerLevers';
-import { changeFitsObject, nameCarriesAnswer, type MatterExplorerItem } from './matterExplorerScript';
+import { changeFitsObject, nameCarriesAnswer, type MatterExplorerItem } from './matterExplorerDomain';
 
 const PAYLOADS: Record<string, any> = {
   sort: (sortP as any).data, property: (propertyP as any).data, change: (changeP as any).data, mystery: (mysteryP as any).data,
@@ -24,13 +24,13 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
   it('has items', () => expect(items.length).toBeGreaterThan(0));
 
   it.each(items.map(i => [`${i.id}/${i.tier}`, i] as const))('%s: every checked miss has a lever on this item', (_id, item) => {
-    const levers = matterLevers(item, s, []);
+    const levers = MATTER_LEVERS.declare(item, s, []);
     for (const m of matterSpokenMisses(item)) expect(levers.some(l => l.answers?.includes(m.id)), `${item.id} ${m.id}`).toBe(true);
   });
 
   it.each(items.map(i => [`${i.id}/${i.tier}`, i] as const))('%s: the levers never draw the item or say its answer', (_id, item) => {
-    const all = matterLevers(item, s, []).map(l => l.id);
-    const fact = leversOnScreen(item, all, s) ?? '';
+    const all = MATTER_LEVERS.declare(item, s, []).map(l => l.id);
+    const fact = MATTER_LEVERS.onScreen(item, s, all);
     // The fact locates the drawing by the item ("beside the rock") and names it nowhere else; a mystery fact never names it.
     const named = fact.toLowerCase().split(item.objectName.toLowerCase()).length - 1;
     expect(named).toBe(item.kind === 'mystery_state' || !fact ? 0 : 1);
@@ -38,7 +38,7 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
     if (models) expect(modelsLeak(models, item, s)).toBe(false);
     const pair = changesFor(item, s);
     if (pair) expect(changesLeak(pair, item, s)).toBe(false);
-    for (const l of matterLevers(item, s, [])) expect(l.does.toLowerCase()).not.toContain(item.objectName.toLowerCase());
+    for (const l of MATTER_LEVERS.declare(item, s, [])) expect(l.does.toLowerCase()).not.toContain(item.objectName.toLowerCase());
   });
 
   it.each(items.map(i => [`${i.id}/${i.tier}`, i] as const))('%s: a practice item is the same kind, a new plain thing, and clean', (_id, item) => {
@@ -50,18 +50,19 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
     expect(practiceParent(p.id, items.filter(i => i.tier === item.tier))).toBe(item);
     expect(collides(p.objectName, s)).toBe(false);
     expect(p.tier).toBe('easy');
-    expect(matterAssignment(p).task).not.toContain(item.objectName);
+    expect(askFor(p)).not.toContain(item.objectName);
     if (p.kind === 'name_property') {
       expect(p.menu).toHaveLength(2);
       expect(p.menu).toContain(p.answerShape);
-      expect(matterAssignment(p).task).toMatch(/, or /);
+      expect(askFor(p)).toMatch(/, or /);
     }
     if (p.kind === 'mystery_state') expect(p.clues!.every(c => !nameCarriesAnswer(c))).toBe(true);
   });
 });
 
+const MODE = { name_state: 'sort', name_property: 'property', name_undo: 'change', mystery_state: 'mystery' } as const;
 const item = (extra: Partial<MatterExplorerItem>) => ({
-  id: 'x', kind: 'name_state', challengeType: 'sort', tier: 'medium', objectName: 'pebble', objectId: 'o', answerState: 'solid',
+  id: 'x', kind: 'name_state', challengeType: MODE[extra.kind ?? 'name_state'], tier: 'medium', objectName: 'pebble', objectId: 'o', answerState: 'solid',
   answerShape: 'keeps_shape', answerKind: 'voice', responseClass: 'short_spoken_word', action: 'name_state', ...extra,
 }) as MatterExplorerItem;
 
@@ -94,7 +95,7 @@ it('a plain sort item at the easy tier has no simplify; the same thing at medium
   const s = { objectNames: ['rock'] };
   expect(practiceItem(item({ objectName: 'rock', tier: 'easy' }), s)).toBeNull();
   expect(practiceItem(item({ objectName: 'rock', tier: 'medium' }), s)).not.toBeNull();
-  expect(matterLevers(item({ objectName: 'rock', tier: 'easy' }), s, []).map(l => l.id)).toEqual([THREE_MODELS_LEVER]);
+  expect(MATTER_LEVERS.declare(item({ objectName: 'rock', tier: 'easy' }), s, []).map(l => l.id)).toEqual([THREE_MODELS_LEVER]);
 });
 
 it.each([
@@ -110,6 +111,6 @@ it.each([
   const it_ = item({ kind, ...(kind === 'name_undo' ? { change: 'melt', answerUndo: 'can_go_back' } : {}),
     ...(kind === 'mystery_state' ? { clues: ['it looks grey', 'it feels rough'] } : {}) });
   const s = { objectNames: ['pebble'] };
-  expect(nextLever(matterLevers(it_, s, []), miss)).toBe(first);
-  expect(nextLever(matterLevers(it_, s, [first]), miss)).toBe(kind === 'name_undo' ? null : PLAIN_OBJECT_LEVER);
+  expect(nextLever(MATTER_LEVERS.declare(it_, s, []), miss)).toBe(first);
+  expect(nextLever(MATTER_LEVERS.declare(it_, s, [first]), miss)).toBe(kind === 'name_undo' ? null : PLAIN_OBJECT_LEVER);
 });

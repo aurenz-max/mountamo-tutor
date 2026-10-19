@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import type { CelestialBody } from './SolarSystemExplorer';
-import type { SolarItem } from './solarSystemScript';
+import type { SolarItem } from './solarSystemDomain';
 
 const Panel: React.FC<{ lever: string; label: string; children: React.ReactNode; extra?: Record<string, string> }> = ({ lever, label, children, extra }) => (
   <div data-lever={lever} {...extra} aria-label={label}

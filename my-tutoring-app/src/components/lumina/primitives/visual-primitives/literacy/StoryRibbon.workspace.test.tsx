@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Story ribbon on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Story ribbon on the teaching workspace: what is its own. Pip is the shared contract's
+ * (`pip/WorkspacePip.surface.test.tsx`). The generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,7 +14,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import { STORY_RIBBON_FALLBACKS } from '../../../service/literacy/gemini-story-ribbon';
 import type { StoryRibbonChallenge, StoryRibbonChallengeType } from './StoryRibbon';
 
@@ -72,16 +71,6 @@ it('Hear the directions again asks silently, as the host, and names no event', (
   const [text, options] = seam.send.mock.calls.at(-1)!;
   for (const event of STORY_RIBBON_FALLBACKS[0].events) expect(text).not.toContain(event.modelSentence);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip outlines the ribbon and celebrates the credited account', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('ribbon');
-  const h = mountWorkspace({ primitiveId: 'story-ribbon', evalMode: 'tell_connected_account', data: data('tell_connected_account'),
-    instanceId: 'ribbon', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toContain('ribbon');
-  h.say('the whole story'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a ribbon whose time cue does not match its mode', () => {

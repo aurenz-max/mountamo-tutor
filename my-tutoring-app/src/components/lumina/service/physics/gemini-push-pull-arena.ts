@@ -23,45 +23,27 @@ import {
   DESIGN_SETUPS,
   FRICTION_MU,
   FORCE_SCALE_N,
-  designPushSize,
-  headNoun,
-  predictMoves,
   SURFACE_SPOKEN,
-} from '../../primitives/visual-primitives/physics/pushPullArenaScript';
+} from '../../primitives/visual-primitives/physics/pushPullArenaDomain';
 
 // ============================================================================
 // CODE-OWNED ANSWERS + NEUTRAL INSTRUCTIONS (the DI port)
 // ============================================================================
 
-/** Stamp the code-computed spoken answer, its stated alternates, and a
- *  neutral on-screen ask. Never authored by the LLM: an instruction like
- *  "Push the ball!" IS the answer of an observe item. */
+/** Stamp a neutral on-screen ask. Never authored by the LLM: an instruction like
+ *  "Push the ball!" IS the answer of an observe item. The answer itself is computed
+ *  where it is judged (`pushPullArenaDomain.itemFromChallenge`), never stored here. */
 function applyJudgedAnswer(ch: PushPullChallenge): void {
   switch (ch.type) {
     case 'predict': {
-      const moves = predictMoves(ch.pushStrength ?? 5, ch.objectWeight, ch.surface);
-      ch.spokenAnswer = moves ? 'moves' : 'stays';
-      ch.spokenAlternates = moves
-        ? ['move', 'it moves', 'it will move', 'yes']
-        : ['stay', 'stay still', 'it stays', 'no'];
       ch.instruction = `Think first: will the ${ch.objectName} move, or stay?`;
       return;
     }
     case 'compare': {
-      const lighter = (ch.object2Weight ?? 99) < ch.objectWeight
-        ? (ch.object2Name ?? ch.objectName)
-        : ch.objectName;
-      ch.spokenAnswer = lighter.toLowerCase();
-      ch.spokenAlternates = [headNoun(lighter)];
       ch.instruction = 'Same push for both. Which one slides farther?';
       return;
     }
     case 'design': {
-      const size = designPushSize(ch.objectWeight, ch.surface);
-      ch.spokenAnswer = size;
-      ch.spokenAlternates = size === 'big'
-        ? ['a big push', 'strong', 'a strong push', 'hard']
-        : ['a little push', 'small', 'gentle', 'soft'];
       ch.instruction = `What kind of push does the ${ch.objectName} need? Try it!`;
       // Code-owned too: the design branch replaces the LLM's object and surface, so its goal named another object
       // ("Move the Backpack" on a Barrel item) and carried answer adjectives ("the heavy Refrigerator").
@@ -69,11 +51,6 @@ function applyJudgedAnswer(ch: PushPullChallenge): void {
       return;
     }
     default: {
-      const pull = ch.pushDirection === 'pull';
-      ch.spokenAnswer = pull ? 'pull' : 'push';
-      ch.spokenAlternates = pull
-        ? ['a pull', 'pulling', 'you pulled it']
-        : ['a push', 'pushing', 'you pushed it'];
       ch.instruction = `Tap Go and watch the ${ch.objectName}. What kind of force is that?`;
     }
   }

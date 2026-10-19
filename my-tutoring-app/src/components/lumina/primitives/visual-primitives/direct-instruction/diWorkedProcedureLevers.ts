@@ -26,13 +26,13 @@ import { leverSet } from '../../../components/live-activity/bossLevers';
 import { diWorkedProcedureCard } from './diWorkedProcedure.card';
 import { numberWord, planSubtraction, type SubtractionPlan } from './diWorkedProcedurePlan';
 import { itemsFromProblems, type WorkedProcedureItem } from './diWorkedProcedureScript';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_PROBLEM = 'model_problem';
 export const TOP_BLOCKS = 'top_blocks';
 export const TAKE_AWAY_CUBES = 'take_away_cubes';
 export const FEWER_COLUMNS = 'fewer_columns';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 const w = numberWord;
 
 /** The step answers of a problem: each difference, and on a regroup the new numbers above and in the column. */
@@ -115,7 +115,7 @@ export function fewerColumnsFor(item: WorkedProcedureItem, lastMiss?: string): W
 
 const regroupDecide = (item: WorkedProcedureItem) => item.challengeType === 'subtract_regroup' && item.kind === 'decide';
 
-const DECIDE_MISSES = ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', ...OFF_BY];
+const DECIDE_MISSES = diWorkedProcedureCard.modes.subtract_regroup.misses;
 
 /** Every lever of the pack, by type, in the order the tutor sees them. The levers read nothing beyond the step. */
 export const PROCEDURE_LEVERS = leverSet<WorkedProcedureItem, null>({

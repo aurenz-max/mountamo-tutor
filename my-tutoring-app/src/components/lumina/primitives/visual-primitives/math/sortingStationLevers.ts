@@ -26,9 +26,9 @@
  * sort needs a new card of the generated groups, which no pool keys; the saved counts are 1-3, already the plainest;
  * a two-criteria item with one criterion is another mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { itemsFromChallenge, type SortingChallengeLike, type SortingStationItem } from './sortingStationScript';
-import type { SpokenSortingMiss } from './sortingStationWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { sortingStationCard } from './sortingStation.card';
+import { itemsFromChallenge, type SortingChallengeLike, type SortingStationItem, type SortingStationMode } from './sortingStationDomain';
 
 export const TRY_EACH_LEVER = 'try_each';
 export const EXAMPLES_LEVER = 'tray_examples';
@@ -41,7 +41,14 @@ export const LINE_UP_LEVER = 'line_up';
 export const CHECKS_LEVER = 'check_boxes';
 export const THREE_CARDS_LEVER = 'three_cards';
 export const FAR_COMPARE_LEVER = 'far_compare';
-export const SIMPLIFY_LEVERS = [THREE_CARDS_LEVER, FAR_COMPARE_LEVER] as const;
+
+/** The catalog eval mode an item belongs to (its challenge type, as the catalog names it). */
+const CATALOG_MODE: Record<SortingStationMode, string> = {
+  'sort-by-one': 'sort_one', 'sort-by-attribute': 'sort_attribute', 'sort-variety': 'sort_variety',
+  'count-and-compare': 'count_compare', 'odd-one-out': 'odd_one_out', 'two-attributes': 'two_attributes',
+  'tally-record': 'tally_record',
+};
+export const catalogModeOf = (item: SortingStationItem): string => CATALOG_MODE[item.mode];
 
 /** A card the learner had credited on a sort, kept for `tray_examples`. */
 export interface CreditedCard { challengeId: string; label: string; emoji: string; group: string; rule: string }
@@ -104,14 +111,12 @@ const POOL: readonly { kind: string; tray: string; members: readonly (readonly [
   { kind: 'Flower', tray: '🪴', members: [['Rose', '🌹'], ['Tulip', '🌷'], ['Daisy', '🌼'], ['Sunflower', '🌻'], ['Hibiscus', '🌺'], ['Blossom', '🌸']] },
 ];
 
-export type Easier = { item: SortingStationItem; challenge: SortingChallengeLike };
-
 const freshMembers = (kind: (typeof POOL)[number], taken: Set<string>) => kind.members.filter(([label]) => !taken.has(lower(label)));
 const objectOf = (id: string, [label, emoji]: readonly [string, string], kind: string) =>
   ({ id, label, emoji, attributes: { category: lower(kind) } });
 
 /** `three_cards`: two cards of one kind and one of another, all new, the odd one in the middle. */
-export function threeCards(item: SortingStationItem | null, challenge: SortingChallengeLike | null): Easier | null {
+export function threeCards(item: SortingStationItem | null, challenge: SortingChallengeLike | null): SortingStationItem | null {
   if (item?.kind !== 'odd_one' || item.choices.length < 4) return null;
   const taken = new Set([...item.choices, ...(challenge?.objects ?? []).map(o => o.label)].map(lower));
   for (const a of POOL) for (const b of POOL) {
@@ -122,13 +127,13 @@ export function threeCards(item: SortingStationItem | null, challenge: SortingCh
     const ch: SortingChallengeLike = { id, type: 'odd-one-out', sortingAttribute: 'category',
       objects: [objectOf('s1', a1, a.kind), objectOf('s2', b1, b.kind), objectOf('s3', a2, a.kind)], oddOneOut: 's2' };
     const built = itemsFromChallenge(ch, { tier: item.tier })[0];
-    if (built) return { item: { ...built, id: `${item.id}~simpler` }, challenge: ch };
+    if (built) return { ...built, id: `${item.id}~simpler`, practiceChallenge: ch };
   }
   return null;
 }
 
 /** `far_compare`: two new groups of one and four (gap 3), never the same, only when the item's groups are within 2. */
-export function farCompare(item: SortingStationItem | null, challenge: SortingChallengeLike | null): Easier | null {
+export function farCompare(item: SortingStationItem | null, challenge: SortingChallengeLike | null): SortingStationItem | null {
   if (item?.kind !== 'compare') return null;
   const counts = compareCounts(item, challenge);
   if (counts.length !== 2 || Math.abs(counts[0] - counts[1]) >= 3) return null;
@@ -143,86 +148,78 @@ export function farCompare(item: SortingStationItem | null, challenge: SortingCh
       objects: [...s.map((m, i) => objectOf(`s${i}`, m, small.kind)), ...b.map((m, i) => objectOf(`b${i}`, m, big.kind))],
       correctComparison: 'more' };
     const built = itemsFromChallenge(ch, { tier: item.tier }).find(i => i.kind === 'compare');
-    if (built) return { item: { ...built, id: `${item.id}~simpler`, namesChoices: true }, challenge: ch };
+    if (built) return { ...built, id: `${item.id}~simpler`, namesChoices: true, practiceChallenge: ch };
   }
-  return null;
-}
-
-/** The easier item a simplify lever opens, by lever id. */
-export function sortingSimpler(lever: string, item: SortingStationItem | null, challenge: SortingChallengeLike | null): Easier | null {
-  if (lever === THREE_CARDS_LEVER) return threeCards(item, challenge);
-  if (lever === FAR_COMPARE_LEVER) return farCompare(item, challenge);
   return null;
 }
 
 /** The easier item behind a `~simpler` id (the journey row rebuilds it from its parent with the same builder). */
-export function simplerFromParent(item: SortingStationItem, challenge: SortingChallengeLike | null): Easier | null {
+export function simplerFromParent(item: SortingStationItem, challenge: SortingChallengeLike | null): SortingStationItem | null {
   return item.kind === 'odd_one' ? threeCards(item, challenge) : item.kind === 'compare' ? farCompare(item, challenge) : null;
 }
 
-// ── The levers ─────────────────────────────────────────────────────────────
+// ── The lever set ──────────────────────────────────────────────────────────
 
-export function sortingLevers(item: SortingStationItem | null, pulled: readonly string[], ctx: SortingLeverContext): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: SpokenSortingMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const practiceDoes = 'Opens an easier one of the same kind first, with new pictures. It is not graded; the full item comes back after it.';
-  switch (item.kind) {
-    case 'sort': return [
-      ...(trayExamples(item, ctx).size ? [lever(EXAMPLES_LEVER, 'help', 'shown', ['other_group'], 'The learner names another group.',
-        'Puts one card the learner already sorted in an earlier round on each tray it went to. Not this card.')] : []),
-      ...(!ctx.preReader && item.choiceEmojis.every(Boolean) && !trayPicturesLeak(item)
-        ? [lever(PICTURES_LEVER, 'help', 'shown', ['other_group'], 'The learner names another group.',
-          'Shows each tray\'s picture on the tray. Marks no tray.')] : []),
-      lever(TRY_EACH_LEVER, 'help', 'both', ['said_object', 'other_group'],
-        'The learner says the thing\'s own name, or names another group.',
-        'Puts a copy of the card\'s picture with a question mark on every tray. Marks no tray: hold the card up to each tray in turn.'),
-    ];
-    case 'pick_rule': return showTraysLeak(item, ctx.challenge) ? [] : [lever(SHOW_TRAYS_LEVER, 'help', 'shown', ['other_rule'],
-      'The learner names another way to sort.', 'Shows the empty trays the cards will go into, each with its picture and name. '
-        + 'It never says the way to sort: the learner still names it.')];
-    case 'odd_one': return [
-      lever(ODD_MODEL_LEVER, 'help', 'both', ['said_all_belong', 'belonging_card'],
-        'The learner says they all belong, or names a card that belongs.',
-        'Shows a model row beside the cards: three blue circles and one red square. Point at the model, not the cards. Never say what any of the learner\'s cards have in common or which one differs: the learner still finds it.'),
-      ...(threeCards(item, ctx.challenge) ? [lever(THREE_CARDS_LEVER, 'simplify', 'shown', ['belonging_card', 'said_all_belong'],
-        'There are too many cards to compare yet.', practiceDoes)] : []),
-    ];
-    case 'count_group': return [
-      lever(FOCUS_LEVER, 'help', 'shown', ['over_by_more', 'one_over'], 'The learner counts more than the group has.',
-        'Dims every tray but the tray asked about. No numbers.'),
-      lever(TAP_LEVER, 'help', 'shown', ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        'The learner\'s count of the group is off.',
-        'Lets the learner tap each picture in the group as they count it; a tapped picture gets a ring. No numbers.'),
-    ];
-    case 'compare': return [
-      lever(LINE_UP_LEVER, 'help', 'shown', ['other_group', 'said_same', 'bare_more'],
-        'The learner names the group with fewer, says they are the same, or says only "more".',
-        'Lines each group\'s pictures up in a row under its tray picture, a picture per column, both rows from the same left edge. No numbers.'),
-      ...(farCompare(item, ctx.challenge) ? [lever(FAR_COMPARE_LEVER, 'simplify', 'shown', ['other_group', 'said_same'],
-        'The two groups are too close to tell apart yet.', practiceDoes)] : []),
-    ];
-    case 'both_criteria': return [lever(CHECKS_LEVER, 'help', 'both', ['one_criterion_only', 'opposite_verdict'],
-      'The learner answers only half the question, or gives the opposite answer.',
-      'Puts an empty box beside each of the two things asked about; the learner taps a box to tick or cross it. '
-        + 'Ask about one thing at a time; the boxes start empty and nothing fills them for the learner.')];
-    default: return [];
-  }
-}
+const SORTS = ['sort_one', 'sort_attribute', 'sort_variety'];
+const COUNTS = ['count_compare', 'tally_record'];
+const PRACTICE = 'Opens an easier one of the same kind first, with new pictures. It is not graded; the full item comes back after it.';
+const kindIs = (kind: SortingStationItem['kind']) => (item: SortingStationItem) => item.kind === kind;
 
-/** What the pulled levers put on screen, as a scene fact. Describes what is drawn; never which group, card or count. */
-export function sortingLeverFacts(item: SortingStationItem | null, pulled: readonly string[]): string {
-  if (!item) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(EXAMPLES_LEVER) && item.kind === 'sort' && 'A card the learner sorted in an earlier round sits on the trays it went to.',
-    on(PICTURES_LEVER) && item.kind === 'sort' && 'Every tray shows its picture.',
-    on(TRY_EACH_LEVER) && item.kind === 'sort' && 'A copy of the card\'s picture with a question mark sits on every tray. No tray is marked.',
-    on(SHOW_TRAYS_LEVER) && item.kind === 'pick_rule' && 'Under the cards are the empty trays, each with its picture and name.',
-    on(ODD_MODEL_LEVER) && item.kind === 'odd_one' && 'Beside the cards is a model row of three blue circles and one red square. It is not these cards.',
-    on(FOCUS_LEVER) && item.kind === 'count_group' && 'Every tray but the tray asked about is dimmed.',
-    on(TAP_LEVER) && item.kind === 'count_group' && 'The pictures in the tray asked about can be tapped; each tapped picture gets a ring.',
-    on(LINE_UP_LEVER) && item.kind === 'compare' && 'Under the trays, each group\'s pictures are in a row, a picture per column, both rows starting at the same left edge.',
-    on(CHECKS_LEVER) && item.kind === 'both_criteria' && 'Beside each of the two things asked about is an empty box the learner can tap to tick or cross.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** Every lever of the family, by type, in the order the tutor sees them. */
+export const SORTING_LEVERS = leverSet<SortingStationItem, SortingLeverContext>({
+  modeOf: catalogModeOf,
+  missesOf: mode => sortingStationCard.modes[mode]?.misses ?? [],
+  answersOf: item => [item.answer],
+  specs: [
+    { id: EXAMPLES_LEVER, type: 'custom', modes: SORTS, carrier: 'shown', answers: ['other_group'],
+      why: 'It shows cards the learner already had credited in earlier rounds on their trays: earned work, not a model of a new item.',
+      when: 'The learner names another group.',
+      does: 'Puts one card the learner already sorted in an earlier round on each tray it went to. Not this card.',
+      content: (item, ctx) => (trayExamples(item, ctx).size ? true : null),
+      fact: 'A card the learner sorted in an earlier round sits on the trays it went to.' },
+    { id: PICTURES_LEVER, type: 'meaning', modes: SORTS, carrier: 'shown', answers: ['other_group'],
+      offer: (item, ctx) => item.kind === 'sort' && !ctx.preReader && item.choiceEmojis.every(Boolean) && !trayPicturesLeak(item),
+      when: 'The learner names another group.', does: 'Shows each tray\'s picture on the tray. Marks no tray.',
+      fact: 'Every tray shows its picture.' },
+    { id: TRY_EACH_LEVER, type: 'marks', modes: SORTS, carrier: 'both', answers: ['said_object', 'other_group'],
+      offer: kindIs('sort'),
+      when: 'The learner says the thing\'s own name, or names another group.',
+      does: 'Puts a copy of the card\'s picture with a question mark on every tray. Marks no tray: hold the card up to each tray in turn.',
+      fact: 'A copy of the card\'s picture with a question mark sits on every tray. No tray is marked.' },
+    { id: SHOW_TRAYS_LEVER, type: 'layout', modes: ['sort_attribute'], answers: ['other_rule'],
+      offer: (item, ctx) => item.kind === 'pick_rule' && !showTraysLeak(item, ctx.challenge),
+      when: 'The learner names another way to sort.',
+      does: 'Shows the empty trays the cards will go into, each with its picture and name. It never says the way to sort: the learner still names it.',
+      fact: 'Under the cards are the empty trays, each with its picture and name.' },
+    { id: ODD_MODEL_LEVER, type: 'custom', modes: ['odd_one_out'], carrier: 'both', answers: ['said_all_belong', 'belonging_card'],
+      why: 'A fixed abstract row (three circles, one square) that shows what "does not belong" means; it is not a solved item of this lesson.',
+      when: 'The learner says they all belong, or names a card that belongs.',
+      does: 'Shows a model row beside the cards: three blue circles and one red square. Point at the model, not the cards. Never say what '
+        + 'any of the learner\'s cards have in common or which one differs: the learner still finds it.',
+      fact: 'Beside the cards is a model row of three blue circles and one red square. It is not these cards.' },
+    { id: THREE_CARDS_LEVER, type: 'easier', modes: ['odd_one_out'], carrier: 'shown', answers: ['belonging_card', 'said_all_belong'],
+      when: 'There are too many cards to compare yet.', does: PRACTICE,
+      content: (item, ctx) => threeCards(item, ctx.challenge) },
+    { id: FOCUS_LEVER, type: 'marks', modes: COUNTS, answers: ['over_by_more', 'one_over'], offer: kindIs('count_group'),
+      when: 'The learner counts more than the group has.', does: 'Dims every tray but the tray asked about. No numbers.',
+      fact: 'Every tray but the tray asked about is dimmed.' },
+    { id: TAP_LEVER, type: 'marks', modes: COUNTS, answers: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      offer: kindIs('count_group'), when: 'The learner\'s count of the group is off.',
+      does: 'Lets the learner tap each picture in the group as they count it; a tapped picture gets a ring. No numbers.',
+      fact: 'The pictures in the tray asked about can be tapped; each tapped picture gets a ring.' },
+    { id: LINE_UP_LEVER, type: 'layout', modes: ['count_compare'], answers: ['other_group', 'said_same', 'bare_more'],
+      offer: kindIs('compare'),
+      when: 'The learner names the group with fewer, says they are the same, or says only "more".',
+      does: 'Lines each group\'s pictures up in a row under its tray picture, a picture per column, both rows from the same left edge. No numbers.',
+      fact: 'Under the trays, each group\'s pictures are in a row, a picture per column, both rows starting at the same left edge.' },
+    { id: FAR_COMPARE_LEVER, type: 'easier', modes: ['count_compare'], carrier: 'shown', answers: ['other_group', 'said_same'],
+      when: 'The two groups are too close to tell apart yet.', does: PRACTICE,
+      content: (item, ctx) => farCompare(item, ctx.challenge) },
+    { id: CHECKS_LEVER, type: 'custom', modes: ['two_attributes'], carrier: 'both', answers: ['one_criterion_only', 'opposite_verdict'],
+      why: 'It adds empty boxes the learner ticks or crosses; nothing on screen is marked for them.',
+      when: 'The learner answers only half the question, or gives the opposite answer.',
+      does: 'Puts an empty box beside each of the two things asked about; the learner taps a box to tick or cross it. '
+        + 'Ask about one thing at a time; the boxes start empty and nothing fills them for the learner.',
+      fact: 'Beside each of the two things asked about is an empty box the learner can tap to tick or cross.' },
+  ],
+});

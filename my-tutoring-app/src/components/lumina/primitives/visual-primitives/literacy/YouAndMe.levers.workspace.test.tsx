@@ -38,11 +38,11 @@ it('hard: both levers change the screen in the commit, name no pronoun, and the 
   const receipt = h.dispatch('pull_lever', { lever: 'speaker_highlight' });
   expect(lit('Leo')).toBe(true);
   expect(lit('Maya')).toBe(false);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/Leo's card is lit/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/Leo's card is lit/);
   h.dispatch('pull_lever', { lever: 'actor_marker' });
   expect(screen.getByRole('img', { name: 'Maya' }).parentElement!.contains(marker(h))).toBe(true);
   expect(marker(h)!.textContent).not.toMatch(/\b(I|you|myself|yourself)\b/i);
-  expect(String(h.state().task!.demand.levers_on_screen)).not.toMatch(/\b(I|you|myself|yourself)\b/i);
+  expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\b(I|you|myself|yourself)\b/i);
   h.say('You packed the bag by yourself.'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true,
     levers: ['speaker_highlight', 'actor_marker'] });

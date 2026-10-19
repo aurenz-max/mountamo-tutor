@@ -1,55 +1,21 @@
 'use client';
 
 /**
- * WordSorter — the tutor says a word and the child says which group it belongs
- * with, or its partner from the printed bank. It runs only on the shared tutor/JEV
- * teaching workspace (workspace rollout C2; the scripted runner was retired, LA-14,
- * user ruling 09-23: one path). The observer judges each spoken answer and the
- * runtime owns progression. An unbound mount shows the shared "needs the tutor"
- * card. There is no advance timer, no Next button and no answer on screen before
- * it is credited.
+ * WordSorter: the tutor says a word and the child says which group it belongs with, or its partner from the printed
+ * bank. It is a boss (`wordSorter.card.ts` + `wordSorter.boss.ts`) on the spoken preset, taught only on the shared
+ * tutor/JEV teaching workspace; an unbound mount shows the shared "needs the tutor" card. The observer judges each
+ * spoken answer and the runtime owns progression: no advance timer, no Next button, and no answer on screen before it
+ * is credited.
  *
- * THE MODALITY, in one exchange:
+ * What stays on the page: the mats, their labels and picture cues (a sort whose groups are not knowable is broken, not
+ * harder); the word card and its emoji (the stimulus, and the pre-reader's way in); the word bank, which never
+ * shrinks, with the tier decoys and the filed-word badges; and tap-to-hear, which asks for the QUESTION again.
  *
- *   "I say a word — you tell me which group it belongs with.
- *    Your turn. Listen: dog. Animals, or Food?"      → "Animals!"
- *   "Yes, dog belongs with Animals."
- *
- * WHAT WENT, AND WHY:
- *  - **Every tap.** The child tapped a bucket, or tapped a term and then its
- *    match. A child who cannot categorise at all could still tap correctly at a
- *    1-in-2 floor, be told instantly it was wrong, and re-tap until it landed —
- *    the tap produced no evidence of the skill, so it is a costume for the
- *    category NAME. All three modes are spoken now (`wordSorterScript.ts`).
- *  - **The shrinking match column.** It CONSUMED its entries, so the last pair
- *    of every challenge had exactly one option left and needed no reading at
- *    all. The bank is now printed whole for the whole challenge; what withdraws
- *    the elimination information is the `showFiledWords` tier lever, which is
- *    what that lever was always for.
- *  - **The Next Challenge button, the attempt badge, the feedback card and the
- *    bucket flash.** Corrections cap in the runner; the moveOn line names the
- *    answer so a capped word never ends up unplaced.
- *  - **Six improvised tutor sends** (`[ACTIVITY_START]`, `[WORD_STAGED]`,
- *    `[WORD_TAP]`, `[ANSWER_INCORRECT]` ×2, `[NEXT_ITEM]`, `[ALL_COMPLETE]`) and
- *    the `tutorRevealPolicy` prose that steered them. The cues carry the entire
- *    spoken surface; the support tier now rides the ASK (whether the groups are
- *    named aloud) instead of a paragraph of improvisation licence.
- *  - **The printed instruction sentence.** The tutor's opening line IS the
- *    instruction now (SWAP-1). Two instruction channels is what the click era
- *    had.
- *
- * WHAT STAYED — the PAGE, never the voice:
- *  - The mats, their labels and their picture cues. A sort whose groups are not
- *    knowable is a broken task, not a harder one.
- *  - The word card and its emoji: the stimulus, and the pre-reader's only way in.
- *  - The word bank, the tier decoys and the filed-word badges.
- *  - Tap-to-hear, which re-speaks the QUESTION and is never withdrawn.
- *
- * Build gates and the asks live in `wordSorterScript.ts`; the workspace assignment
- * and scene in `wordSorterWorkspace.ts`. Nothing in this file writes a spoken line.
+ * The domain (build gates, ask, key, scene) is `wordSorterDomain.ts`; the levers `wordSorterLevers.ts`. Nothing in
+ * this file writes a spoken line.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -61,28 +27,17 @@ import {
   LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import type { PrimitiveEvaluationResult } from '../../../evaluation';
 import type { WordSorterMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useWorkspaceRunner, type TeachingEvaluationResult }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace, useRunnerPip } from '../../../pip/WorkspacePip';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import {
-  itemsFromChallenges,
-  type WordSorterItem,
-  type WordSorterMode,
-  type WordSorterTier,
-} from './wordSorterScript';
-import { hearQuestionRequest, wordSorterAssignment, wordSorterScene } from './wordSorterWorkspace';
-import { aidsOnScreen, leversOnScreen, wordSorterLevers } from './wordSorterLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { wordSorterPipPose } from '../../../pip/wordSorterPipPose';
+import { hearQuestionRequest, wordSorterScene, type WordSorterItem, type WordSorterMode, type WordSorterTier } from './wordSorterDomain';
+import { aidsOnScreen, WORD_SORTER_LEVERS } from './wordSorterLevers';
+import { wordSorterBoss, wordSorterItems } from './wordSorter.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -190,110 +145,57 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300'];
 // ============================================================================
 
 function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterProps) {
-  const {
-    title,
-    gradeLevel = 'K',
-    supportTier,
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+  const items = useMemo(() => wordSorterItems(data), [data]);
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
+          These sorting words are still being written. Try generating them again.
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+  return <SorterWorkspace key={data.instanceId} data={data} items={items} className={className}
+    runtimePlanItemId={runtimePlanItemId} />;
+}
 
+function SorterWorkspace({ data, items, className, runtimePlanItemId }: WordSorterProps & { items: WordSorterItem[] }) {
+  const { title, gradeLevel = 'K' } = data;
   const isPreReader = gradeLevel === 'K';
-  const ctx = useLuminaAIContext();
+  const instance = useRef(data.instanceId || `word-sorter-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
-
-  const stableInstanceIdRef = useRef(instanceId || `word-sorter-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
-  const items = useMemo<WordSorterItem[]>(
-    () => itemsFromChallenges(challenges, { tier: supportTier, isPreReader }),
-    [challenges, supportTier, isPreReader],
-  );
-
-  /**
-   * The affirmed item's reveal payload. Set on the affirm and rendered behind
-   * `runner.revealHeld`, and deliberately never cleared in `onItemOpened` (18b):
-   * a credit that also advances opens the next item in the SAME dispatch, so a
-   * payload cleared there paints on the last item and nowhere else.
-   */
-  const [reveal, setReveal] = useState<{
-    challengeId: string;
-    word: string;
-    answer: string;
-  } | null>(null);
-  /** Every credited item: the only thing that can put a word on a mat. */
-  const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
   // In-item levers (`wordSorterLevers.ts`), keyed by the item they were pulled on.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
-  // ── Evaluation ─────────────────────────────────────────────────────────────
-  const evaluation = usePrimitiveEvaluation<WordSorterMetrics>({
-    primitiveType: 'word-sorter',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
+  const assignments = useMemo(() => items.map(item => ({ ...wordSorterBoss.assignment(item), checkResponse: () => null })), [items]);
+  const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'word-sorter',
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace });
+  useTeachingEvaluation<WordSorterMetrics>({ primitiveType: 'word-sorter', instanceId: instance.current,
+    data, assignments, lesson,
+    metrics: result => ({ type: 'word-sorter', sortingAccuracy: result.accuracy, attemptsCount: result.attemptsCount,
+      wordsProcessed: items.length }) });
 
-  const finish = (summary: TeachingEvaluationResult) => {
-    const metrics: WordSorterMetrics = {
-      type: 'word-sorter',
-      sortingAccuracy: summary.accuracy,
-      attemptsCount: summary.attemptsCount,
-      wordsProcessed: items.length,
-    };
-    evaluation.submitResult(
-      summary.passed,
-      summary.accuracy,
-      metrics,
-      { challengeResults: summary.outcomes, learningResponses: summary.learningResponses,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
-      undefined,
-      summary.diagnosisEvidence,
-    );
-  };
+  const currentItem = items[lesson.state.index];
+  const modeMeta = MODE_META[currentItem.mode];
+  const pulledLevers = leverState.item === currentItem.id ? leverState.pulled : [];
+  /** The item's answer is credited: the reveal ring may paint. A credit that also advances opens the next item in the
+   *  same dispatch, so it never paints there. */
+  const solved = lesson.state.phase === 'checked' && !!lesson.state.lastResponse?.correct;
+  useRunnerPip({ instanceId: instance.current, itemId: currentItem.id, running: lesson.state.phase !== 'completed', solved });
 
-  const runner = useWorkspaceRunner<WordSorterItem>({
-    primitiveId: 'word-sorter',
-    assignment: wordSorterAssignment,
-    items,
-    workspace,
-    objectiveId,
-    planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
-    instanceId: resolvedInstanceId,
-    onFinished: finish,
-    onAffirmed: (item) => {
-      setReveal({ challengeId: item.challengeId, word: item.word, answer: item.answer });
-      setSolvedIds((current) => new Set(current).add(item.id));
-    },
-  });
-
-  const currentItem = runner.currentItem;
-  const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-  const modeMeta = MODE_META[currentItem?.mode ?? 'binary_sort'];
-  const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
-  const filedCount = currentItem
-    ? items.filter(i => i.challengeId === currentItem.challengeId && solvedIds.has(i.id)).length : 0;
+  /** Every credited item: the only thing that can put a word on a mat. Read off the session's own attempts. */
+  const solvedIds = useMemo(() => new Set(lesson.state.attempts.filter(a => a.correct).map(a => a.itemId)),
+    [lesson.state.attempts]);
+  const filedCount = items.filter(i => i.challengeId === currentItem.challengeId && solvedIds.has(i.id)).length;
+  const leverCtx = { filed: filedCount };
 
   // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    const levers = wordSorterLevers(currentItem, pulledLevers, filedCount);
-    const scene = wordSorterScene(currentItem);
-    const onScreen = leversOnScreen(currentItem, pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+    const levers = WORD_SORTER_LEVERS.declare(currentItem, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(wordSorterScene(currentItem), {
+        support: WORD_SORTER_LEVERS.support(currentItem),
+        onScreen: WORD_SORTER_LEVERS.onScreen(currentItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -306,82 +208,38 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
     };
   });
 
-  /** Asks the tutor for the question again: a silent host request, never the answer. */
-  const hearQuestion = useCallback(() => {
-    if (!currentItem) return;
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state onto the word card; Pip never answers,
-  // files a word, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(['word'], () => 'The word card');
-    const pose = wordSorterPipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Word sorter', dock: pip.dock.current, targets, pose };
-  });
-
   /**
-   * The words this challenge has already placed — the surviving `showFiledWords`
-   * lever. Read off the credited ledger, so the only thing that can put a word on
-   * a mat is a committed credit.
+   * The words this challenge has already placed: the `showFiledWords` aid. Read off the credited ledger, so the only
+   * thing that can put a word on a mat is a committed credit.
    */
   const placedByChoice = useMemo(() => {
     const map = new Map<string, WordSorterItem[]>();
-    if (!currentItem) return map;
     for (const item of items) {
-      if (item.challengeId !== currentItem.challengeId) continue;
-      if (!solvedIds.has(item.id)) continue;
+      if (item.challengeId !== currentItem.challengeId || !solvedIds.has(item.id)) continue;
       map.set(item.answer, [...(map.get(item.answer) ?? []), item]);
     }
     return map;
   }, [items, currentItem, solvedIds]);
 
-  /** The mat/bank entry the tutor is affirming right now, for the reveal ring.
-   *  Guarded on the challenge: by render time the surface may already point at
-   *  the next challenge's mats, and highlighting one of those would be wrong. */
-  const revealedChoice =
-    runner.revealHeld && reveal && reveal.challengeId === currentItem?.challengeId
-      ? reveal.answer
-      : null;
+  /** The mat or bank entry just credited, for the reveal ring. */
+  const revealedChoice = solved ? currentItem.answer : null;
 
   // ── Phase summary ─────────────────────────────────────────────────────────
-  const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!runner.practiceSummary) return [];
-    return phaseResultsFromSummary(items, runner.practiceSummary, (item) => ({
-      label: MODE_META[item.mode].label,
-      icon: MODE_META[item.mode].icon,
-      accentColor: MODE_META[item.mode].accent,
-    }));
-  }, [runner.practiceSummary, items]);
+  const summary = lesson.summary;
+  const phaseResults: PhaseResult[] = summary?.outcomes.map(outcome => {
+    const meta = MODE_META[items.find(i => i.id === outcome.id)?.mode ?? 'binary_sort'];
+    return { label: outcome.assisted ? `${meta.label} (with help)` : meta.label, icon: meta.icon, score: outcome.score,
+      attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1, accentColor: meta.accent };
+  }) ?? [];
 
   // ============================================================================
   // Render
   // ============================================================================
 
-  if (items.length === 0) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-8 text-center text-slate-400">
-          These sorting words are still being written. Try generating them again.
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
-
   /** The mats — printed material, never an answer surface. Nothing here is
    *  clickable: the child says the group out loud. */
   // The tier's aids plus the pulled levers.
-  const aids = currentItem ? aidsOnScreen(currentItem, pulledLevers) : null;
+  const aids = aidsOnScreen(currentItem, pulledLevers);
 
   const renderMats = (item: WordSorterItem) => (
     <div className={`grid gap-4 ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
@@ -396,7 +254,7 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
         return (
           <div key={label} className="w-full">
             <div className="mb-3 flex flex-col items-center gap-1">
-              {aids?.showChoiceEmojis && item.choiceEmojis[idx] && (
+              {aids.showChoiceEmojis && item.choiceEmojis[idx] && (
                 <span data-lever="group-picture" className="text-4xl leading-none">{item.choiceEmojis[idx]}</span>
               )}
               <h3
@@ -411,7 +269,7 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
               state={zoneState}
               className="min-h-[104px] pointer-events-none content-center justify-center"
             >
-              {aids?.showFiledWords
+              {aids.showFiledWords
                 ? placed.map((p) => (
                   <LuminaBadge
                     key={p.id}
@@ -474,7 +332,7 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
     const paired = items.filter(
       (i) => i.challengeId === item.challengeId && solvedIds.has(i.id),
     );
-    if (!aids?.showFiledWords || paired.length === 0) return null;
+    if (!aids.showFiledWords || paired.length === 0) return null;
     return (
       <div data-lever="filed-pairs" className="flex flex-wrap justify-center gap-2">
         {paired.map((p) => (
@@ -491,7 +349,7 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!showSummary && !isPreReader && (
+          {!summary && !isPreReader && (
             <LuminaBadge accent={modeMeta.accent} className="text-xs">
               {modeMeta.icon} {modeMeta.label}
             </LuminaBadge>
@@ -500,19 +358,20 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {!showSummary && (
+        {summary ? (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            heading="Word Sorting Complete!"
+            celebrationMessage="Great sorting — you told me every answer out loud!"
+          />
+        ) : (
           <>
             <div className="flex items-center justify-center gap-4">
-              <LuminaChallengeCounter
-                current={Math.min(runner.currentIndex + 1, items.length)}
-                total={items.length}
-                variant="dots"
-              />
-              {/* Tap-to-hear — the question again, never a hint ladder, and
-                  never withdrawn by band or tier. */}
+              <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
+              {/* Tap-to-hear: the question again, never a hint ladder, and never withdrawn by band or tier. */}
               <button
                 type="button"
-                onClick={hearQuestion}
+                onClick={() => lesson.requestHear(hearQuestionRequest(currentItem))}
                 className="flex h-11 w-11 items-center justify-center rounded-full
                   bg-amber-500/15 border-2 border-amber-500/30
                   hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all"
@@ -522,57 +381,34 @@ function WordSorterSurface({ data, className, runtimePlanItemId }: WordSorterPro
               </button>
             </div>
 
-            {currentItem && (
-              <>
-                {/* The stimulus card. The word is the QUESTION in every mode —
-                    the answer is a group name or a bank word — so printing it
-                    leaks nothing, and its picture is the pre-reader's way in. */}
-                <div className="flex justify-center">
-                  <div ref={pip.ref('word')} data-pip-object="word"
-                    className="flex flex-col items-center gap-2 rounded-3xl border-2 border-white/15 bg-white/5 px-10 py-6">
-                    {currentItem.emoji && (
-                      <span className="text-7xl leading-none">{currentItem.emoji}</span>
-                    )}
-                    <span
-                      className={`font-bold text-slate-100 ${
-                        currentItem.emoji ? 'text-2xl' : 'text-4xl'
-                      }`}
-                    >
-                      {currentItem.word}
-                    </span>
-                    <LuminaReadAloudGlyph size={22} speaking={ctx.isAudioPlaying && ctx.activePrimitiveId === resolvedInstanceId} />
-                  </div>
-                </div>
+            {/* The stimulus card. The word is the QUESTION in every mode (the answer is a group name or a bank word),
+                so printing it leaks nothing, and its picture is the pre-reader's way in. */}
+            <div className="flex justify-center">
+              <div data-pip-object="word"
+                className="flex flex-col items-center gap-2 rounded-3xl border-2 border-white/15 bg-white/5 px-10 py-6">
+                {currentItem.emoji && <span className="text-7xl leading-none">{currentItem.emoji}</span>}
+                <span className={`font-bold text-slate-100 ${currentItem.emoji ? 'text-2xl' : 'text-4xl'}`}>
+                  {currentItem.word}
+                </span>
+                <LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} />
+              </div>
+            </div>
 
-                {/* Pip's dock sits between the word card and the mats or bank,
-                    so a pointer to the card never crosses an answer. */}
-                {pipStore && (
-                  <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                    className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-                )}
+            {/* Pip's dock sits between the word card and the mats or bank, so a pointer to the card never crosses an
+                answer. */}
+            <PipDock />
 
-                {currentItem.mode === 'match_pairs' ? (
-                  <div className="space-y-3">
-                    {renderBank(currentItem)}
-                    {renderPaired(currentItem)}
-                  </div>
-                ) : (
-                  renderMats(currentItem)
-                )}
-              </>
-            )}
-
+            <PipWorkspace className="space-y-3">
+              {currentItem.mode === 'match_pairs' ? (
+                <>
+                  {renderBank(currentItem)}
+                  {renderPaired(currentItem)}
+                </>
+              ) : (
+                renderMats(currentItem)
+              )}
+            </PipWorkspace>
           </>
-        )}
-
-        {showSummary && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
-            durationMs={evaluation.elapsedMs}
-            heading="Word Sorting Complete!"
-            celebrationMessage="Great sorting — you told me every answer out loud!"
-          />
         )}
       </LuminaCardContent>
     </LuminaCard>

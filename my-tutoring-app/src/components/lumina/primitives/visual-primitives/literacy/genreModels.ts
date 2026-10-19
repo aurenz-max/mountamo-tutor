@@ -4,7 +4,7 @@
  * this one ___?" and the evidence words (underlined on a card). The evidence is also the clue that tells the kind from
  * its sibling. No text names a kind (`namesAGenre`); every text can be read aloud (`isReadableAloud`).
  */
-import type { GenreId } from './genreExplorerScript';
+import type { GenreId } from './genreExplorerDomain';
 
 export interface GenreModel { kind: GenreId; text: string; predicate: string; evidence: string }
 const m = (kind: GenreId, text: string, predicate: string, evidence: string): GenreModel => ({ kind, text, predicate, evidence });

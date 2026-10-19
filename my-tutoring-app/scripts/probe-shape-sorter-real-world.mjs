@@ -61,9 +61,8 @@ try {
   const runner = createServerModuleRunner(server.environments.ssr, { hmr: false });
   const base = '/src/components/lumina/';
   const { generateShapeSorter } = await runner.import(`${base}service/math/gemini-shape-sorter.ts`);
-  const script = await runner.import(`${base}primitives/visual-primitives/math/shapeSorterScript.ts`);
-  const { checkPackGates } = await runner.import(`${base}hooks/judgedScriptContract.testkit.ts`);
-  const { spokenSpanOf } = await runner.import(`${base}hooks/judgedScriptContract.ts`);
+  const { shapeSorterBoss } = await runner.import(`${base}primitives/visual-primitives/math/shapeSorter.boss.ts`);
+  const { spokenLeaksOf } = await runner.import(`${base}components/live-activity/boss.ts`);
 
   for (const kase of CASES) {
     for (let i = 1; i <= draws; i++) {
@@ -114,18 +113,14 @@ try {
       }
 
       // The judged items must survive the build gate and carry the object.
-      const items = script.itemsFromChallenges(challenges, { isPreReader: true });
-      note(items.length > 0, 'every item was dropped by the script build gate');
+      const lesson = { ...data, challenges, gradeBand: 'K' };
+      const items = shapeSorterBoss.items(lesson);
+      note(items.length > 0, 'every item was dropped by the build gate');
       if (kase.wantReal) {
         note(items.every((it) => !!it.realObject), 'an item lost its object on the way to the tutor');
-        for (const it of items) {
-          const spoken = spokenSpanOf(script.itemCue(it, { opening: true, howToPlay: true })).toLowerCase();
-          note(!new RegExp(`\\b${it.answer}\\b`).test(spoken),
-            `item ${it.id} says the answer "${it.answer}" in its ask`);
-        }
       }
-      const gateFailures = checkPackGates(script.shapeSorterPackBase(items));
-      note(gateFailures.length === 0, `pack gates: ${JSON.stringify(gateFailures)}`);
+      // The boss's ask-leak gate (askLeaks): no ask says its answer.
+      for (const leak of spokenLeaksOf(shapeSorterBoss, lesson)) note(false, leak);
 
       evidence.draws.push({
         label, failures,
@@ -134,7 +129,7 @@ try {
           id: c.id, instruction: c.instruction,
           shapes: (c.shapes ?? []).map((s) => `${s.emoji ?? ''}${s.realObject ?? s.shape}=${s.shape}`),
         })),
-        asks: items.slice(0, 4).map((it) => spokenSpanOf(script.itemCue(it))),
+        asks: items.slice(0, 4).map((it) => shapeSorterBoss.ask(it, lesson)),
       });
       console.log(`${failures.length === 0 ? '✓' : '✗'} ${label}: ${challenges.length} challenge(s), ${failures.length} failure(s)`);
       for (const f of failures.slice(0, 6)) console.log(`    - ${f}`);

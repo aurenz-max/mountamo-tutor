@@ -26,7 +26,7 @@ import {
   isSayableObject,
   optionsEarSeparable,
   opensWithSentinel,
-} from '../../primitives/visual-primitives/math/sortingStationScript';
+} from '../../primitives/visual-primitives/math/sortingStationDomain';
 
 // ============================================================================
 // Eval Mode Docs — one entry per challenge type (kept for eval mode resolution)

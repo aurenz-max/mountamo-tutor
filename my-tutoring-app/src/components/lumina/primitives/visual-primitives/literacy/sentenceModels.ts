@@ -7,7 +7,7 @@
  * M Modifier, DO Direct Object, IO Indirect Object, OP Object of Preposition. A preposition's job is Modifier (its
  * phrase adds detail), as the generator keys it.
  */
-import type { PosLabel, RoleLabel, SentenceTypeLabel } from './sentenceAnalyzerScript';
+import type { PosLabel, RoleLabel, SentenceTypeLabel } from './sentenceAnalyzerDomain';
 
 export interface PoolWord { text: string; pos: PosLabel; role: RoleLabel }
 export interface PoolSentence { sentence: string; words: PoolWord[]; subjectEnd: number | null; kind: SentenceTypeLabel }

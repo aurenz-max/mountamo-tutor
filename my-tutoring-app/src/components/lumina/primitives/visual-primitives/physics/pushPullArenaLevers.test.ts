@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import {
-  EASIER_LEVER, FORCE_MODEL_LEVER, HAND_LEVER, SAME_PUSH_MODEL_LEVER, SETUP_LEVER,
-  arenaLevers, arenaLeversOnScreen, arenaPracticeItem, arenaSessionNames, leverTextLeaks, practiceLeak,
+  ARENA_LEVERS, EASIER_LEVER, FORCE_MODEL_LEVER, HAND_LEVER, SAME_PUSH_MODEL_LEVER, SETUP_LEVER,
+  arenaPracticeItem, arenaSessionNames, leverTextLeaks, practiceLeak,
 } from './pushPullArenaLevers';
-import { FORCE_SCALE_N, FRICTION_MU, itemFromChallenge, type ArenaSurfaceId } from './pushPullArenaScript';
+import { FORCE_SCALE_N, FRICTION_MU, itemFromChallenge, type ArenaSurfaceId } from './pushPullArenaDomain';
 import type { PushPullChallenge } from './PushPullArena';
 import observe from '../../../components/live-activity/runtime/testing/w1-payloads/push-pull-arena.observe.json';
 import predict from '../../../components/live-activity/runtime/testing/w1-payloads/push-pull-arena.predict.json';
@@ -13,6 +13,11 @@ import design from '../../../components/live-activity/runtime/testing/w1-payload
 
 const PAYLOADS = { observe, predict, compare, design } as unknown as Record<string, { data: { challenges: PushPullChallenge[] } }>;
 const ALL_IDS = [HAND_LEVER, FORCE_MODEL_LEVER, SETUP_LEVER, SAME_PUSH_MODEL_LEVER, EASIER_LEVER];
+/** The levers a challenge's item declares in its session, and their scene fact. */
+const arenaLevers = (c: PushPullChallenge, pulled: readonly string[], session: readonly PushPullChallenge[]) =>
+  ARENA_LEVERS.declare(itemFromChallenge(c), { challenges: session }, pulled);
+const arenaLeversOnScreen = (c: PushPullChallenge, pulled: readonly string[], session: readonly PushPullChallenge[]) =>
+  ARENA_LEVERS.onScreen(itemFromChallenge(c), { challenges: session }, pulled);
 
 describe('saved payloads: every item has a lever for its miss, and no lever text leaks', () => {
   it.each(Object.keys(PAYLOADS))('%s', mode => {

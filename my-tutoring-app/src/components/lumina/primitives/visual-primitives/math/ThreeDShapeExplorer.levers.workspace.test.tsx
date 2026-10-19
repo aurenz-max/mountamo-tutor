@@ -78,7 +78,7 @@ it('faces: fewer_faces opens an ungraded count on a solid with fewer flat faces,
   const task = h.state().task!;
   expect(task.itemId).toBe(`${full}~simpler`);
   expect(task.workspace!.practice).toEqual({ returnsTo: full });
-  expect(task.workspace!.expectedAnswer).toMatch(/^two\./);
+  expect(task.workspace!.expectedAnswer).toMatch(/^"two"/);
   expect(q(h, '[data-practice-item]')).toHaveLength(1);
   expect(h.view.container.textContent).toMatch(/cylinder/i);
   expect(task.workspace!.levers ?? []).toEqual([]);

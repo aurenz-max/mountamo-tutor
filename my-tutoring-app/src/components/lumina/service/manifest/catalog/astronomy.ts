@@ -5,7 +5,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { SpokenSolarMiss } from '../../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { solarSystemCard } from '../../../primitives/visual-primitives/astronomy/solarSystem.card';
 import type { ShadowMiss } from '../../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
 import type { PlanetMiss } from '../../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
 import type { ConstellationMiss } from '../../../primitives/visual-primitives/astronomy/constellationWorkspace';
@@ -20,7 +21,10 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     id: 'solar-system-explorer',
     description: 'Interactive solar system model with accurate orbital mechanics, zoom controls, and planet details. Students explore planetary motion, compare sizes and distances, watch orbits in real-time, and discover facts about each celestial body. Features dynamic zoom from full system view down to individual planets, adjustable time scale to speed up orbital motion, and multiple scale modes (size-accurate, distance-accurate, hybrid) to teach the challenge of representing space at scale. Shows the habitable zone (Goldilocks zone) for astrobiology concepts. Includes all 8 planets plus optional dwarf planets (Pluto, Ceres, Eris) for advanced grades. Perfect for K-5 astronomy, NGSS space science standards, and next-generation science education. ESSENTIAL for teaching solar system structure, planetary motion, and scale of space. Assessment runs as LIVE-JUDGED direct instruction: the tutor asks about the sky out loud and the student answers OUT LOUD with a planet\'s name — tapping and zooming stay free as research on the model. Requires a microphone.',
     constraints: 'Best for grades K-5. Learning progression: K (planet names, order, Earth), 1 (inner vs outer, sizes), 2 (orbits, day/year), 3 (moons, rings, AU), 4 (orbital periods, distances), 5 (Kepler\'s laws, gravity, habitable zone). K-2: Show inner planets only or use hybrid scale mode for visibility. 3-5: Include all 8 planets, dwarf planets optional for grade 5. Use initialZoom to control starting view: "inner" for K-1, "system" for 2-5. Enable showDistances and showHabitableZone for grades 3+. Increase timeScale for younger grades (faster = more engaging). Assessment is SPOKEN (DI judged loop, microphone required): every eval mode is answered by saying a planet\'s name to the Live tutor, whose own affirmation advances the session — there is no confirm button, no Next button, and no attempts ladder.',
+    // Live-tutor wiring: `solarSystem.card.ts` + `solarSystem.boss.ts` (the spoken preset); asks, keys and build
+    // gates in `solarSystemDomain.ts`, levers in `solarSystemLevers.ts`.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: ['visualize', 'apply'], minutes: 6 },
+    ...bossEntry(solarSystemCard),
     evalModes: [
       {
         evalMode: 'identify',
@@ -28,11 +32,9 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        // β HELD despite recognition → production: the DI correction models the
-        // name and re-elicits (model–lead–test), so the effective demand at K —
-        // the band this mode serves — is echo-then-own, not cold recall. The
-        // vocabulary the K objective is ABOUT now leaves the child's mouth,
-        // which is the standard, not a difficulty tier.
+        // β HELD despite recognition → production: the vocabulary the K
+        // objective is ABOUT now leaves the child's mouth, which is the
+        // standard, not a difficulty tier.
         description: 'say the name of the planet the model spotlights — planet-name production, judged by the Live tutor',
       },
       {
@@ -60,9 +62,9 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['compare_attribute'],
-        // β HELD — comparison across bodies is the demand either way. The DI
-        // port adds named-pair items (which one is bigger, A or B) beside the
-        // extremes, same skill at the same rung.
+        // β HELD — comparison across bodies is the demand either way. Named-pair
+        // items (which one is bigger, A or B) sit beside the extremes, same
+        // skill at the same rung.
         description: 'say the planet that wins one attribute — biggest, smallest, hottest, most moons, or the bigger of a named pair',
       },
       {
@@ -76,128 +78,7 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         description: 'say the planet by its orbital period — the longest year, the quickest trip, or the faster of a named pair',
       },
     ],
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'LIVE-JUDGED solar system practice (DI modality) under a moving model of the planets: you ask '
-        + 'about the sky with scripted lines sent as cues, the child answers OUT LOUD with a planet\'s '
-        + 'name, you judge what you heard, and your own affirmation is what advances the lesson. '
-        + 'Current challenge type: {{challengeType}} (the special type free_explore means there is no '
-        + 'judged loop — the child is exploring and you follow the FREE EXPLORATION directive instead). '
-        + 'The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ 18d, applied at conversion: no level of this ladder may OFFER a
-      // speakable line of its own. A quoted hint here is a sanctioned-sounding
-      // replacement for the scripted correction at exactly the moment the model
-      // wants one — it opens with neither sentinel, so the engine sees no
-      // verdict and the correction counter stalls. The ladder commands script
-      // fidelity; it never supplies an alternative.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name a planet of your own and never describe one.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction line names the planet and re-asks for you. Never invent encouragement, a new question, or a softer hint.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Long silence',
-          response: 'Silence is the child looking at the sky and thinking — the wait is theirs. If they truly seem stuck, re-speak the current ask once; never answer for them.',
-        },
-        {
-          pattern: 'Names the Sun when a question asks for a planet',
-          response: 'That is wrong, and the scripted correction is how it is taught: speak it exactly. The star/planet line is part of the lesson, not a technicality to wave through.',
-        },
-        {
-          pattern: 'Answers with a description instead of a name ("the red one", "that one")',
-          response: 'A description with no name does not answer the question, so it is wrong: speak the scripted correction, which names the planet and asks again.',
-        },
-        {
-          pattern: 'Taps planets and zooms around while the question is open',
-          response: 'That is the child LOOKING — research on the model, never an answer. Stay silent while they look, and judge only what they say.',
-        },
-        {
-          pattern: 'The same wrong answer comes twice in a row',
-          response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.',
-        },
-        {
-          pattern: 'Thinks the planets are lined up in a row, or as crowded as they look on screen (free exploration only)',
-          response: 'In free exploration, name the trade-off in child words: on screen they sit close and tidy so we can see them, but in real space they are spread all around the Sun, far emptier and almost never in a line. During a judged item, stay with the script and let the scripted lines carry the turn.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — A PLANET\'S NAME, SAID OUT LOUD',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states its own item\'s contract. On every judged type the answer is ONE '
-            + 'planet name spoken aloud — the spotlighted planet\'s name (identify), the planet at a position from the Sun (order-from-sun), '
-            + 'any member of the named category (classify), the winner of an attribute or of a named pair (compare-attribute), or the planet '
-            + 'picked by its trip around the Sun (orbital-reasoning). The cue names the correct answer, the wrong answer most likely to sound '
-            + 'right, and what to accept — judge by that cue and nothing else. A tap on the model is the child LOOKING, never an answer. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another planet, or the next item, '
-            + 'even one you can see on the screen. The next ask always arrives as its own cue.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never describe the sky out loud, and never prompt while the child is looking. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again ([SOLAR_HEAR]). That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer.',
-        },
-        {
-          title: 'FREE EXPLORATION (challenge type free_explore ONLY)',
-          instruction:
-            'When the challenge type is free_explore there is no judged loop and no scripted cues: the child taps planets to hear about them. '
-            + 'On [SOLAR_ORIENT], say in one or two warm child-sized sentences that these are the planets going around our Sun, and that they can tap one to hear about it — that IS your greeting. '
-            + 'On [SOLAR_BODY_SELECTED], say the body\'s name and one short child-sized thing about it. '
-            + 'On [SOLAR_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
-            + 'NEVER speak a measurement to a pre-reader — no kilometres, no AU, no degrees Celsius, no day counts. Say "the biggest one", "really really hot", "it takes a long time to go around" instead. '
-            + 'Scale honesty: this model cannot show size and distance truthfully at once — when a child concludes the planets are crowded together, name the trade-off in child words.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'A live model of the Sun and planets; every answer is one planet name said out loud, computed from the bodies '
-        + 'on screen (classify accepts any one member of the kind). Tapping, zooming or panning is looking, never an answer. '
-        + 'Identify: one planet glows and no planet wears its name, so the name is the whole answer. Pair questions light the '
-        + 'two planets being compared. From Grade 2 a tap opens the card of facts for that planet; a Kindergarten or Grade 1 '
-        + 'learner has no cards and does not read, so say the question aloud. The Sun is a star, not a planet answer. A '
-        + 'colour or "that one" with no name does not answer. Before an attempt never say the answer or describe the '
-        + 'planets for them, and never point them to the ring or place in the sky where the answer is. You cannot move a planet '
-        + 'or mark one yourself; only a pulled lever changes the picture.',
-      // In-item levers (`solarSystemLevers.ts`): star mark, close-up, models beside the sky, size row, fact strip, easier items.
-      levers: true,
-      // Every item is one spoken planet name: its known wrong answers (`solarSpokenMisses`, handoff 20 Part B).
-      misses: missLists<SpokenSolarMiss>({ identify: ['said_sun', 'neighbour_planet', 'other_planet'],
-        order_from_sun: ['said_sun', 'signature_planet', 'other_planet'], classify: ['said_sun', 'signature_planet', 'other_planet'],
-        compare_attribute: ['said_sun', 'signature_planet', 'other_planet'], orbital_reasoning: ['said_sun', 'signature_planet', 'other_planet'] }),
-    },
   },
   {
     id: 'scale-comparator',

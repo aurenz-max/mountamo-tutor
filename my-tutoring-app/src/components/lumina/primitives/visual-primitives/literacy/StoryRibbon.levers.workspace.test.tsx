@@ -36,7 +36,7 @@ it('hard retell: labels and arrows mark the slots, stay by place after a swap, a
   h.say('ball, park, slide'); h.feedback('incorrect', 'retry');
   const receipt = h.dispatch('pull_lever', { lever: 'sequence_labels' });
   expect(labelsBySlot(h)).toEqual(['First', 'Next', 'Last']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/places, not the pictures/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/places, not the pictures/);
   const [a, b] = cards(h);
   h.touch(a); h.touch(b);
   expect(cards(h).slice(0, 2)).toEqual([b, a]);

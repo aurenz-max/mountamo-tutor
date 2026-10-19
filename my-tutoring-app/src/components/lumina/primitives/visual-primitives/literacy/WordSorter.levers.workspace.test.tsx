@@ -34,7 +34,7 @@ it('group_pictures: a picture on every mat in the commit, none marked; the credi
   h.say('dog'); h.feedback('incorrect', 'retry');
   const receipt = h.dispatch('pull_lever', { lever: 'group_pictures' });
   expect(q(h, '[data-lever="group-picture"]').map(e => e.textContent)).toEqual(['🐾', '🍎']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/every group mat/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/every group mat/);
   expect(q(h, '.border-emerald-400\\/40')).toHaveLength(0);
   h.say('Animals'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['group_pictures'] });

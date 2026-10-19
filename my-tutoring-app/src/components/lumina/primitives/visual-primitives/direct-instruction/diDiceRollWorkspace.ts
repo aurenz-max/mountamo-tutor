@@ -9,7 +9,7 @@
  * judging contract carried that is task structure stays in the key: counting aloud that lands on the
  * total is the answer, and a comparison has three answers ("left", "right", "same") in the child's words.
  */
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { DI_DICE_ROLL_MODES } from './diDiceRollModes';
@@ -22,13 +22,13 @@ const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'e
 export const diceAskFor = (item: DiDiceRollChallenge): string => studentPrompt(item);
 
 /** The key the tutor judges with (`spokenKeyText`): the word for the roll, what else counts, and what does not. */
-export function diceKey(item: DiDiceRollChallenge): string {
+export function diceKey(item: DiDiceRollChallenge): SpokenKey {
   if (item.challengeType === 'compare_dice') {
-    return spokenKeyText(item.comparison === 'same'
+    return (item.comparison === 'same'
       ? { answer: 'same', alsoAccept: ['equal', 'a tie', 'they are the same'] }
       : { answer: item.comparison, alsoAccept: [`the ${item.comparison} one`, `the ${item.comparison} die`] });
   }
-  return spokenKeyText({ answer: item.spokenAnswer, alsoAccept: [],
+  return ({ answer: item.spokenAnswer, alsoAccept: [],
     acceptRule: `Counting ${item.challengeType === 'sum_two_dice' ? 'all ' : ''}the dots aloud and ending on ${item.spokenAnswer} is the answer.`,
     signatureError: 'A different number is not the answer, however close it is.' });
 }

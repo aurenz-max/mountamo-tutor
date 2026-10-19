@@ -24,7 +24,7 @@ import {
   challengeAskable,
   ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES,
   REHEARSAL_ORDER_WORDS,
-} from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
+} from '../../primitives/visual-primitives/literacy/oralSentenceStudioDomain';
 import {
   constrainChallengeTypeEnum,
   resolveEvalModes,

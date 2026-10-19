@@ -533,7 +533,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
       || session.getSnapshot().phase !== 'working') return;
     aiRef.current.sendText(facts, { scripted: false, author: 'host' });
   };
-  return { state, item, summary, scored, submitGestureResponse, noteLearner, publishWorkspace, present: () => currentItem().id === item.id && present(),
+  /** A tap-to-hear request (say this card word or this sound, once): silent and host-authored, so it is never a
+   *  learner turn or an answer. The text names question-side audio only. */
+  const requestHear = (text: string) => {
+    if (!mounted.current || !activeRef.current || suspended.current) return;
+    aiRef.current.sendText(text, { silent: true, author: 'host' });
+  };
+  return { state, item, summary, scored, submitGestureResponse, noteLearner, requestHear, publishWorkspace, present: () => currentItem().id === item.id && present(),
     currentItemId: () => currentItem().id,
     canAttempt: active && state.phase === 'working' && !suspended.current,
     isBlocked: () => !mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || session.getSnapshot().phase !== 'working',

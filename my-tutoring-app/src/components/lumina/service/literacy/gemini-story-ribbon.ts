@@ -30,7 +30,7 @@ import {
   challengeAskable,
   isModelSentence,
   isPictureLabel,
-} from '../../primitives/visual-primitives/literacy/storyRibbonScript';
+} from '../../primitives/visual-primitives/literacy/storyRibbonDomain';
 import {
   normalizeSupportTier,
   resolveProblemShape,

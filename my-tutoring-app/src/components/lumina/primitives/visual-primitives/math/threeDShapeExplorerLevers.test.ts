@@ -1,17 +1,24 @@
 /**
- * 3d-shape-explorer levers (`/add-support-tiers` 2026-10-08): the leak rules, the models' exclusions, the simplify
+ * 3d-shape-explorer levers (`/add-support-tiers` 2026-10-08), as its lever set: the leak rules, the models' exclusions, the simplify
  * builder, which lever a named miss gets, and per-item coverage of every checked miss on every saved payload (J12).
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { SHAPE_FACTS, THREE_D_SHAPES, buildThreeDShapeItems, type ThreeDShapeChallengeLike, type ThreeDShapeItem } from './threeDShapeExplorerScript';
-import { threeDShapeAssignment, threeDShapeSpokenMisses } from './threeDShapeExplorerWorkspace';
+import { SHAPE_FACTS, THREE_D_SHAPES, buildThreeDShapeItems, type ThreeDShapeChallengeLike, type ThreeDShapeItem } from './threeDShapeExplorerDomain';
+import { threeDShapeSpokenMisses } from './threeDShapeExplorerDomain';
+import { threeDShapeExplorerBoss } from './threeDShapeExplorer.boss';
 import {
   FEWER_FACES, MODEL_OBJECT, MODEL_PROPERTY, SIMPLER_SUFFIX, catalogModeOf, leverLeak, modelObjectFor, modelPropertyFor,
-  simplerFaces, simplerFromId, startingLevers, threeDShapeLeverFacts, threeDShapeLevers,
+  THREE_D_SHAPE_LEVERS, simplerFaces, simplerFromId, startingLevers,
 } from './threeDShapeExplorerLevers';
+
+/** What the component publishes: the set's levers and facts, with the tier's starting levers drawn. */
+const threeDShapeLevers = (item: ThreeDShapeItem, pulled: readonly string[], items: readonly ThreeDShapeItem[]) =>
+  THREE_D_SHAPE_LEVERS.declare(item, { items }, [...startingLevers(item), ...pulled]);
+const threeDShapeLeverFacts = (item: ThreeDShapeItem, pulled: readonly string[], items: readonly ThreeDShapeItem[]) =>
+  THREE_D_SHAPE_LEVERS.onScreen(item, { items }, [...startingLevers(item), ...pulled]);
 
 const PAYLOADS = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing/w1-payloads');
 const MODES = ['identify_3d', 'match_real_world', '2d_vs_3d', 'faces_properties', 'shape_riddle'];
@@ -147,7 +154,7 @@ describe('fewer_faces builder', () => {
       expect(easier.id).toBe(`${item.id}${SIMPLER_SUFFIX}`);
       expect(easier).toMatchObject({ kind: 'count_property', propertyKey: 'flatFaces', shape3d: to, answer, sourceMode: 'faces-and-properties' });
       expect(SHAPE_FACTS[to].flatFaces).toBeLessThan(SHAPE_FACTS[from].flatFaces);
-      expect(threeDShapeAssignment(easier).expectedAnswer).toMatch(new RegExp(`^${answer}\\.`));
+      expect(threeDShapeExplorerBoss.assignment(easier).expectedAnswer).toMatch(new RegExp(`^"${answer}"`));
       expect(simplerFromId(easier.id, [item])).toEqual(easier);
     });
 

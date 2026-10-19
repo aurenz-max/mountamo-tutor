@@ -34,7 +34,7 @@
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { wordReadingMisses, type WordReadingMiss } from '../literacy/spokenReadingMisses';
 import { diWordReadingModePlan, DI_WORD_READING_MODES, type DiWordReadingChallengeType }
@@ -109,7 +109,7 @@ export interface WordReadingItem extends TeachingItem {
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
   accepted: string;
   /** The spoken key the tutor judges with (`spokenKeyText`): the word, the read that counts, and what does not. */
-  assignment: string;
+  key: SpokenKey;
 }
 
 const nonEmpty = (value: unknown): value is string => typeof value === 'string' && !!value.trim();
@@ -176,13 +176,13 @@ export function askFor(_item?: Pick<DiWordReadingChallenge, 'challengeType'>): s
  *
  * The residual belongs to LA-13, not here: see the adoption report.
  */
-function keyFor(c: DiWordReadingChallenge): string {
+function keyFor(c: DiWordReadingChallenge): SpokenKey {
   const different = 'A different word is not a correct read, however close it sounds (a rhyme too), and letter names are not reading.';
   return isCvc(c)
-    ? spokenKeyText({ answer: c.word, alsoAccept: [],
+    ? ({ answer: c.word, alsoAccept: [],
       acceptRule: 'Saying the separate sounds slowly and then the whole word is a correct read.',
       signatureError: `Stopping at the separate sounds without ever saying the whole word is not a read. ${different}` })
-    : spokenKeyText({ answer: c.word, alsoAccept: [],
+    : ({ answer: c.word, alsoAccept: [],
       acceptRule: 'It is irregular and is recalled whole, so sounding it out letter by letter is not how it is read.',
       signatureError: different });
 }
@@ -206,7 +206,7 @@ export function buildWordReadingItems(challenges: DiWordReadingChallenge[] = [])
     supportTier: c.supportTier ?? 'easy',
     ask: askFor(c),
     accepted: c.word,
-    assignment: keyFor(c),
+    key: keyFor(c),
     answerKind: diWordReadingModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'short_spoken_word',
   }));

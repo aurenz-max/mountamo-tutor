@@ -37,7 +37,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge, type DiShapesChallengeType,
   type DiShapeName, type ShapeExemplar } from './diShapesScript';
-import { shapesAskFor, shapesAssignment, shapesScene } from './diShapesWorkspace';
+import { shapesAskFor, shapesScene } from './diShapesWorkspace';
+import { diShapesBoss } from './diShapes.boss';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
 import { SHAPE_LEVERS, START_MARK, TOUCH_MARKS, modelFor, modelLever } from './diShapesLevers';
 import { DiModelCard } from './DiModelCard';
@@ -266,7 +267,7 @@ export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlan
   const scene = useCallback((item: DiShapesChallenge) => shapesScene(item, builds[item.id] ?? EMPTY_SHAPE_BUILD), [builds]);
   return <DiTeachingStage<DiShapesChallenge, DiShapesMetrics> primitiveId="di-shapes" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={shapesAssignment} scene={scene} copy={COPY} copyFor={copyFor} trail={creditedShapes} recapLabel={recapLabel} levers={levers}
+    assignment={diShapesBoss.assignment} scene={scene} copy={COPY} copyFor={copyFor} trail={creditedShapes} recapLabel={recapLabel} levers={levers}
     stimulus={(item, marks, view) => <ShapeTask key={item.id} item={item} marked={marks.includes('shape')} view={view}
       model={view.practice ? null : modelFor(item, items)} build={builds[item.id] ?? EMPTY_SHAPE_BUILD}
       onBuild={next => setBuilds(prev => ({ ...prev, [item.id]: next }))} />}

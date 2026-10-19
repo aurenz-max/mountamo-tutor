@@ -7,13 +7,13 @@ import type { KnownMiss } from '../../../components/live-activity/runtime/spoken
 import { cvcSpokenMisses } from './cvcSpellerWorkspace';
 import { letterSpotterSpokenMisses } from './letterSpotterWorkspace';
 import { blendSpokenMisses } from './phonicsBlenderWorkspace';
-import { phonemeSpokenMisses } from './phonemeExplorerWorkspace';
+import { phonemeSpokenMisses } from './phonemeExplorerDomain';
 import { rhymeSpokenMisses } from './rhymeStudioWorkspace';
 import { swapSpokenMisses } from './soundSwapWorkspace';
 import { syllableSpokenMisses } from './syllableClapperWorkspace';
 import { flipSpokenMisses } from './wordFlipWorkspace';
 import { wordWorkoutSpokenMisses } from './wordWorkoutWorkspace';
-import { decodableSpokenMisses } from './decodableReaderWorkspace';
+import { decodableSpokenMisses } from './decodableReaderDomain';
 import { interactiveBookSpokenMisses } from './interactiveBookWorkspace';
 import { readAloudSpokenMisses } from './readAloudStudioWorkspace';
 

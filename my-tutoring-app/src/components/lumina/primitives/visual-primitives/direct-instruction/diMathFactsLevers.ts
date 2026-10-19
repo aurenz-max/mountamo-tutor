@@ -30,6 +30,7 @@ import { diMathFactsCard } from './diMathFacts.card';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
 import { buildMathFactItems, type DiMathFactsChallenge, type DiMathFactsChallengeType, type MathFactItem }
   from './diMathFactsDomain';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_LEVER = 'model_fact';
 export const DOTS_LEVER = 'dot_model';
@@ -40,7 +41,6 @@ export const TAKE_ONE_LEVER = 'take_one_away';
 export const DECADE_LEVER = 'inside_decade';
 export const DIGIT_LEVER = 'single_digit';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
 /** The printed numbers of an item, in order, and its operator ('' for a bare numeral). */
 export function factParts(item: Pick<MathFactItem, 'terms' | 'display'>) {

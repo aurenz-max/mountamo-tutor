@@ -28,9 +28,9 @@ const MATCH = { id: 'ch2', type: 'match_pairs', instruction: '', relationLabel: 
 const data = (gradeLevel: string, ...challenges: unknown[]) =>
   ({ title: 'Sorting', gradeLevel, sortingTopic: 'Things', challenges }) as unknown as Record<string, unknown>;
 const BY_MODE: Record<string, { challenge: unknown; key: RegExp }> = {
-  binary_sort: { challenge: SORT, key: /^Animals, the group dog belongs with/ },
-  ternary_sort: { challenge: THREE, key: /^Toys, the group ball belongs with/ },
-  match_pairs: { challenge: MATCH, key: /^small, the opposite of big/ },
+  binary_sort: { challenge: SORT, key: /^"Animals"\. The learner chooses one word from "Animals", "Food";.*"dog" said back/ },
+  ternary_sort: { challenge: THREE, key: /^"Toys"\. The learner chooses one word from "Animals", "Food", "Toys";.*"ball" said back/ },
+  match_pairs: { challenge: MATCH, key: /^"small"\..*"big" said back/ },
 };
 
 it.each(Object.keys(BY_MODE))('%s binds: one spoken answer judged against the key, nothing marked before credit', mode => {

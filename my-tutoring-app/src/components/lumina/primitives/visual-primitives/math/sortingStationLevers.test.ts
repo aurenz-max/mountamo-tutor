@@ -6,9 +6,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { itemsFromChallenge, itemsFromChallenges, type SortingChallengeLike, type SortingStationItem } from './sortingStationScript';
-import { sortingStationSpokenMisses } from './sortingStationWorkspace';
-import { compareCounts, farCompare, showTraysLeak, simplerFromParent, sortingLeverFacts, sortingLevers, threeCards,
+import { itemsFromChallenge, itemsFromChallenges, sortingStationSpokenMisses, type SortingChallengeLike, type SortingStationItem }
+  from './sortingStationDomain';
+import { SORTING_LEVERS, compareCounts, farCompare, showTraysLeak, simplerFromParent, threeCards,
   trayExamples, trayPicturesLeak, type SortingLeverContext } from './sortingStationLevers';
 
 const PAYLOADS = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
@@ -20,6 +20,9 @@ const savedItems = saved.flatMap(p => itemsFromChallenges(p.data.challenges, { i
 const ctx = (challenge: SortingChallengeLike | null, extra: Partial<SortingLeverContext> = {}): SortingLeverContext =>
   ({ challenge, preReader: true, credited: [], ...extra });
 const obj = (id: string, label: string, emoji: string, attributes: Record<string, string>) => ({ id, label, emoji, attributes });
+/** The lever set as the component calls it. */
+const sortingLevers = (item: SortingStationItem, pulled: readonly string[], c: SortingLeverContext) => SORTING_LEVERS.declare(item, c, pulled);
+const sortingLeverFacts = (item: SortingStationItem, pulled: readonly string[]) => SORTING_LEVERS.onScreen(item, ctx(null), pulled);
 
 const SORT: SortingChallengeLike = { id: 'c1', type: 'sort-by-one', sortingAttribute: 'category',
   categories: [{ label: 'Living', bucketEmoji: '🌱' }, { label: 'Non-living', bucketEmoji: '🧱' }],
@@ -116,12 +119,13 @@ describe('simplify builders', () => {
   it('three_cards: three new cards, one odd, same mode, never the item\'s cards or id', () => {
     const odd = first(ODD, 'odd_one');
     const easier = threeCards(odd, ODD)!;
-    expect(easier.item).toMatchObject({ kind: 'odd_one', mode: 'odd-one-out', id: `${odd.id}~simpler` });
-    expect(easier.item.choices).toHaveLength(3);
-    expect(easier.item.choices.map(c => c.toLowerCase())).not.toEqual(expect.arrayContaining([expect.stringMatching(/^(dog|cat|cow|ball)$/)]));
-    expect(easier.item.answer).toBe(easier.item.choices[1]);
-    const odds = easier.challenge.objects!.filter(o => o.attributes!.category !== easier.challenge.objects![0].attributes!.category);
-    expect(odds.map(o => o.label)).toEqual([easier.item.answer]);
+    expect(easier).toMatchObject({ kind: 'odd_one', mode: 'odd-one-out', id: `${odd.id}~simpler` });
+    expect(easier.choices).toHaveLength(3);
+    expect(easier.choices.map(c => c.toLowerCase())).not.toEqual(expect.arrayContaining([expect.stringMatching(/^(dog|cat|cow|ball)$/)]));
+    expect(easier.answer).toBe(easier.choices[1]);
+    const page = easier.practiceChallenge!.objects!;
+    const odds = page.filter(o => o.attributes!.category !== page[0].attributes!.category);
+    expect(odds.map(o => o.label)).toEqual([easier.answer]);
     // Already three cards: the plainest shape, no simplify.
     expect(threeCards({ ...odd, choices: odd.choices.slice(0, 3) }, ODD)).toBeNull();
   });
@@ -130,11 +134,11 @@ describe('simplify builders', () => {
     const compare = first(COMPARE, 'compare');
     expect(compareCounts(compare, COMPARE)).toEqual([3, 2]);
     const easier = farCompare(compare, COMPARE)!;
-    expect(easier.item).toMatchObject({ kind: 'compare', id: `${compare.id}~simpler` });
-    expect(compareCounts(easier.item, easier.challenge).sort()).toEqual([1, 4]);
-    expect(easier.item.answer).not.toBe('the same');
-    expect(easier.item.choices.map(c => c.toLowerCase())).not.toContain('animal');
-    expect(easier.item.choices.map(c => c.toLowerCase())).not.toContain('fruit');
+    expect(easier).toMatchObject({ kind: 'compare', id: `${compare.id}~simpler` });
+    expect(compareCounts(easier, easier.practiceChallenge!).sort()).toEqual([1, 4]);
+    expect(easier.answer).not.toBe('the same');
+    expect(easier.choices.map(c => c.toLowerCase())).not.toContain('animal');
+    expect(easier.choices.map(c => c.toLowerCase())).not.toContain('fruit');
     const wide: SortingChallengeLike = { ...COMPARE, objects: [...COMPARE.objects!, obj('o6', 'Pig', '🐷', { category: 'animal' }),
       obj('o7', 'Goat', '🐐', { category: 'animal' })].filter(o => o.id !== 'o5') };
     expect(farCompare(first(wide, 'compare'), wide)).toBeNull();
@@ -147,8 +151,8 @@ describe('simplify builders', () => {
       const easier = simplerFromParent(item, challenge);
       expect(easier, item.id).not.toBeNull();
       const pageLabels = new Set((challenge.objects ?? []).map(o => o.label.toLowerCase()));
-      expect(easier!.challenge.objects!.some(o => pageLabels.has(o.label.toLowerCase())), item.id).toBe(false);
-      expect(easier!.item.answer.toLowerCase()).not.toBe(item.answer.toLowerCase());
+      expect(easier!.practiceChallenge!.objects!.some(o => pageLabels.has(o.label.toLowerCase())), item.id).toBe(false);
+      expect(easier!.answer.toLowerCase()).not.toBe(item.answer.toLowerCase());
       expect(simplerFromParent(item, challenge)).toEqual(easier);
     }
   });

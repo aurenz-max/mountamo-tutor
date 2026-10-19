@@ -1,7 +1,7 @@
 # Contract: word-sorter
 
 - **Derived:** 2026-09-28 · evidence window: workspace rollout C2 + w1 payloads + `WordSorter.workspace.test.tsx` + git
-- **Component:** `primitives/visual-primitives/literacy/WordSorter.tsx` (workspace only) + `wordSorterScript.ts` (build gates) + `wordSorterWorkspace.ts` + `wordSorterLevers.ts` · **Generator:** `service/literacy/gemini-word-sorter.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`word-sorter`)
+- **Component:** `primitives/visual-primitives/literacy/WordSorter.tsx` (workspace only) + `wordSorter.card.ts` + `wordSorter.boss.ts` (spoken preset) + `wordSorterDomain.ts` (build gates, ask, key, misses, scene) + `wordSorterLevers.ts` (lever set) · **Generator:** `service/literacy/gemini-word-sorter.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`word-sorter`)
 - **Status:** ACTIVE (no open conflicts)
 
 Static derivation for the word-sorter slice of handoff 22 L4.
@@ -12,7 +12,7 @@ Static derivation for the word-sorter slice of handoff 22 L4.
 |---|---|---|---|
 | K-2 categorisation: binary_sort, ternary_sort | catalog evalModes | `literacy.ts` word-sorter entry | live |
 | K-2 word relations: match_pairs (opposite, synonym, plural, rhyme) | catalog evalModes | same | live |
-| Shared teaching workspace + live journey | live + code | `wordSorterWorkspace.ts`; w1 payloads | 2026-09-28 |
+| Shared teaching workspace + live journey | live + code | `wordSorter.boss.ts`; w1 payloads | 2026-10-19 |
 
 ## Requirements
 
@@ -31,6 +31,12 @@ Static derivation for the word-sorter slice of handoff 22 L4.
 - **Probe:** `npm test -- wordSorterLevers WordSorter.levers`.
 
 ## Changelog
+- 2026-10-19 — **Boss migration** (`/add-live-tutor-tools`, PLAN-2026-10-18 wave 1). Card + boss on `spokenBoss`; the key is a
+  `SpokenKey` (a sort that names its groups is a menu key) written by `spokenKeyText`, replacing the hand-written
+  `expectedAnswer`; levers are one `leverSet` (`group_pictures` = `meaning`, `filed_examples` = `custom`), fact key
+  `onScreen`. Deleted: `wordSorterLive.ts`, `wordSorterWorkspace.ts` (folded into the domain), the cue builders in
+  `wordSorterScript.ts` (renamed `wordSorterDomain.ts`), the DI_PORTS row, hand-wired Pip + pose + surface test, the
+  catalog `tutoring` block. R1-R4 unchanged: `npm run test:primitive -- word-sorter` green.
 - 2026-10-13 — **R-WS concept sorts** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-sorter/before.txt`): Animals/Food with cat, dog, pig at every tier; a ternary sort shipped eagle pictured as 🥚 and "feline". After: named animals/food varies its words (egg, snail, tiger… / lobster, bagel, kangaroo…); open sorts easy Body Parts | Home → hard Body Parts | Clothes | Places, Animals | Nature | Toys.
 
 - 2026-09-29 — handoff 28 row 3, WS-2 (`/eval-fix`): the generator skips a sort word whose picture is a group mat's picture, so

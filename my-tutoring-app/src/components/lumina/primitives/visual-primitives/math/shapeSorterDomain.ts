@@ -1,37 +1,20 @@
 /**
- * shapeSorterDomain — what shape-sorter TEACHES, with no teaching engine
- * attached: the geometry table both sides of the wire agree on, the spoken
- * alternates, the build gates that drop an unaskable item, the item builders,
- * and the asks.
- *
- * Sunset slice S1 (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
- * `ShapeSorterTeaching` — the tutor/JEV naming pilot — needs the geometry and
- * the aliases and nothing else, but reaching them through `shapeSorterScript`
- * pulled the sentinel scanner, the correction wording and the pack base into
- * the destination architecture's import graph. The split is by ownership:
- *
- *   - HERE: the task and its validity gates. Which shapes are nameable at
- *     which rotation, which labels are sayable, which options are separable by
- *     ear, what the child is asked, and the harness answer material. The
- *     generator imports its build gates from this module, so both sides of the
- *     wire still agree on what is askable.
- *   - `shapeSorterScript`: the retiring control protocol — affirmation and
- *     correction wording, the two-branch law, the judging contract, the cues.
- *
- * The geometry table stays a single source of truth. `gemini-shape-sorter.ts`
- * and the component both import it from here; a hand-synced copy is what the
- * letter-spotter 90-vs-100 drift was.
+ * shapeSorterDomain — what shape-sorter TEACHES: the geometry table both sides of the wire agree on, the spoken
+ * alternates, the build gates that drop an unaskable item, the item builders, the ask and key, and the known misses.
+ * The generator imports its build gates from here, so both sides agree on what is askable; the boss
+ * (`shapeSorter.boss.ts`) reads the ask, key and misses. A hand-synced copy of the table is what the letter-spotter
+ * 90-vs-100 drift was.
  */
 
 import { type ResponseClassId, type TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberWordFor } from './countingBoardDomain';
 import {
   objectLabelLeaksShape,
   realWorldShapeObjectById,
   type RealWorldShapeObjectId,
 } from '../shared/realWorldShapeObjects';
-import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 // LEGACY PROTOCOL GATE (retires with the sentinel engine at S5): a generated
 // sort label that opens with "Yes" or "My turn" would be read as a verdict by
@@ -265,6 +248,9 @@ export interface ShapeSorterItem extends TeachingItem {
   showCornerHints: boolean;
   /** sort render lever — the running per-mat count of AFFIRMED shapes. */
   showBinCounts: boolean;
+  /** A practice item a simplify lever opened (`shapeSorterLevers.ts`): the one shape it draws, in place of its
+   *  challenge's pool. */
+  practiceShapes?: ShapeSorterShapeLike[];
 }
 
 /** Every mode is SAID. Nothing in this pack answers with its hands: a shape
@@ -880,40 +866,41 @@ export function shapeSorterSpokenMisses(item: ShapeSorterItem): KnownMiss[] {
   ];
 }
 
-/** An item as the tutor and the outcome observer are told it, across every mode this
- *  family binds to the teaching workspace: naming (plain or a real-object drawing),
- *  counting, and sorting into a printed group. */
-export const workspaceAssignment = (item: ShapeSorterItem): TeachingAssignment => {
-  const found = shapeSorterSpokenMisses(item);
-  const misses = found.length ? { misses: found } : {};
-  if (item.mode === 'count') {
-    const noun = countNounOf(item);
-    const alternates = item.countNumeral != null ? [String(item.countNumeral)] : [];
-    return { id: item.id, task: `Count the gold-ringed shape's own ${noun} and say the number.`,
-      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech', ...misses };
-  }
-  if (item.mode === 'sort') {
-    const alternates = item.rule === 'sides' ? [item.answer.split(' ')[0]] : [];
-    return { id: item.id, task: 'Say which printed mat the gold-ringed shape belongs to. Naming the shape itself is not the group.',
-      expectedAnswer: [item.answer, ...alternates].join(' or '), response: 'speech', ...misses };
-  }
-  if (item.realObjectId) {
-    return { id: item.id,
-      task: item.realObject
-        ? `Name the 2D shape the gold-ringed ${item.realObject} is drawn as. Naming the object itself is not the answer.`
-        : 'Name the 2D shape the gold-ringed everyday object is drawn as. Naming the object itself is not the answer.',
-      expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech', ...misses };
-  }
-  return { id: item.id, task: 'Name the shape inside the gold ring. What shape is it?',
-    expectedAnswer: [item.answer, ...item.spokenAlternates].join(' or '), response: 'speech', ...misses };
+/** What the learner is asked on one item, across every mode: naming (plain or a real-object drawing), counting, and
+ *  sorting into a printed group. Never the answer. */
+export const shapeSorterAsk = (item: ShapeSorterItem): string => {
+  if (item.mode === 'count') return `Count the gold-ringed shape's own ${countNounOf(item)} and say the number.`;
+  if (item.mode === 'sort') return 'Say which printed mat the gold-ringed shape belongs to.';
+  if (item.realObjectId) return item.realObject
+    ? `Name the 2D shape the gold-ringed ${item.realObject} is drawn as.`
+    : 'Name the 2D shape the gold-ringed everyday object is drawn as.';
+  return 'Name the shape inside the gold ring. What shape is it?';
 };
 
-/** What is actually drawn for one item. Only the whole objects genuinely visible on
- *  screen are published: `count` and a real-object `identify` show one object alone,
- *  plain `identify` and `sort` show the whole pool with the target ringed, and `sort`
- *  adds the printed mats — labelled at every tier, so every one of them is a legitimate
- *  demonstration target. */
-export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLike[]): WorkspaceScene {
+/** The key the tutor judges one item against (`spokenKeyText` writes its sentence). */
+export function shapeSorterKey(item: ShapeSorterItem): SpokenKey {
+  if (item.mode === 'count') return { answer: item.answer,
+    alsoAccept: item.countNumeral != null ? [String(item.countNumeral)] : [],
+    acceptRule: 'Counting aloud that lands on the right total is right.',
+    signatureError: 'The shape\'s name, or a different number however close, is not the answer.' };
+  if (item.mode === 'sort') {
+    // The mat label IS the property a natural sub-step question asks for ("curved or straight?", "how many sides?").
+    const property = item.rule === 'curved' ? 'whether it is curved or straight' : item.rule === 'sides'
+      ? 'its own side count' : 'its colour';
+    return { answer: item.answer, alsoAccept: item.rule === 'sides' ? [item.answer.split(' ')[0]] : [],
+      acceptRule: `Each mat's label is the shape's ${property}, so stating ${property} names the group.`,
+      signatureError: `The shape's own name (${item.shape}) is not a group.` };
+  }
+  return { answer: item.answer, alsoAccept: item.spokenAlternates,
+    signatureError: item.realObject
+      ? `The object's own name (${item.realObject}) is not the answer, and neither is a close but different shape name.`
+      : 'A colour or a side count is a step, not the name; a close but different shape name (square for a rectangle) is not the answer.' };
+}
+
+/** What is actually drawn for one item. Only the whole objects genuinely visible on screen are published: `count`
+ *  and a real-object `identify` show one object alone, plain `identify` and `sort` show the whole pool with the
+ *  target ringed, and `sort` adds the printed mats — labelled at every tier, so each is a demonstration target. */
+export function workspaceScene(item: ShapeSorterItem, shapes: readonly ShapeSorterShapeLike[]): SceneOf {
   const ringed = 'assignment target (gold ring)', dimmed = 'comparison shape';
   if (item.mode === 'count') {
     const focus = shapes[item.shapeIndex];
@@ -923,9 +910,7 @@ export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLi
         label: `${focus?.size ?? 'medium'} ${focus?.color ?? ''} ${item.shape}, rotated ${focus?.rotation ?? 0} degrees`.replace(/\s+/g, ' ').trim(),
         selected: false, group: ringed }],
       facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, countNoun: countNounOf(item),
-        count: item.countNumeral ?? geometry.sides, cornerHintsShown: item.showCornerHints ? 'yes' : 'no',
-        assignment: `Count the gold-ringed shape's own ${countNounOf(item)} and say the number. Naming the shape is not the answer.`,
-        ringMeaning: 'Gold ring identifies the shape being counted. Purple dashed rings are tutor marks; they never change the target.' },
+        count: item.countNumeral ?? geometry.sides, cornerHintsShown: item.showCornerHints ? 'yes' : 'no' },
     };
   }
   if (item.mode === 'identify' && item.realObjectId) {
@@ -935,9 +920,7 @@ export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLi
         selected: false, group: ringed }],
       facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape,
         targetObject: item.realObject ?? 'unnamed', sides: geometry.sides, corners: geometry.corners,
-        curved: geometry.curved ? 'yes' : 'no',
-        assignment: 'Name the 2D shape the gold-ringed everyday object is drawn as. Naming the object itself is not the answer.',
-        ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+        curved: geometry.curved ? 'yes' : 'no' },
     };
   }
   const poolObjects = shapes.map((shape, index) => ({ id: `shape-${index}`,
@@ -946,17 +929,10 @@ export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLi
   if (item.mode === 'sort') {
     const matObjects = item.choices.map((label, index) => ({ id: `mat-${index}`,
       label: `mat printed "${label}"`, selected: false, group: 'sort mat' }));
-    // The mat label IS the property a natural sub-step question asks for ("curved or
-    // straight?", "how many sides?"), so stating that property already answers the
-    // sort assignment — the learner does not additionally have to say the mat's name.
-    const property = item.rule === 'curved' ? "its curved-or-straight property" : item.rule === 'sides'
-      ? 'its own side count' : 'its color';
     return {
       objects: [...poolObjects, ...matObjects],
       facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, rule: item.rule ?? '',
-        groups: item.choices.join(', '), groupsSpokenInAsk: item.namesChoices ? 'yes' : 'no',
-        assignment: `Say which printed mat the gold-ringed shape belongs to. Each mat's label is the shape's ${property}, so a learner who states ${property} has already named the group — that credits the assignment, and does not need a further question asking them to name the mat too. Naming the shape's own kind (e.g. "triangle") is not the group.`,
-        ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+        groups: item.choices.join(', '), groupsSpokenInAsk: item.namesChoices ? 'yes' : 'no' },
     };
   }
   const focus = shapes[item.shapeIndex];
@@ -965,9 +941,7 @@ export function workspaceScene(item: ShapeSorterItem, shapes: ShapeSorterShapeLi
     objects: poolObjects,
     facts: { targetId: `shape-${item.shapeIndex}`, targetShape: item.shape, color: focus.color,
       rotation: focus.rotation ?? 0, sides: geometry.sides, corners: geometry.corners,
-      curved: geometry.curved ? 'yes' : 'no',
-      assignment: 'Name the gold-ringed shape. Naming a color or counting sides is an intermediate step, not the answer.',
-      ringMeaning: 'Gold ring identifies the assignment. Purple dashed rings are tutor marks; they never change the target.' },
+      curved: geometry.curved ? 'yes' : 'no' },
   };
 }
 
@@ -1032,83 +1006,3 @@ export const shapeSorterHarnessAnswers = (item: ShapeSorterItem) => {
     leakExemptSpan: leakExemptSpanFor(item),
   };
 };
-
-/* ------------------------------------------------------------------ *
- * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
- *
- * Kept beside the correction lines above, because the two answer different
- * things. The correction re-models and STATES the answer, and it fires however
- * the child was wrong. These aids name the misstep and never state the answer —
- * which here means never a SHAPE NAME (the answer on `identify`), never a COUNT
- * (the answer on `count`) and never a GROUP LABEL (the answer on `sort`).
- *
- * Missteps deliberately left to another lane:
- *   - "does not know the shape word yet" — between-item remediation, not an
- *     in-item aid; the correction names it and the next item re-asks.
- *   - "needs the corner dots or the mat counts" — those are render levers of
- *     the support tier (`showCornerHints`, the per-mat tally), a difficulty
- *     axis rather than an error response.
- *   - "counted a curve as a corner" — distinguishing that from a miscount needs
- *     per-feature evidence the adapter does not publish. Publish it first.
- * ------------------------------------------------------------------ */
-
-/** What the child has actually done on this item, as the adapter publishes it. */
-export interface ShapeMisstepEvidence {
-  /** The raw transcript, lower-cased. Null when nothing has been heard. */
-  said: string | null;
-  /** The number the transcript names, or null. */
-  saidNumber: number | null;
-  /** Whether the last committed attempt was judged wrong. */
-  wrongNow: boolean;
-}
-
-export type ShapeScaffold = LiveScaffold<ShapeSorterItem, ShapeMisstepEvidence>;
-
-/** Did the child name one of the groups the ask actually offered? */
-const namedAChoice = (item: ShapeSorterItem, said: string | null) =>
-  !!said && item.choices.some(choice => choice && said.includes(choice.toLowerCase()));
-
-/**
- * One method reminder per mode, and none of them contains a shape name, a count
- * or a group label — each is the answer on one of these three asks.
- */
-const METHOD: Record<ShapeSorterMode, ShapeScaffold> = {
-  identify: { strategyId: 'look-at-its-sides-and-corners', when: 'the child needs the method again',
-    hint: () => 'Trace round the edge of the ringed shape and look at its sides and its corners.' },
-  count: { strategyId: 'start-at-one-and-go-round', when: 'the child needs the method again',
-    hint: () => 'Pick a place to start, then go round the shape the same way and touch each as you count.' },
-  sort: { strategyId: 'what-do-the-mats-ask-for', when: 'the child needs the method again',
-    hint: () => 'Look at what each mat is collecting, then check the ringed shape against them.' },
-};
-
-/**
- * The error-specific aids, offered only once the published evidence fits. Each
- * `when` states the CONDITION, because the model routes on that sentence.
- */
-const AIDS: readonly ShapeScaffold[] = [
-  { strategyId: 'i-asked-for-the-shape-not-the-thing', when: 'the child named the everyday object rather than its shape',
-    hint: () => 'That is what the picture shows. I am asking what shape it is drawn as.',
-    matches: (i, e) => i.mode === 'identify' && !!i.realObject && !!e.said
-      && e.said.includes(i.realObject.toLowerCase()) },
-
-  { strategyId: 'i-asked-for-a-name-not-a-number', when: 'the child answered a shape question with a number',
-    hint: () => 'That is how many. I am asking for the name of the shape.',
-    matches: (i, e) => i.mode === 'identify' && e.saidNumber !== null
-      && !!e.said && !/[a-z]{4,}/.test(e.said.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/g, '')) },
-
-  { strategyId: 'go-round-once-only', when: 'the child was one out on the count',
-    hint: () => 'You are very close. Start again from the same place and go round only once.',
-    matches: (i, e) => i.mode === 'count' && typeof i.countNumeral === 'number'
-      && e.saidNumber !== null && Math.abs(e.saidNumber - i.countNumeral) === 1 },
-
-  { strategyId: 'say-one-of-the-mats', when: 'the child answered with something that is not one of the mats',
-    hint: () => 'Say the name of one of the mats on the table.',
-    matches: (i, e) => e.wrongNow && i.mode === 'sort' && i.namesChoices
-      && i.choices.length > 0 && !!e.said && !namedAChoice(i, e.said) },
-];
-
-/** The mode's method reminder plus every aid whose evidence currently fits. */
-export function shapeScaffoldsFor(item: ShapeSorterItem | null | undefined,
-  evidence: ShapeMisstepEvidence): ShapeScaffold[] {
-  return resolveScaffolds(item, evidence, item ? METHOD[item.mode] : undefined, AIDS);
-}

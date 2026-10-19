@@ -1,4 +1,5 @@
 import { missLists, sameMisses } from './missLists';
+import { bossEntry } from '../../../components/live-activity/boss';
 import type { ArrayMiss } from '../../../primitives/visual-primitives/math/arrayGridWorkspace';
 import type { AddSubMiss, SpokenAddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import type { BarModelMiss, SpokenGraphMiss } from '../../../primitives/visual-primitives/math/barModelWorkspace';
@@ -62,11 +63,11 @@ import type { SpatialMiss } from '../../../primitives/visual-primitives/math/spa
 import type { StrategyPickerMiss } from '../../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFrameLevers';
 import type { SpokenFrameMiss } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
-import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
+import { shapeSorterCard } from '../../../primitives/visual-primitives/math/shapeSorter.card';
+import { threeDShapeExplorerCard } from '../../../primitives/visual-primitives/math/threeDShapeExplorer.card';
 import type { ShapeBuilderMiss } from '../../../primitives/visual-primitives/math/shapeBuilderWorkspace';
 import type { ShapeComposerMiss } from '../../../primitives/visual-primitives/math/shapeComposerWorkspace';
-import type { SpokenSortingMiss } from '../../../primitives/visual-primitives/math/sortingStationWorkspace';
-import type { SpokenSolidMiss } from '../../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
+import { sortingStationCard } from '../../../primitives/visual-primitives/math/sortingStation.card';
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
@@ -4864,117 +4865,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'sorting-station',
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Every answer here is said aloud; nothing is dragged or tapped. At Kindergarten the tray labels are words a '
-        + 'pre-reader cannot read, so name the groups aloud when you ask. On a count or compare item the tray counts stay hidden '
-        + 'until an answer is credited, because they are the answer. You cannot move, sort, mark or count the cards.',
-      // Every item is spoken: its known wrong answers (`sortingStationSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenSortingMiss>({
-        ...sameMisses<SpokenSortingMiss>(['sort_one', 'sort_variety'], ['said_object', 'other_group']),
-        sort_attribute: ['other_rule', 'said_object', 'other_group'],
-        odd_one_out: ['belonging_card', 'said_all_belong'],
-        count_compare: ['one_short', 'one_over', 'short_by_more', 'over_by_more', 'other_group', 'said_same', 'bare_more'],
-        tally_record: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        two_attributes: ['opposite_verdict', 'one_criterion_only'],
-      }),
-    },
+    ...bossEntry(sortingStationCard),
     misconceptionScope: 'primitive',
-    description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks with scripted lines ONE OBJECT AT A TIME, judges the child in-band, and its own affirmation advances the lesson — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
+    description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks ONE OBJECT AT A TIME and judges the spoken answer; the activity moves on once an answer is credited — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
     constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND: all seven modes are Kindergarten-routable. The five Grade-1 floors came down on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port left no printed text on the child\'s path, and the script already forces the groups to be NAMED ALOUD at every tier when the band is Kindergarten, so the five modes were floored against a surface that no longer exists. The K caps that DO bind are the object and bin counts stated above.',
     // reader: 'none' — READY @ PRE for sort_one and odd_one_out after the --fix loop
     // (qa/reader-fit/sorting-station-PRE-2026-07-15.md), and READY @ PRE for the other five
     // on the post-port re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port only
     // REMOVED demand from the child's path (every answer is spoken; no Check button,
     // drag-to-bin, attribute buttons or steppers survive), `isPreReader` in
-    // sortingStationScript.ts forces the options to be named aloud at every tier, and K draws
+    // sortingStationDomain.ts forces the options to be named aloud at every tier, and K draws
     // of all five modes came back picture-primary with speakable one-or-two-word groups.
     // The re-audit the ported surface owed is DONE; the band floors it was gating are gone.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED sorting practice (DI modality): you ask with scripted lines sent as cues, ONE object or ONE group at a time, the child answers OUT LOUD, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
-      // line of its own. A quoted hint here is a sanctioned-sounding replacement
-      // for the scripted correction at exactly the moment 18c makes the model
-      // want one — it opens with neither sentinel, so the engine sees no verdict
-      // and the correction counter stalls. The ladder commands script fidelity;
-      // it never supplies an alternative. The click-era ladder here was the
-      // worst offender in the catalog: its level 3 scripted a whole sorting
-      // dialogue ("Pick up this object — say what it is…"), which is now the
-      // activity's own default interaction and must never be improvised on top.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name a group for the object in question and never say any part of the answer.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction line names the fact and re-asks for you. Never invent encouragement, a new question, a softer hint, or a sorting walkthrough of your own.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Says the object\'s name back instead of naming a group', response: 'That word is the question, not the answer, so it is wrong: speak the scripted "My turn:" correction, which names the group and re-asks.' },
-        { pattern: 'Answers only ONE half of a two-criteria question ("it is a need")', response: 'A true statement about one criterion does not say whether the second holds, so it is wrong: speak the scripted correction, which states both and re-asks.' },
-        { pattern: 'Gives the REASON instead of choosing the odd one out ("they all go together")', response: 'That is the thinking the task wants and it is not the answer to the question asked, so it is wrong: speak the scripted correction, which names the card and re-asks.' },
-        { pattern: 'Counts out loud on the way to a total ("one, two, three")', response: 'That is the child working, not answering. Only the number they FINISH on is their answer — judge that, and count a correct landing as correct.' },
-        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it. '
-            + 'In particular, never announce the whole activity or read out every group before the first ask — the ask names what the child needs.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On a SORT the answer is ONE group name — said plainly, with or without its little words ("need", "the needs", "it is a need" are the same answer). '
-            + 'On PICK-THE-RULE the answer is the way to sort them all, not a description of one object. '
-            + 'On ODD-ONE-OUT the answer is the NAME of the card that does not belong; the reason on its own is not an answer. '
-            + 'On a COUNT the answer is ONE number word, and counting out loud on the way to it is the child working, not answering — only the number they land on counts. '
-            + 'On COMPARE the answer is more, fewer, or the same — a group name is not a comparison. '
-            + 'On TWO-THINGS the answer is YES or NO in any natural form, and answering only one of the two criteria is not an answer. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another object, or the next item, '
-            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong object.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never sort anything out loud, and never prompt while the child is looking. The silence is theirs.',
-        },
-        {
-          title: 'NEVER READ THE SCREEN\'S NUMBERS',
-          instruction:
-            'On a counting question the screen may show the group the child is counting. Never count it aloud, never say how many you can see, '
-            + 'and never describe what is in a tray — the number is the answer and it belongs to the child.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'sort_one',
@@ -5058,31 +4961,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-sorter',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold ring (or the single object shown) fixes the assignment across every mode. Under identify, '
-        + 'accept its listed alternate names and equivalents in other languages; a color or side count is useful progress but not the '
-        + 'naming answer. Under find_real_object, the object\'s own name is never the answer — accept only the 2D shape its outline is '
-        + 'drawn as. Under count, accept counting aloud that lands on the right total; a shape name, or a count one more or one less, '
-        + 'is wrong, and sides and corners are asked separately, never both at once. Under sort, the printed mats are the groups the '
-        + 'learner names; the shape\'s own name is not a group. '
-        + 'Use demonstrate with visible shape or mat IDs to draw purple dashed tutor rings for comparison; [] clears them. Those marks '
-        + 'never change the gold-ringed assignment or move a shape onto a mat. You cannot move, rotate, count, or sort a shape for the learner.',
-      // In-item levers (`shapeSorterLevers.ts`): every miss below has a lever on every saved payload item.
-      levers: true,
-      // Every item is spoken: its known wrong answers (`shapeSorterSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenShapeMiss>({
-        identify: ['near_name', 'other_shape_name'],
-        find_real_object: ['said_object', 'near_name', 'other_shape_name'],
-        count: ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        sort: ['said_shape_name', 'other_group'],
-      }),
-    },
+    ...bossEntry(shapeSorterCard),
     description:
       'LIVE-JUDGED SPOKEN 2D geometry (Direct Instruction). The tutor points to one shape at a time and the '
       + 'student ANSWERS OUT LOUD — naming the shape, saying how many sides or corners it has, or naming the '
-      + 'group it belongs with. The tutor judges the spoken answer from the audio, corrects by re-modelling, and '
-      + 'its own affirmation advances the lesson. Nothing is tapped, dragged or typed. REQUIRES A MICROPHONE. '
+      + 'group it belongs with. The tutor judges the spoken answer and teaches with in-item levers (a solved model, '
+      + 'marks, an easier item); a credited answer advances the lesson. Nothing is tapped, dragged or typed. REQUIRES A MICROPHONE. '
       + 'Teaches Defining vs Non-Defining Attributes; correctness is derived in code from the geometry, never '
       + 'from the model. When the objective asks for shapes in REAL objects or everyday things, the naming pool '
       + 'is drawn as familiar objects instead of bare figures — a clock face, a door, a window, a slice of pizza — '
@@ -5098,142 +4982,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     // reader: 'none' — "Nothing is tapped, dragged or typed" (description) and every answer is
     // spoken (all 3 modes below); no text surface exists for the child to read.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
-    // ── DI MODALITY (2026-08-18) — FIFTH math port, item 18. The tutor owns the
-    // clock: it asks once, waits, judges the spoken answer in-band, and its own
-    // affirmation is the advance. No advance timer, no Next button, no Check,
-    // no push-to-talk mic.
-    // THE FORK HAS NO SPLIT — a shape's name, a count and a group name are all
-    // things a five-year-old says across a table, so all three modes are SPOKEN
-    // and every tap is deleted. Three benched response classes, no new sitting.
-    // WHAT THE COSTUME TEST DELETED: the select-all identify grid (a child who
-    // cannot identify a triangle can tap, read the red ring, and re-tap until it
-    // lands), the side/corner steppers, and the shape-tray-into-bin drag.
-    // WHAT IS NOT A COSTUME AND STAYS: the drawn shapes and the labelled mats.
-    // The screen is the PAGE; it was the ACTION that was the costume.
-    // AND THE MATS ARE LABELLED AT EVERY TIER NOW: blanking them at `hard` was
-    // legal while the answer was a position you could tap, and is an
-    // unanswerable question once the answer is the label said aloud — so that
-    // withdrawal moved into the ASK (the hard tier stops SPEAKING the groups to
-    // a reader; the K band floor always speaks them).
-    // Cue lines, the judging contracts, the geometry table and the build gates
-    // live in `shapeSorterScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. SENTINEL DISCIPLINE (standing gate 2) re-checked on
-    // every line below: no sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction shape work for a young child. You ask one question out loud and the '
-        + 'child answers OUT LOUD. Right now the task identity is "{{challengeType}}" and what is in front of '
-        + 'them is {{stimulus}}. Under "identify" the child SAYS the name of the shape; under "count" the child '
-        + 'SAYS how many sides or corners it has; under "sort" the child SAYS which group it belongs with. You '
-        + 'speak the exact scripted lines from each bracketed application message, you re-ask when the child '
-        + 'asks to hear the question again, and you judge each spoken attempt from the audio you heard using '
-        + 'only the two allowed reply branches. Naming, counting and grouping ARE the skills being practised, '
-        + 'so the child produces every answer — there is nothing to tap, drag, or point at.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory, and every level is a
-      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
-      // hints is a no-verdict stall: on a repeated wrong answer the model
-      // reaches for the sanctioned-sounding alternative and says something that
-      // opens with neither sentinel, so the loop records no verdict at all and
-      // the correction counter freezes (18d, found on number-bond).
-      scaffoldingLevels: {
-        level1: 'Use the scripted correction line for this shape, then hand the question back and wait.',
-        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
-        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
-      },
-      // Observable behaviours only, and every response is a PERFORMABLE script
-      // move: meta-commentary in this field gets recited verbatim to a child.
-      // The first entries are the SIGNATURE errors — the wrong answers that
-      // arrive fluent, confident, and most likely to be affirmed by mistake.
-      commonStruggles: [
-        {
-          pattern: 'Says a near shape name — "rectangle" at a square, "circle" at an oval, "pentagon" at a hexagon',
-          response: 'A different shape name is wrong however close it sounds, and it is the exact error this practice exists to catch. Run the scripted correction, then hand the question back and wait.',
-        },
-        {
-          pattern: 'Says a count that is one more or one less than the true one',
-          response: 'A miscount by one is still a wrong count. Run the scripted correction, then ask once more and wait.',
-        },
-        {
-          pattern: 'Names the SHAPE when asked which group it belongs with — "square" instead of the group',
-          response: 'That is a true thing to say about the drawing and it is still not a group. Run the scripted correction, then hand the question back and wait.',
-        },
-        {
-          pattern: 'Counts out loud on the way to the answer — one, two, three, and then three',
-          response: 'That is a correct answer at this age, not a hesitation: wait for them to finish, judge the number they land on, and affirm it with the scripted line.',
-        },
-        {
-          pattern: 'Says a shape name with young-child pronunciation, or with or without a little word in front',
-          response: 'Those are all the same correct answer — affirm with the scripted line. Naming is what is measured, not diction.',
-        },
-        {
-          pattern: 'Goes quiet after the question, or asks to hear it again',
-          response: 'Silence is a five-year-old looking carefully at a drawing — wait. If they ask, the application sends the re-ask; never volunteer one.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [SHS_ITEM], [SHS_MOVE], [SHS_HEAR] or [SHS_COMPLETE] contain the only lesson words '
-            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket label '
-            + 'is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
-            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
-            + 'from the audio and do not praise to be kind. YOUR VERDICT LINE IS THE END OF YOUR TURN: you never '
-            + 'continue into another question, never ask about another shape, and never announce what is coming. '
-            + 'The application decides which shape comes next and sends it to you when the screen is ready — a '
-            + 'question you ask early is about the wrong shape, and the child then hears it twice.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [SHS_ITEM] carries the greeting, how the game works and the whole first question inside '
-            + 'one quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
-            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (it depends on the identity)',
-          instruction:
-            'Every answer here is SPOKEN, and the [SHS_ITEM] message names the one that is correct. Under '
-            + '"identify" it is the NAME OF THE SHAPE — young-child pronunciation counts, a little word in front '
-            + 'is optional, and where the message says another name is also accepted, it is the same drawing and '
-            + 'you affirm it. Under "count" it is a NUMBER WORD, and counting out loud on the way to it is a '
-            + 'correct route: wait until they stop and judge only the number they finish on. Under "sort" it is '
-            + 'a GROUP NAME: the label alone, with its ending changed, inside a little phrase, or — for a group '
-            + 'like "4 sides" — just the number, are all the same answer. THE LAW: you never say the answer '
-            + 'before the child does, in any identity, at any support level. There is nothing on screen for them '
-            + 'to tap, so never suggest picking, pointing, dragging or showing you anything.',
-        },
-        {
-          title: 'NEVER NAME THE SHAPE BEFORE THEY ANSWER — IT IS THE ANSWER TWICE OVER',
-          instruction:
-            'Under "identify" the name of the shape IS the answer. Under "count" it hands the answer over just '
-            + 'as completely — a child who hears "triangle" knows the count without looking. So before the child '
-            + 'answers, never name the shape and never describe the drawing (how many points it has, whether it '
-            + 'is round), under any identity. When the quoted line names the GROUPS ("Curved, or Straight?"), '
-            + 'that IS the question — a sort whose groups are unknowable cannot be answered at all, so naming '
-            + 'them is never a leak. When the quoted line does NOT name them, they are printed and the student '
-            + 'is expected to read them: say only what is quoted and do not helpfully list them.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not name the '
-            + 'choices again to nudge them. A long pause is a five-year-old looking hard at a drawing or counting '
-            + 'its corners under their breath, and that work IS the activity. Think time is unbounded and the '
-            + 'application, not the clock, decides when to move on.',
-        },
-        {
-          title: 'HEAR IT AGAIN ON DEMAND',
-          instruction:
-            'When you receive [SHS_HEAR], the child asked to hear the question again. Say ONLY the quoted line, '
-            + 'warmly and slowly, then go back to waiting. Add nothing, judge nothing you just heard, and never '
-            + 'let the repeat carry more help than the first asking did: no extra stress on any word, no clue '
-            + 'about the name, the count or the group. This channel is answered at every grade and support tier.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -5290,59 +5038,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: '3d-shape-explorer',
+    ...bossEntry(threeDShapeExplorerCard),
     misconceptionScope: 'primitive',
     description: 'LIVE-JUDGED spoken solid-shape exploration for K-1. The child sees one code-drawn solid or familiar object, or hears one code-owned riddle, and SAYS one answer: a mathematical solid name, flat or solid, one property count, a yes/no property verdict, or a flat-face shape. The Live tutor responds to the answer, teaches the exact misconception after a wrong one, and a credited answer advances the run.',
     constraints: 'Requires a microphone. Every answer is spoken; there are no answer buttons, sorting bins, match grid, property grid, Check, or Next controls. Solids are limited to cube, sphere, cylinder, cone, and rectangular-prism; flat drawings are circle, square, triangle, and rectangle. Geometry facts and riddle clues come from the code-owned truth table. Number answers are 1-20; a zero count is reframed as a yes/no any-question. Compound generated collections fan out to one judged item per answer, capped at four children and six session items. Generated content with unknown names, contradictory dimensions or facts, object-name leaks, or non-unique riddles is discarded.',
     // reader: 'none' — every mode below is already spoken-only ("there are no answer buttons,
     // sorting bins, match grid, property grid, Check, or Next controls").
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED solid-shape practice. Ask only the hand-authored cue, wait for one spoken answer, judge it, and let your own verdict advance. Current challenge type: {{challengeType}}. Question-side screen context: {{stimulus}}. Never read the [CURRENT STATE] heading or its lines aloud.',
-      contextKeys: ['challengeType', 'stimulus'],
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name the hidden solid or property and never offer a second speakable line.',
-        level2: 'After a wrong answer, speak the cue\'s scripted "My turn:" correction exactly. Do not add a hint, alternate question, or praise before or after it.',
-        level3: 'Stay with the script even when the child is stuck. The correction models the geometry and re-asks. Never improvise a walkthrough, count aloud during the child\'s turn, or reveal a candidate.',
-      },
-      commonStruggles: [
-        { pattern: 'Says a flat look-alike instead of a solid name', response: 'Judge it wrong and use only the scripted correction, which contrasts the whole solid with one flat face.' },
-        { pattern: 'Repeats the everyday object name', response: 'That names the stimulus, not its mathematical solid. Use only the scripted correction.' },
-        { pattern: 'Counts one face twice or misses one', response: 'Use only the scripted correction, which models touching each face exactly once.' },
-        { pattern: 'Confuses rolling, sliding, and stacking', response: 'Judge the property actually asked. A true statement about a different movement is still wrong.' },
-        { pattern: 'Long silence', response: 'The child is looking and thinking. Wait. If needed, re-speak the exact current ask once without naming the answer.' },
-      ],
-      aiDirectives: [
-        { title: 'THE SCRIPT OWNS EVERY SPOKEN LINE', instruction: 'The opening cue already contains the greeting, how-to-play, exact ask, exact affirmation, and exact correction. Speak only the quoted line required for this turn. Never replace it with catalog prose or generated instruction text.' },
-        { title: 'TWO-BRANCH LAW', instruction: 'Judge only the learner response. If it is right, speak the exact "Yes," affirmation. If it is wrong, speak the exact "My turn:" correction. There is no hint or partial-credit branch.' },
-        { title: 'THE VERDICT ENDS THE TURN', instruction: 'An affirmation or correction is the whole turn. Stop immediately afterward. Never ask the next item early; its cue arrives separately.' },
-        { title: 'ANSWER MATERIAL', instruction: 'Every item is answered aloud. Shape names must be mathematical names, flat/solid accepts the stated dimensional variants, positive counts are one through twenty, and yes/no accepts the natural variants explicitly listed by the cue. Do not accept an object name, a nearby solid, or a fact about a different property.' },
-        { title: 'NEVER PERFORM THE CHILD\'S WORK', instruction: 'Never name a hidden target, read answer options, count faces aloud during the child\'s turn, or select a candidate from the clues. Think time is unbounded. Bracketed text is stage direction and is never spoken.' },
-        { title: 'CURRENT STATE IS SILENT CONTEXT', instruction: 'Never read [CURRENT STATE], its heading, or any of its lines aloud. It describes the screen only.' },
-      ],
-    },
-    audioInput: { manual_activity: true },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'One solid, flat shape, familiar object or riddle at a time, and every answer is spoken: a solid name, '
-        + 'flat or solid, a property count, yes or no, or the shape of a flat face. Solids are cube, sphere, cylinder, '
-        + 'cone and rectangular prism; the answer is judged against the name or fact you are given. Common misses to '
-        + 'teach from: a flat look-alike for a solid (circle for sphere), the object\'s own name instead of its solid, '
-        + 'the solid\'s name when the face was asked, a count one off, a riddle answer that fits only some clues. '
-        + 'Before an attempt never say the answer. The replay button asks you to repeat the question only. You cannot '
-        + 'rotate or mark the shape yourself; its levers change what is drawn.',
-      // In-item levers (`threeDShapeExplorerLevers.ts`): every miss below has a lever on every saved payload item.
-      levers: true,
-      // Every item is spoken: its known wrong answers (`threeDShapeSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenSolidMiss>({
-        identify_3d: ['flat_look_alike', 'similar_solid', 'other_solid'],
-        match_real_world: ['said_object', 'flat_look_alike', 'similar_solid', 'other_solid'],
-        '2d_vs_3d': ['opposite_dimension', 'said_shape_name'],
-        faces_properties: ['said_other_surface', 'said_all_surfaces', 'one_short', 'one_over', 'short_by_more', 'over_by_more',
-          'opposite_verdict', 'said_solid', 'side_view_shape', 'other_flat_shape'],
-        shape_riddle: ['similar_solid', 'flat_look_alike', 'other_solid'],
-      }),
-    },
     evalModes: [
       {
         evalMode: 'identify_3d',

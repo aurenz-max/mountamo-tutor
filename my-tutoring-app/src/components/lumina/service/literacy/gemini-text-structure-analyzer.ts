@@ -12,7 +12,7 @@ import {
 /**
  * ⚠️ THE BUILD GATES ARE IMPORTED, NEVER COPIED (DI port, 2026-08-16).
  *
- * This generator and `textStructureAnalyzerScript.ts` are the two sides of one
+ * This generator and `textStructureAnalyzerDomain.ts` are the two sides of one
  * wire, and both have to agree on what is sayable, which spans exist in the
  * passage, and what the structure labels ARE. letter-spotter's two sides drifted
  * to 90 vs 100 characters on exactly this question and disagreed live about what
@@ -33,7 +33,7 @@ import {
   optionsEarSeparable,
   STRUCTURE_GLOSS,
   STRUCTURE_LABEL,
-} from '../../primitives/visual-primitives/literacy/textStructureAnalyzerScript';
+} from '../../primitives/visual-primitives/literacy/textStructureAnalyzerDomain';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -416,7 +416,7 @@ const textStructureAnalyzerSchema: Schema = {
  * SP-8: recompute startIndex/endIndex from the passage text — LLMs cannot count
  * characters, so the model is told not to try.
  *
- * ⚠️ THE IMPLEMENTATION MOVED TO `textStructureAnalyzerScript.locateSignalWords`
+ * ⚠️ THE IMPLEMENTATION MOVED TO `textStructureAnalyzerDomain.locateSignalWords`
  * AND GAINED A WORD BOUNDARY (DI port, 2026-08-16). The version that lived here
  * used a bare `indexOf` on the lowercased passage, so the signal word "so"
  * matched inside "also" and "before" inside "beforehand" — the highlight landed
@@ -801,7 +801,7 @@ Rules:
      * target string, so it cannot be authored per generation: one
      * "Cause/Effect Relationship" and the ask is unsayable, one "Sequence of
      * Events" beside "Order of Events" and no utterance has an honest home. The
-     * five labels are owned by `textStructureAnalyzerScript` and derived from
+     * five labels are owned by `textStructureAnalyzerDomain` and derived from
      * the `type` enum, which makes ear-separability true by construction over a
      * set of five we control.
      *

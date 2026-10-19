@@ -7,8 +7,15 @@ import { NEAR_SHAPE, SHAPE_PROPERTIES, VALID_SHAPES, itemsFromChallenges, nameCl
 import {
   FEWER_MATS, FEWER_SIDES, MAT_PICTURES, MODEL_COUNT, MODEL_OBJECT, MODEL_SHAPE, OUTLINE_ONLY, PLAIN_DRAWING, SIDE_TICKS,
   START_MARK, TOUCH_MARKS, catalogModeOf, droppedMat, isTurned, matPicture, modelCountFor, modelObjectFor, modelShapeFor,
-  shapeLeaks, shapeSorterLeverFacts, shapeSorterLevers, simplerFromId, simplerShape,
+  SHAPE_SORTER_LEVERS, shapeLeaks, simplerFromId, simplerShape, startingLevers,
 } from './shapeSorterLevers';
+import type { ShapeSorterShapeLike } from './shapeSorterDomain';
+
+/** The lever set as the component calls it: the tier's starting levers count as on screen. */
+const shapeSorterLevers = (item: ShapeSorterItem, pulled: readonly string[], items: readonly ShapeSorterItem[],
+  shapes: readonly ShapeSorterShapeLike[]) => SHAPE_SORTER_LEVERS.declare(item, { items, shapes }, [...startingLevers(item), ...pulled]);
+const shapeSorterLeverFacts = (item: ShapeSorterItem, pulled: readonly string[], items: readonly ShapeSorterItem[]) =>
+  SHAPE_SORTER_LEVERS.onScreen(item, { items, shapes: [] }, [...startingLevers(item), ...pulled]);
 
 const PAYLOADS = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
 const payload = (mode: string) => JSON.parse(readFileSync(join(PAYLOADS, `shape-sorter.${mode}.json`), 'utf-8')).data as {

@@ -5,12 +5,15 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { buildThreeDShapeItems, type ThreeDShapeChallengeLike } from './threeDShapeExplorerScript';
-import { threeDShapeAssignment, threeDShapeSpokenMisses } from './threeDShapeExplorerWorkspace';
-import { itemsFromChallenges as shapeItems } from './shapeSorterScript';
-import { shapeSorterSpokenMisses, workspaceAssignment as shapeAssignment, type ShapeSorterChallengeLike } from './shapeSorterDomain';
-import { itemsFromChallenges as sortingItems } from './sortingStationScript';
-import { sortingStationSpokenMisses, workspaceAssignment as sortingAssignment } from './sortingStationWorkspace';
+import { buildThreeDShapeItems, type ThreeDShapeChallengeLike } from './threeDShapeExplorerDomain';
+import { threeDShapeSpokenMisses } from './threeDShapeExplorerDomain';
+import { threeDShapeExplorerBoss } from './threeDShapeExplorer.boss';
+import { itemsFromChallenges as shapeItems, shapeSorterSpokenMisses, type ShapeSorterChallengeLike } from './shapeSorterDomain';
+import { shapeSorterBoss } from './shapeSorter.boss';
+
+const shapeAssignment = shapeSorterBoss.assignment;
+import { itemsFromChallenges as sortingItems, sortingStationSpokenMisses } from './sortingStationDomain';
+import { sortingStationBoss } from './sortingStation.boss';
 
 const PAYLOADS = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing/w1-payloads');
 const payload = (file: string) => JSON.parse(readFileSync(join(PAYLOADS, `${file}.json`), 'utf-8')).data;
@@ -45,7 +48,7 @@ describe('threeDShapeSpokenMisses', () => {
   it.each(['identify_3d', '2d_vs_3d', 'match_real_world', 'faces_properties', 'shape_riddle'])('%s payload: no example is accepted', mode => {
     for (const item of buildThreeDShapeItems(payload(`3d-shape-explorer.${mode}`).challenges).items) {
       const ok = accepted(item.answer, item.spokenAlternates);
-      const { misses } = threeDShapeAssignment(item);
+      const { misses } = threeDShapeExplorerBoss.assignment(item);
       expect(misses?.length, item.id).toBeGreaterThan(0);
       for (const m of misses ?? []) for (const e of m.examples ?? []) expect(ok.has(e.toLowerCase()), `${item.id} ${m.id} "${e}"`).toBe(false);
     }
@@ -95,7 +98,7 @@ describe('sortingStationSpokenMisses', () => {
           expect(found).toEqual(OFF.filter(id => item.answerValue! > 1 || (id !== 'one_short' && id !== 'short_by_more'))
             .filter(id => item.answerValue! > 2 || id !== 'short_by_more'));
         } else expect(found, item.id).toEqual(kinds[item.kind]);
-        for (const m of sortingAssignment(item).misses ?? []) {
+        for (const m of sortingStationBoss.assignment(item).misses ?? []) {
           for (const e of m.examples ?? []) expect(e.toLowerCase(), `${item.id} ${m.id}`).not.toBe(item.answer.toLowerCase());
         }
       }

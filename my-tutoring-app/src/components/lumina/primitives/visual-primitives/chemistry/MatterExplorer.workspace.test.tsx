@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Matter explorer on the teaching workspace: what is its own, plus its Pip surface. The generic
+ * Matter explorer on the teaching workspace: what is its own (Pip is the shared contract, pip/WorkspacePip.surface.test.tsx). The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -14,7 +14,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -35,10 +34,10 @@ const CHALLENGES = {
   change: { id: 'change-egg', type: 'change', instruction: 'Can it go back?', objectId: 'egg' },
   mystery: { id: 'mystery-air', type: 'mystery', instruction: 'Guess the state.', objectId: 'air' },
 } as const;
-const KEYS: Record<string, RegExp> = { sort: /^solid\./, property: /^it takes the shape of the cup\./, change: /^it is changed for ever\./, mystery: /^gas\./ };
+const KEYS: Record<string, RegExp> = { sort: /^"solid"/, property: /^"the cup"/, change: /^"for ever"/, mystery: /^"gas"/ };
 const data = (...challenges: unknown[]): Record<string, unknown> => ({ title: 'Matter', objects: OBJECTS, challenges, gradeBand: 'K-1' });
-const mount = (d: Record<string, unknown>, mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'matter-explorer', evalMode: mode, data: d, instanceId: 'matter', pipStore });
+const mount = (d: Record<string, unknown>, mode: string) =>
+  mountWorkspace({ primitiveId: 'matter-explorer', evalMode: mode, data: d, instanceId: 'matter' });
 
 it.each(Object.keys(CHALLENGES))('%s binds: the code-computed answer is the spoken key', mode => {
   const d = data(CHALLENGES[mode as keyof typeof CHALLENGES]);
@@ -76,15 +75,6 @@ it('the state badge waits for credit; right answers complete once', async () => 
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ sortingCorrect: 1, sortingTotal: 1, changesJudged: 1, changesTotal: 1 });
-});
-
-it('Pip outlines the bench and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('matter');
-  const h = mount(data(CHALLENGES.sort), 'sort', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('solid'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable', () => {

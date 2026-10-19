@@ -82,7 +82,7 @@ it('shortest_year: two_planets opens an ungraded pair race, then the full sky co
   const task = h.state().task!;
   expect(task.itemId).toBe('ssc-2~simpler');
   expect(task.workspace!.practice).toEqual({ returnsTo: 'ssc-2' });
-  expect(task.workspace!.expectedAnswer).toMatch(/^Venus\./);
+  expect(task.workspace!.expectedAnswer).toMatch(/^"Venus"\./);
   expect(h.offer('pull_lever')).toBeUndefined();
   expect(spotlit()).toEqual(['neptune', 'venus']);
   expect(drawn(h, 'trip-model')).toHaveLength(0);
@@ -118,6 +118,6 @@ it('position: first_ring brightens the first ring only; fewer_rings asks a neare
   expect(Number(ring[0].getAttribute('r'))).toBeCloseTo(0.39 * 180);
   h.dispatch('pull_lever', { lever: 'fewer_rings' });
   expect(h.state().task!.itemId).toBe('ssc-3~simpler');
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^Earth\./);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"Earth"\./);
   expect(drawn(h, 'first-ring')).toHaveLength(0);
 });

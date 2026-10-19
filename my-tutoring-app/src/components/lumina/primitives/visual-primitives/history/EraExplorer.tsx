@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * EraExplorer — runs only on the shared tutor/JEV teaching workspace (workspace
- * rollout C8; the scripted runner was retired, LA-14, user ruling 09-23: one path).
- * The observer judges each spoken pick and the runtime owns progression. There is
+ * EraExplorer — wired to the live tutor by its boss (`eraExplorer.card.ts` +
+ * `eraExplorer.boss.ts`, the spoken preset); it runs only on the shared tutor/JEV
+ * teaching workspace. The observer judges each spoken pick and the runtime owns progression. There is
  * no Next or Check button, no mic panel, and no answer on screen before credit. An
  * unbound mount shows the shared "needs the tutor" card; the adapter refuses a
  * lesson with no askable challenge.
@@ -25,7 +25,7 @@
  *    owns progression, so neither has anything to advance.
  *  - tap-to-hear the question: with the tutor present, the learner asks it to repeat.
  *  - the HINT DISCLOSURE — a hint the child dispenses to themselves is not a
- *    scaffold the tier can withdraw; the scripted correction re-models instead.
+ *    scaffold the tier can withdraw; the levers (`eraExplorerLevers.ts`) help instead.
  *  - the EXPLANATION under the choices — it names the answer, so it is a
  *    reveal, and reveals ride `runner.revealHeld` (18b).
  *
@@ -37,12 +37,10 @@
  * statement or an option. `lensAccess: 'collapsible'` still folds it away between items at the
  * hard tier — the one L3 lever that survives as a render lever.
  *
- * Asks and build gates live in `eraExplorerScript.ts`; the assignment and scene
- * the tutor receives live in `eraExplorerWorkspace.ts`.
+ * Asks, build gates, the key and the scene live in `eraExplorerDomain.ts`.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -69,18 +67,22 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   correctChoiceOf,
+  eraItems,
+  eraScene,
+  hearCardRequest,
   type EraExplorerItem,
   type EraKind,
   type EraTier,
-} from './eraExplorerScript';
-import { eraAssignment, eraItems, eraScene, hearCardRequest } from './eraExplorerWorkspace';
+} from './eraExplorerDomain';
 import {
-  MODEL_CHANGE_LEVER, MODEL_TAGS, SIDE_BY_SIDE_LEVER, TWO_CHECKS_LEVER,
-  changeModelFor, eraLeverSession, eraLevers, leversOnScreen, practiceItem, startingLevers, twoChecksFor,
+  ERA_LEVERS, MODEL_CHANGE_LEVER, MODEL_TAGS, SIDE_BY_SIDE_LEVER, TWO_CHECKS_LEVER,
+  changeModelFor, eraLeverSession, startingLevers, twoChecksFor,
 } from './eraExplorerLevers';
+import { eraExplorerBoss } from './eraExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -99,10 +101,10 @@ export type EraChallengeType = EraKind;
 
 /**
  * Within-mode support tier. Second field of the two-field contract: the eval
- * mode says WHICH historian move, this says HOW MUCH help inside it. Since the
- * port, three of its six levers are SPOKEN (the model line, the guide line, the
- * plain-language half of each menu phrase) and one is still rendered
- * (`lensAccess`). Set by the generator from `config.difficulty`.
+ * mode says WHICH historian move, this says HOW MUCH help inside it: where the
+ * levers start (`startingLevers`, eraExplorerLevers.ts), when the model comes
+ * (the lever set's `support`), and `lensAccess`. Set by the generator from
+ * `config.difficulty`.
  */
 export type EraSupportTier = EraTier;
 
@@ -144,8 +146,7 @@ export interface EraExplorerChallenge {
   correctIndex: number;
   /** Why that answer is right — rendered behind `revealHeld`, never spoken. */
   explanation: string;
-  /** Which lens to re-read. Retained on the payload; the judged loop's scripted
-   *  correction re-models the rule instead of naming a lens. */
+  /** Which lens to re-read. Retained on the payload; nothing names a lens before credit. */
   lensHint?: string;
 
   // ---- Support tier (generator-side; see EraSupportTier) ----
@@ -437,7 +438,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
 
   const runner = useWorkspaceRunner<EraExplorerItem>({
     primitiveId: 'era-explorer',
-    assignment: eraAssignment,
+    assignment: eraExplorerBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -464,7 +465,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
   const sessionItem = runner.currentItem;
   const shownItem = practice ?? sessionItem;
-  const starting = practice ? [] : startingLevers(supportTier, sessionItem);
+  const starting = practice || !sessionItem ? [] : startingLevers(sessionItem.tier, sessionItem);
   const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
   const leverOn = (id: string) => !practice && (starting.includes(id) || pulledLevers.includes(id));
   const sideBySide = leverOn(SIDE_BY_SIDE_LEVER);
@@ -472,18 +473,17 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   const checks = sessionItem && leverOn(TWO_CHECKS_LEVER) ? twoChecksFor(sessionItem, session) : null;
   const changeModel = sessionItem && leverOn(MODEL_CHANGE_LEVER) ? changeModelFor(sessionItem, session) : null;
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!sessionItem || !shownItem) return;
-    const scene = eraScene(shownItem, data, sourceVisible, isPreReader);
-    const levers = practice ? [] : eraLevers(sessionItem, session, pulledLevers, starting);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, [...starting, ...pulledLevers], session);
+    const scene = eraScene(shownItem, data, { cardsOpen: sourceVisible, readsAloud: isPreReader, practice: !!practice });
+    // No lever on a practice item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : ERA_LEVERS.declare(sessionItem, session, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item, ungraded: its detail is copied word for word from one era card. '
-          + 'The full item comes back after it.' } : {}) },
+      ...leverScene(scene, {
+        support: practice ? '' : ERA_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : ERA_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -491,10 +491,10 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, session);
+          const easier = ERA_LEVERS.simpler(sessionItem, session, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier);
-          return { practice: eraAssignment(easier) };
+          return { practice: eraExplorerBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -504,14 +504,10 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The statement', finished: showSummary,
-  });
 
   // ── The source read-aloud: a silent host request, never a choice ──────────
-  const ctx = useLuminaAIContext();
   const readLens = (lens: EraLens) => {
-    if (lens?.body) ctx.sendText(hearCardRequest(lens.title, lens.body), { silent: true, author: 'host' });
+    if (lens?.body) runner.requestHear(hearCardRequest(lens.title, lens.body));
   };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -586,14 +582,17 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
             {/* THE STATEMENT. The question side, printed for a reader and read
                 aloud for everyone — no bins under it, no captions, no hint, no
                 explanation until the answer is credited. */}
-            {pip.store && <div {...pip.dock} />}
+            {/* Every answer is spoken: Pip outlines the statement as a whole and never a choice. */}
+            <PipDock />
             {practice && !showReveal && (
               <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
             )}
             {staged && (
-              <LuminaPrompt {...pip.target('stimulus')} accent="amber" center>
-                {staged.statement}
-              </LuminaPrompt>
+              <PipWorkspace>
+                <LuminaPrompt data-pip-object="stimulus" accent="amber" center>
+                  {staged.statement}
+                </LuminaPrompt>
+              </PipWorkspace>
             )}
 
             {/* The help lever `two_checks`: two EMPTY checks under the detail. Nothing ever ticks them. */}

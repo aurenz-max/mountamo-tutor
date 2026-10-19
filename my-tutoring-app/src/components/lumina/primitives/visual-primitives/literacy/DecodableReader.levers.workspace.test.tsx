@@ -34,7 +34,7 @@ it('the underline and dots mark the line in one commit, nothing said; the next r
   const receipt = h.dispatch('pull_lever', { lever: 'sound_dots' });
   expect(q(h, '[data-sound-dot]').length).toBeGreaterThanOrEqual(12);
   expect(seam.send.mock.calls.length).toBe(sent);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/\bcat\b|\bmat\b/);
+  expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/\bcat\b|\bmat\b/);
   expect(Array.from(q(h, '[data-print-word]')).map(w => w.textContent).join(' ')).toBe('The cat sat on the mat.');
   h.say('The cat sat on the mat.'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['tracking_underline', 'sound_dots'] });
@@ -95,8 +95,8 @@ it('read-along: the region is refused before a try and changes nothing; after a 
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-lever="story-region"] p').map(p => p.textContent)).toEqual(['The fat cat sat on a mat.', 'A rat ran to the mat.']);
   expect(q(h, '[data-lever="story-region"] span, [data-lever="story-region"] mark')).toHaveLength(0);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/two sentences of the story/);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/\bcat\b/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/two sentences of the story/i);
+  expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/\bcat\b/);
   h.say('cat'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['story_region'] });
   h.close();

@@ -36,7 +36,7 @@
  *      accurate. A near-miss word is never accepted, however close it sounds.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { lineReadingMisses } from '../literacy/spokenReadingMisses';
@@ -116,7 +116,7 @@ export interface SentenceReadingItem extends TeachingItem {
   /** The accepted answer, the exact sentence, for comparing a tutor's affirmation against. */
   accepted: string;
   /** The success condition in full, for the tutor's scene facts. */
-  assignment: string;
+  key: SpokenKey;
 }
 
 /**
@@ -153,8 +153,8 @@ export function askFor(): string {
  * SAME judging criteria (the class the standing-gate sitting benched); what
  * differs between them is which sentences are drawn, not how a read is judged.
  */
-function keyFor(c: DiSentenceReadingChallenge): string {
-  return spokenKeyText({ answer: sentenceText(c), alsoAccept: [],
+function keyFor(c: DiSentenceReadingChallenge): SpokenKey {
+  return ({ answer: sentenceText(c), alsoAccept: [],
     acceptRule: 'Catching and fixing their own slip mid-read still counts as an accurate read. Slow, effortful '
       + 'sounding-out that lands on the right words is correct; speed is never judged.',
     signatureError: 'Every word must be read, in order: a word skipped, added, or read as a different word is a miss, '
@@ -178,7 +178,7 @@ export function buildSentenceReadingItems(challenges: DiSentenceReadingChallenge
     emoji: c.emoji ?? '',
     ask: askFor(),
     accepted: sentenceText(c),
-    assignment: keyFor(c),
+    key: keyFor(c),
     answerKind: diSentenceReadingModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'sentence_read_aloud',
   }));

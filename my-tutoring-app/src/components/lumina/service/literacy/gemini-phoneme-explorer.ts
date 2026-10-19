@@ -39,7 +39,7 @@ import { phonemeSpace } from '../wordSpace/phonemeSpaces';
 // live tutor in-band. Only the MENU modes (`isolate`, `ending`, `medial`) carry 4 choices
 // — they are the on-screen MENU (the question side, unmarked); the other three
 // modes emit the ANSWER as a field and no choices at all.
-// `phonemeExplorerScript.ts` owns the leak/sayability gates that drop an item
+// `phonemeExplorerDomain.ts` owns the leak/sayability gates that drop an item
 // the tutor could not honestly ask.
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   isolate: {
@@ -1052,7 +1052,7 @@ export const generatePhonemeExplorer = async (
 // Validation — KEEP or DROP, never backfill. (The old validators patched
 // malformed challenges with "word"/"???" placeholders; in a judged spoken loop
 // a fabricated item becomes a spoken ask the tutor must then judge, so a
-// challenge that arrives broken ships nothing. `phonemeExplorerScript.ts`'s
+// challenge that arrives broken ships nothing. `phonemeExplorerDomain.ts`'s
 // itemFromChallenge runs the same gates again component-side — belt and
 // suspenders on two sides of the wire.)
 // ---------------------------------------------------------------------------

@@ -102,7 +102,7 @@ function useSandboxRun(options: RampRunOptions): RampRun {
     stage: 'asking', currentSolved: false, canAttempt: true, revealHeld: false, practice: false, tutorSpeaking: false, cuedItemId: '',
     summary: null, practiceSummary: null, teachingResult: null, start: async () => {}, isAwaitingGesture: () => false,
     armStillness: () => {}, clearStillness: () => {}, commitGesture: () => {}, presentStimulus: () => false,
-    publishWorkspace: () => {}, submitGestureAttempt: () => { throw new Error('The sandbox grades nothing'); },
+    publishWorkspace: () => {}, requestHear: () => {}, submitGestureAttempt: () => { throw new Error('The sandbox grades nothing'); },
     micState: 'armed', statusLine: '', cancelListening: () => {} };
 }
 

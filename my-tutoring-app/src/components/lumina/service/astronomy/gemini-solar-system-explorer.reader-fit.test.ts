@@ -62,59 +62,14 @@ describe('solar-system-explorer — reader-fit scaffold + fallback grade rung', 
     });
   });
 
-  describe('catalog tutoring scaffold', () => {
+  describe('catalog wiring', () => {
     const entry = ASTRONOMY_CATALOG.find((c) => c.id === 'solar-system-explorer')!;
 
-    it('exists and has a tutoring block (was the SCAFFOLD-GAP)', () => {
-      expect(entry).toBeDefined();
-      expect(entry.tutoring).toBeDefined();
-    });
-
-    it('defines all three scaffolding levels and common struggles', () => {
-      expect(entry.tutoring!.scaffoldingLevels.level1).toBeTruthy();
-      expect(entry.tutoring!.scaffoldingLevels.level2).toBeTruthy();
-      expect(entry.tutoring!.scaffoldingLevels.level3).toBeTruthy();
-      expect(entry.tutoring!.commonStruggles!.length).toBeGreaterThanOrEqual(3);
-    });
-
-    it('forbids speaking measurements to a pre-reader (free-exploration face)', () => {
-      const explore = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /FREE EXPLORATION/i.test(d.title))!;
-      expect(explore).toBeDefined();
-      expect(explore.instruction).toMatch(/that IS your greeting/i);
-      expect(explore.instruction).toMatch(/NEVER speak a measurement/i);
-      expect(explore.instruction).toMatch(/kilometres|AU|Celsius/i);
-    });
-
-    it('carries scale honesty — the model cannot show size and distance truthfully at once', () => {
-      const explore = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /FREE EXPLORATION/i.test(d.title))!;
-      expect(explore.instruction).toMatch(/trade-off/i);
-      const struggles = JSON.stringify(entry.tutoring!.commonStruggles);
-      expect(struggles).toMatch(/lined up|in a line/i);
-      expect(struggles).toMatch(/emptier|spread/i);
-    });
-
-    it('references only tags the component or the judged script actually emits', () => {
-      const directiveText = (entry.tutoring!.aiDirectives ?? [])
-        .map((d) => `${d.title} ${d.instruction}`).join(' ');
-      const referenced = Array.from(directiveText.matchAll(/\[([A-Z_]+)\]/g)).map((m) => m[1]);
-      // Must stay in sync with every sendText() tag in SolarSystemExplorer.tsx
-      // and every cue tag in solarSystemScript.ts — a directive naming a tag
-      // that is never sent is a rule the tutor can never apply.
-      const emitted = [
-        // Free-exploration face:
-        'SOLAR_ORIENT', 'SOLAR_BODY_SELECTED', 'SOLAR_READ_ALOUD',
-        // Judged-loop cues (solarSystemScript.ts):
-        'SOLAR_ITEM', 'SOLAR_MOVE', 'SOLAR_COMPLETE', 'SOLAR_HEAR',
-        // The generic never-read-tags directive names its own placeholder:
-        'BRACKETS',
-      ];
-      for (const tag of referenced) expect(emitted).toContain(tag);
-    });
-
-    it('uses no {{#if}} handlebars', () => {
-      expect(JSON.stringify(entry.tutoring)).not.toMatch(/\{\{#/);
+    // The scaffold this suite once pinned was the free-exploration voice: the tutor no longer receives a tutoring
+    // block, and the explore face sends it nothing. The live wiring is the boss (`solarSystem.card.ts`).
+    it('is wired by its boss card, with no tutoring block beside it', () => {
+      expect(entry.teachingWorkspace?.card).toBeDefined();
+      expect(entry.tutoring).toBeUndefined();
     });
   });
 });

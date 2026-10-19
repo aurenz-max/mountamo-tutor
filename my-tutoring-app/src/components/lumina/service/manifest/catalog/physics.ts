@@ -6,11 +6,12 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { SpokenPushPullMiss } from '../../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import type { RaceTrackMiss } from '../../../primitives/visual-primitives/physics/raceTrackWorkspace';
 import type { SoundWaveMiss } from '../../../primitives/visual-primitives/physics/soundWaveWorkspace';
 import type { GravityDropMiss } from '../../../primitives/visual-primitives/physics/gravityDropWorkspace';
 import { missLists } from './missLists';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { pushPullArenaCard } from '../../../primitives/visual-primitives/physics/pushPullArena.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -113,8 +114,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     id: 'push-pull-arena',
     description: 'Live force arena with a spoken tutor where the child watches and runs canvas physics simulations — pushes and pulls on ice, wood, carpet and grass — and ANSWERS OUT LOUD: the tutor asks, responds to the spoken answer, corrects with the physics idea, and a credited answer advances. Modes: observe (watch the preset force, say "push" or "pull"), predict (say "moves" or "stays" before it runs; the sim plays the push once the answer is credited), compare (two objects, same push — say which slides farther), design (experiment with force controls, say whether the goal needs a big or little push). ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
     constraints: 'Best for K-5. Use observe mode for K-1, predict for 1-2, compare for 2-3, design for 4-5. Keep object weights 1-10 for clarity. Answers are single spoken words judged by the microphone-enabled Lumina tutor; there is no Check button and no printed answer options.',
-    // reader: 'none' — shipped judged-loop DI port (same pattern as di-dice-roll /
-    // di-math-facts): the runner owns every cue, the child never reads anything, the
+    // reader: 'none': every answer is spoken, the child never reads anything, and the
     // constraint text itself says "no printed answer options."
     affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -151,79 +151,9 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         description: 'Experiment with the force controls, then SAY whether the goal needs a big or little push',
       },
     ],
-    audioInput: { manual_activity: true },
-    tutoring: {
-      // The answer used to live in this sentence ("The correct spoken answer:
-      // {{expectedAnswer}}."), which held it in the persistent state block for
-      // the whole session while the child was still being asked for it. The
-      // per-turn judging contract inside each cue names the answer, scoped to
-      // the turn that needs it; the state block carries the STIMULUS only.
-      taskDescription: 'LIVE-JUDGED forces practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD, you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Object: {{objectName}} on {{surface}}. In the arena right now: {{stimulus}}.',
-      contextKeys: ['challengeType', 'objectName', 'surface', 'stimulus'],
-      // 18d: a rung that quotes a SPEAKABLE line is a third reply channel. On
-      // repeat wrong answers the model speaks the rung verbatim; it opens with
-      // neither sentinel, so the loop records `di-no-verdict` and the correction
-      // counter freezes with the child waiting. Level 3 was the worst kind —
-      // "Tap Go and watch closely. Then tell me." is the observe how-to-play
-      // almost word for word, so the model had a fluent, on-topic, sentinel-less
-      // line pre-approved. The pedagogy is good and survives; it now routes
-      // through the correction, which already opens "My turn:".
-      scaffoldingLevels: {
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already models the physics idea and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a look-at-the-evidence hint or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
-      },
-      commonStruggles: [
-        { pattern: 'Describes the motion without committing to an answer word', response: 'The scripted ask names the two choices — re-speak it once and wait. The judging happens on the answer word.' },
-        { pattern: 'Long silence', response: 'Silence is the child thinking or watching — wait. If they truly seem stuck, re-speak the current ask once.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE — AND YOUR WHOLE REPLY IS ONE OF TWO LINES',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener. Your whole reply to an attempt is ONE of those two '
-            + 'quoted lines and nothing else — not the first time, not any time: no praise, no encouragement, no hint, '
-            + 'no reminder of the method, however kind it would be. A reply that is neither reaches the activity as no '
-            + 'verdict at all, and the child waits.',
-        },
-        {
-          title: 'THE CHILD IS WATCHING PHYSICS — WAIT',
-          instruction:
-            'Think time is unbounded. Never narrate the simulation, never name the outcome, never fill silence. '
-            + 'The cue names the accepted answer words; judge what you heard against them.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS OR NARRATE THE SCREEN',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken. '
-            + 'Never announce the activity\'s state or describe what has changed in the arena, and never announce that you '
-            + 'are waiting or listening — simply stop speaking.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'A sim arena of objects on ice, wood, carpet or grass; every answer is one spoken word computed from the '
-        + 'sim\'s physics. Observe: the learner presses Go to watch the preset force, then says push or pull (away is a '
-        + 'push, closer is a pull). Predict: moves or stays, said before anything moves. Compare: two objects get the '
-        + 'same push and the learner names the one that slides farther (the lighter one; heavier does not slide '
-        + 'farther). Design: the learner experiments with direction, strength and Go, then says big or little. The '
-        + 'arena plays predict and compare once the answer is credited. A description of the motion or a restated '
-        + 'setup is not an answer. Before an attempt never say the answer. You cannot press Go or move an object.',
-      // Every item is one spoken word: its known wrong answers by kind (`pushPullSpokenMisses`, handoff 20 Part B).
-      misses: missLists<SpokenPushPullMiss>({ observe: ['opposite_force', 'described_motion'], predict: ['opposite_outcome'],
-        compare: ['other_object'], design: ['opposite_size'] }),
-      // In-item levers (`pushPullArenaLevers.ts`): help in every mode, an easier item in predict, compare and design.
-      levers: true,
-    },
+    // Wired to the live tutor by its boss (pushPullArena.card.ts + pushPullArena.boss.ts).
+    ...bossEntry(pushPullArenaCard),
   },
   {
     id: 'race-track-lab',

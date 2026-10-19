@@ -13,7 +13,7 @@
  */
 import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { numberWord as w, PLACES, type Place } from './diWorkedProcedurePlan';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { itemsFromProblems, withWorkedProcedureAction, type DiWorkedProcedureData, type WorkedProcedureItem } from './diWorkedProcedureScript';
 
@@ -29,12 +29,12 @@ export const workedProcedureAskFor = (item: WorkedProcedureItem): string =>
   withWorkedProcedureAction(item).actionContract.instruction;
 
 /** The key the tutor judges with (`spokenKeyText`): a regroup is judged on meaning, a number exactly. */
-export function workedProcedureKey(item: WorkedProcedureItem): string {
+export function workedProcedureKey(item: WorkedProcedureItem): SpokenKey {
   const c = item.column;
   const flip = `"${w(c.bottom)} minus ${w(c.topAfterLend)}"`;
   if (item.kind === 'decide' && item.regroup) {
     const above = item.placeAbove as Place;
-    return spokenKeyText({ answer: item.answerSpoken, alsoAccept: [],
+    return ({ answer: item.answerSpoken, alsoAccept: [],
       meaning: { idea: `Regroup (borrow, trade, or take one from the ${above}), with both new numbers: ${w(item.newAbove)} ${above} `
         + `and ${w(c.effectiveTop)} ${c.place}, in any order.`,
         notIt: `naming the regroup and ${w(c.effectiveTop)} with nothing about ${w(item.newAbove)} ${above} (the ${above} were never changed)` },
@@ -43,12 +43,12 @@ export function workedProcedureKey(item: WorkedProcedureItem): string {
   const number = { answer: w(c.difference), alsoAccept: [`${w(c.effectiveTop)} minus ${w(c.bottom)} is ${w(c.difference)}`],
     acceptRule: 'The bare number or the whole fact said aloud counts, straight away or after counting back to it.' };
   if (item.kind === 'subtract') {
-    return spokenKeyText({ ...number,
+    return ({ ...number,
       signatureError: `Any other number is wrong; ${w(c.bottom - c.topAfterLend)} is the digits subtracted the wrong way round.` });
   }
   const lent = c.lent ? ` Saying ${w(c.top - c.bottom)} reads the crossed-out ${w(c.top)}: this column lent one to the `
     + `${PLACES[c.index - 1]}.` : '';
-  return spokenKeyText({ ...number,
+  return ({ ...number,
     signatureError: `No regrouping is needed; regrouping here (working from ${w(c.topAfterLend + 10)}) is the signature error.${lent}` });
 }
 

@@ -41,7 +41,7 @@
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { diMathFactsModePlan, DI_MATH_FACTS_MODES, type DiMathFactsChallengeType }
@@ -138,7 +138,7 @@ export interface MathFactItem extends TeachingItem {
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
   accepted: string;
   /** The spoken key the tutor judges with (`spokenKeyText`): the answer, the route that counts, and what does not. */
-  assignment: string;
+  key: SpokenKey;
 }
 
 const nonEmpty = (value: unknown): value is string => typeof value === 'string' && !!value.trim();
@@ -208,11 +208,11 @@ export function askFor(item: Pick<DiMathFactsChallenge, 'problem'>): string {
  * The teen/decade and whole-compound clauses are added only above twelve, where they are the two discriminations
  * the 1-120 counting extension depends on. Below that they would be inert text on every item in the pack.
  */
-function keyFor(c: DiMathFactsChallenge): string {
+function keyFor(c: DiMathFactsChallenge): SpokenKey {
   const answer = c.answerWord.trim().toLowerCase();
   const sounds = 'Young-child pronunciation of it, or a word that sounds like it, is that number.';
   if (stimulusIsAnswer(c)) {
-    return spokenKeyText({ answer, alsoAccept: [], acceptRule: sounds,
+    return ({ answer, alsoAccept: [], acceptRule: sounds,
       signatureError: `Reciting the counting sequence up to the printed numeral ${c.display.trim()}, or saying a `
         + 'different number, is not naming this numeral.' });
   }
@@ -220,7 +220,7 @@ function keyFor(c: DiMathFactsChallenge): string {
     ? ' A teen and its decade are different numbers, never near misses: thirteen is not thirty. '
       + 'A number said as several words is one answer and must arrive whole.'
     : '';
-  return spokenKeyText({ answer, alsoAccept: [],
+  return ({ answer, alsoAccept: [],
     acceptRule: `Counting ${countingRouteFor(c)} to it out loud and then saying it is a correct answer. ${sounds}`,
     signatureError: `A different number is not the answer, however close it is.${compound}` });
 }
@@ -246,7 +246,7 @@ export function buildMathFactItems(challenges: DiMathFactsChallenge[] = []): Mat
     countingRoute: countingRouteFor(c),
     ask: askFor(c),
     accepted: c.answerWord.trim().toLowerCase(),
-    assignment: keyFor(c),
+    key: keyFor(c),
     answerKind: diMathFactsModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: c.answerNumeral <= 20 ? 'number_word_to_20' : 'number_word_to_120',
   }));

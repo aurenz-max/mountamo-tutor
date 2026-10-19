@@ -80,6 +80,8 @@ export interface WorkspaceRun<Item extends WorkspaceRunItem> {
   summary: null;
   /** A fact about the learner's work on the open item, sent to the tutor as host text. */
   noteLearner?: (facts: string) => void;
+  /** A tap-to-hear request (`useTeachingWorkspace.requestHear`): silent and host-authored, never a learner turn. */
+  requestHear: (text: string) => void;
   practiceSummary: TeachingSummary | null;
   teachingResult: TeachingEvaluationResult | null;
   start: () => Promise<void>;
@@ -230,6 +232,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
       lesson.submitGestureResponse(response, miss);
     },
     presentStimulus: () => !!lesson.present(), publishWorkspace: lesson.publishWorkspace, noteLearner: lesson.noteLearner,
+    requestHear: lesson.requestHear,
     submitGestureAttempt: () => { throw new Error('Tutor-owned work accepts structured learner responses, never script cues'); },
     micState: 'armed', statusLine: state.phase === 'checked' ? 'Let us talk about your answer.' : 'We can work on this together.',
     cancelListening: lesson.stop };

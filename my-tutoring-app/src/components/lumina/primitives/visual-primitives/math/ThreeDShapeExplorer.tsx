@@ -2,12 +2,12 @@
 
 /**
  * ThreeDShapeExplorer — solids, flat shapes, everyday objects and riddles; every answer is
- * spoken. It runs only on the shared tutor/JEV teaching workspace (workspace rollout C4; the
- * scripted runner was retired, LA-14, user ruling 09-23: one path). The observer judges the
- * spoken answer and the runtime owns progression. An unbound mount shows the shared "needs the
- * tutor" card.
+ * spoken. Wired to the live tutor by its boss (`threeDShapeExplorer.card.ts` +
+ * `threeDShapeExplorer.boss.ts`, the spoken preset): it runs only on the shared tutor/JEV teaching
+ * workspace. The observer judges the spoken answer and the runtime owns progression. An unbound
+ * mount shows the shared "needs the tutor" card.
  *
- * In-item levers (`threeDShapeExplorerLevers.ts`, /add-support-tiers 2026-10-08) change what is drawn: dashed back
+ * In-item levers (`threeDShapeExplorerLevers.ts`, one lever set) change what is drawn: dashed back
  * edges, face prints, tinted surfaces, a turned copy, a shelf of the five solids, a model card, or an easier count.
  */
 
@@ -19,26 +19,23 @@ import {
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ThreeDShapeExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import {
   SHAPE_FACTS, SHAPE_LABELS, THREE_D_SHAPES, buildThreeDShapeItems, supportForItem,
-  wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
+  wrapperTextForSession, hearQuestionRequest, threeDShapeScene, type PropertyKey, type ThreeDShapeChallengeLike,
   type ThreeDShapeItem, type ThreeDShapeMode, type ThreeDShapeName,
-} from './threeDShapeExplorerScript';
-import { hearQuestionRequest, threeDShapeAssignment, threeDShapeScene } from './threeDShapeExplorerWorkspace';
+} from './threeDShapeExplorerDomain';
 import {
-  EDGE_VIEW, FACE_PRINTS, MODEL_OBJECT, MODEL_PROPERTY, SEE_THROUGH, SOLID_SHELF, TINT_SURFACES,
-  modelObjectFor, modelPropertyFor, simplerFaces, startingLevers, threeDShapeLeverFacts, threeDShapeLevers,
-  type ModelProperty,
+  EDGE_VIEW, FACE_PRINTS, MODEL_OBJECT, MODEL_PROPERTY, SEE_THROUGH, SOLID_SHELF, THREE_D_SHAPE_LEVERS, TINT_SURFACES,
+  modelObjectFor, modelPropertyFor, startingLevers, type ModelProperty,
 } from './threeDShapeExplorerLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { stimulusPipPose } from '../../../pip/stimulusPipPose';
-import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
+import { threeDShapeExplorerBoss } from './threeDShapeExplorer.boss';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 export interface ThreeDShapeExplorerChallenge extends ThreeDShapeChallengeLike {}
 
@@ -233,7 +230,6 @@ interface ThreeDShapeExplorerProps {
 
 function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: ThreeDShapeExplorerProps) {
   const { challenges=[], gradeBand='K', show3dRotation=true, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `3d-shape-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -272,7 +268,7 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
 
   const runner = useWorkspaceRunner<ThreeDShapeItem>({
     primitiveId: '3d-shape-explorer',
-    assignment: threeDShapeAssignment,
+    assignment: threeDShapeExplorerBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -295,20 +291,22 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
   const support = item ? supportForItem(item, !!revealItem && !practice) : null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const pulled = sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
-  /** A lever's drawing is on the session item only, while pulled or started by the tier. */
-  const on = (id: string) => !practice && !!sessionItem && (pulled.includes(id) || startingLevers(sessionItem).includes(id));
+  /** The levers drawn on the session item: started by the tier, then pulled. */
+  const shown = sessionItem ? [...startingLevers(sessionItem), ...pulled] : [];
+  /** A lever's drawing is on the session item only. */
+  const on = (id: string) => !practice && shown.includes(id);
+  const leverCtx = useMemo(() => ({ items }), [items]);
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!sessionItem) return;
-    const scene = threeDShapeScene(practice ?? sessionItem);
-    const onScreen = practice ? '' : threeDShapeLeverFacts(sessionItem, pulled, items);
     // No lever on an easier item: it is practice, and the full item's levers come back with it.
-    const levers = practice ? [] : threeDShapeLevers(sessionItem, pulled, items);
+    const levers = practice ? [] : THREE_D_SHAPE_LEVERS.declare(sessionItem, leverCtx, shown);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(threeDShapeScene(practice ?? sessionItem), {
+        support: practice ? '' : THREE_D_SHAPE_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : THREE_D_SHAPE_LEVERS.onScreen(sessionItem, leverCtx, shown) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -317,10 +315,10 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerFaces(sessionItem, items);
+          const easier = THREE_D_SHAPE_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!easier) return 'There is no easier item for this one.';
           setLeverState(next); setPractice(easier);
-          return { practice: threeDShapeAssignment(easier) };
+          return { practice: threeDShapeExplorerBoss.assignment(easier) };
         }
         setLeverState(next);
         return true;
@@ -330,29 +328,12 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const { requestHear } = runner;
   const hearQuestion = useCallback(() => {
     const asked = practice ?? runner.currentItem;
-    if (!asked) return;
-    ctx.sendText(hearQuestionRequest(asked), { silent: true, author: 'host' });
-  }, [ctx, runner.currentItem, practice]);
+    if (asked) requestHear(hearQuestionRequest(asked));
+  }, [requestHear, runner.currentItem, practice]);
 
-  // ── Pip shared surface ───────────────────────────────────────────────────
-  // Every answer is spoken; the solid, object, flat shape or clue list is the
-  // question side, so Pip points at it as a whole — never at one face or edge.
-  const pip = usePipTargets(runner.currentItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    const current = runner.currentItem;
-    if (!pip.dock.current || !current || showSummary) return null;
-    const targets = pip.targets(['stimulus'], () => 'The shape');
-    const pose = stimulusPipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: false, tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === current.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: current.id, label: 'Solid shape lab', dock: pip.dock.current, targets, pose };
-  });
   const phases = useMemo<PhaseResult[]>(() => runner.practiceSummary
     ? phaseResultsFromSummary(items, runner.practiceSummary, (entry) => ({ label: MODE_META[entry.sourceMode].label, icon: MODE_META[entry.sourceMode].icon, accentColor: MODE_META[entry.sourceMode].accent }))
     : [], [runner.practiceSummary, items]);
@@ -395,8 +376,9 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
       {!showSummary && item && <>
         <div className="flex items-center justify-center gap-4"><LuminaChallengeCounter current={Math.max(1, displayedIndex + 1)} total={items.length} variant="dots" /><button type="button" onClick={hearQuestion} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-500/30 bg-amber-500/15 transition hover:bg-amber-500/25" aria-label="Hear the question again"><span aria-hidden>🔁</span></button></div>
         {practice && <div className="text-center text-xs text-amber-300" data-practice-item>Practice shape</div>}
-        {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
-        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" className="mx-auto w-fit">{renderStimulus(item)}</div>
+        {/* Every answer is spoken: Pip points at the solid, object or clue list as a whole, never at one face or edge. */}
+        <PipDock />
+        <PipWorkspace><div data-pip-object="stimulus" className="mx-auto w-fit">{renderStimulus(item)}</div></PipWorkspace>
         {renderLevers()}
         {item.sourceMode === 'faces-and-properties' && !revealItem && <p className="text-center text-xs uppercase tracking-wide text-slate-500">Look for: {propertyLabel(item.propertyKey)}</p>}
         {show3dRotation && item.shape3d && item.supportTier !== 'hard' && <p className="text-center text-xs text-slate-500">Look all the way around the solid.</p>}

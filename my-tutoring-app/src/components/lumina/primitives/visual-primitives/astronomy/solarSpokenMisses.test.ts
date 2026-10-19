@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest';
-import { solarSpokenMisses } from './solarSystemWorkspace';
-import type { SolarItem } from './solarSystemScript';
+import { solarSpokenMisses, type SolarItem } from './solarSystemDomain';
 
 // solar-system-explorer's known wrong names (handoff 20 Part B): ids in precedence order, and no example is accepted.
 const solar = (kind: SolarItem['kind'], facet: string, answer: string, signatureName: string, wrongName: string) =>

@@ -3,7 +3,7 @@
  * exactly one code-owned linking word between two ideas; mini passages are three sentences of one structure and never
  * print a word of any structure's name (R6), so naming the structure is not word matching on the model either.
  */
-import type { StructureTypeId } from './textStructureAnalyzerScript';
+import type { StructureTypeId } from './textStructureAnalyzerDomain';
 
 export interface LinkModel { sentence: string; word: string }
 const l = (sentence: string, word: string): LinkModel => ({ sentence, word });

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { solarItems, solarJourneyItem } from '../../../components/live-activity/adapters/solarSystemExplorerLive';
-import { solarSpokenMisses } from './solarSystemWorkspace';
+import { solarItems, solarSystemBoss } from './solarSystem.boss';
+import { solarSpokenMisses, type SolarItem } from './solarSystemDomain';
 import {
-  firstRingBodyId, simplerSolar, sizeRowBodies, solarLeverFacts, solarLeverLeaks, solarLevers, type SolarLeverContext,
+  firstRingBodyId, simplerSolar, sizeRowBodies, solarLeverLeaks, SOLAR_LEVERS, type SolarLeverContext,
 } from './solarSystemLevers';
 import type { SolarSystemExplorerData } from './SolarSystemExplorer';
 import identify from '../../../components/live-activity/runtime/testing/w1-payloads/solar-system-explorer.identify.json';
@@ -19,6 +19,9 @@ const sessionOf = (mode: keyof typeof PAYLOADS) => {
   const ctx: SolarLeverContext = { bodies: data.bodies, rung: (data.gradeLevel ?? '3') as SolarLeverContext['rung'], session: items };
   return { data, items, ctx };
 };
+const solarLevers = (item: SolarItem, pulled: string[], ctx: SolarLeverContext) => SOLAR_LEVERS.declare(item, ctx, pulled);
+const journeyItem = (data: SolarSystemExplorerData, itemId: string) =>
+  solarSystemBoss.drive.current!({ data, itemId } as unknown as Parameters<NonNullable<typeof solarSystemBoss.drive.current>>[0]);
 const ALL = Object.keys(PAYLOADS).flatMap(mode => {
   const s = sessionOf(mode as keyof typeof PAYLOADS);
   return s.items.map(item => ({ mode, item, ...s }));
@@ -37,7 +40,8 @@ describe('solar levers on the saved payloads', () => {
   it.each(ALL.map(a => [a.mode, a.item.id, a] as const))('%s %s: no lever text or scene fact names an answer', (_m, _id, { item, ctx }) => {
     const levers = solarLevers(item, [], ctx);
     for (const l of levers) expect(solarLeverLeaks(item, `${l.when} ${l.does}`), l.id).toBe(false);
-    expect(solarLeverLeaks(item, solarLeverFacts(item, levers.map(l => l.id)))).toBe(false);
+    expect(solarLeverLeaks(item, SOLAR_LEVERS.onScreen(item, ctx, levers.map(l => l.id)))).toBe(false);
+    expect(solarLeverLeaks(item, SOLAR_LEVERS.support(item))).toBe(false);
   });
 
   it('simplify is offered where a free easier item exists, and on the plainest items not at all', () => {
@@ -60,7 +64,7 @@ describe('solar levers on the saved payloads', () => {
         expect(easier.item.pairBodyIds).toHaveLength(2);
         for (const b of easier.item.pairBodyIds) expect(taken.has(b)).toBe(false);
       }
-      expect(solarJourneyItem(data, easier.item.id)).toEqual(easier.item);
+      expect(journeyItem(data, easier.item.id)).toEqual(easier.item);
     });
 
   it('first_ring brightens the first planet\'s ring, never the answer\'s; the size row draws the pair alone on a pair item', () => {
@@ -97,5 +101,23 @@ describe('this wrong answer, then this lever', () => {
     expect(nextLever(solarLevers(item, ['first_ring'], ctx), 'signature_planet')).toBe('fewer_rings');
     const year = at('shortest_year');
     expect(nextLever(solarLevers(year.item, ['trip_model'], year.ctx), 'other_planet')).toBe('two_planets');
+  });
+});
+
+describe('the lever set', () => {
+  it('declares every lever by a stock type, the models with the support rule', () => {
+    expect(SOLAR_LEVERS.specs.map(spec => [spec.id, spec.type])).toEqual([
+      ['star_mark', 'marks'], ['close_up', 'layout'], ['near_far_model', 'model'], ['first_ring', 'marks'],
+      ['kind_model', 'model'], ['fact_strip', 'layout'], ['size_row', 'layout'], ['trip_model', 'model'],
+      ['fewer_rings', 'easier'], ['two_planets', 'easier']]);
+    const giant = ALL.find(a => a.item.facet === 'giant')!;
+    expect(SOLAR_LEVERS.support({ ...giant.item, tier: 'medium' })).toMatch(/model model worlds that are not from this sky with the kind_model lever/);
+    const biggest = ALL.find(a => a.item.facet === 'biggest')!;
+    expect(SOLAR_LEVERS.support(biggest.item)).toBe('');
+  });
+
+  it('the simplify lever opens the same easier item the journey rebuilds', () => {
+    const { item, ctx } = ALL.find(a => a.item.facet === 'position')!;
+    expect(SOLAR_LEVERS.simpler(item, ctx, 'fewer_rings')).toEqual(simplerSolar(item, ctx)!.item);
   });
 });

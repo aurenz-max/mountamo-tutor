@@ -6,9 +6,8 @@
  * activity checks the big slot. The step names are the scene's `kind`.
  */
 import type { SpokenWordProblemMiss, WordProblemMiss } from './diWordProblemWorkspace';
-import { defineCard, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { defineCard, SPOKEN, SPOKEN_AUDIO, OFF_BY } from '../../../components/live-activity/boss';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'] as const;
 const PLACE = ['box_in_big', 'printed_small_in_big'] as const;
 const BUILD = { answer: 'manipulate', judge: 'activity', flow: 'one-at-a-time',
   moves: 'puts the three story-part cards into small + small = big' } as const;

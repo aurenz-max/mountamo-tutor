@@ -15,7 +15,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromPayload } from './genreExplorerScript';
+import { itemsFromPayload } from './genreExplorerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -43,7 +43,7 @@ it('check-feature at the band floor: read_again, sentence rows and a text model;
   expect(new Set(rows.map(r => r.className)).size).toBe(1);
   h.dispatch('pull_lever', { lever: 'text_model' });
   expect(q(h, '[data-lever="text-model"] u')).toHaveLength(1);
-  expect(String(h.state().task!.demand.levers_on_screen)).toMatch(/It is not the learner text/);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/It is not the learner text/);
   h.say(first.answer); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true,
     levers: ['read_again', 'sentence_rows', 'text_model'] });
@@ -70,7 +70,7 @@ it('name-genre on a sibling menu: the kind pair names only kinds off the menu; t
   expect(h.state().task).toMatchObject({ itemId: `${genre.id}~simpler` });
   const practiceMenu = String(h.state().task!.demand.menu);
   for (const label of list.menu) expect(practiceMenu).not.toContain(label);
-  const answer = h.state().task!.workspace!.expectedAnswer!.split('.')[0];
+  const answer = h.state().task!.workspace!.expectedAnswer!.match(/^"([^"]+)"/)![1];
   h.say(answer); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task).toMatchObject({ itemId: genre.id });
   h.say(genre.answer); h.feedback('correct');

@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { formKey, readShape, type Pt } from '../math/shapeMakeBuild';
 import { BUILDABLE_SHAPES, BUILD_WITNESSES, GRID_MAX, WRONG_BUILD, buildAskFor, buildFacts, shapeBuildMiss } from './diShapesBuild';
 import { shapeItem, SHAPE_LEVERS, simplerShape, MAKE_TRIANGLE, modelFor, shapeLeaks } from './diShapesLevers';
-import { shapesAssignment, shapesScene } from './diShapesWorkspace';
+import { shapesScene } from './diShapesWorkspace';
+import { diShapesBoss } from './diShapes.boss';
 
 const P = (...xy: number[]): Pt[] => Array.from({ length: xy.length / 2 }, (_, i) => ({ x: xy[2 * i], y: xy[2 * i + 1] }));
 const SQUARE = P(1, 1, 3, 1, 3, 3, 1, 3);
@@ -53,7 +54,7 @@ describe('the ask, scene and levers', () => {
 
   it('the ask states the name; the assignment is a gesture with no key; the scene gives the made shape as numbers', () => {
     expect(buildAskFor('hexagon')).toBe('Make a hexagon.');
-    expect(shapesAssignment(hex)).toEqual({ id: 'b1', task: 'Make a hexagon.', response: 'gesture' });
+    expect(diShapesBoss.assignment(hex)).toEqual({ id: 'b1', task: 'Make a hexagon.', response: 'gesture' });
     const facts = shapesScene(hex, { points: BUILD_WITNESSES.pentagon[0], closed: true }).facts;
     expect(facts).toMatchObject({ kind: 'build_shape', sides: 5, cornersPlaced: 5, shapeClosed: 'yes' });
     expect(JSON.stringify(facts)).not.toMatch(/\bsix\b|\b6 sides/);

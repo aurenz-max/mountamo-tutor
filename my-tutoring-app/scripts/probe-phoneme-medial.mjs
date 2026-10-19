@@ -32,7 +32,7 @@ const TOPIC = 'Decoding CVC words with short a';
 try {
   const runner = createServerModuleRunner(server.environments.ssr, { hmr: false });
   const base = '/src/components/lumina/';
-  const script = await runner.import(`${base}primitives/visual-primitives/literacy/phonemeExplorerScript.ts`);
+  const script = await runner.import(`${base}primitives/visual-primitives/literacy/phonemeExplorerDomain.ts`);
   const { resolveLessonEvalModes } = await runner.import(`${base}service/manifest/resolveLessonEvalModes.ts`);
   await runner.import(`${base}service/registry/generators/literacyGenerators.ts`);
   const { getGenerator } = await runner.import(`${base}service/registry/contentRegistry.ts`);
@@ -55,22 +55,18 @@ try {
   // ── Per-item gates: what the ask may and may not contain ──────────────────
   const inspect = (data) => {
     const built = script.itemsFromChallenges(data.challenges);
-    const asks = built.map((i) => script.itemCue(i));
+    const asks = built.map((i) => script.askFor(i));
     const medials = built.filter((i) => i.kind === 'medial');
     const srcByIndex = data.challenges;
     return {
       generated: data.challenges.length >= 3,
       allSurviveGates: built.length === data.challenges.length,
       everyItemMedial: built.length > 0 && medials.length === built.length,
-      // The design ruling: the ask states the stimulus, never the vowel.
-      // The design ruling, measured on the line the tutor actually SPEAKS.
+      // The design ruling: the ask states the stimulus, never the vowel, measured on the line the tutor actually SPEAKS.
       askNeverNamesVowel: medials.every((i) =>
-        !new RegExp(i.vowelSpoken, 'i').test(spokenSpanOf(script.itemCue(i)))),
+        !new RegExp(i.vowelSpoken, 'i').test(spokenSpanOf(script.askFor(i)))),
       askAsksForSameMiddleSound: medials.every((i) =>
-        script.itemCue(i).includes(`same middle sound as ${i.targetWord}`)),
-      correctionNamesVowelInBoth: medials.every((i) =>
-        script.itemCue(i).includes(`${i.targetWord} has ${i.vowelSpoken} in the middle`)
-        && script.itemCue(i).includes(`has ${i.vowelSpoken} in the middle too`)),
+        script.askFor(i).includes(`same middle sound as ${i.targetWord}`)),
       vowelIsReallyInTheWord: srcByIndex.every((c) =>
         c.mode !== 'medial' || String(c.targetWord).toLowerCase().includes(String(c.vowel).toLowerCase())),
       stimulusNotOnACard: medials.every((i) =>
@@ -105,8 +101,8 @@ try {
         && data.challenges.every((c) => c.showChoiceEmoji === false && c.readOptionsAloud === false),
       askStopsEnumerating: medials.length > 0 && medials.every((i) =>
         i.enumerateMenu === false
-        && spokenSpanOf(script.itemCue(i)).includes('Read the cards')
-        && !spokenSpanOf(script.itemCue(i)).includes('The words are:')),
+        && spokenSpanOf(script.askFor(i)).includes('Read the cards')
+        && !spokenSpanOf(script.askFor(i)).includes('The words are:')),
       noExemptionWhenUnspoken: medials.every((i) => script.leakExemptSpanFor(i) === undefined),
     };
   };

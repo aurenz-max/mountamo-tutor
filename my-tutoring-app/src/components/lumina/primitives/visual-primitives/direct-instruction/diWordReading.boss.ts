@@ -27,7 +27,7 @@ export const diWordReadingBoss = spokenBoss<DiWordReadingData, WordReadingItem, 
   levers: WORD_LEVERS,
   speech: {
     ask: askFor,
-    key: item => item.assignment,
+    key: item => item.key,
     misses: diWordReadingSpokenMisses,
     // A plainly different word: the near neighbour this pack exists to correct belongs in the JEV probe.
     say: wordReadingHarnessAnswers,

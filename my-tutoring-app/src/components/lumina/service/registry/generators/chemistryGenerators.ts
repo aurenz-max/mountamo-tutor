@@ -32,7 +32,7 @@ import { generateStoichiometryLab } from '../../chemistry/gemini-stoichiometry-l
 import { generateGasLawsSimulator } from '../../chemistry/gemini-gas-laws-simulator';
 import { buildPeriodicChallenges } from '../../chemistry/periodic-table-challenges';
 import { buildStatesOfMatterChallenges } from '../../chemistry/states-of-matter-challenges';
-import type { StatesChallengeType } from '../../../primitives/visual-primitives/chemistry/statesOfMatterScript';
+import type { StatesChallengeType } from '../../../primitives/visual-primitives/chemistry/statesOfMatterDomain';
 
 // ============================================================================
 // Helper Types

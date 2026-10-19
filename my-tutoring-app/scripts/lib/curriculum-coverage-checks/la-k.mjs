@@ -2,7 +2,7 @@
 // pilot. Code-judged checks over production item conversion; no live microphone is driven.
 export const modules = {
   pv: '/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript.ts',
-  ws: '/src/components/lumina/primitives/visual-primitives/literacy/wordSorterScript.ts',
+  ws: '/src/components/lumina/primitives/visual-primitives/literacy/wordSorterDomain.ts',
 };
 export const interactionNote = 'Production item converters and cue builders executed. No live microphone/session was driven.';
 export const semantic = {

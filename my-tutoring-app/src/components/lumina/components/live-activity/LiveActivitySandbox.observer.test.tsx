@@ -119,7 +119,7 @@ it('reuses the host observer for shape naming, intermediate steps, retry, altern
   const h = await startHost(undefined, true);
   const task = () => seam.runtime.getSnapshot().task;
   const first = task().itemId;
-  expect(task().workspace.expectedAnswer).toBe('triangle');
+  expect(task().workspace.expectedAnswer).toMatch(/^"triangle"./);
   expect(h.view.container.textContent).not.toContain('Say exactly');
   expect(task().demand.targetId).toBe('shape-0');
   const command = (targets: string[]) => {
@@ -140,7 +140,8 @@ it('reuses the host observer for shape naming, intermediate steps, retry, altern
   h.speak('How many sides does the shape inside the gold ring have?'); h.drain();
   await h.say('tres'); h.speak('Yes, three sides. What is its name?'); h.drain();
   const request = JSON.parse(String(h.fetcher.mock.calls.filter(([url]) => url.endsWith('/observe-dialogue')).at(-1)![1]!.body));
-  expect(request).toMatchObject({ expectedAnswer: 'triangle', priorTutor: 'How many sides does the shape inside the gold ring have?' });
+  expect(request).toMatchObject({ priorTutor: 'How many sides does the shape inside the gold ring have?' });
+  expect(request.expectedAnswer).toMatch(/^"triangle"./);
   await h.decide({ accepted: false, verdict: 'none', transition: 'none' });
   expect(task().itemId).toBe(first); expect(task().evidence.attemptNumber).toBe(0);
   expect(seam.correct).not.toHaveBeenCalled();

@@ -27,7 +27,7 @@ export const diLetterSoundsBoss = spokenBoss<DiLetterSoundsData, LetterSoundItem
   levers: LETTER_LEVERS,
   speech: {
     ask: askFor,
-    key: item => item.assignment,
+    key: item => item.key,
     misses: diLetterSoundSpokenMisses,
     // The sound itself comes from the domain: the harness never invents a phoneme.
     say: letterSoundHarnessAnswers,

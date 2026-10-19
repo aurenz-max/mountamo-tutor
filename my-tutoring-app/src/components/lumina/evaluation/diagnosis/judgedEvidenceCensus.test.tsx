@@ -15,7 +15,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DiHarnessAnswers, DiPortAdapter } from '../../service/qa/di/diDrivePlan';
+import type { DiPortAdapter } from '../../service/qa/di/diDrivePlan';
 import type { JudgedScriptItem, JudgedScriptPack } from '../../hooks/judgedScriptContract';
 import { judgedRunEvidence } from '../../hooks/judgedRunEvidence';
 import { isDiagnosableFailure } from './types';
@@ -77,14 +77,6 @@ const COMPONENTS: Record<string, Loader> = {
 async function adapterFor(id: string): Promise<DiPortAdapter<JudgedScriptItem> | null> {
   const { DI_PORTS } = await import('../../service/qa/di/diDrivePlan');
   if (DI_PORTS[id]) return DI_PORTS[id];
-  if (id === 'oral-sentence-studio') {
-    const s = await import('../../primitives/visual-primitives/literacy/oralSentenceStudioScript');
-    return {
-      build: (data: Record<string, unknown>) => { const items = s.itemsFromChallenges((data.challenges ?? []) as never[]); return { items, dropped: 0, surface: s.oralSentenceStudioPack(items) }; },
-      answersFor: (item: JudgedScriptItem) => { const a = s.oralSentenceHarnessAnswers(item as never); return { correct: a.valid[0] ?? '', plainWrong: a.unrelated,
-        signatureWrong: { text: a.fragment, why: 'a fragment: both target words and the object, no verb — the contract refuses it' }, leakTokens: [] } as DiHarnessAnswers; },
-    } as unknown as DiPortAdapter<JudgedScriptItem>;
-  }
   return null;
 }
 

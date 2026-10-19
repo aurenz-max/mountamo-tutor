@@ -28,7 +28,9 @@ export const diMathFactsBoss = spokenBoss<DiMathFactsData, MathFactItem, SpokenF
   levers: MATH_FACT_LEVERS,
   speech: {
     ask: askFor,
-    key: item => item.assignment,
+    key: item => item.key,
+    // The ask says the fact ("What is zero plus three?"), and an operand can be the answer.
+    given: item => [item.problem],
     misses: mathFactSpokenMisses,
     // A plainly different quantity: the off-by-one this pack exists to correct belongs in the JEV probe.
     say: mathFactsHarnessAnswers,

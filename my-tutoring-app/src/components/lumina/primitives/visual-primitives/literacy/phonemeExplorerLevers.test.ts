@@ -7,11 +7,15 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
-import { itemFromChallenge, itemsFromChallenges, type PhonemeChallengeLike, type PhonemeExplorerItem } from './phonemeExplorerScript';
+import { itemFromChallenge, itemsFromChallenges, type PhonemeChallengeLike, type PhonemeExplorerItem } from './phonemeExplorerDomain';
 import {
-  CVC_POOL, LONG_MIDDLE_POOL, PHONEME_MISSES, askedSound, changedBox, phonemeExplorerLevers, phonemeSessionWords, positionModelFor,
+  CVC_POOL, LONG_MIDDLE_POOL, PHONEME_LEVERS, PHONEME_MISSES, askedSound, changedBox, phonemeSessionWords, positionModelFor,
   practiceItemFor, practiceLeak,
 } from './phonemeExplorerLevers';
+
+/** The levers offered on an item, as the component declares them. */
+const phonemeExplorerLevers = (item: PhonemeExplorerItem, pulled: readonly string[], items: readonly PhonemeExplorerItem[],
+  withdrawn: { example?: boolean; operation?: boolean } = {}) => PHONEME_LEVERS.declare(item, { items, withdrawn }, pulled);
 
 const PAYLOADS = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
 const payload = (mode: string): PhonemeExplorerItem[] =>

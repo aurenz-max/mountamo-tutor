@@ -21,6 +21,7 @@ import { leverSet } from '../../../components/live-activity/bossLevers';
 import { diSpokenPracticeCard } from './diSpokenPractice.card';
 import { PRACTICE_WORDS } from '../literacy/cvcSpellerLevers';
 import { numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_COUNT = 'model_count';
 export const TOUCH_MARKS = 'touch_marks';
@@ -36,7 +37,6 @@ export const MODEL_ANSWER = 'model_answer';
 export const MODEL_EXPLAIN = 'model_explain';
 export const EASIER_ITEM = 'easier_item';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 const low = (s: string) => s.trim().toLowerCase();
 const words = (s: string) => low(s).split(/[^a-z0-9']+/).filter(Boolean);
 const coming = (item: SpokenPracticeItem, items: readonly SpokenPracticeItem[]) => {

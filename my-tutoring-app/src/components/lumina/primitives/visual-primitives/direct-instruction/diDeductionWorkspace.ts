@@ -13,7 +13,7 @@
  */
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { capitalize, withArticle } from './diDeductionPlan';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { VERDICT_MENU, itemsFromRules, withDeductionAction, type DeductionItem, type DiDeductionData } from './diDeductionScript';
 
@@ -25,23 +25,23 @@ export const deductionItems = (data: Pick<DiDeductionData, 'rules' | 'supportTie
 export const deductionAskFor = (item: DeductionItem): string => withDeductionAction(item).actionContract.instruction;
 
 /** The key the tutor judges with: a meaning key (`spokenKeyText`), since a verdict and its reason come in any words. */
-export function deductionKey(item: DeductionItem): string {
+export function deductionKey(item: DeductionItem): SpokenKey {
   const r = item.rule;
   const s = item.case.subject;
   const cat = withArticle(r.category);
   if (item.shape === 'conclude') {
-    return spokenKeyText({ answer: item.answerSpoken, alsoAccept: [`it ${r.propertySingular}`],
+    return ({ answer: item.answerSpoken, alsoAccept: [`it ${r.propertySingular}`],
       meaning: { idea: `${capitalize(s)} ${r.propertySingular}.`,
         notIt: `the rule read back ("all ${r.categoryPlural} ${r.propertyPlural}"), the case read back, or a fact about ${s} the rule does not give` } });
   }
   if (item.shape === 'deny') {
-    return spokenKeyText({ answer: item.answerSpoken, alsoAccept: [`nope, it ${r.propertyNegated}`],
+    return ({ answer: item.answerSpoken, alsoAccept: [`nope, it ${r.propertyNegated}`],
       meaning: { idea: `No, ${s} is not ${cat}, because all ${r.categoryPlural} ${r.propertyPlural} and ${s} ${r.propertyNegated}.`,
         notIt: `a reason that is not about whether it ${r.propertySingular}` },
       signatureError: 'A no with no reason has the right verdict and is not yet the answer.' });
   }
   const look = withArticle(item.case.lookalike ?? 'something else');
-  return spokenKeyText({ answer: item.answerSpoken, alsoAccept: ['maybe, the rule does not say', `no, because other things ${r.propertyPlural} too`],
+  return ({ answer: item.answerSpoken, alsoAccept: ['maybe, the rule does not say', `no, because other things ${r.propertyPlural} too`],
     meaning: { idea: `Can't tell, because the rule does not say only ${r.categoryPlural} ${r.propertyPlural}; other things do too `
       + `(${look} ${r.propertySingular} and is not ${cat}).`, notIt: "a can't-tell with no reason" },
     signatureError: `"Yes, because it ${r.propertySingular}" is the signature error: the rule does not run backwards.` });

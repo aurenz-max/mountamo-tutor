@@ -24,7 +24,7 @@ beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
 const challenge = (type: DiMathFactsChallengeType, a: number, b: number, supportTier: DiMathFactsSupportTier, id: string) => {
-  const { terms: _t, countingRoute: _c, ask: _a, accepted: _ac, assignment: _as, answerKind: _k, responseClass: _r, ...c } =
+  const { terms: _t, countingRoute: _c, ask: _a, accepted: _ac, key: _as, answerKind: _k, responseClass: _r, ...c } =
     factItem(type, a, b, id, supportTier)!;
   return { ...c, a, b };
 };

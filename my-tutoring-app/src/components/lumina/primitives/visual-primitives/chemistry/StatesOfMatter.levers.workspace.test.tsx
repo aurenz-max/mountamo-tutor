@@ -13,7 +13,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { statesItems } from '../../../components/live-activity/adapters/statesOfMatterLive';
+import { statesItems } from './statesOfMatter.boss';
 import { practiceItem, statesLeverSession } from './statesOfMatterLevers';
 
 beforeEach(() => {
@@ -51,7 +51,7 @@ it('observe: particle_models draws three model boxes in one commit; a second pul
   const receipt = h.dispatch('pull_lever', { lever: 'particle_models' });
   expect(receipt.status).toBe('committed');
   expect(String((receipt.state.task!.demand as Record<string, unknown>).onScreen))
-    .toMatch(/^beside the beaker, three model particle boxes that are not the Water, .*Nothing marks which box the beaker's particles move like$/);
+    .toMatch(/^Beside the beaker, three model particle boxes that are not the Water, .*Nothing marks which box the beaker's particles move like\.$/);
   const boxes = h.lever('particle-models')!;
   expect(boxes.children).toHaveLength(3);
   expect(boxes.textContent).not.toMatch(/Water/);
@@ -103,7 +103,7 @@ it('predict: temperature_strip marks both points and "now", never the temperatur
   expect(strip.textContent).toMatch(/370°C/);
   expect(strip.textContent).toMatch(/now 20°C/);
   expect(strip.textContent).not.toMatch(/200/);
-  expect(h.onScreen()).toMatch(/^beside the beaker, a temperature strip for the Wax: .*The temperature it is going to is not marked$/);
+  expect(h.onScreen()).toMatch(/^Beside the beaker, a temperature strip for the Wax: .*The temperature it is going to is not marked\.$/);
   h.say('liquid'); h.feedback('correct');
   expect(h.attempts().at(-1)).toMatchObject({ itemId: 'p1', correct: true, assisted: true, levers: ['temperature_strip'] });
 });
@@ -135,7 +135,7 @@ it('compare: model_pair shows two other substances heated to one temperature; fa
   expect(panel.textContent).toMatch(/still solid/);
   expect(panel.textContent).toMatch(/melted/);
   expect(panel.textContent).not.toMatch(/Coconut|Butter/);
-  expect(h.onScreen()).toMatch(/^under the two beakers, a model pair that is not this item/);
+  expect(h.onScreen()).toMatch(/^Under the two beakers, a model pair that is not this item/);
   const receipt = h.dispatch('pull_lever', { lever: 'far_pair' });
   expect(receipt.status).toBe('committed');
   expect(receipt.state.task!.itemId).toBe('c1~simpler');

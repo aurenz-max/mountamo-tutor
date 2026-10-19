@@ -3,15 +3,15 @@
 /**
  * MatterExplorer — TWO surfaces, forked on whether askable challenges arrived:
  *
- *  - TEACHING WORKSPACE (challenges present): runs only on the shared tutor/JEV
- *    teaching workspace (workspace rollout C5; the scripted runner was retired,
- *    LA-14, user ruling 09-23: one path). The observer judges the spoken answer
- *    and the runtime owns progression. No Next, no Check, no printed answer
+ *  - TEACHING WORKSPACE (challenges present): wired to the live tutor by its
+ *    boss (`matterExplorer.card.ts` + `matterExplorer.boss.ts`, the spoken
+ *    preset); it runs only on the shared tutor/JEV teaching workspace. The
+ *    observer judges the spoken answer and the runtime owns progression. No Next, no Check, no printed answer
  *    before credit. An unbound mount shows the shared "needs the tutor" card.
  *
  *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
- *    free object shelf with its property panel, tutor as a silent guide. The
- *    honest degrade, and a real reference surface. Ungraded.
+ *    free object shelf with its property panel. The honest degrade, and a real
+ *    reference surface. Ungraded, and the tutor is not sent anything.
  *
  * ⭐ ALL FOUR EVAL MODES ARE SPOKEN. sort says the state, property says what
  * the thing does in a cup, change says whether an everyday change to the
@@ -45,17 +45,15 @@
  *    era substring-matched what they typed against an LLM's free-text guess.
  * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
  *
- * Asks and build gates live in `matterExplorerScript.ts`; the assignment and
- * scene the tutor receives live in `matterExplorerWorkspace.ts`.
+ * Asks, build gates, the key and the scene live in `matterExplorerDomain.ts`.
  */
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { MatterExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -65,7 +63,7 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../../../ui';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
@@ -75,31 +73,29 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
 import {
   CHANGE_CATALOG,
   CHANGE_OPTIONS,
-  itemsFromChallenges,
+  matterScene,
   nameCarriesAnswer,
   PROPERTY_OPTIONS,
   type EverydayChange,
-  type MatterBand,
   type MatterExplorerItem,
   type MatterKind,
   type MatterTier,
-} from './matterExplorerScript';
-import { matterAssignment, matterScene } from './matterExplorerWorkspace';
+} from './matterExplorerDomain';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   changeLine,
   changesFor,
   changeTag,
-  leversOnScreen,
-  matterLevers,
+  MATTER_LEVERS,
   matterLeverSession,
   modelsFor,
   modelTag,
-  practiceItem,
   THREE_MODELS_LEVER,
   TWO_CHANGES_LEVER,
   type ChangeModel,
   type MatterModel,
 } from './matterExplorerLevers';
+import { matterExplorerBoss, matterItems } from './matterExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -339,31 +335,9 @@ const ExplorationShelf: React.FC<{ objects: MatterObject[]; onInspect: (o: Matte
 const safeTitleOf = (title?: string) => (title && !nameCarriesAnswer(title) ? title : 'Matter Explorer');
 
 const MatterExplorerShelf: React.FC<MatterExplorerProps> = ({ data, className }) => {
-  const { objects = [], instanceId } = data;
+  const { objects = [] } = data;
   const safeTitle = safeTitleOf(data.title);
   const [inspected, setInspected] = useState<MatterObject | null>(null);
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'matter-explorer',
-    instanceId: instanceId ?? 'matter-explorer',
-    // Exploration-only context. `state` and `properties.shape` are deliberately
-    // absent: nothing is being judged, but the tutor is still guiding a child
-    // through the same classification and must not hand it over.
-    primitiveData: {
-      title: safeTitle,
-      objects: objects.map((o) => o.name),
-      selectedObject: inspected?.name ?? null,
-    },
-  });
-
-  useEffect(() => {
-    if (!isConnected || !inspected) return;
-    sendText(
-      `[OBJECT_SELECTED] The learner is looking at "${inspected.name}". `
-      + 'Wonder aloud with them about what it is like to hold. Do not classify it for them.',
-      { silent: true },
-    );
-  }, [isConnected, inspected, sendText]);
-
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -466,7 +440,7 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
 
   const runner = useWorkspaceRunner<MatterExplorerItem>({
     primitiveId: 'matter-explorer',
-    assignment: matterAssignment,
+    assignment: matterExplorerBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -499,17 +473,16 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
   const models = sessionItem && pulledLevers.includes(THREE_MODELS_LEVER) ? modelsFor(sessionItem, leverSession) : null;
   const changePair = sessionItem && pulledLevers.includes(TWO_CHANGES_LEVER) ? changesFor(sessionItem, leverSession) : null;
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!sessionItem || !shownItem) return;
-    const scene = matterScene(shownItem);
-    const levers = practice ? [] : matterLevers(sessionItem, leverSession, pulledLevers);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, leverSession);
+    // No lever on an easier item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : MATTER_LEVERS.declare(sessionItem, leverSession, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item, ungraded, on a plain everyday thing. The full item comes back after it.' } : {}) },
+      ...leverScene(matterScene(shownItem, { practice: !!practice }), {
+        support: practice ? '' : MATTER_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : MATTER_LEVERS.onScreen(sessionItem, leverSession, pulledLevers) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -517,10 +490,10 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, leverSession);
+          const easier = MATTER_LEVERS.simpler(sessionItem, leverSession, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier);
-          return { practice: matterAssignment(easier) };
+          return { practice: matterExplorerBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -539,11 +512,6 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
   }, [runner.practiceSummary, items]);
 
   const staged = showReveal && reveal ? reveal.item : shownItem;
-  // Pip: the object on the bench is the question side; Pip outlines it during the
-  // ask and watches it while the child answers aloud.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The object on the bench', finished: showSummary,
-  });
   const modeMeta = MODE_META[staged?.kind ?? 'name_state'];
 
   return (
@@ -573,13 +541,16 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
             {/* THE BENCH. No bins, no property panel, no slider, no text box —
                 every one of them either prints the answer or lets the child
                 pick it from a menu the tutor never offered. */}
-            {pip.store && <div {...pip.dock} />}
+            {/* Every answer is spoken: Pip outlines the object on the bench as a whole and watches it. */}
+            <PipDock />
             {practice && !showReveal && (
               <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
             )}
-            <div {...pip.target('stimulus')} className="flex justify-center">
-              {staged && <ObjectStage item={staged} revealed={showReveal} />}
-            </div>
+            <PipWorkspace>
+              <div data-pip-object="stimulus" className="flex justify-center">
+                {staged && <ObjectStage item={staged} revealed={showReveal} />}
+              </div>
+            </PipWorkspace>
             {!showReveal && sessionItem && models && <ModelCups item={sessionItem} models={models} />}
             {!showReveal && changePair && <ModelChanges pair={changePair} />}
 
@@ -616,16 +587,7 @@ const MatterExplorerBound = withWorkspaceOnly<SurfaceProps>('matter-explorer', M
  * A payload with no askable challenge is the ungraded exploration shelf.
  */
 const MatterExplorer: React.FC<MatterExplorerProps> = (props) => {
-  const { challenges = [], objects = [], gradeBand = 'K-1', supportTier } = props.data;
-  const band: MatterBand = gradeBand === '1-2' ? '1-2' : 'K-1';
-  const items = useMemo(
-    () => itemsFromChallenges(
-      challenges.map((c) => ({ id: c.id, challengeType: c.type, objectId: c.objectId })),
-      objects,
-      { band, tier: supportTier },
-    ),
-    [challenges, objects, band, supportTier],
-  );
+  const items = useMemo(() => matterItems(props.data), [props.data]);
   return items.length ? <MatterExplorerBound {...props} items={items} /> : <MatterExplorerShelf {...props} />;
 };
 

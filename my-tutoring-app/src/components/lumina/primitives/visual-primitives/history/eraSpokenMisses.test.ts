@@ -1,9 +1,8 @@
 import { expect, it } from 'vitest';
-import { eraSpokenMisses } from './eraExplorerWorkspace';
-import type { EraExplorerItem } from './eraExplorerScript';
+import { eraSpokenMisses, type EraExplorerItem } from './eraExplorerDomain';
 
 // era-explorer's known wrong picks (handoff 20 Part B): each other choice named for what it is; no example is accepted.
-const choice = (phrase: string, distinguisher: string, alsoCounts: string[] = []) => ({ label: phrase, phrase, closeForm: phrase, distinguisher, alsoCounts });
+const choice = (phrase: string, distinguisher: string, alsoCounts: string[] = []) => ({ label: phrase, phrase, distinguisher, alsoCounts });
 const SORT = [choice('only back then in Pioneer Times', 'back then', ['long ago']), choice('only today in your own life', 'today', ['now']),
   choice('true in both times', 'both', ['both times'])];
 const sort = (correctIndex: number) => ({ id: 's', kind: 'era_sort', statement: 'Children play games.', choices: SORT, correctIndex }) as unknown as EraExplorerItem;

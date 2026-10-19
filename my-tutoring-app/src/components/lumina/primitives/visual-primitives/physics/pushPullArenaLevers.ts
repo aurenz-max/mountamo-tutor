@@ -1,24 +1,24 @@
 /**
- * The in-item levers on push-pull-arena (`/add-support-tiers`, report `qa/eval-reports/push-pull-arena-levers-2026-10-08.md`).
- * Every answer is one spoken word computed from the sim; no lever says it, draws it or turns the ask into a choice.
+ * The in-item levers on push-pull-arena, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * `qa/eval-reports/push-pull-arena-levers-2026-10-08.md`). Every answer is one spoken word computed from the sim; no
+ * lever says it, draws it or turns the ask into a choice.
  *
- * - `mark_the_hand` (observe, help, shown): a hand at the arena's left edge, where every force comes from. The same
- *   picture on a push item and a pull item; the learner still watches whether the object goes away or comes closer.
- * - `push_pull_model` (observe, help, both): push and pull on a cart and a sled, never the item's object. Both words
+ * - `mark_the_hand` (observe, marks): a hand at the arena's left edge, where every force comes from. The same picture
+ *   on a push item and a pull item; the learner still watches whether the object goes away or comes closer.
+ * - `push_pull_model` (observe, model): push and pull on a cart and a sled, never the item's object. Both words
  *   together, never one.
- * - `show_the_setup` (predict, compare, design; help, shown): one weight block per kilogram under each object; for
- *   predict and design the surface's grip as bumps; for predict the coming push as marks. What is drawn, never which
- *   one wins.
- * - `same_push_model` (compare, help, both): two other things given the same push, with their weight blocks and their
+ * - `show_the_setup` (predict, compare, design; marks): one weight block per kilogram under each object; for predict
+ *   and design the surface's grip as bumps; for predict the coming push as marks. What is drawn, never which one wins.
+ * - `same_push_model` (compare, model): two other things given the same push, with their weight blocks and their
  *   tracks. Never the item's objects.
- * - `easier_item` (predict, compare, design; simplify): an ungraded item of the same mode, on objects the session
- *   never uses, with a decisive margin: an extreme setup on another surface (predict, design), or 1 kg against 10 kg
+ * - `easier_item` (predict, compare, design; easier): an ungraded item of the same mode, on objects the session never
+ *   uses, with a decisive margin: an extreme setup on another surface (predict, design), or 1 kg against 10 kg
  *   (compare). Observe has none: one object and one force is already its plainest shape.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { FRICTION_MU, SURFACE_SPOKEN, itemFromChallenge, type ArenaItem, type ArenaSurfaceId } from './pushPullArenaScript';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { pushPullArenaCard } from './pushPullArena.card';
+import { SURFACE_SPOKEN, itemFromChallenge, type ArenaItem, type ArenaItemKind, type ArenaSurfaceId } from './pushPullArenaDomain';
 import type { PushPullChallenge } from './PushPullArena';
-import type { SpokenPushPullMiss } from './pushPullArenaWorkspace';
 
 export const HAND_LEVER = 'mark_the_hand';
 export const FORCE_MODEL_LEVER = 'push_pull_model';
@@ -98,6 +98,13 @@ export function practiceLeak(practice: PushPullChallenge, parent: PushPullChalle
     || (parent.type !== 'compare' && practice.surface === parent.surface);
 }
 
+/** A practice item rebuilt from its parent's id (the journey row). */
+export function practiceFromId(itemId: string, session: readonly PushPullChallenge[]): ArenaItem | undefined {
+  if (!itemId.endsWith(ARENA_SIMPLER)) return undefined;
+  const parent = session.find(c => `${c.id}${ARENA_SIMPLER}` === itemId);
+  return parent ? arenaPracticeItem(parent, session)?.item : undefined;
+}
+
 const has = (text: string, word: RegExp) => word.test(text.toLowerCase());
 const PAIR: Record<string, [RegExp, RegExp]> = {
   push: [/\bpush/, /\bpull/], pull: [/\bpull/, /\bpush/],
@@ -108,7 +115,7 @@ const PAIR: Record<string, [RegExp, RegExp]> = {
 const HINT = /\b(heav\w*|light(er|est)?|grippy|slippery|strong\w*|gentle|farther|further|lighter)\b/;
 
 /**
- * The leak rule every lever's text (its `does` and its scene fact) passes, per mode. A two-word ask (push or pull,
+ * The leak rule every lever's text (its words and its scene fact) passes, per mode. A two-word ask (push or pull,
  * moves or stays, big or little) leaks when the text says the item's answer word without the other one; design also
  * leaks on a weight or grip adjective. compare leaks when the text names one of the item's objects and not the other,
  * or names them beside a comparative.
@@ -126,57 +133,69 @@ export function leverTextLeaks(text: string, item: ArenaItem): boolean {
 const blocks = (n: number) => `${n} weight block${n === 1 ? '' : 's'}`;
 const bumps = (s: ArenaSurfaceId) => GRIP_BUMPS[s] ? `${SURFACE_SPOKEN[s]} drawn with ${GRIP_BUMPS[s]} bumps` : `${SURFACE_SPOKEN[s]} drawn smooth, with no bumps`;
 
-/** What the pulled help levers put on screen, for the tutor and JEV. What is drawn, never which way it comes out. */
-export function arenaLeversOnScreen(challenge: PushPullChallenge, pulled: readonly string[], session: readonly PushPullChallenge[]): string | null {
-  const parts: string[] = [];
-  if (pulled.includes(HAND_LEVER)) parts.push('a hand at the left edge of the arena, where the force comes from (the same picture on every item)');
-  if (pulled.includes(FORCE_MODEL_LEVER)) parts.push(`a model on other things: a hand and a ${FORCE_MODEL.push.name} that goes away from it, marked push; `
-    + `a hand and a ${FORCE_MODEL.pull.name} that comes closer to it, marked pull. It is not this item`);
-  if (pulled.includes(SETUP_LEVER)) {
-    const setup = [`under the ${challenge.objectName}, ${blocks(challenge.objectWeight)}`];
-    if (challenge.type === 'compare' && challenge.object2Name) setup.push(`under the ${challenge.object2Name}, ${blocks(challenge.object2Weight ?? 0)}`);
-    else setup.push(bumps(challenge.surface));
-    if (challenge.type === 'predict') setup.push(`the coming push drawn as ${challenge.pushStrength ?? 5} marks`);
-    parts.push(setup.join('; '));
-  }
-  const model = pulled.includes(SAME_PUSH_MODEL_LEVER) ? samePushModel(session) : null;
-  if (model) parts.push(`a model on other things: a ${low(model.light.name)} with ${blocks(model.light.weight)} and a ${low(model.heavy.name)} with `
-    + `${blocks(model.heavy.weight)} got the same push; the ${low(model.light.name)}'s track is long and the ${low(model.heavy.name)}'s track is short. `
-    + 'It is not this item');
-  return parts.length ? parts.join('; ') : null;
+/** What `show_the_setup` draws for a challenge. What is drawn, never which way it comes out. */
+export function setupFact(c: PushPullChallenge): string {
+  const setup = [`under the ${c.objectName}, ${blocks(c.objectWeight)}`];
+  if (c.type === 'compare' && c.object2Name) setup.push(`under the ${c.object2Name}, ${blocks(c.object2Weight ?? 0)}`);
+  else setup.push(bumps(c.surface));
+  if (c.type === 'predict') setup.push(`the coming push drawn as ${c.pushStrength ?? 5} marks`);
+  const text = setup.join('; ');
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 }
 
-/** The levers this item declares, with their state. */
-export function arenaLevers(challenge: PushPullChallenge | null, pulled: readonly string[], session: readonly PushPullChallenge[]): WorkspaceLever[] {
-  if (!challenge) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly SpokenPushPullMiss[], when: string, does: string) =>
-    levers.push({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  switch (challenge.type) {
-    case 'observe':
-      add(HAND_LEVER, 'help', 'shown', ['opposite_force', 'described_motion'], 'The learner gives the other force word, or describes the motion with no force word.',
-        'Draws a hand at the left edge of the arena, where the force comes from. The learner presses Go again and watches the object against it.');
-      add(FORCE_MODEL_LEVER, 'help', 'both', ['opposite_force', 'described_motion'], 'The learner still mixes up the two force words.',
-        `Shows push and pull on a ${FORCE_MODEL.push.name} and a ${FORCE_MODEL.pull.name}, not this item. Say the model through; never say which way the learner's object went or which word fits it.`);
-      break;
-    case 'predict':
-      add(SETUP_LEVER, 'help', 'shown', ['opposite_outcome'], 'The learner gives the other outcome.',
-        'Draws the object\'s weight as blocks, the surface\'s grip as bumps and the coming push as marks. Nothing runs; say what is drawn, never what happens.');
-      break;
-    case 'compare':
-      add(SETUP_LEVER, 'help', 'shown', ['other_object'], 'The learner names the other object.',
-        'Draws each object\'s weight as blocks under it. Say what is drawn; never say which one wins.');
-      if (samePushModel(session)) add(SAME_PUSH_MODEL_LEVER, 'help', 'both', ['other_object'], 'The learner still names the other object after the blocks.',
-        'Shows two other things given the same push, with their weight blocks and their tracks, not this item. Say the model through; never say which of the learner\'s two objects goes farther.');
-      break;
-    case 'design':
-      add(SETUP_LEVER, 'help', 'shown', ['opposite_size'], 'The learner gives the other push size.',
-        'Draws the object\'s weight as blocks and the surface\'s grip as bumps. The learner can still try pushes; say what is drawn, never the size it needs.');
-      break;
-  }
-  if (arenaPracticeItem(challenge, session)) add(EASIER_LEVER, 'simplify', 'shown',
-    challenge.type === 'predict' ? ['opposite_outcome'] : challenge.type === 'compare' ? ['other_object'] : ['opposite_size'],
-    'The learner still misses after help.',
-    'Opens an easier practice item first: the same question on other things, with a clearer setup. Not graded; the full item comes back after it.');
-  return levers;
-}
+/** What the levers read beyond the item: the session's challenges (the arena draws from them; models stay off them). */
+export interface ArenaLeverContext { challenges: readonly PushPullChallenge[] }
+
+const challengeOf = (item: ArenaItem, { challenges }: ArenaLeverContext) => challenges.find(c => c.id === item.id) ?? null;
+type Mode = keyof typeof pushPullArenaCard.modes;
+const SETUP_WHEN: Record<Exclude<ArenaItemKind, 'observe'>, string> = {
+  predict: 'The learner gives the other outcome.',
+  compare: 'The learner names the other object.',
+  design: 'The learner gives the other push size.',
+};
+const SETUP_DOES: Record<Exclude<ArenaItemKind, 'observe'>, string> = {
+  predict: 'Draws the object\'s weight as blocks, the surface\'s grip as bumps and the coming push as marks. Nothing runs; say what is drawn, never what happens.',
+  compare: 'Draws each object\'s weight as blocks under it. Say what is drawn; never say which one wins.',
+  design: 'Draws the object\'s weight as blocks and the surface\'s grip as bumps. The learner can still try pushes; say what is drawn, never the size it needs.',
+};
+
+/** Every lever of the family, by type, in the order the tutor sees them. */
+export const ARENA_LEVERS = leverSet<ArenaItem, ArenaLeverContext>({
+  modeOf: item => item.kind,
+  missesOf: mode => pushPullArenaCard.modes[mode as Mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'medium',
+    different: item => (item.kind === 'observe' ? 'a push and a pull on other things' : 'two other things given the same push'),
+    own: 'this item\'s answer' },
+  specs: [
+    { id: HAND_LEVER, type: 'marks', modes: ['observe'], answers: 'all',
+      when: 'The learner gives the other force word, or describes the motion with no force word.',
+      does: 'Draws a hand at the left edge of the arena, where the force comes from. The learner presses Go again and watches the object against it.',
+      fact: 'A hand is drawn at the left edge of the arena, where the force comes from (the same picture on every item).' },
+    { id: FORCE_MODEL_LEVER, type: 'model', modes: ['observe'], answers: 'all',
+      when: 'The learner still mixes up the two force words.',
+      does: `Shows push and pull on a ${FORCE_MODEL.push.name} and a ${FORCE_MODEL.pull.name}, not this item. Say the model through; `
+        + 'never say which way the learner\'s object went or which word fits it.',
+      fact: `A model on other things: a hand and a ${FORCE_MODEL.push.name} that goes away from it, marked push; `
+        + `a hand and a ${FORCE_MODEL.pull.name} that comes closer to it, marked pull. It is not this item.` },
+    { id: SETUP_LEVER, type: 'marks', modes: ['predict', 'compare', 'design'], answers: 'all',
+      when: item => SETUP_WHEN[item.kind as Exclude<ArenaItemKind, 'observe'>],
+      does: item => SETUP_DOES[item.kind as Exclude<ArenaItemKind, 'observe'>],
+      content: challengeOf,
+      fact: (c: PushPullChallenge) => setupFact(c) },
+    { id: SAME_PUSH_MODEL_LEVER, type: 'model', modes: ['compare'], answers: 'all',
+      when: 'The learner still names the other object after the blocks.',
+      does: 'Shows two other things given the same push, with their weight blocks and their tracks, not this item. Say the model '
+        + 'through; never say which of the learner\'s two objects goes farther.',
+      content: (_item, { challenges }) => samePushModel(challenges),
+      fact: (m: { light: Thing; heavy: Thing }) => `A model on other things: a ${low(m.light.name)} with ${blocks(m.light.weight)} and a `
+        + `${low(m.heavy.name)} with ${blocks(m.heavy.weight)} got the same push; the ${low(m.light.name)}'s track is long and the `
+        + `${low(m.heavy.name)}'s track is short. It is not this item.` },
+    { id: EASIER_LEVER, type: 'easier', modes: ['predict', 'compare', 'design'], answers: 'all',
+      when: 'The learner still misses after help.',
+      does: 'Opens an easier practice item first: the same question on other things, with a clearer setup. Not graded; the full item comes back after it.',
+      content: (item, ctx) => {
+        const parent = challengeOf(item, ctx);
+        return parent ? arenaPracticeItem(parent, ctx.challenges)?.item ?? null : null;
+      } },
+  ],
+});

@@ -60,6 +60,25 @@ export const containsPhrase = (haystack: string, needle: string): boolean => {
 export const keyAnswers = (key: Pick<SpokenKey, 'answer' | 'alsoAccept'>) =>
   [key.answer, ...key.alsoAccept].filter(a => a.trim());
 
+/** A sound written between slashes ("/t/") is a sound, not the letter: it matches only itself. */
+const namesAnswer = (text: string, answer: string) =>
+  /^\/.+\/$/.test(answer.trim()) ? text.toLowerCase().includes(answer.trim().toLowerCase()) : containsPhrase(text, answer);
+
+/**
+ * What is wrong with an ask against its key, empty when nothing is (the spoken preset rejects content otherwise;
+ * boss.test.ts runs it over every saved payload). A menu key's ask must say every menu word, and may say the
+ * answer among them. Any other ask must not say an accepted answer, unless the answer is part of `given`: what the
+ * ask says by design ("zero plus three" asks for three).
+ */
+export function askLeaks(ask: string, key: SpokenKey, given: readonly string[] = []): string[] {
+  if (key.menu?.length) {
+    return key.menu.filter(word => !containsPhrase(ask, word)).map(word => `does not say the menu word "${word}"`);
+  }
+  return keyAnswers(key)
+    .filter(answer => namesAnswer(ask, answer) && !given.some(text => namesAnswer(text, answer)))
+    .map(answer => `says the answer "${answer}"`);
+}
+
 /**
  * Each surface (the ask, a printed stimulus, a picture's name) that names an accepted answer, with the first answer
  * it names. The caller lists only the surfaces that must not carry it: a print the learner reads aloud IS the answer.

@@ -4,9 +4,8 @@
  * Every step of a subtraction is one spoken move or number the tutor judges against the key.
  */
 import type { SpokenProcedureMiss } from './diWorkedProcedureWorkspace';
-import { defineCard, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { defineCard, SPOKEN, SPOKEN_AUDIO, OFF_BY } from '../../../components/live-activity/boss';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'] as const;
 
 export const diWorkedProcedureCard = defineCard<SpokenProcedureMiss>({
   id: 'di-worked-procedure',

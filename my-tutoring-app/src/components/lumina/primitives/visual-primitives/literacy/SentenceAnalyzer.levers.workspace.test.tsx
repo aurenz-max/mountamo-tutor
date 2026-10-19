@@ -15,7 +15,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromPayload } from './sentenceAnalyzerScript';
+import { itemsFromPayload } from './sentenceAnalyzerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -39,7 +39,7 @@ it('identify_pos: the model card and the wall examples change the screen; the it
   h.dispatch('pull_lever', { lever: 'wall_examples' });
   expect(q(h, '[data-lever="wall-example"]').length).toBe(first.wallLabels.length);
   expect(q(h, '.rounded-full').map(e => e.textContent)).not.toContain(first.answer);
-  expect(String(h.state().task!.demand.levers_on_screen)).toMatch(/Models are other sentences/);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/another sentence, not this one/);
   h.say(first.answer); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true,
     levers: ['model_sentence', 'wall_examples'] });
@@ -56,7 +56,7 @@ it('short_sentence: an ungraded practice sentence, then the full item back; only
   const practiceSentence = String(h.state().task!.demand.sentence);
   expect(practiceSentence).not.toBe(first.sentence);
   expect(practiceSentence.split(' ').length).toBeLessThanOrEqual(4);
-  const answer = h.state().task!.workspace!.expectedAnswer!.split(/[,.]/)[0];
+  const answer = h.state().task!.workspace!.expectedAnswer!.match(/^"([^"]+)"/)![1];
   h.say(answer); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task).toMatchObject({ itemId: first.id });
   expect(h.state().task!.demand.sentence).toBe(first.sentence);

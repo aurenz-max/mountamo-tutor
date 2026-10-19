@@ -1758,7 +1758,8 @@ export type ComponentId =
 /** How the learner gives an answer in one eval mode: the curator's answer vocabulary (`AffordanceAnswer`). */
 export type BossAnswer = AffordanceAnswer;
 /** Who decides whether an answer is right: the activity's own check in code, or the tutor from the learner's words. */
-export type BossJudge = 'activity' | 'tutor';
+/** `either`: the learner says it (the tutor judges against the key) or shows it (the activity checks it). */
+export type BossJudge = 'activity' | 'tutor' | 'either';
 /** What one graded item is: a single answer, or a board of parts the learner fills and then checks together. */
 export type BossFlow = 'one-at-a-time' | 'board';
 

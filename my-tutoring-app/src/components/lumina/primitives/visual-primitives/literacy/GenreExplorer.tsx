@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * GenreExplorer — runs only on the shared tutor/JEV teaching workspace (workspace
- * rollout C7; the scripted runner was retired, LA-14, user ruling 09-23: one path).
- * The observer judges each spoken answer and the runtime owns progression. There
+ * GenreExplorer — wired to the live tutor by its boss (`genreExplorer.card.ts` +
+ * `genreExplorer.boss.ts`, the spoken preset); it runs only on the shared tutor/JEV
+ * teaching workspace. The observer judges each spoken answer and the runtime owns progression. There
  * is no Next button, no mic panel, and no answer on screen before credit. An
  * unbound mount shows the shared "needs the tutor" card.
  *
@@ -45,8 +45,7 @@
  * where a child cannot decode four sentences unaided. The rule is a property of
  * the answer material, not a family constant.
  *
- * Asks and build gates live in `genreExplorerScript.ts`; the assignment and scene
- * the tutor receives live in `genreExplorerWorkspace.ts`.
+ * Asks, build gates, the key and the scene live in `genreExplorerDomain.ts`.
  */
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -60,7 +59,7 @@ import {
   LuminaPanel,
   LuminaReadAloudGlyph,
 } from '../../../ui';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -72,17 +71,19 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
+  GENRE_LABEL,
+  genreScene,
   itemsFromPayload,
   type GenreAction,
   type GenreExplorerItem,
   type GenreTier,
-} from './genreExplorerScript';
-import { genreAssignment, genreScene } from './genreExplorerWorkspace';
-import { FAR_KINDS_LEVER, GLOSSES_LEVER, KIND_PAIR_LEVER, PAIR_MODEL_LEVER, READ_AGAIN_LEVER, ROWS_LEVER, TEXT_MODEL_LEVER,
-  TWO_CHECKS_LEVER, farKindsFor, genreExplorerLevers, kindPairFor, leversOnScreen, pairModelFor, sentenceRows,
-  startingLevers, textModelFor, type FarKindsPractice, type GenreSession } from './genreExplorerLevers';
-import { GENRE_LABEL } from './genreExplorerScript';
+  type ResolvedExcerpt,
+} from './genreExplorerDomain';
+import { GENRE_LEVERS, GLOSSES_LEVER, KIND_PAIR_LEVER, PAIR_MODEL_LEVER, READ_AGAIN_LEVER, ROWS_LEVER, TEXT_MODEL_LEVER,
+  TWO_CHECKS_LEVER, kindPairFor, pairModelFor, sentenceRows, startingLevers, textModelFor, type GenreSession } from './genreExplorerLevers';
+import { genreExplorerBoss } from './genreExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -92,7 +93,7 @@ export interface GenreExcerpt {
   /** EXACTLY 'e1' | 'e2' | 'e3', in order — `presentIn` points at these. */
   excerptId: string;
   text: string;
-  /** A canonical `GenreId` from `genreExplorerScript`. */
+  /** A canonical `GenreId` from `genreExplorerDomain`. */
   genre: string;
 }
 
@@ -205,7 +206,7 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
   // In-item levers, keyed by the session item they were pulled on, and the practice text a simplify lever put on
   // screen in its place (ungraded; the full item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<FarKindsPractice | null>(null);
+  const [practice, setPractice] = useState<GenreExplorerItem | null>(null);
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<GenreExplorerMetrics>({
@@ -251,7 +252,7 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
 
   const runner = useWorkspaceRunner<GenreExplorerItem>({
     primitiveId: 'genre-explorer',
-    assignment: genreAssignment,
+    assignment: genreExplorerBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -268,56 +269,54 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
 
   const sessionItem = runner.currentItem;
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
-  const currentItem = practice?.item ?? sessionItem;
+  const currentItem = practice ?? sessionItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'check-feature'];
   const session: GenreSession = { items, excerpts, menu, readsAloud };
-  const starting = practice ? [] : startingLevers(data.supportTier, sessionItem);
+  const starting = practice || !sessionItem ? [] : startingLevers(sessionItem.tier, sessionItem);
   const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
   const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
   const textModel = sessionItem && leverOn(TEXT_MODEL_LEVER) ? textModelFor(sessionItem, session) : null;
   const pairModel = sessionItem && leverOn(PAIR_MODEL_LEVER) ? pairModelFor(sessionItem, session) : null;
   const kindPair = sessionItem && leverOn(KIND_PAIR_LEVER) ? kindPairFor(sessionItem, session) : null;
   /** The menu on screen: the practice item's two kinds while one is open. */
-  const shownMenu = practice ? practice.item.choices : menu;
-  const shownNotes = practice ? practice.item.choiceNotes : menuNotes;
+  const shownMenu = practice ? practice.choices : menu;
+  const shownNotes = practice ? practice.choiceNotes : menuNotes;
+  /** The practice text, as the scene and the stage show it. */
+  const practiceExcerpt = useMemo<ResolvedExcerpt | null>(() => (practice
+    ? { index: -1, excerptId: 'practice', text: practice.practiceText ?? '', spokenText: '', genre: null, ordinal: 'this one' } : null), [practice]);
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : genreExplorerLevers(sessionItem, session, pulledLevers, starting);
-    const scene = practice
-      ? genreScene(practice.item, [{ index: -1, excerptId: 'practice', text: practice.text, spokenText: '', genre: null, ordinal: 'this one' }],
-        practice.item.choices, readsAloud)
-      : genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud);
-    const onScreen = practice ? null : leversOnScreen([...starting, ...pulledLevers], sessionItem, session);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice text named from two kinds, ungraded. The full item comes back after it.' } : {}) },
+    // No lever on a practice item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : GENRE_LEVERS.declare(sessionItem, session, pulledLevers);
+    const scene = practice && practiceExcerpt
+      ? genreScene(practice, [practiceExcerpt], practice.choices, { readsAloud, practice: true })
+      : genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], { readsAloud });
+    workspace.current = {
+      ...leverScene(scene, {
+        support: practice ? '' : GENRE_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : GENRE_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === FAR_KINDS_LEVER) {
-          const simpler = farKindsFor(sessionItem, session);
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const simpler = GENRE_LEVERS.simpler(sessionItem, session, id);
           if (!simpler) return 'There is no easier text for this item.';
-          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setLeverState(next);
           setPractice(simpler);
-          return { practice: genreAssignment(simpler.item) };
+          return { practice: genreExplorerBoss.assignment(simpler) };
         }
-        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        setLeverState(next);
         return true;
       },
       endPractice: () => setPractice(null),
     };
-  });
-
-  // Pip: the texts are the question side and the genre menu is the answer, so
-  // Pip outlines the texts as a region during the ask and never the menu.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The texts', finished: showSummary,
   });
 
   /** The evidence this run has already EARNED, in the order it was earned. */
@@ -357,10 +356,10 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
    * every other item shows the one it is about.
    */
   const shownExcerpts = useMemo(() => {
-    if (practice) return [{ index: -1, excerptId: 'practice', text: practice.text, spokenText: '', genre: null, ordinal: 'this one' }];
+    if (practiceExcerpt) return [practiceExcerpt];
     if (!currentItem || currentItem.excerptIndex < 0) return excerpts;
     return excerpts.filter((e) => e.index === currentItem.excerptIndex);
-  }, [currentItem, excerpts, practice]);
+  }, [currentItem, excerpts, practiceExcerpt]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -509,8 +508,11 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.target('stimulus')}>{renderExcerpts()}</div>
+            {/* Every answer is spoken: Pip outlines the texts as a whole and never the menu. */}
+            <PipDock />
+            <PipWorkspace>
+              <div data-pip-object="stimulus">{renderExcerpts()}</div>
+            </PipWorkspace>
 
             {/* The model cards: other texts, never the learner's. */}
             {(textModel || pairModel || kindPair) && (

@@ -1,18 +1,16 @@
 'use client';
 
 /**
- * TextStructureAnalyzer — runs only on the shared tutor/JEV teaching workspace
- * (workspace rollout C7; the scripted runner was retired, LA-14, user ruling
- * 09-23: one path). The observer judges each spoken answer and the runtime owns
+ * TextStructureAnalyzer — wired to the live tutor by its boss (`textStructureAnalyzer.card.ts` +
+ * `textStructureAnalyzer.boss.ts`, the spoken preset); it runs only on the shared tutor/JEV
+ * teaching workspace. The observer judges each spoken answer and the runtime owns
  * progression. There is no Next button, no mic panel, and no answer on screen
  * before credit. An unbound mount shows the shared "needs the tutor" card.
  *
  * THE MODALITY, in one sitting:
  *
- *   "I point you at one sentence — you read it and tell me which word links
- *    the ideas. Your turn. Read the second sentence."         → "because"
- *   "Yes, because is the word that links them."
- *   "Now you tell me how the whole passage is put together.
+ *   "Read sentence two. Which word links the ideas?"          → "because"
+ *   "Think about the whole passage. How is it put together?
  *    Cause and Effect, Time Order, or Description?"           → "Cause and Effect"
  *   "Listen: the river rose over its banks.
  *    Does that go with Cause, or Effect?"                     → "Cause"
@@ -21,7 +19,7 @@
  *  - **All four phases' taps.** Clicking a highlighted span, tapping one of two
  *    cards at a 1-in-2 floor, and re-tapping a misplaced idea until it landed
  *    are three actions a child who cannot analyse structure performs perfectly.
- *    All three answers are spoken now (`textStructureAnalyzerScript.ts`).
+ *    All three answers are spoken now (`textStructureAnalyzerDomain.ts`).
  *  - **⚠️ THE HEADER BADGE THAT PRINTED THE ANSWER.** The card rendered
  *    `<LuminaBadge>{structureType.replace('-', ' ')}</LuminaBadge>` beside the
  *    grade chip, so "cause effect" was on screen from the first paint, above a
@@ -36,9 +34,9 @@
  *    feedback card.** Corrections cap in the runner; `PhaseSummaryPanel` reports.
  *  - **Six improvised tutor sends** (`[ACTIVITY_START]`, `[PHASE_TO_IDENTIFY]`,
  *    `[PHASE_TO_MAP]`, `[PHASE_TO_REVIEW]`, `[ANALYSIS_CORRECT]`,
- *    `[ANALYSIS_INSIGHT]`). The cues carry the entire spoken surface.
- *  - **The printed instruction sentences.** The tutor's line IS the instruction
- *    now (SWAP-1). Two instruction channels is what the click era had.
+ *    `[ANALYSIS_INSIGHT]`). The tutor speaks each item's ask from the workspace.
+ *  - **The printed instruction sentences.** The tutor's ask IS the instruction
+ *    now. Two instruction channels is what the click era had.
  *
  * WHAT STAYED — the PAGE, never the voice:
  *  - The passage. It is the reading material, and the tutor never reads it
@@ -50,11 +48,10 @@
  *    asked items — an exemplar is page material, not a question.
  *  - (Tap-to-hear is gone: with the tutor present, the learner asks it to repeat.)
  *
- * Asks and build gates live in `textStructureAnalyzerScript.ts`; the items,
- * assignment and scene the tutor receives live in `textStructureAnalyzerWorkspace.ts`.
+ * Asks, build gates, the key and the scene live in `textStructureAnalyzerDomain.ts`.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -67,7 +64,7 @@ import {
   LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -79,18 +76,21 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
+  STRUCTURE_LABEL as LABEL_OF,
+  isStructureType as isStructureId,
+  textStructureItems,
+  textStructureScene,
   wordBoundedIndexOf,
   type StructureTypeId,
   type TextStructureAction,
   type TextStructureItem,
   type TextStructureTier,
-} from './textStructureAnalyzerScript';
-import { textStructureAssignment, textStructureItems, textStructureScene } from './textStructureAnalyzerWorkspace';
-import { ANCHOR_LEVER, FOCUS_LEVER, LINK_MODEL_LEVER, SAY_CHOICES_LEVER, SOURCE_LEVER, STRUCTURE_MODEL_LEVER,
-  anchorFor, leversOnScreen, linkModelFor, linkParts, shortLinkFor, sourceFor, startingLevers, structureModelFor,
-  structurePracticeFor, textStructureLevers, twoPartFor, type TsaSession } from './textStructureAnalyzerLevers';
-import { STRUCTURE_LABEL as LABEL_OF, isStructureType as isStructureId } from './textStructureAnalyzerScript';
+} from './textStructureAnalyzerDomain';
+import { ANCHOR_LEVER, FOCUS_LEVER, LINK_MODEL_LEVER, SAY_CHOICES_LEVER, SOURCE_LEVER, STRUCTURE_MODEL_LEVER, TSA_LEVERS,
+  anchorFor, linkModelFor, linkParts, sourceFor, startingLevers, structureModelFor, type TsaSession } from './textStructureAnalyzerLevers';
+import { textStructureAnalyzerBoss } from './textStructureAnalyzer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -112,7 +112,7 @@ export interface TextStructureAnalyzerData {
     endIndex: number;
   }>;
 
-  /** The printed structure menu. `label` is CANONICAL (owned by the script
+  /** The printed structure menu. `label` is CANONICAL (owned by the domain
    *  module, derived from `type`) so a spoken closed set cannot have its option
    *  strings authored per generation; `description` is the generated gloss. */
   structureOptions: Array<{
@@ -143,9 +143,9 @@ export interface TextStructureAnalyzerData {
 
   /** easy/medium: the ASK names the structures and mats aloud; hard prints them
    *  only (band floor at grade 2 forces it on at every tier). Consumed by the
-   *  script module from `supportTier`. */
+   *  domain module from `supportTier`. */
   nameStrategy?: boolean;
-  /** easy: fewer structures in the spoken menu. FLOORED AT THREE by the script
+  /** easy: fewer structures in the spoken menu. FLOORED AT THREE by the domain
    *  module — a 2-option menu is a 1-in-2 guess on the run's single Identify
    *  ask, and the guess floor is what a judged loop exists to delete. Saturates
    *  at 2 in grade 2, where the curriculum has only two structures in band. */
@@ -193,10 +193,6 @@ const MAT_COLORS = ['text-violet-300', 'text-sky-300', 'text-emerald-300', 'text
 // Component
 // ============================================================================
 
-/** The catalog mode a structure belongs to, for a mount that did not pass its resolved mode. */
-const evalModeFor = (structure: StructureType): string =>
-  structure === 'chronological' || structure === 'description' ? 'chronological_description' : structure.replace('-', '_');
-
 const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title,
@@ -221,12 +217,9 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
   /** Build gates drop what cannot be asked; the structure menu takes its per-instance order. */
   const { items, sentences, spares } = useMemo(() => textStructureItems(data, resolvedInstanceId), [data, resolvedInstanceId]);
   // In-item levers, keyed by the session item they were pulled on, and the practice item a simplify lever put on
-  // screen in its place (ungraded; the full item comes back after it). `text` is a practice mini passage.
+  // screen in its place (ungraded; the full item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<{ item: TextStructureItem; text?: string } | null>(null);
-  /** The misses may quote the title and the session's linking words (said_topic, said_signal_word). */
-  const signals = useMemo(() => items.filter((i) => i.action === 'find-signal').map((i) => i.answer), [items]);
-  const assignment = useCallback((item: TextStructureItem) => textStructureAssignment(item, { title, signals }), [title, signals]);
+  const [practice, setPractice] = useState<TextStructureItem | null>(null);
 
   /** The credited item's reveal payload, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<{ action: TextStructureAction; answer: string } | null>(null);
@@ -277,7 +270,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
 
   const runner = useWorkspaceRunner<TextStructureItem>({
     primitiveId: 'text-structure-analyzer',
-    assignment,
+    assignment: textStructureAnalyzerBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -294,11 +287,11 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
 
   const sessionItem = runner.currentItem;
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
-  const currentItem = practice?.item ?? sessionItem;
+  const currentItem = practice ?? sessionItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'find-signal'];
   const session: TsaSession = { passage, sentences, items, spares, grade: Number(String(gradeLevel).replace(/[^0-9]/g, '')) || 4,
     structure: isStructureId(structureType) ? structureType : null, hasAnchor: !!anchorIdeaId };
-  const starting = practice ? [] : startingLevers(data.supportTier);
+  const starting = practice || !sessionItem ? [] : startingLevers(sessionItem.tier);
   const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
   const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
   const linkModel = sessionItem && !practice && leverOn(LINK_MODEL_LEVER) ? linkModelFor(sessionItem, session) : null;
@@ -307,46 +300,35 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
   const source = sessionItem && !practice && leverOn(SOURCE_LEVER) && sessionItem.action === 'place-idea' ? sourceFor(sessionItem, session) : null;
   const sayChoices = !practice && pulledLevers.includes(SAY_CHOICES_LEVER);
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : textStructureLevers(sessionItem, session, pulledLevers, starting);
-    const scene = textStructureScene(currentItem, passage);
-    const onScreen = practice ? null : leversOnScreen(pulledLevers, sessionItem, session);
-    const card = practice ? (practice.text ?? (practice.item.action === 'find-signal' ? practice.item.stimulusText : '')) : '';
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: `An easier practice item, ungraded. The full item comes back after it.${card
-          ? ` On the card, for the learner to read (never read it aloud): "${card}"` : ''}` } : {}) },
+    // No lever on a practice item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : TSA_LEVERS.declare(sessionItem, session, pulledLevers);
+    workspace.current = {
+      ...leverScene(textStructureScene(currentItem, passage), {
+        support: practice ? '' : TSA_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : TSA_LEVERS.onScreen(sessionItem, session, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const simpler = sessionItem.action === 'find-signal' ? (() => { const x = shortLinkFor(sessionItem, session); return x ? { item: x } : null; })()
-            : sessionItem.action === 'name-structure' ? structurePracticeFor(sessionItem, session)
-              : (() => { const x = twoPartFor(sessionItem, session); return x ? { item: x } : null; })();
+          const simpler = TSA_LEVERS.simpler(sessionItem, session, id);
           if (!simpler) return 'There is no easier item for this one.';
-          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setLeverState(next);
           setPractice(simpler);
-          return { practice: assignment(simpler.item) };
+          return { practice: textStructureAnalyzerBoss.assignment(simpler) };
         }
-        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        setLeverState(next);
         return true;
       },
       endPractice: () => setPractice(null),
     };
-  });
-
-  // Pip: the passage is the question side. On a place-idea item the idea card
-  // is already marked on screen, so Pip may point at it; the structure menu and
-  // the mats are answers and are never targets.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The passage', finished: showSummary,
-    cueId: currentItem?.action === 'place-idea' ? 'idea' : 'stimulus',
   });
 
   /** The linking words this run has already earned, by sentence: only a credit lights one up. */
@@ -536,14 +518,17 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
               <LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} />
             </div>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.target('stimulus')}>{renderPassage()}</div>
+            {/* Every answer is spoken: Pip outlines the passage as a whole and never the menu or the mats. */}
+            <PipDock />
+            <PipWorkspace>
+              <div data-pip-object="stimulus">{renderPassage()}</div>
+            </PipWorkspace>
 
             {/* A practice card: a sentence or a short passage the learner reads (never the session passage). */}
-            {practice && practice.item.action !== 'place-idea' && (
+            {practice && practice.action !== 'place-idea' && (
               <LuminaPanel data-lever="practice-card" className="p-3 border-amber-300/30 bg-amber-950/10">
                 <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-amber-300">Practice</p>
-                <p className="text-sm text-slate-100">{practice.text ?? practice.item.stimulusText}</p>
+                <p className="text-sm text-slate-100">{practice.practiceText ?? practice.stimulusText}</p>
               </LuminaPanel>
             )}
 
@@ -577,7 +562,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
             {currentItem?.action === 'place-idea' && (
               <div className="space-y-3">
                 <div className="flex justify-center">
-                  <div {...pip.target('idea')} className="rounded-2xl border-2 border-white/15 bg-white/5 px-6 py-3 text-center text-sm font-medium text-slate-100">
+                  <div className="rounded-2xl border-2 border-white/15 bg-white/5 px-6 py-3 text-center text-sm font-medium text-slate-100">
                     {currentItem.stimulusText}
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 # Contract: text-structure-analyzer
 
 - **Derived:** 2026-10-04 (static: lever table, QA reports, tests, git history; no live census) · evidence window: 2026-08-17 → 2026-10-04
-- **Component:** `primitives/visual-primitives/literacy/TextStructureAnalyzer.tsx` · **Domain:** `textStructureAnalyzerScript.ts`, `textStructureAnalyzerWorkspace.ts`, `textStructureAnalyzerLevers.ts`, `textStructureModels.ts` · **Generator:** `service/literacy/gemini-text-structure-analyzer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (text-structure-analyzer)
+- **Component:** `primitives/visual-primitives/literacy/TextStructureAnalyzer.tsx` · **Domain:** `textStructureAnalyzerDomain.ts`, `textStructureAnalyzerLevers.ts`, `textStructureAnalyzer.card.ts` + `textStructureAnalyzer.boss.ts`, `textStructureModels.ts` · **Generator:** `service/literacy/gemini-text-structure-analyzer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (text-structure-analyzer)
 - **Status:** ACTIVE
 
 ## Consumers (blast radius)
@@ -43,3 +43,4 @@ None open.
 ## Changelog
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.
+- 2026-10-19: moved onto the boss framework (spokenBoss). The script's cue builders, the workspace module, the live adapter and the catalog `tutoring` block are deleted; the build gates, the ask, the key, the misses and the scene live in `textStructureAnalyzerDomain.ts`, the levers are one lever set (`TSA_LEVERS`). Requirements unchanged: the passage is still never read aloud (scene `constraints`; the card's `question` words name only the ask and the idea card), starting levers are still drawn and never offered (R6). The lever set now also writes the shared `support` fact (when the model lever comes, by tier), as on every boss with a model lever.

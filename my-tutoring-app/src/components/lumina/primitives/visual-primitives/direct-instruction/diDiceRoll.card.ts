@@ -4,9 +4,8 @@
  * The learner rolls, then every mode is one spoken answer the tutor judges against the key.
  */
 import type { SpokenDiceMiss } from './diDiceRollWorkspace';
-import { defineCard, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { defineCard, SPOKEN, SPOKEN_AUDIO, OFF_BY } from '../../../components/live-activity/boss';
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'] as const;
 
 export const diDiceRollCard = defineCard<SpokenDiceMiss>({
   id: 'di-dice-roll',

@@ -4,11 +4,10 @@
  * Oral Sentence Studio — original vocabulary use in complete child sentences.
  *
  * A meaningful scene and two new words stay visible while the child speaks.
- * Runs only on the shared tutor/JEV teaching workspace (workspace rollout C7;
- * the scripted runner was retired, LA-14, user ruling 09-23: one path): the
- * observer judges complete thought + task relevance + semantic word use, never
- * exact wording, and the runtime owns progression. An example sentence appears
- * only after credit. An unbound mount shows the shared "needs the tutor" card.
+ * Wired to the live tutor by its boss (`oralSentenceStudio.card.ts` + `oralSentenceStudio.boss.ts`, the spoken
+ * preset): it runs only on the shared tutor/JEV teaching workspace. The tutor judges complete thought + task
+ * relevance + semantic word use against the key, never exact wording, and the runtime owns progression. An example
+ * sentence appears only after credit. An unbound mount shows the shared "needs the tutor" card.
  */
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -26,18 +25,19 @@ import {
   LuminaReadAloudGlyph,
   LuminaSectionLabel,
 } from '../../../ui';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OralSentenceStudioMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
-import { itemsFromChallenges, type OralSentenceStudioItem } from './oralSentenceStudioScript';
-import { oralSentenceAssignment, oralSentenceScene } from './oralSentenceStudioWorkspace';
-import { PICTURES_LEVER, STRIP_LEVER, leversOnScreen, oralSentenceLevers } from './oralSentenceStudioLevers';
+import { oralSentenceScene, type OralSentenceStudioItem } from './oralSentenceStudioDomain';
+import { ORAL_SENTENCE_LEVERS, PICTURES_LEVER, STRIP_LEVER } from './oralSentenceStudioLevers';
+import { oralSentenceItems, oralSentenceStudioBoss } from './oralSentenceStudio.boss';
 
 /** Task identities (eval modes): describe a picture, rehearse the sentence
  * for the next step of a class writing piece, or reuse two story words in a
@@ -112,7 +112,7 @@ const MODE_PROMPT: Record<OralSentenceStudioChallengeType, string> = {
 };
 
 const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, className, runtimePlanItemId }) => {
-  const items = useMemo(() => itemsFromChallenges(data.challenges), [data.challenges]);
+  const items = useMemo(() => oralSentenceItems(data), [data]);
   const stableInstanceIdRef = useRef(data.instanceId || `oral-sentence-studio-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -157,7 +157,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
 
   const runner = useWorkspaceRunner<OralSentenceStudioItem>({
     primitiveId: 'oral-sentence-studio',
-    assignment: oralSentenceAssignment,
+    assignment: oralSentenceStudioBoss.assignment,
     items,
     workspace,
     objectiveId: data.objectiveId,
@@ -178,11 +178,11 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
   useLayoutEffect(() => {
     const item = runner.currentItem;
     if (!item) return;
-    const levers = oralSentenceLevers(item, pulledLevers);
-    const scene = oralSentenceScene(item);
-    const onScreen = leversOnScreen(item, pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+    const levers = ORAL_SENTENCE_LEVERS.declare(item, undefined, pulledLevers);
+    workspace.current = {
+      ...leverScene(oralSentenceScene(item), {
+        support: ORAL_SENTENCE_LEVERS.support(item),
+        onScreen: ORAL_SENTENCE_LEVERS.onScreen(item, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -195,11 +195,6 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
     };
   });
 
-  // Pip: the scene is the question side; the sentence is the child's own, so
-  // Pip points only at the scene and watches it while the child speaks.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The picture', finished: showSummary,
-  });
   const phaseResults = useMemo(() => {
     if (!runner.practiceSummary) return [];
     return phaseResultsFromSummary(items, runner.practiceSummary, (item) => PHASE_CONFIG[item.mode]);
@@ -254,8 +249,10 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
               </LuminaPanel>
             )}
 
-            {pip.store && <div {...pip.dock} />}
-            <LuminaPanel {...pip.target('stimulus')} accent="cyan" className="overflow-hidden">
+            {/* Pip outlines the picture as a whole: the sentence is the child's own. */}
+            <PipDock />
+            <PipWorkspace>
+            <LuminaPanel data-pip-object="stimulus" accent="cyan" className="overflow-hidden">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <LuminaSectionLabel>
@@ -310,6 +307,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
                 </div>
               </div>
             </LuminaPanel>
+            </PipWorkspace>
 
             <LuminaPanel accent="amber">
               <LuminaSectionLabel>

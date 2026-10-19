@@ -28,6 +28,7 @@
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { itemFromChallenge, type CountingChallengeLike, type CountingItem } from './countingBoardDomain';
 import { LINE_LEVER, lineUpChanges } from './countingBoardLevers';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const FIVES_LEVER = 'five_groups';
 export const GROUP_TAG_LEVER = 'tag_one_group';
@@ -38,7 +39,6 @@ export const COUNT_ON_LEVER = 'small_count_on';
 export const FEWER_GROUPS_LEVER = 'fewer_groups';
 export const SPOKEN_SIMPLIFY = new Set([SMALLER_SET_LEVER, CHANGE_ONE_LEVER, COUNT_ON_LEVER, FEWER_GROUPS_LEVER]);
 
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 const LINE_KINDS = new Set(['count_all', 'count_on', 'take_away', 'add_more', 'recount_moved']);
 
 /** The practice board a simplify lever opens, built through the family's own item gate; null when none fits. */
@@ -70,9 +70,9 @@ export function spokenPractice(item: CountingItem, lever: string, session: reado
 export function countingBoardSpokenLevers(item: CountingItem | null, pulled: readonly string[], arrangement: string,
   session: readonly CountingItem[]): WorkspaceLever[] {
   if (!item || item.answerKind !== 'voice') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const simpler = (id: string, answers: string[], when: string) => spokenPractice(item, id, session)
+  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string): WorkspaceLever =>
+    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers: [...answers], when, does });
+  const simpler = (id: string, answers: readonly string[], when: string) => spokenPractice(item, id, session)
     ? [lever(id, 'simplify', answers, when, 'Opens an easier board of the same kind first. It is not graded; the full item comes back after it.')] : [];
   const noun = item.objectWord;
   const row = LINE_KINDS.has(item.kind) && (lineUpChanges(item, arrangement) || pulled.includes(LINE_LEVER))

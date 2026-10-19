@@ -3,13 +3,12 @@
 /**
  * You & Me — two partners, one action. The child plays the speaking partner and tells the
  * other what happened, choosing I or you (and myself or yourself on independent actions)
- * from that role. It runs only on the shared tutor/JEV teaching workspace (workspace
- * rollout B3; the scripted runner was retired, LA-14, user ruling 09-23: one path). The
- * observer judges each spoken sentence and the runtime owns progression. An unbound mount
- * shows the shared "needs the tutor" card.
+ * from that role. Wired to the live tutor by its boss (`youAndMe.card.ts` + `youAndMe.boss.ts`,
+ * the spoken preset): it runs only on the shared tutor/JEV teaching workspace. The tutor
+ * judges each spoken sentence against the key and the runtime owns progression. An unbound
+ * mount shows the shared "needs the tutor" card.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaPanel, LuminaPrompt } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
@@ -20,13 +19,13 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { sceneStatement, taskPrompt } from './youAndMeScript';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { SupportTier } from '../../../service/generation/generationContext';
 import { supportFor, type YouAndMeSupportScaffold } from './youAndMeSupport';
-import { hearSceneRequest, youAndMeAssignment, youAndMeScene } from './youAndMeWorkspace';
-import { aidsOnScreen, leversOnScreen, youAndMeLevers } from './youAndMeLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { youAndMePipPose } from '../../../pip/youAndMePipPose';
+import { hearSceneRequest, sceneStatement, taskPrompt, youAndMeScene } from './youAndMeDomain';
+import { aidsOnScreen, YOU_AND_ME_LEVERS } from './youAndMeLevers';
+import { youAndMeBoss } from './youAndMe.boss';
 
 export type YouAndMeMode = 'describe_action' | 'describe_independent_action';
 
@@ -74,7 +73,6 @@ function YouAndMeSurface(props: YouAndMeProps) {
 }
 
 function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) {
-  const ctx = useLuminaAIContext();
   const instanceId = useRef(data.instanceId ?? `you-and-me-${crypto.randomUUID()}`).current;
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [correctedId, setCorrectedId] = useState<string | null>(null);
@@ -110,7 +108,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
 
   const run = useWorkspaceRunner<YouAndMeChallenge>({
     primitiveId: 'you-and-me',
-    assignment: youAndMeAssignment,
+    assignment: youAndMeBoss.assignment,
     items,
     workspace,
     objectiveId: data.objectiveId,
@@ -119,7 +117,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
     instanceId,
     onFinished: finish,
     onItemOpened: () => setCorrectedId(null),
-    // After a checked miss the roles are restated on screen (the scripted correction's panel).
+    // After a checked miss the roles are restated on screen.
     onCorrectionRetry: item => setCorrectedId(item.id),
   });
   const item = run.currentItem;
@@ -130,11 +128,11 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item) return;
-    const levers = youAndMeLevers(item, pulledLevers);
-    const scene = youAndMeScene(item);
-    const onScreen = leversOnScreen(item, pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+    const levers = YOU_AND_ME_LEVERS.declare(item, undefined, pulledLevers);
+    workspace.current = {
+      ...leverScene(youAndMeScene(item), {
+        support: YOU_AND_ME_LEVERS.support(item),
+        onScreen: YOU_AND_ME_LEVERS.onScreen(item, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -145,24 +143,6 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
         return true;
       },
     };
-  });
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state onto the scene as a whole; Pip never
-  // answers, judges, or advances.
-  const pip = usePipTargets(item?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !item || showSummary) return null;
-    const targets = pip.targets(['scene'], () => 'The partners and the scene');
-    const pose = youAndMePipPose({
-      running: run.running, preparing: false,
-      currentSolved: run.currentSolved, revealHeld: run.revealHeld, judging: false,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === instanceId),
-      cueMatchesItem: run.cuedItemId === item.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId, scopeId: item.id, label: 'You and me', dock: pip.dock.current, targets, pose };
   });
 
   const phases = useMemo(() => phaseResultsFromSummary(items, run.practiceSummary, ch => ({
@@ -191,7 +171,10 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
       <div className="flex justify-center"><LuminaBadge accent="pink">
         {swapped ? 'Trade roles · same action, new speaker' : 'Meet the partners'}
       </LuminaBadge></div>
-      <div ref={pip.ref('scene')} data-pip-object="scene" className="relative grid grid-cols-2 gap-4 rounded-3xl bg-gradient-to-br from-rose-950/20 to-teal-950/25 p-4 sm:p-8">
+      {/* Pip outlines the scene as a whole: the speaker highlight and actor marker are aids the tiers withdraw. */}
+      <PipDock />
+      <PipWorkspace>
+      <div data-pip-object="scene" className="relative grid grid-cols-2 gap-4 rounded-3xl bg-gradient-to-br from-rose-950/20 to-teal-950/25 p-4 sm:p-8">
         {item.participants.map((person, index) => <div key={person.name}
           className={`relative flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border-2 p-4 transition-all duration-500 ${aids.speaker && index === item.speaker ?'border-pink-300 bg-pink-300/10 shadow-lg shadow-pink-300/10' : 'border-slate-600/40 bg-slate-800/20'}`}>
           <span className="text-6xl sm:text-7xl" role="img" aria-label={person.name}>{person.emoji}</span>
@@ -203,16 +186,14 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
         </div>)}
         <div className="col-span-2 text-center text-lg text-slate-100">{sceneStatement(item)}</div>
       </div>
+      </PipWorkspace>
       <LuminaPrompt>{taskPrompt(item)}</LuminaPrompt>
-      {/* Pip's dock sits below the prompt: the scene is outlined as a region. */}
-      {pipStore && <div ref={pip.dock} data-pip-dock={instanceId}
-        className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
       {support.preparation && <LuminaPanel><p className="text-center text-slate-200">{support.preparation}</p></LuminaPanel>}
       {correctedId === item.id && <LuminaPanel>
         <p className="text-center text-slate-200">{speaker.name} is speaking. {actor.name} did the action.</p>
       </LuminaPanel>}
       <div className="text-center"><LuminaButton tone="ghost"
-        onClick={() => ctx.sendText(hearSceneRequest(item), { silent: true, author: 'host' })}>
+        onClick={() => run.requestHear(hearSceneRequest(item))}>
         Hear the scene again
       </LuminaButton></div>
     </LuminaCardContent>

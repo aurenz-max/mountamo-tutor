@@ -3,16 +3,17 @@
 /**
  * StatesOfMatter — TWO surfaces, forked on whether judged challenges arrived:
  *
- *  - TEACHING WORKSPACE (challenges present): runs only on the shared tutor/JEV
- *    teaching workspace (workspace rollout C5; the scripted runner was retired,
- *    LA-14, user ruling 09-23: one path). The observer judges the spoken answer
- *    and the runtime owns progression. No Next, no Check, no printed answer
- *    before credit. An unbound mount shows the shared "needs the tutor" card.
+ *  - TEACHING WORKSPACE (challenges present): wired to the live tutor by its
+ *    boss (`statesOfMatter.card.ts` + `statesOfMatter.boss.ts`, the spoken
+ *    preset); it runs only on the shared tutor/JEV teaching workspace. The
+ *    observer judges the spoken answer and the runtime owns progression. No
+ *    Next, no Check, no printed answer before credit. An unbound mount shows
+ *    the shared "needs the tutor" card.
  *
  *  - EXPLORATION (no challenges, or every one dropped by a build gate): the
  *    free particle sim — slider, beaker, particle view, heating curve,
- *    substance switcher — with the tutor as a silent guide reacting to
- *    [PHASE_CHANGE] beats. The honest degrade, and a real reference surface.
+ *    substance switcher. The honest degrade, and a real reference surface.
+ *    Ungraded, and the tutor is not sent anything.
  *
  * ⭐ ALL THREE EVAL MODES ARE SPOKEN. observe says the state, predict says the
  * state it will reach or names the change, compare says one of two substances.
@@ -35,8 +36,8 @@
  *  - the SUBSTANCE SWITCHER — a compare item's other beaker is the question.
  * All of them return in the REVEAL, behind `runner.revealHeld` (18b).
  *
- * Asks, build gates and the substance table live in `statesOfMatterScript.ts`;
- * the assignment and scene the tutor receives live in `statesOfMatterWorkspace.ts`.
+ * Asks, build gates, the substance table, the key and the scene live in
+ * `statesOfMatterDomain.ts`.
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -45,7 +46,6 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { StatesOfMatterMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
   LuminaCard,
@@ -57,16 +57,15 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../../../ui';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { statesAssignment, statesScene } from './statesOfMatterWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  leversOnScreen,
   MODEL_COLOR,
   MODEL_PAIR_LEVER,
   modelPairFor,
@@ -74,8 +73,7 @@ import {
   modelTag,
   PARTICLE_MODELS,
   PARTICLE_MODELS_LEVER,
-  practiceItem,
-  statesLevers,
+  STATES_LEVERS,
   statesLeverSession,
   stripFor,
   TEMPERATURE_STRIP_LEVER,
@@ -85,8 +83,8 @@ import {
 import {
   SUBSTANCES,
   carriesAnswerVocabulary,
-  itemsFromChallenges,
   stateAt,
+  statesScene,
   substanceFactsOf,
   type MatterState,
   type StatesBand,
@@ -94,7 +92,8 @@ import {
   type StatesOfMatterItem,
   type StatesTier,
   type SubstanceFacts,
-} from './statesOfMatterScript';
+} from './statesOfMatterDomain';
+import { statesItems, statesOfMatterBoss } from './statesOfMatter.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -122,8 +121,8 @@ export interface ParticleConfig {
 
 /**
  * One judged states-of-matter challenge — CODE-DRAWN from the substance table
- * (never LLM-authored; every answer key is computed). The script module's build
- * gates (`statesOfMatterScript.itemFromChallenge`) validate and DROP, never
+ * (never LLM-authored; every answer key is computed). The domain module's build
+ * gates (`statesOfMatterDomain.itemFromChallenge`) validate and DROP, never
  * backfill: a placeholder item in a judged loop becomes a spoken ask the tutor
  * has to stand behind.
  */
@@ -742,7 +741,7 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
 
   const runner = useWorkspaceRunner<StatesOfMatterItem>({
     primitiveId: 'states-of-matter',
-    assignment: statesAssignment,
+    assignment: statesOfMatterBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -772,8 +771,6 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const showReveal = runner.revealHeld && reveal !== null;
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
   const sessionItem = runner.currentItem;
   const shownItem = practice ?? sessionItem;
@@ -782,15 +779,16 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
   const strip = sessionItem && pulledLevers.includes(TEMPERATURE_STRIP_LEVER) ? stripFor(sessionItem) : null;
   const modelPair = sessionItem && pulledLevers.includes(MODEL_PAIR_LEVER) ? modelPairFor(sessionItem, leverSession) : null;
 
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!sessionItem || !shownItem) return;
-    const scene = statesScene(shownItem);
-    const levers = practice ? [] : statesLevers(sessionItem, leverSession, pulledLevers);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, leverSession);
+    // No lever on an easier item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : STATES_LEVERS.declare(sessionItem, leverSession, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item, ungraded, on another substance. The full item comes back after it.' } : {}) },
+      ...leverScene(statesScene(shownItem, { practice: !!practice }), {
+        support: practice ? '' : STATES_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : STATES_LEVERS.onScreen(sessionItem, leverSession, pulledLevers) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -798,10 +796,10 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, leverSession);
+          const easier = STATES_LEVERS.simpler(sessionItem, leverSession, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier);
-          return { practice: statesAssignment(easier) };
+          return { practice: statesOfMatterBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -852,11 +850,6 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
   }, [runner.practiceSummary, items]);
 
   const staged = showReveal && reveal ? reveal.item : shownItem;
-  // Pip: the substances on the bench are the question side; on a pair item both
-  // are possible answers, so Pip outlines them together and never one.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The substances on the bench', finished: showSummary,
-  });
   const stagedTemp = showReveal && rampTemp != null
     ? rampTemp
     : staged?.startTemp ?? 0;
@@ -891,31 +884,34 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
                 no state badge, no substance switcher — every one of them either
                 answers the ask or lets the child run the experiment the tutor
                 is asking them to predict. */}
-            {pip.store && <div {...pip.dock} />}
+            {/* Every answer is spoken: Pip outlines the bench as a whole (on a pair item both beakers, never one). */}
+            <PipDock />
             {practice && !showReveal && (
               <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
             )}
-            <div {...pip.target('stimulus')} className="flex flex-col sm:flex-row gap-4 items-start justify-center">
-              {staged?.pair
-                ? staged.pair.map((s) => (
-                    <MatterLab
-                      key={s.key}
-                      substance={s}
-                      temperature={stagedTemp}
-                      particles={particles}
-                      revealed={showReveal}
-                      compact
-                    />
-                  ))
-                : staged?.substance && (
-                    <MatterLab
-                      substance={staged.substance}
-                      temperature={stagedTemp}
-                      particles={particles}
-                      revealed={showReveal}
-                    />
-                  )}
-            </div>
+            <PipWorkspace>
+              <div data-pip-object="stimulus" className="flex flex-col sm:flex-row gap-4 items-start justify-center">
+                {staged?.pair
+                  ? staged.pair.map((s) => (
+                      <MatterLab
+                        key={s.key}
+                        substance={s}
+                        temperature={stagedTemp}
+                        particles={particles}
+                        revealed={showReveal}
+                        compact
+                      />
+                    ))
+                  : staged?.substance && (
+                      <MatterLab
+                        substance={staged.substance}
+                        temperature={stagedTemp}
+                        particles={particles}
+                        revealed={showReveal}
+                      />
+                    )}
+              </div>
+            </PipWorkspace>
 
             {!showReveal && particleModels && <ParticleModels particles={particles} />}
             {!showReveal && strip && <TemperatureStripPanel strip={strip} />}
@@ -972,7 +968,6 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
     showOptions = {},
     substances: availableSubstances,
     gradeBand = 'K-2',
-    instanceId,
   } = data;
 
   const {
@@ -989,16 +984,7 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
   const [substancesExplored, setSubstancesExplored] = useState<Set<string>>(new Set([initialSubstance.name]));
   const [lastCrossedTransition, setLastCrossedTransition] = useState<'melting' | 'boiling' | null>(null);
   const [previousState, setPreviousState] = useState<MatterState | null>(null);
-
-  // Spoken-narration gating: settle timer + witnessed set, so dragging back and
-  // forth across a threshold stays silent and the first melt is illuminating
-  // where the fifth would be nagging.
-  const speakTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const witnessedTransitionsRef = useRef<Set<string>>(new Set());
   const prevSubstanceNameRef = useRef(initialSubstance.name);
-
-  const stableInstanceIdRef = useRef(instanceId || `states-of-matter-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const currentState: MatterState = useMemo(() => {
     if (temperature < substance.meltingPoint) return 'solid';
@@ -1022,34 +1008,9 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
     return Math.max(0, Math.min(100, ((temperature - tempRange.min) / range) * 100));
   }, [temperature, tempRange]);
 
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: 'free_explore',
-    stimulus: `${substance.name} in a beaker with its particle view, temperature under the learner's hand`,
-  }), [substance.name]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'states-of-matter',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? 'Kindergarten' : 'Grade 3-5',
-  });
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Free states-of-matter exploration for ${gradeBand}. `
-      + `The learner controls the temperature of ${substance.name} and watches the particles respond. `
-      + `Greet them warmly and invite them to try heating it up.`,
-      { silent: true },
-    );
-  }, [isConnected, substance.name, gradeBand, sendText]);
-
   useEffect(() => {
     if (prevSubstanceNameRef.current !== substance.name) {
       prevSubstanceNameRef.current = substance.name;
-      if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
       setPreviousState(currentState);
       return;
     }
@@ -1063,34 +1024,9 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
         setLastCrossedTransition(transition);
         setTimeout(() => setLastCrossedTransition(null), 2000);
       }
-
-      const reverseTransition = (previousState === 'liquid' && currentState === 'solid') ? 'freezing'
-        : (previousState === 'gas' && currentState === 'liquid') ? 'condensing'
-        : null;
-
-      if (transition || reverseTransition) {
-        if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
-        const fromState = previousState;
-        const toState = currentState;
-        const crossingTemp = temperature;
-        speakTransitionTimerRef.current = setTimeout(() => {
-          const key = `${substance.name}:${fromState}->${toState}`;
-          if (witnessedTransitionsRef.current.has(key)) return;
-          witnessedTransitionsRef.current.add(key);
-          sendText(
-            `[PHASE_CHANGE] ${substance.name} went from ${fromState} to ${toState} at ${crossingTemp} degrees. `
-            + `Celebrate what the particles just did, in one short sentence.`,
-            { silent: true },
-          );
-        }, 1200);
-      }
     }
     setPreviousState(currentState);
-  }, [currentState, previousState, substance.name, temperature, sendText]);
-
-  useEffect(() => () => {
-    if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
-  }, []);
+  }, [currentState, previousState, substance.name]);
 
   const handleTemperatureChange = useCallback((newTemp: number) => {
     SoundManager.tick();
@@ -1104,11 +1040,7 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
     setSubstance(preset);
     setTemperature(preset.currentTemp);
     setSubstancesExplored(prev => { const next = new Set(prev); next.add(preset.name); return next; });
-    sendText(
-      `[SUBSTANCE_CHANGED] The learner switched to ${preset.name}. Invite them to explore it.`,
-      { silent: true },
-    );
-  }, [sendText]);
+  }, []);
 
   const stateConf = STATE_CONFIG[currentState];
 
@@ -1278,13 +1210,7 @@ const StatesOfMatterExplorer: React.FC<StatesOfMatterProps> = ({ data, className
 const StatesOfMatter: React.FC<StatesOfMatterProps> = (props) => {
   const { data, className } = props;
   const band: StatesBand = data.gradeBand ?? '3-5';
-  const judgedItems = useMemo(
-    () => itemsFromChallenges(data.challenges ?? [], {
-      band,
-      tier: data.supportTier ?? 'medium',
-    }),
-    [data.challenges, band, data.supportTier],
-  );
+  const judgedItems = useMemo(() => statesItems(data), [data]);
 
   // A payload whose challenges ALL dropped degrades to exploration rather than
   // to an empty judged session — the build gates never repair, they drop, and

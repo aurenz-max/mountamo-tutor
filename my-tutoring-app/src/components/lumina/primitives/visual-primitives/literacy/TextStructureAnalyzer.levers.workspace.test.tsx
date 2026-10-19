@@ -13,7 +13,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { textStructureItems } from './textStructureAnalyzerWorkspace';
+import { textStructureItems } from './textStructureAnalyzerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -59,7 +59,7 @@ it('find-signal: the focus ring and a link model; the practice sentence is on a 
   expect(h.state().task).toMatchObject({ itemId: `${first.id}~simpler` });
   expect(h.state().task!.task).toMatch(/sentence on the card/);
   expect(q(h, '[data-lever="practice-card"]')).toHaveLength(1);
-  const word = h.state().task!.workspace!.expectedAnswer!.split(',')[0];
+  const word = h.state().task!.workspace!.expectedAnswer!.match(/^"([^"]+)"/)![1];
   h.say(word); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task).toMatchObject({ itemId: first.id });
   h.say(first.answer); h.feedback('correct');

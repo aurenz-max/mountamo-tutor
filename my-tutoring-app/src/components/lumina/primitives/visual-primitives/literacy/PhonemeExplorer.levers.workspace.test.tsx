@@ -40,7 +40,7 @@ it('isolate: the position model lights the first box of another word; the withdr
   expect(q(h, '[data-lever="position-model"] [data-lit]').map(b => b.getAttribute('data-box'))).toEqual(['0']);
   const word = model[0].querySelector('[role="img"]')!.getAttribute('aria-label')!;
   expect(word[0]).not.toBe('m');
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(`another word, ${word}`));
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(new RegExp(`another word, ${word}`));
   h.dispatch('pull_lever', { lever: 'example_word' });
   expect(text(h)).toMatch(/mouse/);
   h.say('moon'); h.feedback('correct');

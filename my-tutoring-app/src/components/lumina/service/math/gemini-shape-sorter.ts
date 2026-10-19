@@ -4,9 +4,9 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from "../scopeContext";
 
-// The geometry table and every build gate come from the SCRIPT module — the one
+// The geometry table and every build gate come from the DOMAIN module — the one
 // address both sides of the wire share. It carried a local copy until the DI
-// port (SS-1: it could not import the `'use client'` component); `shapeSorterScript`
+// port (SS-1: it could not import the `'use client'` component); `shapeSorterDomain`
 // is not a client module, so the copy is deleted rather than re-synced. A
 // hand-synced pair drifts, and letter-spotter's 90-vs-100 disagreement is why
 // that is a rule and not a preference.
@@ -19,9 +19,9 @@ import {
   isSortable,
   binLabelFor,
   normalizeSortRule,
-  opensWithSentinel,
   optionsEarSeparable,
-} from "../../primitives/visual-primitives/math/shapeSorterScript";
+} from "../../primitives/visual-primitives/math/shapeSorterDomain";
+import { opensWithSentinel } from "../../hooks/judgedScriptContract";
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -126,7 +126,7 @@ const TIER_GUARDRAIL =
  *   `showBinLabels: false` blanked the mats at `hard`. That is legal while the
  *   answer is a POSITION you can tap; once the answer is the label SAID ALOUD,
  *   an unlabelled mat is an unanswerable question. The withdrawal moved into
- *   the ASK — `shapeSorterScript`'s `namesChoices` stops SPEAKING the groups at
+ *   the ASK — `shapeSorterDomain`'s `namesChoices` stops SPEAKING the groups at
  *   `hard` for a reader while they stay printed (letter-sound-link's
  *   tier-conditional exemption). It rides `supportTier`, stamped below.
  *
@@ -462,7 +462,7 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
    * stand behind, and a coerced circle in a sides-sort is an ask with no
    * defensible answer.
    *
-   * Every gate below is IMPORTED from `shapeSorterScript`, so the build side and
+   * Every gate below is IMPORTED from `shapeSorterDomain`, so the build side and
    * the generator side cannot disagree about what is askable.
    */
   const kept: ShapeSorterChallengeDraft[] = [];

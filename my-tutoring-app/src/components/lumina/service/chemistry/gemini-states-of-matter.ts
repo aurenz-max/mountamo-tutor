@@ -10,7 +10,7 @@ import {
 import {
   bandPool,
   carriesAnswerVocabulary,
-} from "../../primitives/visual-primitives/chemistry/statesOfMatterScript";
+} from "../../primitives/visual-primitives/chemistry/statesOfMatterDomain";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
 export type {

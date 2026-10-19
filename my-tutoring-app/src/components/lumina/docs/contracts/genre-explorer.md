@@ -1,7 +1,7 @@
 # Contract: genre-explorer
 
 - **Derived:** 2026-10-04 (static: lever table, QA reports, tests, git history; no live census) · evidence window: 2026-08-17 → 2026-10-04
-- **Component:** `primitives/visual-primitives/literacy/GenreExplorer.tsx` · **Domain:** `genreExplorerScript.ts`, `genreExplorerWorkspace.ts`, `genreExplorerLevers.ts`, `genreModels.ts` · **Generator:** `service/literacy/gemini-genre-explorer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (genre-explorer)
+- **Component:** `primitives/visual-primitives/literacy/GenreExplorer.tsx` · **Domain:** `genreExplorerDomain.ts`, `genreExplorerLevers.ts`, `genreExplorer.card.ts` + `genreExplorer.boss.ts`, `genreModels.ts` · **Generator:** `service/literacy/gemini-genre-explorer.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (genre-explorer)
 - **Status:** ACTIVE
 
 ## Consumers (blast radius)
@@ -43,3 +43,4 @@ None open.
 ## Changelog
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.
+- 2026-10-19: moved onto the boss framework (spokenBoss). The script's cue builders and the catalog `tutoring` block are deleted; the build gates, the ask and the key live in `genreExplorerDomain.ts`. Requirements unchanged; the lever set now also writes the shared `support` fact (when the model lever comes, by tier), as on every boss with a model lever.

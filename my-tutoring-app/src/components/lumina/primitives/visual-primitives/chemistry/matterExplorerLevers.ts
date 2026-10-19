@@ -1,20 +1,21 @@
 /**
- * The in-item levers on matter-explorer (`/add-support-tiers`, report qa/eval-reports/matter-explorer-levers-2026-10-08.md).
+ * The in-item levers on matter-explorer, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report qa/eval-reports/matter-explorer-levers-2026-10-08.md).
  * No real-learner evidence: the misses are what `matterSpokenMisses` names on each mode's spoken answer.
  *
  * Every answer is said out loud, and the scene must never classify the item's object. So no lever marks the item:
  * help draws MODELS beside it (other everyday things, never one the lesson carries), and simplify opens a practice
  * item `<item>~simpler` on a plainer thing.
  *
- * - sort, mystery: `three_models` (help) a solid, a liquid and a gas from everyday life, each drawn in a cup and tagged
- *   with its state and what it does there. `plain_object` (simplify) a practice item on a plain everyday thing with the
+ * - sort, mystery: `three_models` (model) a solid, a liquid and a gas from everyday life, each drawn in a cup and tagged
+ *   with its state and what it does there. `plain_object` (easier) a practice item on a plain everyday thing with the
  *   three state words named in the ask (mystery: clues that point at the state, e.g. "it feels wet").
  * - property: `three_models` tagged with what each does in a cup, no state word. `plain_object` a practice item on a
  *   plain thing whose ask names two options, its answer and the far one, instead of three.
- * - change: `two_changes` (help) one model change that can go back and one that cannot, each tagged with why. Never the
+ * - change: `two_changes` (model) one model change that can go back and one that cannot, each tagged with why. Never the
  *   item's own change. No simplify: one premise and two options is the plainest shape of the ask.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { matterExplorerCard } from './matterExplorer.card';
 import {
   CHANGE_CATALOG,
   CHANGE_OPTIONS,
@@ -26,8 +27,7 @@ import {
   type MatterState,
   type Reversibility,
   type ShapeBehaviour,
-} from './matterExplorerScript';
-import type { SpokenMatterMiss } from './matterExplorerWorkspace';
+} from './matterExplorerDomain';
 
 export const THREE_MODELS_LEVER = 'three_models';
 export const TWO_CHANGES_LEVER = 'two_changes';
@@ -180,61 +180,57 @@ export function practiceLeaks(practice: MatterExplorerItem, item: MatterExplorer
   return false;
 }
 
-// ── what is on screen ──────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
-/** What the pulled levers put on screen, for the tutor and JEV: what is drawn, never this item's answer. */
-export function leversOnScreen(item: MatterExplorerItem, on: readonly string[], s: MatterLeverSession): string | null {
-  const parts: string[] = [];
-  const models = on.includes(THREE_MODELS_LEVER) ? modelsFor(item, s) : null;
-  if (models) {
-    const where = item.kind === 'mystery_state' ? 'the covered box' : `the ${item.objectName}`;
-    parts.push(`beside ${where}, three model things that are not this item, each drawn in a cup and tagged: `
-      + `${models.map(m => `${m.name} (${modelTag(item, m)})`).join('; ')}. Nothing marks which one the item is like`);
-  }
-  const pair = on.includes(TWO_CHANGES_LEVER) ? changesFor(item, s) : null;
-  if (pair) {
-    parts.push(`under the ${item.objectName}, two model changes that are not this item, each tagged: `
-      + `${pair.map(m => `"${changeLine(m).replace(/\.$/, '')}" (${changeTag(m)})`).join('; ')}. Nothing marks which one the item is like`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
+/** What `three_models` draws, for the tutor and JEV: what is drawn, never this item's answer. */
+const modelsFact = (models: readonly MatterModel[], item: MatterExplorerItem) =>
+  `Beside ${item.kind === 'mystery_state' ? 'the covered box' : `the ${item.objectName}`}, three model things that are not this `
+  + `item, each drawn in a cup and tagged: ${models.map(m => `${m.name} (${modelTag(item, m)})`).join('; ')}. Nothing marks which one `
+  + 'the item is like.';
 
-// ── the levers ─────────────────────────────────────────────────────────────
+/** What `two_changes` draws. */
+const changesFact = (pair: readonly ChangeModel[], item: MatterExplorerItem) =>
+  `Under the ${item.objectName}, two model changes that are not this item, each tagged: `
+  + `${pair.map(m => `"${changeLine(m).replace(/\.$/, '')}" (${changeTag(m)})`).join('; ')}. Nothing marks which one the item is like.`;
 
-const MISSES: Record<MatterExplorerItem['kind'], SpokenMatterMiss[]> = {
-  name_state: ['other_state', 'said_object_back'],
-  mystery_state: ['other_state'],
-  name_property: ['other_shape', 'state_word'],
-  name_undo: ['other_way', 'said_change_back', 'state_word'],
+type Mode = keyof typeof matterExplorerCard.modes;
+const ASKED: Record<Exclude<MatterExplorerItem['kind'], 'name_undo'>, { when: string; easier: string }> = {
+  name_state: { when: 'The learner names another state, or says the object\'s name back.',
+    easier: 'Opens an easier practice item first: a plain everyday thing, and the question names the three states.' },
+  name_property: { when: 'The learner picks another thing the question offered, or says a state word.',
+    easier: 'Opens an easier practice item first: a plain everyday thing, and the question offers two choices instead of three.' },
+  mystery_state: { when: 'The learner names another state.',
+    easier: 'Opens an easier practice item first: a secret plain everyday thing with clues that point at it, and the question '
+      + 'names the three states.' },
 };
+const asked = (item: MatterExplorerItem) => ASKED[item.kind as keyof typeof ASKED];
 
-export function matterLevers(item: MatterExplorerItem | null, s: MatterLeverSession, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const answers = MISSES[item.kind];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], when: string, does: string) =>
-    levers.push({ id, kind, carrier: 'both', pulled: pulled.includes(id), answers, when, does });
-  if (item.kind === 'name_undo') {
-    if (changesFor(item, s)) add(TWO_CHANGES_LEVER, 'help',
-      'The learner picks the wrong way, says the change back, or says a state word.',
-      'Shows two model changes from everyday life under the item, never this item\'s change: one tagged "it can go back the way it was" '
-      + 'and one tagged "it is changed for ever", each with why. Read them if you like. Never say which model the learner\'s change is '
-      + 'like, or whether the learner\'s change can go back.');
-    return levers;
-  }
-  const property = item.kind === 'name_property';
-  if (modelsFor(item, s)) add(THREE_MODELS_LEVER, 'help',
-    property ? 'The learner picks another thing the question offered, or says a state word.'
-      : item.kind === 'mystery_state' ? 'The learner names another state.' : 'The learner names another state, or says the object\'s name back.',
-    `Draws three model things from everyday life beside the item, none of them in this lesson, each in a cup and tagged with `
-    + `${property ? 'what it does there' : 'its state and what it does there'}. Read the tags if you like. Never say which model the `
-    + `${item.kind === 'mystery_state' ? 'secret thing' : 'learner\'s object'} is like, or what it does in a cup.`);
-  if (practiceItem(item, s)) add(PLAIN_OBJECT_LEVER, 'simplify', 'The learner still cannot answer after help.',
-    property ? 'Opens an easier practice item first: a plain everyday thing, and the question offers two choices instead of three. '
-      + 'Not graded; the full item comes back after it.'
-      : item.kind === 'mystery_state' ? 'Opens an easier practice item first: a secret plain everyday thing with clues that point at it, '
-        + 'and the question names the three states. Not graded; the full item comes back after it.'
-        : 'Opens an easier practice item first: a plain everyday thing, and the question names the three states. '
-          + 'Not graded; the full item comes back after it.');
-  return levers;
-}
+/** Every lever of the family, by type, in the order the tutor sees them. */
+export const MATTER_LEVERS = leverSet<MatterExplorerItem, MatterLeverSession>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => matterExplorerCard.modes[mode as Mode]?.misses ?? [],
+  support: { tier: item => item.tier,
+    different: item => (item.kind === 'name_undo' ? 'two other everyday changes' : 'three other everyday things in cups'),
+    own: 'this item\'s answer' },
+  specs: [
+    { id: THREE_MODELS_LEVER, type: 'model', modes: ['sort', 'property', 'mystery'], answers: 'all',
+      when: item => asked(item).when,
+      does: item => `Draws three model things from everyday life beside the item, none of them in this lesson, each in a cup and `
+        + `tagged with ${item.kind === 'name_property' ? 'what it does there' : 'its state and what it does there'}. Read the tags if `
+        + `you like. Never say which model the ${item.kind === 'mystery_state' ? 'secret thing' : 'learner\'s object'} is like, or what `
+        + 'it does in a cup.',
+      content: (item, s) => modelsFor(item, s),
+      fact: (models: MatterModel[], item) => modelsFact(models, item) },
+    { id: TWO_CHANGES_LEVER, type: 'model', modes: ['change'], answers: 'all',
+      when: 'The learner picks the wrong way, says the change back, or says a state word.',
+      does: 'Shows two model changes from everyday life under the item, never this item\'s change: one tagged "it can go back the way '
+        + 'it was" and one tagged "it is changed for ever", each with why. Read them if you like. Never say which model the '
+        + 'learner\'s change is like, or whether the learner\'s change can go back.',
+      content: (item, s) => changesFor(item, s),
+      fact: (pair: ChangeModel[], item) => changesFact(pair, item) },
+    { id: PLAIN_OBJECT_LEVER, type: 'easier', modes: ['sort', 'property', 'mystery'], answers: 'all',
+      when: 'The learner still cannot answer after help.',
+      does: item => `${asked(item).easier} Not graded; the full item comes back after it.`,
+      content: (item, s) => practiceItem(item, s) },
+  ],
+});

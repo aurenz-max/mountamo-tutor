@@ -5,7 +5,8 @@
  * checks it, so the boss is bespoke.
  */
 import type { SpokenShapeMiss } from '../math/shapeSorterDomain';
-import { defineCard, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { defineCard, OFF_BY, SPOKEN, SPOKEN_AUDIO } from '../../../components/live-activity/boss';
+import { SHAPE_ITEM_RULES } from '../math/shapeSorter.card';
 
 /** What the made shape got wrong, first one first (`shapeBuildMiss`, `TeachingAttempt.miss`). */
 export type ShapeBuildMiss = 'too_few_sides' | 'too_many_sides' | 'corners_not_square' | 'sides_not_equal'
@@ -14,7 +15,7 @@ export const SHAPE_BUILD_MISSES: readonly ShapeBuildMiss[] =
   ['too_few_sides', 'too_many_sides', 'corners_not_square', 'sides_not_equal', 'made_square', 'parallel_off'];
 
 const NAME = ['near_name', 'other_shape_name', 'described_shape'] as const;
-const COUNT = ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] as const;
+const COUNT = ['said_shape_name', ...OFF_BY] as const;
 
 export const diShapesCard = defineCard<SpokenShapeMiss | ShapeBuildMiss>({
   id: 'di-shapes',
@@ -35,9 +36,8 @@ export const diShapesCard = defineCard<SpokenShapeMiss | ShapeBuildMiss>({
     job: 'name the drawn shape, say how many sides or corners it has, or make the named shape on the dots',
     answer: 'the answer',
     question: 'the ask',
-    special: 'The stage draws one flat shape, or a familiar object; on a real object the shape in it is the answer. On '
-      + 'a counting item never say the shape name: it gives the count away. On a naming item never describe the shape '
-      + 'or offer a choice of names. Stuck with the model on screen: say the model again, then ask. On a build item '
+    special: 'The stage draws one flat shape, or a familiar object; on a real object the shape in it is the answer. '
+      + `${SHAPE_ITEM_RULES} Stuck with the model on screen: say the model again, then ask. On a build item `
       + 'never say how many sides or corners the asked shape has or what the learner\'s shape is short of.',
   },
   audio: SPOKEN_AUDIO,

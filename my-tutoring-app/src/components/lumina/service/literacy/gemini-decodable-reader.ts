@@ -24,7 +24,7 @@ import {
   optionsEarSeparable,
   sentenceText,
   wordsIn,
-} from '../../primitives/visual-primitives/literacy/decodableReaderScript';
+} from '../../primitives/visual-primitives/literacy/decodableReaderDomain';
 
 // ---------------------------------------------------------------------------
 // Eval modes = COMPREHENSION TASK IDENTITIES (not numeric difficulty).
@@ -77,7 +77,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
  * READS each sentence aloud into a live judged loop, then answers comprehension
  * questions — aloud with one word where the answer is a word in the story
  * (literal / read-along), by picture card where the answer is a whole
- * proposition. See `decodableReaderScript.ts` for the answer-material fork.
+ * proposition. See `decodableReaderDomain.ts` for the answer-material fork.
  *
  * TWO CONTENT RULES ARE LOAD-BEARING, NOT COSMETIC, because every string below
  * gets SPOKEN by the tutor:

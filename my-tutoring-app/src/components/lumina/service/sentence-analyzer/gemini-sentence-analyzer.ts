@@ -6,7 +6,7 @@
  * `posOption0-3`, `roleOption0-3`, `sentenceTypeOption0-3`, `correctPos` and
  * `correctRole` — fourteen flat fields whose only consumer was a tap surface.
  * The child now SAYS the label, the answer set is the code-owned GRADE WALL in
- * `sentenceAnalyzerScript.ts`, and each word's own `pos` / `role` is the single
+ * `sentenceAnalyzerDomain.ts`, and each word's own `pos` / `role` is the single
  * answer key for every mode.
  *
  * The words also stopped being flat: `word0Text..word7Role` became a nested array
@@ -51,7 +51,7 @@ import {
   posWallFor,
   roleWallFor,
   type SentenceTier,
-} from '../../primitives/visual-primitives/literacy/sentenceAnalyzerScript';
+} from '../../primitives/visual-primitives/literacy/sentenceAnalyzerDomain';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,

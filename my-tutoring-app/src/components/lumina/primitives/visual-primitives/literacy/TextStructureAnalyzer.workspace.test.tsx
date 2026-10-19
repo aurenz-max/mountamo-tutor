@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Text structure analyzer on the teaching workspace: what is its own, plus its Pip surface. The
- * generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Text structure analyzer on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared boss contract
+ * (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,8 +15,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
-import { textStructureAssignment, textStructureItems } from './textStructureAnalyzerWorkspace';
+import { textStructureItems } from './textStructureAnalyzerDomain';
+import { textStructureAnalyzerBoss } from './textStructureAnalyzer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -47,8 +48,8 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
     + 'As a result, the plants had water all season.', ['To fix this', 'As a result'], ['Problem', 'Solution'],
   [['the garden kept drying out', 'Problem'], ['the class built a rain barrel', 'Solution']]),
 };
-const mount = (mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'text-structure-analyzer', evalMode: mode, data: PAYLOADS[mode], instanceId: 'text-structure-analyzer', pipStore });
+const mount = (mode: string) =>
+  mountWorkspace({ primitiveId: 'text-structure-analyzer', evalMode: mode, data: PAYLOADS[mode], instanceId: 'text-structure-analyzer' });
 const itemsOf = (mode: string) => textStructureItems(PAYLOADS[mode] as never, 'text-structure-analyzer').items;
 
 it.each(Object.keys(PAYLOADS))('%s binds: the build gates\' answer is the spoken key', mode => {
@@ -57,7 +58,7 @@ it.each(Object.keys(PAYLOADS))('%s binds: the build gates\' answer is the spoken
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'text-structure-analyzer', pin: mode, objectiveIds: ['o'], data: PAYLOADS[mode] })).not.toBeNull();
   const h = mount(mode);
   const task = h.state().task!;
-  expect(task.workspace!.expectedAnswer!.startsWith(items[0].answer)).toBe(true);
+  expect(task.workspace!.expectedAnswer!.startsWith(`"${items[0].answer}"`)).toBe(true);
   expect(task.task).not.toMatch(/Your turn/);
   expect(task.demand.passage).toBe((PAYLOADS[mode] as { passage: string }).passage);
 });
@@ -65,7 +66,7 @@ it.each(Object.keys(PAYLOADS))('%s binds: the build gates\' answer is the spoken
 it('no task says a sentence of the passage', () => {
   for (const mode of Object.keys(PAYLOADS)) {
     const sentences = (PAYLOADS[mode] as { passage: string }).passage.split(/(?<=\.)\s+/).map(t => t.replace(/\.$/, ''));
-    for (const item of itemsOf(mode)) for (const sentence of sentences) expect(textStructureAssignment(item).task).not.toContain(sentence);
+    for (const item of itemsOf(mode)) for (const sentence of sentences) expect(textStructureAnalyzerBoss.assignment(item).task).not.toContain(sentence);
   }
 });
 
@@ -91,15 +92,6 @@ it('right answers complete once and submit the structure metrics', async () => {
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'text-structure-analyzer', structureIdentifiedCorrectly: true });
-});
-
-it('Pip outlines the passage and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('text-structure-analyzer');
-  const h = mount('cause_effect', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toContain('stimulus');
-  h.say('because'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a passage with nothing askable', () => {

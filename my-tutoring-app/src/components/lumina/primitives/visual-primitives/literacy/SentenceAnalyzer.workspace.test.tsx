@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Sentence analyzer on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Sentence analyzer on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared boss contract
+ * (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,9 +15,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
-import { itemsFromPayload } from './sentenceAnalyzerScript';
+import { itemsFromPayload } from './sentenceAnalyzerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -25,8 +25,8 @@ afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 const GENERATED = (fixtures as Record<string, any>)['sentence-analyzer'];
 const MODES = ['identify_pos', 'identify_role', 'label_all', 'parse_structure'];
 const payload = (mode: string) => ({ ...GENERATED, challenges: GENERATED.challenges.filter((c: { type: string }) => c.type === mode) });
-const mount = (mode: string, pipStore?: PipSurfaceStore, data: Record<string, unknown> = payload(mode)) =>
-  mountWorkspace({ primitiveId: 'sentence-analyzer', evalMode: mode, data, instanceId: 'sentence-analyzer', pipStore });
+const mount = (mode: string, data: Record<string, unknown> = payload(mode)) =>
+  mountWorkspace({ primitiveId: 'sentence-analyzer', evalMode: mode, data, instanceId: 'sentence-analyzer' });
 const itemsOf = (mode: string) => itemsFromPayload(payload(mode) as never).items;
 
 it.each(MODES)('%s binds: the build gates\' label is the spoken key', mode => {
@@ -35,7 +35,7 @@ it.each(MODES)('%s binds: the build gates\' label is the spoken key', mode => {
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'sentence-analyzer', pin: mode, objectiveIds: ['o'], data: payload(mode) })).not.toBeNull();
   const h = mount(mode);
   const task = h.state().task!;
-  expect(task.workspace!.expectedAnswer!.toLowerCase().startsWith(items[0].answer.toLowerCase())).toBe(true);
+  expect(task.workspace!.expectedAnswer!.toLowerCase().startsWith(`"${items[0].answer.toLowerCase()}"`)).toBe(true);
   expect(task.task).not.toMatch(/Your turn/);
   expect(task.demand.sentence).toBe(items[0].sentence);
 });
@@ -66,15 +66,6 @@ it('right answers complete once and submit the grammar metrics', async () => {
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'sentence-analyzer', posIdentifyCorrect: itemsOf('identify_pos').length });
-});
-
-it('Pip outlines the sentence and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('sentence-analyzer');
-  const h = mount('identify_pos', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('noun'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable', () => {

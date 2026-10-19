@@ -13,9 +13,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { matterItems } from '../../../components/live-activity/adapters/matterExplorerLive';
+import { matterItems } from './matterExplorer.boss';
 import { matterLeverSession, practiceItem } from './matterExplorerLevers';
-import { PROPERTY_OPTIONS } from './matterExplorerScript';
+import { PROPERTY_OPTIONS } from './matterExplorerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -56,7 +56,7 @@ it('sort: three_models draws three tagged model cups in one commit; a second pul
   const receipt = h.dispatch('pull_lever', { lever: 'three_models' });
   expect(receipt.status).toBe('committed');
   expect(String((receipt.state.task!.demand as Record<string, unknown>).onScreen))
-    .toMatch(/^beside the rock, three model things that are not this item, each drawn in a cup and tagged: .*\(a solid: .*\(a liquid: .*\(a gas: .*Nothing marks which one the item is like$/);
+    .toMatch(/^Beside the rock, three model things that are not this item, each drawn in a cup and tagged: .*\(a solid: .*\(a liquid: .*\(a gas: .*Nothing marks which one the item is like\.$/);
   const cups = h.lever('three-models')!;
   expect(cups.children).toHaveLength(3);
   expect(cups.textContent).not.toMatch(/\brock\b/);
@@ -117,7 +117,7 @@ it('change: two_changes draws one model change of each kind, never the egg being
   expect(panel.textContent).toMatch(/it can go back the way it was/);
   expect(panel.textContent).toMatch(/it is changed for ever/);
   expect(panel.textContent).not.toMatch(/\begg\b|cooked/);
-  expect(h.onScreen()).toMatch(/^under the egg, two model changes that are not this item/);
+  expect(h.onScreen()).toMatch(/^Under the egg, two model changes that are not this item/);
   expect(h.levers()).toEqual([['two_changes', true]]);
   h.say('for ever'); h.feedback('correct');
   expect(h.attempts().at(-1)).toMatchObject({ itemId: 'change-egg', correct: true, assisted: true, levers: ['two_changes'] });

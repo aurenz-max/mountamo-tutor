@@ -14,8 +14,7 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
-import { buildThreeDShapeItems, canonicalRiddleCluesFor } from './threeDShapeExplorerScript';
+import { buildThreeDShapeItems, canonicalRiddleCluesFor } from './threeDShapeExplorerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -35,7 +34,7 @@ it.each(Object.keys(CHALLENGES))('%s binds: the spoken answer is the key, printe
   expect(item, `no askable ${mode} item`).toBeTruthy();
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: '3d-shape-explorer', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: '3d-shape-explorer', evalMode: mode, data: d });
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^${item.answer}\\.`));
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${item.answer}"`));
   expect(document.querySelector('p.text-emerald-300')).toBeNull();
 });
 
@@ -61,16 +60,6 @@ it('the replay button asks for the question silently, as the host, never the ans
   expect(text).toContain('What shape is it?');
   expect(text).not.toMatch(/cube/);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip points at the solid as a whole and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('solids');
-  const h = mountWorkspace({ primitiveId: '3d-shape-explorer', evalMode: 'identify_3d', data: data(CHALLENGES.identify_3d),
-    instanceId: 'solids', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('cube'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lab with nothing it can ask', () => {

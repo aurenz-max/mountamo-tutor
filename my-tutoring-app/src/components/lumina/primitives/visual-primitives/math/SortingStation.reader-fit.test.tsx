@@ -1,108 +1,26 @@
 // @vitest-environment jsdom
 /**
- * SortingStation STAGE behaviour under the judged loop. Every intent this file
- * pinned in the click era is still pinned — RE-BASED, not dropped:
- *
- *  1. (reader-fit PRE / contract R4) Trays are PICTURE-primary at K — the
- *     `bucketEmoji` (or a colour-coded fallback) with the word as a caption —
- *     and adult chrome is hidden. UNCHANGED: the port preserved this surface
- *     exactly, and it was the live regression risk of a whole-file rewrite.
- *  2. (R7) "Sort-family keeps its explicit Check button." RE-BASED. What R7
- *     protects is the COMMIT STEP for multi-part construction; the judged loop
- *     does not remove the commit, it removes the multi-part construction. One
- *     object is now one atomic judged turn and its commit is the child's spoken
- *     answer plus the tutor's verdict. So what this file pins is the ABSENCE of
- *     every Check control and the classification of each item as a VOICE item.
- *  3. (R6) "Odd-one-out is tap = choose; a wrong tap must not latch." RE-BASED
- *     the same way: there is no tap left to latch, because the child SAYS which
- *     card does not belong. Pinned as the absence of a tappable card plus the
- *     item's voice classification.
- *  4. Grade 1 keeps the reader chrome (progress counter, mode badges) — the
- *     control half of the band gate, so nothing leaks across `isPreReader`.
- *  5. The printed INSTRUCTION is gone at BOTH bands, which is new and
- *     deliberate: the tutor speaks the ask, so a printed copy would let a
- *     reader skip listening and would be unreadable to everyone else.
- *
- *  Plus the leak this port introduced a gate for: the per-tray count badge is
- *  withdrawn on a count ask, where it equals the number about to be spoken.
- *
- * The runner is mocked at the seam — it has its own suite
- * (`hooks/useJudgedScriptRunner.test.tsx`) and the pack has its own
- * (`__tests__/SortingStation.di-script.test.ts`). What is under test here is
- * the STAGE.
+ * SortingStation's page on the live workspace, per band. Every intent the click era pinned is still pinned, re-based:
+ *  1. (reader-fit PRE / contract R4) Trays are PICTURE-primary at K — the `bucketEmoji` (or a colour-coded fallback)
+ *     with the word as a caption — and adult chrome is hidden.
+ *  2. (R7) The commit step for the sort family is the spoken answer the tutor credits, not a button: no Check
+ *     control at either band, and every sort item is one spoken turn.
+ *  3. (R6) Odd-one-out has no tap left to latch: the cards are not buttons, the answer is said.
+ *  4. Grade 1 keeps the reader chrome (mode badges, description), so nothing leaks across `isPreReader`.
+ *  5. The printed instruction is gone at both bands: the tutor speaks the ask.
+ *  Plus the pixel leak: the per-tray count badge is withheld on a count ask until the answer is credited.
  */
-import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SortingStationItem } from './sortingStationScript';
-
-const runnerState = vi.hoisted(() => ({
-  index: 0,
-  stage: 'asking' as 'idle' | 'asking' | 'judging' | 'affirmed' | 'done',
-  running: true,
-  solved: new Set<string>(),
-  /** 18b: is the affirmed item's reveal still on screen? */
-  revealHeld: false,
-  options: null as null | {
-    pack: { items: SortingStationItem[] };
-    onItemOpened?: (item: SortingStationItem, index: number) => void;
-    onAffirmed?: (item: SortingStationItem) => void;
-  },
-}));
-
-vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
-  useJudgedScriptRunner: (options: typeof runnerState.options) => {
-    runnerState.options = options;
-    const item = options?.pack.items[runnerState.index] ?? null;
-    return {
-      running: runnerState.running,
-      preparing: false,
-      stage: runnerState.stage,
-      statusLine: 'status',
-      currentIndex: runnerState.index,
-      currentItem: item,
-      solvedIds: runnerState.solved,
-      currentSolved: item != null && runnerState.solved.has(item.id),
-      canAttempt:
-        runnerState.running && item != null
-        && !runnerState.solved.has(item.id) && runnerState.stage !== 'judging',
-      summary: null,
-      micState: 'armed',
-      tutorSpeaking: false,
-      cuedItemId: item?.id ?? null,
-      revealHeld: runnerState.revealHeld,
-      armStillness: vi.fn(),
-      clearStillness: vi.fn(),
-      start: vi.fn(),
-      hearStimulus: vi.fn(),
-      stimulusTapped: false,
-      submitGestureAttempt: vi.fn(),
-      isAwaitingGesture: () => false,
-      loop: {},
-    };
-  },
-}));
-
-// JudgedMicPanel subscribes to the live mic level (19b) — the only reason this
-// suite touches the AI context at all.
-vi.mock('@/contexts/LuminaAIContext', () => ({
-  useMicLevel: () => 0,
-}));
-
-vi.mock('../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    submittedResult: null,
-    elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import SortingStation, { type SortingStationData } from './SortingStation';
+import { cleanup, screen } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { SortingStationData } from './SortingStation';
+import { sortingStationItems } from './sortingStation.boss';
 
 const sortByOne = (gradeBand: 'K' | '1'): SortingStationData => ({
   title: 'Needs and Wants',
@@ -180,20 +98,15 @@ const countCompare = (gradeBand: 'K' | '1'): SortingStationData => ({
 });
 
 const CHECK_CONTROLS = /check answer|check sort|check counts|check tallies|next|finish|submit/i;
+const show = (data: SortingStationData, evalMode = 'sort_one') =>
+  mountWorkspace({ primitiveId: 'sorting-station', evalMode, instanceId: 'station', data: { ...data, instanceId: 'station' } });
 
-beforeEach(() => {
-  runnerState.index = 0;
-  runnerState.stage = 'asking';
-  runnerState.running = true;
-  runnerState.solved = new Set();
-  runnerState.revealHeld = false;
-  runnerState.options = null;
-});
-afterEach(cleanup);
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
-describe('SortingStation @ PRE (gradeBand K) — R4 survives the rewrite', () => {
+describe('SortingStation @ PRE (gradeBand K) — R4', () => {
   it('renders picture-primary trays (emoji + word caption)', () => {
-    render(<SortingStation data={sortByOne('K')} />);
+    show(sortByOne('K'));
     expect(screen.getByText('🏠')).toBeTruthy();
     expect(screen.getByText('🎁')).toBeTruthy();
     expect(screen.getByText('Need')).toBeTruthy();
@@ -201,98 +114,79 @@ describe('SortingStation @ PRE (gradeBand K) — R4 survives the rewrite', () =>
   });
 
   it('hides adult chrome and the unreadable description', () => {
-    render(<SortingStation data={sortByOne('K')} />);
+    show(sortByOne('K'));
     expect(screen.queryByText('Sort each thing into a need or a want')).toBeNull();
-    expect(screen.queryByText(/Sort It/)).toBeNull();          // mode badge
-    expect(screen.queryByText(/Listen to the question/)).toBeNull(); // helper prose
+    expect(screen.queryByText(/Sort It/)).toBeNull();
+    expect(screen.queryByText(/Say your answer out loud/)).toBeNull();
   });
 
-  /** NEW, and true at both bands: the tutor speaks the ask, so a printed copy
-   *  would let a reader skip listening and is unreadable to everyone else. */
   it('never prints the instruction — the tutor speaks it', () => {
-    render(<SortingStation data={sortByOne('K')} />);
+    show(sortByOne('K'));
     expect(screen.queryByText('Sort these into needs and wants')).toBeNull();
   });
 });
 
-describe('R7 re-based — the commit step is the verdict, not a button', () => {
-  it('the sort family has no Check control at K', () => {
-    render(<SortingStation data={sortByOne('K')} />);
+describe('R7 re-based — the commit step is the credited answer, not a button', () => {
+  it.each(['K', '1'] as const)('the sort family has no Check control at %s', band => {
+    show(sortByOne(band));
     expect(screen.queryByText(CHECK_CONTROLS)).toBeNull();
   });
 
-  it('the sort family has no Check control at Grade 1 either', () => {
-    render(<SortingStation data={sortByOne('1')} />);
-    expect(screen.queryByText(CHECK_CONTROLS)).toBeNull();
-  });
-
-  it('every sort item is an atomic VOICE turn — the commit is the answer', () => {
-    render(<SortingStation data={sortByOne('K')} />);
-    const items = runnerState.options!.pack.items;
-    // One challenge is no longer one screenful: it is one judged turn PER object.
+  it('every sort item is one spoken turn — the commit is the answer', () => {
+    const items = sortingStationItems(sortByOne('K'));
     expect(items).toHaveLength(2);
-    expect(items.every((i) => i.answerKind === 'voice')).toBe(true);
-    expect(items.every((i) => i.kind === 'sort')).toBe(true);
+    expect(items.every(i => i.answerKind === 'voice' && i.kind === 'sort')).toBe(true);
+    expect(show(sortByOne('K')).state().task!.workspace).toBeTruthy();
   });
 });
 
 describe('R6 re-based — there is no tap left to latch', () => {
   it('odd-one-out renders cards that are not buttons', () => {
-    const { container } = render(<SortingStation data={oddOneOut('K')} />);
+    const h = show(oddOneOut('K'), 'odd_one_out');
     expect(screen.getByText('🐶')).toBeTruthy();
     expect(screen.getByText('🚗')).toBeTruthy();
-    // The only button on the stage is the mic orb — no card is clickable, so a
-    // wrong "tap" cannot latch a wrong state and cannot auto-submit.
-    const cardButtons = Array.from(container.querySelectorAll('button'))
-      .filter((b) => /🐶|🐱|🚗/.test(b.textContent ?? ''));
+    const cardButtons = Array.from(h.view.container.querySelectorAll('button')).filter(b => /🐶|🐱|🚗/.test(b.textContent ?? ''));
     expect(cardButtons).toHaveLength(0);
   });
 
   it('the odd-one-out answer is SPOKEN, and one challenge is one turn', () => {
-    render(<SortingStation data={oddOneOut('K')} />);
-    const items = runnerState.options!.pack.items;
+    const items = sortingStationItems(oddOneOut('K'));
     expect(items).toHaveLength(1);
-    expect(items[0].answerKind).toBe('voice');
-    expect(items[0].kind).toBe('odd_one');
-    expect(items[0].answer).toBe('car');
+    expect(items[0]).toMatchObject({ answerKind: 'voice', kind: 'odd_one', answer: 'car' });
   });
 
-  it('never prints which card is the odd one before the verdict', () => {
-    render(<SortingStation data={oddOneOut('K')} />);
+  it('never prints which card is the odd one before it is credited', () => {
+    show(oddOneOut('K'), 'odd_one_out');
     expect(screen.queryByText(/does(n't| not) belong/i)).toBeNull();
+    expect(screen.queryByText('car', { selector: '.animate-bounce' })).toBeNull();
   });
 });
 
-describe('the pixel leak the port had to close', () => {
-  /** `showCounts` drew a live tally on every tray. Under a Check button that was
-   *  progress; the moment "how many are in the Red group?" became a spoken ask it
-   *  was the answer, printed, before the child said it. */
+describe('the pixel leak: the count badge is the answer on a count ask', () => {
   it('withdraws the tray count badge on a count ask, even with showCounts on', () => {
-    render(<SortingStation data={countCompare('1')} />);
-    const item = runnerState.options!.pack.items[runnerState.index];
-    expect(item.kind).toBe('count_group');
-    expect(item.hidesCounts).toBe(true);
+    const h = show(countCompare('1'), 'count_compare');
+    expect(h.state().task!.itemId).toBe('c1::count::red');
     // 2 red + 1 blue — neither count may be on screen while it is the answer.
     expect(screen.queryByText('2')).toBeNull();
     expect(screen.queryByText('1')).toBeNull();
   });
 
-  it('restores it once the tutor has affirmed the number', () => {
-    runnerState.revealHeld = true;
-    render(<SortingStation data={countCompare('1')} />);
-    expect(screen.queryByText('2')).toBeTruthy();
+  it('restores it once the answer is credited', () => {
+    const h = show(countCompare('1'), 'count_compare');
+    h.say('two'); h.feedback('correct');
+    expect(screen.queryAllByText('2').length).toBeGreaterThan(0);
   });
 });
 
 describe('SortingStation @ reader grade (control, Grade 1)', () => {
-  it('keeps the reader chrome: progress counter, mode badge, description', () => {
-    render(<SortingStation data={sortByOne('1')} />);
+  it('keeps the reader chrome: mode badge, description', () => {
+    show(sortByOne('1'));
     expect(screen.getByText('Sort each thing into a need or a want')).toBeTruthy();
     expect(screen.getByText(/Sort It/)).toBeTruthy();
   });
 
   it('keeps text-primary trays — no big picture header leaks down from K', () => {
-    render(<SortingStation data={sortByOne('1')} />);
+    show(sortByOne('1'));
     expect(screen.getByText('Need')).toBeTruthy();
     expect(screen.queryByText('🏠')).toBeNull();
     expect(screen.queryByText('🎁')).toBeNull();

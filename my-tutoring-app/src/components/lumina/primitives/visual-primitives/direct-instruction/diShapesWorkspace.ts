@@ -7,9 +7,8 @@
  * a counting item never names the shape (the name gives the count away), a real-object item names the
  * object but never the shape in it, and a naming item accepts the pack's spoken alternates.
  */
-import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { NEAR_SHAPE, flatShapeNameMisses, shapeCountMisses } from '../math/shapeSorterDomain';
 import { answerWordFor, countNoun, isCountingType, type DiShapeName, type DiShapesChallenge } from './diShapesScript';
@@ -45,16 +44,13 @@ export function shapesSpokenMisses(it: DiShapesChallenge): KnownMiss[] {
   ];
 }
 
-export function shapesAssignment(it: DiShapesChallenge): TeachingAssignment {
-  // The open build: the board checks the made shape; its misses come from that check, not from words.
-  if (it.challengeType === 'build_shape') return { id: it.id, task: shapesAskFor(it), response: 'gesture' };
+/** A spoken item's key; null on the open build, which the board checks. */
+export function shapesKey(it: DiShapesChallenge): SpokenKey | null {
+  if (it.challengeType === 'build_shape') return null;
   const counting = isCountingType(it.challengeType);
-  const misses = shapesSpokenMisses(it);
-  return { id: it.id, task: shapesAskFor(it), response: 'speech', expectedAnswer: spokenKeyText({ answer: answerWordFor(it),
-    alsoAccept: counting ? [] : it.spokenAlternates ?? [],
+  return { answer: answerWordFor(it), alsoAccept: counting ? [] : it.spokenAlternates ?? [],
     signatureError: counting ? 'A different number is not the answer, however close it is.'
-      : 'A close but different shape name (square for a rectangle) is not the answer.' }),
-    ...(misses.length ? { misses } : {}) };
+      : 'A close but different shape name (square for a rectangle) is not the answer.' };
 }
 
 /**

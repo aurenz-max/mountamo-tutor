@@ -4,9 +4,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { clueInvitesOtherPart, itemsFromTargets } from './wordBuilderScript';
-import { unaskableKeys } from './sentenceAnalyzerScript';
-import { restatesBinaryGenre } from './genreExplorerScript';
-import { passageNamesStructure } from './textStructureAnalyzerScript';
+import { unaskableKeys } from './sentenceAnalyzerDomain';
+import { restatesBinaryGenre } from './genreExplorerDomain';
+import { passageNamesStructure } from './textStructureAnalyzerDomain';
 
 const board = [
   { id: 'root-teach', text: 'teach', type: 'root' as const, meaning: 'show how' },

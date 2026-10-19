@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Solar system explorer on the teaching workspace: what is its own, plus its Pip surface. The
- * generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and
- * self-advance. The explore face is pinned by the reader-fit suite.
+ * Solar system explorer on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the
+ * shared contract (pip/WorkspacePip.surface.test.tsx). The explore face is pinned by the reader-fit suite.
  *
  * Still NOT covered, jsdom is blind to it: whether the moving `<g>` targets are hittable in a real
  * browser ([[feedback_svg-g-unclickable-jsdom-blind]]).
@@ -18,7 +18,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import type { CelestialBody } from './SolarSystemExplorer';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -46,12 +45,12 @@ const CHALLENGES = {
   compare_attribute: { id: 'ssc-big', type: 'compare_attribute', facet: 'biggest', answerBodyIds: ['jupiter'] },
   orbital_reasoning: { id: 'ssc-year', type: 'orbital_reasoning', facet: 'longest_year' },
 } as const;
-const KEYS: Record<string, RegExp> = { identify: /^Earth\./, order_from_sun: /^Mercury\./, classify: /^Any one of: Jupiter, Saturn\./,
-  compare_attribute: /^Jupiter\./, orbital_reasoning: /^Saturn\./ };
+const KEYS: Record<string, RegExp> = { identify: /^"Earth"\./, order_from_sun: /^"Mercury"\./,
+  classify: /^"Jupiter" \(also accept "Saturn"\)\. Any one of them counts/, compare_attribute: /^"Jupiter"\./, orbital_reasoning: /^"Saturn"\./ };
 const data = (...challenges: unknown[]): Record<string, unknown> => ({ title: 'Our Solar System', description: 'Explore the planets.',
   bodies: BODIES, gradeLevel: '3', challenges });
-const mount = (d: Record<string, unknown>, mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'solar-system-explorer', evalMode: mode, data: d, instanceId: 'solar', pipStore });
+const mount = (d: Record<string, unknown>, mode: string) =>
+  mountWorkspace({ primitiveId: 'solar-system-explorer', evalMode: mode, data: d, instanceId: 'solar' });
 const tap = (container: HTMLElement, id: string) => act(() => { fireEvent.click(container.querySelector(`[data-body-id="${id}"]`)!); });
 const svgTexts = (container: HTMLElement) => Array.from(container.querySelectorAll('svg text')).map(t => t.textContent ?? '');
 
@@ -90,15 +89,6 @@ it('a tap on a compare item opens the card and answers nothing; right answers co
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'solar-system-explorer', totalChallenges: 2, correctChallenges: 2, bodiesExplored: 1 });
-});
-
-it('Pip outlines the sky and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('solar');
-  const h = mount(data(CHALLENGES.order_from_sun), 'order_from_sun', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('Mercury'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a sky with nothing askable; the component degrades to exploration', () => {

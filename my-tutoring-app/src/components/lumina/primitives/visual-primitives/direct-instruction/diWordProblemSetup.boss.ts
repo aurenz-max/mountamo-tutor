@@ -8,7 +8,7 @@ import type { DiWordProblemSetupData, WordProblemItem } from './diWordProblemScr
 import type { DriverInput } from '../../../components/live-activity/liveJourneySpec';
 import { defineBoss } from '../../../components/live-activity/boss';
 import { diWordProblemSetupCard } from './diWordProblemSetup.card';
-import { diWordProblemHarnessAnswers, wordProblemAskFor, wordProblemDataValid, wordProblemHarnessPlacements, wordProblemItems,
+import { diWordProblemHarnessAnswers, wordProblemAskFor, wordProblemDataValid, wordProblemHarnessPlacements, wordProblemItems, wordProblemKey,
   type SpokenWordProblemMiss, type WordProblemMiss } from './diWordProblemWorkspace';
 import { WORD_PROBLEM_LEVERS } from './diWordProblemLevers';
 
@@ -27,6 +27,7 @@ export const diWordProblemSetupBoss = defineBoss<DiWordProblemSetupData, WordPro
   validate: validateDiWordProblemSetupData,
   items: wordProblemItems,
   ask: wordProblemAskFor,
+  spoken: { key: wordProblemKey },
   stepOf: item => item.kind,
   levers: WORD_PROBLEM_LEVERS,
   drive: {

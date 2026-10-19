@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * PushPullArena — forces in a sim arena, every answer spoken. It runs only on the shared
- * tutor/JEV teaching workspace (workspace rollout C4; the scripted runner was retired, LA-14,
- * user ruling 09-23: one path). The observer judges the spoken answer and the runtime owns
+ * PushPullArena — forces in a sim arena, every answer spoken. Wired to the live tutor by its boss
+ * (`pushPullArena.card.ts` + `pushPullArena.boss.ts`, the spoken preset): it runs only on the shared
+ * tutor/JEV teaching workspace. The observer judges the spoken answer and the runtime owns
  * progression. An unbound mount shows the shared "needs the tutor" card.
  *
  * WHAT THE CHILD DOES, PER MODE.
@@ -17,8 +17,8 @@
  *    experiments freely, then says whether the goal needs a big or little
  *    push.
  *
- * WHAT CHANGED (second non-literacy consumer of useJudgedScriptRunner; also
- * this primitive's Lumina-kit migration — it was raw shadcn). Deleted: the
+ * WHAT CHANGED (the judged-loop DI port, and this primitive's Lumina-kit
+ * migration — it was raw shadcn). Deleted: the
  * four MC answer chips (they PRINTED the answer — word-flip's chips in a
  * physics costume), the answer-checking and advancing buttons, the
  * show-the-answer reveal after three attempts, and the labeled Push/Pull
@@ -54,18 +54,15 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { pushPullArenaScene, type ArenaItem } from './pushPullArenaDomain';
 import {
-  itemsFromChallenges,
-  type ArenaChallengeLike,
-  type ArenaItem,
-} from './pushPullArenaScript';
-import { pushPullArenaAssignment, pushPullArenaScene } from './pushPullArenaWorkspace';
-import {
-  EASIER_LEVER, FORCE_MODEL, FORCE_MODEL_LEVER, GRIP_BUMPS, HAND_LEVER, SAME_PUSH_MODEL_LEVER, SETUP_LEVER,
-  arenaLevers, arenaLeversOnScreen, arenaPracticeItem, samePushModel,
+  ARENA_LEVERS, FORCE_MODEL, FORCE_MODEL_LEVER, GRIP_BUMPS, HAND_LEVER, SAME_PUSH_MODEL_LEVER, SETUP_LEVER,
+  arenaPracticeItem, samePushModel,
 } from './pushPullArenaLevers';
+import { pushPullArenaBoss, pushPullArenaItems } from './pushPullArena.boss';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
@@ -99,10 +96,6 @@ export interface PushPullChallenge {
   pushDirection?: PushPullDirection;
   // Design mode
   goalDescription?: string;
-  /** CODE-COMPUTED spoken answer (push/pull, moves/stays, object name,
-   *  big/little). Never authored by the LLM. */
-  spokenAnswer?: string;
-  spokenAlternates?: string[];
   // ── Within-mode support tier scaffolds (display-only) ──
   showForceArrows?: boolean;
   showMotionReadout?: boolean;
@@ -462,10 +455,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   // challenge whose answer is not decisive (a predict sitting on the friction
   // boundary, a compare whose two objects weigh the same, a design inside
   // `designPushSize`'s murky band) is dropped rather than asked.
-  const items = useMemo<ArenaItem[]>(
-    () => itemsFromChallenges(challenges as ArenaChallengeLike[]),
-    [challenges],
-  );
+  const items = useMemo<ArenaItem[]>(() => pushPullArenaItems(data), [data]);
 
   /**
    * Items can now DROP, so nothing may bind a challenge by position again:
@@ -577,7 +567,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   // ── The runner ───────────────────────────────────────────────────
   const runner = useWorkspaceRunner<ArenaItem>({
     primitiveId: 'push-pull-arena',
-    assignment: pushPullArenaAssignment,
+    assignment: pushPullArenaBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -612,11 +602,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   const showForceModel = pulledLevers.includes(FORCE_MODEL_LEVER);
   const showSetup = pulledLevers.includes(SETUP_LEVER);
   const pushModel = pulledLevers.includes(SAME_PUSH_MODEL_LEVER) ? samePushModel(challenges) : null;
-  // Pip: the arena is the question side and the experiment; every answer is
-  // spoken, so Pip outlines the arena and watches it, and never runs it.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The arena', finished: showSummary,
-  });
+  const leverCtx = useMemo(() => ({ challenges }), [challenges]);
   const showForceArrows = currentChallenge?.showForceArrows ?? true;
   const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
 
@@ -646,13 +632,13 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   useLayoutEffect(() => {
     const item = currentArenaItem;
     if (!item || !sessionItem) return;
-    const levers = practice ? [] : arenaLevers(sessionChallenge, pulledLevers, challenges);
-    const scene = pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed });
-    const onScreen = currentChallenge ? arenaLeversOnScreen(currentChallenge, pulledLevers, challenges) : null;
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on other things, ungraded. The full item comes back after it.' } : {}) },
+    // No lever on an easier item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : ARENA_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene = pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed, practice: !!practice });
+    workspace.current = {
+      ...leverScene(scene, {
+        support: practice ? '' : ARENA_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : ARENA_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       readyForResponse: item.kind !== 'observe' || observed,
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the arena changes before this returns.
@@ -661,13 +647,14 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         if (!sessionChallenge) return 'There is no item in the arena.';
-        if (id === EASIER_LEVER) {
-          const simpler = arenaPracticeItem(sessionChallenge, challenges);
+        if (lever.kind === 'simplify') {
+          // The lever set offers the practice item; the arena also needs the challenge it is built from.
+          const simpler = ARENA_LEVERS.simpler(sessionItem, leverCtx, id) && arenaPracticeItem(sessionChallenge, challenges);
           if (!simpler) return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           resetArena(simpler.challenge);
-          return { practice: pushPullArenaAssignment(simpler.item) };
+          return { practice: pushPullArenaBoss.assignment(simpler.item) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -774,8 +761,10 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
             )}
 
             {/* Canvas arena — the stimulus and the experiment */}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.target('stimulus')} className="relative rounded-lg overflow-hidden border border-white/10">
+            {/* Every answer is spoken: Pip outlines the arena as a whole and watches it, and never runs it. */}
+            <PipDock />
+            <PipWorkspace>
+            <div data-pip-object="stimulus" className="relative rounded-lg overflow-hidden border border-white/10">
               <canvas
                 ref={canvasRef}
                 className="w-full"
@@ -786,6 +775,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
                 <div data-lever="hand" aria-label="a hand" className="absolute left-1 bottom-[22%] text-4xl select-none pointer-events-none">✋</div>
               )}
             </div>
+            </PipWorkspace>
 
             {(showForceModel || showSetup || pushModel) && currentChallenge && (
               <ArenaLeverStrip challenge={currentChallenge} forceModel={showForceModel} setup={showSetup} pushModel={pushModel} />

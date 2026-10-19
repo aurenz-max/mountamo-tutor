@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { startingLevers as wordBuilderStarts } from './wordBuilderLevers';
 import { startingLevers as sentenceStarts } from './sentenceAnalyzerLevers';
 import { startingLevers as genreStarts } from './genreExplorerLevers';
-import type { GenreExplorerItem } from './genreExplorerScript';
+import type { GenreExplorerItem } from './genreExplorerDomain';
 import { startingLevers as tsaStarts } from './textStructureAnalyzerLevers';
 
 const genreAt = (action: GenreExplorerItem['action']) => (tier: Tier) => genreStarts(tier, { action } as GenreExplorerItem);

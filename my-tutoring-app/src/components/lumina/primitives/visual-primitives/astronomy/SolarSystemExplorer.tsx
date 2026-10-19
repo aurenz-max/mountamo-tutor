@@ -3,20 +3,19 @@
 /**
  * SolarSystemExplorer — a living orrery with TWO faces:
  *
- *   EXPLORE (no judgeable challenges): the original free-exploration surface.
- *   Tap a body, hear about it, zoom and pan; the tutor narrates via the
- *   ORIENT / BODY_SELECTED / READ_ALOUD beats. Unchanged on purpose — the
- *   reader-fit suite pins this face.
+ *   EXPLORE (no judgeable challenges): the free-exploration surface. Tap a
+ *   body to open its card, zoom and pan. Ungraded, and the tutor is not sent
+ *   anything. The reader-fit suite pins its band chrome.
  *
- *   CHALLENGES (challenges present): runs only on the shared tutor/JEV teaching
- *   workspace (workspace rollout C5; the scripted runner was retired, LA-14,
- *   user ruling 09-23: one path). The tutor asks about the sky OUT LOUD, the
- *   child answers OUT LOUD with a planet's name, the observer judges it and the
- *   runtime owns progression. An unbound mount shows the "needs the tutor" card.
- *   Tapping is LOOKING: a tap opens a body's research card (the compare modes'
- *   own instrument); it never answers.
+ *   CHALLENGES (challenges present): wired to the live tutor by its boss
+ *   (`solarSystem.card.ts` + `solarSystem.boss.ts`, the spoken preset); it runs
+ *   only on the shared tutor/JEV teaching workspace. The tutor asks about the
+ *   sky OUT LOUD, the child answers OUT LOUD with a planet's name, the observer
+ *   judges it and the runtime owns progression. An unbound mount shows the
+ *   "needs the tutor" card. Tapping is LOOKING: a tap opens a body's research
+ *   card (the compare modes' own instrument); it never answers.
  *
- * Stage rules carried from the family (see solarSystemScript.ts):
+ * Stage rules carried from the family (see solarSystemDomain.ts):
  *   - The identify / pair SPOTLIGHT paints when the item opens.
  *   - While an identify item is open, body LABELS are withheld — a printed
  *     name under the spotlit planet is the answer in pixels (defect 11).
@@ -25,30 +24,28 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { LuminaReadAloud } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { SolarSystemExplorerMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { solarAssignment, solarScene } from './solarSystemWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CLOSE_UP_LEVER, FACT_STRIP_LEVER, FIRST_RING_LEVER, KIND_MODEL_LEVER, NEAR_FAR_LEVER, SIZE_ROW_LEVER, STAR_LEVER,
-  TRIP_MODEL_LEVER, firstRingBodyId, simplerSolar, sizeRowBodies, solarLeverFacts, solarLevers,
+  TRIP_MODEL_LEVER, SOLAR_LEVERS, firstRingBodyId, sizeRowBodies,
 } from './solarSystemLevers';
 import { CloseUp, FactStrip, KindModel, NearFarModel, SizeRow, TripModel } from './SolarLeverViews';
 import {
-  itemsFromChallenges,
   revealTextFor,
   isPairFacet,
+  solarScene,
   type SolarItem,
   type SolarChallengeType,
-  type SolarBand,
-} from './solarSystemScript';
+} from './solarSystemDomain';
+import { solarItems, solarRungOf, solarSystemBoss } from './solarSystem.boss';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 
 export type { SolarChallengeType };
@@ -79,7 +76,7 @@ export interface CelestialBody {
 export interface SolarChallenge {
   id: string;
   type: SolarChallengeType;
-  /** Structured ask identity — see SolarFacet in solarSystemScript. */
+  /** Structured ask identity — see SolarFacet in solarSystemDomain. */
   facet?: string;
   /** order_from_sun 'position' facet: 1-based position among the planets. */
   position?: number;
@@ -591,13 +588,9 @@ interface BodyCardProps {
   body: CelestialBody;
   isPreReader: boolean;
   onClose: () => void;
-  /** Explore face only: the tutor reads the card aloud. The judged face passes
-   *  nothing — an improvised read-aloud send mid-item is deleted choreography. */
-  onReadAloud?: (text: string) => void;
-  readAloudSpeaking?: boolean;
 }
 
-const BodyCard: React.FC<BodyCardProps> = ({ body, isPreReader, onClose, onReadAloud, readAloudSpeaking }) => (
+const BodyCard: React.FC<BodyCardProps> = ({ body, isPreReader, onClose }) => (
   <div className="mt-6 glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden">
     <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: body.color }} />
     <div className="relative z-10 pt-2">
@@ -616,23 +609,7 @@ const BodyCard: React.FC<BodyCardProps> = ({ body, isPreReader, onClose, onReadA
         </button>
       </div>
 
-      <div className="flex items-start gap-3 mb-4">
-        <p className="text-slate-300 leading-relaxed flex-1">{body.description}</p>
-        {onReadAloud && (
-          <LuminaReadAloud
-            iconOnly
-            size={isPreReader ? 'lg' : 'sm'}
-            accent="cyan"
-            speaking={!!readAloudSpeaking}
-            aria-label={`Tell me about ${body.name}`}
-            className="flex-shrink-0"
-            onClick={() => onReadAloud(
-              `${body.name}. ${body.description}`
-              + `${body.funFact ? ` Here is a fun fact. ${body.funFact}` : ''}`,
-            )}
-          />
-        )}
-      </div>
+      <p className="text-slate-300 leading-relaxed mb-4">{body.description}</p>
 
       {body.funFact && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
@@ -682,79 +659,21 @@ const BodyCard: React.FC<BodyCardProps> = ({ body, isPreReader, onClose, onReadA
 );
 
 // ============================================================================
-// EXPLORE face — the original free-exploration surface, unchanged behaviour
+// EXPLORE face — the free-exploration surface, ungraded and silent to the tutor
 // ============================================================================
 
 interface ExploreFaceProps {
   data: SolarSystemExplorerData;
   isPreReader: boolean;
-  resolvedInstanceId: string;
 }
 
-const ExploreFace: React.FC<ExploreFaceProps> = ({ data, isPreReader, resolvedInstanceId }) => {
+const ExploreFace: React.FC<ExploreFaceProps> = ({ data, isPreReader }) => {
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>(data.focusBody || null);
 
   const selectedBody = useMemo(
     () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
     [data.bodies, selectedBodyId],
   );
-
-  const aiPrimitiveData = useMemo(() => ({
-    // The catalog's tutoring block interpolates challengeType + stimulus only;
-    // free exploration fills both so no template key ever reads "(not set)".
-    challengeType: 'free_explore',
-    stimulus: `a live model of the solar system showing ${data.bodies.map((b) => b.name).join(', ')}; `
-      + 'the learner taps a body to hear about it',
-    title: data.title,
-    selectedBodyName: selectedBody?.name ?? 'nothing yet',
-    ...(data.supportTier ? { supportTier: data.supportTier } : {}),
-  }), [data.title, data.bodies, data.supportTier, selectedBody]);
-
-  const { sendText, isAudioPlaying } = useLuminaAI({
-    primitiveType: 'solar-system-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel,
-  });
-
-  // Read-aloud: silent like every system trigger — `silent` suppresses only the
-  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[SOLAR_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  // ORIENT — fires once so a non-reader learns the task without asking.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[SOLAR_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a solar system model showing: ${data.bodies.map((b) => b.name).join(', ')}. `
-      + `They tap a planet to learn about it. Tell them what to do in child words, warmly.`
-      + `${isPreReader ? ' Never speak a measurement to them — no kilometres, AU, degrees or day counts.' : ''}`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, data.bodies]);
-
-  // Tapping a body: the tutor names it and says one child-sized thing.
-  const lastAnnouncedBodyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!selectedBody) return;
-    if (lastAnnouncedBodyRef.current === selectedBody.id) return;
-    lastAnnouncedBodyRef.current = selectedBody.id;
-    sendText(
-      `[SOLAR_BODY_SELECTED] The student tapped ${selectedBody.name}. `
-      + `Say its name and ONE short child-sized thing about it. `
-      + `Do not ask a question and do not list numbers.`,
-      { silent: true },
-    );
-  }, [selectedBody, sendText]);
 
   return (
     <>
@@ -777,8 +696,6 @@ const ExploreFace: React.FC<ExploreFaceProps> = ({ data, isPreReader, resolvedIn
           body={selectedBody}
           isPreReader={isPreReader}
           onClose={() => setSelectedBodyId(null)}
-          onReadAloud={readAloud}
-          readAloudSpeaking={isAudioPlaying}
         />
       )}
     </>
@@ -850,7 +767,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
 
   const runner = useWorkspaceRunner<SolarItem>({
     primitiveId: 'solar-system-explorer',
-    assignment: solarAssignment,
+    assignment: solarSystemBoss.assignment,
     items,
     workspace,
     objectiveId: data.objectiveId,
@@ -881,18 +798,18 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
   const pulledLevers = leverState.item === sessionItem?.id && !practice ? leverState.pulled : [];
-  const leverCtx = { bodies: data.bodies, rung: rungOf(data), session: items };
+  const leverCtx = { bodies: data.bodies, rung: solarRungOf(data), session: items };
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation: the spotlight paints when the item opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation: the spotlight paints when the item opens.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    const scene = solarScene(currentItem, { preReader: isPreReader });
-    const onScreen = solarLeverFacts(currentItem, pulledLevers);
-    const levers = practice ? [] : solarLevers(sessionItem, pulledLevers, leverCtx);
+    if (!currentItem || !sessionItem) return;
+    // No lever on an easier item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : SOLAR_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(solarScene(currentItem, { preReader: isPreReader }), {
+        support: practice ? '' : SOLAR_LEVERS.support(sessionItem),
+        onScreen: practice ? '' : SOLAR_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the sky changes before this returns.
       pullLever: (id) => {
@@ -901,24 +818,18 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerSolar(sessionItem, leverCtx);
+          const easier = SOLAR_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!easier) return 'There is no easier one for this item.';
           setLeverState(pulled);
-          setPractice(easier.item);
+          setPractice(easier);
           setSelectedBodyId(null);
-          return { practice: solarAssignment(easier.item) };
+          return { practice: solarSystemBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { setPractice(null); setSelectedBodyId(null); },
     };
-  });
-
-  // Pip: the sky is the question side. On identify items one body is spotlit and
-  // unlabelled, so Pip outlines the whole sky and never rings a body.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The solar system', finished: showSummary,
   });
 
   // A tap is LOOKING: it opens the research card (where the band allows one)
@@ -987,8 +898,10 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
             )}
           </div>
 
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.target('stimulus')}>
+          {/* Every answer is spoken: Pip outlines the sky as a whole and never rings a body. */}
+          <PipDock />
+          <PipWorkspace>
+          <div data-pip-object="stimulus">
           <SolarCanvas
             bodies={data.bodies}
             isPreReader={isPreReader}
@@ -1009,6 +922,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
             brightRingBodyId={pulledLevers.includes(FIRST_RING_LEVER) ? firstRingBodyId(currentItem, data.bodies) : null}
           />
           </div>
+          </PipWorkspace>
 
           {currentItem && pulledLevers.includes(CLOSE_UP_LEVER) && (() => {
             const target = data.bodies.find((b) => b.id === currentItem.targetBodyId);
@@ -1070,16 +984,11 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
 // Component
 // ============================================================================
 
-const VALID_RUNGS: readonly SolarBand[] = ['K', '1', '2', '3', '4', '5'];
-
-const rungOf = (data: SolarSystemExplorerData): SolarBand => (VALID_RUNGS.includes(data.gradeLevel as SolarBand)
-  ? (data.gradeLevel as SolarBand)
-  : '3');
-
 type FrameProps = SolarSystemExplorerProps & { items: SolarItem[] };
 
 const SolarSystemFrame: React.FC<FrameProps> = ({ data, items, className = '', runtimePlanItemId, runtimeEvalMode }) => {
-  const isPreReader = rungOf(data) === 'K' || rungOf(data) === '1';
+  const rung = solarRungOf(data);
+  const isPreReader = rung === 'K' || rung === '1';
 
   const stableInstanceIdRef = useRef(
     data.instanceId || `solar-system-explorer-${Math.round(performance.now())}`,
@@ -1120,11 +1029,7 @@ const SolarSystemFrame: React.FC<FrameProps> = ({ data, items, className = '', r
               runtimeEvalMode={runtimeEvalMode}
             />
           ) : (
-            <ExploreFace
-              data={data}
-              isPreReader={isPreReader}
-              resolvedInstanceId={resolvedInstanceId}
-            />
+            <ExploreFace data={data} isPreReader={isPreReader} />
           )}
         </div>
       </div>
@@ -1140,12 +1045,8 @@ const SolarSystemBound = withWorkspaceOnly<FrameProps>('solar-system-explorer', 
  */
 const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = (props) => {
   const { data } = props;
-  const rung = rungOf(data);
-  const built = useMemo(
-    () => itemsFromChallenges(data.challenges ?? [], { bodies: data.bodies, rung }),
-    [data.challenges, data.bodies, rung],
-  );
-  const isJudged = built.items.length > 0;
+  const items = useMemo(() => solarItems(data), [data]);
+  const isJudged = items.length > 0;
 
   useEffect(() => {
     if ((data.challenges?.length ?? 0) > 0 && !isJudged) {
@@ -1155,7 +1056,7 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = (props) => {
     }
   }, [data.challenges, isJudged]);
 
-  return isJudged ? <SolarSystemBound {...props} items={built.items} /> : <SolarSystemFrame {...props} items={[]} />;
+  return isJudged ? <SolarSystemBound {...props} items={items} /> : <SolarSystemFrame {...props} items={[]} />;
 };
 
 // Star background component - memoized to prevent unnecessary re-renders

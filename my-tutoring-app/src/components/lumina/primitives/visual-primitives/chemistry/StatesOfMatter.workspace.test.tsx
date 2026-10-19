@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * States of matter on the teaching workspace: what is its own, plus its Pip surface. The generic
+ * States of matter on the teaching workspace: what is its own (Pip is the shared contract, pip/WorkspacePip.surface.test.tsx). The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -14,7 +14,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 
 beforeEach(() => {
   installRuntimeTimers();
@@ -30,10 +29,10 @@ const CHALLENGES = {
   compare: { id: 'c1', challengeType: 'compare', kind: 'melt_first', pairKeys: ['coconutOil', 'butter'], startTemp: 4 },
 } as const;
 const MODE: Record<string, string> = { observe: 'observe', predict: 'predict', change: 'predict', compare: 'compare' };
-const KEYS: Record<string, RegExp> = { observe: /^liquid\./, predict: /^liquid\. .*"solid", the state it is in now, is not it/, change: /^boiling\./, compare: /^Coconut Oil\./ };
+const KEYS: Record<string, RegExp> = { observe: /^"liquid"/, predict: /^"liquid".*"solid", the state it is in now, is not it/, change: /^"boiling"/, compare: /^"Coconut Oil"/ };
 const data = (...challenges: unknown[]): Record<string, unknown> => ({ title: 'Heat and matter', gradeBand: '3-5', challenges });
-const mount = (d: Record<string, unknown>, mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'states-of-matter', evalMode: mode, data: d, instanceId: 'states', pipStore });
+const mount = (d: Record<string, unknown>, mode: string) =>
+  mountWorkspace({ primitiveId: 'states-of-matter', evalMode: mode, data: d, instanceId: 'states' });
 
 it.each(Object.keys(CHALLENGES))('%s binds: the code-computed answer is the spoken key', name => {
   const d = data(CHALLENGES[name as keyof typeof CHALLENGES]);
@@ -65,15 +64,6 @@ it('right answers complete once and submit per-mode accuracy', async () => {
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ challengesCorrect: 2, challengesTotal: 2, predictAccuracy: 100, compareAccuracy: 100 });
-});
-
-it('Pip outlines the bench and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('states');
-  const h = mount(data(CHALLENGES.observe), 'observe', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('liquid'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable', () => {

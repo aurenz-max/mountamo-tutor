@@ -26,7 +26,6 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: seam.correct, playPerfect: vi.fn(),
   playStreak: vi.fn(), tap: vi.fn(), tick: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
-vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import SortingStation, { type SortingStationData } from './SortingStation';
 /** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
@@ -105,7 +104,7 @@ it.each(MODES)('%s binds the workspace under tutor ownership, spoken, with no ru
 it('a count item keeps its tray counts hidden, and the scene says so', () => {
   const h = mount('count_compare', 'count-and-compare');
   const demand = h.state().task!.demand as Record<string, unknown>;
-  expect(String(demand.constraints)).toContain('counts are hidden');
+  expect(demand.countsShown).toBe('no');
   expect(JSON.stringify(demand)).not.toMatch(/"3"|"2"/);
 });
 
@@ -113,12 +112,12 @@ it('a wrong answer reopens the item; the right one files the card and completes 
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('sort_one', 'sort-by-one');
   const first = h.state().task!;
-  expect(first.workspace!.expectedAnswer).toBe('Red');
+  expect(first.workspace!.expectedAnswer).toMatch(/^"Red"/);
   h.say('yellow'); h.feedback('incorrect', 'retry');
   expect(h.state().task!.itemId).toBe(first.itemId);
   const ids: string[] = [first.itemId];
   for (let guard = 0; guard < 10 && h.state().status !== 'completed'; guard++) {
-    h.say(h.state().task!.workspace!.expectedAnswer!); h.feedback('correct', 'advance'); h.confirmVisible();
+    h.say('my answer'); h.feedback('correct', 'advance'); h.confirmVisible();
     if (h.state().task && !ids.includes(h.state().task!.itemId)) ids.push(h.state().task!.itemId);
   }
   expect(h.state().status).toBe('completed');
@@ -132,7 +131,7 @@ it('a verdict that credits and advances in one step still files the card (onAffi
   const h = mount('sort_one', 'sort-by-one');
   const tray = (label: string) => h.view.container.querySelector(`[data-pip-object="tray-${label.toLowerCase()}"]`)!;
   const cards = (label: string) => tray(label).querySelectorAll('.flex-wrap > div').length;
-  const first = h.state().task!, group = first.workspace!.expectedAnswer!;
+  const first = h.state().task!, group = /^"([^"]+)"/.exec(first.workspace!.expectedAnswer!)![1];
   expect(cards(group)).toBe(0);
   h.say(group); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).not.toBe(first.itemId);

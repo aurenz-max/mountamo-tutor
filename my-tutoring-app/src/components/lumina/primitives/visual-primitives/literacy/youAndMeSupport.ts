@@ -26,13 +26,14 @@ export function supportFor(item: YouAndMeChallenge): YouAndMeSupportScaffold {
     : { showSpeakerHighlight: true, showActorMarker: true, preparation: '' };
 }
 
+/** The scene's `help` fact: how much a help request may walk through, by tier. The answer rule is the doctrine's. */
 export function tutorRevealPolicy(item: YouAndMeChallenge): string {
   const preparation = supportFor(item).preparation;
   return item.supportTier === 'hard'
-    ? 'On help, invite a fresh look at the scene. Do not walk through roles or name a strategy. Preserve the required task. Never give a target word or model before an actual wrong attempt.'
+    ? 'On help, invite a fresh look at the scene. Do not walk through roles or name a strategy.'
     : item.supportTier === 'medium'
-      ? `On help, offer only this brief nudge: ${preparation} Do not add a role checklist or model answer.`
+      ? `On help, offer only this brief nudge: ${preparation} Do not add a role checklist.`
       : item.supportTier === 'easy'
-        ? `On help, walk through this check one step at a time: ${preparation} Never supply the target pronoun or model answer.`
-        : 'On help, use the catalog role scaffold without supplying a target pronoun or model answer.';
+        ? `On help, walk through this check one step at a time: ${preparation}`
+        : 'On help, name who is speaking and who did the action.';
 }

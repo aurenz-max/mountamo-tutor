@@ -32,8 +32,7 @@ import { diSentenceReadingBoss } from '../../primitives/visual-primitives/direct
 import { diLetterSoundsBoss } from '../../primitives/visual-primitives/direct-instruction/diLetterSounds.boss';
 import { diWordReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diWordReading.boss';
 import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
-import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
-import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
+import { shapeSorterBoss } from '../../primitives/visual-primitives/math/shapeSorter.boss';
 import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
 import { settledView } from '../../primitives/visual-primitives/math/numberLineView';
 import { CHANGE_ONE_LEVER, COUNT_ON_LEVER, FEWER_GROUPS_LEVER, SMALLER_SET_LEVER, spokenPractice }
@@ -135,13 +134,7 @@ const twoPictureFraction = (parent: any) => {
 import { practiceItem } from '../../primitives/visual-primitives/math/tenFrameLevers';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
-import { buildLetterSoundItems, letterSoundHarnessAnswers }
-  from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
-import { buildWordReadingItems, wordReadingHarnessAnswers }
-  from '../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
 import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
-import { buildSentenceReadingItems, sentenceReadingHarnessAnswers }
-  from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
   from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 import { fartherPair } from '../../primitives/visual-primitives/literacy/letterSoundLinkLevers';
@@ -157,8 +150,8 @@ import { letterWorkshopHarnessStrokes } from '../../primitives/visual-primitives
 import { practiceItem as letterPracticeItem, practiceParent as letterPracticeParent } from '../../primitives/visual-primitives/literacy/letterWorkshopLevers';
 import { tracePart } from '../../primitives/visual-primitives/math/numberTracerLevers';
 import { drawCorners as shapeTracerDrawCorners } from '../../primitives/visual-primitives/math/shapeTracerWorkspace';
-import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
-import { simplerFromParent as sortingSimplerFromParent } from '../../primitives/visual-primitives/math/sortingStationLevers';
+import { sortingStationBoss } from '../../primitives/visual-primitives/math/sortingStation.boss';
+import { phonemeExplorerBoss } from '../../primitives/visual-primitives/literacy/phonemeExplorer.boss';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { baseTenHarnessAnswers, itemsFromChallenges as baseTenItems, usesBaseTenDi, wrongTradePlace }
   from '../../primitives/visual-primitives/math/baseTenScript';
@@ -179,33 +172,28 @@ import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
 import { simplerGraph, simplerParent } from '../../primitives/visual-primitives/math/barModelLevers';
 import { twoBarPractice } from '../../primitives/visual-primitives/math/barModelBuild';
-import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
+import { youAndMeBoss } from '../../primitives/visual-primitives/literacy/youAndMe.boss';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
 import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
 import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
 import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
-import { itemsFromChallenges as phonemeItems } from '../../primitives/visual-primitives/literacy/phonemeExplorerScript';
-import { phonemeHarnessAnswers } from '../../primitives/visual-primitives/literacy/phonemeExplorerWorkspace';
 import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
 import { wordWorkoutJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
 import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
 import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
-import { itemsFromChallenges as sorterItems } from '../../primitives/visual-primitives/literacy/wordSorterScript';
-import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
+import { wordSorterBoss } from '../../primitives/visual-primitives/literacy/wordSorter.boss';
+import { storyRibbonBoss } from '../../primitives/visual-primitives/literacy/storyRibbon.boss';
+import { oralSentenceStudioBoss } from '../../primitives/visual-primitives/literacy/oralSentenceStudio.boss';
 import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
 import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
 import { passingPairs, picturePairItemsFrom, picturePairMiss } from '../../primitives/visual-primitives/literacy/picturePairBuild';
 import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
 import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
-import { itemsFromChallenges as decodableItems } from '../../primitives/visual-primitives/literacy/decodableReaderScript';
-import { decodableReaderJourneyAnswers } from '../../primitives/visual-primitives/literacy/decodableReaderWorkspace';
-import { simplerFor as decodableSimplerFor } from '../../primitives/visual-primitives/literacy/decodableReaderLevers';
+import { decodableReaderBoss } from '../../primitives/visual-primitives/literacy/decodableReader.boss';
 import { itemsFromChallenges as bookItems } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
 import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-primitives/literacy/storyBridgeScript';
 import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
-import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-primitives/literacy/storyRibbonScript';
-import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import type { StoryMapData } from '../../primitives/visual-primitives/literacy/StoryMap';
 import { CONFLICT_LABELS as STORY_CONFLICT_LABELS, arcLabels as storyArcLabels, eventBank as storyEventBank, settingChoices }
   from '../../primitives/visual-primitives/literacy/storyMapWorkspace';
@@ -225,9 +213,7 @@ import { itemsFromChallenges as addSubItems } from '../../primitives/visual-prim
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import { practiceParent as addSubPracticeParent, smallerStory as addSubSmallerStory }
   from '../../primitives/visual-primitives/math/additionSubtractionSceneLevers';
-import { buildThreeDShapeItems } from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
-import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
-import { simplerFromId as simplerSolidFromId } from '../../primitives/visual-primitives/math/threeDShapeExplorerLevers';
+import { threeDShapeExplorerBoss } from '../../primitives/visual-primitives/math/threeDShapeExplorer.boss';
 import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
 import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
@@ -235,9 +221,7 @@ import { calendarPracticeItem, calendarPracticeParent } from '../../primitives/v
 import { practiceParentId as timelinePracticeParent, practiceTimeline } from '../../primitives/visual-primitives/calendar/timelineBuilderLevers';
 import { tapPlaces as lifeCycleTapPlaces } from '../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
 import { lifeCycleJourneyItem } from '../../primitives/visual-primitives/biology/lifeCycleSequencerLevers';
-import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
-import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
-import { ARENA_SIMPLER, arenaPracticeItem } from '../../primitives/visual-primitives/physics/pushPullArenaLevers';
+import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
 import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
 import { fewerNeedsItem as habitatFewerNeedsItem, habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import { SIMPLER_SUFFIX as HABITAT_SIMPLER, easierItemFor as habitatEasierItem }
@@ -251,39 +235,28 @@ import { shorterTower } from '../../primitives/visual-primitives/engineering/tow
 import { gearHarnessInputs } from '../../primitives/visual-primitives/engineering/gearWorkspace';
 import { simplerTrain } from '../../primitives/visual-primitives/engineering/gearLevers';
 import type { FoodWebChallenge } from '../../primitives/visual-primitives/biology/FoodWebBuilder';
-import { matterItems } from './adapters/matterExplorerLive';
-import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
-import { matterLeverSession, practiceItem as matterPracticeItem, practiceParent as matterPracticeParent } from '../../primitives/visual-primitives/chemistry/matterExplorerLevers';
+import { matterExplorerBoss } from '../../primitives/visual-primitives/chemistry/matterExplorer.boss';
+import { statesOfMatterBoss } from '../../primitives/visual-primitives/chemistry/statesOfMatter.boss';
+import { solarSystemBoss } from '../../primitives/visual-primitives/astronomy/solarSystem.boss';
 import { moleculeHarnessInputs } from '../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import { simplerMolecule } from '../../primitives/visual-primitives/chemistry/moleculeConstructorLevers';
 import type { MoleculeConstructorChallenge } from '../../primitives/visual-primitives/chemistry/MoleculeConstructor';
 import { atomHarnessInputs } from '../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
 import { practiceById as atomPracticeById } from '../../primitives/visual-primitives/chemistry/atomBuilderLevers';
 import type { AtomBuilderChallenge } from '../../primitives/visual-primitives/chemistry/AtomBuilder';
-import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
-import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
-import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
-import { itemsFromPayload as sentenceItems } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerScript';
-import { sentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
+import { genreExplorerBoss } from '../../primitives/visual-primitives/literacy/genreExplorer.boss';
+import { textStructureAnalyzerBoss } from '../../primitives/visual-primitives/literacy/textStructureAnalyzer.boss';
+import { sentenceAnalyzerBoss } from '../../primitives/visual-primitives/literacy/sentenceAnalyzer.boss';
 import { readAloudItems } from './adapters/readAloudStudioLive';
 import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
 import { shortLine as readAloudShortLine } from '../../primitives/visual-primitives/literacy/readAloudStudioLevers';
-import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
-import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
 import { practiceItem as causeEffectPracticeItem, practiceParent as causeEffectPracticeParent }
   from '../../primitives/visual-primitives/history/causeEffectChainLevers';
-import { eraItems, eraJourneyAnswers } from '../../primitives/visual-primitives/history/eraExplorerWorkspace';
-import { eraLeverSession, practiceItem as eraPracticeItem, practiceParent as eraPracticeParent }
-  from '../../primitives/visual-primitives/history/eraExplorerLevers';
+import { eraExplorerBoss } from '../../primitives/visual-primitives/history/eraExplorer.boss';
 import { periodicItems, periodicJourneyAnswers } from '../../primitives/chemistry-primitives/periodicTableWorkspace';
 import { periodicPracticeItem, periodicPracticeParent } from '../../primitives/chemistry-primitives/periodicTableLevers';
 import { knowledgeCheckItems, knowledgeCheckJourneyAnswers } from '../../primitives/knowledgeCheckWorkspace';
-import { statesItems } from './adapters/statesOfMatterLive';
-import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
-import { practiceItem as statesPracticeItem, practiceParent as statesPracticeParent, statesLeverSession } from '../../primitives/visual-primitives/chemistry/statesOfMatterLevers';
-import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
-import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
 import { planetHarnessAnswers, planetItems } from '../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
 import { choiceLabel as telescopeChoiceLabel, isTapItem as telescopeTapItem, skyTarget, telescopeHarnessAnswers, telescopeItems }
@@ -321,13 +294,7 @@ import { practiceItem as constellationPracticeItem, practiceParent as constellat
   from '../../primitives/visual-primitives/astronomy/constellationLevers';
 import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
-import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
-import { BUILD_WITNESSES as SHAPE_BUILD_WITNESSES, WRONG_BUILD as WRONG_SHAPE_BUILD } from '../../primitives/visual-primitives/direct-instruction/diShapesBuild';
 import { diSpokenPracticeBoss } from '../../primitives/visual-primitives/direct-instruction/diSpokenPractice.boss';
-import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
-import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
-import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
-import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 import { spatialPathHarnessInputs } from '../../primitives/visual-primitives/math/spatialPathWorkspace';
 import { practiceParent as spatialPathPracticeParent, threeRoutes as spatialPathThreeRoutes }
@@ -822,29 +789,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stage"]' } },
   },
-  'sorting-station': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/SortingStation.tsx',
-    instanceId: 'station',
-    defaults: { grade: 'Kindergarten', mode: 'sort_one', di: false,
-      topic: 'Sorting objects into groups by one attribute' },
-    leakTokens: ['SS_'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is spoken: the pack's own right answer, or its plain wrong one.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const built = sortingItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier,
-        isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' });
-      // An easier item (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? sortingSimplerFromParent(parent, (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === parent.challengeId) ?? null)?.item
-        : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current sorting-station assignment');
-      const answers = sortingStationHarnessAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object^="tray-"]', kind: 'count' } },
-  },
+  'sorting-station': bossJourney(sortingStationBoss),
   'number-tracer': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberTracer.tsx',
@@ -2314,28 +2259,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stage"]' } },
   },
-  'shape-sorter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/ShapeSorter.tsx',
-    instanceId: 'shapes',
-    defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
-      topic: 'Naming flat shapes by their sides and corners' },
-    leakTokens: ['SH_'],
-    prompts: WORKSPACE_PROMPTS,
-    // A practice item (`~simpler`, shapeSorterLevers.ts) is rebuilt from its parent with the component's builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const challenges = ctx.data.challenges ?? [];
-      const built = shapeItems(challenges, { isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' });
-      const item = built.find(i => i.id === ctx.itemId) ?? simplerShapeFromId(ctx.itemId ?? '', built,
-        parent => challenges.find((c: { id: string }) => c.id === parent.challengeId)?.shapes ?? [])?.item;
-      if (!item) throw new Error('No current shape assignment');
-      const answers = shapeSorterHarnessAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="shape"]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
-  },
+  'shape-sorter': bossJourney(shapeSorterBoss),
   'di-letter-sounds': bossJourney(diLetterSoundsBoss),
   'di-word-reading': bossJourney(diWordReadingBoss),
   'di-sentence-reading': bossJourney(diSentenceReadingBoss),
@@ -2581,24 +2505,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="hook"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
       picture: { selector: '[data-pip-object="picture"] img', kind: 'count' } },
   },
-  'you-and-me': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/YouAndMe.tsx',
-    instanceId: 'partners',
-    defaults: { grade: 'Kindergarten', mode: 'describe_action', di: false,
-      topic: 'Using I and you to tell a partner what happened' },
-    leakTokens: ['YOU_AND_ME_ITEM', 'YOU_AND_ME_MOVE_ON', 'YOU_AND_ME_COMPLETE', 'YOU_AND_ME_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken sentence per turn: the model sentence, or the same action with I and you swapped.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current you-and-me turn');
-      const answers = youAndMeHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="scene"]' } },
-  },
+  'you-and-me': bossJourney(youAndMeBoss),
   'ramp-lab': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/engineering/RampLab.tsx',
@@ -3140,18 +3047,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       (challenges: any[]) => challenges.flatMap(c => rhymeItems(c)), rhymeHarnessAnswers, 'rhyme-studio'),
     probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"], [data-testid="rp-tray"]' } },
   },
-  'phoneme-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/PhonemeExplorer.tsx',
-    instanceId: 'phonemes',
-    defaults: { grade: 'Kindergarten', mode: 'isolate', di: false,
-      topic: 'Hearing the first sound in short picture words' },
-    leakTokens: ['PE_ITEM', 'PE_MOVE', 'PE_COMPLETE', 'PE_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: the pack's right answer, or a real card / plainly different word.
-    inputsFor: spokenWorkspaceInputs(phonemeItems, phonemeHarnessAnswers, 'phoneme-explorer'),
-    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="sounds"]' } },
-  },
+  'phoneme-explorer': bossJourney(phonemeExplorerBoss),
   'word-workout': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/WordWorkout.tsx',
@@ -3198,24 +3094,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="workspace"]' } },
   },
-  'word-sorter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/WordSorter.tsx',
-    instanceId: 'sorter',
-    defaults: { grade: 'Kindergarten', mode: 'binary_sort', di: false, topic: 'Sorting animals and foods' },
-    leakTokens: ['WSR_ITEM', 'WSR_MOVE', 'WSR_COMPLETE', 'WSR_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: the right group or partner, or another printed choice.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = sorterItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier, isPreReader: (ctx.data.gradeLevel ?? 'K') === 'K' })
-        .find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current word-sorter item');
-      const answers = wordSorterJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="word"]' } },
-  },
+  'word-sorter': bossJourney(wordSorterBoss),
   'picture-vocabulary': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/PictureVocabulary.tsx',
@@ -3259,26 +3138,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="letter"], [data-pip-object="marker"]' } },
   },
-  'decodable-reader': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/DecodableReader.tsx',
-    instanceId: 'decodable',
-    defaults: { grade: 'Grade 1', mode: 'literal', di: false, topic: 'A short story with short-a words' },
-    leakTokens: ['DR_ITEM', 'DR_MOVE', 'DR_COMPLETE', 'DR_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is spoken: the printed line read aloud, a word from the story, or the right choice said.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // A practice item (`~simpler`: short_line, short_story) is rebuilt from its parent with the same builder.
-      const built = decodableItems(ctx.data as never).items, sentences = ctx.data.passage?.sentences ?? [];
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? decodableSimplerFor(parent, sentences, built) : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current decodable-reader item');
-      const answers = decodableReaderJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="line"], [data-pip-object="question"], [data-pip-object="story"]' } },
-  },
+  'decodable-reader': bossJourney(decodableReaderBoss),
   'interactive-book': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/InteractiveBook.tsx',
@@ -3315,23 +3175,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stories"]' } },
   },
-  'story-ribbon': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/StoryRibbon.tsx',
-    instanceId: 'ribbon',
-    defaults: { grade: 'Kindergarten', mode: 'tell_connected_account', di: false, topic: 'A day at the park' },
-    leakTokens: ['SR_ITEM', 'SR_MOVE', 'SR_COMPLETE', 'SR_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken account; a wrong one is a single picture label said alone. The cards are not graded.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = ribbonItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current story-ribbon item');
-      const answers = storyRibbonJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="ribbon"]' } },
-  },
+  'story-ribbon': bossJourney(storyRibbonBoss),
   'story-map': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/StoryMap.tsx',
@@ -3498,25 +3342,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="scene"]' } },
   },
-  '3d-shape-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/ThreeDShapeExplorer.tsx',
-    instanceId: 'solids',
-    defaults: { grade: 'Kindergarten', mode: 'identify_3d', di: false, topic: 'Naming solid shapes: cube, sphere, cylinder, cone' },
-    leakTokens: ['3DS_ITEM', '3DS_MOVE', '3DS_COMPLETE', '3DS_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer (a challenge may fan out into several items). A practice item (`~simpler`,
-    // threeDShapeExplorerLevers.ts) is rebuilt from its parent with the component's builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const built = buildThreeDShapeItems(ctx.data.challenges ?? []).items;
-      const item = built.find(i => i.id === ctx.itemId) ?? simplerSolidFromId(ctx.itemId ?? '', built);
-      if (!item) throw new Error('No current 3d-shape-explorer item');
-      const answers = threeDShapeJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  '3d-shape-explorer': bossJourney(threeDShapeExplorerBoss),
   'calendar-explorer': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/calendar/CalendarExplorer.tsx',
@@ -3670,28 +3496,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'push-pull-arena': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/physics/PushPullArena.tsx',
-    instanceId: 'arena',
-    defaults: { grade: 'Grade 1', mode: 'observe', di: false, topic: 'Pushes and pulls move objects' },
-    leakTokens: ['ARENA_ITEM', 'ARENA_MOVE', 'ARENA_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken word; observe first presses Go to watch the preset force.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // The easier item (`~simpler`, simplify lever) is rebuilt from its parent with the same builder.
-      const parent = ctx.itemId?.endsWith(ARENA_SIMPLER)
-        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}${ARENA_SIMPLER}` === ctx.itemId) : undefined;
-      const item = parent ? arenaPracticeItem(parent, ctx.data.challenges ?? [])?.item
-        : arenaItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current push-pull-arena item');
-      const answers = pushPullArenaJourneyAnswers(item);
-      const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
-      return item.kind === 'observe' && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Go!' }, say] : [say];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'push-pull-arena': bossJourney(pushPullArenaBoss),
   'ecosystem-diorama': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/biology/EcosystemDiorama.tsx',
@@ -3814,26 +3619,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'matter-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/MatterExplorer.tsx',
-    instanceId: 'matter',
-    defaults: { grade: 'Kindergarten', mode: 'sort', di: false, topic: 'Solids, liquids and gases around us' },
-    leakTokens: ['MEX_ITEM', 'MEX_MOVE', 'MEX_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer computed from the object. A practice item (`~simpler`) is rebuilt from its parent
-    // with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = matterItems(ctx.data as never);
-      const parent = ctx.itemId ? matterPracticeParent(ctx.itemId, all) : null;
-      const item = parent ? matterPracticeItem(parent, matterLeverSession(ctx.data as never)) : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current matter-explorer item');
-      const answers = matterJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'matter-explorer': bossJourney(matterExplorerBoss),
   'molecule-constructor': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/chemistry/MoleculeConstructor.tsx',
@@ -3875,45 +3661,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'states-of-matter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/StatesOfMatter.tsx',
-    instanceId: 'states',
-    defaults: { grade: 'Grade 2', mode: 'observe', di: false, topic: 'Heating and cooling change solids, liquids and gases' },
-    leakTokens: ['SOM_ITEM', 'SOM_MOVE', 'SOM_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer computed from the substance table.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // A practice item (`~simpler`) is rebuilt from its parent with the same builder.
-      const all = statesItems(ctx.data as never);
-      const parent = ctx.itemId ? statesPracticeParent(ctx.itemId, all) : null;
-      const item = parent ? statesPracticeItem(parent, statesLeverSession(all, (ctx.data as { gradeBand?: 'K-2' | '3-5' }).gradeBand ?? '3-5'))
-        : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current states-of-matter item');
-      const answers = statesJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
-  'solar-system-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/SolarSystemExplorer.tsx',
-    instanceId: 'solar',
-    defaults: { grade: 'Grade 2', mode: 'identify', di: false, topic: 'The planets of our solar system' },
-    leakTokens: ['SOLAR_ITEM', 'SOLAR_MOVE', 'SOLAR_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken planet name computed from the bodies on screen.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier item a simplify lever opened is not a generated challenge: rebuilt from its parent.
-      const item = solarJourneyItem(ctx.data as never, ctx.itemId);
-      if (!item) throw new Error('No current solar-system-explorer item');
-      const answers = solarJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'states-of-matter': bossJourney(statesOfMatterBoss),
+  'solar-system-explorer': bossJourney(solarSystemBoss),
   'light-shadow-lab': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/astronomy/LightShadowLab.tsx',
@@ -4272,57 +4021,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'genre-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/GenreExplorer.tsx',
-    instanceId: 'genre-explorer',
-    defaults: { grade: 'Grade 3', mode: 'classify_genre', di: false, topic: 'Fables, myths and informational texts' },
-    leakTokens: ['GEX_ITEM', 'GEX_MOVE', 'GEX_COMPLETE', 'GEX_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer: yes or no, which text, or the kind of writing.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = genreItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current genre-explorer item');
-      const answers = genreJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
-  'text-structure-analyzer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/TextStructureAnalyzer.tsx',
-    instanceId: 'text-structure-analyzer',
-    defaults: { grade: 'Grade 4', mode: 'cause_effect', di: false, topic: 'Why rivers flood' },
-    leakTokens: ['TSA_ITEM', 'TSA_MOVE', 'TSA_COMPLETE', 'TSA_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer: the linking word, the structure, or the part an idea goes in.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = textStructureItems(ctx.data as never, 'text-structure-analyzer').items.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current text-structure-analyzer item');
-      const answers = textStructureJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
-  'sentence-analyzer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/SentenceAnalyzer.tsx',
-    instanceId: 'sentence-analyzer',
-    defaults: { grade: 'Grade 3', mode: 'identify_pos', di: false, topic: 'Nouns, verbs and adjectives' },
-    leakTokens: ['SAN_ITEM', 'SAN_MOVE', 'SAN_COMPLETE', 'SAN_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken grammar label.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = sentenceItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current sentence-analyzer item');
-      const answers = sentenceJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'genre-explorer': bossJourney(genreExplorerBoss),
+  'text-structure-analyzer': bossJourney(textStructureAnalyzerBoss),
+  'sentence-analyzer': bossJourney(sentenceAnalyzerBoss),
   'read-aloud-studio': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/ReadAloudStudio.tsx',
@@ -4345,23 +4046,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
-  'oral-sentence-studio': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/OralSentenceStudio.tsx',
-    instanceId: 'oral',
-    defaults: { grade: 'Kindergarten', mode: 'describe_scene', di: false, topic: 'Using new vocabulary words' },
-    leakTokens: ['OSS_ITEM', 'OSS_MOVE', 'OSS_COMPLETE', 'OSS_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one original spoken sentence: a valid example, or the pack's signature wrong answer.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = oralSentenceItems((ctx.data as { challenges?: never[] }).challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current oral-sentence-studio item');
-      const answers = oralSentenceJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'oral-sentence-studio': bossJourney(oralSentenceStudioBoss),
   'cause-effect-chain': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/history/CauseEffectChain.tsx',
@@ -4390,26 +4075,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
-  'era-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/history/EraExplorer.tsx',
-    instanceId: 'era-explorer',
-    defaults: { grade: 'Grade 2', mode: 'era_sort', di: false, topic: 'Life in pioneer times' },
-    leakTokens: ['ERA_ITEM', 'ERA_MOVE', 'ERA_COMPLETE', 'ERA_HEAR', 'ERA_SOURCE', 'ERA_EXPLORE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken pick from the three-part menu the ask states. A practice item (`~simpler`) is rebuilt
-    // from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = eraItems(ctx.data as never);
-      const parent = ctx.itemId ? eraPracticeParent(ctx.itemId, all) : null;
-      const item = parent ? eraPracticeItem(parent, eraLeverSession(all, ctx.data as never)) : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current era-explorer item');
-      const answers = eraJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'era-explorer': bossJourney(eraExplorerBoss),
   'periodic-table': {
     execution: 'workspace',
     component: 'primitives/PeriodicTable.tsx',

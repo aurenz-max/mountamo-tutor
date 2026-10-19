@@ -42,8 +42,11 @@ export interface LeverSpec<I, C> {
   carrier?: WorkspaceLever['carrier'];
   /** The misses it is for (`TeachingAttempt.miss`); `'all'` is every miss of the item's mode. */
   answers: readonly string[] | 'all';
-  /** When to pull it, in the tutor's terms. */
-  when: string;
+  /** The misses it answers on this item, when they differ by item within one mode: kept from `answers`, which stays
+   *  the mode's whole list (the card and the guards read it). */
+  answersOn?: (item: I, ctx: C) => readonly string[];
+  /** When to pull it, in the tutor's terms. A function when the words differ by item within one mode. */
+  when: string | ((item: I, ctx: C) => string);
   /** What changes on screen when it is pulled. Never the answer. A function when the words differ by item within one
    *  mode (a decodable word is sounded out, a sight word said whole). */
   does: string | ((item: I, ctx: C) => string);
@@ -134,8 +137,10 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
     if (!item || !def.support) return '';
     const { tier, different, own } = def.support;
     const word = (w: string | ((item: I) => string)) => (typeof w === 'function' ? w(item) : w);
-    // The item's own model lever, named when its mode has exactly one.
+    // The item's own model lever, named when its mode has exactly one. A mode with no model lever has no support
+    // rule to state: telling the tutor to pull a model it is not offered is false.
     const inItemMode = models.filter(spec => inMode(spec, modeOf(item)));
+    if (!inItemMode.length) return '';
     return supportFact(tier(item), { different: word(different), own: word(own),
       ...(inItemMode.length === 1 ? { lever: inItemMode[0].id } : {}) });
   };
@@ -156,9 +161,12 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
       if (!inMode(spec, mode) || (spec.offer && !spec.offer(item, ctx, lastMiss))) return [];
       const content = contentOf(spec, item, ctx, lastMiss);
       if (content == null || content === false || leaks(spec, content, item, ctx)) return [];
+      const listed = spec.answers === 'all' ? def.missesOf(mode) : spec.answers;
+      const onItem = spec.answersOn?.(item, ctx);
       return [{ id: spec.id, kind: leverKind(spec.type), carrier: spec.carrier ?? CARRIER[spec.type] ?? 'both',
         pulled: pulled.includes(spec.id),
-        answers: [...(spec.answers === 'all' ? def.missesOf(mode) : spec.answers)], when: spec.when,
+        answers: onItem ? listed.filter(miss => onItem.includes(miss)) : [...listed],
+        when: typeof spec.when === 'function' ? spec.when(item, ctx) : spec.when,
         does: typeof spec.does === 'function' ? spec.does(item, ctx) : spec.does }];
     });
   };

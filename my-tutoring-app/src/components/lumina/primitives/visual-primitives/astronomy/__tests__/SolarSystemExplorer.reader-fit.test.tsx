@@ -7,18 +7,16 @@
  * checkboxes, a scale-mode <select>, a raw speed multiplier, a calendar date,
  * and a six-cell stat grid reading AU / km / days / hours / °C / moons.
  *
- * Behaviors tsc cannot see: the ORIENT beat fires, tapping a body voices it,
- * the chrome is gone at K-1 and still present at 3-5, and no measurement is
- * ever pushed at a pre-reader.
+ * Behaviors tsc cannot see: the chrome is gone at K-1 and still present at
+ * 3-5, and no measurement is ever pushed at a pre-reader. The explore face
+ * sends the tutor nothing since the move to the boss (2026-10-19): the
+ * ORIENT / BODY_SELECTED / READ_ALOUD beats were a scripted channel beside
+ * the workspace.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 
-const sendTextSpy = vi.fn();
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: sendTextSpy, isAudioPlaying: false, isConnected: true }),
-}));
 // The primitive gained an evaluation surface, so the real module now pulls
 // Firebase in at import time and the suite cannot even load without this.
 vi.mock('../../../../evaluation', () => ({
@@ -65,56 +63,8 @@ const kData = (over: Partial<SolarSystemExplorerData> = {}): SolarSystemExplorer
 
 const g4Data = () => kData({ gradeLevel: '4', initialZoom: 'system' });
 
-const sent = () => sendTextSpy.mock.calls.map((c) => String(c[0]));
-
 beforeEach(() => {
   cleanup();
-  sendTextSpy.mockClear();
-});
-
-describe('SolarSystemExplorer reader-fit — the voice (was the SCAFFOLD-GAP)', () => {
-  it('fires an ORIENT beat naming the bodies, with a no-measurements clause at K', () => {
-    render(<SolarSystemExplorer data={kData()} />);
-    const orient = sent().find((m) => m.includes('[SOLAR_ORIENT]'))!;
-    expect(orient).toBeTruthy();
-    expect(orient).toMatch(/pre-reader who cannot read any text/i);
-    expect(orient).toContain('Sun, Earth, Mars');
-    expect(orient).toMatch(/Never speak a measurement/i);
-  });
-
-  it('drops the no-measurements clause at Grade 4, where numbers are the point', () => {
-    render(<SolarSystemExplorer data={g4Data()} />);
-    const orient = sent().find((m) => m.includes('[SOLAR_ORIENT]'))!;
-    expect(orient).not.toMatch(/Never speak a measurement/i);
-  });
-
-  it('voices the selected body without listing numbers', () => {
-    render(<SolarSystemExplorer data={kData()} />);
-    const msg = sent().find((m) => m.includes('[SOLAR_BODY_SELECTED]'))!;
-    expect(msg).toBeTruthy();
-    expect(msg).toContain('Earth');
-    expect(msg).toMatch(/do not list numbers/i);
-  });
-
-  it('read-aloud sends the description and the fun fact verbatim', () => {
-    render(<SolarSystemExplorer data={kData()} />);
-    sendTextSpy.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /tell me about earth/i }));
-    const msg = sent().find((m) => m.includes('[SOLAR_READ_ALOUD]'))!;
-    expect(msg).toContain('Our home planet, the only one we know with life.');
-    expect(msg).toContain('Earth is the only planet not named after a god.');
-  });
-
-  it('every tagged send is silent', () => {
-    render(<SolarSystemExplorer data={kData()} />);
-    fireEvent.click(screen.getByRole('button', { name: /tell me about earth/i }));
-    sendTextSpy.mock.calls.forEach((call) => {
-      if (/^\[[A-Z_]+\]/.test(String(call[0]))) {
-        expect(call[1]).toEqual({ silent: true });
-      }
-    });
-    expect(sendTextSpy).toHaveBeenCalled();
-  });
 });
 
 describe('SolarSystemExplorer reader-fit — band contract at PRE (K-1)', () => {
@@ -136,7 +86,7 @@ describe('SolarSystemExplorer reader-fit — band contract at PRE (K-1)', () => 
     expect(screen.queryByText(/Speed:/)).toBeNull();
   });
 
-  it('hides the three-clause protocol help text at K (the ORIENT beat carries it)', () => {
+  it('hides the three-clause protocol help text at K', () => {
     render(<SolarSystemExplorer data={kData()} />);
     expect(screen.queryByText(/Scroll to Zoom/i)).toBeNull();
   });
@@ -159,9 +109,8 @@ describe('SolarSystemExplorer reader-fit — band contract at PRE (K-1)', () => 
     expect(screen.getByText(/Temperature/i)).toBeTruthy();
   });
 
-  it('still gives a K child the planet story — by voice, with a read-aloud', () => {
+  it('still gives a K child the planet story on the tapped card', () => {
     render(<SolarSystemExplorer data={kData()} />);
-    expect(screen.getByRole('button', { name: /tell me about earth/i })).toBeTruthy();
     expect(screen.getByText('Our home planet, the only one we know with life.')).toBeTruthy();
   });
 });

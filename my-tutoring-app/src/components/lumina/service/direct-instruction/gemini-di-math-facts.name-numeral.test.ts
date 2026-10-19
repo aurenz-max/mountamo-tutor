@@ -29,6 +29,7 @@ vi.mock('../geminiClient', () => ({
   ai: { models: { generateContent: mocks.generateContent } },
 }));
 
+import { spokenKeyText } from '../../components/live-activity/spokenKey';
 import { generateDiMathFacts, numberWordFor, resolveTextScope } from './gemini-di-math-facts';
 import {
   buildMathFactItems,
@@ -150,7 +151,7 @@ describe('name_numeral — the success condition drops the two clauses that misf
     solvedDisplay: '5 → 6',
   };
 
-  const conditionOf = (c: DiMathFactsChallenge) => buildMathFactItems([c])[0].assignment;
+  const conditionOf = (c: DiMathFactsChallenge) => spokenKeyText(buildMathFactItems([c])[0].key);
   const routeOf = (c: DiMathFactsChallenge) => String(workspaceScene(buildMathFactItems([c])[0]).facts.countingRoute);
 
   it('offers no "count to the answer" route — you do not count to a name', () => {

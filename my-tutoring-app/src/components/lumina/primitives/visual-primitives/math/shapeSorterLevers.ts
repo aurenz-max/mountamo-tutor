@@ -26,12 +26,14 @@
  * - `fewer_mats` (sort, on the item): one wrong mat greyed out on a three-mat sort. Never greys the answer.
  * find_real_object has no simplify: a bare outline is the identify mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { shapeSorterCard } from './shapeSorter.card';
 import { REAL_WORLD_SHAPE_OBJECTS, type RealWorldShapeObjectSpec } from '../shared/realWorldShapeObjects';
 import {
   NEAR_SHAPE, SHAPE_ALTERNATES, SHAPE_PROPERTIES, countNounOf, itemsFromChallenge, nameClassOf,
   type ShapeSorterItem, type ShapeSorterShapeLike,
 } from './shapeSorterDomain';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_SHAPE = 'model_shape';
 export const MODEL_OBJECT = 'model_object';
@@ -46,8 +48,7 @@ export const FEWER_SIDES = 'fewer_sides';
 export const FEWER_MATS = 'fewer_mats';
 
 export const SIMPLER_SUFFIX = '~simpler';
-const NAME_MISSES = ['near_name', 'other_shape_name'];
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
+const NAME_MISSES = shapeSorterCard.modes.identify.misses;
 
 /** K core shapes first, so a model or practice shape is one a young child has met. */
 const BY_CORE = ['circle', 'square', 'triangle', 'rectangle', 'hexagon', 'oval', 'pentagon', 'diamond', 'rhombus'];
@@ -120,7 +121,7 @@ const practiceOf = (item: ShapeSorterItem, shape: ShapeSorterShapeLike, type: 'i
   const id = `${item.id}${SIMPLER_SUFFIX}`;
   const built = itemsFromChallenge({ id, type, ruleAttribute: 'shape', shapes: [shape], supportTier: item.tier },
     { tier: item.tier, countNoun: item.countNoun })[0];
-  return built ? { item: { ...built, id }, shapes: [shape] } : null;
+  return built ? { item: { ...built, id, practiceShapes: [shape] }, shapes: [shape] } : null;
 };
 
 /**
@@ -174,84 +175,81 @@ export function matPicture(item: ShapeSorterItem, label: string): MatPicture | n
 export const startingLevers = (item: ShapeSorterItem | null): string[] =>
   item?.mode === 'sort' && item.tier === 'easy' ? [MAT_PICTURES] : [];
 
-export function shapeSorterLevers(item: ShapeSorterItem | null, pulled: readonly string[],
-  items: readonly ShapeSorterItem[], shapes: readonly ShapeSorterShapeLike[]): WorkspaceLever[] {
-  if (!item) return [];
-  const on = [...startingLevers(item), ...pulled];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: on.includes(id), answers, when, does });
-  const practice = 'Opens an easier one of the same kind first. It is not graded; the full item comes back after it.';
-  const out: WorkspaceLever[] = [];
-  const mode = catalogModeOf(item);
-  if (mode === 'identify') {
-    if (modelShapeFor(item, items)) out.push(lever(MODEL_SHAPE, 'help', 'both', NAME_MISSES,
-      'The learner names a wrong shape, or does not know how to start.',
-      'Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn ("My turn: this shape is a …"), '
-        + 'then ask about the learner\'s own shape again. Never say what the model means for their shape.'));
-    if (simplerShape(item, items, shapes)) out.push(lever(PLAIN_DRAWING, 'simplify', 'both', NAME_MISSES,
-      'The learner cannot name a shape drawn turned or small yet.', practice));
-  } else if (mode === 'find_real_object') {
-    out.push(lever(OUTLINE_ONLY, 'help', 'shown', ['said_object', ...NAME_MISSES],
-      'The learner names the object, or a wrong shape, instead of the shape of its outside edge.',
-      'Fades the inside details of the learner\'s object, so its outside edge stands out. It names nothing.'));
-    if (modelObjectFor(item, items)) out.push(lever(MODEL_OBJECT, 'help', 'both', ['said_object', ...NAME_MISSES],
-      'The learner names the object, names a wrong shape, or does not know how to start.',
-      'Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn '
-        + '("My turn: the … is a …"), then ask about the learner\'s own object again. Never say what the model means for their object.'));
-  } else if (mode === 'count') {
-    const noun = countNounOf(item), one = noun.slice(0, -1);
-    if (modelCountFor(item, items)) out.push(lever(MODEL_COUNT, 'help', 'both', ['said_shape_name', ...OFF_BY],
-      `The learner gives a wrong number of ${noun}, says a shape name, or does not know how to start.`,
-      `Shows a small card with a DIFFERENT shape, a mark on each of its ${noun} (onScreen says how many). Say only its total as `
-        + `your turn ("My turn: this shape has … ${noun}"); never count it aloud and never name either shape. Then ask about the learner's shape again.`));
-    out.push(lever(START_MARK, 'help', 'shown', ['one_short', 'one_over'],
-      `The learner counts one ${one} twice or misses the one they started on.`,
-      `Puts one dot on one ${one} of the learner's shape: start there and stop when you are back. No number.`));
-    out.push(lever(TOUCH_MARKS, 'help', 'shown', ['said_shape_name', ...OFF_BY],
-      `The learner loses track while counting the ${noun}, or says the shape's name instead of a number.`,
-      `Lets the learner tap each ${one} as they count it; a tapped one is marked. No numbers.`));
-    if (simplerShape(item, items, shapes)) out.push(lever(FEWER_SIDES, 'simplify', 'both', OFF_BY,
-      `This many ${noun} is too many to count yet.`, practice));
-  } else {
-    out.push(lever(MAT_PICTURES, 'help', 'shown', ['said_shape_name', 'other_group'],
-      'The learner names the shape instead of a mat, or picks another mat.',
-      `Shows under each mat label a picture of what it collects (${item.rule === 'sides' ? 'that many sticks'
-        : item.rule === 'curved' ? 'a curved or a straight stroke' : 'a patch of that colour'}). Every mat alike; none is marked.`));
-    if (item.rule === 'sides' && SHAPE_PROPERTIES[item.shape] && !SHAPE_PROPERTIES[item.shape].curved)
-      out.push(lever(SIDE_TICKS, 'help', 'shown', ['other_group'], 'The learner picks a mat with the wrong number of sides.',
-        'Puts a small tick across each side of the gold-ringed shape. No number.'));
-    if (droppedMat(item)) out.push(lever(FEWER_MATS, 'simplify', 'shown', ['other_group'],
-      'Three mats are too many to choose between yet.', 'Greys out one wrong mat on this item; two are left.'));
-  }
-  return out;
-}
+/** What the levers read beyond the item: the session's items (a model never shows what a later item asks) and the
+ *  shapes of the item's challenge. */
+export interface ShapeSorterLeverContext { items: readonly ShapeSorterItem[]; shapes: readonly ShapeSorterShapeLike[] }
 
 const article = (w: string) => (/^[aeiou]/i.test(w) ? 'an' : 'a');
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
+const PRACTICE = 'Opens an easier one of the same kind first. It is not graded; the full item comes back after it.';
+const collects = (item: ShapeSorterItem) => (item.rule === 'sides' ? 'that many sticks'
+  : item.rule === 'curved' ? 'a curved or a straight stroke' : 'a patch of that colour');
+const one = (item: ShapeSorterItem) => countNounOf(item).slice(0, -1);
 
-/** What the levers on screen show, as a scene fact. Names a model; never the learner's shape, count or group. */
-export function shapeSorterLeverFacts(item: ShapeSorterItem | null, pulled: readonly string[],
-  items: readonly ShapeSorterItem[]): string {
-  if (!item) return '';
-  const on = new Set([...startingLevers(item), ...pulled]);
-  const noun = item.mode === 'count' ? countNounOf(item) : '';
-  const shape = on.has(MODEL_SHAPE) ? modelShapeFor(item, items) : null;
-  const object = on.has(MODEL_OBJECT) ? modelObjectFor(item, items) : null;
-  const counted = on.has(MODEL_COUNT) ? modelCountFor(item, items) : null;
-  const dropped = on.has(FEWER_MATS) ? droppedMat(item) : null;
-  return [
-    shape && `Beside the learner's shape, a model card shows a different one, solved: ${article(shape)} ${shape}. It is not this one.`,
-    object && `Beside the learner's object, a model card shows a different one, solved: a ${object.label} beside the outline of its shape, ${article(object.shape)} ${object.shape}. It is not this one.`,
-    on.has(OUTLINE_ONLY) && 'The inside details of the learner\'s object are faded; its outside edge stands out.',
-    counted && `Beside the learner's shape, a model card shows a different shape with a mark on each of its ${noun}: ${COUNT_WORDS[countOf(counted, item)]} ${noun}. It is not this one.`,
-    item.mode === 'count' && on.has(START_MARK) && `One dot marks a starting ${noun.slice(0, -1)} on the learner's shape. No number.`,
-    item.mode === 'count' && on.has(TOUCH_MARKS) && `The ${noun} of the learner's shape can be tapped; each tapped one is marked. No number.`,
-    item.mode === 'sort' && on.has(MAT_PICTURES) && `Under each mat label is a picture of what that mat collects (${item.rule === 'sides'
-      ? 'that many sticks' : item.rule === 'curved' ? 'a curved or a straight stroke' : 'a patch of that colour'}); none is marked.`,
-    item.mode === 'sort' && on.has(SIDE_TICKS) && 'A small tick crosses each side of the gold-ringed shape. No number.',
-    dropped && `The "${dropped}" mat is greyed out; ${item.choices.filter(c => c !== dropped).map(c => `"${c}"`).join(' and ')} are left.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** Every lever of the family, by type, in the order the tutor sees them. */
+export const SHAPE_SORTER_LEVERS = leverSet<ShapeSorterItem, ShapeSorterLeverContext>({
+  modeOf: catalogModeOf,
+  missesOf: mode => shapeSorterCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.tier ?? 'easy',
+    different: item => (catalogModeOf(item) === 'find_real_object' ? 'a different object' : 'a different shape'),
+    own: 'this answer' },
+  specs: [
+    { id: MODEL_SHAPE, type: 'model', modes: ['identify'], answers: NAME_MISSES,
+      when: 'The learner names a wrong shape, or does not know how to start.',
+      does: 'Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn ("My turn: this shape is a …"), '
+        + 'then ask about the learner\'s own shape again. Never say what the model means for their shape.',
+      content: (item, { items }) => modelShapeFor(item, items),
+      fact: (shape: string) => `Beside the learner's shape, a model card shows a different one, solved: ${article(shape)} ${shape}. It is not this one.` },
+    { id: PLAIN_DRAWING, type: 'easier', modes: ['identify'], answers: NAME_MISSES,
+      when: 'The learner cannot name a shape drawn turned or small yet.', does: PRACTICE,
+      content: (item, { items, shapes }) => simplerShape(item, items, shapes)?.item ?? null },
+    { id: OUTLINE_ONLY, type: 'layout', modes: ['find_real_object'], answers: ['said_object', ...NAME_MISSES],
+      when: 'The learner names the object, or a wrong shape, instead of the shape of its outside edge.',
+      does: 'Fades the inside details of the learner\'s object, so its outside edge stands out. It names nothing.',
+      fact: 'The inside details of the learner\'s object are faded; its outside edge stands out.' },
+    { id: MODEL_OBJECT, type: 'model', modes: ['find_real_object'], answers: ['said_object', ...NAME_MISSES],
+      when: 'The learner names the object, names a wrong shape, or does not know how to start.',
+      does: 'Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn '
+        + '("My turn: the … is a …"), then ask about the learner\'s own object again. Never say what the model means for their object.',
+      content: (item, { items }) => modelObjectFor(item, items),
+      fact: (object: RealWorldShapeObjectSpec) => `Beside the learner's object, a model card shows a different one, solved: a ${object.label} `
+        + `beside the outline of its shape, ${article(object.shape)} ${object.shape}. It is not this one.` },
+    { id: MODEL_COUNT, type: 'model', modes: ['count'], answers: ['said_shape_name', ...OFF_BY],
+      when: 'The learner gives a wrong number, says a shape name, or does not know how to start.',
+      does: item => `Shows a small card with a DIFFERENT shape, a mark on each of its ${countNounOf(item)} (onScreen says how many). `
+        + `Say only its total as your turn ("My turn: this shape has … ${countNounOf(item)}"); never count it aloud and never name `
+        + 'either shape. Then ask about the learner\'s shape again.',
+      content: (item, { items }) => modelCountFor(item, items),
+      fact: (shape: string, item) => `Beside the learner's shape, a model card shows a different shape with a mark on each of its `
+        + `${countNounOf(item)}: ${COUNT_WORDS[countOf(shape, item)]} ${countNounOf(item)}. It is not this one.` },
+    { id: START_MARK, type: 'marks', modes: ['count'], answers: ['one_short', 'one_over'],
+      when: 'The learner counts one side or corner twice, or misses the one they started on.',
+      does: item => `Puts one dot on one ${one(item)} of the learner's shape: start there and stop when you are back. No number.`,
+      fact: (_on: unknown, item) => `One dot marks a starting ${one(item)} on the learner's shape. No number.` },
+    { id: TOUCH_MARKS, type: 'marks', modes: ['count'], answers: ['said_shape_name', ...OFF_BY],
+      when: 'The learner loses track while counting, or says the shape\'s name instead of a number.',
+      does: item => `Lets the learner tap each ${one(item)} as they count it; a tapped one is marked. No numbers.`,
+      fact: (_on: unknown, item) => `The ${countNounOf(item)} of the learner's shape can be tapped; each tapped one is marked. No number.` },
+    { id: FEWER_SIDES, type: 'easier', modes: ['count'], answers: OFF_BY,
+      when: 'This many sides or corners is too many to count yet.', does: PRACTICE,
+      content: (item, { items, shapes }) => simplerShape(item, items, shapes)?.item ?? null },
+    { id: MAT_PICTURES, type: 'marks', modes: ['sort'], answers: ['said_shape_name', 'other_group'],
+      when: 'The learner names the shape instead of a mat, or picks another mat.',
+      does: item => `Shows under each mat label a picture of what it collects (${collects(item)}). Every mat alike; none is marked.`,
+      fact: (_on: unknown, item) => `Under each mat label is a picture of what that mat collects (${collects(item)}); none is marked.` },
+    { id: SIDE_TICKS, type: 'marks', modes: ['sort'], answers: ['other_group'],
+      offer: item => item.rule === 'sides' && !!SHAPE_PROPERTIES[item.shape] && !SHAPE_PROPERTIES[item.shape].curved,
+      when: 'The learner picks a mat with the wrong number of sides.',
+      does: 'Puts a small tick across each side of the gold-ringed shape. No number.',
+      fact: 'A small tick crosses each side of the gold-ringed shape. No number.' },
+    { id: FEWER_MATS, type: 'custom', modes: ['sort'], answers: ['other_group'], carrier: 'shown',
+      why: 'It narrows this item in place (one wrong mat greyed out) rather than opening a practice item.',
+      when: 'Three mats are too many to choose between yet.', does: 'Greys out one wrong mat on this item; two are left.',
+      content: item => droppedMat(item),
+      fact: (dropped: string, item) => `The "${dropped}" mat is greyed out; `
+        + `${item.choices.filter(c => c !== dropped).map(c => `"${c}"`).join(' and ')} are left.` },
+  ],
+});
 
 /** A practice item's parent and the easier item it is, rebuilt with the component's builder (journey rows). */
 export function simplerFromId(itemId: string, items: readonly ShapeSorterItem[],

@@ -2,12 +2,12 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { getComponentById } from '../../../service/manifest/catalog';
 import { ALL_STRUCTURE_TYPES, askFor, askIsAnswerFree, countConnectives, isStructureType, passageNamesStructure,
-  structureDistance, STRUCTURE_LABEL, wordBoundedIndexOf, type TextStructureItem } from './textStructureAnalyzerScript';
-import { textStructureItems, textStructureSpokenMisses } from './textStructureAnalyzerWorkspace';
+  structureDistance, STRUCTURE_LABEL, textStructureItems, textStructureSpokenMisses, wordBoundedIndexOf,
+  type TextStructureItem } from './textStructureAnalyzerDomain';
 import { anchorFor, linkModelFor, shortLinkFor, sourceFor, sourceLeak, startingLevers, structureModelFor,
-  structurePracticeFor, textStructureLevers, twoPartFor, type TsaSession } from './textStructureAnalyzerLevers';
+  structurePracticeFor, TSA_LEVERS, twoPartFor, type TsaSession } from './textStructureAnalyzerLevers';
+import { textStructureAnalyzerCard } from './textStructureAnalyzer.card';
 import { LINK_MODELS, MINI_PASSAGES, structuresForGrade } from './textStructureModels';
 
 const DIR = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
@@ -40,7 +40,7 @@ describe('the pool', () => {
 describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { session: s }) => {
   it('has items', () => expect(s.items.length).toBeGreaterThan(0));
   it.each(s.items.map(i => [i.id, i] as const))('%s: levers are leak-free and answer the misses they can', (_id, item) => {
-    const levers = textStructureLevers(item, s, []);
+    const levers = TSA_LEVERS.declare(item, s, []);
     const ids = levers.map(l => l.id);
     if (item.action === 'find-signal') {
       expect(ids.includes('focus_sentence')).toBe(!item.showFocusSentence);
@@ -65,11 +65,11 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { session: s }
         expect(model!.structure).not.toBe(answer);
         expect(structuresForGrade(s.grade)).toContain(model!.structure);
         expect(practice).not.toBeNull();
-        expect(practice!.item.choices).toHaveLength(2);
-        expect(practice!.item.choices).toContain(practice!.item.answer);
-        expect(practice!.item.answer).not.toBe(item.answer);
-        expect(practice!.text).not.toBe(model!.text);
-        const [a, b] = practice!.item.choices.map(l => (Object.keys(STRUCTURE_LABEL) as Array<keyof typeof STRUCTURE_LABEL>).find(k => STRUCTURE_LABEL[k] === l)!);
+        expect(practice!.choices).toHaveLength(2);
+        expect(practice!.choices).toContain(practice!.answer);
+        expect(practice!.answer).not.toBe(item.answer);
+        expect(practice!.practiceText).not.toBe(model!.text);
+        const [a, b] = practice!.choices.map(l => (Object.keys(STRUCTURE_LABEL) as Array<keyof typeof STRUCTURE_LABEL>).find(k => STRUCTURE_LABEL[k] === l)!);
         expect(structureDistance(a, b)).toBeGreaterThanOrEqual(2);
       }
       expect(ids.includes('say_choices')).toBe(!item.namesChoices);
@@ -91,7 +91,7 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { session: s }
         expect(two.stimulusText).not.toBe(anchor?.text);
       }
     }
-    const misses = textStructureSpokenMisses(item, { signals: s.items.filter(i => i.action === 'find-signal').map(i => i.answer) });
+    const misses = textStructureSpokenMisses(item);
     for (const miss of misses) {
       const fits = levers.filter(l => l.answers?.includes(miss.id));
       if (item.action === 'name-structure' && (item.choices.length < 3 || s.grade <= 2)) {
@@ -106,11 +106,10 @@ describe.each(PAYLOADS.map(p => [p.file, p] as const))('%s', (_f, { session: s }
 
 describe('catalog and tiers', () => {
   it('declares levers; every mode miss is answered by a lever on a saved payload of that mode', () => {
-    const tw = getComponentById('text-structure-analyzer')!.teachingWorkspace!;
-    expect(tw.levers).toBe(true);
-    for (const [mode, misses] of Object.entries(tw.misses!)) {
+    expect(textStructureAnalyzerCard.levers).toBe(true);
+    for (const [mode, { misses }] of Object.entries(textStructureAnalyzerCard.modes)) {
       const answered = new Set(PAYLOADS.filter(p => p.mode === mode).flatMap(p => p.session.items
-        .flatMap(i => textStructureLevers(i, p.session, []).flatMap(l => l.answers ?? []))));
+        .flatMap(i => TSA_LEVERS.declare(i, p.session, []).flatMap(l => l.answers ?? []))));
       for (const m of misses) expect(answered.has(m), `${mode} ${m}`).toBe(true);
     }
   });

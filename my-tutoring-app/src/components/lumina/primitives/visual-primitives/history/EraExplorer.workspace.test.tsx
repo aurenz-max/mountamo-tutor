@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Era explorer on the teaching workspace: what is its own, plus its Pip surface. The generic
+ * Era explorer on the teaching workspace: what is its own. Pip is the shared contract
+ * (pip/WorkspacePip.surface.test.tsx). The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -15,11 +16,9 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
 import EraExplorer from './EraExplorer';
-import { eraItems } from './eraExplorerWorkspace';
-import { correctChoiceOf } from './eraExplorerScript';
+import { correctChoiceOf, eraItems } from './eraExplorerDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -35,8 +34,8 @@ const CAUSE = { id: 'era-cause-1', type: 'cause_of_change', statement: 'Most fam
 const BY_MODE: Record<string, unknown> = { lens_id: LENS, era_sort: SORT, era_compare: COMPARE, cause_of_change: CAUSE };
 const MODES = Object.keys(BY_MODE);
 const payload = (mode: string, extra: Record<string, unknown> = {}) => ({ ...GENERATED, challengeType: mode, challenges: [BY_MODE[mode]], ...extra });
-const mount = (mode: string, pipStore?: PipSurfaceStore, extra: Record<string, unknown> = {}) =>
-  mountWorkspace({ primitiveId: 'era-explorer', evalMode: mode, data: payload(mode, extra), instanceId: 'era-explorer', pipStore });
+const mount = (mode: string, extra: Record<string, unknown> = {}) =>
+  mountWorkspace({ primitiveId: 'era-explorer', evalMode: mode, data: payload(mode, extra), instanceId: 'era-explorer' });
 
 it.each(MODES)('%s binds: the pack\'s menu choice is the spoken key', mode => {
   const items = eraItems(payload(mode));
@@ -66,7 +65,7 @@ it('the answer appears only after credit; a miss reopens the item', () => {
 });
 
 it('the hard tier folds the cards away: the tutor is told, and opening them publishes them', () => {
-  const h = mount('lens_id', undefined, { lensAccess: 'collapsible' });
+  const h = mount('lens_id', { lensAccess: 'collapsible' });
   expect(h.state().task!.demand.card1).toBeUndefined();
   expect(h.state().task!.demand.cards).toMatch(/folded away/);
   fireEvent.click(screen.getByRole('button', { name: /Open the era cards/ }));
@@ -83,21 +82,12 @@ it('reading a card aloud is a silent host request for its body', () => {
 
 it('right answers complete once and submit the era metrics', async () => {
   seam.evaluationContext = { lesson: 'test' };
-  const h = mount('era_sort', undefined, { challenges: [LENS, SORT] });
+  const h = mount('era_sort', { challenges: [LENS, SORT] });
   for (let i = 0; i < 2; i++) { h.say('answer'); h.feedback('correct', 'advance'); h.confirmVisible(); }
   expect(h.state().status).toBe('completed');
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'era-explorer', correctCount: 2, totalChallenges: 2 });
-});
-
-it('Pip outlines the statement and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('era-explorer');
-  const h = mount('era_sort', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('back then'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable; outside a runtime the surface shows the needs-the-tutor card', () => {

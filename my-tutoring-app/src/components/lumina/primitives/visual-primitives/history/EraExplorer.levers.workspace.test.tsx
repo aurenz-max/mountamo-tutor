@@ -17,9 +17,8 @@ import lensP from '../../../components/live-activity/runtime/testing/w1-payloads
 import sortP from '../../../components/live-activity/runtime/testing/w1-payloads/era-explorer.era_sort.json';
 import compareP from '../../../components/live-activity/runtime/testing/w1-payloads/era-explorer.era_compare.json';
 import causeP from '../../../components/live-activity/runtime/testing/w1-payloads/era-explorer.cause_of_change.json';
-import { eraItems } from './eraExplorerWorkspace';
+import { correctChoiceOf, eraItems } from './eraExplorerDomain';
 import { eraLeverSession, practiceItem } from './eraExplorerLevers';
-import { correctChoiceOf } from './eraExplorerScript';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -48,7 +47,7 @@ it('era_sort: two_checks puts two empty checks under the detail in one commit; t
   const receipt = h.dispatch('pull_lever', { lever: 'two_checks' });
   expect(receipt.status).toBe('committed');
   expect(String((receipt.state.task!.demand as Record<string, unknown>).onScreen))
-    .toBe('under the detail, two empty checks: "Back then, in Pioneer Times?" and "Today, in your own life?". Neither is ticked');
+    .toBe('Under the detail, two empty checks: "Back then, in Pioneer Times?" and "Today, in your own life?". Neither is ticked.');
   expect(h.lever('two-checks')!.textContent).toMatch(/☐ Back then, in Pioneer Times\?.*☐ Today, in your own life\?/);
   expect(h.levers()).toEqual([['two_checks', true]]);
   h.say(correctChoiceOf(item).distinguisher); h.feedback('correct');
@@ -64,7 +63,7 @@ it('lens_id: side_by_side opens every card at once (a second pull is refused); o
   expect(h.lever('side-by-side')).toBeNull();
   expect(h.dispatch('pull_lever', { lever: 'side_by_side' }).status).toBe('committed');
   for (const lens of DATA.lens_id.lenses) expect(h.lever('side-by-side')!.textContent).toContain(lens.body);
-  expect(h.onScreen()).toMatch(/all three era cards are open side by side/);
+  expect(h.onScreen()).toMatch(/All three era cards are open side by side/);
   // A second pull of the same lever is refused and changes nothing.
   const before = { html: h.view.container.innerHTML, levers: h.levers(), attempts: h.attempts().length, item: h.state().task!.itemId };
   expect(h.dispatch('pull_lever', { lever: 'side_by_side' }).status).toBe('blocked');

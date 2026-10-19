@@ -26,6 +26,7 @@ import { leverSet } from '../../../components/live-activity/bossLevers';
 import { diDiceRollCard } from './diDiceRoll.card';
 import { saysWords } from './diMathFactsLevers';
 import { diceValuesFor, type DiDiceRollChallenge, type DiDiceRollChallengeType, type DieValue } from './diDiceRollScript';
+import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_LEVER = 'model_roll';
 export const TOUCH_LEVER = 'touch_dots';
@@ -35,7 +36,6 @@ export const FAR_LEVER = 'far_pair';
 export const SMALLER_LEVER = 'smaller_dice';
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
-const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
 const relation = (a: number, b: number) => a === b ? 'same' as const : a > b ? 'left' as const : 'right' as const;
 

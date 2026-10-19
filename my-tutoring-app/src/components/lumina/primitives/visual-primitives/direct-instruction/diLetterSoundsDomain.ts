@@ -21,7 +21,7 @@
  * standing block on letter NAMES. What does not survive is the wording that decided progression.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { LETTER_NAME, childSound } from '../literacy/spokenReadingMisses';
@@ -131,7 +131,7 @@ export interface LetterSoundItem extends TeachingItem {
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
   accepted: string;
   /** The success condition in full, for the tutor's scene facts. */
-  assignment: string;
+  key: SpokenKey;
 }
 
 const nonEmpty = (value: unknown): value is string => typeof value === 'string' && !!value.trim();
@@ -174,17 +174,17 @@ function acceptedFor(c: DiLetterSoundChallenge): string {
  * the near miss this primitive has to distinguish: for a held sound, saying "moon" is progress toward mmm and not the
  * answer, while a short vowel or a stop accepts its keyword (`alsoAccept`).
  */
-function keyFor(c: DiLetterSoundChallenge): string {
+function keyFor(c: DiLetterSoundChallenge): SpokenKey {
   const name = "The letter's name is not the answer.";
-  if (isOnset(c)) return spokenKeyText({ answer: c.spoken, alsoAccept: [],
+  if (isOnset(c)) return ({ answer: c.spoken, alsoAccept: [],
     signatureError: `Saying the whole word "${c.keyword}" back, or naming a letter, is a step toward the answer and is not it.` });
-  if (c.elicitation === 'keyword') return spokenKeyText({ answer: c.spoken, alsoAccept: [c.keyword],
+  if (c.elicitation === 'keyword') return ({ answer: c.spoken, alsoAccept: [c.keyword],
     acceptRule: `It is the short vowel sound at the start of "${c.keyword}"; another word starting with that sound counts too.`,
     signatureError: name });
-  if (c.articulation === 'clipped') return spokenKeyText({ answer: c.spoken, alsoAccept: [c.keyword],
+  if (c.articulation === 'clipped') return ({ answer: c.spoken, alsoAccept: [c.keyword],
     acceptRule: 'It is a clipped sound: a small "uh" after it counts, and so does another word starting with that sound.',
     signatureError: name });
-  return spokenKeyText({ answer: c.spoken, alsoAccept: [],
+  return ({ answer: c.spoken, alsoAccept: [],
     signatureError: `It is a continuous sound. ${name} Naming the picture "${c.keyword}" is a step toward the sound rather than the sound itself.` });
 }
 
@@ -209,7 +209,7 @@ export function buildLetterSoundItems(challenges: DiLetterSoundChallenge[] = [])
     stimulus: isOnset(c) ? 'word' : 'letter',
     ask: askFor(c),
     accepted: acceptedFor(c),
-    assignment: keyFor(c),
+    key: keyFor(c),
     answerKind: diLetterSoundModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'continuant_sound',
   }));

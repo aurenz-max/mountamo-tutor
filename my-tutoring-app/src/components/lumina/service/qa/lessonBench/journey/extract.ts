@@ -7,8 +7,7 @@ import { itemsFromChallenges, itemCue as linkCue } from '../../../../primitives/
 import type { LetterSoundChallengeLike, LetterSoundTier } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkScript';
 import { itemsFromChallenges as spotterItems, itemCue as spotterCue } from '../../../../primitives/visual-primitives/literacy/letterSpotterScript';
 import type { LetterSpotterChallengeLike, LetterSpotterTier } from '../../../../primitives/visual-primitives/literacy/letterSpotterScript';
-import { itemsFromChallenges as phonemeItems, itemCue as phonemeCue } from '../../../../primitives/visual-primitives/literacy/phonemeExplorerScript';
-import type { PhonemeChallengeLike } from '../../../../primitives/visual-primitives/literacy/phonemeExplorerScript';
+import { askFor as phonemeAsk, itemsFromChallenges as phonemeItems, type PhonemeChallengeLike } from '../../../../primitives/visual-primitives/literacy/phonemeExplorerDomain';
 import type { LessonPackage } from '../lessonPackage';
 import type { ExtractedLesson, InstructionEvent, LessonContract } from './types';
 
@@ -160,7 +159,8 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           // Hear a sound, say the menu word that starts with it: onset, spoken, closed set.
           const letter = lower(it.phoneme).replace(/[^a-z]/g, '').slice(0, 1);
           if (!letter) throw new Error(`Item ${i}: phoneme is not a single letter`);
-          const cue = spokenOpening(phonemeCue(it, { opening: i === 0, howToPlay: i === 0 }));
+          // The boss ask: the tutor receives it as the task (phonemeExplorer.boss.ts), not a scripted cue.
+          const cue = phonemeAsk(it);
           add({ itemId: it.id, evalMode: it.kind, capability: 'onset', target: letter, graphemes: [letter],
             cue, source: `${source}/challenges/${i}`, modality: 'spoken',
             modeled: openingModelsAnswer(cue, it.answer), guided: false, explainsRelation: false });

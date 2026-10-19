@@ -2,18 +2,15 @@ import { expect, it } from 'vitest';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { pictureVocabSpokenMisses } from './pictureVocabularyWorkspace';
 import type { PictureVocabItem } from './pictureVocabularyScript';
-import { youAndMeSpokenMisses } from './youAndMeWorkspace';
+import { youAndMeSpokenMisses } from './youAndMeDomain';
 import type { YouAndMeChallenge } from './YouAndMe';
-import { genreSpokenMisses } from './genreExplorerWorkspace';
-import type { GenreExplorerItem } from './genreExplorerScript';
-import { sentenceSpokenMisses } from './sentenceAnalyzerWorkspace';
-import type { SentenceAnalyzerItem } from './sentenceAnalyzerScript';
-import { textStructureSpokenMisses } from './textStructureAnalyzerWorkspace';
-import type { TextStructureItem } from './textStructureAnalyzerScript';
+import { genreSpokenMisses } from './genreExplorerDomain';
+import type { GenreExplorerItem } from './genreExplorerDomain';
+import { sentenceSpokenMisses, type SentenceAnalyzerItem } from './sentenceAnalyzerDomain';
+import { textStructureSpokenMisses, type TextStructureItem } from './textStructureAnalyzerDomain';
 import { wordBuilderSpokenMisses } from './wordBuilderWorkspace';
 import type { WordBuilderItem } from './wordBuilderScript';
-import { wordSorterSpokenMisses } from './wordSorterWorkspace';
-import type { WordSorterItem } from './wordSorterScript';
+import { wordSorterSpokenMisses, type WordSorterItem } from './wordSorterDomain';
 
 // The spoken literacy families' known wrong answers (handoff 20 Part B): ids in precedence order, and no example is
 // an accepted answer.

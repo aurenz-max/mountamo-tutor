@@ -5,12 +5,13 @@ import sortP from '../../../components/live-activity/runtime/testing/w1-payloads
 import compareP from '../../../components/live-activity/runtime/testing/w1-payloads/era-explorer.era_compare.json';
 import causeP from '../../../components/live-activity/runtime/testing/w1-payloads/era-explorer.cause_of_change.json';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
-import { eraItems, eraSpokenMisses } from './eraExplorerWorkspace';
+import { correctChoiceOf, eraItems, eraSpokenMisses, toWords, type EraExplorerItem } from './eraExplorerDomain';
 import {
-  CHANGE_MODELS, changeModelFor, eraLeverSession, eraLevers, leversOnScreen, modelLeaks, practiceItem, practiceLeaks,
-  practiceParent, startingLevers, twoChecksFor,
+  CHANGE_MODELS, ERA_LEVERS, changeModelFor, eraLeverSession, modelLeaks, practiceItem, practiceLeaks,
+  practiceParent, startingLevers, twoChecksFor, type EraLeverSession,
 } from './eraExplorerLevers';
-import { correctChoiceOf, toWords, type EraExplorerItem } from './eraExplorerScript';
+
+const eraLevers = (item: EraExplorerItem, s: EraLeverSession, pulled: string[]) => ERA_LEVERS.declare(item, s, pulled);
 
 const PAYLOADS: Record<string, any> = {
   lens_id: (lensP as any).data, era_sort: (sortP as any).data, era_compare: (compareP as any).data,
@@ -30,7 +31,7 @@ describe.each(Object.keys(PAYLOADS))('%s payload', key => {
 
   it.each(items.map(i => [i.id, i] as const))('%s: the levers on screen never state the detail or its answer', (_id, item) => {
     const all = eraLevers(item, s, []).map(l => l.id);
-    const fact = leversOnScreen(item, all, s) ?? '';
+    const fact = ERA_LEVERS.onScreen(item, s, all);
     // A lens fact names all three lenses, a time fact both times; a model is checked by `modelLeaks` (below).
     if (item.kind !== 'cause_of_change') {
       for (const w of statementWords(item)) expect(fact.toLowerCase().includes(` ${w} `), `${item.id}: ${w}`).toBe(false);
@@ -131,5 +132,5 @@ it('easy starts the self-check levers; medium and hard start none; cause_of_chan
   expect(startingLevers('medium', sort)).toEqual([]);
   expect(startingLevers('hard', lens)).toEqual([]);
   const { s } = sessionOf(PAYLOADS.era_sort);
-  expect(eraLevers(sort, s, [], ['two_checks'])).toEqual([]);
+  expect(eraLevers({ ...sort, tier: 'easy' }, s, [])).toEqual([]);
 });

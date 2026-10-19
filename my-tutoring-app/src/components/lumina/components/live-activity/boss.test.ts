@@ -13,7 +13,8 @@ import { classificationSorterBoss } from '../../primitives/visual-primitives/bio
 import { LIVE_ADAPTERS, type LivePrimitiveId } from './activityContract';
 import { LIVE_JOURNEYS } from './liveJourneySpec';
 import { ROTATION_DOCTRINE } from './adapters/adapterContract';
-import { bossEntry, renderBoss, SPOKEN, TAP_ONE, wiringsOf, type Boss, type Card } from './boss';
+import { bossEntry, renderBoss, SAY_OR_SHOW, SPOKEN, spokenBoss, spokenLeaksOf, TAP_ONE, tapBoss, wiringsOf, type Boss, type Card } from './boss';
+import { askLeaks, type SpokenKey } from './spokenKey';
 import { leverScene, leverSet, type SceneOf } from './bossLevers';
 import { supportFact } from './supportFact';
 
@@ -105,7 +106,7 @@ describe('every boss on disk', () => {
   it('a boss wires no Pip: the runner publishes it, the component only marks the dock and the workspace', async () => {
     for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
       const source = readFileSync(join(LUMINA, boss.drive.component), 'utf8');
-      for (const hand of ['useWorkspacePipSurface(', 'usePipSurface(', 'useLuminaAIContext('])
+      for (const hand of ['useWorkspacePipSurface(', 'usePipSurface(', 'useStimulusPipSurface(', 'useLuminaAIContext('])
         expect(source.includes(hand), `${boss.card.id}: ${hand} wires Pip by hand; render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)`).toBe(false);
       // DiTeachingStage is the spoken stage; it publishes Pip itself, once for every pack.
       if (!/<DiTeachingStage[<\s]/.test(source))
@@ -154,6 +155,107 @@ describe('every boss on disk', () => {
         for (const miss of m.misses) expect(answered.has(miss), `${card.id} ${mode}: no lever answers ${miss}; add one or list it in unanswered`).toBe(true);
       }
     }
+  });
+
+  it('a boss with spoken items declares their keys, and no saved payload\'s ask says its answer', async () => {
+    const payloadDir = join(__dirname, 'runtime/testing/w1-payloads');
+    const payloads = readdirSync(payloadDir).filter(f => f.endsWith('.json'));
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      const id = boss.card.id;
+      if (!Object.values(boss.card.modes).some(m => wiringsOf(m).some(w => w.wiring.answer === 'spoken'))) continue;
+      expect(boss.spoken, `${id}: a boss with spoken modes declares spoken: { key } (spokenBoss does it)`).toBeTruthy();
+      const mine = payloads.filter(f => f.startsWith(`${id}.`));
+      expect(mine.length, `${id}: save a payload in runtime/testing/w1-payloads so its asks are checked`).toBeGreaterThan(0);
+      let spokenItems = 0;
+      for (const file of mine) {
+        const data = boss.validate(JSON.parse(readFileSync(join(payloadDir, file), 'utf8')).data);
+        expect(spokenLeaksOf(boss, data), `${file}: an ask says its answer (askLeaks)`).toEqual([]);
+        spokenItems += boss.items(data).filter((item: unknown) => boss.spoken!.key(item)).length;
+      }
+      expect(spokenItems, `${id}: its payloads have no spoken item to check`).toBeGreaterThan(0);
+    }
+  });
+
+  it('a boss family builds a spoken assignment only through spokenAssignment', async () => {
+    for (const file of bossFiles) {
+      const dir = file.slice(0, file.lastIndexOf('/') + 1), stem = file.slice(dir.length, -'.boss.ts'.length).toLowerCase();
+      const family = files(join(PRIMITIVES, dir), f => !f.includes('/') && f.toLowerCase().startsWith(stem)
+        && /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
+      for (const f of family) {
+        expect(/response: 'speech'/.test(readFileSync(join(PRIMITIVES, dir, f), 'utf8')),
+          `${dir}${f}: build the assignment with spokenAssignment (boss.ts), which writes the key text`).toBe(false);
+      }
+    }
+  });
+});
+
+describe('the ask never says the answer (askLeaks)', () => {
+  const key = (answer: string, more: Partial<SpokenKey> = {}): SpokenKey => ({ answer, alsoAccept: [], ...more });
+
+  it('flags an answer or an also-accepted answer in the ask', () => {
+    expect(askLeaks('What is three plus four? Seven?', key('seven'))).toEqual(['says the answer "seven"']);
+    expect(askLeaks('Is it a diamond?', key('rhombus', { alsoAccept: ['diamond'] }))).toEqual(['says the answer "diamond"']);
+    expect(askLeaks('What shape is this?', key('circle'))).toEqual([]);
+  });
+
+  it('lets the ask say what it states by design, and a sound is not its letter', () => {
+    expect(askLeaks('What is zero plus three?', key('three'), ['zero plus three'])).toEqual([]);
+    expect(askLeaks('What sound does the letter "t" make?', key('/t/'))).toEqual([]);
+    expect(askLeaks('Say /t/.', key('/t/'))).toEqual(['says the answer "/t/"']);
+  });
+
+  it('a menu key says its whole menu, the answer among it', () => {
+    expect(askLeaks('Add or subtract?', key('add', { menu: ['add', 'subtract'] }))).toEqual([]);
+    expect(askLeaks('Do you add?', key('add', { menu: ['add', 'subtract'] }))).toEqual(['does not say the menu word "subtract"']);
+  });
+
+  it('a spoken boss rejects content whose ask says the answer', () => {
+    const card = { id: 'x', grades: [], modes: { m: { ...SPOKEN, misses: [] } }, words: { job: '', answer: '', question: '' } } as unknown as Card;
+    const boss = spokenBoss<{ title: string; items: string[] }, { id: string; word: string }, string>({
+      card, validate: v => v as { title: string; items: string[] },
+      items: d => d.items.map(word => ({ id: word, word })),
+      speech: { ask: i => `Say ${i.word === 'cat' ? 'cat' : 'it'}.`, key: i => key(i.word), say: i => ({ correct: i.word, plainWrong: 'no' }) },
+      drive: { component: '', instanceId: '', defaults: { grade: '', mode: 'm', topic: '' }, mounted: '' },
+    });
+    expect(() => boss.validate({ title: 't', items: ['dog'] })).not.toThrow();
+    expect(() => boss.validate({ title: 't', items: ['dog', 'cat'] })).toThrow('item cat: the ask says the answer "cat"');
+  });
+
+  // The variants the card describes, on the one preset: no mode needs its own wiring.
+  type Item = { id: string; mode: string; word: string };
+  const mixed = (modes: Card['modes'], modeOf?: (i: Item) => string) => spokenBoss<{ title: string }, Item, string>({
+    card: { id: 'x', grades: [], modes, words: { job: '', answer: '', question: '' } } as unknown as Card,
+    validate: v => v as { title: string }, items: () => [],
+    speech: { ask: i => `Show or say ${i.mode}.`, key: i => (i.mode === 'build' ? null : key(i.word)),
+      say: i => ({ correct: i.word, plainWrong: 'no' }), show: (right, i) => [{ type: 'touch', target: right ? i.word : 'other' }], modeOf },
+    drive: { component: '', instanceId: '', defaults: { grade: '', mode: 'say', topic: '' }, mounted: '' },
+  });
+  const ctx = { data: {}, challenge: null, diItems: [], itemId: '' } as never;
+
+  it('one spoken boss mixes said, shown and say-or-show items, each from its card mode', () => {
+    const boss = mixed({ say: { ...SPOKEN, misses: [] }, show: { ...SAY_OR_SHOW, misses: [] }, build: { ...TAP_ONE, misses: [] } }, i => i.mode);
+    expect(boss.assignment({ id: 'a', mode: 'say', word: 'cat' })).toEqual({ id: 'a', task: 'Show or say say.', response: 'speech', expectedAnswer: '"cat".' });
+    expect(boss.assignment({ id: 'b', mode: 'show', word: 'cat' })).toMatchObject({ response: 'speech', acceptsGesture: true });
+    expect(boss.assignment({ id: 'c', mode: 'build', word: 'cat' })).toEqual({ id: 'c', task: 'Show or say build.', response: 'gesture' });
+    expect(boss.drive.play(true, { id: 'c', mode: 'build', word: 'cat' }, ctx)).toEqual([{ type: 'touch', target: 'cat' }]);
+    expect(boss.drive.play(false, { id: 'a', mode: 'say', word: 'cat' }, ctx)).toEqual([{ type: 'answer', text: 'no' }]);
+  });
+
+  it('a say-or-show mode beside other modes needs modeOf', () => {
+    expect(() => mixed({ say: { ...SPOKEN, misses: [] }, show: { ...SAY_OR_SHOW, misses: [] } })).toThrow('needs speech.modeOf');
+  });
+
+  it('say-or-show and a tap with a commit press are card values the doctrine and the tap preset read', () => {
+    const words = { job: 'answer', answer: 'the answer', question: 'the prompt' };
+    expect(ROTATION_DOCTRINE({ words, modes: { m: SAY_OR_SHOW } })).toContain('The learner may say the answer out loud or show it on screen');
+    const tap = tapBoss<{ title: string }, { id: string }, string>({
+      card: { id: 't', grades: [], modes: { m: { ...TAP_ONE, moves: 'taps a choice, then presses Check', misses: [] } },
+        words: { job: '', answer: '', question: '' } } as unknown as Card,
+      validate: v => v as { title: string }, items: () => [],
+      choice: { ask: () => 'Pick one.', targets: () => ({ correct: 'opt-a', wrong: 'opt-b' }), commit: 'Check' },
+      drive: { component: '', instanceId: '', defaults: { grade: '', mode: 'm', topic: '' }, mounted: '' },
+    });
+    expect(tap.drive.play(true, { id: 'i' }, ctx)).toEqual([{ type: 'touch', target: 'opt-a' }, { type: 'choose', label: 'Check' }]);
   });
 });
 
@@ -249,6 +351,13 @@ describe('support is the lever set\'s: a mode cannot write the tier rule itself'
     expect(set.support({ id: 'a' })).toMatch(/^before the learner tries, pull the model lever \(model_it\)/);
   });
 
+  it('a mode with no model lever gets no support fact: the tutor is never told to pull a model it is not offered', () => {
+    const set = leverSet<Item & { mode: string }, null>({ modeOf: i => i.mode, missesOf: () => [], support,
+      specs: [{ ...model, modes: ['name'] }] });
+    expect(set.support({ id: 'a', mode: 'name' })).toMatch(/model_it/);
+    expect(set.support({ id: 'b', mode: 'sort' })).toBe('');
+  });
+
   it('a scene that writes support or onScreen throws when published', () => {
     expect(() => leverScene({ objects: [], facts: { support: 'answer it cold' } }, { support: 'x', onScreen: '' })).toThrow(/lever set writes it/);
     expect(leverScene({ objects: [], facts: { kind: 'k' } }, { support: 's', onScreen: '' }).facts).toEqual({ kind: 'k', support: 's' });
@@ -272,11 +381,11 @@ describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 83, 'spokenBoss builds the assignment from speech.ask/key/misses'],
-    ['hand-written spoken key text', /also accept/i, 10, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 162, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
-    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(/, 177, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
-    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 94, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
+    ['hand-built spoken assignments', /response: 'speech'/, 64, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-written spoken key text', /also accept/i, 5, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 145, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 174, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
+    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 92, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
     ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
     expect(count(pattern), `more files than the ratchet allows; use ${instead}`).toBeLessThanOrEqual(ceiling);
@@ -289,6 +398,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(152);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(135);
   });
 });

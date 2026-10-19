@@ -40,7 +40,7 @@ import {
   optionsEarSeparable,
   pruneForEar,
   type GenreId,
-} from '../../primitives/visual-primitives/literacy/genreExplorerScript';
+} from '../../primitives/visual-primitives/literacy/genreExplorerDomain';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry

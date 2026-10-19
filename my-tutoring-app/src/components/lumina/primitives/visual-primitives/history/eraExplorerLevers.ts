@@ -1,5 +1,6 @@
 /**
- * The in-item levers on era-explorer (`/add-support-tiers`, report qa/eval-reports/era-explorer-levers-2026-10-08.md).
+ * The in-item levers on era-explorer, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/era-explorer-levers-2026-10-08.md).
  * No real-learner evidence: the misses are what `eraSpokenMisses` names on each mode's spoken pick.
  *
  * Every answer is one of three choices the ask names aloud, and the catalog rule is "never name the box": no lever
@@ -15,11 +16,9 @@
  * - cause_of_change: `model_change` (help) a model change from everyday life, its cause, what changed and a line true
  *   at the time, each tagged. No simplify: one change and three causes is the plainest shape of the ask.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import {
-  containsPhrase, eraTokens, toWords, type EraExplorerItem, type EraTier,
-} from './eraExplorerScript';
-import type { SpokenEraMiss } from './eraExplorerWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { eraExplorerCard } from './eraExplorer.card';
+import { containsPhrase, eraTokens, toWords, type EraExplorerItem, type EraTier } from './eraExplorerDomain';
 
 export const SIDE_BY_SIDE_LEVER = 'side_by_side';
 export const ON_THE_CARD_LEVER = 'on_the_card';
@@ -129,63 +128,10 @@ export function practiceLeaks(practice: EraExplorerItem, item: EraExplorerItem, 
   return readsAs(practice.statement, sessionTexts(s));
 }
 
-// ── what is on screen ──────────────────────────────────────────────────────
+// ── the tier's starting levers ─────────────────────────────────────────────
 
-const plain = (t: string) => t.replace(/[.!?]+$/, '');
-
-/** What the pulled levers put on screen, for the tutor and JEV: what is drawn, never this item's answer. */
-export function leversOnScreen(item: EraExplorerItem, on: readonly string[], s: EraLeverSession): string | null {
-  const parts: string[] = [];
-  if (on.includes(SIDE_BY_SIDE_LEVER) && item.kind === 'lens_id') {
-    parts.push(`all three era cards are open side by side, each under its lens name (${s.lenses.map(l => l.title).join(', ')}). Nothing on a card is marked`);
-  }
-  const checks = on.includes(TWO_CHECKS_LEVER) ? twoChecksFor(item, s) : null;
-  if (checks) parts.push(`under the detail, two empty checks: "${checks[0]}" and "${checks[1]}". Neither is ticked`);
-  const model = on.includes(MODEL_CHANGE_LEVER) ? changeModelFor(item, s) : null;
-  if (model) {
-    parts.push(`beside the item, a model from everyday life, not this item: "${plain(model.change)}" (tagged ${MODEL_TAGS.change}); `
-      + `"${plain(model.cause)}" (tagged ${MODEL_TAGS.cause}); "${plain(model.notWhy)}" (tagged ${MODEL_TAGS.notWhy})`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
-
-// ── the levers ─────────────────────────────────────────────────────────────
-
-const LENS_MISSES: SpokenEraMiss[] = ['other_lens', 'named_a_thing'];
-const SORT_MISSES: SpokenEraMiss[] = ['said_back_then', 'said_today', 'said_both'];
-const COMPARE_MISSES: SpokenEraMiss[] = ['said_earlier', 'said_later', 'said_both', 'said_today'];
-const CAUSE_MISSES: SpokenEraMiss[] = ['other_cause', 'said_what_changed'];
-
-export function eraLevers(item: EraExplorerItem | null, s: EraLeverSession, pulled: readonly string[],
-  starting: readonly string[] = []): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string) => {
-    if (!starting.includes(id)) levers.push({ id, kind, carrier: 'both', pulled: pulled.includes(id), answers, when, does });
-  };
-  if (item.kind === 'lens_id') {
-    add(SIDE_BY_SIDE_LEVER, 'help', LENS_MISSES, 'The learner names the wrong lens, or a thing from the sentence instead of a lens.',
-      'Lays all three era cards open side by side, each under its lens name, so the learner can look through every card at once. '
-      + 'Nothing is marked. Never say which card holds the detail or read the matching words.');
-    if (practiceItem(item, s)) add(ON_THE_CARD_LEVER, 'simplify', LENS_MISSES, 'The learner still cannot find the lens after help.',
-      'Opens an easier practice item first: a detail copied word for word from one era card, with the same three lenses to choose from. '
-      + 'Not graded; the full item comes back after it.');
-  } else if (item.kind === 'era_sort' || item.kind === 'era_compare') {
-    const checks = twoChecksFor(item, s);
-    if (checks) add(TWO_CHECKS_LEVER, 'help', item.kind === 'era_sort' ? SORT_MISSES : COMPARE_MISSES,
-      item.kind === 'era_sort' ? 'The learner puts a detail in one time only when it is true in both, or in both when it belongs to one.'
-        : 'The learner picks the wrong one of the two past times, says both for one, or says today.',
-      `Puts two empty checks under the detail: "${checks[0]}" and "${checks[1]}". Read them and let the learner answer each one `
-      + 'from the cards. Never tick one, answer either, or say which choice the learner\'s two answers make.');
-  } else {
-    if (changeModelFor(item, s)) add(MODEL_CHANGE_LEVER, 'help', CAUSE_MISSES, 'The learner picks a cause that did not make the change, or says what changed instead of why.',
-      'Shows a model from everyday life beside the item: a change, the cause that made it happen, and a line that was true then but is '
-      + 'not why, each tagged. Read the model if you like; never say which of the learner\'s three causes is like the model\'s cause.');
-  }
-  return levers;
-}
-
-/** Phase 6: easy starts lens_id with the cards side by side and the two time modes with the two checks. Not a pull. */
+/** Easy starts lens_id with the cards side by side and the two time modes with the two checks: drawn from the first
+ *  render and never offered as a pull. */
 export const startingLevers = (tier: EraTier | string | undefined, item: EraExplorerItem | null): string[] => {
   if (tier !== 'easy' || !item) return [];
   if (item.kind === 'lens_id') return [SIDE_BY_SIDE_LEVER];
@@ -193,7 +139,59 @@ export const startingLevers = (tier: EraTier | string | undefined, item: EraExpl
   return [];
 };
 
-/** The lever session for a payload: the shared shape the component, the journey and the tests build. */
+const notStarting = (id: string) => (item: EraExplorerItem) => !startingLevers(item.tier, item).includes(id);
+
+/** The lever session for a payload: the shared shape the component, the boss and the tests build. */
 export const eraLeverSession = (items: readonly EraExplorerItem[], data: {
   eraName?: string; priorEra?: { name: string }; lenses?: readonly { title: string; body: string }[];
 }): EraLeverSession => ({ items, eraName: data.eraName ?? '', priorEraName: data.priorEra?.name ?? '', lenses: data.lenses ?? [] });
+
+// ── the lever set ──────────────────────────────────────────────────────────
+
+const plain = (t: string) => t.replace(/[.!?]+$/, '');
+type Mode = keyof typeof eraExplorerCard.modes;
+const twoChecksFact = (checks: [string, string]) =>
+  `Under the detail, two empty checks: "${checks[0]}" and "${checks[1]}". Neither is ticked.`;
+const twoChecksDoes = (checks: [string, string] | null) => `Puts two empty checks under the detail: "${checks?.[0]}" and `
+  + `"${checks?.[1]}". Read them and let the learner answer each one from the cards. Never tick one, answer either, or say `
+  + 'which choice the learner\'s two answers make.';
+
+/** Every lever of the family, in the order the tutor sees them. */
+export const ERA_LEVERS = leverSet<EraExplorerItem, EraLeverSession>({
+  modeOf: item => item.kind,
+  missesOf: mode => eraExplorerCard.modes[mode as Mode]?.misses ?? [],
+  support: { tier: item => item.tier, different: 'a change from everyday life, with its cause', own: 'this change\'s cause' },
+  specs: [
+    { id: SIDE_BY_SIDE_LEVER, type: 'layout', carrier: 'both', modes: ['lens_id'], answers: ['other_lens', 'named_a_thing'],
+      offer: notStarting(SIDE_BY_SIDE_LEVER),
+      when: 'The learner names the wrong lens, or a thing from the sentence instead of a lens.',
+      does: 'Lays all three era cards open side by side, each under its lens name, so the learner can look through every card at once. '
+        + 'Nothing is marked. Never say which card holds the detail or read the matching words.',
+      fact: (_c: unknown, _item: EraExplorerItem, s: EraLeverSession) =>
+        `All three era cards are open side by side, each under its lens name (${s.lenses.map(l => l.title).join(', ')}). Nothing on a card is marked.` },
+    { id: ON_THE_CARD_LEVER, type: 'easier', modes: ['lens_id'], answers: ['other_lens', 'named_a_thing'],
+      when: 'The learner still cannot find the lens after help.',
+      does: 'Opens an easier practice item first: a detail copied word for word from one era card, with the same three lenses to choose from. '
+        + 'Not graded; the full item comes back after it.',
+      content: practiceItem },
+    { id: TWO_CHECKS_LEVER, type: 'marks', carrier: 'both', modes: ['era_sort'], answers: ['said_back_then', 'said_today', 'said_both'],
+      offer: notStarting(TWO_CHECKS_LEVER),
+      when: 'The learner puts a detail in one time only when it is true in both, or in both when it belongs to one.',
+      does: (item, s) => twoChecksDoes(twoChecksFor(item, s)),
+      content: twoChecksFor,
+      fact: twoChecksFact },
+    { id: TWO_CHECKS_LEVER, type: 'marks', carrier: 'both', modes: ['era_compare'], answers: ['said_earlier', 'said_later', 'said_both', 'said_today'],
+      offer: notStarting(TWO_CHECKS_LEVER),
+      when: 'The learner picks the wrong one of the two past times, says both for one, or says today.',
+      does: (item, s) => twoChecksDoes(twoChecksFor(item, s)),
+      content: twoChecksFor,
+      fact: twoChecksFact },
+    { id: MODEL_CHANGE_LEVER, type: 'model', modes: ['cause_of_change'], answers: ['other_cause', 'said_what_changed'],
+      when: 'The learner picks a cause that did not make the change, or says what changed instead of why.',
+      does: 'Shows a model from everyday life beside the item: a change, the cause that made it happen, and a line that was true then but is '
+        + 'not why, each tagged. Read the model if you like; never say which of the learner\'s three causes is like the model\'s cause.',
+      content: changeModelFor,
+      fact: (m: ChangeModel) => `Beside the item, a model from everyday life, not this item: "${plain(m.change)}" (tagged ${MODEL_TAGS.change}); `
+        + `"${plain(m.cause)}" (tagged ${MODEL_TAGS.cause}); "${plain(m.notWhy)}" (tagged ${MODEL_TAGS.notWhy}).` },
+  ],
+});
