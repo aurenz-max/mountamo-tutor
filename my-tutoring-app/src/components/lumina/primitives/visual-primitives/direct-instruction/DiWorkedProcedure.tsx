@@ -131,7 +131,8 @@ function ModelCard({ item }: { item: WorkedProcedureItem }) {
   if (!plan || !steps.length) return null;
   return <DiModelCard lever={MODEL_PROBLEM} data-model-problem={`${plan.minuend}-${plan.subtrahend}`} aria-label="My turn: a different subtraction, worked"
     className="flex items-center gap-2 px-3 py-0">
-    <ProblemColumns item={steps[0]} steps={steps} credited={() => true} marked={false} compact />
+    {/* Every step of the model is done, and only real steps: a column with no regroup below it never shows a lend. */}
+    <ProblemColumns item={steps[0]} steps={steps} credited={step => !!step} marked={false} compact />
   </DiModelCard>;
 }
 

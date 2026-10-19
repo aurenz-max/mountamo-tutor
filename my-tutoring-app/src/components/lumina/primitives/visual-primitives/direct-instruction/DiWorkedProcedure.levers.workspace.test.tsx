@@ -54,6 +54,8 @@ it('easy starts with no model; the pulled card shows a different problem, fully 
   const model = q(h, '[data-lever="model_problem"]');
   expect(model).toHaveLength(1);
   expect(model[0].getAttribute('data-model-problem')).not.toBe('57-23');
+  // A no-regroup model lends nothing: no digit is crossed out, none is written above (10-18: 51 - 40 drew a lend).
+  expect(model[0].querySelectorAll('.line-through')).toHaveLength(0);
   expect(String(h.state().task!.demand.onScreen)).toMatch(/fully worked/);
   h.say('no regrouping, seven minus three is four'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_problem']);
