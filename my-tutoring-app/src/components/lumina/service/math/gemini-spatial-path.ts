@@ -81,5 +81,7 @@ ${scopeSection}`,
     challengeType: 'choose_route',
     challenges,
     gradeBand: ctx.grade === '2' ? '2' : ctx.grade === '1' ? '1' : 'K',
+    // When the word picture (a model lever) comes: the lever set's support fact reads it; medium when absent.
+    ...(ctx.supportTier ? { supportTier: ctx.supportTier } : {}),
   };
 }

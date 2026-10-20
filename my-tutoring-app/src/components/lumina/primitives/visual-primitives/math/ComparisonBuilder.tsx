@@ -24,24 +24,18 @@ import {
   type DiagnosisEvidence,
 } from '../../../evaluation';
 import type { ComparisonBuilderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import type { PipTarget } from '../../../pip/PipSurfaceStore';
-import { comparisonBuilderPipPose } from '../../../pip/comparisonBuilderPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
-import { useComparisonBuilderRuntime } from './useComparisonBuilderRuntime';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { comparisonMiss, describeComparison, workspaceAssignment, workspaceScene } from './comparisonBuilderWorkspace';
-import { HOPS_LEVER, MARKS_LEVER, MATCH_LEVER, STEPS_LEVER, TAP_LEVER, comparisonLevers, hopLabels, leverFacts, modelPair,
-  quantityParts, simplerItem, slotSteps, startLevers } from './comparisonBuilderLevers';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { comparisonBuilderBoss } from './comparisonBuilder.boss';
+import { comparisonItems, comparisonMiss, comparisonScene, describeComparison, type ComparisonItem } from './comparisonBuilderWorkspace';
+import { COMPARISON_LEVERS, HOPS_LEVER, MARKS_LEVER, MATCH_LEVER, STEPS_LEVER, TAP_LEVER, hopLabels, modelPair, quantityParts,
+  slotSteps } from './comparisonBuilderLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -177,35 +171,6 @@ function generateScatterPositions(
     x: offsetX + pad + rand((i + 1) * 12.9898 + offsetX) * w,
     y: offsetY + pad + rand((i + 1) * 78.233 + offsetX) * h,
   }));
-}
-
-/**
- * Answer-free "what to do" clause for the on-demand 🔊 Read-me replay, per
- * challenge type. Names the ask (which mirrors the catalog ORIENT directive) but
- * NEVER states or hints the answer (no "the bigger one", no sorted order).
- */
-function readMeAskClause(challenge: ComparisonBuilderChallenge): string {
-  switch (challenge.type) {
-    case 'compare-groups':
-      return 'Tap the side that has more. If the two sides have the same, tap the equals sign in the middle.';
-    case 'compare-numbers':
-      return `Tap the number that is bigger, ${challenge.leftNumber ?? ''} or ${challenge.rightNumber ?? ''}. If they are the same, tap the equals sign in the middle.`;
-    case 'order': {
-      const dir = challenge.direction === 'descending' ? 'greatest to least' : 'least to greatest';
-      return `Tap the numbers one at a time to put them in order from ${dir}.`;
-    }
-    case 'one-more-one-less': {
-      const t = challenge.targetNumber ?? '';
-      const askFor = challenge.askFor ?? 'both';
-      return askFor === 'one-more'
-        ? `Find the number that is one more than ${t} and tap it.`
-        : askFor === 'one-less'
-          ? `Find the number that is one less than ${t} and tap it.`
-          : `Find the number that is one more than ${t}, and also the number that is one less than ${t}.`;
-    }
-    default:
-      return '';
-  }
 }
 
 // ============================================================================
@@ -344,8 +309,9 @@ const ModelMatch = ({ pair }: { pair: readonly [number, number] }) => {
   );
 };
 
-const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  ComparisonBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ComparisonBuilderChallenge>) => Progress }) => {
+const useComparisonProgress = useWorkspaceProgressFor('comparison-builder');
+
+const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId }: ComparisonBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -370,8 +336,10 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   } = data;
 
   // -------------------------------------------------------------------------
-  // Shared challenge progress. On the workspace path the runtime moves the index.
+  // Challenge progress: the teaching workspace owns it and moves the index.
   // -------------------------------------------------------------------------
+  // The lesson's items: each challenge with the grade band and tier its ask, key and model lever read.
+  const items = useMemo(() => comparisonItems({ challenges, gradeBand, supportTier }), [challenges, gradeBand, supportTier]);
   const stableInstanceIdRef = useRef(instanceId || `comparison-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // A fresh challenge and Try again both start from an empty answer (bound below, once the setters exist).
@@ -382,11 +350,11 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
-    challenges,
+  const progress = useComparisonProgress({
+    challenges: items,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: comparisonBuilderBoss.assignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onSolved: (index) => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -396,12 +364,10 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next challenge. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The primitive's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -426,7 +392,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   // In-item levers (`comparisonBuilderLevers.ts`), keyed by the session item they were pulled on; the easier item a
   // simplify lever put on screen in its place; and, under `tap_count`, the objects the learner has tapped, in order.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<ComparisonBuilderChallenge | null>(null);
+  const [practice, setPractice] = useState<ComparisonItem | null>(null);
   const [tapped, setTapped] = useState<{ left: number[]; right: number[] }>({ left: [], right: [] });
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -471,24 +437,14 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   // hidden — it either strands or hands the answer to a non-reader.
   const isK = gradeBand === 'K';
 
-  // one-more-one-less DISAMBIGUATE latches — voice each sub-question ONCE per
-  // challenge so "one less" is spoken identically to "one more" (Pulse 2026-07-16
-  // found the tutor voiced the increment beat but was silent on the decrement).
-  // Cleared in the per-challenge reset (advanceToNextChallenge) — see the
-  // spoken-primitive-autoadvance-footguns ruling: clear every per-challenge latch.
-  const disambiguatedMoreRef = useRef(false);
-  const disambiguatedLessRef = useRef(false);
-
   // Current challenge
-  const sessionChallenge = useMemo(
-    () => challenges[currentChallengeIndex] || null,
-    [challenges, currentChallengeIndex],
+  const sessionChallenge = useMemo<ComparisonItem | null>(
+    () => items[currentChallengeIndex] || null,
+    [items, currentChallengeIndex],
   );
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
-  // easy starts with the model lever pulled on compare-groups; a runtime pull adds to that.
-  const startPulled = startLevers(sessionChallenge, supportTier);
-  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startPulled;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
 
   // Shuffled numbers for order challenges. Derived in render, not set from an effect: an
   // effect painted the previous item's cards for one commit, and on the workspace path that
@@ -549,114 +505,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? 'compare-groups',
-    leftCount: currentChallenge?.leftGroup?.count,
-    rightCount: currentChallenge?.rightGroup?.count,
-    leftNumber: currentChallenge?.leftNumber,
-    rightNumber: currentChallenge?.rightNumber,
-    correctAnswer: currentChallenge?.correctAnswer ?? currentChallenge?.correctSymbol,
-    targetNumber: currentChallenge?.targetNumber,
-    askFor: currentChallenge?.askFor,
-    gradeBand,
-    useAlligatorMnemonic,
-    supportTier,
-    instruction: currentChallenge?.instruction ?? '',
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    attemptNumber: currentAttempts + 1,
-  }), [
-    currentChallenge, gradeBand, useAlligatorMnemonic, supportTier,
-    challenges.length, currentChallengeIndex, currentAttempts,
-  ]);
-
-  // -------------------------------------------------------------------------
-  // Tutor reveal policy — keeps the tutor's coaching depth in sync with the
-  // on-screen scaffold so it doesn't leak what a hard tier withheld. Mode-aware:
-  // for compare-numbers the > / < relationship IS the answer, so the tutor must
-  // never name it at any tier (only dial coaching depth).
-  // -------------------------------------------------------------------------
-  const tutorRevealClause = useCallback(
-    (type: ComparisonBuilderChallenge['type']): string => {
-      const tier = supportTier;
-      if (!tier) return '';
-      if (type === 'compare-numbers') {
-        // The relationship is the answer — never name it; tier dials depth only.
-        return tier === 'easy'
-          ? ' [TIER easy] You may remind them the alligator eats the bigger number; do NOT state the symbol.'
-          : tier === 'medium'
-            ? ' [TIER medium] Nudge: ask which number is bigger; do NOT name the symbol.'
-            : ' [TIER hard] No mnemonic on screen — ask which digit to compare (tens, then ones); never name the symbol.';
-      }
-      if (type === 'compare-groups') {
-        return tier === 'easy'
-          ? ' [TIER easy] You may name the matching/one-to-one strategy; do NOT state which side has more or either count.'
-          : tier === 'medium'
-            ? ' [TIER medium] Nudge them to count each side; do NOT state which has more.'
-            : ' [TIER hard] Counts are hidden and objects scattered — ask them to count each group themselves; do NOT name which side has more or state either count.';
-      }
-      if (type === 'one-more-one-less') {
-        return tier === 'easy'
-          ? ' [TIER easy] You may count forward/backward by one aloud with them.'
-          : tier === 'medium'
-            ? ' [TIER medium] Nudge them to count by one in the asked direction.'
-            : ' [TIER hard] No number-line highlight — ask them to find the target then count one step each way; do NOT state the answers.';
-      }
-      // order
-      return tier === 'easy'
-        ? ' [TIER easy] You may name the direction (least to greatest); do NOT name which number goes first or the order.'
-        : tier === 'medium'
-          ? ' [TIER medium] Nudge them toward the next number; do NOT order it for them.'
-          : ' [TIER hard] Descending with no slot hints — ask which is biggest first; do NOT name the sequence.';
-    },
-    [supportTier],
-  );
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'comparison-builder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    // The workspace packet replaces this context (it carries the answers).
-    enabled: !tutorOwned,
-  });
-  // Every scripted cue ([ACTIVITY_START], [ANSWER_*], [DISAMBIGUATE], [NEXT_ITEM], [ALL_COMPLETE])
-  // goes through here; on the workspace path the tutor teaches from the packet instead.
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Under the live runtime the tutor OWNS progression, and the `[ANSWER_CORRECT]`
-  // text below is a complete instruction on its own ("Congratulate briefly"). Sent
-  // bare, the model did exactly that and waited: 3/3 drives on 2026-09-18 stalled
-  // on a checked-correct item with `advance` the only choice. Same clause as
-  // NumberLine; nothing is sent on the final item, whose completion the runtime owns.
-  const liveRuntime = useLiveRuntime();
-  const runtimeAdvanceClause = liveRuntime && currentChallengeIndex < challenges.length - 1
-    ? ' This challenge is checked complete. Execute the advertised runtime advance action now, '
-      + 'then wait for its visible receipt before introducing the next instruction.'
-    : '';
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    const types = Array.from(new Set(challenges.map((c) => c.type))).join(', ');
-    sendText(
-      `[ACTIVITY_START] Comparison activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges covering: ${types}. `
-      + `${useAlligatorMnemonic ? 'Using alligator mnemonic for inequality symbols. ' : ''}`
-      + `First challenge: "${currentChallenge?.instruction}". Introduce warmly.`
-      + (currentChallenge ? tutorRevealClause(currentChallenge.type) : ''),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, useAlligatorMnemonic, currentChallenge, tutorRevealClause, sendText]);
-
-  // -------------------------------------------------------------------------
   // Check Answer — compare-groups
   // -------------------------------------------------------------------------
   const checkCompareGroups = useCallback((answerArg?: 'more' | 'less' | 'equal') => {
@@ -678,12 +526,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       );
       setFeedbackType('success');
       setShowLines(true);
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified that left (${leftCount}) has ${answerWord} right (${rightCount}). `
-        + `Congratulate briefly! ${showCorrespondenceLines ? 'Point out the matching lines.' : ''}`
-        + runtimeAdvanceClause,
-        { silent: true },
-      );
     } else {
       setFeedback('Not quite — count each group carefully and try again!');
       setFeedbackType('error');
@@ -692,21 +534,11 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         `picked "${answer}" for the left group`,
         `the left group has "${currentChallenge.correctAnswer}" (left ${leftCount} vs right ${rightCount})`,
       );
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". `
-        + `Left has ${leftCount}, right has ${rightCount}. Attempt ${currentAttempts + 1}. `
-        + `${useAlligatorMnemonic
-          ? 'Hint: "Count the objects on each side. Which side has more?"'
-          : 'Give a gentle hint to count each group.'}`
-        + tutorRevealClause('compare-groups'),
-        { silent: true },
-      );
     }
 
     return correct;
   }, [
     currentChallenge, selectedAnswer, noteWrongAnswer,
-    showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -738,7 +570,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     },
     [
       currentChallenge, challengeResults, allChallengesComplete,
-      checkCompareGroups, recordResult, currentAttempts, flashWrong,
+      checkCompareGroups, flashWrong,
     ],
   );
 
@@ -761,12 +593,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         `Yes! ${currentChallenge.leftNumber} ${currentChallenge.correctSymbol} ${currentChallenge.rightNumber}`,
       );
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly chose ${currentChallenge.correctSymbol} `
-        + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. Congratulate!`
-        + runtimeAdvanceClause,
-        { silent: true },
-      );
     } else {
       setFeedback('Not quite. Think about which number is bigger.');
       setFeedbackType('error');
@@ -775,20 +601,10 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         `picked "${selected}"`,
         `the correct symbol is "${currentChallenge.correctSymbol}" (${currentChallenge.leftNumber} ${currentChallenge.correctSymbol} ${currentChallenge.rightNumber})`,
       );
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selected}" but correct is "${currentChallenge.correctSymbol}" `
-        + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `${useAlligatorMnemonic
-          ? '"Remember, the alligator always eats the bigger number! Which number is bigger?"'
-          : 'Give a hint about which is bigger.'}`
-        + tutorRevealClause('compare-numbers'),
-        { silent: true },
-      );
     }
 
     return correct;
-  }, [currentChallenge, selectedAnswer, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
+  }, [currentChallenge, selectedAnswer, noteWrongAnswer]);
 
   // -------------------------------------------------------------------------
   // K tap=choose — compare-numbers. The pre-reader taps the BIGGER numeral
@@ -817,7 +633,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     },
     [
       currentChallenge, challengeResults, allChallengesComplete,
-      checkCompareNumbers, recordResult, currentAttempts, flashWrong,
+      checkCompareNumbers, flashWrong,
     ],
   );
 
@@ -843,12 +659,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     if (correct) {
       setFeedback(`Perfect order! ${orderedNumbers.join(', ')}`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly ordered numbers ${currentChallenge.direction}: `
-        + `${orderedNumbers.join(', ')}. Celebrate!`
-        + runtimeAdvanceClause,
-        { silent: true },
-      );
     } else {
       setFeedback('Not quite the right order. Try again!');
       setFeedbackType('error');
@@ -857,18 +667,10 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         `ordered ${orderedNumbers.join(', ')}`,
         `the correct ${currentChallenge.direction ?? 'ascending'} order is ${expected.join(', ')}`,
       );
-      sendText(
-        `[ANSWER_INCORRECT] Student ordered: ${orderedNumbers.join(', ')} but correct is: `
-        + `${expected.join(', ')} (${currentChallenge.direction}). `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "Which number is the ${currentChallenge.direction === 'ascending' ? 'smallest' : 'biggest'}? Start with that one."`
-        + tutorRevealClause('order'),
-        { silent: true },
-      );
     }
 
     return correct;
-  }, [currentChallenge, orderedNumbers, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
+  }, [currentChallenge, orderedNumbers, noteWrongAnswer]);
 
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
@@ -900,12 +702,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       if (askFor !== 'one-more') parts.push(`one less is ${target - 1}`);
       setFeedback(`That's right! ${parts.join(' and ')}.`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly found one ${askFor} of ${target}. `
-        + `${askFor === 'both' ? `One more: ${target + 1}, one less: ${target - 1}.` : ''} Congratulate!`
-        + runtimeAdvanceClause,
-        { silent: true },
-      );
     } else {
       setFeedback('Not quite. Think about counting forward or backward by 1.');
       setFeedbackType('error');
@@ -920,56 +716,17 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         `answered ${studentAnswers}`,
         `one more is ${target + 1}, one less is ${target - 1}`,
       );
-      sendText(
-        `[ANSWER_INCORRECT] Target: ${target}, askFor: ${askFor}. Student answered: ${studentAnswers}. `
-        + `Correct: one more=${target + 1}, one less=${target - 1}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "Start at ${target} and count ${askFor === 'one-less' ? 'backward' : 'forward'} by one."`
-        + tutorRevealClause('one-more-one-less'),
-        { silent: true },
-      );
     }
 
     return correct;
-  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause, runtimeAdvanceClause]);
-
-  // -------------------------------------------------------------------------
-  // one-more-one-less DISAMBIGUATE — after the child answers ONE part of a
-  // "both" challenge, voice the OTHER part so "one less" is spoken identically to
-  // "one more" (symmetric by construction; each side fires at most once via its
-  // ref latch). K only — a reader sees the two labelled rows. NON-silent so the
-  // tutor actually speaks; answer-free (never states target±1).
-  // -------------------------------------------------------------------------
-  const voiceOtherOneMoreLess = useCallback(
-    (justAnswered: 'more' | 'less') => {
-      if (!isK || !currentChallenge || currentChallenge.type !== 'one-more-one-less') return;
-      if ((currentChallenge.askFor ?? 'both') !== 'both') return;
-      const target = currentChallenge.targetNumber ?? 0;
-      if (justAnswered === 'more' && oneLessAnswer === null && !disambiguatedLessRef.current) {
-        disambiguatedLessRef.current = true;
-        sendText(
-          `[DISAMBIGUATE] The child just answered the "one more" part. Now warmly ask them for the OTHER part in one short sentence: `
-          + `"Now find one LESS than ${target}. Tap the number that is one less." Do NOT say the number.`,
-          { silent: true },
-        );
-      } else if (justAnswered === 'less' && oneMoreAnswer === null && !disambiguatedMoreRef.current) {
-        disambiguatedMoreRef.current = true;
-        sendText(
-          `[DISAMBIGUATE] The child just answered the "one less" part. Now warmly ask them for the OTHER part in one short sentence: `
-          + `"Now find one MORE than ${target}. Tap the number that is one more." Do NOT say the number.`,
-          { silent: true },
-        );
-      }
-    },
-    [isK, currentChallenge, oneMoreAnswer, oneLessAnswer, sendText],
-  );
+  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, noteWrongAnswer]);
 
   // -------------------------------------------------------------------------
   // K tap=choose — one-more-one-less. Tapping a number cell IS the answer (no
   // Check). For a single ask (one-more OR one-less) the tap is atomic → evaluate
   // at once. For 'both' the first tap gives immediate rule-5 feedback if wrong,
-  // then the DISAMBIGUATE beat asks for the other part; the second tap completes
-  // and evaluates. Wrong lands on the tapped cell (shake); correct records +
+  // then the learner taps the other row; the second tap completes and
+  // evaluates. Wrong lands on the tapped cell (shake); correct records +
   // advances. Grade-1 keeps the Check-button path (handleCheckAnswer).
   // -------------------------------------------------------------------------
   const handleTapOneMoreLess = useCallback(
@@ -983,7 +740,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       const askFor = currentChallenge.askFor ?? 'both';
 
       if (which === 'more') setOneMoreAnswer(n); else setOneLessAnswer(n);
-      voiceOtherOneMoreLess(which);
 
       const nextMore = which === 'more' ? n : oneMoreAnswer;
       const nextLess = which === 'less' ? n : oneLessAnswer;
@@ -994,13 +750,13 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
 
       if (!ready) {
         // 'both', only one part answered — immediate feedback if THIS part is wrong;
-        // otherwise wait for the DISAMBIGUATE-prompted other part.
+        // otherwise wait for the other row's tap.
         const partCorrect = which === 'more' ? n === target + 1 : n === target - 1;
         if (!partCorrect) {
           SoundManager.playIncorrect();
           flashWrong(`${which}-${n}`);
         } else {
-          // First part accepted — soft tick; the DISAMBIGUATE beat asks the other.
+          // First part accepted: a soft tick; the other row is still open.
           SoundManager.select();
         }
         return;
@@ -1016,8 +772,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     },
     [
       currentChallenge, challengeResults, allChallengesComplete,
-      oneMoreAnswer, oneLessAnswer, voiceOtherOneMoreLess,
-      checkOneMoreOneLess, recordResult, currentAttempts, flashWrong,
+      oneMoreAnswer, oneLessAnswer,
+      checkOneMoreOneLess, flashWrong,
     ],
   );
 
@@ -1049,19 +805,18 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       SoundManager.playIncorrect();
     }
   }, [
-    currentChallenge, currentAttempts,
+    currentChallenge,
     checkCompareGroups, checkCompareNumbers, checkOrder, checkOneMoreOneLess,
-    recordResult,
   ]);
 
   // -------------------------------------------------------------------------
-  // Navigation
+  // Item lifecycle
   // -------------------------------------------------------------------------
   const isCurrentChallengeComplete = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
 
-  /** Everything a fresh challenge starts without, including the per-challenge DISAMBIGUATE latches. */
+  /** Everything a fresh challenge starts without. */
   const resetForNewChallenge = () => {
     setSelectedAnswer(null);
     setOrderedNumbers([]);
@@ -1074,113 +829,60 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
     setWrongFlash(null);
     if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
-    // Clear the per-challenge DISAMBIGUATE latches so the next one-more-one-less
-    // voices both sub-questions fresh.
-    disambiguatedMoreRef.current = false;
-    disambiguatedLessRef.current = false;
     setPractice(null);
     setTapped({ left: [], right: [] });
   };
 
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter((r) => r.correct).length / challenges.length) * 100,
-      );
+  // Completion: once every challenge is solved, submit once (only under an evaluation provider; the live host has none).
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || submittedRef.current || challenges.length === 0) return;
+    if (progress.recordsEvaluation === false) return;
+    submittedRef.current = true;
+    const totalCorrect = challengeResults.filter((r) => r.correct).length;
+    const overallAccuracy = Math.round((totalCorrect / challenges.length) * 100);
 
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their comparison skills!`,
-        { silent: true },
-      );
+    const accuracyByType = (type: string) => {
+      const chs = challenges.filter((c) => c.type === type);
+      const rs = challengeResults.filter((r) => chs.some((c) => c.id === r.challengeId));
+      if (chs.length === 0) return -1;
+      return Math.round((rs.filter((r) => r.correct).length / chs.length) * 100);
+    };
 
-      // Submit evaluation (the live host has no evaluation provider on the workspace path)
-      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
-        const totalCorrect = challengeResults.filter((r) => r.correct).length;
-        const overallAccuracy = Math.round(
-          (totalCorrect / challenges.length) * 100,
-        );
+    const symbolChallenges = challenges.filter((c) => c.type === 'compare-numbers');
+    const symbolCorrect = challengeResults.filter((r) =>
+      symbolChallenges.some((c) => c.id === r.challengeId && r.correct),
+    ).length;
 
-        const accuracyByType = (type: string) => {
-          const chs = challenges.filter((c) => c.type === type);
-          const rs = challengeResults.filter((r) =>
-            chs.some((c) => c.id === r.challengeId),
-          );
-          if (chs.length === 0) return -1;
-          return Math.round(
-            (rs.filter((r) => r.correct).length / chs.length) * 100,
-          );
-        };
+    const metrics: ComparisonBuilderMetrics = {
+      type: 'comparison-builder',
+      overallAccuracy,
+      compareGroupsAccuracy: accuracyByType('compare-groups'),
+      compareNumbersAccuracy: accuracyByType('compare-numbers'),
+      orderAccuracy: accuracyByType('order'),
+      oneMoreOneLessAccuracy: accuracyByType('one-more-one-less'),
+      symbolsCorrect: symbolCorrect,
+      symbolsTotal: symbolChallenges.length,
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
 
-        const symbolChallenges = challenges.filter(
-          (c) => c.type === 'compare-numbers',
-        );
-        const symbolCorrect = challengeResults.filter((r) =>
-          symbolChallenges.some((c) => c.id === r.challengeId && r.correct),
-        ).length;
+    // Misconception Loop S1 — Tier-B evidence packet on failed sessions. The latest wrong observation is the
+    // headline; earlier ones become priorAttempts (the consistency signal the distiller needs to tell a mental model
+    // from a slip). Clean sessions carry no packet.
+    const goalMet = totalCorrect === challenges.length;
+    const wrongs = wrongObservationsRef.current;
+    const latest = wrongs[wrongs.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = !goalMet && latest
+      ? {
+          challengeSummary: latest.challenge,
+          expected: latest.expected,
+          observed: latest.observed,
+          priorAttempts: wrongs.slice(0, -1).map((w) => ({ challenge: w.challenge, observed: w.observed })),
+        }
+      : undefined;
 
-        const metrics: ComparisonBuilderMetrics = {
-          type: 'comparison-builder',
-          overallAccuracy,
-          compareGroupsAccuracy: accuracyByType('compare-groups'),
-          compareNumbersAccuracy: accuracyByType('compare-numbers'),
-          orderAccuracy: accuracyByType('order'),
-          oneMoreOneLessAccuracy: accuracyByType('one-more-one-less'),
-          symbolsCorrect: symbolCorrect,
-          symbolsTotal: symbolChallenges.length,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        // Misconception Loop S1 — Tier-B evidence packet on failed sessions.
-        // Latest wrong observation is the headline; earlier ones become
-        // priorAttempts (the consistency signal the distiller needs to tell a
-        // mental model from a slip). Clean sessions carry no packet.
-        const goalMet = totalCorrect === challenges.length;
-        const wrongs = wrongObservationsRef.current;
-        const latest = wrongs[wrongs.length - 1];
-        const diagnosisEvidence: DiagnosisEvidence | undefined =
-          !goalMet && latest
-            ? {
-                challengeSummary: latest.challenge,
-                expected: latest.expected,
-                observed: latest.observed,
-                priorAttempts: wrongs
-                  .slice(0, -1)
-                  .map((w) => ({ challenge: w.challenge, observed: w.observed })),
-              }
-            : undefined;
-
-        submitEvaluation(
-          goalMet,
-          overallAccuracy,
-          metrics,
-          { challengeResults },
-          undefined,
-          diagnosisEvidence,
-        );
-      }
-      return;
-    }
-
-    // Reset domain-specific state for next challenge (the scripted path; the
-    // workspace path runs the same reset from `onItemOpened`).
-    resetForNewChallenge();
-
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
-      + `Read the instruction and encourage the student.`,
-      { silent: true },
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, progress.recordsEvaluation,
-  ]);
+    submitEvaluation(goalMet, overallAccuracy, metrics, { challengeResults }, undefined, diagnosisEvidence);
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, submitEvaluation, progress.recordsEvaluation]);
 
   /**
    * Clear THIS response and nothing else — attempts, recorded results and any
@@ -1200,7 +902,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
     setTapped({ left: [], right: [] });
   }, []);
-  // Workspace path: Try again clears this response (an easier practice item stays); a fresh challenge clears everything.
+  // Try again clears this response (an easier practice item stays); a fresh challenge clears everything.
   openItem.current = retry => { if (retry) clearResponse(); else resetForNewChallenge(); };
 
   // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
@@ -1233,44 +935,19 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     setFeedbackType('success');
   };
 
-  // ── Live tutor runtime ──────────────────────────────────────────────
-  // The tutor drives the learner's OWN handlers; grading and progression are
-  // untouched. `promptRef` exists so `replay` has a real, focusable effect
-  // rather than a claim, and the label matches the shared journey probe.
-  const promptRef = useRef<HTMLDivElement | null>(null);
-  const runtimeHint = useComparisonBuilderRuntime({
-    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || currentChallenge?.type || 'compare',
-    challenge: currentChallenge, index: currentChallengeIndex, attempts: currentAttempts,
-    correct: isCurrentChallengeComplete,
-    incorrect: !isCurrentChallengeComplete && feedbackType === 'error',
-    completed: allChallengesComplete,
-    selected: selectedAnswer, ordered: orderedNumbers,
-    oneMore: oneMoreAnswer, oneLess: oneLessAnswer,
-    advance: advanceToNextChallenge,
-    clear: clearResponse,
-    replay: () => { promptRef.current?.focus(); return !!promptRef.current && document.activeElement === promptRef.current; },
-    // The two flash timers are the whole of this component's quiescing; a flash
-    // that lands during a detour would paint a verdict nobody is looking at.
-    cancelFlashes: () => {
-      if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
-      if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
-    },
-    // The teaching workspace owns this mount instead: no tool-lab registration, no completion request.
-    disabled: tutorOwned,
-  });
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    const scene = workspaceScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
-      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK && isCurrentChallengeComplete });
-    const onScreen = leverFacts(currentChallenge, pulledLevers, { left: tapped.left.length, right: tapped.right.length });
-    const levers = practice ? [] : comparisonLevers(sessionChallenge, pulledLevers, gradeBand);
+    if (!currentChallenge) return;
+    const leverCtx = { tapped: { left: tapped.left.length, right: tapped.right.length } };
+    const scene = comparisonScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
+      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers,
+      countsShown: showCountBadges && !isK && isCurrentChallengeComplete,
+      alligator: currentChallenge.type === 'compare-numbers' && !isK && useAlligatorMnemonic && !isCurrentChallengeComplete });
+    const levers = practice || !sessionChallenge ? [] : COMPARISON_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    // On the easier item the session item's pulls stay drawn, so the scene names what is drawn on it.
+    const onScreen = COMPARISON_LEVERS.onScreen(currentChallenge, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(scene, { support: COMPARISON_LEVERS.support(practice ? null : sessionChallenge, leverCtx), onScreen }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -1279,11 +956,11 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge, gradeBand);
+          const easier = COMPARISON_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'There is no easier item for this one.';
           setLeverState(pulled);
           clearResponse(); setShowLines(false); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: comparisonBuilderBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1291,15 +968,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       endPractice: () => { clearResponse(); setShowLines(false); setPractice(null); },
     };
   });
-
-  // Auto-submit when all complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
   // Overall score
   const localOverallScore = useMemo(() => {
@@ -1995,7 +1663,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
                   } else {
                     SoundManager.select();
                     if (which === 'more') setOneMoreAnswer(i); else setOneLessAnswer(i);
-                    voiceOtherOneMoreLess(which);
                   }
                 }}
                 disabled={isCurrentChallengeComplete}
@@ -2058,38 +1725,6 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     [challenges],
   );
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never chooses, checks, or advances. Tutor audio
-  // counts only while the tutor is on this block.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipTouch = (node: EventTarget) => {
-    if (!currentChallenge || isCurrentChallengeComplete || !(node instanceof Element)) return;
-    const workspace = pip.targets(['workspace'])[0]?.element;
-    const element = node.closest('button, [role="button"]') ?? node;
-    if (workspace?.contains(element)) setPipTouched({ scopeId: currentChallenge.id, element });
-  };
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets: PipTarget[] = pip.targets(['workspace'], () => 'Comparison workspace');
-    const workspace = targets[0]?.element;
-    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
-      && workspace?.contains(pipTouched.element) ? pipTouched.element : null;
-    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
-    const pose = comparisonBuilderPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Comparison builder',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -2135,40 +1770,23 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
           </div>
         )}
 
-        {/* Instruction — with a persistent 🔊 Read-me replay at K so a non-reader can
-            re-hear the current question on demand, in the SAME position across every
-            eval mode. The button re-voices the instruction + an answer-free ask. */}
+        {/* Instruction. At K the tutor reads it aloud (the learner asks the tutor to repeat it). */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="flex items-start gap-2">
-            <div ref={promptRef} tabIndex={-1} aria-label="Current instruction" className="flex-1 outline-none">
-              <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
-            </div>
-            {/* Workspace path: the learner asks the tutor to repeat instead. */}
-            {isK && !tutorOwned && (
-              <ReadMeButton
-                instruction={currentChallenge.instruction}
-                ask={readMeAskClause(currentChallenge)}
-                onAskTutor={(m) => sendText(m)}
-                className="mt-1 flex-shrink-0"
-              />
-            )}
-          </div>
+          <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
         )}
+
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock between the instruction and the
+            workspace, and the workspace as one region, never a single choice. */}
+        {!allChallengesComplete && <PipDock />}
 
         {/* Challenge workspace */}
         {!allChallengesComplete && (
-          <div ref={pip.ref('workspace')} data-pip-object="workspace"
-            onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
+          <PipWorkspace>
             {currentChallenge?.type === 'compare-groups' && renderCompareGroups()}
             {currentChallenge?.type === 'compare-numbers' && renderCompareNumbers()}
             {currentChallenge?.type === 'order' && renderOrder()}
             {currentChallenge?.type === 'one-more-one-less' && renderOneMoreOneLess()}
-          </div>
-        )}
-
-        {pipStore && !allChallengesComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+          </PipWorkspace>
         )}
 
         {/* Feedback — text card at Grade 1+. At K (band gate, rule 5) the feedback
@@ -2199,16 +1817,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={!canCheck || hasSubmittedEvaluation || (tutorOwned && progress.canAttempt === false)}
+                disabled={!canCheck || hasSubmittedEvaluation || progress.canAttempt === false}
               />
-            )}
-            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -2239,8 +1849,9 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   );
 };
 
-// The workspace path never registers the tool-lab mount, whose advance command would compete with the observer.
-const ComparisonBuilder = withWorkspaceController<ComparisonBuilderProps, ProgressOptions<ComparisonBuilderChallenge>, Progress>(
-  'comparison-builder', ComparisonBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('comparison-builder'));
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const ComparisonBuilder = withWorkspaceOnly<ComparisonBuilderProps>(
+  'comparison-builder', ComparisonBuilderSurface, (props) => props.data.title,
+);
 
 export default ComparisonBuilder;

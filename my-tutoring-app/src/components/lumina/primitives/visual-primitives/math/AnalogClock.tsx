@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import {
   LuminaCard,
@@ -16,23 +16,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AnalogClockMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import type { PipTarget } from '../../../pip/PipSurfaceStore';
-import { analogClockPipPose } from '../../../pip/analogClockPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { clockMiss, describeClockWork, isSpokenClock, workspaceAssignment, workspaceScene, type ClockView } from './analogClockWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { analogClockBoss } from './analogClock.boss';
+import { clockMiss, clockScene, describeClockWork, isSpokenClock, type ClockView } from './analogClockWorkspace';
 import {
-  DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER, SHORT_HANDS_LEVER,
-  START_SWEEP_LEVER, analogClockLevers, leverFacts, practiceItem, runningModelHour, sweptMinutes,
+  CLOCK_LEVERS, DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER,
+  SHORT_HANDS_LEVER, START_SWEEP_LEVER, runningModelHour, sweptMinutes, tierPulled,
 } from './analogClockLevers';
 
 // ============================================================================
@@ -547,38 +544,6 @@ const TimelineScrubber: React.FC<{
 };
 
 // ============================================================================
-// Tutor reveal policy — calibrate the live tutor to the on-screen support tier
-// ============================================================================
-
-/**
- * How much the live tutor may reveal, calibrated to the on-screen support tier
- * and the mode. The tutor is a second information channel, so at 'hard' (bare
- * dial) it must not supply the reading aids the UI withheld (don't name the
- * minute position, don't identify the hands). The TIME itself — and the elapsed
- * duration — is the answer and is never stated at any tier.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  mode: ClockChallenge['type'],
-): string {
-  if (!tier) return '';
-  const answerNote =
-    mode === 'elapsed'
-      ? 'Never state the elapsed duration — that is the answer.'
-      : mode === 'set_time'
-        ? 'The target time was given; help the student align the hands, but never confirm the exact hand position is right before they check.'
-        : 'Never state the time shown — that is the answer.';
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name which hand to read first (short = hour, long = minute) and point to the numbered minute marks. ${answerNote}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the minute numbers are hidden; you may still remind the student which hand is which, but ask them to read the minute position themselves. ${answerNote}`;
-    case 'hard':
-      return `SUPPORT TIER hard: bare dial. Do NOT name the minute position or identify the hands — ask the student what they see and how they can tell. ${answerNote}`;
-  }
-}
-
-// ============================================================================
 // Props
 // ============================================================================
 
@@ -595,8 +560,9 @@ interface AnalogClockProps {
 // Component
 // ============================================================================
 
-const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  AnalogClockProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ClockChallenge>) => Progress }) => {
+const useClockProgress = useWorkspaceProgressFor('analog-clock');
+
+const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -615,7 +581,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // State
   // -------------------------------------------------------------------------
 
-  // On the workspace path the runtime moves the index; the activity's own Check is the checked gesture.
+  // The teaching workspace moves the index; the activity's own Check is the checked gesture.
   const stableInstanceIdRef = useRef(instanceId || `analog-clock-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // Bound below, once the setters and the evaluation exist.
@@ -627,11 +593,11 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
+  const progress = useClockProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: analogClockBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
     onSolved: index => solvedAloud.current(index),
@@ -643,10 +609,9 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const closed = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next challenge. */
+  const closed = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = closed;
   const learnerBlocked = () => workspaceClosed.current;
@@ -743,7 +708,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     resetSurface(currentChallenge);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeIndex, currentChallenge]);
-  // Workspace path: a fresh challenge, Try again and the return from a practice item all open the challenge
+  // A fresh challenge, Try again and the return from a practice item all open the challenge
   // blank (no pick, no touched hand or numbers, the hands back where the challenge starts them). Try again on a
   // practice item reopens the practice item; a fresh item or the return ends it.
   openItem.current = (index, retry) => {
@@ -792,54 +757,6 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? 'Explore the clock',
-    challengeType: currentChallenge?.type ?? 'read',
-    targetTime: currentChallenge ? formatTime(currentChallenge.targetHour, currentChallenge.targetMinute) : '12:00',
-    attemptNumber: currentAttempts + 1,
-    // Within-mode support tier + reveal policy so the tutor stays in sync with
-    // the on-screen reading aids (at 'hard' it must not name what the dial hid).
-    supportTier: currentChallenge?.supportTier,
-    tutorRevealPolicy: currentChallenge
-      ? tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)
-      : '',
-  }), [
-    gradeBand, challenges.length, currentChallengeIndex,
-    currentChallenge, currentAttempts,
-  ]);
-
-  // Its context carries the target time, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'analog-clock',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] This is an analog clock activity for ${gradeBand === 'K' ? 'Kindergarten' : `Grades ${gradeBand}`}. `
-      + `There are ${challenges.length} challenges. `
-      + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce the activity warmly — we're going to learn about telling time on a clock!`,
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Drag-to-set interaction (for set_time mode)
@@ -918,7 +835,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
-      // The clock's own fields; `commitCheck` below adds the verdict and the attempts on both paths. A practice item
+      // The clock's own fields; `commitCheck` below adds the verdict and the attempts. A practice item
       // (the simplify lever) records nothing: it is not the session's challenge.
       if (practice) setPracticeSolved(true);
       else {
@@ -931,32 +848,20 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           targetTime,
         });
       }
-      sendText(
-        `[ANSWER_CORRECT] Student got it right on attempt ${currentAttempts + 1}. Target: ${targetTime}. Congratulate briefly!`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
-      // With the tutor, the tutor gives the hints: a generated read/match hint can name where the hands point.
-      setFeedback(currentAttempts === 0 || tutorOwned ? 'Not quite — try again!' : currentChallenge.hint);
+      // The tutor gives the hints: a generated read/match hint can name where the hands point.
+      setFeedback('Not quite — try again!');
       setFeedbackType('error');
-      const revealClause = tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type);
-      sendText(
-        `[ANSWER_INCORRECT] Student answered wrong. Target: ${targetTime}. `
-        + `Displayed: ${formatTime(displayHour, displayMinute)}. `
-        + `Attempt ${currentAttempts + 1}. Give a gentle hint.`
-        + (revealClause ? ` ${revealClause}` : ''),
-        { silent: true },
-      );
     }
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records a correct result.
     const work = clockView.current;
     if (work) commitCheck.current(describeClockWork(currentChallenge, work), correct,
       correct ? undefined : clockMiss(currentChallenge, work));
   }, [
     currentChallenge, selectedOption, displayHour, displayMinute,
     pickedHand, countedNumerals, practice,
-    currentAttempts, hasSubmittedEvaluation, recordResult, sendText, tutorOwned,
+    currentAttempts, hasSubmittedEvaluation, recordResult,
   ]);
 
   // A spoken read, match, elapsed or hand_name answer the observer credited (`onSolved` fires once per challenge, for a
@@ -1012,65 +917,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     });
   }, [currentChallenge, hasSubmittedEvaluation, feedbackType]);
 
-  // -------------------------------------------------------------------------
-  // Advance to next challenge
-  // -------------------------------------------------------------------------
-  const handleNext = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — compute and submit eval
-      const totalCorrect = challengeResults.filter(r => r.correct).length;
-      const overallScore = Math.round((totalCorrect / challenges.length) * 100);
-
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallScore}%. `
-        + `Give encouraging phase-specific feedback about telling time!`,
-        { silent: true },
-      );
-
-      // The workspace path submits the scored session from `onFinished` (below), not this tally.
-      if (!hasSubmittedEvaluation && !tutorOwned) {
-        const metrics: AnalogClockMetrics = {
-          type: 'analog-clock',
-          accuracy: overallScore / 100,
-          totalChallenges: challenges.length,
-          correctAnswers: totalCorrect,
-          averageAttempts: challengeResults.reduce((s, r) => s + r.attempts, 0) / challenges.length,
-          challengeTypes: Array.from(new Set(challenges.map(c => c.type))),
-        };
-        submitEvaluation(
-          totalCorrect === challenges.length,
-          overallScore,
-          metrics,
-          { challengeResults },
-        );
-      }
-      return;
-    }
-
-    // Reset for next challenge
-    setSelectedOption(null);
-    setFeedback('');
-    setFeedbackType('');
-
-    const next = challenges[currentChallengeIndex + 1];
-    if (next) {
-      const nextReveal = tutorRevealPolicy(next.supportTier, next.type);
-      sendText(
-        `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-        + `Type: ${next.type}. Instruction: "${next.instruction}". Introduce it briefly.`
-        + (nextReveal ? ` ${nextReveal}` : ''),
-        { silent: true },
-      );
-    }
-  }, [
-    advanceProgress, challengeResults, challenges, phaseResults,
-    currentChallengeIndex, hasSubmittedEvaluation, submitEvaluation, sendText, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
   finish.current = (result) => {
     if (hasSubmittedEvaluation) return;
@@ -1162,17 +1009,17 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     minuteNumbersShown: showMinuteNumbers, handLegendShown: showHandLegend, digitalEchoShown: showDigitalEcho,
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation. Every mode declares levers (`analogClockLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; the
+  // lever set (`analogClockLevers.ts`) writes the levers, their facts and the support fact. A tier aid already on
+  // screen is declared pulled.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge || !clockView.current) return;
-    const scene = workspaceScene(currentChallenge, clockView.current);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : analogClockLevers(sessionChallenge, pulledLevers,
-      { legendShown: tierHandLegend, minuteNumbersShown: tierMinuteNumbers, echoShown: tierEcho });
+    if (!currentChallenge || !sessionChallenge || !clockView.current) return;
+    const scene = clockScene(currentChallenge, clockView.current);
+    const ctx = { legendShown: tierHandLegend, minuteNumbersShown: tierMinuteNumbers, echoShown: tierEcho };
+    const onScreen = practice ? '' : CLOCK_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers);
+    const levers = practice ? [] : CLOCK_LEVERS.declare(sessionChallenge, ctx, [...pulledLevers, ...tierPulled(sessionChallenge, ctx)]);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(scene, { support: CLOCK_LEVERS.support(practice ? null : sessionChallenge, ctx), onScreen }),
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -1180,10 +1027,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = CLOCK_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier one; try a help lever.';
           setLeverState(pulled); setStopwatchRunning(false); resetSurface(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: analogClockBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1195,47 +1042,6 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const localOverallScore = challenges.length > 0
     ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
     : 0;
-
-  // -------------------------------------------------------------------------
-  // Pip shared surface
-  // -------------------------------------------------------------------------
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never moves a hand, chooses, checks, or
-  // advances. Tutor audio counts only while the tutor is on this block.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipTouch = (node: EventTarget) => {
-    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
-    // Any touch on the dial is the dial: the hand under a dragging finger is
-    // never singled out.
-    const element = svgContainerRef.current?.contains(node)
-      ? svgContainerRef.current
-      : node.closest('button, [role="button"], [role="slider"]') ?? node;
-    setPipTouched({ scopeId: currentChallenge.id, element });
-  };
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const clock = svgContainerRef.current;
-    const targets: PipTarget[] = [
-      // hear_time hides the dial; a hidden element is never published.
-      ...(clock && currentChallenge.type !== 'hear_time' ? [{ id: 'clock', label: 'The clock face', element: clock }] : []),
-      ...pip.targets(['options'], () => 'The clock choices'),
-    ];
-    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected ? pipTouched.element : null;
-    if (touched && touched !== clock) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
-    const pose = analogClockPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      type: currentChallenge.type, visibleIds: targets.map((target) => target.id),
-      touchedId: !touched ? undefined : touched === clock ? 'clock' : 'touched',
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Analog clock',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -1287,13 +1093,15 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 o'clock?" into matching against an answer already on screen —
                 caught in the 2026-09-09 Chrome drive, where the big dial sat
                 over the options showing exactly the time being asked for. */}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the workspace, and the
+                workspace as one region, never a single hand, face or choice. */}
+            <PipDock />
+            <PipWorkspace className="flex w-full flex-col items-center gap-4">
             <div className="flex flex-wrap items-center justify-center gap-3">
             <div
               ref={svgContainerRef}
-              data-pip-object="clock"
               hidden={currentChallenge?.type === 'hear_time'}
               className={`relative cursor-${currentChallenge?.type === 'set_time' ? 'grab' : 'default'} touch-none`}
-              onPointerDownCapture={(event) => pipTouch(event.target)}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
@@ -1357,13 +1165,8 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               </div>
             )}
 
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
-
             {/* Timeline scrubber */}
-            <div className="w-full max-w-sm" onPointerDownCapture={(event) => pipTouch(event.target)}>
+            <div className="w-full max-w-sm">
               <TimelineScrubber
                 hour={displayHour}
                 minute={displayMinute}
@@ -1380,7 +1183,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
             {/* Stopwatch controls (elapsed mode) */}
             {currentChallenge?.type === 'elapsed' && !isCurrentChallengeCorrect && (
-              <div className="flex gap-3" onPointerDownCapture={(event) => pipTouch(event.target)}>
+              <div className="flex gap-3">
                 <LuminaButton
                   className={
                     stopwatchRunning
@@ -1406,8 +1209,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 it — the inverse of `read`, and the only mode whose options are
                 clocks rather than words. */}
             {currentChallenge && currentChallenge.type === 'hear_time' && !isCurrentChallengeCorrect && (
-              <div ref={pip.ref('options')} data-pip-object="options" className="grid grid-cols-2 gap-4"
-                onPointerDownCapture={(event) => pipTouch(event.target)}>
+              <div className="grid grid-cols-2 gap-4">
                 {getOptions(currentChallenge).map((option, i) => {
                   const [oh, om] = option.split(':').map((n) => parseInt(n, 10));
                   return (
@@ -1449,7 +1251,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
             {/* Multiple choice options (read / match / elapsed) */}
             {currentChallenge && ['read', 'match', 'elapsed'].includes(currentChallenge.type) && !isCurrentChallengeCorrect && (
-              <div className="grid grid-cols-2 gap-3 w-full max-w-sm" onPointerDownCapture={(event) => pipTouch(event.target)}>
+              <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
                 {getOptions(currentChallenge).map((option, i) => (
                   <button
                     key={i}
@@ -1479,7 +1281,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             {/* Action buttons */}
             {currentChallenge && !allChallengesComplete && (
               <div className="flex gap-3">
-                {!isCurrentChallengeCorrect ? (
+                {!isCurrentChallengeCorrect && (
                   <LuminaActionButton
                     action="check"
                     onClick={handleCheckAnswer}
@@ -1494,16 +1296,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                       stopwatchRunning
                     }
                   />
-                ) : tutorOwned ? null : (
-                  <LuminaActionButton
-                    action="next"
-                    onClick={handleNext}
-                  >
-                    {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-                  </LuminaActionButton>
                 )}
               </div>
             )}
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>
@@ -1511,8 +1307,6 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const AnalogClock = withWorkspaceController<AnalogClockProps, ProgressOptions<ClockChallenge>, Progress>(
-  'analog-clock', AnalogClockSurface, useScriptedProgress, useWorkspaceProgressFor('analog-clock'));
+const AnalogClock = withWorkspaceOnly<AnalogClockProps>('analog-clock', AnalogClockSurface, (props) => props.data.title);
 
 export default AnalogClock;

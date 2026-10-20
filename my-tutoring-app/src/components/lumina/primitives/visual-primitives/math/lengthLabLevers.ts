@@ -1,7 +1,9 @@
 /**
- * length-lab's in-item levers (/add-support-tiers; report qa/eval-reports/length-lab-levers-2026-10-09.md). The misses
- * are what `lengthMiss` observes; there is no real-learner evidence. K band: every help lever changes the picture, and
- * any words on it (the word model's tags, the chain model's captions) are read aloud by the tutor.
+ * length-lab's in-item levers, as one lever set (`bossLevers.ts`; /add-support-tiers; report
+ * qa/eval-reports/length-lab-levers-2026-10-09.md). The misses are what `lengthMiss` observes; there is no real-learner
+ * evidence. K band: every help lever changes the picture, and any words on it (the word model's tags, the chain
+ * model's captions) are read aloud by the tutor. Types: `word_model` is a meaning lever, `unit_model` and `chain_model`
+ * are model levers (when they come is the set's `support`, by the item's tier), the rest are marks or easier.
  *
  * - compare: `word_model` (help) a picture outside the item of what longer, shorter and same look like on plain grey
  *   bars; `end_lines` (help) each bar's far end carried down across both bars; `unit_marks` (help) each bar split into
@@ -20,9 +22,10 @@
  * Leak rules (code, `*Leaks`): no lever text or scene fact carries a digit; a model never uses one of the item's
  * object names; a practice item never repeats the learner's object, length or count, and never its units.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { LengthLabChallenge } from './LengthLab';
-import type { LengthMiss } from './lengthLabWorkspace';
+import { LENGTH_MISSES } from './lengthLab.card';
 
 export const WORD_MODEL_LEVER = 'word_model';
 export const END_LINES_LEVER = 'end_lines';
@@ -165,94 +168,89 @@ export function simplerLeaks(parent: LengthLabChallenge, simpler: LengthLabChall
   return false;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────
 
-/** What the session already draws: unit marks on screen take the unit-marks lever away. */
-export interface LengthLeverContext { ticksShown: boolean; sessionUnit?: string }
+/** What the screen holds that the levers read: the session's unit marks and unit, and whether a guess is made. */
+export interface LengthLeverContext { ticksShown: boolean; sessionUnit?: string; guessed?: boolean }
 
-export function lengthLabLevers(c: LengthLabChallenge | null, pulled: readonly string[], ctx: LengthLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeLength(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly LengthMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerLength(c, ctx.sessionUnit);
-  const marks = !ctx.ticksShown;
-  const endLines = (answers: readonly LengthMiss[]) => lever(END_LINES_LEVER, 'help', 'shown', answers,
-    'The learner misjudges which far end reaches farther.',
-    'Carries each bar\'s far end down as a dashed line across all the bars, so the ends can be compared. No bar is marked.');
-  const unitMarks = (answers: readonly LengthMiss[]) => lever(UNIT_MARKS_LEVER, 'help', 'shown', answers,
-    'The learner cannot see the difference between bars that are close in length.',
-    'Splits every bar into equal unit cells. No count is written.');
-  switch (c.type) {
-    case 'compare': return [
-      lever(WORD_MODEL_LEVER, 'help', 'both', ['reversed', 'said_same', 'missed_same'],
-        'The learner mixes up longer and shorter, or what same means.',
-        'Shows a picture outside the item: a long grey bar tagged longer over a short one tagged shorter, and two equal '
-          + 'grey bars tagged same. Read the tags aloud; it names neither object.'),
-      endLines(['said_same', 'missed_same']),
-      ...(marks ? [unitMarks(['said_same', 'missed_same', 'reversed'])] : []),
-      ...(simpler ? [lever(FAR_PAIR_LEVER, 'simplify', 'shown', ['said_same', 'reversed'],
-        'These two objects are too close in length to compare yet.',
-        'Opens an easier pair first: two plain objects far apart in length. It is not graded; the full item comes back after it.')] : []),
-    ];
-    case 'tile_and_count':
-    case 'estimate_then_tile': return [
-      lever(OUTLINE_LEVER, 'help', 'shown',
-        c.type === 'estimate_then_tile' ? ['tiled_to_guess', 'one_short', 'one_over', 'short', 'over'] : ['one_short', 'one_over', 'short', 'over'],
-        'The learner stops short of the end, goes past it, or leaves gaps.',
-        'Draws a dashed outline of the object\'s length behind the learner\'s units, from its start to its end. No count is written.'),
-      ...(simpler ? [lever(SHORTER_LEVER, 'simplify', 'shown',
-        c.type === 'estimate_then_tile' ? ['tiled_to_guess', 'short', 'over'] : ['short', 'over'],
-        'This object is too long to measure yet.',
-        'Opens an easier object first, about half as long, with the same unit. It is not graded; the full item comes back after it.')] : []),
-    ];
-    case 'two_unit_compare': return [
-      lever(UNIT_MODEL_LEVER, 'help', 'shown', ['chose_bigger_unit'],
-        'The learner picks the unit they needed fewer of.',
-        'Shows a picture outside the item: one plain grey bar measured twice, once with small squares and once with big '
-          + 'squares, both rows reaching its end. It uses neither of the item\'s units.'),
-      ...(simpler ? [lever(SHORTER_LEVER, 'simplify', 'shown', ['chose_bigger_unit'],
-        'Measuring this object twice is too much yet.',
-        'Opens an easier object first: a shorter plain object measured with two other units. It is not graded; the full item comes back after it.')] : []),
-    ];
-    case 'order': return [
-      lever(ORDER_STEPS_LEVER, 'help', 'shown', ['reversed_order'],
-        'The learner orders from the wrong end.',
-        'Shows three wordless bars under the slots that grow the way the slots run. They name no object.'),
-      endLines(['swapped_pair', 'other_order']),
-      ...(marks ? [unitMarks(['swapped_pair', 'other_order'])] : []),
-      ...(simpler ? [lever(FAR_THREE_LEVER, 'simplify', 'shown', ['swapped_pair', 'other_order'],
-        'Two of these objects are too close in length to order yet.',
-        'Opens an easier set first: three plain objects far apart in length. It is not graded; the full item comes back after it.')] : []),
-    ];
-    case 'indirect': return [
-      lever(CHAIN_MODEL_LEVER, 'help', 'both', ['chose_shorter', 'said_same'],
-        'The learner cannot chain the two clues through the reference.',
-        'Shows a picture outside the item: a red, a blue and a green bar lined up at one start, captioned red is shorter '
-          + 'than blue and blue is shorter than green. Read the captions aloud; it names none of the item\'s objects.'),
-    ];
-    default: return [];
-  }
-}
+const EASIER_DOES = 'It is not graded; the full item comes back after it.';
+const END_LINES = { id: END_LINES_LEVER, type: 'marks' as const,
+  when: 'The learner misjudges which far end reaches farther.',
+  does: 'Carries each bar\'s far end down as a dashed line across all the bars, so the ends can be compared. No bar is marked.',
+  fact: 'Each bar\'s far end is carried down as a dashed line across all the bars.' };
+/** Offered only where the session hides the unit marks. */
+const UNIT_MARKS = { id: UNIT_MARKS_LEVER, type: 'marks' as const,
+  when: 'The learner cannot see the difference between bars that are close in length.',
+  does: 'Splits every bar into equal unit cells. No count is written.',
+  fact: 'Every bar is split into equal unit cells.',
+  offer: (_c: LengthLabChallenge, ctx: LengthLeverContext) => !ctx.ticksShown };
+const SHORTER = { id: SHORTER_LEVER, type: 'easier' as const, carrier: 'shown' as const,
+  when: 'This object is too long to measure yet.',
+  does: `Opens an easier object first, about half as long, with the same unit. ${EASIER_DOES}`,
+  content: (c: LengthLabChallenge, ctx: LengthLeverContext) => simplerLength(c, ctx.sessionUnit) };
+const TIERS: readonly string[] = ['easy', 'medium', 'hard'];
 
-/** What the pulled help levers put on screen, for the tutor and JEV. Pictures only: no digit, no answer. */
-export function leverFacts(c: LengthLabChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeLength(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(WORD_MODEL_LEVER) && 'Beside the objects is a word picture outside the item: a long grey bar tagged longer over a short '
-      + 'one tagged shorter, and two equal grey bars tagged same.',
-    on(END_LINES_LEVER) && 'Each bar\'s far end is carried down as a dashed line across all the bars.',
-    on(UNIT_MARKS_LEVER) && 'Every bar is split into equal unit cells.',
-    on(OUTLINE_LEVER) && 'A dashed outline of the object\'s length, from its start to its end, sits behind the learner\'s units.',
-    on(UNIT_MODEL_LEVER) && 'Beside the item is a picture outside it: one plain grey bar measured with a row of small squares '
-      + 'and with a row of big squares, both rows reaching its end.',
-    on(ORDER_STEPS_LEVER) && 'Under the slots are three wordless bars that grow the way the slots run.',
-    on(CHAIN_MODEL_LEVER) && 'Beside the clues is a picture outside the item: a red, a blue and a green bar lined up at one start, '
-      + 'captioned red is shorter than blue and blue is shorter than green.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const LENGTH_LEVERS = leverSet<LengthLabChallenge, LengthLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => LENGTH_MISSES[mode as keyof typeof LENGTH_MISSES] ?? [],
+  // The word picture names no item object.
+  answersOf: c => itemNames(c),
+  support: {
+    tier: c => (TIERS.includes(c.supportTier ?? '') ? c.supportTier : 'medium') as SupportTier,
+    different: c => (c.type === 'indirect' ? 'three plain bars chained by two captions'
+      : 'a plain bar measured with small squares and with big squares'),
+    own: c => (c.type === 'indirect' ? 'which object is longer' : 'which unit was needed more'),
+  },
+  specs: [
+    { id: WORD_MODEL_LEVER, type: 'meaning', modes: ['compare'], answers: 'all',
+      when: 'The learner mixes up longer and shorter, or what same means.',
+      does: 'Shows a picture outside the item: a long grey bar tagged longer over a short one tagged shorter, and two equal '
+        + 'grey bars tagged same. Read the tags aloud; it names neither object.',
+      fact: 'Beside the objects is a word picture outside the item: a long grey bar tagged longer over a short one tagged '
+        + 'shorter, and two equal grey bars tagged same.' },
+    { ...END_LINES, modes: ['compare'], answers: ['said_same', 'missed_same'] },
+    { ...UNIT_MARKS, modes: ['compare'], answers: ['said_same', 'missed_same', 'reversed'] },
+    { id: FAR_PAIR_LEVER, type: 'easier', modes: ['compare'], carrier: 'shown', answers: ['said_same', 'reversed'],
+      when: 'These two objects are too close in length to compare yet.',
+      does: `Opens an easier pair first: two plain objects far apart in length. ${EASIER_DOES}`,
+      content: (c, ctx) => simplerLength(c, ctx.sessionUnit) },
+    { id: OUTLINE_LEVER, type: 'marks', modes: ['tile_and_count', 'estimate_then_tile'], answers: 'all',
+      when: 'The learner stops short of the end, goes past it, or leaves gaps.',
+      does: 'Draws a dashed outline of the object\'s length behind the learner\'s units, from its start to its end. No count is written.',
+      // An estimate's units row appears only after the guess.
+      offer: (c, ctx) => c.type !== 'estimate_then_tile' || !!ctx.guessed,
+      fact: 'A dashed outline of the object\'s length, from its start to its end, sits behind the learner\'s units.' },
+    { ...SHORTER, modes: ['tile_and_count'], answers: ['short', 'over'] },
+    { ...SHORTER, modes: ['estimate_then_tile'], answers: ['tiled_to_guess', 'short', 'over'] },
+    { id: UNIT_MODEL_LEVER, type: 'model', modes: ['two_unit_compare'], carrier: 'shown', answers: ['chose_bigger_unit'],
+      when: 'The learner picks the unit they needed fewer of.',
+      does: 'Shows a picture outside the item: one plain grey bar measured twice, once with small squares and once with big '
+        + 'squares, both rows reaching its end. It uses neither of the item\'s units.',
+      fact: 'Beside the item is a picture outside it: one plain grey bar measured with a row of small squares and with a row '
+        + 'of big squares, both rows reaching its end.' },
+    { ...SHORTER, modes: ['two_unit_compare'], answers: ['chose_bigger_unit'],
+      when: 'Measuring this object twice is too much yet.',
+      does: `Opens an easier object first: a shorter plain object measured with two other units. ${EASIER_DOES}` },
+    { id: ORDER_STEPS_LEVER, type: 'marks', modes: ['order'], answers: ['reversed_order'],
+      when: 'The learner orders from the wrong end.',
+      does: 'Shows three wordless bars under the slots that grow the way the slots run. They name no object.',
+      fact: 'Under the slots are three wordless bars that grow the way the slots run.' },
+    { ...END_LINES, modes: ['order'], answers: ['swapped_pair', 'other_order'] },
+    { ...UNIT_MARKS, modes: ['order'], answers: ['swapped_pair', 'other_order'] },
+    { id: FAR_THREE_LEVER, type: 'easier', modes: ['order'], carrier: 'shown', answers: ['swapped_pair', 'other_order'],
+      when: 'Two of these objects are too close in length to order yet.',
+      does: `Opens an easier set first: three plain objects far apart in length. ${EASIER_DOES}`,
+      content: (c, ctx) => simplerLength(c, ctx.sessionUnit) },
+    { id: CHAIN_MODEL_LEVER, type: 'model', modes: ['indirect'], answers: 'all',
+      when: 'The learner cannot chain the two clues through the reference.',
+      does: 'Shows a picture outside the item: a red, a blue and a green bar lined up at one start, captioned red is shorter '
+        + 'than blue and blue is shorter than green. Read the captions aloud; it names none of the item\'s objects.',
+      fact: 'Beside the clues is a picture outside the item: a red, a blue and a green bar lined up at one start, captioned '
+        + 'red is shorter than blue and blue is shorter than green.' },
+  ],
+});
 
-/** Leak rule for the help levers' words: no digit, and none of the item's object names. */
+/** Leak rule for the levers' words: no digit, and none of the item's object names. */
 export function leverTextLeaks(c: LengthLabChallenge, text: string): boolean {
   if (/\d/.test(text)) return true;
   const lower = text.toLowerCase();

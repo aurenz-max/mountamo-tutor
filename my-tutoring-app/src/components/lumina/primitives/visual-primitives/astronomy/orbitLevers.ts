@@ -1,26 +1,27 @@
 /**
- * The in-item levers on orbit-mechanics-lab (`/add-support-tiers`; report
+ * The in-item levers on orbit-mechanics-lab, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/orbit-mechanics-lab-levers-2026-10-16.md). No real-learner evidence: the misses are what `orbitMiss`
  * observes. Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `throw_model` (help; pick_speed): a card with a ball thrown sideways from a tall hill three times, softly, harder and
- *   harder still, each landing farther away. A model outside the item: no throw goes around or flies away, and no arrow
- *   is one of the item's pushes.
- * - `pull_card` (help; orbit_speed): a card with Earth's pull drawn as arrows, longer close to Earth and shorter far
+ * - `throw_model` (clue; pick_speed): a card with a ball thrown sideways from a tall hill three times, softly, harder and
+ *   harder still, each landing farther away. Outside the item: no throw goes around or flies away, and no arrow is one
+ *   of the item's pushes.
+ * - `same_size` (layout; orbit_speed, sizes differ): every rocket drawn the same size.
+ * - `pull_card` (clue; orbit_speed): a card with Earth's pull drawn as arrows, longer close to Earth and shorter far
  *   out. Names no rocket and says nothing about speed or time.
- * - `same_size` (help; orbit_speed, sizes differ): every rocket drawn the same size.
- * - `speed_arrows` (help; predict_burn): the rocket's speed before the push and after it, as two arrows side by side.
+ * - `speed_arrows` (clue; predict_burn): the rocket's speed before the push and after it, as two arrows side by side.
  *   Never draws a path.
- * - `mark_points` (help; circularize): marks the loop's near point and far point.
- * - `burn_card` (help; circularize): a card with a different loop: a push forward at one point lifts the other side of
+ * - `mark_points` (marks; circularize): marks the loop's near point and far point.
+ * - `burn_card` (clue; circularize): a card with a different loop: a push forward at one point lifts the other side of
  *   the loop, a push backward lowers it. Names neither point of this loop.
- * - `drop_one` (simplify; on the item, user ruling 09-27: a removed choice is assisted work): greys out one wrong push,
- *   rocket or choice that is easy to rule out, while at least two untried ones remain.
+ * - `drop_one` (custom; user ruling 09-27: a removed choice is assisted work): greys out one wrong push, rocket or
+ *   choice that is easy to rule out, while at least two untried ones remain.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { ORBIT_MISSES } from './orbitMechanicsLab.card';
 import {
-  BURN_OUTCOMES, biggestCraft, burnFactor, choiceKey, choiceLabel, choiceMiss, isTapItem, ORBIT_MISSES, PATHS,
-  pushPath, tapCount, tapKey, tapLabel, tapMiss, type BurnOutcome, type OrbitItem, type OrbitMiss,
+  BURN_OUTCOMES, biggestCraft, burnFactor, choiceKey, choiceMiss, isTapItem, optionLabel, PATHS,
+  pushPath, tapCount, tapKey, tapMiss, type BurnOutcome, type OrbitItem, type OrbitMiss, type OrbitMode,
 } from './orbitWorkspace';
 
 export const THROW_LEVER = 'throw_model';
@@ -66,46 +67,8 @@ export function dropTarget(item: OrbitItem, s: OrbitLeverState): number | null {
   return [...foils].sort((a, b) => distance(b) - distance(a) || b - a)[0];
 }
 
-const lever = (id: string, kind: WorkspaceLever['kind'], s: OrbitLeverState, answers: readonly OrbitMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: s.pulled.includes(id), answers, when, does });
-
 /** orbit_speed: the rockets are drawn at different sizes. */
 const sizesDiffer = (item: OrbitItem) => item.mode === 'orbit_speed' && biggestCraft(item) >= 0;
-
-/** The levers this item declares, with their state. One that cannot be pulled now and was not pulled is left out. */
-export function orbitLevers(item: OrbitItem | undefined, s: OrbitLeverState): WorkspaceLever[] {
-  if (!item) return [];
-  const on = (id: string) => s.pulled.includes(id);
-  const all = ORBIT_MISSES[item.mode];
-  const out: WorkspaceLever[] = [];
-  if (item.mode === 'pick_speed') {
-    out.push(lever(THROW_LEVER, 'help', s, all,
-      'The learner does not connect how fast the rocket goes sideways with where gravity pulls it.',
-      'Shows a card: a ball thrown sideways from a tall hill three times, each throw harder, each landing farther away. No throw goes around or flies away, and none is one of the pushes.'));
-  } else if (item.mode === 'orbit_speed') {
-    if (on(SAME_SIZE_LEVER) || sizesDiffer(item)) out.push(lever(SAME_SIZE_LEVER, 'help', s, ['picked_biggest'],
-      'The learner picks the biggest rocket, or judges by size.',
-      'Draws every rocket at the same size.'));
-    out.push(lever(PULL_LEVER, 'help', s, all,
-      'The learner does not connect how far out a rocket is with how it moves.',
-      "Shows a card with Earth's pull drawn as arrows: long close to Earth, shorter farther out. It names no rocket and says nothing about speed or time."));
-  } else if (item.mode === 'predict_burn') {
-    out.push(lever(SPEED_ARROWS_LEVER, 'help', s, all,
-      'The learner mixes up a push forward and a push backward, or how big the push is.',
-      "Shows the rocket's speed before the push and right after it as two arrows side by side. It draws no path."));
-  } else {
-    out.push(lever(MARK_POINTS_LEVER, 'help', s, ['other_circle', 'wrong_place'],
-      'The learner cannot tell where the near point and the far point of the loop are.',
-      "Marks the loop's near point and far point with a dot and a word each."));
-    out.push(lever(BURN_CARD_LEVER, 'help', s, all,
-      'The learner does not know what a push forward or backward does to the other side of a loop.',
-      'Shows a card with a different loop: a push forward at one point lifts the other side of the loop; a push backward lowers it.'));
-  }
-  if (on(DROP_LEVER) || dropTarget(item, s) !== null) out.push(lever(DROP_LEVER, 'simplify', s, all,
-    'The learner still picks wrong after help, or is stuck with too many to choose from.',
-    `Greys out one ${item.mode === 'pick_speed' ? 'push' : item.mode === 'orbit_speed' ? 'rocket' : 'choice'} that is easy to rule out, so fewer remain. The next answer counts as helped.`));
-  return out;
-}
 
 /** speed_arrows: the arrow lengths before and after the push, as fractions of the circle speed. */
 export const speedArrows = (item: OrbitItem): { before: number; after: number } | null =>
@@ -118,25 +81,61 @@ export const BURN_CARD_LINES = [
 export const THROW_CARD_LINE = 'The harder the ball is thrown sideways, the farther it goes before it lands.';
 export const PULL_CARD_LINE = "Earth's pull is strongest close to Earth and gets weaker farther out.";
 
-/** What the pulled levers put on screen, for the tutor and JEV. Never the key. */
-export function leverFacts(item: OrbitItem, s: OrbitLeverState): string | null {
-  const parts: string[] = [];
-  const on = (id: string) => s.pulled.includes(id);
-  if (on(THROW_LEVER)) parts.push(`a card shows a ball thrown sideways from a tall hill three times, each throw harder and landing farther away: "${THROW_CARD_LINE}"`);
-  if (on(SAME_SIZE_LEVER)) parts.push('every rocket is now drawn the same size');
-  if (on(PULL_LEVER)) parts.push(`a card shows Earth's pull as arrows, long close to Earth and shorter farther out: "${PULL_CARD_LINE}"`);
-  if (on(SPEED_ARROWS_LEVER)) {
-    const a = speedArrows(item);
-    if (a) parts.push(`two arrows show the rocket's speed before the push and right after it; the after arrow is ${a.after > a.before ? 'longer' : 'shorter'}`);
-  }
-  if (on(MARK_POINTS_LEVER)) parts.push('the loop\'s near point and far point are marked with a dot and a word');
-  if (on(BURN_CARD_LEVER)) parts.push(`a card with a different loop says: "${BURN_CARD_LINES.join(' ')}"`);
-  for (const i of s.dropped) {
-    if (isTapItem(item)) parts.push(`the ${tapLabel(item, i).toLowerCase()} is greyed out and is not the answer`);
-    else if (item.choices[i] !== undefined) parts.push(`the choice "${choiceLabel(item, item.choices[i])}" is greyed out and is not the answer`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
+/** The lesson's lever state for the item on screen. */
+export interface OrbitLeverContext { state: OrbitLeverState }
+
+const what = (item: OrbitItem) => (item.mode === 'pick_speed' ? 'push' : item.mode === 'orbit_speed' ? 'rocket' : 'choice');
+
+export const ORBIT_LEVERS = leverSet<OrbitItem, OrbitLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => ORBIT_MISSES[mode as OrbitMode] ?? [],
+  // A card's words never name a choice: the key's label, or the colour that names its rocket.
+  answersOf: item => {
+    const at = keyIndexOf(item);
+    return [optionLabel(item, at), ...(item.mode === 'orbit_speed' ? [item.crafts[at].color] : [])];
+  },
+  specs: [
+    { id: THROW_LEVER, type: 'clue', modes: ['pick_speed'], answers: 'all',
+      when: 'The learner does not connect how fast the rocket goes sideways with where gravity pulls it.',
+      does: 'Shows a card: a ball thrown sideways from a tall hill three times, each throw harder, each landing farther away. '
+        + 'No throw goes around or flies away, and none is one of the pushes.',
+      fact: `A card shows a ball thrown sideways from a tall hill three times, each throw harder and landing farther away: "${THROW_CARD_LINE}"` },
+    { id: SAME_SIZE_LEVER, type: 'layout', modes: ['orbit_speed'], answers: ['picked_biggest'],
+      offer: item => sizesDiffer(item),
+      when: 'The learner picks the biggest rocket, or judges by size.',
+      does: 'Draws every rocket at the same size.',
+      fact: 'Every rocket is now drawn the same size.' },
+    { id: PULL_LEVER, type: 'clue', modes: ['orbit_speed'], answers: 'all',
+      when: 'The learner does not connect how far out a rocket is with how it moves.',
+      does: "Shows a card with Earth's pull drawn as arrows: long close to Earth, shorter farther out. It names no rocket and "
+        + 'says nothing about speed or time.',
+      fact: `A card shows Earth's pull as arrows, long close to Earth and shorter farther out: "${PULL_CARD_LINE}"` },
+    { id: SPEED_ARROWS_LEVER, type: 'clue', modes: ['predict_burn'], answers: 'all',
+      when: 'The learner mixes up a push forward and a push backward, or how big the push is.',
+      does: "Shows the rocket's speed before the push and right after it as two arrows side by side. It draws no path.",
+      content: item => speedArrows(item),
+      fact: (a: { before: number; after: number }) => "Two arrows show the rocket's speed before the push and right after it; "
+        + `the after arrow is ${a.after > a.before ? 'longer' : 'shorter'}.` },
+    { id: MARK_POINTS_LEVER, type: 'marks', modes: ['circularize'], answers: ['other_circle', 'wrong_place'],
+      when: 'The learner cannot tell where the near point and the far point of the loop are.',
+      does: "Marks the loop's near point and far point with a dot and a word each.",
+      fact: "The loop's near point and far point are marked with a dot and a word." },
+    { id: BURN_CARD_LEVER, type: 'clue', modes: ['circularize'], answers: 'all',
+      when: 'The learner does not know what a push forward or backward does to the other side of a loop.',
+      does: 'Shows a card with a different loop: a push forward at one point lifts the other side of the loop; a push '
+        + 'backward lowers it.',
+      fact: `A card with a different loop says: "${BURN_CARD_LINES.join(' ')}"` },
+    { id: DROP_LEVER, type: 'custom', answers: 'all', carrier: 'shown',
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks wrong after help, or is stuck with too many to choose from.',
+      does: item => `Greys out one ${what(item)} that is easy to rule out, so fewer remain. The next answer counts as helped.`,
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (item, { state }) => (state.pulled.includes(DROP_LEVER) || dropTarget(item, state) !== null ? state.dropped : null),
+      fact: (dropped: readonly number[], item) => dropped.filter(i => i < optionCount(item)).map(i => (isTapItem(item)
+        ? `The ${optionLabel(item, i).toLowerCase()} is greyed out and is not the answer.`
+        : `The choice "${optionLabel(item, i)}" is greyed out and is not the answer.`)).join(' ') },
+  ],
+});
 
 /** For tests: every miss an item's wrong answers can show. */
 export function possibleMisses(item: OrbitItem): OrbitMiss[] {

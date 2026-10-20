@@ -21,7 +21,7 @@ import {
 // hand-synced copies drifted live once already). A challenge this gate refuses
 // would be DROPPED at the component seam anyway; filtering here keeps the
 // 4-6-challenge session contract honest instead of shipping a shorter run.
-import { challengeAskable } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
+import { challengeAskable } from '../../primitives/visual-primitives/literacy/interactiveBookDomain';
 
 // Fork B, coherent-book variant: Gemini authors one flat, internally coherent
 // nonfiction book. Code reconstructs its pages and derives every scored
@@ -370,7 +370,7 @@ const deriveChallenges = (
 
 const fallbackFor = (difficulty: BookWordDifficulty): { title: string; description: string; book: InteractiveBookVolume } => {
   // Every focus word sits with AT LEAST TWO words before it in its sentence —
-  // the judged-loop lead gate (interactiveBookScript MIN_LEAD_WORDS). A
+  // the judged-loop lead gate (interactiveBookDomain MIN_LEAD_WORDS). A
   // fallback word with a one-word lead would be dropped at derive time and the
   // fallback would ship an under-count session, which is the one thing a
   // fallback exists to prevent.
@@ -554,6 +554,8 @@ export const generateInteractiveBook = async (ctx: GenerationContext): Promise<I
         : 'mixed',
     challengeType: singleType ?? 'mixed',
     wordDifficulty: difficulty,
+    // The lesson's support tier, stamped for the model lever's timing (`supportFact`); it changes no generated content.
+    ...(ctx.supportTier ? { supportTier: ctx.supportTier } : {}),
     books: [reconstructed.book],
     challenges: finalChallenges,
   };

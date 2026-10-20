@@ -33,8 +33,8 @@ const summary = [];
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generatePictureVocabulary } = await loader.import('/src/components/lumina/service/literacy/gemini-picture-vocabulary.ts');
-  const { itemsFromChallenges, clueLeak } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript.ts');
-  const { pictureVocabLevers, practiceItemFor, practiceLeak } =
+  const { itemsFromChallenges, clueLeak } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyDomain.ts');
+  const { PICTURE_VOCAB_LEVERS, practiceItemFor, practiceLeak } =
     await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyLevers.ts');
 
   const topics = [['farm', 'Farm animals'], ['kitchen', 'Things in the kitchen'], ['park', 'A day at the park']];
@@ -54,7 +54,7 @@ try {
         if (mode === 'receptive_match' && (c.options ?? []).some((o) => !o.category)) issues.push(`${c.id}: a card has no kind`);
       }
       const rows = items.map((item) => {
-        const levers = pictureVocabLevers(item, [], items).map((l) => l.id);
+        const levers = PICTURE_VOCAB_LEVERS.declare(item, { items }, []).map((l) => l.id);
         const practice = practiceItemFor(item, items);
         if (practice && practiceLeak(practice, item, items)) issues.push(`${item.id}: practice leaks`);
         return { word: item.word, category: item.category, clue: item.clue,

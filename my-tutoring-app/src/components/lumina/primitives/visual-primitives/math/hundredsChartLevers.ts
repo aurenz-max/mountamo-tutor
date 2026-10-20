@@ -1,23 +1,24 @@
 /**
- * The in-item levers on a hundreds-chart item (`/add-support-tiers`, report
+ * The in-item levers on a hundreds-chart item, one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/hundreds-chart-levers-2026-10-08.md). No real-learner evidence: the misses are what
  * `hundredsChartMiss` observes. Pure: the component draws from these, the workspace publishes them, the tests hold
  * each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and is built by `practiceItem`.
  *
- * - highlight / complete / find_skip_value: `hop_dots` (help) a dot on each cell passed over between one highlighted
+ * - highlight / complete / find_skip_value: `hop_dots` (marks) a dot on each cell passed over between one highlighted
  *   (or tapped) number and the next, never past the last one and no number written (`dotsLeak`). On highlight with no
  *   taps yet, the dots run from 1 and stop before the count's first number. Not on a count by 1: there every passed
  *   cell is a number the learner left out.
- * - highlight / complete on a board of two rows or more: `row_tally` (help) a dot at the end of each row for each
+ * - highlight / complete on a board of two rows or more: `row_tally` (marks) a dot at the end of each row for each
  *   highlighted or tapped number in it, the learner's own work only (`tallyLeaks`).
- * - identify_pattern: the shape is the answer, so the help acts on a model outside the item: `model_chart` (help) a
+ * - identify_pattern: the shape is the answer, so the help acts on a model outside the item: `model_chart` (model) a
  *   1-30 chart beside the item with ANOTHER count highlighted and its description under it (`modelLeaks`).
- * - every mode: `simpler_chart` (simplify) the same mode on a plainer count (`practiceLeaks`): five cells of a count
+ * - every mode: `simpler_chart` (easier) the same mode on a plainer count (`practiceLeaks`): five cells of a count
  *   by 10s or 5s, a two-choice identify on a column count, a find on four cells of a count by 2s or 5s. Never on an
  *   item already the plainest (a count by 1, by 10s on a cell mode, by 2s on find).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { HundredsChartChallenge } from './HundredsChart';
+import { HUNDREDS_MISSES, type HundredsMode } from './hundredsChart.card';
 import { CELL_TYPES, neededCells } from './hundredsChartWorkspace';
 
 export const DOTS_LEVER = 'hop_dots';
@@ -214,10 +215,11 @@ function build(c: HundredsChartChallenge, step: number, end: number): HundredsCh
         instruction: 'Look at the highlighted cells. Which description best matches the visual pattern on the grid?' });
     }
     case 'find_skip_value': {
-      const cells = run(step, step, end, 4);
+      // From the count's second step, as the generator shows it: the first highlighted number is never the answer.
+      const cells = run(step, 2 * step, end, 4);
       const far = FAR_STEPS.find(f => f !== step && f !== step * 2 && f * 2 !== step && f !== c.skipValue);
       if (cells.length < 3 || far === undefined) return null;
-      return practiceOf(c, { skipValue: step, startNumber: step, givenCells: cells, correctCells: cells,
+      return practiceOf(c, { skipValue: step, startNumber: 2 * step, givenCells: cells, correctCells: cells,
         correctAnswer: String(step), options: [String(step), String(far)].sort((a, b) => Number(a) - Number(b)),
         instruction: 'Look at the highlighted numbers. What is the skip value (how much is added each step)?' });
     }
@@ -241,49 +243,60 @@ export function practiceItem(c: HundredsChartChallenge, s: ChartSession): Hundre
 export const practiceParent = (id: string | null | undefined, challenges: readonly HundredsChartChallenge[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-/** Easy starts with the item's picture help shown (the learner can check against it); a starting position is not a
- *  pull. The row tally follows the learner's own taps, so it is only ever pulled. */
-export const helpStartsShown = (c: HundredsChartChallenge, id: string) => c.supportTier === 'easy' && id !== TALLY_LEVER;
+/** Easy starts with the hop dots shown (the learner can check against them); a starting position is not a pull. The row
+ *  tally follows the learner's own taps, so it is only ever pulled, and the model chart comes by the set's `support`. */
+export const startsShown = (c: HundredsChartChallenge): string[] => (c.supportTier === 'easy' && dotsAvailable(c) ? [DOTS_LEVER] : []);
 
-const CELL_MISSES = ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'];
-const SKIP_MISSES = ['twice_the_step', 'half_the_step', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
-export const IDENTIFY_MISSES = ['chose_rows', 'chose_columns', 'chose_diagonal', 'chose_scattered'];
+// ── the lever set ──────────────────────────────────────────────────────────
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls. */
-export function hundredsChartLevers(c: HundredsChartChallenge | null, s: ChartSession, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const help = (id: string, carrier: WorkspaceLever['carrier'], when: string, does: string, answers: string[]) =>
-    levers.push({ id, kind: 'help', carrier, when, does, pulled: helpStartsShown(c, id) || pulled.includes(id), answers });
-  const back = 'then this item comes back blank.';
-  if (dotsAvailable(c)) help(DOTS_LEVER, 'shown',
-    c.type === 'find_skip_value' ? 'The learner picks a skip value that does not match how far apart the highlighted numbers are.'
-      : 'The learner\'s taps do not land the same distance apart, skip numbers, or leave the count.',
-    c.type === 'find_skip_value'
-      ? 'Puts a small dot on each cell passed over between one highlighted number and the next, with no numbers written. '
-        + 'You may point to the dots and the highlighted numbers; never count the dots or say the skip value.'
-      : 'Puts a small dot on each cell passed over between the highlighted numbers and the learner\'s own taps, never past '
+/** What the screen holds that a lever reads: the learner's taps, and the lesson (the board's end, the items ahead). */
+export interface ChartLeverContext { tapped: readonly number[]; session: ChartSession }
+
+const BACK = 'then this item comes back blank.';
+const SIMPLER_DOES: Record<HundredsChartChallenge['type'], string> = {
+  highlight_sequence: `Opens an ungraded practice chart: five numbers of a plainer count; ${BACK}`,
+  complete_sequence: `Opens an ungraded practice chart: five numbers of a plainer count; ${BACK}`,
+  identify_pattern: `Opens an ungraded practice chart of a plainer count with two choices; ${BACK}`,
+  find_skip_value: `Opens an ungraded practice chart with four numbers of a plainer count and two choices; ${BACK}`,
+};
+
+/** Declared in the order the tutor reaches for them. */
+export const HUNDREDS_LEVERS = leverSet<HundredsChartChallenge, ChartLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => HUNDREDS_MISSES[mode as HundredsMode] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'another count on a small 1-30 chart, with its description',
+    own: 'the shape this chart\'s highlighted cells make' },
+  specs: [
+    { id: DOTS_LEVER, type: 'marks', modes: ['highlight_sequence', 'complete_sequence'],
+      answers: ['other_step', 'stray_cells', 'gaps_left', 'extra_cells'],
+      when: 'The learner\'s taps do not land the same distance apart, skip numbers, or leave the count.',
+      does: 'Puts a small dot on each cell passed over between the highlighted numbers and the learner\'s own taps, never past '
         + 'the last of them. You may point to the dots; never say which number to tap next or count the dots.',
-    c.type === 'find_skip_value' ? SKIP_MISSES : ['other_step', 'stray_cells', 'gaps_left', 'extra_cells']);
-  if (tallyAvailable(c, boardEnd(s))) help(TALLY_LEVER, 'shown',
-    'The learner stops before the end of the chart, leaves numbers out, or adds numbers that are not in the count.',
-    'Puts a dot at the end of each row for each highlighted or tapped number in that row, following the learner\'s own '
-      + 'taps. You may point to rows whose dots differ; never say how many a row should have or which number is missing.',
-    CELL_MISSES);
-  const model = modelChart(c, s);
-  if (model) help(MODEL_LEVER, 'both',
-    'The learner picks a description that does not match the shape the highlighted cells make.',
-    'Draws a small 1-30 model chart beside the item with another count highlighted and its description under it. You may '
-      + 'read the caption and compare the two charts; never name the shape of the item\'s chart or point to its choice.',
-    IDENTIFY_MISSES);
-  if (practiceItem(c, s)) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'The learner cannot do this item even with the help on screen: a plainer count first.',
-    does: c.type === 'identify_pattern' ? `Opens an ungraded practice chart of a plainer count with two choices; ${back}`
-      : c.type === 'find_skip_value' ? `Opens an ungraded practice chart with four numbers of a plainer count and two choices; ${back}`
-        : `Opens an ungraded practice chart: five numbers of a plainer count; ${back}`,
-    pulled: pulled.includes(SIMPLER_LEVER),
-    answers: c.type === 'identify_pattern' ? IDENTIFY_MISSES : c.type === 'find_skip_value' ? SKIP_MISSES : CELL_MISSES });
-  return levers;
-}
+      content: c => (dotsAvailable(c) ? true : null),
+      fact: (_on: unknown, c, { tapped }) => dotsFact(c, tapped) },
+    { id: DOTS_LEVER, type: 'marks', modes: ['find_skip_value'], answers: HUNDREDS_MISSES.find_skip_value,
+      when: 'The learner picks a skip value that does not match how far apart the highlighted numbers are.',
+      does: 'Puts a small dot on each cell passed over between one highlighted number and the next, with no numbers written. '
+        + 'You may point to the dots and the highlighted numbers; never count the dots or say the skip value.',
+      content: c => (dotsAvailable(c) ? true : null),
+      fact: (_on: unknown, c, { tapped }) => dotsFact(c, tapped) },
+    { id: TALLY_LEVER, type: 'marks', modes: ['highlight_sequence', 'complete_sequence'], answers: HUNDREDS_MISSES.highlight_sequence,
+      when: 'The learner stops before the end of the chart, leaves numbers out, or adds numbers that are not in the count.',
+      does: 'Puts a dot at the end of each row for each highlighted or tapped number in that row, following the learner\'s own '
+        + 'taps. You may point to rows whose dots differ; never say how many a row should have or which number is missing.',
+      content: (c, { session }) => (tallyAvailable(c, boardEnd(session)) ? true : null),
+      fact: TALLY_FACT },
+    { id: MODEL_LEVER, type: 'model', modes: ['identify_pattern'], answers: HUNDREDS_MISSES.identify_pattern,
+      when: 'The learner picks a description that does not match the shape the highlighted cells make.',
+      does: 'Draws a small 1-30 model chart beside the item with another count highlighted and its description under it. You may '
+        + 'read the caption and compare the two charts; never name the shape of the item\'s chart or point to its choice.',
+      content: (c, { session }) => modelChart(c, session),
+      fact: (model: ChartModel, c) => modelFact(model, c) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', answers: 'all',
+      when: 'The learner cannot do this item even with the help on screen: a plainer count first.',
+      does: c => SIMPLER_DOES[c.type],
+      content: (c, { session }) => practiceItem(c, session) },
+  ],
+});
 
 export const PRACTICE_NOTE = 'An easier practice chart, ungraded; the full item comes back after it.';

@@ -1,31 +1,35 @@
 /**
- * The in-item levers on math-fact-fluency (`/add-support-tiers`, handoff 30 M3; table
- * qa/support-levers/m3-lever-tables-2026-10-02.md). No real-learner evidence: the misses are what `mathFactMiss`
+ * The in-item levers on math-fact-fluency, as one lever set (`bossLevers.ts`; `/add-support-tiers`, handoff 30 M3;
+ * table qa/support-levers/m3-lever-tables-2026-10-02.md). No real-learner evidence: the misses are what `mathFactMiss`
  * observes, plus the catalog's documented struggles (subtraction facts, missing-number problems).
  *
- * Every model lever draws the same thing, `factModel`: the fact's printed numbers as dots, with no numeral anywhere.
- * - `two_parts` (help, visual_fact): the picture redrawn as the fact's two parts in two colours (subtraction: the
+ * Every drawing lever draws the same thing, `factModel`: the fact's printed numbers as dots, with no numeral anywhere.
+ * - `two_parts` (layout; visual_fact): the picture redrawn as the fact's two parts in two colours (subtraction: the
  *   dots taken away crossed out). Answers `printed_number`, `other_operation`.
- * - `count_marks` (help, visual_fact and a picture-to-equation match): tapping a dot stamps its running count on it.
+ * - `count_marks` (marks; visual_fact and a picture-to-equation match): tapping a dot stamps its running count on it.
  *   Numbers only the dots tapped. Answers off-by-one, and off-by-more on a visual fact with no `smaller_fact` (one
- *   already +1). On a match it never splits the picture into the fact's parts, which would point at the matching
- *   equation.
- * - `fact_dots` (help, equation_solve and an equation-to-picture match): the model under the printed fact, nothing
- *   under the "?". Answers every miss.
- * - `part_whole` (help, missing_number): the model with the known part shaded and the unknown part hollow and
+ *   already +1); every miss on a match. On a match it never splits the picture into the fact's parts, which would
+ *   point at the matching equation.
+ * - `fact_dots` (marks; equation_solve and an equation-to-picture match): dots under the printed fact, nothing under
+ *   the "?". Answers every miss.
+ * - `part_whole` (marks; missing_number): the dots with the known part shaded and the unknown part hollow and
  *   unlabelled. Answers every miss.
- * - `smaller_fact` (simplify, visual_fact, equation_solve, missing_number): an ungraded fact of the same type,
+ * - `smaller_fact` (easier; visual_fact, equation_solve, missing_number): an ungraded fact of the same type,
  *   operation and blank whose second number (or blank) is 1 or 2; then the full item. Answers off-by-more.
- * - `far_match` (simplify, match): an ungraded match with two choices whose totals are 3 or more apart.
+ * - `far_match` (easier; match): an ungraded match with two choices whose totals are 3 or more apart.
  *
+ * None shows a different item solved, so the set has no `model` lever and no support rule.
  * speed_round gets no lever (user ruling 2026-10-02): it is aid-free recall, a picture would make it equation_solve,
- * and recall has no step to make simpler; its misses are in the catalog's `unanswered` list.
+ * and recall has no step to make simpler; its misses are the card's `unanswered`.
  *
  * A fingers picture (hand emoji) cannot be tapped or split, so on it `two_parts` and `count_marks` draw their dots
  * UNDER the hands instead of in place of the picture (2026-10-08: fingers items had no help lever, J12).
  */
-import type { StepSegment, WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { StepSegment } from '../../../components/live-activity/runtime/contract';
 import type { MathFactFluencyChallenge } from './MathFactFluency';
+import { MATH_FACT_MISSES } from './mathFactFluency.card';
+import { mathFactMode } from './mathFactFluencyWorkspace';
 
 export const PARTS_LEVER = 'two_parts';
 export const MARKS_LEVER = 'count_marks';
@@ -33,11 +37,11 @@ export const DOTS_LEVER = 'fact_dots';
 export const WHOLE_LEVER = 'part_whole';
 export const SMALLER_LEVER = 'smaller_fact';
 export const FAR_LEVER = 'far_match';
-/** The levers that draw `factModel`. */
-export const MODEL_LEVERS: readonly string[] = [PARTS_LEVER, DOTS_LEVER, WHOLE_LEVER];
 
 type C = MathFactFluencyChallenge;
-const ALL_MISSES = ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
+/** The lesson's range, which a simpler item stays inside. */
+export interface MathFactLeverContext { maxNumber: number }
+
 const BY_MORE = ['short_by_more', 'over_by_more'];
 const pictureToEquation = (c: C) => c.type === 'match' && c.matchDirection !== 'equation-to-visual';
 /** A fingers picture keeps its hands; a lever's dots are drawn under them. */
@@ -57,8 +61,9 @@ export function factModel(c: C): StepSegment[] {
   return add ? [seg(r - b, 'empty'), seg(b, 'marked')] : [seg(r, 'marked'), seg(b, 'crossed')];
 }
 
-/** The help levers this challenge offers, in order. */
-function helpLevers(c: C): string[] {
+/** The help lever each challenge's screen can draw, in order. */
+export function helpLevers(c: C | null): string[] {
+  if (!c) return [];
   if (c.type === 'visual-fact') return [PARTS_LEVER, MARKS_LEVER];
   if (c.type === 'match') return pictureToEquation(c) ? [MARKS_LEVER] : [DOTS_LEVER];
   if (c.type === 'equation-solve') return [DOTS_LEVER];
@@ -153,44 +158,46 @@ export function simplerItem(c: C | null, maxNumber: number): C | null {
   return c?.type === 'match' ? farMatch(c, maxNumber) : smallerFact(c, maxNumber);
 }
 
-// ── Declarations and scene facts ─────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────
 
-export function mathFactLevers(c: C | null, pulled: readonly string[], maxNumber: number): WorkspaceLever[] {
-  if (!c || c.type === 'speed-round') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const easier = simplerItem(c, maxNumber);
-  // A visual fact with no smaller fact (already +1): counting the picture is what is left for a far miscount.
-  const marksAnswer = c.type === 'match' ? ALL_MISSES : ['one_short', 'one_over', ...(easier ? [] : BY_MORE)];
-  const under = fingersPicture(c) ? ' The dots are drawn under the hands.' : '';
-  const help = helpLevers(c).map(id => id === PARTS_LEVER
-    ? lever(id, 'help', ['printed_number', 'other_operation'], 'The learner answers with a number from the fact, or combines the numbers the wrong way.',
-      `Redraws the picture as the fact's two parts in two colours (taken-away dots crossed out). No numbers are written.${under}`)
-    : id === MARKS_LEVER
-      ? lever(id, 'help', marksAnswer, 'The learner loses count of the picture.',
-        `Makes each dot a tap target: a tapped dot shows its running count. Only dots the learner taps are numbered.${under}`)
-      : id === DOTS_LEVER
-        ? lever(id, 'help', ALL_MISSES, 'The learner cannot work the bare fact.',
-          'Draws dots under the printed fact: a group for each printed number, the taken-away dots crossed out. Nothing under the "?" and no numbers.')
-        : lever(id, 'help', ALL_MISSES, 'The learner cannot find the missing number.',
-          'Draws the fact as dots: the known part shaded, the missing part as hollow dots with no number.'));
-  const simplify = !easier ? [] : c.type === 'match'
-    ? [lever(FAR_LEVER, 'simplify', BY_MORE, 'The choices are too close together to tell apart yet.',
-      'Opens an easier match first: a different fact and two choices far apart. It is not graded; the full item comes back after it.')]
-    : [lever(SMALLER_LEVER, 'simplify', BY_MORE, 'This fact is too big to work yet.',
-      'Opens a smaller fact of the same kind first. It is not graded; the full item comes back after it.')];
-  return [...help, ...simplify];
-}
+const draws = (id: string) => (c: C) => helpLevers(c).includes(id) || null;
+const under = (c: C) => (fingersPicture(c) ? ' The dots are drawn under the hands.' : '');
 
-/** What the pulled levers put on screen, as a scene fact. Never a count. */
-export function leverFacts(c: C | null, pulled: readonly string[]): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id) && helpLevers(c).includes(id);
-  const hands = fingersPicture(c);
-  return [
-    on(PARTS_LEVER) && `${hands ? 'Dots under the hands show' : 'The picture shows'} the fact's two parts in two colours; dots taken away are crossed out. No numbers are written.`,
-    on(MARKS_LEVER) && `${hands ? 'Dots under the hands are tap targets' : 'Each dot is a tap target'}; a tapped dot shows its running count.`,
-    on(DOTS_LEVER) && 'Dots under the printed fact show each printed number; taken-away dots are crossed out. Nothing is drawn for the "?".',
-    on(WHOLE_LEVER) && 'Dots show the fact: the known part shaded, the missing part hollow and unnumbered.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const FLUENCY_LEVERS = leverSet<C, MathFactLeverContext>({
+  modeOf: mathFactMode,
+  missesOf: () => MATH_FACT_MISSES,
+  specs: [
+    { id: PARTS_LEVER, type: 'layout', modes: ['visual_fact'], answers: ['printed_number', 'other_operation'],
+      when: 'The learner answers with a number from the fact, or combines the numbers the wrong way.',
+      does: c => `Redraws the picture as the fact's two parts in two colours (taken-away dots crossed out). No numbers are written.${under(c)}`,
+      content: draws(PARTS_LEVER),
+      fact: (_on, c) => `${fingersPicture(c) ? 'Dots under the hands show' : 'The picture shows'} the fact's two parts in two colours; `
+        + 'dots taken away are crossed out. No numbers are written.' },
+    { id: MARKS_LEVER, type: 'marks', modes: ['visual_fact', 'match'], answers: 'all',
+      // On a visual fact with a smaller fact, a far miscount is the simplify lever's; on a match every miss is this one's.
+      answersOn: (c, { maxNumber }) => (c.type === 'match' ? MATH_FACT_MISSES
+        : ['one_short', 'one_over', ...(smallerFact(c, maxNumber) ? [] : BY_MORE)]),
+      when: 'The learner loses count of the picture.',
+      does: c => `Makes each dot a tap target: a tapped dot shows its running count. Only dots the learner taps are numbered.${under(c)}`,
+      content: draws(MARKS_LEVER),
+      fact: (_on, c) => `${fingersPicture(c) ? 'Dots under the hands are tap targets' : 'Each dot is a tap target'}; a tapped dot shows its running count.` },
+    { id: DOTS_LEVER, type: 'marks', modes: ['equation_solve', 'match'], answers: 'all',
+      when: 'The learner cannot work the bare fact.',
+      does: 'Draws dots under the printed fact: a group for each printed number, the taken-away dots crossed out. Nothing under the "?" and no numbers.',
+      content: draws(DOTS_LEVER),
+      fact: 'Dots under the printed fact show each printed number; taken-away dots are crossed out. Nothing is drawn for the "?".' },
+    { id: WHOLE_LEVER, type: 'marks', modes: ['missing_number'], answers: 'all',
+      when: 'The learner cannot find the missing number.',
+      does: 'Draws the fact as dots: the known part shaded, the missing part as hollow dots with no number.',
+      content: draws(WHOLE_LEVER),
+      fact: 'Dots show the fact: the known part shaded, the missing part hollow and unnumbered.' },
+    { id: SMALLER_LEVER, type: 'easier', modes: ['visual_fact', 'equation_solve', 'missing_number'], carrier: 'shown', answers: BY_MORE,
+      when: 'This fact is too big to work yet.',
+      does: 'Opens a smaller fact of the same kind first. It is not graded; the full item comes back after it.',
+      content: (c, { maxNumber }) => smallerFact(c, maxNumber) },
+    { id: FAR_LEVER, type: 'easier', modes: ['match'], carrier: 'shown', answers: BY_MORE,
+      when: 'The choices are too close together to tell apart yet.',
+      does: 'Opens an easier match first: a different fact and two choices far apart. It is not graded; the full item comes back after it.',
+      content: (c, { maxNumber }) => farMatch(c, maxNumber) },
+  ],
+});

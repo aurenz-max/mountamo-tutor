@@ -16,14 +16,21 @@
  *   different families; medium: 3; hard: 4 with both look-alike kinds, through binoculars where the cues are smaller.
  * - pick_instrument: a named detail ("Saturn's rings"); the learner says or taps the least powerful instrument that
  *   shows it. The key comes from `DETAILS`, never from a model. easy: 2 instruments; medium: 3; hard: 4.
- * object_type and pick_instrument are sayable closed choices (speech with acceptsGesture, J14); find_by_look and
- * brightest are taps on unnamed objects, checked by code.
+ * object_type and pick_instrument are sayable closed choices (a `SpokenKey`, tap also checked); find_by_look and
+ * brightest are taps on unnamed objects, checked by code. The wiring is `telescopeSimulator.card.ts` +
+ * `telescopeSimulator.boss.ts`.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import {
+  TELESCOPE_MISSES, type BrightMiss, type FindMiss, type InstrumentMiss, type TelescopeMiss, type TypeMiss,
+} from './telescopeSimulator.card';
+
+export { TELESCOPE_MISSES };
+export type { BrightMiss, FindMiss, InstrumentMiss, TelescopeMiss, TypeMiss };
 
 export type TelescopeMode = 'find_by_look' | 'brightest' | 'object_type' | 'pick_instrument';
 export const TELESCOPE_MODES: TelescopeMode[] = ['find_by_look', 'brightest', 'object_type', 'pick_instrument'];
@@ -33,12 +40,13 @@ export type TelescopeTier = 'easy' | 'medium' | 'hard';
 
 export type Scope = 'eyes' | 'binoculars' | 'small' | 'large' | 'space';
 export const SCOPES: Scope[] = ['eyes', 'binoculars', 'small', 'large', 'space'];
-export const SCOPE_TEXT: Record<Scope, { button: string; with: string; power: string; say: string }> = {
-  eyes: { button: 'Just your eyes', with: 'with just your eyes', power: 'no magnifying: things look their normal size', say: '"just your eyes", "no telescope", "my eyes"' },
-  binoculars: { button: 'Binoculars', with: 'through binoculars', power: 'makes things look about 10 times bigger', say: '"binoculars"' },
-  small: { button: 'Small telescope', with: 'through a small telescope', power: 'makes things look about 50 times bigger', say: '"a small telescope", "the small telescope"' },
-  large: { button: 'Large telescope', with: 'through a large telescope', power: 'makes things look about 200 times bigger', say: '"a large telescope", "a big telescope", "the large telescope"' },
-  space: { button: 'Space telescope', with: 'through a space telescope', power: 'flies above the air, so its view is the sharpest of all', say: '"a space telescope", "the space telescope"' },
+/** `say`: other ways to say an instrument, beside its button label. */
+export const SCOPE_TEXT: Record<Scope, { button: string; with: string; power: string; say: readonly string[] }> = {
+  eyes: { button: 'Just your eyes', with: 'with just your eyes', power: 'no magnifying: things look their normal size', say: ['no telescope', 'my eyes'] },
+  binoculars: { button: 'Binoculars', with: 'through binoculars', power: 'makes things look about 10 times bigger', say: [] },
+  small: { button: 'Small telescope', with: 'through a small telescope', power: 'makes things look about 50 times bigger', say: ['a small telescope', 'the small telescope'] },
+  large: { button: 'Large telescope', with: 'through a large telescope', power: 'makes things look about 200 times bigger', say: ['a large telescope', 'a big telescope', 'the large telescope'] },
+  space: { button: 'Space telescope', with: 'through a space telescope', power: 'flies above the air, so its view is the sharpest of all', say: ['a space telescope', 'the space telescope'] },
 };
 export const scopeRank = (s: Scope) => SCOPES.indexOf(s);
 
@@ -47,9 +55,10 @@ export const scopeRank = (s: Scope) => SCOPES.indexOf(s);
 export type Kind = 'moon' | 'planet' | 'star' | 'cluster' | 'nebula' | 'galaxy';
 export const KINDS: Kind[] = ['moon', 'planet', 'star', 'cluster', 'nebula', 'galaxy'];
 export const KIND_TEXT: Record<Kind, string> = { moon: 'Moon', planet: 'Planet', star: 'Star', cluster: 'Star cluster', nebula: 'Nebula', galaxy: 'Galaxy' };
-const KIND_SAY: Record<Kind, string> = {
-  moon: '"the Moon", "a moon"', planet: '"a planet"', star: '"a star"',
-  cluster: '"a star cluster", "a cluster", "a group of stars"', nebula: '"a nebula"', galaxy: '"a galaxy"',
+/** Other ways to say a kind, beside its button label. */
+const KIND_SAY: Record<Kind, readonly string[]> = {
+  moon: ['the Moon', 'a moon'], planet: ['a planet'], star: ['a star'],
+  cluster: ['a star cluster', 'a cluster', 'a group of stars'], nebula: ['a nebula'], galaxy: ['a galaxy'],
 };
 /** Sharp-edged objects (moon, planet, star) and fuzzy ones (cluster, nebula, galaxy): the look-alike families. */
 export const FAMILY: Record<Kind, 'sharp' | 'fuzzy'> = { moon: 'sharp', planet: 'sharp', star: 'sharp', cluster: 'fuzzy', nebula: 'fuzzy', galaxy: 'fuzzy' };
@@ -242,17 +251,7 @@ export function telescopeCorrect(item: TelescopeItem | undefined, w: TelescopeWo
 
 // ── Misses (what the check observes) ─────────────────────────────────────────────────────
 
-export type FindMiss = 'near_match' | 'shares_clue' | 'other_object';
-export type BrightMiss = 'picked_biggest' | 'picked_dimmer';
-export type TypeMiss = 'sharp_mixup' | 'fuzzy_mixup' | 'other_family';
-export type InstrumentMiss = 'too_weak' | 'too_strong';
-export type TelescopeMiss = FindMiss | BrightMiss | TypeMiss | InstrumentMiss;
-export const TELESCOPE_MISSES: Record<TelescopeMode, readonly TelescopeMiss[]> = {
-  find_by_look: ['near_match', 'shares_clue', 'other_object'],
-  brightest: ['picked_biggest', 'picked_dimmer'],
-  object_type: ['sharp_mixup', 'fuzzy_mixup', 'other_family'],
-  pick_instrument: ['too_weak', 'too_strong'],
-};
+// The miss ids and lists are the card's (`telescopeSimulator.card.ts`).
 
 /** How many of the ask's clues an object's look shows. */
 export function cluesShown(item: FindItem, index: number, scope: Scope = item.scope): number {
@@ -486,17 +485,24 @@ export function telescopeItems(d: TelescopeItemsSource): TelescopeItem[] {
   return buildTelescopeItems({ modes: resolveTelescopeModes(d), tier, rng: seededRng(`${d.title ?? 'telescope'}:${d.gradeLevel ?? ''}:${tier}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── Spoken answers ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function telescopeExpectedAnswer(item: ChoiceItem): string {
-  const key = choiceKey(item), at = (item.choices as string[]).indexOf(key);
-  const others = (item.choices as string[]).filter(c => c !== key).map(c => `"${choiceLabel(item, c)}"`).join(', ');
+/**
+ * The key a spoken reply is judged against: the choice's label, the other ways to say it and its place in the row
+ * ("the second one"). A tap item has none: the activity checks the tapped object.
+ */
+export function telescopeKey(item: TelescopeItem): SpokenKey | null {
+  if (isTapItem(item)) return null;
+  const key = choiceKey(item), at = (item.choices as string[]).indexOf(key), label = choiceLabel(item, key);
+  const others = (item.choices as string[]).filter(c => c !== key).map(c => `"${choiceLabel(item, c)}"`);
   const says = item.mode === 'object_type' ? KIND_SAY[key as Kind] : SCOPE_TEXT[key as Scope].say;
-  return `"${choiceLabel(item, key)}" (choice ${at + 1} of ${item.choices.length}): ${says}, or its place in the row ("the ${ORDINAL[at]} one") count. `
-    + `${others} ${item.choices.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+  return {
+    answer: label,
+    alsoAccept: [...says.filter(s => s.toLowerCase() !== label.toLowerCase()), `the ${ORDINAL[at]} one`],
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`,
+  };
 }
 
 const MISS_WORDS: Record<TypeMiss | InstrumentMiss, string> = {
@@ -524,16 +530,6 @@ export function telescopeSpokenMisses(item: ChoiceItem): KnownMiss[] {
   return out;
 }
 
-const HOW_TAP = 'The learner taps one object in the telescope view, then checks it.';
-const HOW_CHOICE = 'The learner answers by saying it, or tapping a choice and pressing Check Answer.';
-
-export function workspaceAssignment(item: TelescopeItem): TeachingAssignment {
-  if (isTapItem(item)) return { id: item.id, task: `${askOf(item)} ${HOW_TAP}`, response: 'gesture' };
-  const misses = telescopeSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW_CHOICE}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: telescopeExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface TelescopeView {
@@ -556,13 +552,25 @@ export function describeTelescopeWork(item: TelescopeItem | undefined, w: Telesc
   return w.choice ? `Chose "${choiceLabel(item, w.choice)}"` : 'Nothing chosen yet';
 }
 
-const CONSTRAINTS_TAP = 'The learner taps an object and checks it; the activity judges the tap. No object is named on screen until '
-  + 'the answer is credited. You cannot tap, check or point at an object for the learner.';
-const CONSTRAINTS_CHOICE = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. '
-  + 'You cannot tap or check a choice for the learner.';
+/** After any miss, in every mode. */
+const AFTER_MISS = 'After a miss, never say what the wrong pick was or why it was wrong.';
+/** Each mode's never-say rules (the old catalog guidance's, kept per item); each under the 500-character fact cap. */
+const CONSTRAINTS: Record<TelescopeMode, string> = {
+  find_by_look: 'No object in the view is named until the answer is credited. Until then, never say which object matches '
+    + `the ask or where it is; ask what the learner notices about each clue and each object. ${AFTER_MISS}`,
+  brightest: 'No object in the view is named until the answer is credited. Until then, never say which object is the '
+    + 'brightest or where it is, or that the big one is not the brightest; ask what the learner notices about how each '
+    + `object shines. ${AFTER_MISS}`,
+  object_type: 'Never say this object\'s kind or its name, never say what a look means or which kind has it ("twinkling '
+    + 'like a star", "a cloud like a nebula", "planets shine steadily"), and never rule a kind in or out; describe only '
+    + `what is drawn and ask about its shape, its edges and its light. ${AFTER_MISS}`,
+  pick_instrument: 'Never say which instrument, what any instrument shows of this object, or how much magnifying the '
+    + 'detail needs, and never point at a choice by its place in the order ("the least powerful one on your list", '
+    + `"one step up from your eyes"). ${AFTER_MISS}`,
+};
 
 /** What is drawn and asked. Looks listed in word order, never by position; names and keys only once credited. */
-export function workspaceScene(item: TelescopeItem, view: TelescopeView): WorkspaceScene {
+export function workspaceScene(item: TelescopeItem, view: TelescopeView): SceneOf {
   const facts: Record<string, string> = { kind: item.mode, question: askOf(item) };
   if (item.mode === 'find_by_look') {
     facts.shown = `A telescope view ${SCOPE_TEXT[view.scope].with} with ${item.objects.length} objects, none named. Their looks, in word order: ${listLooks(item, view.scope)}.`;
@@ -582,7 +590,7 @@ export function workspaceScene(item: TelescopeItem, view: TelescopeView): Worksp
     if (view.solved) facts.credited = `The view now shows ${o.name} ${SCOPE_TEXT[d.min].with}, where ${d.text} can be seen.`;
   }
   facts.learnerWork = describeTelescopeWork(item, view.work, view.scope);
-  facts.constraints = isTapItem(item) ? CONSTRAINTS_TAP : CONSTRAINTS_CHOICE;
+  facts.constraints = CONSTRAINTS[item.mode];
   return { objects: [], facts };
 }
 export const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -591,7 +599,7 @@ export const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The journey's answers: the key, and the wrong answer showing the mode's first-listed miss it can. */
 export function telescopeHarnessAnswers(item: TelescopeItem): { correct: TelescopeWork; plainWrong: TelescopeWork } {
-  const order = TELESCOPE_MISSES[item.mode];
+  const order: readonly TelescopeMiss[] = TELESCOPE_MISSES[item.mode];
   if (isTapItem(item)) {
     const key = tapKey(item);
     const wrongs = item.objects.map((_, i) => i).filter(i => i !== key)

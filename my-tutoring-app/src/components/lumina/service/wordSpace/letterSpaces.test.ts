@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, tierPick, tierPickFocus } from './pick';
 import { distractorKind, letterSpace, type LetterMode } from './letterSpaces';
 import { LETTER_GROUPS, NEW_LETTERS } from '../literacy/letterGroups';
-import { canProduceSound, keywordNamesItsPicture } from '../../primitives/visual-primitives/literacy/letterSoundLinkScript';
+import { canProduceSound, keywordNamesItsPicture } from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 import type { SupportTier } from '../generation/generationContext';
 
 const TIERS: SupportTier[] = ['easy', 'medium', 'hard'];

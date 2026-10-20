@@ -986,8 +986,25 @@ Return the complete skip counting runner configuration.
     const room = positions.length - 4;
     counts.forEach((c, i) => { c.startPosition = positions[Math.round((i * room) / (counts.length - 1))]; });
   }
-  for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; startPosition?: number; hiddenPositions?: number[] }>) {
-    if (ch.type === 'count_along') {
+  // connect_multiplication: one jump reads "? × N = N", the jump size printed twice, so the answer is read off the
+  // screen. Every item makes two jumps or more, on a landing no other connect item uses.
+  const connects = (data.challenges as Array<{ type: string; startPosition?: number; targetFact?: string }>)
+    .filter(c => c.type === 'connect_multiplication');
+  for (const ch of connects) {
+    if (positions.indexOf(ch.startPosition ?? data.startFrom) >= 2) continue;
+    const used = new Set(connects.map(c => c.startPosition));
+    const to = positions.slice(2).find(p => !used.has(p)) ?? positions[2];
+    if (to === undefined) continue;
+    ch.startPosition = to;
+    ch.targetFact = `${positions.indexOf(to)} × ${data.skipValue} = ${to}`;
+  }
+  for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; narration?: string; startPosition?: number; hiddenPositions?: number[] }>) {
+    if (ch.type === 'predict') {
+      // The ask names where the character stands and nothing past it (a model-written ask could name the landing).
+      ch.instruction = `${who.charAt(0).toUpperCase()}${who.slice(1)} is at ${ch.startPosition ?? data.startFrom}. Where does it land next?`;
+      ch.hint = 'How far is each jump? Make one more jump that size.';
+      ch.narration = ch.instruction;
+    } else if (ch.type === 'count_along') {
       // An item that names where it starts ("from 10") starts there, so the items are not one count repeated.
       const from = spaceLine ? null : ch.instruction?.match(/from\s+(\d+)/i);
       const named = from ? parseInt(from[1], 10) : NaN;

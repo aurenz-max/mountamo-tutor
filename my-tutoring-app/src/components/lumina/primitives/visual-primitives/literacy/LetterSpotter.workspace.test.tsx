@@ -15,7 +15,7 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { SPOTTER_EMOJI } from './letterSpotterScript';
+import { SPOTTER_EMOJI } from './letterSpotterDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -36,7 +36,7 @@ it.each(Object.keys(BY_MODE))('%s binds: the spoken key is published, the tap ke
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'letter-spotter', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'letter-spotter', evalMode: mode, data: d });
   const workspace = h.state().task!.workspace!;
-  if (BY_MODE[mode].spoken) expect(workspace.expectedAnswer).toMatch(/^The letter A, the first letter of ant/);
+  if (BY_MODE[mode].spoken) expect(workspace.expectedAnswer).toMatch(/^"A" \(also accept "\/a\/"\)\..*"ant" said back is not a letter/);
   else expect(workspace.expectedAnswer).toBeUndefined();
 });
 

@@ -2,14 +2,12 @@
 
 /**
  * Planetary explorer: a guided trip through 3-5 planets, a few questions at each stop, and in identify mode a quiz
- * after the trip. Two paths, chosen by `withWorkspaceController`:
- * - scripted (no tutor runtime): overview, each planet's card, its questions, a transition, the quiz; two tries a
- *   question, the scripted tutor cues;
- * - workspace (W1, `planetaryExplorerWorkspace.ts`): the runtime owns the item and Try again / Next; the stop's card
- *   opens before its first question; every check commits through `progress.commitCheck`, a spoken answer is judged by
- *   JEV, and the in-item levers (`planetaryExplorerLevers.ts`) are published with the scene.
+ * after the trip. Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is
+ * `planetaryExplorer.card.ts` + `planetaryExplorer.boss.ts`): the runtime owns the item and Try again / Next; a stop's
+ * card opens before its first question; every check commits through `progress.commitCheck` with a named miss, a spoken
+ * answer is judged by the tutor, and the in-item levers are one lever set in `planetaryExplorerLevers.ts`.
  */
-import React, { useState, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useState, useLayoutEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,24 +16,23 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PlanetaryExplorerMetrics } from '../../../evaluation/types';
-import { LuminaReadAloud } from '../../../ui';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  describePlanetWork, planetCorrect, planetItems, planetMiss, workspaceAssignment, workspaceScene, type PlanetItem,
+  describePlanetWork, planetCorrect, planetItems, planetMiss, workspaceScene, type PlanetItem,
 } from './planetaryExplorerWorkspace';
 import {
-  CARD_LEVER, DROP_LEVER, FAMILY_LEVER, NO_LEVERS, VISITED_LEVER, farChoice, leverFacts, planetLevers, startLevers,
+  CARD_LEVER, DROP_LEVER, FAMILY_LEVER, NO_LEVERS, PLANET_LEVERS, VISITED_LEVER, farChoice, startLevers,
   visitedStops, type PlanetLeverState,
 } from './planetaryExplorerLevers';
+import { planetaryExplorerBoss } from './planetaryExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -87,10 +84,9 @@ export interface PlanetaryExplorerData {
 
   /**
    * Within-mode support tier stamped by the generator from config.difficulty.
-   * Never changes planets, questions, options, or correctIndex. Absent ⇒ full-support legacy render.
+   * Never changes planets, questions, options, or correctIndex. Absent ⇒ full-support render.
    *   L2: 'hard' hides comparisonToEarth captions (raw value + unit remain).
-   *   L3: 'hard' skips the first-miss tutor hint (scripted path; the 2-attempt allowance is unchanged).
-   *   Levers: 'easy' starts the workspace path's help levers pulled where they may be shown (`startLevers`).
+   *   Levers: 'easy' starts the help levers pulled where they may be shown (`startLevers`).
    * The map's planet names are withheld in the quiz at EVERY tier: a labelled map in order from the Sun answers the
    * distance and size clues (it was the hard tier's L1 until 2026-10-15).
    */
@@ -132,11 +128,8 @@ const STARS = Array.from({ length: 60 }, (_, i) => {
   return { w: 1 + r(1) * 2, left: r(2) * 100, top: r(3) * 100, opacity: 0.3 + r(4) * 0.7 };
 });
 
-// ============================================================================
-// View modes
-// ============================================================================
-
-type ViewMode = 'overview' | 'planet-info' | 'planet-questions' | 'transition' | 'quiz' | 'summary';
+/** What is on screen: a stop's card, its question, a quiz question, or the summary. */
+type ViewMode = 'planet-info' | 'planet-questions' | 'quiz' | 'summary';
 
 // ============================================================================
 // Component
@@ -153,13 +146,11 @@ interface PlanetaryExplorerProps {
 
 type LeverMemo = { item: string } & PlanetLeverState;
 
-const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PlanetaryExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PlanetItem>) => Progress }) => {
+const usePlanetProgress = useWorkspaceProgressFor('planetary-explorer');
+
+const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId }: PlanetaryExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
-    title,
-    description,
-    introduction,
     celebration,
     planets = [],
     quizQuestions = [],
@@ -176,9 +167,7 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   } = data;
 
   const hasQuiz = quizQuestions.length > 0;
-
-  // reader-fit: the planet description, the stat cards, the fun fact, the question and every answer option are
-  // silent text at K-1, so the scripted voice reads them (the workspace tutor reads them from the scene).
+  // K-1: bigger type, no letter prefixes and no question counter; the tutor reads the screen aloud.
   const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
 
   // ── Stable refs ──
@@ -188,37 +177,33 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
 
   // ── Items: every stop's questions in journey order, then the quiz ──
   const items = useMemo(() => planetItems(planets, quizQuestions), [planets, quizQuestions]);
-  const stopCount = items.filter((i) => i.kind === 'planet').length;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePlanetProgress({
     challenges: items,
     getChallengeId: (i) => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (i) => workspaceAssignment(i, planets),
+    workspace, assignment: planetaryExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: (index) => solvedAloud.current(index),
     onFinished: (result) => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
-  const learnerBlocked = () => workspaceClosed.current;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   // ── View state ──
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
-  const [scriptedPlanetIndex, setScriptedPlanetIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  /** The credited choice is shown, with the explanation. */
   const [showFeedback, setShowFeedback] = useState(false);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<number | null>(null);
   const [tappedStats, setTappedStats] = useState<Set<string>>(new Set());
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
-  /** Workspace path: the stops whose card the learner has read (the card opens before a stop's first question). */
+  /** The stops whose card the learner has read (the card opens before a stop's first question). */
   const [cardsRead, setCardsRead] = useState<number[]>([]);
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   /** The item a correct tap already recorded, so its `onSolved` records nothing twice. */
@@ -231,16 +216,15 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     setLeverMemo((m) => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
   };
 
-  const readingCard = tutorOwned && currentItem?.kind === 'planet' && !cardsRead.includes(currentItem.planetIndex);
-  const view: ViewMode = !tutorOwned ? viewMode
-    : isComplete || !currentItem ? 'summary'
-      : currentItem.kind === 'quiz' ? 'quiz' : readingCard ? 'planet-info' : 'planet-questions';
-  const currentPlanetIndex = !tutorOwned ? scriptedPlanetIndex
-    : currentItem?.kind === 'planet' ? currentItem.planetIndex : Math.max(0, planets.length - 1);
+  const readingCard = currentItem?.kind === 'planet' && !cardsRead.includes(currentItem.planetIndex);
+  const view: ViewMode = isComplete || !currentItem ? 'summary'
+    : currentItem.kind === 'quiz' ? 'quiz' : readingCard ? 'planet-info' : 'planet-questions';
+  const currentPlanetIndex = currentItem?.kind === 'planet' ? currentItem.planetIndex : Math.max(0, planets.length - 1);
   const currentPlanet = planets[currentPlanetIndex];
   const currentPlanetQuestions = useMemo(() => items.filter((i) => i.kind === 'planet' && i.planetIndex === currentPlanetIndex),
     [items, currentPlanetIndex]);
   const currentPlanetQuestionIndex = currentItem ? currentPlanetQuestions.findIndex((q) => q.id === currentItem.id) : -1;
+  const stopCount = items.filter((i) => i.kind === 'planet').length;
   const quizIndex = currentItem?.kind === 'quiz' ? currentIndex - stopCount : 0;
   const solvedNow = !!currentItem && results.some((r) => r.challengeId === currentItem.id && r.correct);
 
@@ -273,32 +257,6 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring (scripted path only: its context carries the question and the learner's choice) ──
-  const aiPrimitiveData = useMemo(() => ({
-    currentPlanet: view === 'quiz' ? undefined : currentPlanet?.planetId,
-    focusTheme: view === 'quiz' ? 'Identification Quiz' : currentPlanet?.focusTheme,
-    planetsVisited: planets.slice(0, currentPlanetIndex).map((p) => p.planetId),
-    planetsRemaining: planets.slice(currentPlanetIndex + 1).map((p) => p.planetId),
-    questionText: currentItem?.question.question,
-    // `correctAnswer` is deliberately NOT here: parking the answer key in the prompt for the whole question leaks.
-    studentAnswer: selectedOption === null ? 'nothing yet' : currentItem?.question.options[selectedOption] ?? 'nothing yet',
-    currentScore: results.filter((r) => r.correct && !String(r.challengeId).startsWith('quiz-')).length,
-    attemptNumber: currentAttempts + 1,
-    gradeLevel,
-    ...(supportTier ? { supportTier } : {}),
-  }), [currentPlanet, currentPlanetIndex, planets, currentItem, gradeLevel, view, supportTier, selectedOption, results, currentAttempts]);
-
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'planetary-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   // ── Workspace callbacks ──
   /** A fresh item, or Try again: the choice is cleared; a retry counts one more wrong answer for the levers. */
   openItem.current = (_index, retry) => {
@@ -311,53 +269,15 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   solvedAloud.current = (index) => {
     const solved = items[index];
     if (!solved || tappedCorrect.current === solved.id || results.some((r) => r.challengeId === solved.id && r.correct)) return;
-    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
-      planetId: solved.kind === 'quiz' ? '__quiz__' : solved.planetId, questionType: solved.question.questionType,
-      difficulty: solved.question.difficulty });
+    progress.mergeResult(resultFor(solved, true, currentAttempts + 1));
     setSelectedOption(solved.question.correctIndex);
     setWrongPick(null);
     setShowFeedback(true);
   };
 
   // ── Handlers ──
-
-  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[PLANET_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  const handleStartJourney = () => {
-    setViewMode('planet-info');
-    setScriptedPlanetIndex(0);
-    sendText(`[JOURNEY_START] Topic: "${title}". We're exploring ${planets.map(p => p.planetId).join(', ')}. Introduce the journey briefly.`, { silent: true });
-    sendText(`[PLANET_ARRIVE] Arriving at ${planets[0]?.planetId}. Focus: ${planets[0]?.focusTheme}. Introduce this planet.`, { silent: true });
-  };
-
-  // Reading a question aloud only helps if something tells the tutor a question has appeared.
-  const speakQuestion = useCallback((q: { question: string; options: string[] } | undefined, lead: string) => {
-    if (!q) return;
-    sendText(
-      `[QUESTION_SHOWN] ${lead} Read this question aloud, then read EVERY choice aloud in order so they can pick one they cannot read. `
-      + `Question: "${q.question}". Choices: ${q.options.map((o, i) => `${i + 1}) ${o}`).join('  ')}. `
-      + `Do NOT say which one is right.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
   const handleStartQuestions = () => {
-    if (tutorOwned) {
-      if (currentItem?.kind === 'planet') setCardsRead((r) => [...r, currentItem.planetIndex]);
-      return;
-    }
-    setViewMode('planet-questions');
-    setSelectedOption(null);
-    setShowFeedback(false);
-    speakQuestion(currentItem?.question, 'The questions are starting.');
+    if (currentItem?.kind === 'planet') setCardsRead((r) => [...r, currentItem.planetIndex]);
   };
 
   const handleSelectOption = (optionIndex: number) => {
@@ -374,77 +294,26 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
 
   const handleCheckAnswer = () => {
     if (selectedOption === null || !currentItem || showFeedback || wrongPick !== null || learnerBlocked()) return;
-    const q = currentItem.question;
-    const quiz = currentItem.kind === 'quiz';
     const correct = planetCorrect(currentItem, selectedOption);
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
     progress.commitCheck(describePlanetWork(currentItem, selectedOption), correct,
       correct ? undefined : planetMiss(currentItem, selectedOption, planets));
-    const attempts = currentAttempts + 1;
-
     if (correct) {
       SoundManager.playCorrect();
       tappedCorrect.current = currentItem.id;
       setShowFeedback(true);
-      progress.mergeResult(resultFor(currentItem, true, attempts));
-      sendText(quiz
-        ? `[QUIZ_CORRECT] Student identified "${q.options[selectedOption]}" correctly for "${q.question}". Brief praise.`
-        : `[ANSWER_CORRECT] Student answered "${q.options[selectedOption]}" correctly for "${q.question}". Congratulate briefly.`,
-      { silent: true });
+      progress.mergeResult(resultFor(currentItem, true, currentAttempts + 1));
       return;
     }
-    if (tutorOwned) {
-      // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
-      const picked = selectedOption;
-      SoundManager.playIncorrect();
-      setWrongPick(picked);
-      editLevers((s) => ({ picked: [...s.picked, picked] }));
-      return;
-    }
-    if (attempts >= 2) {
-      // Scripted path: two tries, then the answer and the explanation are shown.
-      SoundManager.playIncorrect();
-      setShowFeedback(true);
-      progress.recordResult(resultFor(currentItem, false, attempts));
-      sendText(quiz
-        ? `[QUIZ_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}". Explain why.`
-        : `[ANSWER_INCORRECT] FINAL ATTEMPT — the reveal is now correct pedagogy. Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}" for "${q.question}". Say the right answer plainly and give a clear explanation.`,
-      { silent: true });
-      return;
-    }
-    // First wrong attempt: a hint that is NOT handed the correct option (L3: withdrawn at the hard tier).
-    if (supportTier !== 'hard') {
-      sendText(quiz
-        ? `[QUIZ_HINT] Student chose "${q.options[selectedOption]}" but that's not right. Give a hint about the correct planet without naming it.`
-        : `[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" for "${q.question}" and it is wrong, but they have ONE more try. You are NOT being told the right answer. Point them at the thing on screen that decides it. Do not eliminate options for them.`,
-      { silent: true });
-    }
-    setSelectedOption(null);
+    // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
+    const picked = selectedOption;
+    SoundManager.playIncorrect();
+    setWrongPick(picked);
+    editLevers((s) => ({ picked: [...s.picked, picked] }));
   };
 
-  // ── Scripted path: Next / transitions / quiz ──
-
-  const handleSubmitEvaluation = () => {
-    const elapsedMs = Date.now() - startTimeRef.current;
-    const correctCount = results.filter((r) => r.correct).length;
-    const totalQuestions = items.length;
-    const overallScore = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
-    const perPlanetScores = scoresByPhase();
-    const metrics: PlanetaryExplorerMetrics = {
-      type: 'planetary-explorer',
-      totalQuestions,
-      correctAnswers: correctCount,
-      accuracy: totalQuestions > 0 ? correctCount / totalQuestions : 0,
-      planetsExplored: planets.length,
-      perPlanetScores,
-      statsExplored: tappedStats.size,
-      durationMs: elapsedMs,
-    };
-    if (progress.recordsEvaluation !== false) evaluation.submitResult(overallScore >= 50, overallScore, metrics);
-    setSubmittedResult({ score: overallScore });
-    const phaseScoreStr = planets.map((p) => `${p.planetId}: ${perPlanetScores[p.planetId] ?? 0}%`).join(', ');
-    const quizScoreStr = hasQuiz ? `, Quiz: ${perPlanetScores['__quiz__'] ?? 0}%` : '';
-    sendText(`[ALL_COMPLETE] Journey complete! Planet scores: ${phaseScoreStr}${quizScoreStr}. Overall: ${overallScore}%. ${celebration}. Give encouraging planet-specific feedback.`, { silent: true });
+  const handleStatTap = (planetId: string, statLabel: string) => {
+    SoundManager.pop();
+    setTappedStats((prev) => new Set(prev).add(`${planetId}-${statLabel}`));
   };
 
   /** Per planet (and the quiz), the share of its questions answered right. */
@@ -459,62 +328,9 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     return scores;
   };
 
-  const handleNextQuestion = () => {
-    setSelectedOption(null);
-    setShowFeedback(false);
-    const nextQIndex = currentPlanetQuestionIndex + 1;
-    if (nextQIndex < currentPlanetQuestions.length) {
-      progress.advance();
-      speakQuestion(currentPlanetQuestions[nextQIndex]?.question,
-        `Moving to question ${nextQIndex + 1} of ${currentPlanetQuestions.length} for ${currentPlanet?.planetId}.`);
-      return;
-    }
-    // Done with this planet's questions
-    const advanced = progress.advance();
-    sendText(`[PLANET_COMPLETE] Finished all questions for ${currentPlanet?.planetId}. Summarize what we learned.`, { silent: true });
-    if (currentPlanetIndex < planets.length - 1) {
-      setViewMode('transition');
-    } else if (hasQuiz && advanced) {
-      setViewMode('quiz');
-      sendText(`[QUIZ_START] All planets visited! Now it's time for the identification quiz. The student will identify planets from descriptions. Encourage them.`, { silent: true });
-    } else {
-      handleSubmitEvaluation();
-      setViewMode('summary');
-    }
-  };
-
-  const handleNextPlanet = () => {
-    const nextIndex = currentPlanetIndex + 1;
-    setScriptedPlanetIndex(nextIndex);
-    setViewMode('planet-info');
-    setTappedStats(new Set());
-    const nextPlanet = planets[nextIndex];
-    if (nextPlanet) {
-      sendText(`[TRANSITION] Moving from ${currentPlanet?.planetId} to ${nextPlanet.planetId}. Bridge: "${currentPlanet?.transition}".`, { silent: true });
-      sendText(`[PLANET_ARRIVE] Arriving at ${nextPlanet.planetId}. Focus: ${nextPlanet.focusTheme}. Introduce this planet.`, { silent: true });
-    }
-  };
-
-  const handleStatTap = (planetId: string, statLabel: string) => {
-    SoundManager.pop();
-    setTappedStats((prev) => new Set(prev).add(`${planetId}-${statLabel}`));
-    sendText(`[STAT_TAPPED] Student tapped "${statLabel}" for ${planetId}. Give interesting context or comparison.`, { silent: true });
-  };
-
-  const handleQuizNext = () => {
-    setSelectedOption(null);
-    setShowFeedback(false);
-    if (progress.advance()) {
-      sendText(`[QUIZ_NEXT] Moving to quiz question ${quizIndex + 2} of ${quizQuestions.length}.`, { silent: true });
-      return;
-    }
-    handleSubmitEvaluation();
-    setViewMode('summary');
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
-    if (evaluation.hasSubmitted || items.length === 0) return;
+    if (evaluation.hasSubmitted || items.length === 0 || progress.recordsEvaluation === false) return;
     const metrics: PlanetaryExplorerMetrics = {
       type: 'planetary-explorer',
       totalQuestions: items.length,
@@ -533,25 +349,23 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Levers on screen (workspace path): runtime pulls plus the easy tier's starting position ──
-  const shownLevers = tutorOwned && currentItem && !readingCard
-    ? [...lever.pulled, ...startLevers(currentItem, supportTier, planets)] : [];
+  // ── Levers on screen: runtime pulls plus the easy tier's starting position ──
+  const shownLevers = currentItem && !readingCard
+    ? Array.from(new Set([...lever.pulled, ...startLevers(currentItem, supportTier, planets)])) : [];
   const leverOn = (id: string) => shownLevers.includes(id);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration targets
-  // and no presentation; the card before a stop's first question holds the response until it is closed.
+  // What the tutor and the observer are shown, republished every render. The card before a stop's first question holds
+  // the response until it is closed.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem || isComplete) return;
+    if (!currentItem || isComplete) return;
     const scene = workspaceScene(currentItem, {
       readingCard, choice: wrongPick ?? selectedOption, solved: solvedNow,
       visited: planets.slice(0, Math.max(0, currentItem.planetIndex)).map((p) => p.planetId), grade: gradeLevel,
     }, planets);
-    const state: PlanetLeverState = { ...lever, pulled: shownLevers };
-    const levers = readingCard ? [] : planetLevers(currentItem, state, planets);
-    const onScreen = readingCard ? null : leverFacts(currentItem, shownLevers, lever.dropped, planets);
+    const ctx = { planets, state: { ...lever, pulled: shownLevers } };
+    const levers = readingCard ? [] : PLANET_LEVERS.declare(currentItem, ctx, shownLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: '', onScreen: readingCard ? '' : PLANET_LEVERS.onScreen(currentItem, ctx, shownLevers) }),
       readyForResponse: !readingCard,
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
@@ -680,38 +494,9 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     );
   };
 
-  const renderOverview = () => (
-    <div className="space-y-4">
-      {renderSolarSystemCanvas()}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <p className="text-slate-400 text-sm">{description}</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-slate-300 leading-relaxed">{introduction}</p>
-          <div className="flex flex-wrap gap-2">
-            {planets.map((planet) => (
-              <Badge key={planet.planetId} variant="outline" className="border-white/20 text-slate-300 bg-white/5">
-                <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{ backgroundColor: getPlanetVisual(planet.planetId).color }} />
-                {nameOf(planet.planetId)}
-              </Badge>
-            ))}
-          </div>
-          <Button onClick={handleStartJourney} className="w-full bg-indigo-600/80 hover:bg-indigo-500/80 text-white border border-indigo-400/30">
-            Begin Journey →
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
   const renderPlanetInfo = () => {
     if (!currentPlanet) return null;
     const vis = getPlanetVisual(currentPlanet.planetId);
-    const planetName = nameOf(currentPlanet.planetId);
-    // The scripted voice reads the card at K-1; on the workspace path the tutor reads it from the scene.
-    const readAloudHere = isPreReader && !tutorOwned;
     return (
       <div className="space-y-4">
         {renderSolarSystemCanvas()}
@@ -720,32 +505,21 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: vis.color, boxShadow: `0 0 12px ${vis.glow}` }} />
               <div>
-                <CardTitle className="text-slate-100 text-lg">{planetName}</CardTitle>
+                <CardTitle className="text-slate-100 text-lg">{nameOf(currentPlanet.planetId)}</CardTitle>
                 <Badge variant="outline" className="border-white/20 text-slate-400 text-xs bg-white/5">{currentPlanet.focusTheme}</Badge>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tutorOwned && currentPlanetIndex > 0 && planets[currentPlanetIndex - 1]?.transition && (
+            {currentPlanetIndex > 0 && planets[currentPlanetIndex - 1]?.transition && (
               <p className="text-slate-400 text-sm italic">{planets[currentPlanetIndex - 1].transition}</p>
             )}
-            <div className="flex items-center gap-3">
-              <p className={`flex-1 text-slate-300 leading-relaxed ${isPreReader ? 'text-base' : 'text-sm'}`}>{currentPlanet.description}</p>
-              {readAloudHere && (
-                <LuminaReadAloud iconOnly size="sm" aria-label="Hear about this planet"
-                  onClick={() => readAloud(`${planetName}. ${currentPlanet.description}`)} />
-              )}
-            </div>
+            <p className={`text-slate-300 leading-relaxed ${isPreReader ? 'text-base' : 'text-sm'}`}>{currentPlanet.description}</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {currentPlanet.keyStats.map((stat, i) => renderStat(currentPlanet, stat, i, true))}
             </div>
             <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-400/20">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 text-indigo-300 text-xs font-medium mb-1">Fun Fact</div>
-                {readAloudHere && (
-                  <LuminaReadAloud iconOnly size="sm" aria-label="Hear the fun fact" onClick={() => readAloud(currentPlanet.funFact)} />
-                )}
-              </div>
+              <div className="text-indigo-300 text-xs font-medium mb-1">Fun Fact</div>
               <p className={`text-slate-300 ${isPreReader ? 'text-base' : 'text-sm'}`}>{currentPlanet.funFact}</p>
             </div>
             <Button onClick={handleStartQuestions} className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100">
@@ -757,7 +531,7 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     );
   };
 
-  /** The help levers drawn beside the question (workspace path). */
+  /** The help levers drawn beside the question. */
   const renderLevers = (item: PlanetItem) => {
     const stop = item.kind === 'planet' ? planets[item.planetIndex] : undefined;
     return (
@@ -815,7 +589,6 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
           let optionStyle = 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-200';
           if (showFeedback) {
             if (i === q.correctIndex) optionStyle = 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200';
-            else if (i === selectedOption) optionStyle = 'bg-red-500/20 border-red-400/40 text-red-200';
             else optionStyle = 'bg-white/3 border-white/5 text-slate-500';
           } else if (i === wrongPick) {
             optionStyle = 'bg-red-500/20 border-red-400/40 text-red-200';
@@ -841,27 +614,14 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     );
   };
 
-  const nextLabel = () => {
-    if (currentItem?.kind === 'quiz') return quizIndex + 1 < quizQuestions.length ? 'Next Question →' : 'See Results →';
-    return currentPlanetQuestionIndex + 1 < currentPlanetQuestions.length ? 'Next Question →'
-      : currentPlanetIndex < planets.length - 1 ? 'Continue to Next Planet →'
-        : hasQuiz ? 'Start Identification Quiz →' : 'See Results →';
-  };
-
-  /** Check, then (scripted path only) Next; the workspace path's Try again and Next are on the shell. */
+  /** Check Answer; Try again and Next are on the shell. */
   const renderActions = (quiz: boolean) => (
-    !showFeedback ? (
-      wrongPick === null && (
-        <Button onClick={handleCheckAnswer} disabled={selectedOption === null}
-          className={`w-full text-white disabled:opacity-40 ${quiz ? 'bg-amber-600/80 hover:bg-amber-500/80 border border-amber-400/30' : 'bg-indigo-600/80 hover:bg-indigo-500/80 border border-indigo-400/30'}`}>
-          Check Answer
-        </Button>
-      )
-    ) : !tutorOwned ? (
-      <Button onClick={quiz ? handleQuizNext : handleNextQuestion} className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100">
-        {nextLabel()}
+    !showFeedback && wrongPick === null && (
+      <Button onClick={handleCheckAnswer} disabled={selectedOption === null}
+        className={`w-full text-white disabled:opacity-40 ${quiz ? 'bg-amber-600/80 hover:bg-amber-500/80 border border-amber-400/30' : 'bg-indigo-600/80 hover:bg-indigo-500/80 border border-indigo-400/30'}`}>
+        Check Answer
       </Button>
-    ) : null
+    )
   );
 
   const renderFeedback = (item: PlanetItem) => showFeedback && (
@@ -872,97 +632,58 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
 
   const renderPlanetQuestions = () => {
     if (!currentItem || currentItem.kind !== 'planet' || !currentPlanet) return null;
-    const q = currentItem.question;
     const vis = getPlanetVisual(currentPlanet.planetId);
     return (
-      <div className="space-y-4">
-        {renderSolarSystemCanvas()}
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: vis.color }} />
-                <span className="text-slate-300 text-sm">{nameOf(currentPlanet.planetId)}</span>
-              </div>
-              {/* Band contract rule 7: "Q1/2" is a counter a pre-reader cannot use. Conditional render, never `hidden`. */}
-              {!isPreReader && (
-                <Badge variant="outline" className="border-white/20 text-slate-400 bg-white/5">
-                  Q{currentPlanetQuestionIndex + 1}/{currentPlanetQuestions.length}
-                </Badge>
-              )}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: vis.color }} />
+              <span className="text-slate-300 text-sm">{nameOf(currentPlanet.planetId)}</span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <p className={`flex-1 text-slate-100 font-medium leading-relaxed ${isPreReader ? 'text-lg' : 'text-base'}`}>{q.question}</p>
-              {/* The replay a non-reader needs to hear the choices again before picking (scripted voice only). */}
-              {isPreReader && !tutorOwned && (
-                <LuminaReadAloud iconOnly size="sm" aria-label="Hear the question and choices"
-                  onClick={() => speakQuestion(q, 'They asked to hear it again.')} />
-              )}
-            </div>
-            {renderLevers(currentItem)}
-            {renderChoices(currentItem, false)}
-            {renderFeedback(currentItem)}
-            {renderActions(false)}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  const renderTransition = () => {
-    if (!currentPlanet) return null;
-    const nextPlanet = planets[currentPlanetIndex + 1];
-    const nextVis = nextPlanet ? getPlanetVisual(nextPlanet.planetId) : null;
-    return (
-      <div className="space-y-4">
-        {renderSolarSystemCanvas()}
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-8 text-center space-y-4">
-            <p className="text-slate-300 leading-relaxed">{currentPlanet.transition}</p>
-            {nextPlanet && nextVis && (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-8 h-8 rounded-full" style={{ backgroundColor: nextVis.color, boxShadow: `0 0 12px ${nextVis.glow}` }} />
-                <span className="text-slate-100 font-medium">{nameOf(nextPlanet.planetId)}</span>
-              </div>
+            {/* Band contract rule 7: "Q1/2" is a counter a pre-reader cannot use. Conditional render, never `hidden`. */}
+            {!isPreReader && (
+              <Badge variant="outline" className="border-white/20 text-slate-400 bg-white/5">
+                Q{currentPlanetQuestionIndex + 1}/{currentPlanetQuestions.length}
+              </Badge>
             )}
-            <Button onClick={handleNextPlanet} className="bg-indigo-600/80 hover:bg-indigo-500/80 text-white border border-indigo-400/30">
-              Explore {nextPlanet ? nameOf(nextPlanet.planetId) : ''} →
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className={`text-slate-100 font-medium leading-relaxed ${isPreReader ? 'text-lg' : 'text-base'}`}>{currentItem.question.question}</p>
+          {renderLevers(currentItem)}
+          {renderChoices(currentItem, false)}
+          {renderFeedback(currentItem)}
+          {renderActions(false)}
+        </CardContent>
+      </Card>
     );
   };
 
   const renderQuiz = () => {
     if (!currentItem || currentItem.kind !== 'quiz') return null;
     return (
-      <div className="space-y-4">
-        {renderSolarSystemCanvas()}
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full flex-shrink-0 bg-amber-400/80 flex items-center justify-center text-xs font-bold text-slate-900">?</div>
-                <span className="text-amber-300 text-sm font-medium">Identification Quiz</span>
-              </div>
-              <Badge variant="outline" className="border-amber-400/30 text-amber-300 bg-amber-400/10">
-                Q{quizIndex + 1}/{quizQuestions.length}
-              </Badge>
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full flex-shrink-0 bg-amber-400/80 flex items-center justify-center text-xs font-bold text-slate-900">?</div>
+              <span className="text-amber-300 text-sm font-medium">Identification Quiz</span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Question — NO planet name shown */}
-            <p className="text-slate-100 text-base font-medium leading-relaxed">{currentItem.question.question}</p>
-            {renderLevers(currentItem)}
-            {renderChoices(currentItem, true)}
-            {renderFeedback(currentItem)}
-            {renderActions(true)}
-          </CardContent>
-        </Card>
-      </div>
+            <Badge variant="outline" className="border-amber-400/30 text-amber-300 bg-amber-400/10">
+              Q{quizIndex + 1}/{quizQuestions.length}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Question — NO planet name shown */}
+          <p className="text-slate-100 text-base font-medium leading-relaxed">{currentItem.question.question}</p>
+          {renderLevers(currentItem)}
+          {renderChoices(currentItem, true)}
+          {renderFeedback(currentItem)}
+          {renderActions(true)}
+        </CardContent>
+      </Card>
     );
   };
 
@@ -982,37 +703,25 @@ const PlanetaryExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     </div>
   );
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and the child's touches; Pip points only at
-  // the workspace as a whole and never chooses, checks, or advances.
-  const answering = view === 'planet-questions' || view === 'quiz';
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: answering ? currentItem?.id ?? null : null,
-    label: 'The solar system and the question',
-    solved: answering && solvedNow,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   // ── Main render ──
+  if (view === 'summary') return <div className={`w-full max-w-3xl mx-auto space-y-2 ${className ?? ''}`}>{renderSummary()}</div>;
   return (
     <div className={`w-full max-w-3xl mx-auto space-y-2 ${className ?? ''}`}>
-      {view === 'overview' && renderOverview()}
-      {view === 'planet-info' && renderPlanetInfo()}
-      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-      {pip.store && answering && <div {...pip.dock} />}
-      <div {...pip.workspace}>
-        {view === 'planet-questions' && renderPlanetQuestions()}
-        {view === 'transition' && renderTransition()}
-        {view === 'quiz' && renderQuiz()}
-      </div>
-      {view === 'summary' && renderSummary()}
+      {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the map, card and question as its region. */}
+      <PipDock />
+      <PipWorkspace className="space-y-4">
+        {view === 'planet-info' ? renderPlanetInfo() : (
+          <>
+            {renderSolarSystemCanvas()}
+            {view === 'planet-questions' && renderPlanetQuestions()}
+            {view === 'quiz' && renderQuiz()}
+          </>
+        )}
+      </PipWorkspace>
     </div>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const PlanetaryExplorer = withWorkspaceController<PlanetaryExplorerProps, ProgressOptions<PlanetItem>, Progress>(
-  'planetary-explorer', PlanetaryExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('planetary-explorer'));
+const PlanetaryExplorer = withWorkspaceOnly<PlanetaryExplorerProps>('planetary-explorer', PlanetaryExplorerSurface, (props) => props.data.title);
 
 export default PlanetaryExplorer;

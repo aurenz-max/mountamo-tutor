@@ -8,7 +8,6 @@ import {
   LuminaCardTitle,
   LuminaCardContent,
   LuminaBadge,
-  LuminaActionButton,
   dropZoneStateClass,
   motion,
   type DropZoneState,
@@ -18,24 +17,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LengthLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeLengthWork, lengthLabMatches, lengthMiss, workspaceAssignment, workspaceScene, type LengthView }
-  from './lengthLabWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { lengthLabBoss } from './lengthLab.boss';
+import { describeLengthWork, lengthLabMatches, lengthMiss, lengthScene, type LengthView } from './lengthLabWorkspace';
 import {
-  CHAIN_MODEL_LEVER, END_LINES_LEVER, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER, WORD_MODEL_LEVER,
-  lengthLabLevers, leverFacts, simplerLength,
+  CHAIN_MODEL_LEVER, END_LINES_LEVER, LENGTH_LEVERS, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER,
+  WORD_MODEL_LEVER,
 } from './lengthLabLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import type { PipTarget } from '../../../pip/PipSurfaceStore';
-import { lengthLabPipPose } from '../../../pip/lengthLabPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -132,26 +127,6 @@ const UNIT_EMOJI: Record<string, string> = {
 
 const UNIT_WIDTH = 36; // px per unit cell
 const MAX_BAR_UNITS = 12;
-
-/**
- * Tutor reveal calibration by support tier (Gotcha #2): a tier that hides a
- * scaffold on screen must not let the AI tutor leak it. The instruction's
- * strategy is withdrawn at hard, so the tutor must not name it there either.
- */
-function tutorRevealPolicy(tier: string | undefined, type: string): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return ' [TIER easy] Name the strategy and walk the setup: for compare/order, tell them to line up the starting points and count the unit cells; for indirect, read the clues as a chain. Do not state the final answer.';
-  }
-  if (tier === 'medium') {
-    return ' [TIER medium] Nudge execution only — point them to compare the far ends or re-read a clue. Do not name the full strategy or the answer.';
-  }
-  // hard — scaffolds withdrawn on screen; do not reintroduce them verbally
-  if (type === 'indirect') {
-    return ' [TIER hard] Do NOT name the transitive chain or which object is longer. Ask what each clue tells them and let them chain it.';
-  }
-  return ' [TIER hard] Scaffolds are withdrawn — ask what the student sees (which bar reaches farther); do not name the strategy or count the units for them, never reveal the answer.';
-}
 
 // ============================================================================
 // Helper: Object Bar Renderer
@@ -282,10 +257,7 @@ interface TilingWorkspaceProps {
    *  wider, so "fewer of them reach the end" is something the child SEES rather
    *  than something the feedback line tells them. */
   unitSpan?: number;
-  /** Pip's target: the object together with the row its units go in, never the count. */
-  pipRef?: (element: Element | null) => void;
-  pipId?: string;
-  /** Whether a wrong count prints the right one. Off on the tutor's workspace, where Try again follows. */
+  /** Whether a wrong count prints the right one. Off where the count is the answer, since Try again follows. */
   revealOnMiss?: boolean;
   /** The tiles in the row as they change, for the tutor's view of the work. */
   onCountChange?: (count: number) => void;
@@ -293,7 +265,7 @@ interface TilingWorkspaceProps {
   outline?: boolean;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId, revealOnMiss = true, onCountChange, outline = false }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, revealOnMiss = true, onCountChange, outline = false }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -332,7 +304,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
 
   return (
     <div className="space-y-4">
-      <div ref={pipRef} data-pip-object={pipId} className="space-y-4">
+      <div className="space-y-4">
         {/* Object to measure */}
         <div className="space-y-1">
           <span className="text-slate-400 text-xs uppercase tracking-wider">Object: {objectName}</span>
@@ -607,8 +579,9 @@ interface LengthLabProps {
 // Main Component
 // ============================================================================
 
-const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }:
-  LengthLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<LengthLabChallenge>) => Progress }) => {
+const useLengthProgress = useWorkspaceProgressFor('length-lab');
+
+const LengthLabSurface = ({ data, runtimePlanItemId }: LengthLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -629,7 +602,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
 
   const {
     submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
     submittedResult,
     elapsedMs,
   } = usePrimitiveEvaluation<LengthLabMetrics>({
@@ -642,28 +614,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ──
-  const aiPrimitiveData = useMemo(() => ({
-    unitType,
-    gradeBand: data.gradeBand,
-    challengeCount: challenges.length,
-    // Session-level support tier so the tutor calibrates its reveal level.
-    supportTier: challenges.find(c => c.supportTier)?.supportTier ?? null,
-  }), [unitType, data.gradeBand, challenges]);
-
-  // Its cues carry the answers, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'length-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace owns it and moves the index. ──
   /** Bound below, once the setters exist; the progress hook calls it only after render. */
   const openItem = useRef<(retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
@@ -672,11 +623,11 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
+  const progress = useLengthProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: lengthLabBoss.assignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onSolved: (index) => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -686,11 +637,9 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next challenge. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -766,17 +715,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     return [...items].sort((a, b) => a.name.localeCompare(b.name));
   }, [currentChallenge]);
 
-  // Reset local state when challenge changes (the scripted path; the workspace path also runs `openItem`)
-  useEffect(() => {
-    setSelectedAnswer(null);
-    setShowFeedback(false);
-    setEstimate(null);
-    setUnitACount(null);
-    setUnitBCount(null);
-    setTiles(0);
-    setOrder([]);
-  }, [currentIndex]);
-
   // ── The learner's work, as the check and the tutor read it ──
   const unitA = currentChallenge?.unitType || unitType;
   const unitB = currentChallenge?.unitTypeB || unitType;
@@ -785,14 +723,12 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     ticksShown: !!currentChallenge?.showUnitTicks || leverOn(UNIT_MARKS_LEVER), fitShown: currentChallenge?.showAlignmentFeedback !== false,
     ...over,
   });
-  /** The activity's own check, committed as the workspace's checked gesture (the attempt counted on both paths). */
+  /** The activity's own check, committed as the workspace's checked gesture. */
   const commit = (work: LengthView): boolean => {
     const ch = currentChallenge!;
     const correct = lengthLabMatches(ch, work);
     if (correct) tappedCorrect.current = ch.id;
     progress.commitCheck(describeLengthWork(ch, work), correct, correct ? undefined : lengthMiss(ch, work));
-    // The scripted path moves on after one try, so a miss is the challenge's result there.
-    if (!correct && !tutorOwned) recordResult({ challengeId: ch.id, correct: false, attempts: currentAttempts + 1 });
     return correct;
   };
 
@@ -814,16 +750,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     setSelectedAnswer(practice.correctAnswer);
     setShowFeedback(true);
   };
-
-  // ── Announce challenge to AI ──
-  useEffect(() => {
-    if (!currentChallenge) return;
-    if (currentIndex === 0) {
-      sendText(`[ACTIVITY_START] Length Lab: "${title}". ${challenges.length} challenges. First: ${currentChallenge.type} — ${currentChallenge.instruction}`, { silent: true });
-    } else {
-      sendText(`[NEXT_ITEM] Challenge ${currentIndex + 1} of ${challenges.length}: ${currentChallenge.type} — ${currentChallenge.instruction}`, { silent: true });
-    }
-  }, [currentIndex, currentChallenge, challenges.length, title, sendText]);
 
   // ── Submit evaluation when all complete ──
   useEffect(() => {
@@ -852,25 +778,14 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
       metrics,
       { challengeResults },
     );
-
-    // AI celebration
-    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-    sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. Give encouraging phase-specific feedback about measuring and comparing lengths.`, { silent: true });
-  }, [allChallengesComplete, hasSubmittedEval, progress.recordsEvaluation, challengeResults, challenges.length, phaseResults, submitEvaluation, sendText, elapsedMs]);
+  }, [allChallengesComplete, hasSubmittedEval, progress.recordsEvaluation, challengeResults, challenges.length, submitEvaluation, elapsedMs]);
 
   // ── Handle compare answer ──
   const handleCompareAnswer = (answer: string) => {
     if (!currentChallenge || showFeedback || learnerBlocked()) return;
     setSelectedAnswer(answer);
     setShowFeedback(true);
-
-    if (commit(view({ answer }))) {
-      SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] Student correctly identified "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}" — answered "${answer}".`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}" for "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}". Give a hint.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
-    }
+    if (commit(view({ answer }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
   };
 
   // ── The guess, and the two-unit walk ────────────────────────────────────
@@ -878,10 +793,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     if (estimate !== null || learnerBlocked()) return;
     SoundManager.select();
     setEstimate(guess);
-    sendText(
-      `[ESTIMATE] The child guessed ${guess} before measuring. Do not say whether that is close — they are about to find out by measuring.`,
-      { silent: true },
-    );
   };
 
   /** two_unit_compare: the first tiling is recorded, the second opens the question. */
@@ -898,26 +809,14 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     setShowFeedback(true);
     // The unit you need MORE of is the smaller one — that inverse is the whole
     // insight, so it is re-derived from the two counts, never stored separately.
-    if (commit(view({ answer: answerUnit }))) {
-      SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] The child saw which unit was needed more often. Congratulate briefly.`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] The child picked "${answerUnit}". Ask them to look again at how many of each they laid down — never say which.`, { silent: true });
-    }
+    if (commit(view({ answer: answerUnit }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
   };
 
   // ── Handle tile completion ──
   const handleTileComplete = (count: number) => {
     if (!currentChallenge) return;
     setTiles(count);
-    if (commit(view({ tiles: count }))) {
-      SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] Student correctly tiled ${count} ${unitType} for "${currentChallenge.objectName0}".`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student placed ${count} ${unitType} but correct is ${currentChallenge.correctUnitCount} for "${currentChallenge.objectName0}". Hint about gaps or overlaps.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
-    }
+    if (commit(view({ tiles: count }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     setShowFeedback(true);
   };
 
@@ -926,13 +825,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     if (!currentChallenge) return false;
     setOrder(placed);
     const correct = commit(view({ order: placed }));
-    if (correct) {
-      SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] Student correctly ordered objects from shortest to longest.`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student ordered incorrectly. The correct order is: ${currentChallenge.correctOrderCsv}. Encourage comparing two at a time.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
-    }
+    if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     setShowFeedback(true);
     return correct;
   };
@@ -942,95 +835,35 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     if (!currentChallenge || showFeedback || learnerBlocked()) return;
     setSelectedAnswer(answer);
     setShowFeedback(true);
-
-    if (commit(view({ answer }))) {
-      SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] Student correctly used indirect comparison: "${answer}".`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". Remind them about the clues: "${currentChallenge.clue0}" and "${currentChallenge.clue1}".${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
-    }
+    if (commit(view({ answer }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
   };
 
-  // ── Advance (scripted path; the workspace path hides Next and the runtime advances) ──
-  const handleNext = useCallback(() => {
-    if (!advanceProgress()) return; // already at end
-    setSelectedAnswer(null);
-    setShowFeedback(false);
-    setEstimate(null);
-    setUnitACount(null);
-    setUnitBCount(null);
-  }, [advanceProgress]);
-
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`lengthLabLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; the
+  // lever set (`lengthLabLevers.ts`) writes the levers, their facts and the support fact.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, view());
-    const ctx = { ticksShown: !!sessionChallenge.showUnitTicks, sessionUnit: unitType };
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : lengthLabLevers(sessionChallenge, pulledLevers, ctx);
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = lengthScene(currentChallenge, view());
+    const ctx = { ticksShown: !!sessionChallenge.showUnitTicks, sessionUnit: unitType, guessed: estimate !== null };
+    const onScreen = practice ? '' : LENGTH_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers);
+    const levers = practice ? [] : LENGTH_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(scene, { support: LENGTH_LEVERS.support(practice ? null : sessionChallenge, ctx), onScreen }),
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === OUTLINE_LEVER && sessionChallenge.type === 'estimate_then_tile' && estimate === null) {
-          return 'The units row appears after the guess: the learner taps a guess first.';
-        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerLength(sessionChallenge, unitType);
+          const easier = LENGTH_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); clearWork(); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: lengthLabBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { clearWork(); setPractice(null); },
-    };
-  });
-
-  // ── Pip shared surface ──
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never measures, answers, or advances. Tutor audio
-  // counts only while the tutor is on this block.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const isCurrentChallengeCorrect = !!currentChallenge
-    && challengeResults.some((r) => r.challengeId === currentChallenge.id && r.correct);
-  const pipTouch = (node: EventTarget) => {
-    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
-    setPipTouched({ scopeId: currentChallenge.id, element: node.closest('button, [role="button"]') ?? node });
-  };
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets: PipTarget[] = pip.targets(
-      ['workspace', 'objects', 'clues', 'measure', 'measure-a', 'measure-b'],
-      (id) => (id === 'objects' ? 'The objects' : id === 'clues' ? 'The clues' : id === 'workspace' ? 'Length workspace' : 'The object and its units'),
-    );
-    const workspaceTarget = targets.find((target) => target.id === 'workspace')?.element;
-    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
-      && workspaceTarget?.contains(pipTouched.element) ? pipTouched.element : null;
-    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
-    const step = currentChallenge.type === 'estimate_then_tile' ? (estimate === null ? 'guess' : 'measure')
-      : currentChallenge.type === 'two_unit_compare'
-        ? (unitACount === null ? 'measure-a' : unitBCount === null ? 'measure-b' : 'answer')
-        : currentChallenge.type === 'tile_and_count' ? 'measure' : 'answer';
-    const pose = lengthLabPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      type: currentChallenge.type, step, visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Length lab',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -1049,7 +882,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         return (
           <div className="space-y-5">
             {/* Two objects on shared baseline */}
-            <div ref={pip.ref('objects')} data-pip-object="objects" className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
               <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
               {leverOn(END_LINES_LEVER) && <EndLines lengths={[ch.objectLength0, ch.objectLength1]} />}
@@ -1127,9 +960,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                   onComplete={handleTileComplete}
                   disabled={inputClosed}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
-                  pipRef={pip.ref('measure')}
-                  pipId="measure"
-                  revealOnMiss={!tutorOwned}
+                  revealOnMiss={false}
                   onCountChange={setTiles}
                   outline={leverOn(OUTLINE_LEVER)}
                 />
@@ -1163,8 +994,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                 onComplete={handleUnitATile}
                 disabled={inputClosed}
                 showAlignmentFeedback={ch.showAlignmentFeedback !== false}
-                pipRef={pip.ref('measure-a')}
-                pipId="measure-a"
               />
             </div>
 
@@ -1186,8 +1015,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                   onComplete={handleUnitBTile}
                   disabled={inputClosed}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
-                  pipRef={pip.ref('measure-b')}
-                  pipId="measure-b"
                 />
               </div>
             ) : null}
@@ -1245,9 +1072,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
             onComplete={handleTileComplete}
             disabled={inputClosed}
             showAlignmentFeedback={ch.showAlignmentFeedback !== false}
-            pipRef={pip.ref('measure')}
-            pipId="measure"
-            revealOnMiss={!tutorOwned}
+            revealOnMiss={false}
             onCountChange={setTiles}
             outline={leverOn(OUTLINE_LEVER)}
           />
@@ -1257,7 +1082,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         return (
           <div className="space-y-5">
             {/* Show all objects */}
-            <div ref={pip.ref('objects')} data-pip-object="objects" className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               {orderItems.map(item => (
                 <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
               ))}
@@ -1284,7 +1109,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         return (
           <div className="space-y-5">
             {/* Clues */}
-            <div ref={pip.ref('clues')} data-pip-object="clues" className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
               <span className="text-slate-400 text-xs uppercase tracking-wider">Clues</span>
               {ch.clue0 && <p className="text-slate-200 text-sm">{ch.clue0}</p>}
               {ch.clue1 && <p className="text-slate-200 text-sm">{ch.clue1}</p>}
@@ -1390,16 +1215,12 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
             {/* Instruction */}
             <p className="text-slate-200 text-base font-medium">{currentChallenge.instruction}</p>
 
-            {/* Challenge content */}
-            <div ref={pip.ref('workspace')} data-pip-object="workspace"
-              onPointerDownCapture={(event) => pipTouch(event.target)} onFocusCapture={(event) => pipTouch(event.target)}>
+            {/* Challenge content. Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the
+                workspace, and the workspace as one region, never a single choice. */}
+            <PipDock />
+            <PipWorkspace>
               {renderChallenge()}
-            </div>
-
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            </PipWorkspace>
 
             {/* Hint */}
             {showHint && (
@@ -1408,12 +1229,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
               </div>
             )}
 
-            {/* Next button (scripted path only: on the workspace the runtime advances) */}
-            {!tutorOwned && showFeedback && !allChallengesComplete && currentIndex < challenges.length - 1 && (
-              <LuminaActionButton action="next" onClick={handleNext}>
-                Next Challenge
-              </LuminaActionButton>
-            )}
           </div>
         )}
       </LuminaCardContent>
@@ -1421,8 +1236,6 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const LengthLab = withWorkspaceController<LengthLabProps, ProgressOptions<LengthLabChallenge>, Progress>(
-  'length-lab', LengthLabSurface, useScriptedProgress, useWorkspaceProgressFor('length-lab'));
+const LengthLab = withWorkspaceOnly<LengthLabProps>('length-lab', LengthLabSurface, (props) => props.data.title);
 
 export default LengthLab;

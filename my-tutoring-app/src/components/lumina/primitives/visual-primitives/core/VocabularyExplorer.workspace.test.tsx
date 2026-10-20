@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * vocabulary-explorer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
+ * vocabulary-explorer on its boss (`vocabularyExplorer.card.ts` + `.boss.ts`) and its lever set: what is its own. The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * The word cards come first and nothing is answerable until Start the check. match is a gesture checked by code;
  * fill_blank and context are one word, tapped and checked or said aloud, with the key published only as the spoken
@@ -20,14 +20,15 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { VocabularyExplorerData } from './VocabularyExplorer';
 import {
-  askOf, buildVocabItems, clozeOf, clueText, composition, extraMeaning, namesWord, posOf, seededRng, STUDY_TASK,
-  validVocabItem, vocabCorrect, vocabHarnessAnswers, vocabItems, vocabMiss, VOCAB_MISSES, workspaceAssignment,
+  askOf, asCheck, buildVocabItems, clozeOf, clueText, composition, extraMeaning, modeOfKind, namesWord, posOf, seededRng,
+  validVocabItem, vocabCorrect, vocabHarnessAnswers, vocabItems, vocabMiss, VOCAB_MISSES,
   type ChoiceItem, type MatchItem, type VocabItem, type VocabKind, type VocabMode, type VocabTerm, type VocabTier,
 } from './vocabularyExplorerWorkspace';
 import {
   DROP_LEVER, EXAMPLES_LEVER, exampleLeaks, FEWER_LEVER, KINDS_LEVER, meaningsShown, MEANINGS_LEVER, possibleMisses,
-  simplerMatch, vocabLevers, NO_LEVERS,
+  simplerMatch, VOCAB_LEVERS,
 } from './vocabularyExplorerLevers';
+import { vocabularyExplorerBoss } from './vocabularyExplorer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -61,6 +62,9 @@ const SITUATION: ChoiceItem = { id: 'context-2', kind: 'context', term: 't2', op
 const MODES: VocabMode[] = ['explore', 'recall', 'apply'];
 const KINDS: Record<VocabMode, VocabKind[]> = { explore: ['match'], recall: ['match', 'fill_blank'], apply: ['fill_blank', 'context'] };
 const BY_MODE: Record<VocabMode, VocabItem[]> = { explore: [HARD_MATCH, EASY_MATCH], recall: [HARD_MATCH, FILL], apply: [FILL, SITUATION] };
+/** An item as the boss carries it (its mode and the bank), and the lever set read on it with no pull. */
+const chk = (i: VocabItem, mode: VocabMode) => asCheck(i, modeOfKind(i.kind, KINDS[mode]), BANK);
+const leversOn = (i: VocabItem, mode: VocabMode) => VOCAB_LEVERS.declare(chk(i, mode), { dropped: [], picked: [] }, []);
 
 const data = (mode: VocabMode, items = BY_MODE[mode]): VocabularyExplorerData =>
   ({ title: 'Water Cycle Words', topic: 'The water cycle', introduction: 'Words for how water moves.', terms: BANK, challengeTypes: KINDS[mode], items });
@@ -89,13 +93,11 @@ it.each(MODES)('%s opens on the word cards, then binds the check with its key ou
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
   // The cards: nothing to answer yet, no levers, the card's meaning on screen and in the scene.
-  expect(h.state().task!.task).toBe(STUDY_TASK);
   expect(demand(h)).toMatchObject({ kind: 'study', presentation: 'not ready' });
   expect(String(demand(h).card)).toContain('evaporation');
   expect(h.state().task!.workspace!.levers ?? []).toEqual([]);
-  expect(h.view.container.querySelector('[data-pip-object="workspace"]')).toBeNull();
   start(h);
-  expect(h.state().task!.task).toBe(workspaceAssignment(item, BANK).task);
+  expect(h.state().task!.task).toBe(vocabularyExplorerBoss.assignment(chk(item, mode)).task);
   expect(demand(h).presentation).toBe('ready');
   expect(text(h)).not.toMatch(/What it means|In a sentence/);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
@@ -105,7 +107,7 @@ it.each(MODES)('%s opens on the word cards, then binds the check with its key ou
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   } else {
     expect(demand(h).response).toBe('speech');
-    expect(h.state().task!.workspace!.expectedAnswer).toContain('"evaporation" counts');
+    expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"evaporation"\./);
     expect(namesWord(String(demand(h).question), 'evaporation')).toBe(false);
     expect(JSON.stringify(demand(h))).not.toMatch(/turns into a gas/);
   }
@@ -125,7 +127,7 @@ it('match: a swap names its miss and closes the board; Try again clears it; show
   const receipt = h.dispatch('pull_lever', { lever: EXAMPLES_LEVER });
   expect(receipt.status).toBe('committed');
   expect(h.view.container.querySelectorAll('[data-lever="examples"]').length).toBe(4);
-  expect(String(receipt.state.task!.demand.example1)).toMatch(/Under "precipitation"/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/under "precipitation"/);
   h.dispatch('retry'); h.confirmVisible();
   expect(demand(h).learnerWork).toBe('No pairs made yet');
   // The extra meaning is a miss of its own.
@@ -154,7 +156,8 @@ it('sentence and situation: a wrong word names its miss; the levers draw; a spok
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('apply');
   start(h);
-  expect(levers(h)).toEqual([[KINDS_LEVER, 'help', false], [MEANINGS_LEVER, 'help', false], [DROP_LEVER, 'simplify', false]]);
+  // drop_choice narrows the item in place, so it is a help lever (custom), not a practice item.
+  expect(levers(h)).toEqual([[KINDS_LEVER, 'help', false], [MEANINGS_LEVER, 'help', false], [DROP_LEVER, 'help', false]]);
   expect(text(h)).toContain("The sun's heat causes _____ from the lake every afternoon.");
   choose(h, 'collect');
   expect(last(h)).toMatchObject({ correct: false, miss: 'wrong_kind_of_word' });
@@ -228,7 +231,7 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...VOCAB_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
-        const ls = vocabLevers(i, BANK, NO_LEVERS);
+        const ls = leversOn(i, mode);
         const misses = possibleMisses(i, BANK);
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
@@ -263,7 +266,7 @@ describe('the pure rules', () => {
       expect(s.terms.length).toBeGreaterThanOrEqual(2);
       expect(s.terms.some(t => (i as MatchItem).defs.includes(t))).toBe(false);
       expect(simplerMatch(s, BANK)).toBeNull();
-      expect(vocabLevers(s, BANK, NO_LEVERS)).toEqual([]);
+      expect(leversOn(s, mode)).toEqual([]);
     }
     expect(simplerMatch(HARD_MATCH, BANK)).toBeNull();
   });

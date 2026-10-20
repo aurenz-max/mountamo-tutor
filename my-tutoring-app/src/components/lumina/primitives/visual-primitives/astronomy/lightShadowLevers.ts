@@ -1,25 +1,29 @@
 /**
- * The in-item levers on a light-shadow-lab item (`/add-support-tiers`; report
+ * The in-item levers on a light-shadow-lab item, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/light-shadow-lab-levers-2026-10-09.md). No real-learner evidence: the misses are what `shadowMiss`
  * observes, plus the catalog's documented struggles (the shadow drawn toward the sun; length not tied to how high the
  * sun is). Pure: the component draws from these, the workspace publishes them, the tests hold each leak rule. Every
  * help lever is a drawing with no words (K-2 pre-readers); every easier item has the id `<item>~easier`.
  *
- * - `side_model` (help, every mode): three small pictures beside the scene, a sun on the left with the block's shadow
+ * - `side_model` (model, every mode): three small pictures beside the scene, a sun on the left with the block's shadow
  *   to the right, a sun straight above with a dot of shadow underneath, a sun on the right with the shadow to the left.
  *   Fixed: it reads nothing from the item and shows every side, so it favours none.
- * - `height_model` (help, every mode): two small pictures, both suns on the left: a low sun with a long shadow, a high
+ * - `height_model` (model, every mode): two small pictures, both suns on the left: a low sun with a long shadow, a high
  *   sun with a short one. Fixed: a true model of the rule, not the item.
- * - `shadow_zones` (help, observe and measure, where the shadow is drawn): unlabelled tick marks on the ground on both
+ * - `shadow_zones` (marks, observe and measure, where the shadow is drawn): unlabelled tick marks on the ground on both
  *   sides of the object, where a short shadow ends and where a long one begins. Equal on both sides; no words.
- * - `easy_sun` / `easy_shadow` (simplify): an ungraded item of the same mode with an obvious sun (very low on one side,
+ * - `easy_sun` / `easy_shadow` (easier): an ungraded item of the same mode with an obvious sun (very low on one side,
  *   or straight overhead) and two choices, whose answer is never the item's answer.
+ *
+ * When the two models come is the lesson's support tier (`support`; medium when the lesson has none): the lever set
+ * writes that fact. The easy tier also opens items with help already drawn (`startLevers`, set by the generator).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ShadowChallenge, SunPosition } from './LightShadowLab';
+import { APPLY_MISSES, SHADOW_MISSES } from './lightShadowLab.card';
 import {
   PRACTICE_SUNS, comboLabel, flipLength, keyOption, keyShadow, normalizeTime, opposite, shadowDirectionOf, shadowLengthOf,
-  shadowOptions, sunWords, type ShadowMiss,
+  shadowOptions, sunWords,
 } from './lightShadowWorkspace';
 
 export const SIDE_MODEL_LEVER = 'side_model';
@@ -37,9 +41,6 @@ export const SIDE_MODEL = [20, 90, 160] as const;
 /** height_model: the two suns' altitudes, both on the left, fixed. */
 export const HEIGHT_MODEL = [15, 72] as const;
 
-
-const SHADOW_MISSES: readonly ShadowMiss[] = ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'];
-const APPLY_MISSES: readonly ShadowMiss[] = ['mirror_time', 'wrong_height', 'other_time'];
 
 function instructionFor(c: ShadowChallenge, sun: SunPosition): string {
   if (c.type === 'observe') return `Drag the sun to the ${sun.time} mark. Which way does the shadow point, and how long is it?`;
@@ -95,46 +96,56 @@ export function practiceLeaks(parent: ShadowChallenge, p: ShadowChallenge): bool
 export const practiceParent = (itemId: string | null | undefined, challenges: readonly ShadowChallenge[]) =>
   itemId?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === itemId) ?? null : null;
 
-/** Whether the shadow is on screen to be read, so ground marks can help read it. */
-const shadowDrawn = (c: ShadowChallenge) => c.type === 'observe' || c.type === 'measure' || c.type === 'apply';
+const notPractice = (c: ShadowChallenge) => (isPractice(c) ? null : true);
+const isApply = (c: ShadowChallenge) => c.type === 'apply';
+const SHADOW_MODES = ['observe', 'predict', 'measure'] as const;
 
-export function lightShadowLevers(c: ShadowChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPractice(c)) return [];
-  const apply = c.type === 'apply';
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly ShadowMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const simpler = practiceItem(c);
-  return [
-    lever(SIDE_MODEL_LEVER, 'help', apply ? ['mirror_time', 'other_time'] : ['toward_sun', 'side_when_overhead', 'below_when_side', 'both_wrong'],
-      apply ? 'The learner picks a time when the sun is on the same side as the shadow, or cannot tell which side the sun is on.'
-        : 'The learner puts the shadow on the sun\'s side, or under the object when the sun is off to one side.',
-      'Shows three small pictures beside the scene: a sun on the left with a block\'s shadow on the right, a sun straight '
-        + 'above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item.'),
-    lever(HEIGHT_MODEL_LEVER, 'help', apply ? ['wrong_height', 'other_time'] : ['length_flipped', 'length_off', 'both_wrong'],
-      apply ? 'The learner picks a time with the sun at the wrong height for this shadow\'s length.'
-        : 'The learner mixes up long and short, or does not link the length to how high the sun is.',
-      'Shows two small pictures beside the scene, both suns on the left: a low sun with a long shadow and a high sun '
-        + 'with a short one. They show no part of this item.'),
-    ...(shadowDrawn(c) && !apply ? [lever(SHADOW_ZONES_LEVER, 'help', ['length_off', 'length_flipped'],
-      'The learner cannot judge how long the drawn shadow is.',
-      'Draws small marks on the ground on both sides of the object, the same on each side: where a short shadow ends and '
-        + 'where a long one begins. The marks have no words.')] : []),
-    ...(simpler ? [lever(apply ? EASY_SHADOW_LEVER : EASY_SUN_LEVER, 'simplify', apply ? APPLY_MISSES : SHADOW_MISSES,
-      apply ? 'The learner cannot yet read a time from this shadow.' : 'The learner cannot yet work out this shadow.',
-      `Opens an easier item first: the same kind of question with ${apply ? 'a very long or very short shadow' : 'the sun very low or straight overhead'} `
-        + 'and only two choices. It is not graded; the full item comes back after it.')] : []),
-  ];
-}
+const SIDE_FACT = 'Beside the scene are three small pictures: a sun on the left with the shadow on the right, '
+  + 'a sun straight above with a dot of shadow underneath, a sun on the right with the shadow on the left.';
+const HEIGHT_FACT = 'Beside the scene are two small pictures, both suns on the left: a low sun with a long '
+  + 'shadow and a high sun with a short shadow.';
 
-/** What the pulled help levers put on screen, for the tutor. Never a direction, a length or a time for this item. */
-export function leverFacts(c: ShadowChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPractice(c)) return '';
-  return [
-    pulled.includes(SIDE_MODEL_LEVER) && 'Beside the scene are three small pictures: a sun on the left with the shadow on the right, '
-      + 'a sun straight above with a dot of shadow underneath, a sun on the right with the shadow on the left.',
-    pulled.includes(HEIGHT_MODEL_LEVER) && 'Beside the scene are two small pictures, both suns on the left: a low sun with a long '
-      + 'shadow and a high sun with a short shadow.',
-    pulled.includes(SHADOW_ZONES_LEVER) && shadowDrawn(c) && 'Small marks on the ground on both sides of the object show where a '
-      + 'short shadow ends and where a long shadow begins.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The lever set: every lever once, by type. A practice item declares none and shows none. */
+export const SHADOW_LEVERS = leverSet<ShadowChallenge, null>({
+  modeOf: c => c.type,
+  missesOf: mode => (mode === 'apply' ? APPLY_MISSES : SHADOW_MISSES),
+  // The two picture levers are worked suns that are not this item; when they come is the tier's.
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: 'small pictures of other suns and their shadows',
+    own: c => (isApply(c) ? 'the time this shadow shows' : 'which way this shadow points or how long it is'),
+  },
+  specs: [
+    { id: SIDE_MODEL_LEVER, type: 'model', answers: ['toward_sun', 'side_when_overhead', 'below_when_side', 'both_wrong', 'mirror_time', 'other_time'],
+      answersOn: c => (isApply(c) ? ['mirror_time', 'other_time'] : ['toward_sun', 'side_when_overhead', 'below_when_side', 'both_wrong']),
+      when: c => (isApply(c) ? 'The learner picks a time when the sun is on the same side as the shadow, or cannot tell which side the sun is on.'
+        : "The learner puts the shadow on the sun's side, or under the object when the sun is off to one side."),
+      does: "Shows three small pictures beside the scene: a sun on the left with a block's shadow on the right, a sun straight "
+        + 'above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item.',
+      content: notPractice, fact: SIDE_FACT },
+    { id: HEIGHT_MODEL_LEVER, type: 'model', answers: ['length_flipped', 'length_off', 'both_wrong', 'wrong_height', 'other_time'],
+      answersOn: c => (isApply(c) ? ['wrong_height', 'other_time'] : ['length_flipped', 'length_off', 'both_wrong']),
+      when: c => (isApply(c) ? "The learner picks a time with the sun at the wrong height for this shadow's length."
+        : 'The learner mixes up long and short, or does not link the length to how high the sun is.'),
+      does: 'Shows two small pictures beside the scene, both suns on the left: a low sun with a long shadow and a high sun '
+        + 'with a short one. They show no part of this item.',
+      content: notPractice, fact: HEIGHT_FACT },
+    // Only where the shadow is drawn and read: observe and measure.
+    { id: SHADOW_ZONES_LEVER, type: 'marks', modes: ['observe', 'measure'], answers: ['length_off', 'length_flipped'],
+      when: 'The learner cannot judge how long the drawn shadow is.',
+      does: 'Draws small marks on the ground on both sides of the object, the same on each side: where a short shadow ends and '
+        + 'where a long one begins. The marks have no words.',
+      content: notPractice,
+      fact: 'Small marks on the ground on both sides of the object show where a short shadow ends and where a long shadow begins.' },
+    { id: EASY_SUN_LEVER, type: 'easier', modes: SHADOW_MODES, answers: 'all',
+      when: 'The learner cannot yet work out this shadow.',
+      does: 'Opens an easier item first: the same kind of question with the sun very low or straight overhead and only two '
+        + 'choices. It is not graded; the full item comes back after it.',
+      content: c => practiceItem(c) },
+    { id: EASY_SHADOW_LEVER, type: 'easier', modes: ['apply'], answers: 'all',
+      when: 'The learner cannot yet read a time from this shadow.',
+      does: 'Opens an easier item first: the same kind of question with a very long or very short shadow and only two '
+        + 'choices. It is not graded; the full item comes back after it.',
+      content: c => practiceItem(c) },
+  ],
+});

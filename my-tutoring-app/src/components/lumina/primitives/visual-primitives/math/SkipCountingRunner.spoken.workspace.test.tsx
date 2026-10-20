@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Skip counting runner answered aloud (ROLLOUT.md VB-1): predict, find_skip_value, connect_multiplication and a
- * one-gap fill_missing ask for one number, so they are spoken items that still take the typed number and Check. The
- * observer credits a spoken answer from the tutor's feedback; a Check stays checked by the activity. count_along and a
- * fill_missing item with two or more gaps stay on screen.
+ * Skip counting runner answered aloud (ROLLOUT.md VB-1; boss `skipCounting.boss.ts`): predict, find_skip_value,
+ * connect_multiplication and a one-gap fill_missing ask for one number, so they are SAY_OR_SHOW items that still take
+ * the typed number and Check. The observer credits a spoken answer from the tutor's feedback; a Check stays checked by
+ * the activity. count_along and a fill_missing item with two or more gaps have no key and stay on screen.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -17,7 +17,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { SkipCountingChallenge, SkipCountingRunnerData } from './SkipCountingRunner';
-import { skipExpectedAnswer, skipSpokenMisses, spokenSkipKey, type SkipLine } from './skipCountingWorkspace';
+import { skipCountingBoss } from './skipCounting.boss';
+import { skipKey, skipSpokenMisses, spokenSkipKey, type SkipLine } from './skipCountingWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -59,8 +60,8 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/The learner says/);
+  // Said or shown; the scene never states the answer.
+  expect(skipCountingBoss.assignment({ ...c, line: LINE }).acceptsGesture).toBe(true);
   expect(JSON.stringify(task.demand)).not.toMatch(key);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
@@ -112,7 +113,7 @@ it('count_along and a fill_missing item with two gaps stay on screen with no key
     const h = mount([c]);
     expect(h.state().task!.demand.response, c.id).toBe('gesture');
     expect(h.state().task!.workspace!.expectedAnswer, c.id).toBeUndefined();
-    expect(String(h.state().task!.demand.constraints), c.id).not.toMatch(/says/);
+    expect(skipCountingBoss.assignment({ ...c, line: LINE }).acceptsGesture, c.id).toBeFalsy();
     cleanup();
   }
 });
@@ -128,10 +129,10 @@ it('every spoken miss is one the catalog lists for its mode, and no example is a
     for (const c of cases) {
       const key = spokenSkipKey(c, ln);
       expect(key, `${c.type} ${ln.skipValue}`).not.toBeNull();
-      const misses = skipSpokenMisses(c, ln);
+      const misses = skipSpokenMisses({ ...c, line: ln });
       expect(misses.length).toBeGreaterThan(0);
       expect(new Set(misses.map(m => m.id)).size).toBe(misses.length);
-      const keyForms = [String(key), skipExpectedAnswer(c, ln)!.match(/"([a-z -]+)"/)![1]];
+      const keyForms = [String(key), ...skipKey({ ...c, line: ln })!.alsoAccept];
       for (const m of misses) {
         expect(lists[c.type], `${c.type} ${m.id}`).toContain(m.id);
         for (const e of m.examples ?? []) expect(keyForms, `${c.type} ${m.id}`).not.toContain(e);
@@ -139,8 +140,8 @@ it('every spoken miss is one the catalog lists for its mode, and no example is a
     }
   }
   // 15 on a count by 5: standing on 15, counting on by one (16), two jumps (25), the landing before (10).
-  expect(skipSpokenMisses(PREDICT, LINE).map(m => [m.id, m.examples?.[0]])).toEqual(expect.arrayContaining([
+  expect(skipSpokenMisses({ ...PREDICT, line: LINE }).map(m => [m.id, m.examples?.[0]])).toEqual(expect.arrayContaining([
     ['stayed_put', 'fifteen'], ['added_one', 'sixteen'], ['two_jumps', '25'], ['wrong_way', 'ten']]));
-  expect(skipSpokenMisses(CONNECT, LINE).slice(0, 2).map(m => m.id)).toEqual(['typed_product', 'typed_skip']);
-  expect(skipExpectedAnswer(CONNECT, LINE)).toContain('The number reached (20)');
+  expect(skipSpokenMisses({ ...CONNECT, line: LINE }).slice(0, 2).map(m => m.id)).toEqual(['typed_product', 'typed_skip']);
+  expect(skipKey({ ...CONNECT, line: LINE })!.signatureError).toContain('The number reached (20)');
 });

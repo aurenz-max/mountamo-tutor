@@ -156,8 +156,8 @@ export const ROTATION_DOCTRINE = ({ modes, words }: BossCard) => {
   const moves = stepped
     ? Array.from(byMoves.values()).map(group => `In the ${group[0].step} step of ${listOf(group.map(e => e.name))}, the learner `
       + `${group[0].wiring.moves}.`).join(' ')
-    : named.map(entry => (named.length > 1 || Object.keys(modes).length > 1 ? `In ${entry.name}, the learner ` : 'The learner ')
-      + `${entry.wiring.moves}.`).join(' ');
+    : movesByText(named).map(group => (group.length === Object.keys(modes).length ? 'The learner '
+      : `In ${listOf(group.map(e => e.name))}, the learner `) + `${group[0].wiring.moves}.`).join(' ');
   const steps = stepped ? 'Each item is one step of the problem, and the task\'s kind names the step. ' : '';
   return `The learner's job is to ${words.job}. ${steps}${moves ? `${moves} ` : ''}${judged} ${cap(words.question)} are the question: say them freely `
     + 'and as often as needed, and read the instruction and every label aloud for a learner who cannot read, unless '
@@ -173,6 +173,13 @@ export const ROTATION_DOCTRINE = ({ modes, words }: BossCard) => {
 // activityContract.test.ts).
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Unstepped modes grouped by identical `moves`, in card order: the same sentence is said once, naming its modes. */
+function movesByText<E extends { wiring: BossMode }>(entries: readonly E[]): E[][] {
+  const groups = new Map<string, E[]>();
+  for (const entry of entries) groups.set(entry.wiring.moves!, [...(groups.get(entry.wiring.moves!) ?? []), entry]);
+  return Array.from(groups.values());
+}
 
 /** "a", "a and b", "a, b and c". */
 const listOf = (items: readonly string[]) =>

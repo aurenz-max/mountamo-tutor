@@ -1,5 +1,6 @@
 /**
- * timeline-explorer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C34).
+ * timeline-explorer's domain: the items, checks, keys, misses and scene (the wiring is `timelineExplorer.card.ts` +
+ * `timelineExplorer.boss.ts`).
  *
  * Gemini writes the timeline: 5-8 events, each with a date, a title, a description, a one-sentence clue that names
  * neither its title nor its date, and optionally the later event it led to (`ledTo`). Code builds every check item
@@ -13,11 +14,15 @@
  * The eval modes pick the kinds: explore = identify; order = order and identify; connect = cause_effect and date.
  * identify and date are a short phrase said aloud or tapped (J14); order and cause_effect are gestures checked by code.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { KIND_MISSES, type ChoiceMiss, type OrderMiss, type TimelineMiss } from './timelineExplorer.card';
+
+export { KIND_MISSES };
+export type { ChoiceMiss, LinkMiss, OrderMiss, TimelineMiss } from './timelineExplorer.card';
 
 export type TimelineMode = 'explore' | 'order' | 'connect';
 export type TimelineKind = 'identify' | 'date' | 'order' | 'cause_effect';
@@ -138,16 +143,6 @@ export function timelineCorrect(deck: Deck, item: TimelineItem | undefined, w: T
   return w.choice === item.eventId;
 }
 
-export type ChoiceMiss = 'adjacent_event' | 'distant_event' | 'adjacent_date' | 'distant_date';
-export type OrderMiss = 'reversed' | 'adjacent_swap' | 'two_swapped' | 'one_moved' | 'mixed_order';
-export type LinkMiss = 'used_extra' | 'effect_before_cause' | 'pairs_swapped' | 'mixed_links';
-export type TimelineMiss = ChoiceMiss | OrderMiss | LinkMiss;
-export const KIND_MISSES: Record<TimelineKind, readonly TimelineMiss[]> = {
-  identify: ['adjacent_event', 'distant_event'],
-  date: ['adjacent_date', 'distant_date'],
-  order: ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'],
-  cause_effect: ['used_extra', 'effect_before_cause', 'pairs_swapped', 'mixed_links'],
-};
 export const MODE_MISSES = (mode: TimelineMode): TimelineMiss[] => MODE_KINDS[mode].flatMap(k => [...KIND_MISSES[k]]);
 
 function choiceMissOf(deck: Deck, item: ChoiceItem, chose: string): ChoiceMiss {
@@ -217,6 +212,15 @@ export const shuffle = <T,>(xs: readonly T[], rng: Rng): T[] => {
 
 /** Events an identify item can ask: a clue that does not name the event. */
 export const identifiable = (deck: Deck) => deck.events.filter(e => !clueLeaks(deck, e.id));
+/** A title that says its own event's date or year: the date ask ("When did this happen: <title>?") would say the key. */
+export function titleDates(deck: Deck, id: string): boolean {
+  const e = deck.byId.get(id);
+  if (!e) return true;
+  const title = e.title.toLowerCase(), date = e.date.trim().toLowerCase();
+  return (!!date && title.includes(date)) || yearsIn(e.date).some(y => yearsIn(e.title).includes(y));
+}
+/** Events a date item can ask: a title that does not say the date. */
+export const datable = (deck: Deck) => deck.events.filter(e => !titleDates(deck, e.id));
 const distinctBy = (deck: Deck, kind: 'identify' | 'date', ids: string[]) => {
   const seen = new Set<string>();
   return ids.filter(id => { const k = (kind === 'identify' ? titleOf(deck, id) : dateOf(deck, id)).trim().toLowerCase();
@@ -308,7 +312,7 @@ export function buildTimelineItems(opts: { events: readonly TimelineEvent[]; kin
   const deck = deckOf(opts.events), { tier, rng } = opts;
   const out: TimelineItem[] = [];
   const asked = new Set<string>(), carded: string[] = [];
-  const identifyPool = shuffle(identifiable(deck).map(e => e.id), rng), datePool = shuffle(deck.events.map(e => e.id), rng);
+  const identifyPool = shuffle(identifiable(deck).map(e => e.id), rng), datePool = shuffle(datable(deck).map(e => e.id), rng);
   let linkBuilt = false;
   for (const kind of sessionPlan(opts.kinds)) {
     if (kind === 'identify' || (kind === 'date')) {
@@ -365,7 +369,7 @@ export function validTimelineItem(deck: Deck, i: TimelineItem | undefined): i is
   const known = (ids: unknown) => Array.isArray(ids) && ids.every(id => deck.byId.has(id as string)) && new Set(ids).size === ids.length;
   if (i.kind === 'identify' || i.kind === 'date') {
     return deck.byId.has(i.eventId) && known(i.options) && i.options.includes(i.eventId) && i.options.length >= 2
-      && (i.kind === 'date' || !clueLeaks(deck, i.eventId));
+      && (i.kind === 'date' ? !titleDates(deck, i.eventId) : !clueLeaks(deck, i.eventId));
   }
   if (i.kind === 'order') return known(i.cards) && i.cards.length >= 2;
   if (i.kind === 'cause_effect') {
@@ -386,18 +390,55 @@ export function timelineItems(d: TimelineItemsSource): TimelineItem[] {
   return buildTimelineItems({ events, kinds: resolveKinds(d), tier: resolveTier(d), rng: seededRng(`${d.title ?? 'timeline'}:${events.length}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The session's check items, spoken keys ──────────────────────────────────────────────
+
+/**
+ * A check item as the boss and the component carry it: the item, the eval mode it belongs to, and the lesson's events
+ * (so the ask, the key and the levers read the deck without the lesson).
+ */
+export type TimelineCheck = TimelineItem & { mode: TimelineMode; events: readonly TimelineEvent[] };
+
+const DECKS = new WeakMap<readonly TimelineEvent[], Deck>();
+/** The deck of a check's events, built once per events list. */
+export function deckFor(events: readonly TimelineEvent[]): Deck {
+  let deck = DECKS.get(events);
+  if (!deck) { deck = deckOf(events); DECKS.set(events, deck); }
+  return deck;
+}
+
+/** The eval mode an item kind belongs to in a session of these kinds (identify sits in order when cards are asked). */
+export function modeOfKind(kind: TimelineKind, kinds: readonly TimelineKind[]): TimelineMode {
+  if (kind === 'order') return 'order';
+  if (kind === 'date' || kind === 'cause_effect') return 'connect';
+  return kinds.includes('order') ? 'order' : 'explore';
+}
+
+/** An item as a check of this lesson. */
+export const asCheck = (item: TimelineItem, mode: TimelineMode, events: readonly TimelineEvent[]): TimelineCheck => ({ ...item, mode, events });
+
+/** Every check item of the session (`timelineItems`), carrying its mode and the events. */
+export function timelineChecks(d: TimelineItemsSource): TimelineCheck[] {
+  const events = d.events ?? [], kinds = resolveKinds(d);
+  return timelineItems(d).map(i => asCheck(i, modeOfKind(i.kind, kinds), events));
+}
 
 const ORDINAL = ['first', 'second', 'third', 'fourth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function timelineExpectedAnswer(deck: Deck, item: ChoiceItem): string {
-  const key = optionLabel(deck, item, item.eventId), at = item.options.indexOf(item.eventId);
-  const others = item.options.filter(id => id !== item.eventId).map(id => `"${optionLabel(deck, item, id)}"`).join(', ');
-  const say = item.kind === 'identify'
-    ? `The event "${key}": its title, or words that clearly name that event and no other choice, or its place in the list ("the ${ORDINAL[at]} one")`
-    : `"${key}"${yearsIn(key).length ? `, or the year ${yearsIn(key).join(' or ')} alone` : ''}, or its place in the list ("the ${ORDINAL[at]} one")`;
-  return `${say} counts. ${others} ${item.options.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+/**
+ * The key of a choice item: the event's title (identify) or its date (date), its place in the list, and for a date its
+ * year alone. Null on a card item: the activity checks it.
+ */
+export function timelineKey(check: TimelineCheck): SpokenKey | null {
+  if (check.kind !== 'identify' && check.kind !== 'date') return null;
+  const deck = deckFor(check.events), answer = optionLabel(deck, check, check.eventId).trim();
+  if (!answer) return null;
+  const place = `the ${ORDINAL[check.options.indexOf(check.eventId)]} one`;
+  const years = check.kind === 'date' ? yearsIn(answer).filter(y => y !== answer) : [];
+  return {
+    answer, alsoAccept: [...years, place],
+    ...(check.kind === 'identify' ? { acceptRule: 'Words that clearly name that event and no other choice also count.' } : {}),
+    signatureError: 'Naming two choices, or hedging between them, is not an answer.',
+  };
 }
 
 /** A spoken item's known wrong answers, most specific first, with the tap's miss ids. */
@@ -417,20 +458,6 @@ export function timelineSpokenMisses(deck: Deck, item: ChoiceItem): KnownMiss[] 
     const ex = groups.get(m as ChoiceMiss);
     return ex ? [{ id: m, pattern: `The learner's answer ${what[m as ChoiceMiss]}: ${ex.map(x => `"${x}"`).join(', ')}.`, examples: ex }] : [];
   });
-}
-
-const HOW: Record<TimelineKind, string> = {
-  identify: 'The learner answers by saying it, or tapping one event and pressing Check Answer.',
-  date: 'The learner answers by saying it, or tapping one date and pressing Check Answer.',
-  order: 'The learner moves the cards up and down and presses Check Order.',
-  cause_effect: 'The learner taps a cause, then the effect it led to, for every cause, and presses Check Matches.',
-};
-
-export function workspaceAssignment(deck: Deck, item: TimelineItem): TeachingAssignment {
-  const task = `${askOf(deck, item)} ${HOW[item.kind]}`;
-  if (item.kind === 'order' || item.kind === 'cause_effect') return { id: item.id, task, response: 'gesture' };
-  const misses = timelineSpokenMisses(deck, item);
-  return { id: item.id, task, response: 'speech', acceptsGesture: true, expectedAnswer: timelineExpectedAnswer(deck, item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -463,15 +490,25 @@ export function solvedText(deck: Deck, item: TimelineItem): string {
   return `${titleOf(deck, item.eventId)}: ${dateOf(deck, item.eventId)}.`;
 }
 
+/**
+ * This timeline's own rules for each kind of item (the shared doctrine already forbids saying the answer and doing the
+ * step): what is hidden, and the facts about the events that would answer the item.
+ */
+const NEVER_RETELL = 'never retell what an event was about; ask what the learner remembers of it';
 const CONSTRAINTS: Record<TimelineKind, string> = {
-  identify: 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. The timeline is hidden during the check.',
-  date: 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. The timeline and its dates are hidden during the check.',
-  order: 'The learner moves the cards and checks; the activity judges the order. No date is on any card.',
-  cause_effect: 'The learner matches and checks; the activity judges the pairs. No date is on any card.',
+  identify: "The timeline is hidden during the check. Never say which event fits the clue or an event's date, and "
+    + `${NEVER_RETELL}. When you restate the clue, add no word from a choice's title. After a miss, never say which choice it was close to.`,
+  date: "The timeline and its dates are hidden during the check. Never say an event's date or where an event falls in time "
+    + `(first, last, next to another), and ${NEVER_RETELL}. After a miss, never say which choice it was close to.`,
+  order: "No date is on any card. Never say an event's date, where an event falls in time, or which card comes before "
+    + `another (never name a card or a pair to look at), and ${NEVER_RETELL}.`,
+  cause_effect: "No date is on any card. Never say which effect goes with a cause, an event's date or where an event falls "
+    + `in time, and ${NEVER_RETELL}.`,
 };
+const LEVER_CARDS = 'Describe a lever card only by what the scene says it shows.';
 
 /** What is drawn and asked. Choices and cards named, never which is right; the answer only once credited. */
-export function workspaceScene(deck: Deck, item: TimelineItem, view: TimelineView, meta: { title: string; span: string }): WorkspaceScene {
+export function workspaceScene(deck: Deck, item: TimelineItem, view: TimelineView, meta: { title: string; span: string }): SceneOf {
   if (view.reading) {
     const open = view.openEvent ? deck.byId.get(view.openEvent) : undefined;
     return { objects: [], facts: {
@@ -479,7 +516,7 @@ export function workspaceScene(deck: Deck, item: TimelineItem, view: TimelineVie
       shown: `The timeline "${meta.title}" (${meta.span}), ${deck.events.length} events in time order. The learner opens each event to read it `
         + `(opened ${view.opened} of ${deck.events.length}); the questions open when they press Begin the questions, once every event is opened.`,
       ...(open ? { openEvent: `${open.title} (${open.date}): ${open.description}` } : {}),
-      constraints: 'Nothing is asked yet. You may talk about the events with the learner while they read. You cannot open events for the learner.',
+      constraints: 'Nothing is asked yet: talk about the events freely while the learner reads.',
     } };
   }
   const facts: Record<string, string> = { kind: item.kind, question: askOf(deck, item) };
@@ -493,8 +530,8 @@ export function workspaceScene(deck: Deck, item: TimelineItem, view: TimelineVie
   }
   if (view.solved) facts.answerShown = solvedText(deck, item);
   facts.learnerWork = describeTimelineWork(deck, item, view.work);
-  facts.constraints = `${CONSTRAINTS[item.kind]} You cannot tap, move, match or check for the learner.`;
-  return { objects: [], facts };
+  facts.constraints = `${CONSTRAINTS[item.kind]} ${LEVER_CARDS}`;
+  return { objects: [], facts } as SceneOf;
 }
 
 // ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────

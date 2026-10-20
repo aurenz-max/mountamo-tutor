@@ -87,11 +87,11 @@ describe('actual lesson content, independent evidence and persona controls', () 
     const malformed = pkg('di-letter-sounds', { challenges: [challenge('m', 0), {}] });
     expect(extractLesson(malformed, contract()).events).toHaveLength(0);
   });
-  it('recognizes that hard blender still models the word and supplies no cold assessment', () => {
+  it('reads the blender workspace ask, which never models the word: every word is a cold read', () => {
     const p = pkg('phonics-blender', { nameTargetPhonemes: false, words: [{ id: 'w1', targetWord: 'sam', phonemes: ['s', 'a', 'm'].map((letters) => ({ id: letters, letters, sound: `/${letters}/` })) }] });
     const e = extractLesson(p, { ...contract(), allowedGraphemes: ['s', 'a', 'm'] }).events[0];
-    expect(e.modeled).toBe(true); expect(e.explainsRelation).toBe(false);
-    expect(e.cue).toContain('Listen: sam');
+    expect(e.modeled).toBe(false); expect(e.guided).toBe(false);
+    expect(e.cue).toBe('Blend the sounds of the letters on screen and say the whole word out loud.');
   });
   it('a short vowel is asked for its sound, and its ask does not model the keyword (R5)', () => {
     const p = pkg('di-letter-sounds', { challenges: [{ ...challenge('a', 0, 'hard'), keyword: 'apple', elicitation: 'keyword' }] });

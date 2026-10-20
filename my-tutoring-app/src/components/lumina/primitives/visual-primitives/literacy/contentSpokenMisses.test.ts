@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { pictureVocabSpokenMisses } from './pictureVocabularyWorkspace';
-import type { PictureVocabItem } from './pictureVocabularyScript';
+import { pictureVocabSpokenMisses, type PictureVocabItem } from './pictureVocabularyDomain';
 import { youAndMeSpokenMisses } from './youAndMeDomain';
 import type { YouAndMeChallenge } from './YouAndMe';
 import { genreSpokenMisses } from './genreExplorerDomain';

@@ -1289,7 +1289,7 @@ export interface WordBuilderData {
 // Periodic Table Types
 /** One judged periodic-table challenge — CODE-DRAWN from the element table
  *  (never LLM-authored; every answer key is computed). The script module's
- *  build gates (`periodicTableScript.itemFromChallenge`) validate and DROP,
+ *  build gates (`periodicTableDomain.itemFromChallenge`) validate and DROP,
  *  never backfill. */
 export interface PeriodicTableChallenge {
   id: string;

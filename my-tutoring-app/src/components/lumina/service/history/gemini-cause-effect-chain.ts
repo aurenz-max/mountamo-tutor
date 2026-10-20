@@ -62,7 +62,7 @@ import type {
 import {
   cardSpeakable,
   chainEarSeparable,
-} from '../../primitives/visual-primitives/history/causeEffectChainScript';
+} from '../../primitives/visual-primitives/history/causeEffectChainDomain';
 
 // ---------------------------------------------------------------------------
 // Constants

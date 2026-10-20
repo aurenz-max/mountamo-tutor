@@ -19,7 +19,8 @@ import { mountWorkspace } from '../../../components/live-activity/runtime/testin
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { habitatBuildLevers } from './habitatBuild';
+import { HABITAT_LEVERS } from './habitatDioramaLevers';
+import { habitatItems } from './habitatDiorama.boss';
 
 beforeEach(() => { installRuntimeTimers(); watch.mockClear(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -155,8 +156,9 @@ it('catalog and adapter: the build mode, its misses all answered by levers, and 
   const entry = getComponentById('habitat-diorama')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'build_habitat')).toMatchObject({ beta: 6.6, challengeTypes: ['build_habitat'],
     affordances: { answers: ['build'] } });
-  const levers = habitatBuildLevers(['food', 'water', 'shelter', 'weather'], [], false);
-  const misses = entry.teachingWorkspace!.misses!.build_habitat, unanswered = entry.teachingWorkspace!.unanswered!.build_habitat;
+  const [frog] = habitatItems(data(FROG) as never);
+  const levers = HABITAT_LEVERS.declare(frog, { data: { organisms: [], relationships: [] }, shownEmojis: [] }, []);
+  const misses = entry.teachingWorkspace!.misses!.build_habitat, unanswered = entry.teachingWorkspace!.unanswered?.build_habitat ?? [];
   for (const m of misses) expect(levers.some(l => l.answers?.includes(m)) || unanswered.includes(m), m).toBe(true);
   // The lever text names the build (putting pieces in a habitat), never another mode's action or a need it would fill.
   for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/\b(say|tap the zone|connect|pond|flies|snow)\b/i);

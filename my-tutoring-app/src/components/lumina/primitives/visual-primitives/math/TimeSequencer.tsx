@@ -16,23 +16,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TimeSequencerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { timeSequencerPipPose } from '../../../pip/timeSequencerPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { EMPTY_TIME_VIEW, describeTimeWork, timeSequencerMiss, workspaceAssignment, workspaceScene, type TimeView }
-  from './timeSequencerWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { timeSequencerBoss } from './timeSequencer.boss';
+import { EMPTY_TIME_VIEW, describeTimeWork, timeScene, timeSequencerMiss, type TimeView } from './timeSequencerWorkspace';
 import {
   DAY_ANCHORS_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, OPTION_PICTURES_LEVER, PRACTICE_NOTE, RELATION_MODEL_LEVER,
-  SKY_STRIP_LEVER, dayAnchors, durationModel, leverFacts, optionPictures, practiceItem, relationModel, timeSequencerLevers,
+  SKY_STRIP_LEVER, TIME_LEVERS, dayAnchors, durationModel, optionPictures, relationModel, tierPulled,
 } from './timeSequencerLevers';
 
 // ============================================================================
@@ -156,35 +153,6 @@ const PERIOD_DISPLAY: Record<string, { label: string; emoji: string; color: stri
   evening: { label: 'Evening', emoji: '🌇', color: 'bg-orange-500/20 border-orange-400/50 text-orange-300' },
   night: { label: 'Night', emoji: '🌙', color: 'bg-indigo-500/20 border-indigo-400/50 text-indigo-300' },
 };
-
-// ============================================================================
-// Tutor reveal policy — calibrate AI reveal to the support tier (mode-aware)
-// ============================================================================
-
-/**
- * The support tier withdraws on-screen anchors (elapsed-time cues, the start-here
- * slot) and the named strategy at harder tiers — so the tutor must not hand back
- * what the tier hid. At 'hard' the tutor must NOT name the order or the elapsed
- * time; it asks what the student thinks happens first and never reveals the sequence.
- */
-function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined, isPreReader = false): string {
-  if (!tier) return '';
-  const common = 'Never state the correct order, the answer, or which option is right.';
-  switch (tier) {
-    case 'easy':
-      // At Kindergarten the on-screen anchor is a sun picture, not a clock time, so the
-      // strategy the tutor is allowed to name has to be the picture one. Naming the
-      // clock strategy here would hand a pre-reader back the exact demand the band
-      // removed from the screen.
-      return isPreReader
-        ? `SUPPORT TIER easy (Kindergarten): maximum scaffolding. You may point to the sky picture on each card — the sun comes up, climbs, goes down, then it is dark. NEVER mention a clock, a time, or a number: this student cannot read one. ${common}`
-        : `SUPPORT TIER easy: maximum scaffolding. You may name the ordering strategy (read the time on each card, go earliest to latest) and point to the time anchors on screen. ${common}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the on-screen anchors are withdrawn. Nudge the reasoning — ask what the student does first in their day — but do not name the full strategy${isPreReader ? '' : ' or the elapsed times'}. ${common}`;
-    default:
-      return `SUPPORT TIER hard: minimal coaching. The on-screen instruction does NOT name a strategy and there are no anchors — reasoning out the order is the task. Do NOT name the order or the elapsed time; ask the student what they think happens first and let them judge it. ${common}`;
-  }
-}
 
 // ============================================================================
 // Sun-position strip — the pre-reader's time anchor
@@ -352,17 +320,12 @@ interface EventCardVisualProps {
   /** The challenge-local day window the sky strips share, so the cards are comparable. */
   skyWindow?: [number, number];
   className?: string;
-  /** Pip's registry id for this card; presentation only. */
-  pipId?: string;
-  pipRef?: (element: Element | null) => void;
 }
 
 const EventCardVisual: React.FC<EventCardVisualProps> = ({
-  event, index, selected, onClick, disabled, showTime, showSky, showClock, clockNumbers, skyWindow, className = '', pipId, pipRef,
+  event, index, selected, onClick, disabled, showTime, showSky, showClock, clockNumbers, skyWindow, className = '',
 }) => (
   <button
-    ref={pipRef}
-    data-pip-object={pipId}
     type="button"
     aria-label={event.label}
     onClick={onClick}
@@ -419,15 +382,15 @@ const seededOrder = (c: TimeSequencerChallenge | undefined | null): string[] =>
 // Component
 // ============================================================================
 
-const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TimeSequencerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TimeSequencerChallenge>) => Progress }) => {
+const useTimeProgress = useWorkspaceProgressFor('time-sequencer');
+
+const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequencerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     challenges = [],
     gradeBand = 'K',
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -436,7 +399,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge Progress: the teaching workspace moves the index; the activity's own Check is the checked gesture. ──
   const stableInstanceIdRef = useRef(instanceId || `time-sequencer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // Bound below, once the setters and the evaluation exist.
@@ -448,11 +411,11 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
+  const progress = useTimeProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: timeSequencerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
     onSolved: (index) => solvedAloud.current(index),
@@ -463,11 +426,11 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next challenge. */
+  const closed = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = closed;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -483,8 +446,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   });
 
   // ── State ──────────────────────────────────────────────────────────
-  // Levers (`timeSequencerLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
-  // lever put on screen in its place. The tier's sky strip counts as pulled; it is the item's presentation.
+  // Levers (`TIME_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify lever put on
+  // screen in its place. The tier's sky strip counts as pulled; it is the item's presentation.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<TimeSequencerChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
@@ -529,43 +492,6 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'sequence-events',
-    instruction: currentChallenge?.instruction ?? '',
-    attemptNumber: currentAttempts + 1,
-    supportTier: supportTier ?? null,
-  }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier]);
-
-  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'time-sequencer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const revealPolicy = tutorRevealPolicy(supportTier, gradeBand === 'K');
-    sendText(
-      `[ACTIVITY_START] Time Sequencer for ${gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}. `
-      + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's think about time and the order of our day!" Then read the first instruction.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, supportTier, sendText]);
-
   // ── Reset ──────────────────────────────────────────────────────────
   const resetDomainState = useCallback(() => {
     setOrderedEvents([]);
@@ -576,8 +502,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     setFeedback('');
     setFeedbackType('');
   }, []);
-  // Workspace path: a fresh challenge and Try again both open blank, with the start-here card back in the first slot.
-  // A fresh item (or the full item back after a practice item) ends any practice; Try again keeps the practice item.
+  // A fresh challenge and Try again both open blank, with the start-here card back in the first slot. A fresh item (or
+  // the full item back after a practice item) ends any practice; Try again keeps the practice item.
   openItem.current = (index, retry) => {
     resetDomainState();
     if (!retry) setPractice(null);
@@ -604,118 +530,80 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const handleCheckSequence = useCallback(() => {
     if (!currentChallenge) return false;
     const correct = JSON.stringify(orderedEvents) === JSON.stringify(currentChallenge.correctOrder);
-
     if (correct) {
       setFeedback('Perfect order! You know the sequence!');
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student sequenced events correctly. Congratulate briefly.`, { silent: true });
     } else {
       // Count how many are in the right position
       const correctCount = orderedEvents.filter((id, i) => currentChallenge.correctOrder?.[i] === id).length;
       // "2 out of 3 are in the right spot" is a sentence a five-year-old has to read and
-      // then do arithmetic on. The tutor still receives the count below; the child gets
-      // the plain retry.
+      // then do arithmetic on; the child gets the plain retry.
       setFeedback(
         gradeBand === 'K'
           ? 'Not quite — try again!'
           : `Not quite — ${correctCount} out of ${orderedEvents.length} are in the right spot. Try again!`,
       );
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student's order: ${orderedEvents.join(', ')}. Correct: ${currentChallenge.correctOrder?.join(', ')}. `
-        + `${correctCount}/${orderedEvents.length} correct positions. Give a hint: "Think about your day. What do you do first when you wake up?"`,
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, orderedEvents, sendText]);
+  }, [currentChallenge, orderedEvents, gradeBand]);
 
   const handleCheckTimeOfDay = useCallback(() => {
     if (!currentChallenge || !selectedPeriod) return false;
     const correct = selectedPeriod === currentChallenge.correctPeriod;
-
     if (correct) {
       setFeedback(`Yes! "${currentChallenge.event?.label}" happens in the ${currentChallenge.correctPeriod}!`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student matched "${currentChallenge.event?.label}" to ${currentChallenge.correctPeriod}. Congratulate!`, { silent: true });
     } else {
       setFeedback(`"${currentChallenge.event?.label}" doesn't usually happen in the ${selectedPeriod}. Think about when you do this!`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedPeriod}" but "${currentChallenge.event?.label}" happens in the ${currentChallenge.correctPeriod}. `
-        + `Hint: "Think about when you ${currentChallenge.event?.label.toLowerCase()}. Is it light or dark outside?"`,
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, selectedPeriod, sendText]);
+  }, [currentChallenge, selectedPeriod]);
 
   const handleCheckBeforeAfter = useCallback(() => {
     if (!currentChallenge || !selectedEvent) return false;
     const correct = selectedEvent === currentChallenge.correctEvent;
-
     if (correct) {
-      const rel = currentChallenge.relation;
-      setFeedback(`Correct! That happens ${rel} ${currentChallenge.referenceEvent?.label}!`);
+      setFeedback(`Correct! That happens ${currentChallenge.relation} ${currentChallenge.referenceEvent?.label}!`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student correctly identified what happens ${rel} "${currentChallenge.referenceEvent?.label}".`, { silent: true });
     } else {
       setFeedback(`Not quite. Think about what happens ${currentChallenge.relation} ${currentChallenge.referenceEvent?.label}.`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose wrong event for "what happens ${currentChallenge.relation} ${currentChallenge.referenceEvent?.label}". `
-        + `Correct: ${currentChallenge.correctEvent}. Give a hint connecting to the student's daily routine.`,
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, selectedEvent, sendText]);
+  }, [currentChallenge, selectedEvent]);
 
   const handleCheckDuration = useCallback(() => {
     if (!currentChallenge || !durationAnswer) return false;
     const correct = durationAnswer === currentChallenge.correctAnswer;
-
-    const aLabel = currentChallenge.eventA?.label ?? 'A';
-    const bLabel = currentChallenge.eventB?.label ?? 'B';
-
     if (correct) {
+      const aLabel = currentChallenge.eventA?.label ?? 'A';
+      const bLabel = currentChallenge.eventB?.label ?? 'B';
       const explanation = currentChallenge.correctAnswer === 'same'
         ? 'They take about the same time!'
         : `${currentChallenge.correctAnswer === 'A' ? aLabel : bLabel} takes longer!`;
       setFeedback(`Correct! ${explanation}`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student correctly compared durations. ${explanation}`, { silent: true });
     } else {
       setFeedback(`Think about how long each activity takes. Which one would take more time?`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student said "${durationAnswer}" but correct is "${currentChallenge.correctAnswer}". `
-        + `${aLabel} vs ${bLabel}. Hint: "Think about how long you spend doing each activity."`,
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, durationAnswer, sendText]);
+  }, [currentChallenge, durationAnswer]);
 
   const handleCheckSchedule = useCallback(() => {
     if (!currentChallenge || !scheduleAnswer) return false;
     const correct = scheduleAnswer === currentChallenge.correctActivity;
-
     if (correct) {
       setFeedback(`Yes! At ${currentChallenge.targetTime}, it's "${currentChallenge.correctActivity}"!`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student read the schedule correctly for ${currentChallenge.targetTime}.`, { silent: true });
     } else {
       setFeedback(`Look at the schedule again. Find ${currentChallenge.targetTime} and check what activity is listed.`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${scheduleAnswer}" but at ${currentChallenge.targetTime} it's "${currentChallenge.correctActivity}". `
-        + `Hint: "Find ${currentChallenge.targetTime} on the schedule and read across."`,
-        { silent: true },
-      );
     }
     return correct;
-  }, [currentChallenge, scheduleAnswer, sendText]);
+  }, [currentChallenge, scheduleAnswer]);
 
   // ── Master Check ───────────────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -735,66 +623,14 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
     if (correct) tappedCorrect.current = currentChallenge.id;
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records a correct result.
     const work = timeView.current;
     commitCheck.current(describeTimeWork(currentChallenge, work), correct,
       correct ? undefined : timeSequencerMiss(currentChallenge, work));
   }, [currentChallenge, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckDuration, handleCheckSchedule]);
 
-  // ── Advance ────────────────────────────────────────────────────────
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter((r) => r.correct).length / challenges.length) * 100,
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging feedback about their understanding of time and sequences!`,
-        { silent: true },
-      );
-
-      // The workspace path submits the scored session from `onFinished` (below), not this tally.
-      if (!hasSubmittedEvaluation && !tutorOwned) {
-        const correctCount = challengeResults.filter((r) => r.correct).length;
-        const score = Math.round((correctCount / challenges.length) * 100);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-
-        const metrics: TimeSequencerMetrics = {
-          type: 'time-sequencer',
-          accuracy: score,
-          totalAttempts,
-          challengesCompleted: correctCount,
-          challengesTotal: challenges.length,
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          score,
-          metrics,
-          { challengeResults },
-        );
-      }
-      return;
-    }
-
-    resetDomainState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`,
-      { silent: true },
-    );
-  }, [
-    advanceProgress, phaseResults, challengeResults, challenges, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
   finish.current = (result) => {
     if (hasSubmittedEvaluation) return;
     const metrics: TimeSequencerMetrics = {
@@ -836,41 +672,10 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     setFeedbackType('success');
   };
 
-  // Auto-submit
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
   // ── Computed ───────────────────────────────────────────────────────
   const isCurrentChallengeCorrect = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
-
-  // ── Pip shared surface ─────────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never picks a card, checks, or advances. Tutor
-  // audio counts only while the tutor is on this block and began on this challenge.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeCorrect);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets = pip.targets();
-    const pose = timeSequencerPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      type: currentChallenge.type, visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Time sequencer',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
@@ -879,23 +684,22 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     );
   }, [allChallengesComplete, challenges, challengeResults]);
 
-  // ── Sequence event toggling ────────────────────────────────────────
   // The learner's work as the check and the tutor read it. Written every render, read by the check handlers.
   timeView.current = {
     order: orderedEvents, period: selectedPeriod, picked: selectedEvent, duration: durationAnswer, activity: scheduleAnswer,
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
-  // Every mode declares levers (`timeSequencerLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; the lever
+  // set (`TIME_LEVERS`) writes the levers and their facts. The tier's sky strip is declared pulled.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, timeView.current);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : timeSequencerLevers(sessionChallenge, pulledLevers);
+    if (!currentChallenge || !sessionChallenge) return;
+    const drawn = timeScene(currentChallenge, timeView.current, gradeBand === 'K');
+    const scene = { ...drawn, facts: { ...drawn.facts } as Record<string, string | number> };
+    if (practice) scene.facts.practice = PRACTICE_NOTE;
+    const onScreen = practice ? '' : TIME_LEVERS.onScreen(sessionChallenge, null, pulledLevers);
+    const levers = practice ? [] : TIME_LEVERS.declare(sessionChallenge, null, [...pulledLevers, ...tierPulled(sessionChallenge)]);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...leverScene(scene, { support: TIME_LEVERS.support(practice ? null : sessionChallenge, null), onScreen }),
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -903,11 +707,11 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = TIME_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier practice; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); resetDomainState(); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: timeSequencerBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -926,6 +730,13 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       return [...prev, eventId];
     });
   }, [isCurrentChallengeCorrect]);
+
+  /** A one-choice tap, when the item is still open. */
+  const pick = (set: () => void) => {
+    if (isCurrentChallengeCorrect || learnerBlocked()) return;
+    SoundManager.select();
+    set();
+  };
 
   // ── Can check answer? ─────────────────────────────────────────────
   const canCheck = useMemo(() => {
@@ -950,7 +761,6 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   // ── Stable shuffle for sequence events ────────────────────────────
   const shuffledEvents = useMemo(() => {
     const events = [...(currentChallenge?.events || [])];
-    // Fisher-Yates shuffle seeded by challenge id length (stable per challenge)
     for (let i = events.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [events[i], events[j]] = [events[j], events[i]];
@@ -969,29 +779,24 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     const skyWindow = skyWindowFor(events.map((e) => e.dayFraction));
     const unselected = events.filter((e) => !orderedEvents.includes(e.id));
     const selected = orderedEvents.map((id) => events.find((e) => e.id === id)!).filter(Boolean);
+    const cardProps = {
+      showTime: currentChallenge.showTimeAnchors,
+      showSky: skyOn,
+      showClock: currentChallenge.showClockFace,
+      clockNumbers: leverOn(FACE_NUMBERS_LEVER),
+      skyWindow,
+      disabled: isCurrentChallengeCorrect,
+    };
 
     return (
-      <div ref={pip.ref('events')} data-pip-object="events" className="space-y-4">
+      <div className="space-y-4">
         {/* Selected order */}
         {selected.length > 0 && (
           <div className="space-y-2">
             <span className="text-slate-400 text-xs font-medium">Your order:</span>
             {selected.map((event, i) => (
-              <EventCardVisual
-                key={event.id}
-                event={event}
-                index={i}
-                selected
-                showTime={currentChallenge.showTimeAnchors}
-                showSky={skyOn}
-                showClock={currentChallenge.showClockFace}
-                clockNumbers={leverOn(FACE_NUMBERS_LEVER)}
-                skyWindow={skyWindow}
-                pipId={`card-${event.id}`}
-                pipRef={pip.ref(`card-${event.id}`)}
-                onClick={() => { pip.look(`card-${event.id}`); handleToggleSequenceEvent(event.id); }}
-                disabled={isCurrentChallengeCorrect}
-              />
+              <EventCardVisual key={event.id} event={event} index={i} selected {...cardProps}
+                onClick={() => handleToggleSequenceEvent(event.id)} />
             ))}
           </div>
         )}
@@ -1003,19 +808,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               {selected.length === 0 ? 'Tap events in order:' : 'Remaining:'}
             </span>
             {unselected.map((event) => (
-              <EventCardVisual
-                key={event.id}
-                event={event}
-                showTime={currentChallenge.showTimeAnchors}
-                showSky={skyOn}
-                showClock={currentChallenge.showClockFace}
-                clockNumbers={leverOn(FACE_NUMBERS_LEVER)}
-                skyWindow={skyWindow}
-                pipId={`card-${event.id}`}
-                pipRef={pip.ref(`card-${event.id}`)}
-                onClick={() => { pip.look(`card-${event.id}`); handleToggleSequenceEvent(event.id); }}
-                disabled={isCurrentChallengeCorrect}
-              />
+              <EventCardVisual key={event.id} event={event} {...cardProps}
+                onClick={() => handleToggleSequenceEvent(event.id)} />
             ))}
           </div>
         )}
@@ -1030,19 +824,16 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       <div className="space-y-4">
         {/* No time anchor here — the clock time would reveal the period (the answer). */}
         <div className="flex justify-center">
-          <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs"
-            pipId="event" pipRef={pip.ref('event')} />
+          <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           {Object.entries(PERIOD_DISPLAY).filter(([period]) => !currentChallenge.periodChoices
             || (currentChallenge.periodChoices as string[]).includes(period)).map(([period, display]) => (
             <button
               key={period}
-              ref={pip.ref(`period-${period}`)}
-              data-pip-object={`period-${period}`}
               type="button"
               aria-label={display.label}
-              onClick={() => { pip.look(`period-${period}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setSelectedPeriod(period); } }}
+              onClick={() => pick(() => setSelectedPeriod(period))}
               disabled={isCurrentChallengeCorrect}
               className={`
                 p-3 rounded-xl border-2 text-center transition-all
@@ -1101,8 +892,6 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               showTime={currentChallenge.showTimeAnchors}
               showSky={currentChallenge.showSkyCue}
               className="max-w-xs mx-auto"
-              pipId="reference"
-              pipRef={pip.ref('reference')}
             />
           )}
         </div>
@@ -1112,9 +901,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               key={event.id}
               event={event}
               selected={selectedEvent === event.id}
-              pipId={`option-${event.id}`}
-              pipRef={pip.ref(`option-${event.id}`)}
-              onClick={() => { pip.look(`option-${event.id}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setSelectedEvent(event.id); } }}
+              onClick={() => pick(() => setSelectedEvent(event.id))}
               disabled={isCurrentChallengeCorrect}
             />
           ))}
@@ -1134,9 +921,25 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         <div className="h-2.5 rounded-full bg-emerald-400/70" data-lever="duration-bar" style={{ width: `${width}%` }} />
       </div>
     );
+    const side = (key: 'A' | 'B', event: EventCard) => (
+      <button
+        type="button"
+        aria-label={event.label}
+        onClick={() => pick(() => setDurationAnswer(key))}
+        disabled={isCurrentChallengeCorrect}
+        className={`p-3 rounded-xl border-2 transition-all ${
+          durationAnswer === key
+            ? 'border-blue-400 bg-blue-500/10'
+            : 'border-white/10 bg-slate-800/30 hover:border-white/20'
+        }`}
+      >
+        <span className="text-3xl block mb-1">{event.emoji}</span>
+        <span className="text-slate-200 text-sm font-medium">{event.label}</span>
+      </button>
+    );
 
     return (
-      <div ref={pip.ref('durations')} data-pip-object="durations" className="space-y-4">
+      <div className="space-y-4">
         {/* The duration_model lever: two OTHER pairs, each activity with a bar as long as it takes. */}
         {model && (
           <div data-lever="duration-model" className="space-y-2 rounded-xl border border-white/10 bg-slate-800/20 p-2">
@@ -1145,47 +948,15 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           </div>
         )}
         <div className="grid grid-cols-2 gap-4">
-          <button
-            ref={pip.ref('duration-A')}
-            data-pip-object="duration-A"
-            type="button"
-            aria-label={eventA.label}
-            onClick={() => { pip.look('duration-A'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('A'); } }}
-            disabled={isCurrentChallengeCorrect}
-            className={`p-3 rounded-xl border-2 transition-all ${
-              durationAnswer === 'A'
-                ? 'border-blue-400 bg-blue-500/10'
-                : 'border-white/10 bg-slate-800/30 hover:border-white/20'
-            }`}
-          >
-            <span className="text-3xl block mb-1">{eventA.emoji}</span>
-            <span className="text-slate-200 text-sm font-medium">{eventA.label}</span>
-          </button>
-          <button
-            ref={pip.ref('duration-B')}
-            data-pip-object="duration-B"
-            type="button"
-            aria-label={eventB.label}
-            onClick={() => { pip.look('duration-B'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('B'); } }}
-            disabled={isCurrentChallengeCorrect}
-            className={`p-3 rounded-xl border-2 transition-all ${
-              durationAnswer === 'B'
-                ? 'border-blue-400 bg-blue-500/10'
-                : 'border-white/10 bg-slate-800/30 hover:border-white/20'
-            }`}
-          >
-            <span className="text-3xl block mb-1">{eventB.emoji}</span>
-            <span className="text-slate-200 text-sm font-medium">{eventB.label}</span>
-          </button>
+          {side('A', eventA)}
+          {side('B', eventB)}
         </div>
         <div className="flex justify-center">
           <Button
-            ref={pip.ref('duration-same')}
-            data-pip-object="duration-same"
             aria-label="About the Same"
             variant="ghost"
             size="sm"
-            onClick={() => { pip.look('duration-same'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('same'); } }}
+            onClick={() => pick(() => setDurationAnswer('same'))}
             disabled={isCurrentChallengeCorrect}
             className={`text-sm ${
               durationAnswer === 'same'
@@ -1210,8 +981,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     return (
       <div className="space-y-4">
         {/* Schedule table */}
-        <div ref={pip.ref('schedule')} data-pip-object="schedule"
-          className="rounded-xl bg-slate-800/30 border border-white/5 overflow-hidden">
+        <div className="rounded-xl bg-slate-800/30 border border-white/5 overflow-hidden">
           <div className="grid grid-cols-[80px_1fr] text-xs font-medium text-slate-400 bg-slate-800/50 px-3 py-2">
             <span>Time</span>
             <span>Activity</span>
@@ -1241,14 +1011,12 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
         {/* Answer options */}
         <div className="space-y-2">
-          {options.map((activity, i) => (
+          {options.map((activity) => (
             <button
               key={activity}
-              ref={pip.ref(`activity-${i}`)}
-              data-pip-object={`activity-${i}`}
               type="button"
               aria-label={activity}
-              onClick={() => { pip.look(`activity-${i}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setScheduleAnswer(activity); } }}
+              onClick={() => pick(() => setScheduleAnswer(activity))}
               disabled={isCurrentChallengeCorrect}
               className={`
                 w-full px-4 py-3 rounded-xl border-2 text-left text-sm font-medium transition-all
@@ -1279,7 +1047,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
             </LuminaBadge>
             {challenges.length > 0 && (
               <LuminaBadge accent="blue" className="text-xs">
-                {currentChallengeIndex + 1}/{challenges.length}
+                {Math.min(currentChallengeIndex + 1, challenges.length)}/{challenges.length}
               </LuminaBadge>
             )}
           </div>
@@ -1340,48 +1108,40 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               </div>
             )}
 
-            {/* Pip's dock sits above the activity: every cue target (the list,
-                the named card, the pair, the table) is above its answer choices,
-                so a pointer never crosses one. */}
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the activity, and the
+                activity as one region, never a single card or choice. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {(currentChallenge.type === 'sequence-events' || currentChallenge.type === 'clock-sequence') && renderSequenceEvents()}
+              {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}
+              {currentChallenge.type === 'before-after' && renderBeforeAfter()}
+              {currentChallenge.type === 'duration-compare' && renderDurationCompare()}
+              {currentChallenge.type === 'read-schedule' && renderReadSchedule()}
 
-            {(currentChallenge.type === 'sequence-events' || currentChallenge.type === 'clock-sequence') && renderSequenceEvents()}
-            {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}
-            {currentChallenge.type === 'before-after' && renderBeforeAfter()}
-            {currentChallenge.type === 'duration-compare' && renderDurationCompare()}
-            {currentChallenge.type === 'read-schedule' && renderReadSchedule()}
-
-            {/* Feedback */}
-            {feedback && (
-              <div
-                className={`p-3 rounded-xl text-sm font-medium text-center ${
-                  feedbackType === 'success'
-                    ? 'bg-emerald-500/10 border border-emerald-400/30 text-emerald-300'
-                    : 'bg-red-500/10 border border-red-400/30 text-red-300'
-                }`}
-              >
-                {feedback}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex items-center justify-center gap-3">
-              {!isCurrentChallengeCorrect ? (
-                <LuminaActionButton
-                  action="check"
-                  onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}
-                  disabled={!canCheck || (tutorOwned && progress.canAttempt === false)}
-                />
-              ) : tutorOwned ? null : (
-                <LuminaActionButton
-                  action="next"
-                  onClick={advanceToNextChallenge}
+              {/* Feedback */}
+              {feedback && (
+                <div
+                  className={`p-3 rounded-xl text-sm font-medium text-center ${
+                    feedbackType === 'success'
+                      ? 'bg-emerald-500/10 border border-emerald-400/30 text-emerald-300'
+                      : 'bg-red-500/10 border border-red-400/30 text-red-300'
+                  }`}
                 >
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </LuminaActionButton>
+                  {feedback}
+                </div>
               )}
-            </div>
+
+              {/* Check; the runtime moves on, so there is no Next. */}
+              {!isCurrentChallengeCorrect && (
+                <div className="flex items-center justify-center gap-3">
+                  <LuminaActionButton
+                    action="check"
+                    onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}
+                    disabled={!canCheck || closed}
+                  />
+                </div>
+              )}
+            </PipWorkspace>
           </div>
         )}
 
@@ -1397,8 +1157,6 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TimeSequencer = withWorkspaceController<TimeSequencerProps, ProgressOptions<TimeSequencerChallenge>, Progress>(
-  'time-sequencer', TimeSequencerSurface, useScriptedProgress, useWorkspaceProgressFor('time-sequencer'));
+const TimeSequencer = withWorkspaceOnly<TimeSequencerProps>('time-sequencer', TimeSequencerSurface, (props) => props.data.title);
 
 export default TimeSequencer;

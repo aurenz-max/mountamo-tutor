@@ -10,10 +10,11 @@
  */
 import { numberLineLiveDomain, validateActivityData, initialActivityState } from './adapters/numberLineLive';
 import { tenFrameLiveDomain, validateTenFrameData } from './adapters/tenFrameLive';
-import { countingBoardLiveDomain } from './adapters/countingBoardLive';
+import { countingBoardBoss } from '../../primitives/visual-primitives/math/countingBoard.boss';
 import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
 import { numberBondLiveDomain } from './adapters/numberBondLive';
-import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
+import { ordinalLineBoss } from '../../primitives/visual-primitives/math/ordinalLine.boss';
+import { compareObjectsBoss } from '../../primitives/visual-primitives/math/compareObjects.boss';
 import { sortingStationBoss } from '../../primitives/visual-primitives/math/sortingStation.boss';
 import { phonemeExplorerBoss } from '../../primitives/visual-primitives/literacy/phonemeExplorer.boss';
 import { wordSorterBoss } from '../../primitives/visual-primitives/literacy/wordSorter.boss';
@@ -22,8 +23,11 @@ import { oralSentenceStudioBoss } from '../../primitives/visual-primitives/liter
 import { youAndMeBoss } from '../../primitives/visual-primitives/literacy/youAndMe.boss';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { shapeTracerLiveDomain } from './adapters/shapeTracerLive';
-import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
-import { coinCounterLiveDomain } from './adapters/coinCounterLive';
+import { comparisonBuilderBoss } from '../../primitives/visual-primitives/math/comparisonBuilder.boss';
+import { coinCounterBoss } from '../../primitives/visual-primitives/math/coinCounter.boss';
+import { barModelBoss } from '../../primitives/visual-primitives/math/barModel.boss';
+import { lengthLabBoss } from '../../primitives/visual-primitives/math/lengthLab.boss';
+import { analogClockBoss } from '../../primitives/visual-primitives/math/analogClock.boss';
 import { functionMachineLiveDomain } from './adapters/functionMachineLive';
 import { regroupingWorkbenchLiveDomain } from './adapters/regroupingWorkbenchLive';
 import { measureLabLiveDomain } from './adapters/measureLabLive';
@@ -46,15 +50,12 @@ import { doubleNumberLineLiveDomain } from './adapters/doubleNumberLineLive';
 import { factorTreeLiveDomain } from './adapters/factorTreeLive';
 import { equationWorkspaceLiveDomain } from './adapters/equationWorkspaceLive';
 import { practiceProblemLiveDomain } from './adapters/practiceProblemLive';
-import { lengthLabLiveDomain } from './adapters/lengthLabLive';
-import { analogClockLiveDomain } from './adapters/analogClockLive';
-import { timeSequencerLiveDomain } from './adapters/timeSequencerLive';
+import { timeSequencerBoss } from '../../primitives/visual-primitives/math/timeSequencer.boss';
 import { angleWorkshopLiveDomain } from './adapters/angleWorkshopLive';
 import { transformationLabLiveDomain } from './adapters/transformationLabLive';
 import { netFolderLiveDomain } from './adapters/netFolderLive';
 import { arrayGridLiveDomain } from './adapters/arrayGridLive';
 import { multiplicationExplorerLiveDomain } from './adapters/multiplicationExplorerLive';
-import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { balanceScaleLiveDomain } from './adapters/balanceScaleLive';
 import { fractionCirclesLiveDomain } from './adapters/fractionCirclesLive';
 import { fractionBarLiveDomain } from './adapters/fractionBarLive';
@@ -65,36 +66,35 @@ import { diLetterSoundsBoss } from '../../primitives/visual-primitives/direct-in
 import { diWordReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diWordReading.boss';
 import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
 import { diSentenceReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diSentenceReading.boss';
-import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
-import { barModelLiveDomain } from './adapters/barModelLive';
-import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
+import { letterSoundLinkBoss } from '../../primitives/visual-primitives/literacy/letterSoundLink.boss';
+import { phonicsBlenderBoss } from '../../primitives/visual-primitives/literacy/phonicsBlender.boss';
 import { adaptationInvestigatorLiveDomain } from './adapters/adaptationInvestigatorLive';
 import { curatorBriefLiveDomain } from './adapters/curatorBriefLive';
-import { wordFlipLiveDomain } from './adapters/wordFlipLive';
-import { soundSwapLiveDomain } from './adapters/soundSwapLive';
+import { wordFlipBoss } from '../../primitives/visual-primitives/literacy/wordFlip.boss';
+import { soundSwapBoss } from '../../primitives/visual-primitives/literacy/soundSwap.boss';
 import { spellingPatternExplorerLiveDomain } from './adapters/spellingPatternExplorerLive';
-import { cvcSpellerLiveDomain } from './adapters/cvcSpellerLive';
+import { cvcSpellerBoss } from '../../primitives/visual-primitives/literacy/cvcSpeller.boss';
 import { syllableClapperLiveDomain } from './adapters/syllableClapperLive';
-import { rhymeStudioLiveDomain } from './adapters/rhymeStudioLive';
-import { wordWorkoutLiveDomain } from './adapters/wordWorkoutLive';
+import { rhymeStudioBoss } from '../../primitives/visual-primitives/literacy/rhymeStudio.boss';
+import { wordWorkoutBoss } from '../../primitives/visual-primitives/literacy/wordWorkout.boss';
 import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
-import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
-import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
+import { pictureVocabularyBoss } from '../../primitives/visual-primitives/literacy/pictureVocabulary.boss';
+import { letterSpotterBoss } from '../../primitives/visual-primitives/literacy/letterSpotter.boss';
 import { letterWorkshopLiveDomain } from './adapters/letterWorkshopLive';
 import { decodableReaderBoss } from '../../primitives/visual-primitives/literacy/decodableReader.boss';
-import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
-import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
+import { interactiveBookBoss } from '../../primitives/visual-primitives/literacy/interactiveBook.boss';
+import { storyBridgeBoss } from '../../primitives/visual-primitives/literacy/storyBridge.boss';
 import { storyMapLiveDomain } from './adapters/storyMapLive';
 import { poetryLabLiveDomain } from './adapters/poetryLabLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { threeDShapeExplorerBoss } from '../../primitives/visual-primitives/math/threeDShapeExplorer.boss';
-import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
+import { calendarExplorerBoss } from '../../primitives/visual-primitives/calendar/calendarExplorer.boss';
 import { timelineBuilderLiveDomain } from './adapters/timelineBuilderLive';
-import { fastFactLiveDomain } from './adapters/fastFactLive';
-import { factFileLiveDomain } from './adapters/factFileLive';
+import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.boss';
+import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
-import { raceTrackLabLiveDomain } from './adapters/raceTrackLabLive';
-import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
+import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
+import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
 import { ecosystemDioramaLiveDomain } from './adapters/ecosystemDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
 import { lifeCycleSequencerLiveDomain } from './adapters/lifeCycleSequencerLive';
@@ -106,45 +106,45 @@ import { matterExplorerBoss } from '../../primitives/visual-primitives/chemistry
 import { statesOfMatterBoss } from '../../primitives/visual-primitives/chemistry/statesOfMatter.boss';
 import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
 import { atomBuilderLiveDomain } from './adapters/atomBuilderLive';
-import { mixingAndDissolvingLiveDomain } from './adapters/mixingAndDissolvingLive';
-import { reactionLabLiveDomain } from './adapters/reactionLabLive';
+import { mixingAndDissolvingBoss } from '../../primitives/visual-primitives/chemistry/mixingAndDissolving.boss';
+import { reactionLabBoss } from '../../primitives/visual-primitives/chemistry/reactionLab.boss';
+import { phExplorerBoss } from '../../primitives/visual-primitives/chemistry/phExplorer.boss';
 import { genreExplorerBoss } from '../../primitives/visual-primitives/literacy/genreExplorer.boss';
 import { textStructureAnalyzerBoss } from '../../primitives/visual-primitives/literacy/textStructureAnalyzer.boss';
 import { contextCluesDetectiveLiveDomain } from './adapters/contextCluesDetectiveLive';
 import { sentenceAnalyzerBoss } from '../../primitives/visual-primitives/literacy/sentenceAnalyzer.boss';
-import { causeEffectChainLiveDomain } from './adapters/causeEffectChainLive';
+import { causeEffectChainBoss } from '../../primitives/visual-primitives/history/causeEffectChain.boss';
 import { eraExplorerBoss } from '../../primitives/visual-primitives/history/eraExplorer.boss';
-import { periodicTableLiveDomain } from './adapters/periodicTableLive';
+import { periodicTableBoss } from '../../primitives/periodicTable.boss';
 import { knowledgeCheckLiveDomain } from './adapters/knowledgeCheckLive';
 import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
 import { solarSystemBoss } from '../../primitives/visual-primitives/astronomy/solarSystem.boss';
-import { lightShadowLabLiveDomain } from './adapters/lightShadowLabLive';
-import { planetaryExplorerLiveDomain } from './adapters/planetaryExplorerLive';
-import { constellationBuilderLiveDomain } from './adapters/constellationBuilderLive';
-import { telescopeSimulatorLiveDomain } from './adapters/telescopeSimulatorLive';
-import { orbitMechanicsLabLiveDomain } from './adapters/orbitMechanicsLabLive';
-import { rocketBuilderLiveDomain } from './adapters/rocketBuilderLive';
-import { missionPlannerLiveDomain } from './adapters/missionPlannerLive';
-import { phExplorerLiveDomain } from './adapters/phExplorerLive';
-import { gasLawsSimulatorLiveDomain } from './adapters/gasLawsSimulatorLive';
-import { equationBalancerLiveDomain } from './adapters/equationBalancerLive';
-import { energyOfReactionsLiveDomain } from './adapters/energyOfReactionsLive';
-import { stoichiometryLabLiveDomain } from './adapters/stoichiometryLabLive';
-import { gravityDropTowerLiveDomain } from './adapters/gravityDropTowerLive';
-import { soundWaveExplorerLiveDomain } from './adapters/soundWaveExplorerLive';
+import { planetaryExplorerBoss } from '../../primitives/visual-primitives/astronomy/planetaryExplorer.boss';
+import { constellationBuilderBoss } from '../../primitives/visual-primitives/astronomy/constellationBuilder.boss';
+import { telescopeSimulatorBoss } from '../../primitives/visual-primitives/astronomy/telescopeSimulator.boss';
+import { orbitMechanicsLabBoss } from '../../primitives/visual-primitives/astronomy/orbitMechanicsLab.boss';
+import { rocketBuilderBoss } from '../../primitives/visual-primitives/astronomy/rocketBuilder.boss';
+import { missionPlannerBoss } from '../../primitives/visual-primitives/astronomy/missionPlanner.boss';
+import { lightShadowLabBoss } from '../../primitives/visual-primitives/astronomy/lightShadowLab.boss';
+import { gasLawsSimulatorBoss } from '../../primitives/visual-primitives/chemistry/gasLawsSimulator.boss';
+import { equationBalancerBoss } from '../../primitives/visual-primitives/chemistry/equationBalancer.boss';
+import { energyOfReactionsBoss } from '../../primitives/visual-primitives/chemistry/energyOfReactions.boss';
+import { stoichiometryLabBoss } from '../../primitives/visual-primitives/chemistry/stoichiometryLab.boss';
+import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics/gravityDropTower.boss';
+import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { airplaneDioramaLiveDomain } from './adapters/airplaneDioramaLive';
 import { constructionSiteDioramaLiveDomain } from './adapters/constructionSiteDioramaLive';
-import { mapExplorerLiveDomain } from './adapters/mapExplorerLive';
-import { flightForcesExplorerLiveDomain } from './adapters/flightForcesExplorerLive';
-import { constructionSequencePlannerLiveDomain } from './adapters/constructionSequencePlannerLive';
-import { timelineExplorerLiveDomain } from './adapters/timelineExplorerLive';
-import { vocabularyExplorerLiveDomain } from './adapters/vocabularyExplorerLive';
-import { howItWorksLiveDomain } from './adapters/howItWorksLive';
-import { vehicleComparisonLabLiveDomain } from './adapters/vehicleComparisonLabLive';
-import { transportChallengeLiveDomain } from './adapters/transportChallengeLive';
-import { propulsionLabLiveDomain } from './adapters/propulsionLabLive';
+import { mapExplorerBoss } from '../../primitives/visual-primitives/history/mapExplorer.boss';
+import { flightForcesExplorerBoss } from '../../primitives/visual-primitives/engineering/flightForcesExplorer.boss';
+import { constructionSequencePlannerBoss } from '../../primitives/visual-primitives/engineering/constructionSequencePlanner.boss';
+import { timelineExplorerBoss } from '../../primitives/visual-primitives/core/timelineExplorer.boss';
+import { vocabularyExplorerBoss } from '../../primitives/visual-primitives/core/vocabularyExplorer.boss';
+import { howItWorksBoss } from '../../primitives/visual-primitives/core/howItWorks.boss';
+import { vehicleComparisonLabBoss } from '../../primitives/visual-primitives/engineering/vehicleComparisonLab.boss';
+import { transportChallengeBoss } from '../../primitives/visual-primitives/engineering/transportChallenge.boss';
+import { propulsionLabBoss } from '../../primitives/visual-primitives/engineering/propulsionLab.boss';
 import { digitalSkillsSimLiveDomain } from './adapters/digitalSkillsSimLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
@@ -155,12 +155,12 @@ import { diDiceRollBoss } from '../../primitives/visual-primitives/direct-instru
 import { diDeductionBoss } from '../../primitives/visual-primitives/direct-instruction/diDeduction.boss';
 import { diWorkedProcedureBoss } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedure.boss';
 import { diWordProblemSetupBoss } from '../../primitives/visual-primitives/direct-instruction/diWordProblemSetup.boss';
-import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
-import { spatialPathLiveDomain } from './adapters/spatialPathLive';
-import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
-import { skipCountingRunnerLiveDomain } from './adapters/skipCountingRunnerLive';
-import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
-import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrategiesLive';
+import { spatialSceneBoss } from '../../primitives/visual-primitives/math/spatialScene.boss';
+import { spatialPathBoss } from '../../primitives/visual-primitives/math/spatialPath.boss';
+import { hundredsChartBoss } from '../../primitives/visual-primitives/math/hundredsChart.boss';
+import { skipCountingBoss } from '../../primitives/visual-primitives/math/skipCounting.boss';
+import { mathFactFluencyBoss } from '../../primitives/visual-primitives/math/mathFactFluency.boss';
+import { additionFactStrategiesBoss } from '../../primitives/visual-primitives/math/additionFactStrategies.boss';
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
 import { paragraphArchitectLiveDomain } from './adapters/paragraphArchitectLive';
 import { sentenceBuilderLiveDomain } from './adapters/sentenceBuilderLive';
@@ -187,15 +187,15 @@ export { validateActivityData, initialActivityState, validateTenFrameData, valid
 export const LIVE_ADAPTERS = {
   'number-line': workspaceAdapter('number-line', numberLineLiveDomain),
   'ten-frame': workspaceAdapter('ten-frame', tenFrameLiveDomain),
-  'counting-board': workspaceAdapter('counting-board', countingBoardLiveDomain),
+  'counting-board': bossAdapter(countingBoardBoss),
   'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),
   'number-bond': workspaceAdapter('number-bond', numberBondLiveDomain),
-  'ordinal-line': workspaceAdapter('ordinal-line', ordinalLineLiveDomain),
+  'ordinal-line': bossAdapter(ordinalLineBoss),
   'sorting-station': bossAdapter(sortingStationBoss),
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'shape-tracer': workspaceAdapter('shape-tracer', shapeTracerLiveDomain),
-  'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
-  'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
+  'comparison-builder': bossAdapter(comparisonBuilderBoss),
+  'coin-counter': bossAdapter(coinCounterBoss),
   'function-machine': workspaceAdapter('function-machine', functionMachineLiveDomain),
   'regrouping-workbench': workspaceAdapter('regrouping-workbench', regroupingWorkbenchLiveDomain),
   'measure-lab': workspaceAdapter('measure-lab', measureLabLiveDomain),
@@ -218,15 +218,15 @@ export const LIVE_ADAPTERS = {
   'factor-tree': workspaceAdapter('factor-tree', factorTreeLiveDomain),
   'equation-workspace': workspaceAdapter('equation-workspace', equationWorkspaceLiveDomain),
   'practice-problem': workspaceAdapter('practice-problem', practiceProblemLiveDomain),
-  'length-lab': workspaceAdapter('length-lab', lengthLabLiveDomain),
-  'analog-clock': workspaceAdapter('analog-clock', analogClockLiveDomain),
-  'time-sequencer': workspaceAdapter('time-sequencer', timeSequencerLiveDomain),
+  'length-lab': bossAdapter(lengthLabBoss),
+  'analog-clock': bossAdapter(analogClockBoss),
+  'time-sequencer': bossAdapter(timeSequencerBoss),
   'angle-workshop': workspaceAdapter('angle-workshop', angleWorkshopLiveDomain),
   'transformation-lab': workspaceAdapter('transformation-lab', transformationLabLiveDomain),
   'net-folder': workspaceAdapter('net-folder', netFolderLiveDomain),
   'array-grid': workspaceAdapter('array-grid', arrayGridLiveDomain),
   'multiplication-explorer': workspaceAdapter('multiplication-explorer', multiplicationExplorerLiveDomain),
-  'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
+  'compare-objects': bossAdapter(compareObjectsBoss),
   'balance-scale': workspaceAdapter('balance-scale', balanceScaleLiveDomain),
   'fraction-circles': workspaceAdapter('fraction-circles', fractionCirclesLiveDomain),
   'fraction-bar': workspaceAdapter('fraction-bar', fractionBarLiveDomain),
@@ -237,39 +237,39 @@ export const LIVE_ADAPTERS = {
   'di-word-reading': bossAdapter(diWordReadingBoss),
   'di-math-facts': bossAdapter(diMathFactsBoss),
   'di-sentence-reading': bossAdapter(diSentenceReadingBoss),
-  'letter-sound-link': workspaceAdapter('letter-sound-link', letterSoundLinkLiveDomain),
-  'bar-model': workspaceAdapter('bar-model', barModelLiveDomain),
-  'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
+  'letter-sound-link': bossAdapter(letterSoundLinkBoss),
+  'bar-model': bossAdapter(barModelBoss),
+  'phonics-blender': bossAdapter(phonicsBlenderBoss),
   'adaptation-investigator': workspaceAdapter('adaptation-investigator', adaptationInvestigatorLiveDomain),
   'curator-brief': workspaceAdapter('curator-brief', curatorBriefLiveDomain),
-  'word-flip': workspaceAdapter('word-flip', wordFlipLiveDomain),
-  'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
-  'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),
+  'word-flip': bossAdapter(wordFlipBoss),
+  'sound-swap': bossAdapter(soundSwapBoss),
+  'cvc-speller': bossAdapter(cvcSpellerBoss),
   'spelling-pattern-explorer': workspaceAdapter('spelling-pattern-explorer', spellingPatternExplorerLiveDomain),
   'syllable-clapper': workspaceAdapter('syllable-clapper', syllableClapperLiveDomain),
-  'rhyme-studio': workspaceAdapter('rhyme-studio', rhymeStudioLiveDomain),
+  'rhyme-studio': bossAdapter(rhymeStudioBoss),
   'phoneme-explorer': bossAdapter(phonemeExplorerBoss),
-  'word-workout': workspaceAdapter('word-workout', wordWorkoutLiveDomain),
+  'word-workout': bossAdapter(wordWorkoutBoss),
   'word-builder': workspaceAdapter('word-builder', wordBuilderLiveDomain),
   'word-sorter': bossAdapter(wordSorterBoss),
-  'picture-vocabulary': workspaceAdapter('picture-vocabulary', pictureVocabularyLiveDomain),
-  'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
+  'picture-vocabulary': bossAdapter(pictureVocabularyBoss),
+  'letter-spotter': bossAdapter(letterSpotterBoss),
   'letter-workshop': workspaceAdapter('letter-workshop', letterWorkshopLiveDomain),
   'decodable-reader': bossAdapter(decodableReaderBoss),
-  'interactive-book': workspaceAdapter('interactive-book', interactiveBookLiveDomain),
-  'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
+  'interactive-book': bossAdapter(interactiveBookBoss),
+  'story-bridge': bossAdapter(storyBridgeBoss),
   'story-ribbon': bossAdapter(storyRibbonBoss),
   'story-map': workspaceAdapter('story-map', storyMapLiveDomain),
   'poetry-lab': workspaceAdapter('poetry-lab', poetryLabLiveDomain),
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   '3d-shape-explorer': bossAdapter(threeDShapeExplorerBoss),
-  'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
+  'calendar-explorer': bossAdapter(calendarExplorerBoss),
   'timeline-builder': workspaceAdapter('timeline-builder', timelineBuilderLiveDomain),
-  'fast-fact': workspaceAdapter('fast-fact', fastFactLiveDomain),
-  'fact-file': workspaceAdapter('fact-file', factFileLiveDomain),
+  'fast-fact': bossAdapter(fastFactBoss),
+  'fact-file': bossAdapter(factFileBoss),
   'push-pull-arena': bossAdapter(pushPullArenaBoss),
-  'race-track-lab': workspaceAdapter('race-track-lab', raceTrackLabLiveDomain),
-  'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
+  'race-track-lab': bossAdapter(raceTrackLabBoss),
+  'habitat-diorama': bossAdapter(habitatDioramaBoss),
   'ecosystem-diorama': workspaceAdapter('ecosystem-diorama', ecosystemDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
   'life-cycle-sequencer': workspaceAdapter('life-cycle-sequencer', lifeCycleSequencerLiveDomain),
@@ -280,48 +280,48 @@ export const LIVE_ADAPTERS = {
   'matter-explorer': bossAdapter(matterExplorerBoss),
   'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
   'atom-builder': workspaceAdapter('atom-builder', atomBuilderLiveDomain),
-  'mixing-and-dissolving': workspaceAdapter('mixing-and-dissolving', mixingAndDissolvingLiveDomain),
-  'reaction-lab': workspaceAdapter('reaction-lab', reactionLabLiveDomain),
+  'mixing-and-dissolving': bossAdapter(mixingAndDissolvingBoss),
+  'reaction-lab': bossAdapter(reactionLabBoss),
   'genre-explorer': bossAdapter(genreExplorerBoss),
   'text-structure-analyzer': bossAdapter(textStructureAnalyzerBoss),
   'context-clues-detective': workspaceAdapter('context-clues-detective', contextCluesDetectiveLiveDomain),
   'sentence-analyzer': bossAdapter(sentenceAnalyzerBoss),
-  'cause-effect-chain': workspaceAdapter('cause-effect-chain', causeEffectChainLiveDomain),
+  'cause-effect-chain': bossAdapter(causeEffectChainBoss),
   'era-explorer': bossAdapter(eraExplorerBoss),
-  'periodic-table': workspaceAdapter('periodic-table', periodicTableLiveDomain),
+  'periodic-table': bossAdapter(periodicTableBoss),
   'knowledge-check': workspaceAdapter('knowledge-check', knowledgeCheckLiveDomain),
   'read-aloud-studio': workspaceAdapter('read-aloud-studio', readAloudStudioLiveDomain),
   'oral-sentence-studio': bossAdapter(oralSentenceStudioBoss),
   'states-of-matter': bossAdapter(statesOfMatterBoss),
   'solar-system-explorer': bossAdapter(solarSystemBoss),
-  'light-shadow-lab': workspaceAdapter('light-shadow-lab', lightShadowLabLiveDomain),
-  'planetary-explorer': workspaceAdapter('planetary-explorer', planetaryExplorerLiveDomain),
-  'constellation-builder': workspaceAdapter('constellation-builder', constellationBuilderLiveDomain),
-  'telescope-simulator': workspaceAdapter('telescope-simulator', telescopeSimulatorLiveDomain),
-  'orbit-mechanics-lab': workspaceAdapter('orbit-mechanics-lab', orbitMechanicsLabLiveDomain),
-  'rocket-builder': workspaceAdapter('rocket-builder', rocketBuilderLiveDomain),
-  'mission-planner': workspaceAdapter('mission-planner', missionPlannerLiveDomain),
-  'ph-explorer': workspaceAdapter('ph-explorer', phExplorerLiveDomain),
-  'gas-laws-simulator': workspaceAdapter('gas-laws-simulator', gasLawsSimulatorLiveDomain),
-  'equation-balancer': workspaceAdapter('equation-balancer', equationBalancerLiveDomain),
-  'energy-of-reactions': workspaceAdapter('energy-of-reactions', energyOfReactionsLiveDomain),
-  'stoichiometry-lab': workspaceAdapter('stoichiometry-lab', stoichiometryLabLiveDomain),
-  'gravity-drop-tower': workspaceAdapter('gravity-drop-tower', gravityDropTowerLiveDomain),
-  'sound-wave-explorer': workspaceAdapter('sound-wave-explorer', soundWaveExplorerLiveDomain),
+  'light-shadow-lab': bossAdapter(lightShadowLabBoss),
+  'planetary-explorer': bossAdapter(planetaryExplorerBoss),
+  'constellation-builder': bossAdapter(constellationBuilderBoss),
+  'telescope-simulator': bossAdapter(telescopeSimulatorBoss),
+  'orbit-mechanics-lab': bossAdapter(orbitMechanicsLabBoss),
+  'rocket-builder': bossAdapter(rocketBuilderBoss),
+  'mission-planner': bossAdapter(missionPlannerBoss),
+  'ph-explorer': bossAdapter(phExplorerBoss),
+  'gas-laws-simulator': bossAdapter(gasLawsSimulatorBoss),
+  'equation-balancer': bossAdapter(equationBalancerBoss),
+  'energy-of-reactions': bossAdapter(energyOfReactionsBoss),
+  'stoichiometry-lab': bossAdapter(stoichiometryLabBoss),
+  'gravity-drop-tower': bossAdapter(gravityDropTowerBoss),
+  'sound-wave-explorer': bossAdapter(soundWaveExplorerBoss),
   'you-and-me': bossAdapter(youAndMeBoss),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'airplane-diorama': workspaceAdapter('airplane-diorama', airplaneDioramaLiveDomain),
   'construction-site-diorama': workspaceAdapter('construction-site-diorama', constructionSiteDioramaLiveDomain),
-  'map-explorer': workspaceAdapter('map-explorer', mapExplorerLiveDomain),
-  'flight-forces-explorer': workspaceAdapter('flight-forces-explorer', flightForcesExplorerLiveDomain),
-  'construction-sequence-planner': workspaceAdapter('construction-sequence-planner', constructionSequencePlannerLiveDomain),
-  'timeline-explorer': workspaceAdapter('timeline-explorer', timelineExplorerLiveDomain),
-  'vocabulary-explorer': workspaceAdapter('vocabulary-explorer', vocabularyExplorerLiveDomain),
-  'how-it-works': workspaceAdapter('how-it-works', howItWorksLiveDomain),
-  'vehicle-comparison-lab': workspaceAdapter('vehicle-comparison-lab', vehicleComparisonLabLiveDomain),
-  'transport-challenge': workspaceAdapter('transport-challenge', transportChallengeLiveDomain),
-  'propulsion-lab': workspaceAdapter('propulsion-lab', propulsionLabLiveDomain),
+  'map-explorer': bossAdapter(mapExplorerBoss),
+  'flight-forces-explorer': bossAdapter(flightForcesExplorerBoss),
+  'construction-sequence-planner': bossAdapter(constructionSequencePlannerBoss),
+  'timeline-explorer': bossAdapter(timelineExplorerBoss),
+  'vocabulary-explorer': bossAdapter(vocabularyExplorerBoss),
+  'how-it-works': bossAdapter(howItWorksBoss),
+  'vehicle-comparison-lab': bossAdapter(vehicleComparisonLabBoss),
+  'transport-challenge': bossAdapter(transportChallengeBoss),
+  'propulsion-lab': bossAdapter(propulsionLabBoss),
   'digital-skills-sim': workspaceAdapter('digital-skills-sim', digitalSkillsSimLiveDomain),
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
@@ -332,12 +332,12 @@ export const LIVE_ADAPTERS = {
   'di-deduction': bossAdapter(diDeductionBoss),
   'di-worked-procedure': bossAdapter(diWorkedProcedureBoss),
   'di-word-problem-setup': bossAdapter(diWordProblemSetupBoss),
-  'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
-  'spatial-path': workspaceAdapter('spatial-path', spatialPathLiveDomain),
-  'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
-  'skip-counting-runner': workspaceAdapter('skip-counting-runner', skipCountingRunnerLiveDomain),
-  'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
-  'addition-fact-strategies': workspaceAdapter('addition-fact-strategies', additionFactStrategiesLiveDomain),
+  'spatial-scene': bossAdapter(spatialSceneBoss),
+  'spatial-path': bossAdapter(spatialPathBoss),
+  'hundreds-chart': bossAdapter(hundredsChartBoss),
+  'skip-counting-runner': bossAdapter(skipCountingBoss),
+  'math-fact-fluency': bossAdapter(mathFactFluencyBoss),
+  'addition-fact-strategies': bossAdapter(additionFactStrategiesBoss),
   'equation-builder': workspaceAdapter('equation-builder', equationBuilderLiveDomain),
   'pattern-builder': workspaceAdapter('pattern-builder', patternBuilderLiveDomain),
   'strategy-picker': workspaceAdapter('strategy-picker', strategyPickerLiveDomain),

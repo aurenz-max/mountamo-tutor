@@ -1,5 +1,6 @@
 /**
- * gravity-drop-tower on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C28).
+ * gravity-drop-tower's domain: items, keys, misses and the scene the tutor/JEV workspace reads (ROLLOUT C28). Its wiring
+ * to the live tutor is `gravityDropTower.card.ts` + `gravityDropTower.boss.ts`.
  *
  * Every item is built and keyed by code from one physics model: without air every object falls h = 1/2 g t^2; with air
  * each object has its own top speed in air (`vt`), and it falls y = (vt^2/g) ln cosh(g t / vt). The key is what that
@@ -16,11 +17,14 @@
  *   speed from a height (hard, two steps).
  * Difficulty (`config.difficulty`) is structural, never bigger numbers.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { DROP_MISSES } from './gravityDropTower.card';
+
+export { DROP_MISSES };
 
 export type DropMode = 'observe' | 'predict' | 'compare' | 'measure' | 'calculate';
 export const DROP_MODES: DropMode[] = ['observe', 'predict', 'compare', 'measure', 'calculate'];
@@ -133,13 +137,6 @@ export type CompareMiss = 'ranked_by_mass' | 'ignored_air' | 'reversed' | 'other
 export type MeasureMiss = 'linear_scaling' | 'kept_value' | 'added_step';
 export type CalculateMiss = 'forgot_half' | 'no_root' | 'not_squared' | 'gave_time';
 export type GravityDropMiss = ObserveMiss | PredictMiss | CompareMiss | MeasureMiss | CalculateMiss;
-export const DROP_MISSES: Record<DropMode, readonly GravityDropMiss[]> = {
-  observe: ['heavier_first', 'lighter_first', 'said_together', 'slowed_first', 'said_steady', 'said_slowed'],
-  predict: ['heavier_first', 'lighter_first', 'shape_first', 'ignored_air', 'slowed_first', 'heavier_reason', 'air_when_none'],
-  compare: ['ranked_by_mass', 'ignored_air', 'reversed', 'other_order'],
-  measure: ['linear_scaling', 'kept_value', 'added_step'],
-  calculate: ['forgot_half', 'no_root', 'not_squared', 'gave_time'],
-};
 
 export interface DropChoice { label: string; kind: 'key' | GravityDropMiss; value?: number }
 
@@ -485,26 +482,51 @@ export function dropItems(d: DropItemsSource): DropItem[] {
   return buildDropItems({ modes, tier: resolveTier(d), rng: seededRng(`${d.title ?? 'drop'}:${modes.join(',')}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function dropExpectedAnswer(item: DropItem): string {
+/**
+ * The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. A
+ * compare item (an order the learner taps) has none: the activity checks the board.
+ */
+export function dropKey(item: DropItem): SpokenKey | null {
+  if (item.ask === 'order') return null;
   const key = keyChoice(item), choices = choicesOf(item), at = choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
-  const others = choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
+  const place = `the ${ORDINAL[at]} one`;
+  const others = choices.filter(c => c !== key).map(c => `"${c}"`);
+  const wrong = `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong`;
   if (item.ask === 'reason') {
-    const [outcome, reason] = key.split(': ');
-    return `"${key}": the outcome ("${outcome}") AND that reason in the learner's own words, or ${place}. The outcome `
-      + `alone is not complete yet. ${others} are wrong, and so is the right outcome with one of their reasons.`;
+    const [outcome] = key.split(': ');
+    return { answer: key, alsoAccept: [place],
+      acceptRule: `The outcome ("${outcome}") AND that reason in the learner's own words count; the outcome alone is not complete yet.`,
+      signatureError: `${wrong}, and so is the right outcome with one of their reasons.` };
   }
   if (item.ask === 'first' || item.ask === 'speed') {
-    return `"${key}": those words or the same meaning in the learner's own words, or ${place}, count. ${others} are wrong, `
-      + 'and so is naming two or hedging between them.';
+    return { answer: key, alsoAccept: [place], acceptRule: 'The same meaning in the learner\'s own words counts.',
+      signatureError: `${wrong}, and so is naming two or hedging between them.` };
   }
   const [num, unit] = key.split(' ');
-  return `"${key}": the number ${num} said any way (rounded to one decimal counts), with or without "${unit}", or ${place}, counts. ${others} are wrong.`;
+  return { answer: key, alsoAccept: [num, place],
+    acceptRule: `The number ${num} said any way (rounded to one decimal counts), with or without "${unit}", counts.`,
+    signatureError: `${wrong}.` };
+}
+
+/**
+ * What the ask says by design (`askLeaks`'s `given`): the objects it names, the "land together" choice a predict ask
+ * offers, and the numbers the learner works from (the heights, the given time, the table's rows, g). A key that
+ * matches one of these is the learner's work on the stated numbers, never a stated answer.
+ */
+export function dropAskGiven(item: DropItem): string[] {
+  const names = item.drops.map(nameOf);
+  switch (item.mode) {
+    case 'observe': return names;
+    case 'predict': return item.ask === 'first' ? [...names, 'do they land together'] : names;
+    case 'compare': return [...names, ...item.drops.map(d => `${d.height} m`)];
+    case 'measure': return [...(item.measured ?? []).map(m => `${m} m took ${fmt(measuredTime(m))} s`),
+      item.ask === 'time' ? `${item.drops[0].height} m` : `${fmt(item.time!)} s`];
+    case 'calculate': return ['g = 9.8 m/s²', item.ask === 'height' ? `${fmt(item.time!)} s` : `${item.drops[0].height} m`];
+  }
 }
 
 const WHAT: Record<GravityDropMiss, string> = {
@@ -540,22 +562,12 @@ export function dropSpokenMisses(item: DropItem): KnownMiss[] {
     pattern: `${fact} The learner's answer ${WHAT[m]}: ${groups.get(m)!.map(x => `"${x}"`).join(', ')}.`, examples: groups.get(m)! }));
 }
 
-const HOW_CHOICE = 'The learner answers by saying it, or tapping one choice and pressing Check Answer.';
-const HOW_ORDER = 'The learner taps the three objects in landing order and presses Check Answer.';
-
-export function workspaceAssignment(item: DropItem): TeachingAssignment {
-  if (item.ask === 'order') return { id: item.id, task: `${askOf(item)} ${HOW_ORDER}`, response: 'gesture' };
-  const misses = dropSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW_CHOICE}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: dropExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface DropView extends DropWork {
   /** observe: how many drops the learner has run. */
   drops: number;
-  /** The item is credited (or, scripted, revealed) and the drop has run. */
+  /** The item is credited and the drop has run. */
   solved: boolean;
 }
 
@@ -565,12 +577,19 @@ export function describeDropWork(item: DropItem | undefined, view: DropWork): st
   return view.choice ? `Chose "${view.choice}"` : 'Nothing chosen yet';
 }
 
+/** What this item's own shape forbids saying, beyond the shared rules (kept from the catalog guidance before the boss). */
+const WEIGHT = 'Never say that weight does or does not matter here, and never ask a yes-or-no question that settles it '
+  + '("does the air slow the feather?"). Describe a lever card only as the scene does, never as its conclusion.';
+const AFTER_CREDIT = 'The asked drop runs only after the answer is credited.';
+const AFTER_MISS = 'After a miss, never say what the wrong answer came from or which step was left out.';
 const CONSTRAINTS: Record<DropMode, string> = {
-  observe: 'The learner presses Drop to watch (as many times as they like, with Slow motion if they want), then says or taps what they saw; the activity judges the tap. No times or speeds are printed. "Which one landed first?" assumes one did, so it is not asked; ask what the learner saw at the ground. You cannot drop, tap or check for the learner.',
-  predict: 'The learner says or taps a prediction before anything falls; the drop runs on screen only after the answer is credited. You cannot drop, tap or check for the learner.',
-  compare: 'The learner taps the objects in landing order and checks; the drop runs on screen only after the order is credited. You cannot tap, check or drop for the learner.',
-  measure: 'The learner may replay any measured drop (its stopwatch shows the time in the table). The asked drop runs only after the answer is credited. You cannot tap, check or drop for the learner.',
-  calculate: 'The learner says or taps a value; the drop runs on screen, with its stopwatch, only after the answer is credited. You cannot tap, check or drop for the learner.',
+  observe: '"Which one landed first?" assumes one did, and "as they fall together" or "side by side" assumes they did: '
+    + `ask what the learner saw when they reached the ground. ${WEIGHT}`,
+  predict: `${AFTER_CREDIT} ${WEIGHT}`,
+  compare: `${AFTER_CREDIT} ${WEIGHT}`,
+  measure: `${AFTER_CREDIT} Never say how many times the asked height is, or that the time goes with a square root `
+    + `("what times itself makes nine?"): ask how the rows compare. ${AFTER_MISS}`,
+  calculate: `${AFTER_CREDIT} ${AFTER_MISS}`,
 };
 
 function shownText(item: DropItem): string {

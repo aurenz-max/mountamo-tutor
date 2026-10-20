@@ -24,12 +24,16 @@ import CvcSpeller, { type CvcSpellerData } from './CvcSpeller';
 import SoundSwap, { type SoundSwapData } from './SoundSwap';
 import PhonicsBlender, { type PhonicsBlenderData } from './PhonicsBlender';
 import blendPayload from '../../../components/live-activity/runtime/testing/w1-payloads/phonics-blender.build_blend.json';
-import { validatePhonicsBlenderData } from '../../../components/live-activity/adapters/phonicsBlenderLive';
+import { phonicsBlenderBoss } from './phonicsBlender.boss';
+import { BLEND_LEVERS } from './phonicsBlenderLevers';
+import { phonicsBlenderItems } from './phonicsBlenderDomain';
 import swapPayload from '../../../components/live-activity/runtime/testing/w1-payloads/sound-swap.swap_build.json';
-import { validateSoundSwapData } from '../../../components/live-activity/adapters/soundSwapLive';
+import { soundSwapBoss } from './soundSwap.boss';
+import { SWAP_LEVERS } from './soundSwapLevers';
+import { soundSwapItems } from './soundSwapDomain';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/cvc-speller.make_word.json';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { validateCvcSpellerData } from '../../../components/live-activity/adapters/cvcSpellerLive';
+import { validateCvcSpellerData } from './cvcSpellerDomain';
 import {
   askableLetterItem, letterBuildLevers, letterItemsFrom, letterShapeMiss, makeLetterItems, smallBankFor, startRow,
   type LetterBuildItem,
@@ -206,7 +210,15 @@ describe('swap_build on the workspace (sound-swap host)', () => {
     const given = swap.buildItems![0].word!;
     expect(state().task!.task).toContain(`Change one letter in ${given}`);
     expect((state().task!.demand as Record<string, unknown>).boxes).toBe(given.split('').join(' '));
-    expect(() => validateSoundSwapData(swap)).not.toThrow();
+    expect(() => soundSwapBoss.validate(swap)).not.toThrow();
+    // sound-swap is a boss: its gesture assignment, its lever set and its support fact reach the surface.
+    expect(state().task!.task).toBe(soundSwapBoss.ask(soundSwapItems(swap)[0], swap));
+    expect(state().task!.workspace!.expectedAnswer).toBeUndefined();
+    expect((state().task!.workspace!.levers ?? []).map(l => l.id)).toEqual(['pattern_card', 'model_word', 'small_bank']);
+    expect(String((state().task!.demand as Record<string, unknown>).support)).toMatch(/model_word/);
+    const tw = getComponentById('sound-swap')!.teachingWorkspace!;
+    const answered = new Set(soundSwapItems(swap).flatMap(i => SWAP_LEVERS.declare(i, { challenges: [] }, []).flatMap(l => l.answers ?? [])));
+    for (const m of tw.misses!.swap_build) if (!tw.unanswered!.swap_build.includes(m)) expect(answered.has(m), m).toBe(true);
     const target = swap.buildItems![0].examples.find(w => w[0] !== given[0] && w.slice(1) === given.slice(1))
       ?? swap.buildItems![0].examples[0];
     const at = target.split('').findIndex((l, i) => l !== given[i]);
@@ -253,9 +265,11 @@ describe('build_blend (phonics-blender host): two tiles, a blend at the start or
     for (let n = 0; n < 20; n++) for (const item of makeLetterItems(['blend_start', 'blend_end'], [], [], 4)) {
       expect(askableLetterItem(item)!.examples.length).toBeGreaterThanOrEqual(3);
     }
-    expect(() => validatePhonicsBlenderData(blend)).not.toThrow();
+    expect(() => phonicsBlenderBoss.validate(blend)).not.toThrow();
     const tw = getComponentById('phonics-blender')!.teachingWorkspace!;
-    const answered = new Set(letterItemsFrom(blend.buildItems!).flatMap(i => letterBuildLevers(i, []).flatMap(l => l.answers ?? [])));
+    // phonics-blender is a boss: its build levers come from its lever set, not the shared defaults.
+    const answered = new Set(phonicsBlenderItems(blend).flatMap(i => BLEND_LEVERS.declare(i, { words: [], segmentation: 'full' }, [])
+      .flatMap(l => l.answers ?? [])));
     for (const m of tw.misses!.build_blend) if (!tw.unanswered!.build_blend.includes(m)) expect(answered.has(m), m).toBe(true);
   });
 
@@ -266,6 +280,12 @@ describe('build_blend (phonics-blender host): two tiles, a blend at the start or
       <PhonicsBlender data={{ ...blend, instanceId: 'lb' }} runtimePlanItemId="plan-lb" runtimeEvalMode="build_blend" />
     </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
     const item = letterItemsFrom(blend.buildItems!)[0];
+    // The boss's wiring reaches the surface: its gesture assignment, its lever set and its support fact.
+    const opened = runtime.getSnapshot().task!;
+    expect(opened.task).toBe(phonicsBlenderBoss.ask(phonicsBlenderItems(blend)[0], blend));
+    expect(opened.workspace!.expectedAnswer).toBeUndefined();
+    expect((opened.workspace!.levers ?? []).map(l => l.id)).toEqual(['pattern_card', 'model_word', 'small_bank']);
+    expect(String((opened.demand as Record<string, unknown>).support)).toMatch(/model_word/);
     const single = item.bank.find(t => t.length === 1 && !'aeiou'.includes(t))!;
     const vowelEnd = item.bank.find(t => 'aeiou'.includes(t[0]))!;
     for (const t of [single, vowelEnd]) act(() => { fireEvent.click(screen.getByRole('button', { name: new RegExp(`^letter ${t}$`) })); });

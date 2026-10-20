@@ -482,7 +482,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
     const levers = practice ? [] : ERA_LEVERS.declare(sessionItem, session, pulledLevers);
     workspace.current = {
       ...leverScene(scene, {
-        support: practice ? '' : ERA_LEVERS.support(sessionItem),
+        support: practice ? '' : ERA_LEVERS.support(sessionItem, session),
         onScreen: practice ? '' : ERA_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       pullLever: (id: string) => {

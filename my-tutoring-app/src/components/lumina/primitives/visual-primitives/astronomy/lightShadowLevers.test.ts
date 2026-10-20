@@ -7,8 +7,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { ChallengeType, ShadowChallenge, SunPosition } from './LightShadowLab';
 import {
-  EASY_SHADOW_LEVER, EASY_SUN_LEVER, HEIGHT_MODEL, HEIGHT_MODEL_LEVER, SHADOW_ZONES_LEVER, SIDE_MODEL, SIDE_MODEL_LEVER,
-  leverFacts, lightShadowLevers, practiceItem, practiceLeaks, practiceParent,
+  EASY_SHADOW_LEVER, EASY_SUN_LEVER, HEIGHT_MODEL, HEIGHT_MODEL_LEVER, SHADOW_LEVERS, SHADOW_ZONES_LEVER, SIDE_MODEL,
+  SIDE_MODEL_LEVER, practiceItem, practiceLeaks, practiceParent,
 } from './lightShadowLevers';
 import { keyOption, shadowCorrect, shadowMiss, shadowOptions } from './lightShadowWorkspace';
 import observeP from '../../../components/live-activity/runtime/testing/w1-payloads/light-shadow-lab.observe.json';
@@ -24,6 +24,8 @@ for (const type of MODES) for (let alt = 5; alt <= 85; alt += 8) for (let az = 5
   const sun: SunPosition = { time: TIMES[Math.min(10, Math.round(az / 17))], altitude: alt, azimuth: az };
   ITEMS.push({ id: `${type}-${alt}-${az}`, type, instruction: 'q', sunPosition: sun, correctShadow: { direction: 'W', relativeLength: 'long' } });
 }
+const lightShadowLevers = (c: ShadowChallenge, pulled: readonly string[]) => SHADOW_LEVERS.declare(c, null, pulled);
+const leverFacts = (c: ShadowChallenge, pulled: readonly string[]) => SHADOW_LEVERS.onScreen(c, null, pulled);
 const PAYLOADS = [observeP, predictP, measureP, applyP].map(p => p.data as { challenges: ShadowChallenge[]; sunPositions: SunPosition[] });
 
 describe('easier items: same mode, an obvious sun, two choices, never the learner\'s item or its answer', () => {
@@ -72,6 +74,13 @@ describe('help levers: what they draw and say', () => {
       const has = lightShadowLevers(ITEMS.find(i => i.type === mode)!, []).some(l => l.id === SHADOW_ZONES_LEVER);
       expect(has, mode).toBe(mode === 'observe' || mode === 'measure');
     }
+  });
+  it("the lesson tier says when the models come, and never names the item's shadow or time", () => {
+    const c = ITEMS.find(i => i.type === 'predict')!;
+    expect(SHADOW_LEVERS.support(c)).toMatch(/^the learner tries first; after a miss, model small pictures of other suns/);
+    expect(SHADOW_LEVERS.support({ ...c, supportTier: 'easy' })).toMatch(/^before the learner tries, pull the model lever, a card of/);
+    expect(SHADOW_LEVERS.support({ ...c, supportTier: 'hard' })).toBe('answer it cold: model nothing before the learner tries, and never say which way this shadow points or how long it is');
+    expect(SHADOW_LEVERS.support({ ...ITEMS.find(i => i.type === 'apply')!, supportTier: 'hard' })).toMatch(/never say the time this shadow shows$/);
   });
   it('a practice item declares no lever and no fact', () => {
     const p = practiceItem(ITEMS[0])!;

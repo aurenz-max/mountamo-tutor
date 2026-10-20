@@ -1,29 +1,32 @@
 /**
- * The in-item levers on gravity-drop-tower (`/add-support-tiers`; report qa/eval-reports/gravity-drop-tower-levers-2026-10-15.md).
+ * The in-item levers on gravity-drop-tower, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/gravity-drop-tower-levers-2026-10-15.md).
  * No real-learner evidence: the misses are what `dropMiss` observes; the failures behind them come from the catalog's
  * commonStruggles (heavier falls faster, air and no-air mixed up, height not connected to fall time, h = 1/2 g t^2).
  * Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `slow_replay` (help; observe): replays the drop at a quarter of the speed with a line joining the objects (or, on
+ * - `slow_replay` (custom; observe): replays the drop at a quarter of the speed with a line joining the objects (or, on
  *   a one-object item, ghost pictures at equal times), so what happened is easier to see. It states nothing.
- * - `moon_card` (help; predict): a card outside the item: the Apollo 15 hammer and feather dropped on the Moon, where
+ * - `moon_card` (clue; predict): a card outside the item: the Apollo 15 hammer and feather dropped on the Moon, where
  *   there is no air. It never names this item's objects.
- * - `air_arrows` (help; predict and compare items with air): an arrow on each object for how hard air pushes back on
+ * - `air_arrows` (marks; predict and compare items with air): an arrow on each object for how hard air pushes back on
  *   it compared with its weight. It never says which lands first.
- * - `fall_lines` (help; compare): a bar beside each column from its platform to the ground, with its length.
- * - `same_look` (help; compare without air, different masses): draws the three as the same grey ball and hides the masses.
- * - `pattern_line` (help; measure): the measured rows' pattern in words ("4 times the height, 2 times the time").
- * - `formula_card` (help; calculate): h = 1/2 g t^2 rearranged for the asked quantity, in symbols.
- * - `fill_in` (help; calculate): the item's numbers placed in that formula, with no result.
- * - `outcome_only` (simplify; predict reason items): the same pair and air, asking only which lands first.
- * - `two_drops` (simplify; compare): two of the three drops to order.
- * - `one_row` (simplify; measure): one measured row and the 4x height (2x time) step.
- * - `time_first` (simplify; calculate impact items): the fall time from the same height first.
+ * - `fall_lines` (marks; compare): a bar beside each column from its platform to the ground, with its length.
+ * - `same_look` (layout; compare without air, different masses): draws the three as the same grey ball and hides the masses.
+ * - `pattern_line` (clue; measure): the measured rows' pattern in words ("4 times the height, 2 times the time").
+ * - `formula_card` (clue; calculate): h = 1/2 g t^2 rearranged for the asked quantity, in symbols.
+ * - `fill_in` (clue; calculate): the item's numbers placed in that formula, with no result.
+ * - `outcome_only` (easier; predict reason items): the same pair and air, asking only which lands first.
+ * - `two_drops` (easier; compare): two of the three drops to order.
+ * - `one_row` (easier; measure): one measured row and the 4x height (2x time) step.
+ * - `time_first` (easier; calculate impact items): the fall time from the same height first.
+ * A practice item gets no lever: the component declares none while one is open.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { DROP_MISSES } from './gravityDropTower.card';
 import {
-  dropChoices, DROP_MISSES, fallTime, FALLERS, fmt, isFloater, keyChoice, keyOrder, measuredTime, nameOf, orderMiss,
-  round2, validDropItem, type DropItem, type GravityDropMiss,
+  dropChoices, fallTime, FALLERS, fmt, isFloater, keyChoice, keyOrder, measuredTime, nameOf, orderMiss,
+  round2, validDropItem, type DropItem, type DropMode, type GravityDropMiss,
 } from './gravityDropWorkspace';
 
 export const SLOW_LEVER = 'slow_replay';
@@ -125,79 +128,76 @@ export function simplerItem(item: DropItem): DropItem | null {
   return keyChoice(practice) === keyChoice(item) ? null : practice;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
-
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly GravityDropMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
 const distinctMasses = (item: DropItem) => new Set(item.drops.map(d => FALLERS[d.obj].mass)).size === item.drops.length;
+const NOT_GRADED = 'It is not graded; this item comes back after it.';
+const simplerSpec = (id: string, mode: DropMode, when: string, does: string) => ({
+  id, type: 'easier' as const, modes: [mode], answers: 'all' as const, when, does: `${does} ${NOT_GRADED}`,
+  content: (item: DropItem) => simplerItem(item),
+});
+const AIR_FACT = (_on: unknown, item: DropItem) => `Air arrows on the objects: ${airLines(item).join(' ')}`;
 
-/** The levers on the current session item. A practice item has none. */
-export function dropLevers(item: DropItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(item);
-  switch (item.mode) {
-    case 'observe':
-      out.push(lever(SLOW_LEVER, 'help', pulled, DROP_MISSES.observe, 'The learner did not see clearly what happened in the drop.',
-        item.ask === 'speed' ? 'Replays the drop at a quarter of the speed and draws a ghost picture of the object at equal moments of its fall. It states nothing.'
-          : 'Replays the drop at a quarter of the speed with a line joining the two objects as they fall. It states nothing.'));
-      return out;
-    case 'predict': {
-      if (item.air) {
-        out.push(lever(AIR_LEVER, 'help', pulled, ['ignored_air', 'slowed_first', 'heavier_reason'],
-          'The learner leaves the air out, or thinks weight alone decides.',
-          'Draws an arrow on each object for how hard air pushes back on it compared with its weight. It does not say which lands first.'));
-      }
-      out.push(lever(MOON_LEVER, 'help', pulled, item.air ? ['heavier_reason', 'heavier_first', 'lighter_first'] : ['heavier_first', 'lighter_first', 'shape_first', 'air_when_none'],
-        'The learner thinks weight or shape decides how fast things fall with no air.',
-        'Shows a card about a different drop: the Apollo 15 hammer and feather on the Moon, where there is no air. It never names this item\'s objects.'));
-      if (simpler) out.push(lever(OUTCOME_LEVER, 'simplify', pulled, DROP_MISSES.predict, 'The learner cannot hold the outcome and the reason together.',
-        'Opens the same pair and air first, asking only which lands first. It is not graded; this item comes back after it.'));
-      return out;
-    }
-    case 'compare':
-      if (item.air) out.push(lever(AIR_LEVER, 'help', pulled, ['ignored_air', 'ranked_by_mass'], 'The learner orders by height alone though air is in the tower.',
-        'Draws an arrow on each object for how hard air pushes back on it compared with its weight. It does not order them.'));
-      if (!item.air && distinctMasses(item)) out.push(lever(SAME_LOOK_LEVER, 'help', pulled, ['ranked_by_mass'], 'The learner orders by weight.',
-        'Draws the three as the same grey ball and hides their masses; the heights stay. It does not order them.'));
-      out.push(lever(FALL_LEVER, 'help', pulled, ['reversed', 'other_order', 'ranked_by_mass', 'ignored_air'], 'The learner does not connect how far each falls with how long it takes.',
-        'Draws a bar beside each column from its platform to the ground, labelled with how far it falls. It does not order them.'));
-      if (simpler) out.push(lever(TWO_DROPS_LEVER, 'simplify', pulled, DROP_MISSES.compare, 'Three at once is too many to order.',
-        'Opens two of the three drops first to put in order. It is not graded; this item comes back after it.'));
-      return out;
-    case 'measure':
-      out.push(lever(PATTERN_LEVER, 'help', pulled, DROP_MISSES.measure, 'The learner does not see how the time grows with the height in the table.',
-        'Writes under the table how many times the height and how many times the time grew between the measured rows. It names no value for the asked row.'));
-      if (simpler) out.push(lever(ONE_ROW_LEVER, 'simplify', pulled, DROP_MISSES.measure, 'The step in the table is too big a jump.',
-        'Opens a table with one measured row and asks about 4 times that height (or the height for twice its time) first. It is not graded; this item comes back after it.'));
-      return out;
-    case 'calculate':
-      out.push(lever(FORMULA_LEVER, 'help', pulled, DROP_MISSES.calculate, 'The learner does not know which rule to use or how to turn it round.',
-        'Shows h = ½ g t² turned round for the asked quantity, in symbols only.'));
-      out.push(lever(FILL_LEVER, 'help', pulled, ['forgot_half', 'no_root', 'not_squared', 'gave_time'], 'The learner has the rule but slips putting the numbers in.',
-        'Writes this item\'s numbers into the rule, with no result.'));
-      if (simpler) out.push(lever(TIME_FIRST_LEVER, 'simplify', pulled, DROP_MISSES.calculate, 'Two steps at once is too much.',
-        'Opens the same height first, asking only for the fall time. It is not graded; this item comes back after it.'));
-      return out;
-  }
-}
+/** The levers read nothing beside the item. */
+export type DropLeverContext = Record<string, never>;
 
-/** What the pulled levers put on screen, as a scene fact. Never a key. */
-export function leverFact(item: DropItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(SLOW_LEVER)) parts.push(item.ask === 'speed' ? 'The drop replays at a quarter of the speed with ghost pictures at equal moments.'
-    : 'The drop replays at a quarter of the speed with a line joining the two objects.');
-  if (pulled.includes(MOON_LEVER)) parts.push(`A Moon card: ${MOON_LINES.join(' ')}`);
-  if (pulled.includes(AIR_LEVER)) parts.push(`Air arrows on the objects: ${airLines(item).join(' ')}`);
-  if (pulled.includes(SAME_LOOK_LEVER)) parts.push('The three objects are drawn as the same grey ball with no masses; the heights stay.');
-  if (pulled.includes(FALL_LEVER)) parts.push(`Bars beside the columns: ${fallLines(item).join('; ')}.`);
-  if (pulled.includes(PATTERN_LEVER)) parts.push(`Under the table: ${patternLines(item).join(' ')}`);
-  if (pulled.includes(FORMULA_LEVER)) parts.push(`A formula card: ${formulaLines(item).join('; ')}.`);
-  if (pulled.includes(FILL_LEVER)) parts.push(`Filled in: ${fillLines(item).join('; ')} (no result shown).`);
-  return parts.join(' ');
-}
+export const DROP_LEVERS = leverSet<DropItem, DropLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => DROP_MISSES[mode as DropMode] ?? [],
+  // The words a clue card must never carry: this item's key choice.
+  answersOf: item => (item.ask === 'order' ? [] : [keyChoice(item)]),
+  specs: [
+    { id: SLOW_LEVER, type: 'custom', modes: ['observe'], answers: 'all', carrier: 'shown',
+      why: 'It replays the drop itself, slowed, with a line or ghost pictures drawn as it falls; no stock type re-runs what the learner watched.',
+      when: 'The learner did not see clearly what happened in the drop.',
+      does: item => (item.ask === 'speed'
+        ? 'Replays the drop at a quarter of the speed and draws a ghost picture of the object at equal moments of its fall. It states nothing.'
+        : 'Replays the drop at a quarter of the speed with a line joining the two objects as they fall. It states nothing.'),
+      fact: (_on: unknown, item) => (item.ask === 'speed' ? 'The drop replays at a quarter of the speed with ghost pictures at equal moments.'
+        : 'The drop replays at a quarter of the speed with a line joining the two objects.') },
+    { id: AIR_LEVER, type: 'marks', modes: ['predict'], answers: ['ignored_air', 'slowed_first', 'heavier_reason'],
+      when: 'The learner leaves the air out, or thinks weight alone decides.',
+      does: 'Draws an arrow on each object for how hard air pushes back on it compared with its weight. It does not say which lands first.',
+      offer: item => item.air, fact: AIR_FACT },
+    { id: MOON_LEVER, type: 'clue', modes: ['predict'], carrier: 'shown',
+      answers: ['heavier_reason', 'heavier_first', 'lighter_first', 'shape_first', 'air_when_none'],
+      answersOn: item => (item.air ? ['heavier_reason', 'heavier_first', 'lighter_first'] : ['heavier_first', 'lighter_first', 'shape_first', 'air_when_none']),
+      when: 'The learner thinks weight or shape decides how fast things fall with no air.',
+      does: 'Shows a card about a different drop: the Apollo 15 hammer and feather on the Moon, where there is no air. It never names this item\'s objects.',
+      fact: `A Moon card: ${MOON_LINES.join(' ')}` },
+    simplerSpec(OUTCOME_LEVER, 'predict', 'The learner cannot hold the outcome and the reason together.',
+      'Opens the same pair and air first, asking only which lands first.'),
+    { id: AIR_LEVER, type: 'marks', modes: ['compare'], answers: ['ignored_air', 'ranked_by_mass'],
+      when: 'The learner orders by height alone though air is in the tower.',
+      does: 'Draws an arrow on each object for how hard air pushes back on it compared with its weight. It does not order them.',
+      offer: item => item.air, fact: AIR_FACT },
+    { id: SAME_LOOK_LEVER, type: 'layout', modes: ['compare'], answers: ['ranked_by_mass'],
+      when: 'The learner orders by weight.',
+      does: 'Draws the three as the same grey ball and hides their masses; the heights stay. It does not order them.',
+      offer: item => !item.air && distinctMasses(item),
+      fact: 'The three objects are drawn as the same grey ball with no masses; the heights stay.' },
+    { id: FALL_LEVER, type: 'marks', modes: ['compare'], answers: ['reversed', 'other_order', 'ranked_by_mass', 'ignored_air'],
+      when: 'The learner does not connect how far each falls with how long it takes.',
+      does: 'Draws a bar beside each column from its platform to the ground, labelled with how far it falls. It does not order them.',
+      fact: (_on: unknown, item) => `Bars beside the columns: ${fallLines(item).join('; ')}.` },
+    simplerSpec(TWO_DROPS_LEVER, 'compare', 'Three at once is too many to order.', 'Opens two of the three drops first to put in order.'),
+    { id: PATTERN_LEVER, type: 'clue', modes: ['measure'], answers: 'all', carrier: 'shown',
+      when: 'The learner does not see how the time grows with the height in the table.',
+      does: 'Writes under the table how many times the height and how many times the time grew between the measured rows. It names no value for the asked row.',
+      fact: (_on: unknown, item) => `Under the table: ${patternLines(item).join(' ')}` },
+    simplerSpec(ONE_ROW_LEVER, 'measure', 'The step in the table is too big a jump.',
+      'Opens a table with one measured row and asks about 4 times that height (or the height for twice its time) first.'),
+    { id: FORMULA_LEVER, type: 'clue', modes: ['calculate'], answers: 'all', carrier: 'shown',
+      when: 'The learner does not know which rule to use or how to turn it round.',
+      does: 'Shows h = ½ g t² turned round for the asked quantity, in symbols only.',
+      fact: (_on: unknown, item) => `A formula card: ${formulaLines(item).join('; ')}.` },
+    { id: FILL_LEVER, type: 'clue', modes: ['calculate'], answers: ['forgot_half', 'no_root', 'not_squared', 'gave_time'], carrier: 'shown',
+      when: 'The learner has the rule but slips putting the numbers in.',
+      does: 'Writes this item\'s numbers into the rule, with no result.',
+      fact: (_on: unknown, item) => `Filled in: ${fillLines(item).join('; ')} (no result shown).` },
+    simplerSpec(TIME_FIRST_LEVER, 'calculate', 'Two steps at once is too much.', 'Opens the same height first, asking only for the fall time.'),
+  ],
+});
 
 /** For tests: every miss this item's answers can show. */
 export function possibleMisses(item: DropItem): GravityDropMiss[] {

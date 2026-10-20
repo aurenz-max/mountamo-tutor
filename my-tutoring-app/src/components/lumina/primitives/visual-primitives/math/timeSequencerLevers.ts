@@ -1,6 +1,8 @@
 /**
- * time-sequencer's in-item levers (/add-support-tiers; report qa/eval-reports/time-sequencer-levers-2026-10-09.md).
- * The misses are what `timeSequencerMiss` observes; there is no real-learner evidence.
+ * time-sequencer's in-item levers, every mode, as one lever set (`TIME_LEVERS`, `bossLevers.ts`; /add-support-tiers,
+ * report qa/eval-reports/time-sequencer-levers-2026-10-09.md). The misses are what `timeSequencerMiss` observes; there
+ * is no real-learner evidence. The model day and the bar model are `custom` levers: pictures of the relation on other
+ * activities, with no support tier on the items to time a model by.
  *
  * Ordering (sequence-3, sequence-5, clock-sequence). The order of the cards is the answer, so no lever places,
  * numbers or ranks a card.
@@ -31,9 +33,10 @@
  * - `option_pictures` (help): each answer choice shows its own row's picture from the schedule.
  * - `short_schedule` (simplify): a three-row schedule of whole hours, other activities, another asked time.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { EventCard, ScheduleEntry, TimeSequencerChallenge } from './TimeSequencer';
-import { PERIODS, type Period, type TimeSequencerMiss } from './timeSequencerWorkspace';
+import { TIME_MISSES } from './timeSequencer.card';
+import { PERIODS, timeKey, timeModeOf, type Period } from './timeSequencerWorkspace';
 
 export const SKY_STRIP_LEVER = 'sky_strip';
 export const FACE_NUMBERS_LEVER = 'face_numbers';
@@ -348,92 +351,74 @@ const skyOffered = (c: TimeSequencerChallenge) =>
 const facesOffered = (c: TimeSequencerChallenge) =>
   c.type === 'clock-sequence' && (c.events ?? []).every(e => typeof e.clockHour === 'number');
 
-const ORDER_MISSES: TimeSequencerMiss[] = ['reversed', 'swapped_pair', 'wrong_first', 'out_of_order'];
+/** The levers a tier aid already on screen counts as pulled: the sky strip the easy Kindergarten tier draws. */
+export const tierPulled = (c: TimeSequencerChallenge | null): string[] =>
+  c && c.showSkyCue && skyOffered(c) ? [SKY_STRIP_LEVER] : [];
 
-/** The levers on a session item. A tier aid already on screen (the sky strip) counts as pulled. */
-export function timeSequencerLevers(c: TimeSequencerChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPractice(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly TimeSequencerMiss[], when: string, does: string,
-    on = false): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: on || pulled.includes(id), answers, when, does });
-  const simpler = !!practiceItem(c);
-  switch (c.type) {
-    case 'sequence-events':
-    case 'clock-sequence': return [
-      ...(skyOffered(c) ? [lever(SKY_STRIP_LEVER, 'help', ORDER_MISSES,
-        'The learner puts the day in the wrong order: backwards, two cards traded, or the wrong card first.',
-        'Puts a sky strip on every card: the sun or moon drawn where it is at that card\'s time of day. The cards stay '
-          + 'where they are; none is placed or numbered.', !!c.showSkyCue)] : []),
-      ...(facesOffered(c) ? [lever(FACE_NUMBERS_LEVER, 'help', ORDER_MISSES,
-        'The learner puts the clock cards in the wrong order, or cannot read where the short hand points.',
-        'Draws every clock face larger, with all twelve numbers round it. No card is placed or named.')] : []),
-      ...(simpler ? [lever(FAR_APART_LEVER, 'simplify', ORDER_MISSES,
-        'The learner cannot order cards this close together in the day yet.',
-        'Opens an easier practice first: the same number of other cards, a few hours apart in the day. It is not '
-          + 'graded; the full item comes back after it, with no card placed.')] : []),
-    ];
-    case 'match-time-of-day': return [
-      ...(dayAnchors(c) ? [lever(DAY_ANCHORS_LEVER, 'help', ['next_period', 'far_period'],
-        'The learner picks the wrong time of day.',
-        'Puts a picture of one other everyday activity beside each time-of-day choice (another thing people do in '
-          + 'that part of the day). The activity on the card is not among them.')] : []),
-      ...(simpler ? [lever(TWO_CHOICES_LEVER, 'simplify', ['next_period', 'far_period'],
-        'The learner cannot tell neighbouring times of day apart yet.',
-        'Opens an easier practice first: another activity with only two time-of-day choices, far apart. It is not '
-          + 'graded; the full item comes back after it.')] : []),
-    ];
-    case 'before-after': return [
-      ...(relationModel(c) ? [lever(RELATION_MODEL_LEVER, 'help', ['other_event'],
-        'The learner picks a card that does not come right before or after, or mixes up before and after.',
-        'Shows a model day of three other cards in order above the choices, the first marked "before" and the last '
-          + 'marked "after" the middle one. None of them is on the item.')] : []),
-      ...(simpler ? [lever(TWO_CARDS_LEVER, 'simplify', ['other_event'],
-        'The learner cannot pick between cards this close in the day yet.',
-        'Opens an easier practice first: another card with only two choices, far apart in the day. It is not '
-          + 'graded; the full item comes back after it.')] : []),
-    ];
-    case 'duration-compare': return [
-      ...(durationModel(c) ? [lever(DURATION_MODEL_LEVER, 'help', ['said_same', 'missed_same', 'shorter_one'],
-        'The learner picks the shorter activity, or mixes up "about the same" with "longer".',
-        'Shows two other pairs above the cards, each activity with a bar as long as it takes: one very short '
-          + 'against very long, one pair with bars the same length. The item\'s cards get no bar.')] : []),
-      ...(simpler ? [lever(FAR_PAIR_LEVER, 'simplify', ['said_same', 'shorter_one'],
-        'The learner cannot compare two activities this close in length yet.',
-        'Opens an easier practice first: another pair, one very short and one very long. It is not graded; the '
-          + 'full item comes back after it.')] : []),
-    ];
-    case 'read-schedule': return [
-      ...(Object.keys(optionPictures(c)).length > 1 ? [lever(OPTION_PICTURES_LEVER, 'help', ['next_row', 'other_row', 'not_on_schedule'],
-        'The learner reads across the wrong row, or picks an activity that is not on the schedule.',
-        'Puts beside each answer choice the picture its row has in the schedule (none for a choice that is not '
-          + 'on the schedule).')] : []),
-      ...(simpler ? [lever(SHORT_SCHEDULE_LEVER, 'simplify', ['next_row', 'other_row', 'not_on_schedule'],
-        'The learner cannot find the time in a schedule this long yet.',
-        'Opens an easier practice first: a schedule of three rows on whole hours, other activities and another '
-          + 'time. It is not graded; the full item comes back after it.')] : []),
-    ];
-  }
-  return [];
-}
+const ORDERING = ['sequence-3', 'sequence-5', 'clock-sequence'];
+const PRACTICE = 'It is not graded; the full item comes back after it.';
+const PICTURE_ONLY = 'It draws a picture of the relation on other activities beside the item, not a solved item of '
+  + 'this kind to work as a turn, and this lesson\'s items carry no support tier to time a model by.';
 
-/** What the pulled help levers put on screen, for the tutor. Never the order, the period, the pick or the row. */
-export function leverFacts(c: TimeSequencerChallenge | null, pulled: readonly string[]): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id);
-  const parts: string[] = [];
-  if (on(SKY_STRIP_LEVER) && !c.showSkyCue) parts.push('Every card now has a sky strip with the sun or moon drawn at that card\'s time of day.');
-  if (on(FACE_NUMBERS_LEVER)) parts.push('Every clock face is drawn larger with all twelve numbers round it.');
-  if (on(DAY_ANCHORS_LEVER)) {
-    const a = dayAnchors(c);
-    if (a) parts.push(`Beside each time-of-day choice is a picture of another everyday activity in that part of the day: ${PERIODS.map(p => a[p].label).join('; ')} (in the order of the choices).`);
-  }
-  if (on(RELATION_MODEL_LEVER)) {
-    const m = relationModel(c);
-    if (m) parts.push(`Above the choices is a model day of three other cards in order: ${m[0].label}, then ${m[1].label}, then ${m[2].label}; ${m[0].label} is marked "before" and ${m[2].label} "after" ${m[1].label}.`);
-  }
-  if (on(DURATION_MODEL_LEVER)) {
-    const m = durationModel(c);
-    if (m) parts.push(`Above the cards are two other pairs with bars as long as each takes: ${m.far[0].label} (a short bar) and ${m.far[1].label} (a long bar); ${m.same[0].label} and ${m.same[1].label} (bars the same length).`);
-  }
-  if (on(OPTION_PICTURES_LEVER)) parts.push('Each answer choice now shows the picture its row has in the schedule; a choice not on the schedule has none.');
-  return parts.join(' ');
-}
+export const TIME_LEVERS = leverSet<TimeSequencerChallenge, null>({
+  modeOf: timeModeOf,
+  missesOf: mode => TIME_MISSES[mode as keyof typeof TIME_MISSES] ?? [],
+  // The anchors' words must never name a spoken item's answer.
+  answersOf: c => { const key = timeKey(c); return key ? [key.answer, ...key.alsoAccept] : []; },
+  specs: [
+    { id: SKY_STRIP_LEVER, type: 'marks', modes: ['sequence-3', 'sequence-5'], answers: 'all', offer: skyOffered,
+      when: 'The learner puts the day in the wrong order: backwards, two cards traded, or the wrong card first.',
+      does: 'Puts a sky strip on every card: the sun or moon drawn where it is at that card\'s time of day. The cards stay '
+        + 'where they are; none is placed or numbered.',
+      fact: 'Every card now has a sky strip with the sun or moon drawn at that card\'s time of day.' },
+    { id: FACE_NUMBERS_LEVER, type: 'marks', modes: ['clock-sequence'], answers: 'all', offer: facesOffered,
+      when: 'The learner puts the clock cards in the wrong order, or cannot read where the short hand points.',
+      does: 'Draws every clock face larger, with all twelve numbers round it. No card is placed or named.',
+      fact: 'Every clock face is drawn larger with all twelve numbers round it.' },
+    { id: FAR_APART_LEVER, type: 'easier', carrier: 'shown', modes: ORDERING, answers: 'all', content: farApartCards,
+      when: 'The learner cannot order cards this close together in the day yet.',
+      does: `Opens an easier practice first: the same number of other cards, a few hours apart in the day. ${PRACTICE} `
+        + 'No card is placed on the full item when it comes back.' },
+    { id: DAY_ANCHORS_LEVER, type: 'meaning', carrier: 'shown', modes: ['time-of-day'], answers: 'all', content: dayAnchors,
+      when: 'The learner picks the wrong time of day.',
+      does: 'Puts a picture of one other everyday activity beside each time-of-day choice (another thing people do in '
+        + 'that part of the day). The activity on the card is not among them.',
+      fact: (a: Record<Period, BankCard>) => 'Beside each time-of-day choice is a picture of another everyday activity in '
+        + `that part of the day: ${PERIODS.map(p => a[p].label).join('; ')} (in the order of the choices).` },
+    { id: TWO_CHOICES_LEVER, type: 'easier', carrier: 'shown', modes: ['time-of-day'], answers: 'all', content: twoChoices,
+      when: 'The learner cannot tell neighbouring times of day apart yet.',
+      does: `Opens an easier practice first: another activity with only two time-of-day choices, far apart. ${PRACTICE}` },
+    { id: RELATION_MODEL_LEVER, type: 'custom', carrier: 'shown', why: PICTURE_ONLY, modes: ['before-after'], answers: 'all',
+      content: relationModel,
+      when: 'The learner picks a card that does not come right before or after, or mixes up before and after.',
+      does: 'Shows a model day of three other cards in order above the choices, the first marked "before" and the last '
+        + 'marked "after" the middle one. None of them is on the item.',
+      fact: (m: BankCard[]) => `Above the choices is a model day of three other cards in order: ${m[0].label}, then `
+        + `${m[1].label}, then ${m[2].label}; ${m[0].label} is marked "before" and ${m[2].label} "after" ${m[1].label}.` },
+    { id: TWO_CARDS_LEVER, type: 'easier', carrier: 'shown', modes: ['before-after'], answers: 'all', content: twoCards,
+      when: 'The learner cannot pick between cards this close in the day yet.',
+      does: `Opens an easier practice first: another card with only two choices, far apart in the day. ${PRACTICE}` },
+    { id: DURATION_MODEL_LEVER, type: 'custom', carrier: 'shown', why: PICTURE_ONLY, modes: ['duration-compare'],
+      answers: 'all', content: durationModel,
+      when: 'The learner picks the shorter activity, or mixes up "about the same" with "longer".',
+      does: 'Shows two other pairs above the cards, each activity with a bar as long as it takes: one very short '
+        + 'against very long, one pair with bars the same length. The item\'s cards get no bar.',
+      fact: (m: NonNullable<ReturnType<typeof durationModel>>) => 'Above the cards are two other pairs with bars as long as '
+        + `each takes: ${m.far[0].label} (a short bar) and ${m.far[1].label} (a long bar); ${m.same[0].label} and `
+        + `${m.same[1].label} (bars the same length).` },
+    { id: FAR_PAIR_LEVER, type: 'easier', carrier: 'shown', modes: ['duration-compare'], answers: ['said_same', 'shorter_one'],
+      content: farPair,
+      when: 'The learner cannot compare two activities this close in length yet.',
+      does: `Opens an easier practice first: another pair, one very short and one very long. ${PRACTICE}` },
+    { id: OPTION_PICTURES_LEVER, type: 'marks', modes: ['read-schedule'], answers: 'all',
+      offer: c => Object.keys(optionPictures(c)).length > 1,
+      when: 'The learner reads across the wrong row, or picks an activity that is not on the schedule.',
+      does: 'Puts beside each answer choice the picture its row has in the schedule (none for a choice that is not '
+        + 'on the schedule).',
+      fact: 'Each answer choice now shows the picture its row has in the schedule; a choice not on the schedule has none.' },
+    { id: SHORT_SCHEDULE_LEVER, type: 'easier', carrier: 'shown', modes: ['read-schedule'], answers: 'all', content: shortSchedule,
+      when: 'The learner cannot find the time in a schedule this long yet.',
+      does: 'Opens an easier practice first: a schedule of three rows on whole hours, other activities and another '
+        + `time. ${PRACTICE}` },
+  ],
+});

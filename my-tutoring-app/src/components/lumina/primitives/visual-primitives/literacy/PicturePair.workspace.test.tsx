@@ -15,12 +15,13 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { validatePictureVocabularyData } from '../../../components/live-activity/adapters/pictureVocabularyLive';
+import { validatePictureVocabularyData } from './pictureVocabularyDomain';
+import { pictureBoardLevers } from './pictureVocabularyLevers';
 import { pictureVocabularyOracle } from '../../../service/qa/oracles/picture-vocabulary';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/picture-vocabulary.pair_build.json';
 import {
   PAIR_PICTURES, askablePicturePairItem, clashes, makePicturePairItems, pairAdjacent, pairPictureOf, passingPairs,
-  picturePairItemsFrom, picturePairLevers, picturePairMiss, picturePairModelFor, picturePairSmallBoard, relationsFor,
+  picturePairItemsFrom, picturePairMiss, picturePairModelFor, picturePairSmallBoard, relationsFor,
   type PicturePairItem,
 } from './picturePairBuild';
 import { RHYME_PAIR_RULES, pairMiss } from './rhymePairBuild';
@@ -102,10 +103,11 @@ describe('pair_build rules (pure)', () => {
       expect(picturePairMiss([model[0].word, model[1].word], [], item.relation)).toBeUndefined();
     }
     const tw = getComponentById('picture-vocabulary')!.teachingWorkspace!;
-    const answered = new Set(items.flatMap(i => picturePairLevers(i, []).flatMap(l => l.answers ?? [])));
+    const levers = pictureBoardLevers('medium');
+    const answered = new Set(items.flatMap(i => levers.declare(i, []).flatMap(l => l.answers ?? [])));
     for (const m of tw.misses!.pair_build) if (m !== 'same_pair') expect(answered.has(m), m).toBe(true);
     expect(tw.unanswered!.pair_build).toEqual(['same_pair']);
-    expect(picturePairLevers(items[0], []).every(l => !l.pulled)).toBe(true);
+    expect(levers.declare(items[0], []).every(l => !l.pulled)).toBe(true);
     expect(() => validatePictureVocabularyData(data)).not.toThrow();
     expect(pictureVocabularyOracle.verify(data, {} as never).violations).toEqual([]);
   });

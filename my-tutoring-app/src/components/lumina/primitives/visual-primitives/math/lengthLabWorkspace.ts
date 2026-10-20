@@ -1,56 +1,71 @@
 /**
- * Length lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C10).
+ * Length lab on the shared tutor/JEV teaching workspace: the ask, the spoken key, the activity's check and the scene,
+ * which the boss (`lengthLab.boss.ts`), the component, the levers and the tests read.
  *
- * Pure: the component and any probe read the same assignment and scene. A tap, tiles laid with + and Check, or
- * three objects placed in order are checked by the activity's own check. compare and indirect ask for one choice,
- * which may also be said aloud: the item is spoken with `acceptsGesture`, and JEV judges it from the tutor's
- * feedback against `expectedAnswer` (VB-1, 2026-10-13). tile_and_count and estimate_then_tile are checked on the
- * tiles laid, order on the slots, and two_unit_compare asks its question only after both measurements, so those
- * stay tap-only; the tutor is never handed `correctUnitCount`, `correctOrderCsv` or the objects' lengths.
+ * compare and indirect ask for one choice, which may also be said aloud: the boss hands the tutor its key
+ * (`lengthKey`, a menu the ask says in full) and the activity checks a tap. Laying units with + and Check, guessing
+ * then measuring, measuring with two units and putting objects in order have no key and are checked on screen; the
+ * tutor is never handed `correctUnitCount`, `correctOrderCsv` or the objects' lengths.
+ *
+ * Pure: no React.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import type { LengthLabChallenge } from './LengthLab';
+import type { LengthLabChallenge, LengthLabData } from './LengthLab';
+import { LENGTH_MISSES, type LengthMiss } from './lengthLab.card';
+
+export { LENGTH_MISSES, type LengthMiss };
 
 const isSpoken = (c: LengthLabChallenge) => c.type === 'compare' || c.type === 'indirect';
 
-export function workspaceAssignment(challenge: LengthLabChallenge): TeachingAssignment {
-  const expectedAnswer = lengthExpectedAnswer(challenge);
-  if (!expectedAnswer) return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-  return { id: challenge.id, task: `${challenge.instruction} The learner answers by saying it, or tapping one choice.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer, misses: lengthSpokenMisses(challenge) };
-}
+/** The lesson's items, in order. */
+export const lengthItems = (d: Pick<LengthLabData, 'challenges'>): LengthLabChallenge[] => d.challenges ?? [];
 
-/** The one answer a spoken compare or indirect choice is judged against, with the natural ways of saying it. */
-export function lengthExpectedAnswer(c: LengthLabChallenge): string | undefined {
+// ── The ask and the key ──────────────────────────────────────────────────────
+
+/**
+ * What the learner is asked. compare and indirect are asked in the words of their buttons ("pencil is longer",
+ * "pencil is shorter", "They are the same length"; "ribbon is longer", "Same length"), so every choice is said in the
+ * ask. The boards are asked their own instruction.
+ */
+export function lengthAsk(c: LengthLabChallenge): string {
   const a = c.objectName0, b = c.objectName1;
-  if (!isSpoken(c) || !a || !b) return undefined;
-  if (c.correctAnswer === 'same') return `the same length (neither the ${a} nor the ${b} is longer); said as "the same", `
-    + `"same length", "they are the same" or "neither". Naming either object as longer or shorter is not it.`;
-  if (c.type === 'indirect') {
-    const key = c.correctAnswer, other = key === a ? b : key === b ? a : '';
-    if (!other) return undefined;
-    return `the ${key} (the clues make the ${key} longer than the ${other}); said as "${key}", "the ${key}" or "the ${key} `
-      + `is longer". Naming the ${other}${c.referenceObjectName ? ` or the ${c.referenceObjectName}` : ''}, or saying they `
-      + 'are the same, is not it.';
-  }
-  if (c.correctAnswer !== 'longer' && c.correctAnswer !== 'shorter') return undefined;
-  const [long, short] = c.correctAnswer === 'longer' ? [a, b] : [b, a];
-  const opposite = c.correctAnswer === 'longer' ? 'shorter' : 'longer';
-  return `the ${long} is longer and the ${short} is shorter. Credit naming the object the question asks for: the ${long} `
-    + `when it asks which is longer, the ${short} when it asks which is shorter, alone ("the ${long}") or in a sentence `
-    + `("the ${long} is longer"); or saying the choice as the screen words it, "${a} is ${c.correctAnswer}". Naming the `
-    + `other object, calling the ${a} ${opposite}, or saying they are the same length is not it.`;
+  if (c.type === 'compare') return `Is the ${a} longer or shorter than the ${b}, or are they the same length?`;
+  if (c.type === 'indirect') return `Which is longer, the ${a} or the ${b}? Or are they the same length?`;
+  return c.instruction;
 }
 
-/** A spoken choice's known wrong answers, with the tap's ids (`lengthMiss`, the catalog's lists), most specific first. */
+/** The key a spoken answer is judged against; null on a board (checked on screen). */
+export function lengthKey(c: LengthLabChallenge): SpokenKey | null {
+  const a = c.objectName0, b = c.objectName1;
+  if (!isSpoken(c) || !a || !b) return null;
+  const same = { answer: 'the same', alsoAccept: ['same', 'same length', 'they are the same', 'neither'] };
+  if (c.type === 'indirect') {
+    const menu = [`the ${a}`, `the ${b}`, 'the same'];
+    if (c.correctAnswer === 'same') return { ...same, menu,
+      signatureError: `Naming the ${a} or the ${b} as longer is wrong: the clues make them the same length.` };
+    const key = c.correctAnswer, other = key === a ? b : a;
+    return { answer: `the ${key}`, alsoAccept: [key, `the ${key} is longer`, `the ${other} is shorter`], menu,
+      signatureError: `The ${other}${c.referenceObjectName ? ` and the ${c.referenceObjectName}` : ''} are wrong, and so is "the same".` };
+  }
+  const menu = ['longer', 'shorter', 'the same'];
+  if (c.correctAnswer === 'same') return { ...same, menu,
+    signatureError: '"Longer" and "shorter" are wrong: the two are the same length.' };
+  const longer = c.correctAnswer === 'longer';
+  const [long, short] = longer ? [a, b] : [b, a];
+  return { answer: c.correctAnswer, alsoAccept: [`the ${a} is ${c.correctAnswer}`, `the ${b} is ${longer ? 'shorter' : 'longer'}`],
+    menu, acceptRule: `Naming the ${long} as the longer one, or the ${short} as the shorter one, counts.`,
+    signatureError: `"${longer ? 'shorter' : 'longer'}" is wrong, and so is "the same".` };
+}
+
+/** A spoken choice's known wrong answers, with the tap's ids (`lengthMiss`, the card's lists), most specific first. */
 export function lengthSpokenMisses(c: LengthLabChallenge): KnownMiss[] {
   const a = c.objectName0, b = c.objectName1;
   if (!isSpoken(c) || !a || !b) return [];
   if (c.correctAnswer === 'same') return [{ id: c.type === 'compare' ? 'missed_same' : 'chose_shorter',
     pattern: `The ${a} and the ${b} are the same length, but the learner names one of them as longer or shorter.`,
-    examples: [`the ${a}`, `the ${b} is longer`] }];
+    examples: c.type === 'compare' ? ['longer', `the ${b} is longer`] : [`the ${a}`, `the ${b} is longer`] }];
   const same = { id: 'said_same', pattern: 'The learner says the two are the same length, though one is longer.',
     examples: ['the same', 'same length'] };
   if (c.type === 'indirect') {
@@ -59,13 +74,23 @@ export function lengthSpokenMisses(c: LengthLabChallenge): KnownMiss[] {
       examples: [`the ${other}`, `the ${other} is longer`] }, same];
   }
   const [long, short] = c.correctAnswer === 'longer' ? [a, b] : [b, a];
-  return [{ id: 'reversed', pattern: `The ${long} is longer. The learner swaps longer and shorter: names the ${short} as `
-    + `longer, or the ${long} as shorter, or names the ${short} when asked which is longer.`,
-  examples: [`the ${short} is longer`, `the ${long} is shorter`] }, same];
+  const opposite = c.correctAnswer === 'longer' ? 'shorter' : 'longer';
+  return [{ id: 'reversed', pattern: `The ${long} is longer. The learner swaps longer and shorter: says the ${a} is ${opposite}, `
+    + `names the ${short} as longer, or the ${long} as shorter.`,
+  examples: [opposite, `the ${short} is longer`] }, same];
 }
 
-/** What a spoken mode's answer is, which the scene withholds until the learner answers. */
-const WITHHELD = 'which object is longer or shorter, or whether they are the same length';
+/** The journey's spoken answers: the key's own words, or a plainly different choice from the same menu. */
+export function lengthHarnessWords(c: LengthLabChallenge): { correct: string; plainWrong: string } {
+  const key = lengthKey(c)!;
+  if (c.type === 'indirect') {
+    const other = c.correctAnswer === c.objectName0 ? c.objectName1 : c.objectName0;
+    return { correct: key.answer, plainWrong: c.correctAnswer === 'same' ? `the ${c.objectName0}` : `the ${other}` };
+  }
+  return { correct: key.answer, plainWrong: c.correctAnswer === 'longer' ? 'shorter' : 'longer' };
+}
+
+// ── The activity's check ─────────────────────────────────────────────────────
 
 export interface LengthView {
   /** compare: 'longer' | 'shorter' | 'same'; indirect: an object name or 'same'; two_unit_compare: a unit. */
@@ -137,23 +162,6 @@ export function describeLengthWork(c: LengthLabChallenge, view: LengthView): str
   }
 }
 
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads, drawn from
- * the catalog's commonStruggles (longer/shorter confused, gaps or overlaps when tiling):
- * - compare: `reversed` (longer and shorter swapped), `said_same` (a real difference called the same),
- *   `missed_same` (equal lengths called longer or shorter);
- * - tile_and_count / estimate_then_tile: `tiled_to_guess` (stopped at the guess, not the end of the object),
- *   `one_short` / `one_over` (a gap or an overlap's worth), `short` / `over`;
- * - two_unit_compare: `chose_bigger_unit` (picked the unit that took fewer);
- * - order: `reversed_order` (longest first), `swapped_pair` (two neighbours swapped), `other_order`;
- * - indirect: `chose_shorter` (the other object), `said_same`.
- */
-export type LengthMiss = 'reversed' | 'said_same' | 'missed_same'
-  | 'tiled_to_guess' | 'one_short' | 'one_over' | 'short' | 'over'
-  | 'chose_bigger_unit'
-  | 'reversed_order' | 'swapped_pair' | 'other_order'
-  | 'chose_shorter';
-
 export function lengthMiss(c: LengthLabChallenge | null, view: LengthView): LengthMiss | undefined {
   if (!c || lengthLabMatches(c, view)) return undefined;
   switch (c.type) {
@@ -183,8 +191,35 @@ export function lengthMiss(c: LengthLabChallenge | null, view: LengthView): Leng
   }
 }
 
+// ── The scene ────────────────────────────────────────────────────────────────
+
+/** This item's never-say rules and what teaching it is, from the old catalog guidance, by mode and what is on screen. */
+function constraintsOf(c: LengthLabChallenge, view: LengthView): string {
+  const marks = view.ticksShown ? '' : ' The unit marks are hidden: do not count cells.';
+  switch (c.type) {
+    case 'compare':
+      return 'Before the learner answers, and after a wrong answer, never say which object is longer or shorter or whether '
+        + `they are the same length. Teach comparing: line up the starting ends and look at the far ends.${marks}`;
+    case 'indirect':
+      return 'Before the learner answers, and after a wrong answer, never say which object is longer. Read the clues aloud '
+        + 'and teach reading them as a chain through the reference object.';
+    case 'order':
+      return 'Before the learner checks, and after a wrong order, never say where an object goes or which is shortest or '
+        + `longest. Teach comparing two objects at a time.${marks}`;
+    case 'two_unit_compare':
+      return 'Never say how many units reach the end or which unit was needed more. Teach laying units end to end, with no '
+        + 'gaps or overlaps, from one end of the object to the other.';
+    default:
+      return 'Never say how many units reach the end, or whether to add or take away units: ask the learner to look where '
+        + 'their units end against the object. Teach laying units end to end, with no gaps or overlaps, from one end to '
+        + 'the other, counting each once.'
+        + (c.type === 'estimate_then_tile' ? ' The guess is never marked: do not say whether it is close.' : '')
+        + (view.fitShown ? '' : ' The fit line is hidden: do not say whether the units fit.');
+  }
+}
+
 /** What is drawn and asked. The objects and units on screen are named; no length, count or order is. */
-export function workspaceScene(c: LengthLabChallenge, view: LengthView): WorkspaceScene {
+export function lengthScene(c: LengthLabChallenge, view: LengthView): SceneOf {
   const drawn: Record<string, string | number> = {};
   const ticks = view.ticksShown ? 'shown: each bar is split into unit cells' : 'hidden';
   if (c.type === 'compare') {
@@ -196,18 +231,14 @@ export function workspaceScene(c: LengthLabChallenge, view: LengthView): Workspa
     drawn.unit = unitName(view.unitA);
     if (c.type === 'estimate_then_tile') {
       drawn.guess = view.estimate === null ? `not made yet; choices ${(c.estimateOptions ?? []).join(', ')}` : String(view.estimate);
-      drawn.guessGraded = 'never: any guess is fine; the measuring is what is checked';
     }
-    drawn.howToAnswer = 'tap + to lay a unit along the object, - to take one back, then Check';
     drawn.fitCheck = view.fitShown ? 'shown: a line says not enough, too many, or a fit' : 'hidden';
   } else if (c.type === 'two_unit_compare') {
     drawn.object = `${c.objectName0}, drawn as one bar`;
     drawn.units = `first ${unitName(view.unitA)}, then ${unitName(view.unitB)} (drawn wider)`;
-    drawn.howToAnswer = 'lay each unit along the object with + and Check, then tap the unit they needed more of';
   } else if (c.type === 'order') {
     drawn.objects = [c.objectName0, c.objectName1, c.objectName2].filter(Boolean).join(', ') + ', drawn as bars';
     drawn.unitMarks = ticks;
-    drawn.howToAnswer = 'tap each object into the slots from shortest to longest, then Check Order';
   } else if (c.type === 'indirect') {
     drawn.clues = [c.clue0, c.clue1].filter(Boolean).join(' ');
     if (c.referenceObjectName) drawn.reference = `${c.referenceObjectName}, drawn as a bar`;
@@ -216,14 +247,6 @@ export function workspaceScene(c: LengthLabChallenge, view: LengthView): Workspa
   }
   return {
     objects: [],
-    facts: {
-      kind: c.type, ...drawn,
-      learnerWork: describeLengthWork(c, view),
-      constraints: isSpoken(c)
-        ? 'The learner says the answer or taps one choice; a tap is checked by the activity. Before the learner has '
-          + `answered, never name ${WITHHELD}. You cannot tap for the learner.`
-        : 'The learner answers on the screen: taps a choice, lays units with + and Check, or taps objects '
-          + 'into order and presses Check; the activity checks the work itself. You cannot tap, lay or place for the learner.',
-    },
+    facts: { kind: c.type, ...drawn, learnerWork: describeLengthWork(c, view), constraints: constraintsOf(c, view) },
   };
 }

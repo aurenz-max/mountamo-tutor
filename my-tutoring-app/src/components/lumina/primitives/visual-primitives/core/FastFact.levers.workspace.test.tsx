@@ -6,7 +6,6 @@
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
-vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
 vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
@@ -102,7 +101,7 @@ it('apply: the drop greys out an untried wrong choice, keeps its text, and the n
   const dropped = q(h, '[data-dropped]') as HTMLButtonElement[];
   expect(dropped.map(b => b.textContent)).toEqual(['Ohio']);
   expect(dropped[0].disabled).toBe(true);
-  expect(onScreen(h)).toBe('choice 4, "Ohio", is greyed out and is not the answer');
+  expect(onScreen(h)).toBe('Choice 4, "Ohio", is greyed out and is not the answer.');
   h.dispatch('retry');
   h.press('Colorado');
   expect(attempts(h).at(-1)).toMatchObject({ correct: true, levers: ['drop_far_choice'] });

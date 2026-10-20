@@ -1,5 +1,7 @@
 /**
- * construction-sequence-planner on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C31).
+ * construction-sequence-planner's domain: the items, their keys, checks and misses, and the scene. Its live wiring is
+ * `constructionSequencePlanner.card.ts` + `constructionSequencePlanner.boss.ts` (three plan boards and a SAY_OR_SHOW
+ * total on the spoken preset).
  *
  * Every item is built and keyed by code from a library of real construction jobs per project (house, bridge, tower,
  * road, playground), each job with the jobs it needs done first. An item is a convex, connected piece of one project's
@@ -18,11 +20,12 @@
  *   jobs instead of weeks.
  * sequence, dependency_chain and parallel are plans checked by code; critical_path is one number said aloud or tapped (J14).
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { CSP_MISSES, type CriticalMiss, type CspMiss, type OrderMiss, type ParallelMiss } from './constructionSequencePlanner.card';
 
 export type CspMode = 'sequence' | 'dependency_chain' | 'parallel' | 'critical_path';
 export const CSP_MODES: CspMode[] = ['sequence', 'dependency_chain', 'parallel', 'critical_path'];
@@ -255,16 +258,8 @@ export function cspCorrect(item: CspItem | undefined, w: CspWork): boolean {
   return w.choice === criticalWeeks(item);
 }
 
-export type OrderMiss = 'reversed' | 'swapped_neighbors' | 'wrong_first' | 'missed_second_need' | 'job_before_need';
-export type ParallelMiss = 'need_same_week' | 'need_later' | 'crew_over' | 'too_many_weeks';
-export type CriticalMiss = 'added_all' | 'shorter_chain' | 'most_jobs_chain' | 'counted_jobs' | 'off_by_one';
-export type CspMiss = OrderMiss | ParallelMiss | CriticalMiss;
-export const CSP_MISSES: Record<CspMode, readonly CspMiss[]> = {
-  sequence: ['reversed', 'swapped_neighbors', 'wrong_first', 'job_before_need'],
-  dependency_chain: ['wrong_first', 'missed_second_need', 'job_before_need'],
-  parallel: ['need_same_week', 'need_later', 'crew_over', 'too_many_weeks'],
-  critical_path: ['added_all', 'shorter_chain', 'most_jobs_chain', 'counted_jobs', 'off_by_one'],
-};
+export type { CriticalMiss, CspMiss, OrderMiss, ParallelMiss };
+export { CSP_MISSES };
 
 /** The first job in the order placed before a job it needs, with the need it is missing. */
 export function firstBreak(item: CspItem, order: string[]): { at: number; job: string; missing: string } | null {
@@ -581,18 +576,24 @@ export function cspItems(d: CspItemsSource): CspItem[] {
     rng: seededRng(`${d.title ?? 'build'}:${resolveProject(d)}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── Spoken answers ───────────────────────────────────────────────────────────────────────
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
   'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one',
   'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five', 'twenty-six', 'twenty-seven', 'twenty-eight'];
-const said = (n: number) => `"${n}", "${NUMBER_WORDS[n] ?? n}" or "${n} weeks"`;
 
-/** The answer a spoken reply is judged against. */
-export function cspExpectedAnswer(item: CspItem): string {
+/**
+ * The key a spoken total is judged against, on critical_path only: the fewest weeks, as a number, a number word or
+ * with "weeks". The other offered totals, two totals at once and a hedge are the signature error. A plan (sequence,
+ * dependency_chain, parallel) has no key: the activity checks the board.
+ */
+export function cspKey(item: CspItem): SpokenKey | null {
+  if (item.mode !== 'critical_path') return null;
   const cp = criticalWeeks(item);
-  const others = (item.options ?? []).filter(o => o !== cp).map(o => `${o}`).join(', ');
-  return `${said(cp)} counts. ${others ? `${others} weeks are wrong, and so is` : 'So is'} naming two totals or hedging between them.`;
+  const others = (item.options ?? []).filter(o => o !== cp);
+  return { answer: `${cp} weeks`, alsoAccept: [`${cp}`, ...(NUMBER_WORDS[cp] ? [NUMBER_WORDS[cp]] : [])],
+    signatureError: `${others.length ? `${others.join(', ')} weeks ${others.length > 1 ? 'are' : 'is'} wrong, and so is` : 'So is'} `
+      + 'naming two totals or hedging between them.' };
 }
 
 const WHAT: Record<CriticalMiss, string> = {
@@ -614,20 +615,6 @@ export function cspSpokenMisses(item: CspItem): KnownMiss[] {
     out.push({ id, pattern: `The right total is ${cp} weeks. The learner says ${o} weeks, which ${WHAT[id]}.`, examples: [`${o}`, `${o} weeks`] });
   }
   return out;
-}
-
-const HOW: Record<CspMode, string> = {
-  sequence: 'The learner taps the job cards into the plan and presses Check and build.',
-  dependency_chain: 'The learner taps the job cards into the plan and presses Check and build.',
-  parallel: 'The learner taps a job card, then a week, for every job, and presses Check and build.',
-  critical_path: 'The learner answers by saying it, or tapping a total and pressing Check Answer.',
-};
-
-export function workspaceAssignment(item: CspItem): TeachingAssignment {
-  const task = `${askOf(item)} ${HOW[item.mode]}`;
-  if (item.mode !== 'critical_path') return { id: item.id, task, response: 'gesture' };
-  const misses = cspSpokenMisses(item);
-  return { id: item.id, task, response: 'speech', acceptsGesture: true, expectedAnswer: cspExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -677,14 +664,32 @@ export function runText(item: CspItem, w: CspWork): string {
   return '';
 }
 
-const CONSTRAINTS: Record<CspMode, string> = {
-  sequence: 'The learner builds the plan by tapping cards; the activity checks it and runs the build. The cards do not show which jobs a job needs: '
-    + 'that is the task. You cannot tap, place or check for the learner.',
-  dependency_chain: 'The learner builds the plan by tapping cards; the activity checks it and runs the build. You cannot tap, place or check for the learner.',
-  parallel: 'The learner places each job in a week; the activity checks the plan and runs the build. You cannot tap, place or check for the learner.',
-  critical_path: 'The learner answers by saying a total, or by tapping and checking; the activity judges the tap. No total, timeline or chain is marked on '
-    + 'screen until the answer is credited. You cannot tap or check for the learner.',
+/** What the screen shows and hides, by mode (kept from the catalog's guidance before the boss). */
+const LAYOUT: Record<CspMode, string> = {
+  sequence: 'The cards do not show what a job needs: working that out is the task. A checked plan is built on screen and stops at '
+    + 'the first job whose need was not done; the screen does not say which need was missing, and neither do you.',
+  dependency_chain: 'Each card shows the jobs it needs. A checked plan is built on screen and stops at the first job whose need was '
+    + 'not done; the screen does not say which need was missing, and neither do you.',
+  parallel: 'Each card shows the jobs it needs. A checked plan is built on screen week by week and stops at the first week a job\'s '
+    + 'need was not done; the screen does not say which need was missing, and neither do you.',
+  critical_path: 'Each card shows its weeks and the jobs it needs. No total, timeline or chain is marked on screen until the answer '
+    + 'is credited.',
 };
+
+/** What this task forbids saying, beyond the shared rules (kept from the catalog's guidance before the boss). */
+const NEVER_SAY: Record<CspMode, string> = {
+  sequence: 'Never say which job comes first, next or last, which job another job needs, or that one job goes before another '
+    + '("the roof sits on the walls"). You may ask what a job the learner names needs before it, but never describe the needed '
+    + 'job by where it is, what it looks like or what it does ("the part in the middle that holds the floors").',
+  dependency_chain: 'Never say where a job goes, which job to place next, or that a job is missing one of its needs; ask the '
+    + 'learner to read a card.',
+  parallel: 'Never say which jobs share a week, which week a job goes in, or that two jobs can happen at the same time; ask which '
+    + 'jobs need the same jobs.',
+  critical_path: 'Never say a total, the weeks of a chain, which chain is longest, or that the weeks should not all be added; ask '
+    + 'how the learner got their number.',
+};
+const AFTER_A_MISS = 'After a miss, never say what the wrong answer came from, which jobs to swap, switch or move, or where a job '
+  + 'goes ("swap the last two", "put it after the core").';
 
 /** What is drawn and asked. The cards and their rules; never an order, a plan or a total the learner must find. */
 export function workspaceScene(item: CspItem, view: CspView): WorkspaceScene {
@@ -701,14 +706,16 @@ export function workspaceScene(item: CspItem, view: CspView): WorkspaceScene {
   }
   if (view.checked && item.mode !== 'critical_path') facts.run = runText(item, view.checked);
   facts.learnerWork = describeCspWork(item, view.work);
-  facts.constraints = CONSTRAINTS[item.mode];
+  facts.layout = LAYOUT[item.mode];
+  facts.constraints = NEVER_SAY[item.mode];
+  facts.afterMiss = AFTER_A_MISS;
   return { objects: [], facts };
 }
 
 /** parallel: the week rows offered, two past the deadline so a slow plan can be built and checked. */
 export const weekRows = (item: CspItem) => Math.min(item.jobs.length, (item.deadline ?? item.jobs.length) + 2);
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ──────────────────────────────
 
 /** The journey's answers: the key, and a wrong answer showing a typical miss of the mode. */
 export function cspHarnessAnswers(item: CspItem): { correct: CspWork; plainWrong: CspWork } {
@@ -738,6 +745,12 @@ export function cspHarnessAnswers(item: CspItem): { correct: CspWork; plainWrong
   const first = Math.min(...join.needs.map(n => without.indexOf(n)));
   const wrong = [...without.slice(0, first + 1), join.id, ...without.slice(first + 1)];
   return { correct: { ...work, order: key }, plainWrong: { ...work, order: orderWorks(item, wrong) ? [...key].reverse() : wrong } };
+}
+
+/** The journey's spoken totals on critical_path: the key's own words, or the total that shows the mode's first-listed miss. */
+export function cspHarnessWords(item: CspItem): { correct: string; plainWrong: string } {
+  const a = cspHarnessAnswers(item);
+  return { correct: `${a.correct.choice} weeks`, plainWrong: `${a.plainWrong.choice} weeks` };
 }
 
 /** The taps that enter a work on screen (cards, weeks, a total), before the check. */

@@ -14,7 +14,7 @@ import type {
 } from '../../primitives/visual-primitives/literacy/StoryBridge';
 import {
   challengeAskable, isComparisonSummary, isSayableStory, isSharedBehavior,
-} from '../../primitives/visual-primitives/literacy/storyBridgeScript';
+} from '../../primitives/visual-primitives/literacy/storyBridgeDomain';
 
 const MODEL = 'gemini-flash-lite-latest';
 const ROLES = 3;

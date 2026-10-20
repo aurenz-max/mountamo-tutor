@@ -1,30 +1,31 @@
 /**
- * The in-item levers on a periodic-table item (`/add-support-tiers`, report
- * qa/eval-reports/periodic-table-levers-2026-10-08.md). No real-learner evidence: the misses are what
- * `periodicMiss` (a tap) and `periodicSpokenMisses` (a spoken answer) name. Pure: the component draws from these,
- * the workspace publishes them, the tests hold each leak rule. A simpler item has the id `<item>~simpler`, the same
- * mode and the same clue, and is built by `periodicPracticeItem`.
+ * The in-item levers on a periodic-table item, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/periodic-table-levers-2026-10-08.md). No real-learner evidence: the misses are what `periodicMiss`
+ * (a tap) and `periodicSpokenMisses` (a spoken answer) name. Pure: the component draws from these, the tests hold
+ * each leak rule. A simpler item has the id `<item>~simpler`, the same mode and the same clue, and is built by
+ * `periodicPracticeItem`. On easy, every help lever offered starts on screen (`helpShownFromStart`); that is not a pull.
  *
- * - Element Hunt / Name It, by the clue: `axis_marks` (help, group-and-period clue) rings the asked group number at
- *   the top and the asked period number at the side, never a box; `row_ranges` (help, number clue) writes each
- *   row's first and last atomic number beside its period number, the same for every item; `letter_lit` (help, name
+ * - Element Hunt / Name It, by the clue: `axis_marks` (marks, group-and-period clue) rings the asked group number at
+ *   the top and the asked period number at the side, never a box; `row_ranges` (legend, number clue) writes each
+ *   row's first and last atomic number beside its period number, the same for every item; `letter_lit` (marks, name
  *   or symbol clue) lights every box whose name or symbol starts with the asked first letter and dims the rest,
  *   offered only when at least three boxes light (`litLeaks`).
- * - Name It: `box_key` (help) a key beside the table, another element's box with its number, symbol and name
- *   labelled; the key element is in no item of the session (`keyLeaks`).
- * - Trends, compare: `column_model` (help, size only) a model column of another group, each atom drawn as a circle
- *   of its size, in a group no session item touches (`columnModelLeaks`); `pair_marks` (help) both named boxes
+ * - Name It: `box_key` (legend) a key beside the table, another element's box with its number, symbol and name
+ *   labelled, which reads every box alike; the key element is in no item of the session (`keyLeaks`).
+ * - Trends, compare: `column_model` (model, size only) a model column of another group, each atom drawn as a circle
+ *   of its size, in a group no session item touches (`columnModelLeaks`); `pair_marks` (marks) both named boxes
  *   ringed alike.
- * - Trends, outer electrons: `tall_columns` (help) the short middle block (groups 3 to 12) dimmed; no column numbered.
- * - Element Hunt, Name It, outer electrons: `simpler_item` (simplify) the same clue on an element in the first two
+ * - Trends, outer electrons: `tall_columns` (marks) the short middle block (groups 3 to 12) dimmed; no column numbered.
+ * - Element Hunt, Name It, outer electrons: `simpler_item` (easier) the same clue on an element in the first two
  *   rows (or, for outer electrons, in group 1 or 2), in no item of the session (`practiceLeaks`). Never offered on an
  *   item already that plain. A two-element compare has no simpler shape in the mode.
  */
-import type { WorkspaceLever } from '../../components/live-activity/runtime/contract';
+import { leverSet } from '../../components/live-activity/bossLevers';
+import { periodicTableCard } from '../periodicTable.card';
 import { ELEMENTS } from './constants';
 import {
-  elementFactsOf, itemFromChallenge, SIZE_COMPARE_GROUPS, type ElementFacts, type PeriodicTableItem,
-} from './periodicTableScript';
+  elementFactsOf, evalModeOf, itemFromChallenge, SIZE_COMPARE_GROUPS, type ElementFacts, type PeriodicTableItem,
+} from './periodicTableDomain';
 
 export const AXIS_LEVER = 'axis_marks';
 export const RANGES_LEVER = 'row_ranges';
@@ -144,90 +145,75 @@ export function periodicPracticeItem(item: PeriodicTableItem, items: readonly Pe
 export const periodicPracticeParent = (id: string | null | undefined, items: readonly PeriodicTableItem[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? items.find(i => `${i.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-// ── the levers ───────────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────
 
 const FIND_MISSES = ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'];
 const VALENCE_MISSES = ['group_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
-/** Easy starts with the item's help on screen; a starting position is not a pull. */
-export const helpStartsShown = (item: PeriodicTableItem) => item.tier === 'easy';
+/** What the set reads beyond the item: the session's items. */
+export interface PeriodicLeverContext { items: readonly PeriodicTableItem[] }
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls. */
-export function periodicLevers(item: PeriodicTableItem | null, items: readonly PeriodicTableItem[], pulled: readonly string[]):
-  WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const help = (id: string, when: string, does: string, answers: string[]) => levers.push({ id, kind: 'help', carrier: 'shown',
-    when, does, pulled: helpStartsShown(item) || pulled.includes(id), answers });
-  const back = 'then this item comes back.';
-  const simplify = (does: string, answers: string[]) => {
-    if (periodicPracticeItem(item, items)) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown',
-      when: 'The learner cannot do this item even with the help on screen: a plainer one first.', does,
-      pulled: pulled.includes(SIMPLER_LEVER), answers });
-  };
-  switch (item.kind) {
-    case 'find':
-    case 'name': {
-      const by = clueOf(item);
-      const misses = item.kind === 'find' ? FIND_MISSES : ['next_box'];
-      const never = item.kind === 'find' ? 'never say or point to which box it is' : 'never say which element it is';
-      if (by === 'position') help(AXIS_LEVER,
-        'The learner lands in the wrong row or the wrong column, or cannot find where a group and a period meet.',
-        `Rings the asked group number at the top of the table and the asked period number at the side; no box is marked. You may point to the two ringed numbers; ${never}.`,
-        misses);
-      else if (by === 'number') help(RANGES_LEVER,
-        'The learner lands near the asked number but in the wrong box, or cannot find the row that holds it.',
-        `Writes beside each period number the first and last atomic number of that row; no box is marked. You may point to the ranges; never say which row holds the asked number, and ${never}.`,
-        misses);
-      else if (letterLit(item)) help(LETTER_LEVER,
-        'The learner taps or names a box that only looks like the asked one, or cannot narrow the table down.',
-        `Lights every box whose ${by === 'name' ? 'name' : 'symbol'} starts with the asked first letter and dims the rest. You may say the lit boxes are the ones to check; ${never}.`,
-        misses);
-      const key = boxKey(item, items);
-      if (key) help(KEY_LEVER,
-        'The learner reads the big letters back instead of the name, or is unsure which part of a box is the name.',
-        `Draws a key beside the table: ${key.name}'s box with its atomic number, symbol and name labelled. You may point to the key's labels; never read this item's box or say its name.`,
-        ['said_symbol']);
-      simplify(`Opens an ungraded practice item with the same kind of clue on an element in the first two rows; ${back}`,
-        item.kind === 'find' ? FIND_MISSES : ['next_box', 'said_symbol']);
-      return levers;
-    }
-    case 'compare': {
-      if (columnModel(item, items)) help(COLUMN_LEVER,
-        'The learner picks the smaller atom of the two, or cannot say why one atom is bigger.',
-        'Draws a model column of another group beside the table, top to bottom, each atom as a circle of its size. You may point to the model and read its names; never say which of the learner\'s two is bigger, which sits lower, or the rule.',
-        ['other_of_pair']);
-      help(PAIR_LEVER,
-        'The learner answers without finding both elements on the table.',
-        'Rings both named boxes on the table, alike. You may say both boxes are ringed; never say which is the answer, which sits lower, or the rule.',
-        ['other_of_pair']);
-      return levers;
-    }
-    case 'valence':
-      help(TALL_LEVER,
-        'The learner says the group number, or miscounts the tall columns.',
-        'Dims the short middle block (groups 3 to 12) so only the tall columns stand out; no column is numbered or marked. You may point to the tall columns; never count them for the learner or say the number.',
-        VALENCE_MISSES);
-      simplify(`Opens an ungraded practice item: the outer electrons of an element in group 1 or 2; ${back}`, VALENCE_MISSES);
-      return levers;
-  }
-}
+/** The clue levers of Element Hunt and Name It: the same lever in both modes, its words by the mode's "never". */
+const clueSpecs = (mode: 'explore' | 'identify', never: string, answers: 'all' | readonly string[]) => [
+  { id: AXIS_LEVER, type: 'marks' as const, modes: [mode], answers,
+    when: 'The learner lands in the wrong row or the wrong column, or cannot find where a group and a period meet.',
+    does: `Rings the asked group number at the top of the table and the asked period number at the side; no box is marked. You may point to the two ringed numbers; ${never}.`,
+    content: (item: PeriodicTableItem) => (clueOf(item) === 'position' ? item.element ?? null : null),
+    fact: (e: ElementFacts) => `The group number ${e.group} at the top and the period number ${e.period} at the side are ringed; no box is marked.` },
+  { id: RANGES_LEVER, type: 'legend' as const, modes: [mode], answers,
+    when: 'The learner lands near the asked number but in the wrong box, or cannot find the row that holds it.',
+    does: `Writes beside each period number the first and last atomic number of that row; no box is marked. You may point to the ranges; never say which row holds the asked number, and ${never}.`,
+    offer: (item: PeriodicTableItem) => clueOf(item) === 'number',
+    fact: 'Beside each period number, the first and last atomic number of that row is written; no box is marked.' },
+  { id: LETTER_LEVER, type: 'marks' as const, modes: [mode], answers,
+    when: 'The learner taps or names a box that only looks like the asked one, or cannot narrow the table down.',
+    does: (item: PeriodicTableItem) => `Lights every box whose ${clueOf(item) === 'name' ? 'name' : 'symbol'} starts with the asked first letter and dims the rest. You may say the lit boxes are the ones to check; ${never}.`,
+    content: (item: PeriodicTableItem) => letterLit(item),
+    fact: (lit: number[], item: PeriodicTableItem) => {
+      const by = clueOf(item) === 'name' ? 'name' : 'symbol';
+      return `The ${lit.length} boxes whose ${by} starts with the letter ${(by === 'name' ? item.element!.name : item.element!.symbol)[0].toUpperCase()} are lit; the rest are dimmed.`;
+    } },
+];
 
-/** What a pulled help lever has put on screen, for the tutor and the observer: what is drawn, never the key. */
-export function leverFacts(item: PeriodicTableItem, items: readonly PeriodicTableItem[], on: (id: string) => boolean): string {
-  const facts: string[] = [];
-  const e = item.element;
-  if (on(AXIS_LEVER) && e) facts.push(`The group number ${e.group} at the top and the period number ${e.period} at the side are ringed; no box is marked.`);
-  if (on(RANGES_LEVER)) facts.push('Beside each period number, the first and last atomic number of that row is written; no box is marked.');
-  if (on(LETTER_LEVER) && e) {
-    const lit = letterLit(item);
-    if (lit) facts.push(`The ${lit.length} boxes whose ${clueOf(item) === 'name' ? 'name' : 'symbol'} starts with the letter ${(clueOf(item) === 'name' ? e.name : e.symbol)[0].toUpperCase()} are lit; the rest are dimmed.`);
-  }
-  const key = on(KEY_LEVER) ? boxKey(item, items) : null;
-  if (key) facts.push(`Beside the table, a key: ${key.name}'s box, labelled "atomic number" on its ${key.number}, "symbol" on its ${key.symbol} and "name" on its ${key.name}. It is not this item's element.`);
-  const model = on(COLUMN_LEVER) ? columnModel(item, items) : null;
-  if (model) facts.push(`Beside the table, a model column of group ${model.group} (not this pair's group), top to bottom: ${model.members.map(m => m.name).join(', ')}, each with a circle drawn to its atom's size.`);
-  if (on(PAIR_LEVER) && item.pair) facts.push(`${item.pair[0].name}'s box and ${item.pair[1].name}'s box are ringed, alike.`);
-  if (on(TALL_LEVER)) facts.push('The short middle block (groups 3 to 12) is dimmed; the tall columns stand out. No column is numbered or marked.');
-  return facts.join(' ');
-}
+export const PERIODIC_LEVERS = leverSet<PeriodicTableItem, PeriodicLeverContext>({
+  modeOf: evalModeOf,
+  missesOf: mode => periodicTableCard.modes[mode].misses,
+  support: { tier: item => item.tier, different: 'another group\'s column, each atom drawn to its size',
+    own: 'which of this pair is bigger' },
+  specs: [
+    ...clueSpecs('explore', 'never say or point to which box it is', 'all'),
+    ...clueSpecs('identify', 'never say which element it is', ['next_box']),
+    { id: KEY_LEVER, type: 'legend', modes: ['identify'], answers: ['said_symbol'],
+      when: 'The learner reads the big letters back instead of the name, or is unsure which part of a box is the name.',
+      does: (item, ctx) => `Draws a key beside the table: ${boxKey(item, ctx.items)?.name ?? 'another element'}'s box with its atomic number, symbol and name labelled. You may point to the key's labels; never read this item's box or say its name.`,
+      content: (item, ctx) => boxKey(item, ctx.items),
+      fact: (key: ElementFacts) => `Beside the table, a key: ${key.name}'s box, labelled "atomic number" on its ${key.number}, "symbol" on its ${key.symbol} and "name" on its ${key.name}. It is not this item's element.` },
+    { id: COLUMN_LEVER, type: 'model', modes: ['trend'], answers: ['other_of_pair'],
+      when: 'The learner picks the smaller atom of the two, or cannot say why one atom is bigger.',
+      does: 'Draws a model column of another group beside the table, top to bottom, each atom as a circle of its size. You may point to the model and read its names; never say which of the learner\'s two is bigger, which sits lower, or the rule.',
+      content: (item, ctx) => columnModel(item, ctx.items),
+      fact: (model: ColumnModel) => `Beside the table, a model column of group ${model.group} (not this pair's group), top to bottom: ${model.members.map(m => m.name).join(', ')}, each with a circle drawn to its atom's size.` },
+    { id: PAIR_LEVER, type: 'marks', modes: ['trend'], answers: ['other_of_pair'],
+      when: 'The learner answers without finding both elements on the table.',
+      does: 'Rings both named boxes on the table, alike. You may say both boxes are ringed; never say which is the answer, which sits lower, or the rule.',
+      content: item => item.pair ?? null,
+      fact: (pair: [ElementFacts, ElementFacts]) => `${pair[0].name}'s box and ${pair[1].name}'s box are ringed, alike.` },
+    { id: TALL_LEVER, type: 'marks', modes: ['trend'], answers: VALENCE_MISSES,
+      when: 'The learner says the group number, or miscounts the tall columns.',
+      does: 'Dims the short middle block (groups 3 to 12) so only the tall columns stand out; no column is numbered or marked. You may point to the tall columns; never count them for the learner or say the number.',
+      offer: item => item.kind === 'valence',
+      fact: 'The short middle block (groups 3 to 12) is dimmed; the tall columns stand out. No column is numbered or marked.' },
+    { id: SIMPLER_LEVER, type: 'easier', answers: 'all',
+      answersOn: item => (item.kind === 'find' ? FIND_MISSES : item.kind === 'name' ? ['next_box', 'said_symbol'] : VALENCE_MISSES),
+      when: 'The learner cannot do this item even with the help on screen: a plainer one first.',
+      does: item => (item.kind === 'valence'
+        ? 'Opens an ungraded practice item: the outer electrons of an element in group 1 or 2; then this item comes back.'
+        : 'Opens an ungraded practice item with the same kind of clue on an element in the first two rows; then this item comes back.'),
+      content: (item, ctx) => periodicPracticeItem(item, ctx.items) },
+  ],
+});
+
+/** On easy, the help levers offered on the item start on screen; a starting position is not a pull. */
+export const helpShownFromStart = (item: PeriodicTableItem | null, ctx: PeriodicLeverContext): string[] =>
+  item?.tier === 'easy' ? PERIODIC_LEVERS.declare(item, ctx, []).filter(l => l.kind === 'help').map(l => l.id) : [];
+

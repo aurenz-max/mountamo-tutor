@@ -6,9 +6,7 @@ import fixtures from './testing/workspaceFixtures.json';
 import { expectClassicWorkspace, mountWithStore } from './testing/classicSurface';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
-import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
 import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
-import CoinCounter from '../primitives/visual-primitives/math/CoinCounter';
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
@@ -31,7 +29,6 @@ import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
-import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: null as string | null }));
 vi.mock('../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, ...tutor }) }));
@@ -58,15 +55,15 @@ afterEach(() => { cleanup(); Object.assign(tutor, { isAudioPlaying: false, activ
 type AnyPrimitive = React.ComponentType<{ data: any }>;
 const CASES: Array<[string, AnyPrimitive]> = [
   ['array-grid', ArrayGrid], ['multiplication-explorer', MultiplicationExplorer],
-  ['skip-counting-runner', SkipCountingRunner], ['regrouping-workbench', RegroupingWorkbench],
-  ['coin-counter', CoinCounter], ['measurement-tools', MeasurementTools], ['percent-bar', PercentBar],
+  ['regrouping-workbench', RegroupingWorkbench],
+  ['measurement-tools', MeasurementTools], ['percent-bar', PercentBar],
   ['ratio-table', RatioTable], ['double-number-line', DoubleNumberLine], ['factor-tree', FactorTree],
   ['function-machine', FunctionMachine], ['equation-workspace', EquationWorkspace], ['formula-lab', FormulaLab],
   ['parameter-explorer', ParameterExplorer], ['practice-problem', PracticeProblem],
   ['angle-workshop', AngleWorkshop], ['circle-explorer', CircleExplorer], ['polygon-area-builder', PolygonAreaBuilder],
   ['net-folder', NetFolder], ['transformation-lab', TransformationLab], ['histogram', Histogram], ['two-way-table', TwoWayTable],
   ['coordinate-graph', CoordinateGraph], ['slope-triangle', SlopeTriangle], ['systems-equations-visualizer', SystemsEquationsVisualizer],
-  ['matrix-display', MatrixDisplay], ['function-sketch', FunctionSketch], ['spatial-path', SpatialPath],
+  ['matrix-display', MatrixDisplay], ['function-sketch', FunctionSketch],
 ];
 
 describe('classic math primitives share one workspace with Pip', () => {

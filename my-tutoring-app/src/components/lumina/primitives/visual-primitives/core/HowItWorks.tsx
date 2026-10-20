@@ -7,11 +7,10 @@
  * - sequence: put the step cards in order, then which step is this, with no step list on screen
  * - predict: the first steps are shown, what happens next? and why does this step matter?
  *
- * The model writes the process; it never writes a question or picks an answer. Two paths, chosen by
- * `withWorkspaceController`: the scripted path (no tutor) unlocks the questions once every step has been scrolled
- * past, has its own Next and two tries before the answer is shown; the workspace path (W1, plain shape) commits every
- * check through `progress.commitCheck` with a named miss, takes a spoken step name judged by the tutor, and lets the
- * runtime move on. The levers live in `howItWorksLevers.ts`.
+ * The model writes the process; it never writes a question or picks an answer. Taught only on the shared workspace
+ * (`withWorkspaceOnly`; its wiring is `howItWorks.card.ts` + `howItWorks.boss.ts`): every check commits through
+ * `progress.commitCheck` with a named miss, a step's name said aloud is judged by the tutor, and the runtime moves on.
+ * The levers are the lever set in `howItWorksLevers.ts`.
  */
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -39,24 +38,24 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { HowItWorksMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SpotlightCard } from '../../../components/SpotlightCard';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, cardText, choiceText, clueOf, describeHowWork, emptyWork, howCorrect, howItems, howMiss, isChoice, isPictures,
-  keyStep, processSteps, workComplete, workspaceAssignment, workspaceScene,
-  type HowItem, type HowKind, type HowMode, type HowTier, type HowWork,
+  askOfCheck, cardText, choiceText, clueOf, describeHowWork, emptyWork, howChecks, howCorrect, howMiss, isChoice, isPictures,
+  keyStep, processSteps, workComplete, workspaceScene,
+  type HowCheck, type HowItem, type HowKind, type HowMode, type HowTier, type HowWork,
 } from './howItWorksWorkspace';
 import {
-  crossedOut, howLevers, LAST_STEP_LEVER, lastStepLine, leverFacts, SHOW_STEP_LEVER, SHOW_WHY_LEVER, showStepLine,
-  simplerItem, STEP_NUMBERS_LEVER, TWO_CHOICES_LEVER, whyLine,
+  crossedOut, HOW_LEVERS, LAST_STEP_LEVER, lastStepLine, SHOW_STEP_LEVER, SHOW_WHY_LEVER, showStepLine,
+  STEP_NUMBERS_LEVER, TWO_CHOICES_LEVER, whyLine,
 } from './howItWorksLevers';
+import { howItWorksBoss, START_LABEL } from './howItWorks.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -145,9 +144,6 @@ const PROCESS_CATEGORIES: Record<string, { text: string; accent: string; rgb: st
 
 const DEFAULT_COLORS = { text: 'text-blue-300', accent: '#60a5fa', rgb: '96, 165, 250', icon: '⚡' };
 
-/** The Start button's name: the journey presses it by this label. */
-export const START_LABEL = 'Start the questions';
-
 // ============================================================================
 // Props
 // ============================================================================
@@ -163,8 +159,9 @@ interface HowItWorksProps {
 // Component
 // ============================================================================
 
-const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  HowItWorksProps & { tutorOwned: boolean; useController: (options: ProgressOptions<HowItem>) => Progress }) => {
+const useHowProgress = useWorkspaceProgressFor('how-it-works');
+
+const HowItWorksSurface = ({ data, className, runtimePlanItemId }: HowItWorksProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -183,41 +180,38 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     exhibitId,
     onEvaluationSubmit,
   } = data;
-  const preReader = data.preReader;
   const pictures = isPictures(data);
 
   const colors = PROCESS_CATEGORIES[category || ''] || DEFAULT_COLORS;
 
-  // The process as the questions read it, and the questions.
+  // The process as the questions read it, and the questions (each carrying the steps).
   const pSteps = useMemo(() => processSteps(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.steps, data.preReader]);
-  const items = useMemo(() => howItems(data),
+  const items = useMemo(() => howChecks(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.items, data.modes, data.difficulty, data.steps, data.preReader, data.title, data.challenges]);
-  const question = preReader?.question;
 
   // Stable instance ID
   const stableInstanceIdRef = useRef(instanceId || `how-it-works-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Progress: the runtime moves the index on the workspace path (callbacks bound below)
+  // Progress: the runtime moves the index (callbacks bound below)
   // -------------------------------------------------------------------------
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useHowProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: i => workspaceAssignment(pSteps, i, pictures, question),
+    workspace, assignment: howItWorksBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
   // -------------------------------------------------------------------------
   // State
@@ -233,15 +227,11 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   /** The reading is over and the questions are open. */
   const [started, setStarted] = useState(false);
-  const [practice, setPractice] = useState<HowItem | null>(null);
+  const [practice, setPractice] = useState<HowCheck | null>(null);
   const [work, setWork] = useState<HowWork>(emptyWork);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
-  const [scriptedDone, setScriptedDone] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -253,13 +243,13 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const stepsExplored = visitedSteps.size;
   const allStepsExplored = stepsExplored >= totalSteps;
 
-  const sessionItem: HowItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const sessionItem: HowCheck | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const item = practice ?? sessionItem;
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved || !!progress.practiceSolved
     : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
   const crossed = item && isChoice(item) && leverOn(TWO_CHOICES_LEVER) ? crossedOut(item) : [];
 
   // Collect fun facts and key terms for promoted sections
@@ -298,8 +288,6 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
   } = usePrimitiveEvaluation<HowItWorksMetrics>({
     primitiveType: 'how-it-works',
     instanceId: resolvedInstanceId,
@@ -309,51 +297,6 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // Scripted tutor only: its context carries no answer; the workspace tutor reads the scene instead
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    overview,
-    totalSteps,
-    stepsExplored,
-    challengesCompleted: results.length,
-    totalChallenges: items.length,
-    question: started && item ? askOf(pSteps, item, pictures, question) : '',
-  }), [title, overview, totalSteps, stepsExplored, results.length, items.length, started, item, pSteps, pictures, question]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'how-it-works',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: pictures ? 'Kindergarten' : 'Elementary',
-    enabled: !tutorOwned,
-  });
-  const say = useCallback((text: string, opts: { silent?: boolean } = { silent: true }) => {
-    if (!tutorOwned && isConnected) sendText(text, opts);
-  }, [tutorOwned, isConnected, sendText]);
-
-  // Introduce on connect (scripted path). A pre-reader hears the picture story read aloud: it is the process itself.
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    if (preReader) {
-      const story = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
-      say(
-        `[ACTIVITY_START_PRE] You are helping a child who cannot read. Warmly read the story of the process aloud, every step in order, word for word: ${story} `
-        + 'Then invite them to tap the big play button when they are ready for the questions. Reading the steps aloud IS your greeting — do not shorten it or skip any step.',
-        {},
-      );
-      return;
-    }
-    say(
-      `[ACTIVITY_START] How It Works: "${title}" — ${subtitle}. `
-      + `${totalSteps} steps to explore. ${items.length > 0 ? `${items.length} questions after.` : ''} `
-      + `Overview: ${overview}. Introduce the process warmly and encourage step-by-step exploration.`,
-    );
-  }, [tutorOwned, isConnected, title, subtitle, overview, totalSteps, items.length, preReader, say]);
 
   // -------------------------------------------------------------------------
   // IntersectionObserver for scroll-based step tracking
@@ -442,29 +385,20 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const handleDetailExpand = useCallback((stepIndex: number) => {
     setExpandedDetails(prev => {
       const next = new Set(prev);
-      if (next.has(stepIndex)) {
-        next.delete(stepIndex);
-      } else {
-        next.add(stepIndex);
-        say(
-          `[DETAIL_EXPANDED] Student opened "What's Happening?" for Step ${stepIndex + 1}: "${steps[stepIndex]?.title}". `
-          + `React with enthusiasm and add a relatable comparison or context.`,
-        );
-      }
+      if (next.has(stepIndex)) next.delete(stepIndex); else next.add(stepIndex);
       return next;
     });
-  }, [steps, say]);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Questions
   // -------------------------------------------------------------------------
   const clearItem = () => {
-    setWork(emptyWork()); setWrongShown(false); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setWork(emptyWork()); setWrongShown(false); setPracticeSolved(false);
   };
 
   openItem.current = (index, retry) => {
-    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { setWork(emptyWork()); setWrongShown(false); setPracticeSolved(false); return; }
     setPractice(null); clearItem();
     void index;
   };
@@ -476,13 +410,12 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     setWork({ choice: keyStep(solved), placed: [] }); setWrongShown(false);
   };
 
-  const closed = !started || revealed || wrongShown || learnerBlocked();
+  const closed = !started || revealed || wrongShown || progress.canAttempt === false;
 
   const handleStart = () => {
     if (started) return;
     SoundManager.tap();
     setStarted(true);
-    if (items[0]) say(`[READ_QUESTION] The questions begin. ${pictures ? 'Read this aloud to the child, word for word: ' : 'The question on screen: '}"${askOf(pSteps, items[0], pictures, question)}"`, pictures ? {} : { silent: true });
   };
 
   const checkWith = (w: HowWork) => {
@@ -492,37 +425,24 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say('[CHALLENGE_CORRECT] The learner answered the question correctly; the answer is now marked on screen. Praise briefly.');
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      setWork(item.kind === 'sequence' ? { choice: null, placed: [...item.cards] } : { choice: keyStep(item), placed: [] });
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say('[ANSWER_REVEALED] Two tries missed. The answer is now on screen: explain it from the steps of the process.');
-      return;
-    }
-    setWork(emptyWork());
-    setFeedback(item.kind === 'sequence' ? 'Not quite. Think about what has to happen before each step, and try again.' : 'Not quite. Try once more.');
-    say('[CHALLENGE_INCORRECT] The learner\'s answer is wrong. You are not told the answer: ask what has to happen before or after, without naming a choice.');
+    setWrongShown(true);
   };
 
   const pick = (o: number) => {
     if (!item || closed || crossed.includes(o)) return;
     SoundManager.select();
     const next = { choice: o, placed: [] };
-    setWork(next); setFeedback(null);
+    setWork(next);
     if (pictures) checkWith(next);
   };
   const place = (s: number) => {
     if (!item || item.kind !== 'sequence' || closed || work.placed.includes(s)) return;
     SoundManager.tap();
     const next = { choice: null, placed: [...work.placed, s] };
-    setWork(next); setFeedback(null);
+    setWork(next);
     if (pictures && workComplete(item, next)) checkWith(next);
   };
   const unplace = (k: number) => {
@@ -555,22 +475,7 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     };
   };
 
-  /** Scripted path: Next, and after the last question the session report. */
-  const next = () => {
-    if (progress.advance()) {
-      clearItem();
-      const upcoming = items[currentIndex + 1];
-      if (upcoming) say(`[NEXT_QUESTION] Question ${currentIndex + 2} of ${items.length}. ${pictures ? 'Read it aloud, word for word: ' : ''}"${askOf(pSteps, upcoming, pictures, question)}"`, pictures ? {} : { silent: true });
-      return;
-    }
-    setScriptedDone(true);
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} questions (${score}%). Celebrate and name the most important idea of the process in one sentence.`);
-    if (hasSubmittedEvaluation || submitted || progress.recordsEvaluation === false) return;
-    setSubmitted(true);
-    submitEvaluation(score >= 70, score, metrics(results.reduce((a, r) => a + r.attempts, 0)), { challengeResults: results });
-  };
-
+  // Under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong answer's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -580,40 +485,34 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       undefined, result.diagnosisEvidence);
   };
 
-  // Display only (no questions could be built): the exhibit submits once every step has been read.
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || items.length > 0 || pictures || !allStepsExplored || hasSubmittedEvaluation || hasAutoSubmittedRef.current) return;
-    hasAutoSubmittedRef.current = true;
-    submitEvaluation(true, 100, metrics(0), {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorOwned, items.length, pictures, allStepsExplored, hasSubmittedEvaluation]);
-
   // -------------------------------------------------------------------------
-  // Workspace path: what the tutor and the observer are shown, republished every render
+  // What the tutor and the observer are shown, republished every render. The levers are the lever set's
+  // (`HOW_LEVERS`); none while the learner reads or on a practice item.
   // -------------------------------------------------------------------------
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || !sessionItem || isComplete) return;
     const reading = !started;
-    const scene = workspaceScene(pSteps, item, { reading, work, solved: revealed, crossed }, pictures, { title, question });
-    const levers = practice || reading ? [] : howLevers(pSteps, sessionItem, pulled, pictures);
+    const scene = workspaceScene(item, { reading, work, solved: revealed, crossed, why: !practice && leverOn(SHOW_WHY_LEVER) }, { title });
+    if (reading) { workspace.current = { ...scene, readyForResponse: false, levers: [] }; return; }
+    const levers = practice ? [] : HOW_LEVERS.declare(sessionItem, null, pulled);
+    const onScreen = practice ? '' : HOW_LEVERS.onScreen(sessionItem, null, pulled);
+    if (practice) scene.facts.practice = 'An easier question of the same kind, before the full item comes back.';
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'An easier question of the same kind, before the full item comes back.' } : {}),
-        ...(reading || practice ? {} : leverFacts(pSteps, sessionItem, pulled)) },
-      readyForResponse: !reading,
+      ...leverScene(scene, { support: HOW_LEVERS.support(practice ? null : sessionItem, null), onScreen }),
+      readyForResponse: true,
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
-        if (practice || reading || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(pSteps, sessionItem, pictures);
+          const simpler = HOW_LEVERS.simpler(sessionItem, null, id);
           if (!simpler) return 'There is no easier question here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(pSteps, simpler, pictures, question) };
+          return { practice: howItWorksBoss.assignment(simpler) };
         }
+        // Drawing two_choices: a tapped choice it crosses out is cleared.
         if (id === TWO_CHOICES_LEVER && isChoice(sessionItem) && work.choice !== null && crossedOut(sessionItem).includes(work.choice)) {
           setWork(emptyWork());
         }
@@ -624,17 +523,7 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     };
   });
 
-  const done = hasSubmittedEvaluation || submitted || scriptedDone || (tutorOwned && isComplete);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // Nothing is published while the learner reads; from the first question on, the question and the answer.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !started || !item ? null : item.id,
-    label: 'The question and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmittedEvaluation || submitted || isComplete;
 
   // -------------------------------------------------------------------------
   // Render: Step Image
@@ -883,7 +772,6 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   const renderQuestion = () => {
     if (!item) return null;
-    const ask = askOf(pSteps, item, pictures, question);
     return (
       <div className="space-y-4">
         <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'easier' } : {})}>
@@ -894,12 +782,13 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
               {!pictures && <p className="text-xs text-slate-500">The step&apos;s own name is blanked out.</p>}
             </div>
           ) : (
-            <p className="text-slate-100 text-sm font-medium">{ask}</p>
+            <p className="text-slate-100 text-sm font-medium">{askOfCheck(item)}</p>
           )}
         </LuminaPrompt>
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the question's answer surface as its region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
           {renderStrip(item)}
           {item.kind === 'predict' && leverOn(LAST_STEP_LEVER) && !practice && (
             <LuminaPanel accent="cyan" data-lever="last-step" className="text-sm text-slate-300">
@@ -912,7 +801,7 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
             </LuminaPanel>
           )}
           {item.kind === 'sequence' ? renderSequence(item) : renderChoices(item)}
-        </div>
+        </PipWorkspace>
 
         {!revealed && !pictures && (
           <div className="flex justify-center">
@@ -922,57 +811,16 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           </div>
         )}
 
-        {revealed && (
-          <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-            {revealText()}
-          </LuminaFeedbackCard>
-        )}
+        {revealed && <LuminaFeedbackCard status="correct">{revealText()}</LuminaFeedbackCard>}
         {!revealed && wrongShown && (
           <LuminaFeedbackCard status="incorrect">{item.kind === 'sequence' ? 'That order is not right yet.' : 'That is not it.'}</LuminaFeedbackCard>
         )}
-        {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-        {!tutorOwned && revealed && !practice && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={next}>
-              {currentIndex + 1 >= items.length ? 'See Results' : 'Next Question'}
-            </LuminaActionButton>
-          </div>
-        )}
       </div>
     );
   };
 
-  // -------------------------------------------------------------------------
-  // Render: Results
-  // -------------------------------------------------------------------------
-  const renderResults = () => {
-    const correctCount = results.filter(a => a.correct).length;
-    const accuracy = items.length > 0 ? Math.round((correctCount / items.length) * 100) : 0;
-    const score = submittedResult?.score ?? accuracy;
-
-    return (
-      <div className="text-center space-y-4 py-4">
-        <div className="text-3xl font-bold text-emerald-400">{score}%</div>
-        <p className="text-slate-200 text-sm font-medium">{`${correctCount} of ${items.length} questions answered`}</p>
-        {!pictures && (
-          <div className="flex justify-center gap-4 text-xs text-slate-400">
-            <span>{stepsExplored}/{totalSteps} steps explored</span>
-            <span>{expandedDetails.size} details expanded</span>
-            {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
-          </div>
-        )}
-        {summary && !pictures && (
-          <div className="mt-4 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-left">
-            <p className="text-slate-200 text-sm">{summary.keyTakeaway}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const startButton = (enabled: boolean) => (
-    <LuminaActionButton action="next" aria-label={START_LABEL} disabled={!enabled} onClick={handleStart}
+  const startButton = (
+    <LuminaActionButton action="next" aria-label={START_LABEL} onClick={handleStart}
       className={pictures ? 'h-16 px-10 text-2xl' : 'w-full mt-3 text-xs h-8'}>
       {pictures ? '▶' : `${START_LABEL} (${items.length})`}
     </LuminaActionButton>
@@ -996,8 +844,12 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const doneCard = (
     <LuminaCard>
       <LuminaCardContent className="pt-6">
-        {tutorOwned ? <LuminaFeedbackCard status="insight" label="All questions answered">{`${results.filter(r => r.correct).length} of ${items.length} questions answered.`}</LuminaFeedbackCard>
-          : renderResults()}
+        <LuminaFeedbackCard status="insight" label="All questions answered">{`${results.filter(r => r.correct).length} of ${items.length} questions answered.`}</LuminaFeedbackCard>
+        {summary && !pictures && (
+          <div className="mt-4 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-left">
+            <p className="text-slate-200 text-sm">{summary.keyTakeaway}</p>
+          </div>
+        )}
       </LuminaCardContent>
     </LuminaCard>
   );
@@ -1009,15 +861,17 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
         {done ? doneCard : !started ? (
           <div className="space-y-8">
             <p className="text-slate-100 text-xl font-semibold text-center">{title}</p>
-            <div className="flex justify-center gap-4 flex-wrap">
+            {/* The dock above, the picture story as Pip's region. */}
+            <PipDock />
+            <PipWorkspace className="flex justify-center gap-4 flex-wrap">
               {pSteps.map((s, i) => (
                 <div key={i} className="w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-white/15 bg-slate-800/60">
                   <span className="text-5xl leading-none" aria-hidden="true">{s.emoji}</span>
                   <span className="text-slate-200 text-xs font-medium">{s.title}</span>
                 </div>
               ))}
-            </div>
-            {items.length > 0 && <div className="flex justify-center">{startButton(true)}</div>}
+            </PipWorkspace>
+            {items.length > 0 && <div className="flex justify-center">{startButton}</div>}
           </div>
         ) : (
           <div className="space-y-6">
@@ -1058,11 +912,13 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
       {done ? doneCard : started ? questionCard : (
         <>
+          {/* The dock above, the steps as Pip's region while the learner reads. */}
+          <PipDock />
           {/* ── Two-Column Layout: Timeline + Sidebar ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-2">
+            <PipWorkspace className="lg:col-span-2 space-y-2">
               {steps.map((step, i) => renderTimelineStep(step, i))}
-            </div>
+            </PipWorkspace>
 
             <div className="space-y-4">
               {quickFactEntries.length > 0 && (
@@ -1151,10 +1007,7 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${(stepsExplored / Math.max(totalSteps, 1)) * 100}%`, backgroundColor: colors.accent }} />
                   </div>
-                  {items.length > 0 && (tutorOwned || allStepsExplored) && startButton(true)}
-                  {items.length > 0 && !tutorOwned && !allStepsExplored && (
-                    <p className="text-slate-600 text-[10px] mt-2">Scroll through all steps to unlock the questions</p>
-                  )}
+                  {items.length > 0 && startButton}
                 </LuminaCardContent>
               </LuminaCard>
             </div>
@@ -1213,8 +1066,6 @@ const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const HowItWorks = withWorkspaceController<HowItWorksProps, ProgressOptions<HowItem>, Progress>(
-  'how-it-works', HowItWorksSurface, useScriptedProgress, useWorkspaceProgressFor('how-it-works'));
+const HowItWorks = withWorkspaceOnly<HowItWorksProps>('how-it-works', HowItWorksSurface, props => props.data.title);
 
 export default HowItWorks;

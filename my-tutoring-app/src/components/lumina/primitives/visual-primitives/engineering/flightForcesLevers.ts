@@ -1,31 +1,34 @@
 /**
- * The in-item levers on flight-forces-explorer (`/add-support-tiers`; report
+ * The in-item levers on flight-forces-explorer, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/flight-forces-explorer-levers-2026-10-15.md). No real-learner evidence: the misses are what
  * `flightMiss` observes; the failures behind them are documented (the catalog's commonStruggles: the particle-to-lift
  * link, fear of a steep angle, cargo not compensated) or inferred (a pilot action not mapped to its force, a balanced
  * pair read as motion, the nose read as the direction of travel, the drag that a steeper nose adds). Every lever starts
  * released; `config.difficulty` changes the items, not the levers.
  *
- * - `force_link` (help; predict, an item whose ask does not name the force): a card naming which force the action
+ * - `force_link` (clue; predict, an item whose ask does not name the force): a card naming which force the action
  *   changes and which way. It names no motion.
- * - `show_arrows` (help; predict): draws the four arrows as they are right after the change, without moving the plane.
- * - `pair_up` (help; observe): lines the arrows up in their pairs on one unit grid (lift beside weight, thrust beside
+ * - `show_arrows` (marks; predict): draws the four arrows as they are right after the change, without moving the plane.
+ * - `pair_up` (layout; observe): lines the arrows up in their pairs on one unit grid (lift beside weight, thrust beside
  *   drag), so their lengths compare directly.
- * - `count_units` (help; observe): writes each arrow's length in units beside it.
- * - `target_marks` (help; adjust): a dashed mark on the lift track at the weight's length and on the thrust track at
+ * - `count_units` (marks; observe): writes each arrow's length in units beside it.
+ * - `target_marks` (marks; adjust): a dashed mark on the lift track at the weight's length and on the thrust track at
  *   the drag's length.
- * - `stall_mark` (help; adjust, stall items): marks the nose angle past which the wing stalls.
- * - `one_step` (simplify; predict hard): the same change asked one step simpler (the speed before the height, the
+ * - `stall_mark` (marks; adjust, stall items): marks the nose angle past which the wing stalls.
+ * - `one_step` (easier; predict hard): the same change asked one step simpler (the speed before the height, the
  *   nose tilted a little before steeply, one change before two), ungraded, then the full item back.
- * - `one_axis` (simplify; observe, both directions asked): the same diagram asking the height only, then the full item.
- * - `one_control` (simplify; adjust, two controls): the same goal with the thrust held as big as the drag, so only the
+ * - `one_axis` (easier; observe, both directions asked): the same diagram asking the height only, then the full item.
+ * - `one_control` (easier; adjust, two controls): the same goal with the thrust held as big as the drag, so only the
  *   nose angle is set, then the full item.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
+import { FLIGHT_MISSES } from './flightForcesExplorer.card';
 import {
-  AIRCRAFT, askedAxes, choicesFor, emptyWork, FLIGHT_MISSES, flightMiss, forcesAfter, forcesAt, goalMet, keyLabel, keyOf,
+  AIRCRAFT, askedAxes, choicesFor, emptyWork, flightKey, flightMiss, forcesAfter, forcesAt, goalMet, keyLabel, keyOf,
   NOSE_ANGLES, settings, solution,
-  type AdjustItem, type FlightItem, type FlightMiss, type Forces, type ObserveItem, type PredictItem,
+  type AdjustItem, type FlightItem, type FlightMiss, type FlightMode, type Forces, type ObserveItem, type PredictItem,
+  type Setting,
 } from './flightForcesWorkspace';
 
 export const FORCE_LINK_LEVER = 'force_link';
@@ -99,82 +102,66 @@ export function simplerItem(item: FlightItem): FlightItem | null {
   return s;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly FlightMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
 
-/** The levers on the current session item. A practice item has none. */
-export function flightLevers(item: FlightItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(item);
-  if (item.mode === 'predict') {
-    if (!item.named && forceLinkLines(item).length) {
-      out.push(lever(FORCE_LINK_LEVER, 'help', pulled, ['stall_more_lift', 'said_no_change', 'opposite_way'],
-        'The learner does not know which force the action changes.',
-        'Shows a card naming which force the action changes and which way (for example "wheels hanging under the plane catch the air: more drag"). It names no motion.'));
-    }
-    out.push(lever(SHOW_ARROWS_LEVER, 'help', pulled, FLIGHT_MISSES.predict,
-      'The learner cannot picture the forces after the change, or does not compare the pairs.',
-      'Draws the four arrows as they are right after the change, without moving the plane.'));
-    if (simpler) {
-      out.push(lever(ONE_STEP_LEVER, 'simplify', pulled, FLIGHT_MISSES.predict, 'The learner cannot follow the change through.',
-        item.later ? 'Opens the same change asking about the speed first. It is not graded; this item comes back after it.'
-          : item.change === 'stall' ? `Opens the same plane with the nose tilted up only a little (6°) first. It is not graded; this item comes back after it.`
-            : 'Opens the same plane with only the first of the two changes. It is not graded; this item comes back after it.'));
-    }
-    return out;
-  }
-  if (item.mode === 'observe') {
-    out.push(lever(PAIR_UP_LEVER, 'help', pulled, FLIGHT_MISSES.observe,
-      'The learner compares the wrong arrows, or cannot see which of a pair is longer.',
-      'Lines the arrows up in their pairs on one unit grid beside the plane: lift beside weight, thrust beside drag.'));
-    out.push(lever(COUNT_UNITS_LEVER, 'help', pulled, FLIGHT_MISSES.observe,
-      'The learner cannot judge lengths that differ by little.',
-      "Writes each arrow's length in units beside the drawing. It writes no comparison."));
-    if (simpler) {
-      out.push(lever(ONE_AXIS_LEVER, 'simplify', pulled, FLIGHT_MISSES.observe, 'The learner cannot handle both directions at once.',
-        'Opens the same drawing asking only about the height first. It is not graded; this item comes back after it.'));
-    }
-    return out;
-  }
-  out.push(lever(TARGET_MARKS_LEVER, 'help', pulled, ['forgot_drag', 'lift_vs_weight', 'thrust_vs_drag'],
-    'The learner does not know how big the lift or the thrust must be, or misses that the drag grew.',
-    "Draws a dashed mark on the lift arrow's track at the weight's length, and on the thrust arrow's track at the drag's length (it follows the drag). A mark shows where the arrow would be as long as its partner; it is not the goal."));
-  if (item.stall) {
-    out.push(lever(STALL_MARK_LEVER, 'help', pulled, ['stalled'], 'The learner tilts the nose past the stall angle.',
-      'Marks on the nose control the angle past which the wing stalls.'));
-  }
-  if (simpler) {
-    out.push(lever(ONE_CONTROL_LEVER, 'simplify', pulled, FLIGHT_MISSES.adjust, 'The learner cannot set two controls at once.',
-      'Opens the same plane and height goal with the thrust held as big as the drag, so only the nose angle is set. It is not graded; this item comes back after it.'));
-  }
-  return out;
-}
+/** What the levers read beside the item: the controls as set now (target_marks follows the drag). */
+export interface FlightLeverContext { setting?: Setting }
 
-/** What the pulled levers put on screen, as a scene fact. Never a key or a motion. */
-export function leverFact(item: FlightItem | undefined, pulled: readonly string[], setting?: { thrust: number; nose: number }): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (item.mode === 'predict') {
-    if (pulled.includes(FORCE_LINK_LEVER)) parts.push(`A card: ${forceLinkLines(item).join(' ')}`);
-    if (pulled.includes(SHOW_ARROWS_LEVER)) {
-      const f = shownArrows(item);
-      parts.push(`The arrows right after the change are drawn (the plane has not moved): lift ${f.lift}, weight ${f.weight}, thrust ${f.thrust}, drag ${f.drag}.`);
-    }
-  } else if (item.mode === 'observe') {
-    if (pulled.includes(PAIR_UP_LEVER)) parts.push('Beside the plane, the arrows are lined up in pairs on one unit grid: lift beside weight, thrust beside drag.');
-    if (pulled.includes(COUNT_UNITS_LEVER)) parts.push(`Each arrow's length is written beside it: ${countLines(item.forces).join(', ')}.`);
-  } else {
-    if (pulled.includes(TARGET_MARKS_LEVER)) {
-      const f = forcesAt(item, setting ?? item.start);
-      parts.push(`Dashed marks: on the lift track at ${f.weight} (the weight's length), on the thrust track at ${f.drag} (the drag's length now). Each mark shows equal length with the partner arrow, not where the goal needs the arrow.`);
-    }
-    if (pulled.includes(STALL_MARK_LEVER)) parts.push(`On the nose control: ${stallLine(item)}`);
-  }
-  return parts.join(' ');
-}
+/** In the order the observer offers them: on every miss a help lever comes before the item's easier one. */
+export const FLIGHT_LEVERS = leverSet<FlightItem, FlightLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => FLIGHT_MISSES[mode as FlightMode] ?? [],
+  // The force_link card never names what the plane does.
+  answersOf: item => { const key = flightKey(item); return key ? keyAnswers(key) : []; },
+  specs: [
+    { id: FORCE_LINK_LEVER, type: 'clue', carrier: 'shown', modes: ['predict'], answers: ['stall_more_lift', 'said_no_change', 'opposite_way'],
+      when: 'The learner does not know which force the action changes.',
+      does: 'Shows a card naming which force the action changes and which way (for example "wheels hanging under the plane catch the air: more drag"). It names no motion.',
+      offer: item => item.mode === 'predict' && !item.named,
+      content: item => (item.mode === 'predict' && forceLinkLines(item).length ? forceLinkLines(item) : null),
+      fact: (lines: string[]) => `A card: ${lines.join(' ')}` },
+    { id: SHOW_ARROWS_LEVER, type: 'marks', modes: ['predict'], answers: 'all',
+      when: 'The learner cannot picture the forces after the change, or does not compare the pairs.',
+      does: 'Draws the four arrows as they are right after the change, without moving the plane.',
+      content: item => (item.mode === 'predict' ? shownArrows(item) : null),
+      fact: (f: Forces) => `The arrows right after the change are drawn (the plane has not moved): lift ${f.lift}, weight ${f.weight}, thrust ${f.thrust}, drag ${f.drag}.` },
+    { id: ONE_STEP_LEVER, type: 'easier', modes: ['predict'], answers: 'all',
+      when: 'The learner cannot follow the change through.',
+      does: item => (item.mode === 'predict' && item.later ? `Opens the same change asking about the speed first. ${PRACTICE_NOTE}`
+        : item.mode === 'predict' && item.change === 'stall' ? `Opens the same plane with the nose tilted up only a little (6°) first. ${PRACTICE_NOTE}`
+          : `Opens the same plane with only the first of the two changes. ${PRACTICE_NOTE}`),
+      content: item => simplerItem(item) },
+    { id: PAIR_UP_LEVER, type: 'layout', modes: ['observe'], answers: 'all',
+      when: 'The learner compares the wrong arrows, or cannot see which of a pair is longer.',
+      does: 'Lines the arrows up in their pairs on one unit grid beside the plane: lift beside weight, thrust beside drag.',
+      fact: 'Beside the plane, the arrows are lined up in pairs on one unit grid: lift beside weight, thrust beside drag.' },
+    { id: COUNT_UNITS_LEVER, type: 'marks', modes: ['observe'], answers: 'all',
+      when: 'The learner cannot judge lengths that differ by little.',
+      does: "Writes each arrow's length in units beside the drawing. It writes no comparison.",
+      content: item => (item.mode === 'observe' ? countLines(item.forces) : null),
+      fact: (lines: string[]) => `Each arrow's length is written beside it: ${lines.join(', ')}.` },
+    { id: ONE_AXIS_LEVER, type: 'easier', modes: ['observe'], answers: 'all',
+      when: 'The learner cannot handle both directions at once.',
+      does: `Opens the same drawing asking only about the height first. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+    { id: TARGET_MARKS_LEVER, type: 'marks', modes: ['adjust'], answers: ['forgot_drag', 'lift_vs_weight', 'thrust_vs_drag'],
+      when: 'The learner does not know how big the lift or the thrust must be, or misses that the drag grew.',
+      does: "Draws a dashed mark on the lift arrow's track at the weight's length, and on the thrust arrow's track at the drag's length (it follows the drag). A mark shows where the arrow would be as long as its partner; it is not the goal.",
+      content: (item, ctx) => (item.mode === 'adjust' ? forcesAt(item, ctx.setting ?? item.start) : null),
+      fact: (f: Forces) => `Dashed marks: on the lift track at ${f.weight} (the weight's length), on the thrust track at ${f.drag} (the drag's length now). Each mark shows equal length with the partner arrow, not where the goal needs the arrow.` },
+    { id: STALL_MARK_LEVER, type: 'marks', modes: ['adjust'], answers: ['stalled'],
+      when: 'The learner tilts the nose past the stall angle.',
+      does: 'Marks on the nose control the angle past which the wing stalls.',
+      content: item => (item.mode === 'adjust' && item.stall ? stallLine(item) : null),
+      fact: (line: string) => `On the nose control: ${line}` },
+    { id: ONE_CONTROL_LEVER, type: 'easier', modes: ['adjust'], answers: 'all',
+      when: 'The learner cannot set two controls at once.',
+      does: `Opens the same plane and height goal with the thrust held as big as the drag, so only the nose angle is set. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's work can show. */
 export function possibleMisses(item: FlightItem): FlightMiss[] {

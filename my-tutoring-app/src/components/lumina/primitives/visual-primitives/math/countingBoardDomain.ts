@@ -1,29 +1,17 @@
 /**
  * countingBoardDomain — what counting-board TEACHES, with no teaching engine
- * attached: the item kinds, the number words, the asks, the build rules that
- * turn generator challenges into items, and the harness answer material.
+ * attached: the item kinds, the number words, the asks, the spoken key, the
+ * build rules that turn generator challenges into items, the visible scene,
+ * and the harness answer material. The boss (`countingBoard.boss.ts`) and the
+ * component read it; the generator imports its build gates from it.
  *
- * Sunset slice S1 (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
- * This content used to sit in `countingBoardScript` beside the scripted cue
- * protocol, so the live tutor/JEV binding could not read a counting fact
- * without importing the judged runner's pack surface. The split is by
- * ownership, not by file size:
- *
- *   - HERE: the task. What is asked, of which set, with which answer, and
- *     which benched response class it belongs to. Both teaching architectures
- *     read this, and the generator imports its build gates from it.
- *   - `countingBoardScript`: the retiring control protocol — exact correction
- *     and affirmation wording, the two-branch judging contract, the pack base.
- *
- * `askFor` and `howToPlayFor` live here rather than with the cues because they
- * state the ASSIGNMENT — what the child is being asked to do. The scripted
- * runner quotes them inside a "Say exactly" cue; the teaching workspace hands
- * the same sentence to the tutor as the assignment and lets it teach. Same
- * meaning, different transport, which is the whole point of the sunset.
+ * `countingBoardScript` re-exports this module for the families that still
+ * import number words from it, beside the retired scripted cue protocol.
  */
 
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 
 
@@ -458,12 +446,31 @@ export function countingBoardSpokenMisses(item: CountingItem): KnownMiss[] {
   return [...own, ...offByMisses(t, of)];
 }
 
-/** The item as the tutor and the outcome observer are told it. */
-export const workspaceAssignment = (item: CountingItem): TeachingAssignment => {
-  const misses = countingBoardSpokenMisses(item);
-  return { id: item.id, task: askFor(item), response: item.answerKind === 'voice' ? 'speech' : 'gesture',
-    expectedAnswer: String(item.target), ...(misses.length ? { misses } : {}) };
+/** The wrong answer that sounds right on each spoken kind, as an instruction to the judge (`SpokenKey.signatureError`). */
+const signatureFor = (item: CountingItem): string => {
+  switch (item.kind) {
+    case 'count_on': return `${cap(numberWordFor(item.startFrom ?? 0))}, the number already in the group, said back is not how many altogether.`;
+    case 'compare': return 'The count of the smaller group, or of both groups together, is not the answer.';
+    case 'take_away': return 'The number on the board before any were taken away, or the number taken away, is not how many are left.';
+    case 'add_more': return 'The number on the board before more were put on, or the number put on, is not how many altogether.';
+    case 'recount_moved': return 'Moving them did not change how many: a different number because they look different now is wrong.';
+    case 'group_count': return 'The number of groups is not how many altogether.';
+    default: return '';
+  }
 };
+
+/**
+ * The key a spoken item is judged against (`spokenKeyText` writes it); null on an item answered on the board (the
+ * hand, the handover, the build), which the board checks. Cardinality: a count said aloud that ends on the answer is
+ * the answer, so the walk is accepted and a walk ending elsewhere is not.
+ */
+export function countingKey(item: CountingItem): SpokenKey | null {
+  if (item.answerKind !== 'voice') return null;
+  const word = numberWordFor(item.target);
+  return { answer: word, alsoAccept: [],
+    acceptRule: `Counting aloud and ending on ${word} is that answer: the last number said tells how many.`,
+    signatureError: `${signatureFor(item)} A different number is not the answer, however close it is.`.trim() };
+}
 
 /** What the learner has done on the board, and what is hidden from them right now. */
 export interface CountingBoardView {
@@ -502,9 +509,10 @@ export function workspaceScene(item: CountingItem, view: CountingBoardView): Wor
     facts: { kind: item.kind, objects: item.objectWord, markedOnBoard: view.counted.size,
       takenOff: view.removed.size, putOn: view.added.size, moved: view.moved ? 'yes' : 'no',
       startFrom: item.startFrom ?? '', changeBy: item.changeBy ?? '',
-      constraints: item.kind === 'subitize_perceptual' ? 'Pre-numeric matching: use no number words. Learner picks a hand.'
-        : item.kind === 'subitize' ? 'Quick look: present the stimulus before accepting an answer.'
-        : item.kind === 'recount_moved' ? 'After the move, remember the quantity; do not recount.' : '' },
+      // Only what the card's moves and the doctrine do not say: the hand match is pre-numeric, and a quick look is
+      // shown before it is answered. (recount_moved's freeze is the card's `moves`.)
+      constraints: item.kind === 'subitize_perceptual' ? 'Pre-numeric matching: use no number words.'
+        : item.kind === 'subitize' ? 'Quick look: present the stimulus before accepting an answer.' : '' },
   };
 }
 
@@ -557,18 +565,6 @@ export const stimulusFor = (item: CountingItem): string => {
 };
 
 
-// Standalone scripted drill only. The live host uses useTeachingWorkspace.
-/**
- * Everything counting-board ever sends the tutor. `CountingBoard.tsx` spreads
- * this and adds what only a mounted component can own (status lines, and the
- * `observation` that reads the live board); the drive-plan endpoint
- * builds the identical cues for the headless judged-loop harness.
- *
- * The split exists so the harness cannot drift from production — a Python
- * journey mirroring these cues by hand would be a second source of truth for
- * the wording the pedagogy lives in.
- */
-
 // ── Harness answer material — what a right and a wrong child sound like ─────
 
 /** Numbers the ask STATES aloud, so hearing one back is not a leak. Only
@@ -613,9 +609,8 @@ export interface CountingHarnessAnswers {
 }
 
 /**
- * The answers a headless student says on a judged drive. This lives beside the
- * contract it mirrors on purpose: `judgingContract` above CLAIMS the judge
- * refuses these, and this is the claim made testable. Change one, change both.
+ * The answers a headless student says on a journey: the key's own word, a plainly
+ * wrong one, and the fluent miss the key's `signatureError` names.
  *
  * THE WALK IS THE INTERESTING ONE HERE. This pack's contract says a count said
  * aloud that ENDS on the target counts as that answer (cardinality: the last

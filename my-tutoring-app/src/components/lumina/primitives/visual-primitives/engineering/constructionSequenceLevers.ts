@@ -1,27 +1,29 @@
 /**
- * The in-item levers on construction-sequence-planner (`/add-support-tiers`; report
+ * The in-item levers on construction-sequence-planner, as one lever set (`CSP_LEVERS`, `bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/construction-sequence-planner-levers-2026-10-16.md). No real-learner evidence: the misses are what
  * `cspMiss` observes; the failures behind them are documented (the old catalog commonStruggles: the roof placed before
  * the walls, parallel work not seen) or inferred (a job that needs two placed after only one, adding every job's weeks,
  * counting jobs instead of weeks). Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `check_as_you_go` (help; sequence, dependency_chain, parallel): marks each job in the learner's own plan that has a
- *   job it needs missing before it, and each week holding more jobs than there are crews. It never says which job is
+ * - `check_as_you_go` (marks; sequence, dependency_chain, parallel): marks each job in the learner's own plan that has
+ *   a job it needs missing before it, and each week holding more jobs than there are crews. It never says which job is
  *   missing or where a job goes.
- * - `tick_needs` (help; dependency_chain): a tick beside each need on a card once that need is in the plan.
- * - `same_needs` (help; parallel): a matching tag on the jobs that need exactly the same jobs, so they can share a week.
- * - `week_blocks` (help; critical_path): each card draws its weeks as blocks.
- * - `trace_chains` (help; critical_path): every chain of needs from a first job to a last job, as a row of job names,
- *   with no totals.
- * - `fewer_jobs` (simplify; every mode, when the item has more than the smallest size): the same task with fewer jobs
+ * - `tick_needs` (marks; dependency_chain): a tick beside each need on a card once that need is in the plan.
+ * - `same_needs` (marks; parallel): a matching tag on the jobs that need exactly the same jobs, so they can share a week.
+ * - `trace_chains` (layout; critical_path): every chain of needs from a first job to a last job, as a row of job names,
+ *   with no totals: the same jobs, arranged by chain.
+ * - `week_blocks` (marks; critical_path): each card draws its weeks as blocks.
+ * - `fewer_jobs` (easier; every mode, when the item has more than the smallest size): the same task with fewer jobs
  *   on another project (no job of the stuck item, and on critical_path a different total), ungraded, then the full
  *   item back.
+ * The lever context is the learner's work on screen (check_as_you_go marks it).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { CSP_MISSES } from './constructionSequencePlanner.card';
 import {
-  buildOrder, chainsOf, criticalWeeks, CSP_MISSES, cspMiss, emptyWork, isOrderMode, makeItem, nameOf, PROJECT_IDS,
+  buildOrder, chainsOf, criticalWeeks, cspMiss, emptyWork, isOrderMode, makeItem, nameOf, PROJECT_IDS,
   sameNeedsGroups, seededRng, shapesFor, shuffle, weekRows,
-  type CspItem, type CspMiss, type CspWork,
+  type CspItem, type CspMiss, type CspMode, type CspWork,
 } from './constructionSequenceWorkspace';
 
 export const CHECK_AS_YOU_GO_LEVER = 'check_as_you_go';
@@ -84,66 +86,57 @@ export function simplerItem(item: CspItem): CspItem | null {
   return null;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly CspMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+/** check_as_you_go's scene fact: what it marks in the learner's plan now. */
+const asYouGoFact = (item: CspItem, w: CspWork) => {
+  const m = asYouGoMarks(item, w);
+  const marked = m.jobs.map(id => `"${nameOf(item, id)}"`);
+  return `Check as you go is on: a job in the plan is marked "${NOT_READY}". Marked now: ${marked.length ? marked.join(', ') : 'none'}`
+    + `${m.weeks.length ? `; a week holds more jobs than crews: ${m.weeks.map(x => `week ${x}`).join(', ')}` : ''}.`;
+};
+const AS_YOU_GO_WHEN = 'The learner places jobs before the jobs they need and cannot see where the plan breaks.';
+const asYouGoDoes = (item: CspItem) => `Marks each job in the learner's own plan that has a job it needs not done before it${
+  item.crews ? ', and each week with more jobs than crews' : ''}. It never says which job is missing or where a job goes.`;
 
-/** The levers on the current session item. A practice item has none. */
-export function cspLevers(item: CspItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  if (item.mode !== 'critical_path') {
-    out.push(lever(CHECK_AS_YOU_GO_LEVER, 'help', pulled,
-      item.mode === 'parallel' ? ['need_same_week', 'need_later', 'crew_over'] : CSP_MISSES[item.mode],
-      'The learner places jobs before the jobs they need and cannot see where the plan breaks.',
-      `Marks each job in the learner's own plan that has a job it needs not done before it${item.crews ? ', and each week with more jobs than crews' : ''}. It never says which job is missing or where a job goes.`));
-  }
-  if (item.mode === 'dependency_chain') {
-    out.push(lever(TICK_NEEDS_LEVER, 'help', pulled, ['missed_second_need', 'job_before_need', 'wrong_first'],
-      'The learner checks only one of the jobs a card needs.',
-      'Puts a tick beside each need on a card once that need is in the plan.'));
-  }
-  if (item.mode === 'parallel') {
-    out.push(lever(SAME_NEEDS_LEVER, 'help', pulled, ['too_many_weeks'],
-      'The learner gives every job its own week and runs past the goal.',
-      'Puts a matching letter tag on the jobs that need exactly the same jobs. It names no week.'));
-  }
-  if (item.mode === 'critical_path') {
-    out.push(lever(TRACE_CHAINS_LEVER, 'help', pulled, ['added_all', 'shorter_chain', 'most_jobs_chain'],
-      'The learner adds every job, or takes the wrong chain.',
-      'Lists every chain of needs from a job that needs nothing to a job nothing needs, as a row of job names. It shows no totals.'));
-    out.push(lever(WEEK_BLOCKS_LEVER, 'help', pulled, ['counted_jobs', 'off_by_one', 'most_jobs_chain'],
-      'The learner counts jobs instead of weeks, or miscounts.',
-      'Draws each job card\'s weeks as a row of blocks. It adds nothing up.'));
-  }
-  if (simplerItem(item)) {
-    out.push(lever(FEWER_JOBS_LEVER, 'simplify', pulled, CSP_MISSES[item.mode], 'The learner cannot hold all the jobs at once.',
-      'Opens the same kind of task with one job fewer, on a different project. It is not graded; this item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled levers put on screen, as a scene fact. Never an order, a week for a job or a total. */
-export function leverFact(item: CspItem | undefined, pulled: readonly string[], w: CspWork = emptyWork()): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(CHECK_AS_YOU_GO_LEVER)) {
-    const m = asYouGoMarks(item, w);
-    const marked = m.jobs.map(id => `"${nameOf(item, id)}"`);
-    parts.push(`Check as you go is on: a job in the plan is marked "${NOT_READY}". Marked now: ${marked.length ? marked.join(', ') : 'none'}`
-      + `${m.weeks.length ? `; a week holds more jobs than crews: ${m.weeks.map(x => `week ${x}`).join(', ')}` : ''}.`);
-  }
-  if (pulled.includes(TICK_NEEDS_LEVER)) parts.push('Each need on a card gets a tick once that job is in the plan.');
-  if (pulled.includes(SAME_NEEDS_LEVER)) {
-    const tags = sameNeedsTags(item);
-    const groups = Array.from(new Set(Object.values(tags))).map(t => `${t}: ${item.jobs.filter(j => tags[j.id] === t).map(j => j.name).join(', ')}`);
-    parts.push(`Tags on the cards; jobs with the same tag need exactly the same jobs (${groups.join('; ')}).`);
-  }
-  if (pulled.includes(TRACE_CHAINS_LEVER)) parts.push(`The chains of needs are listed, with no totals: ${chainLines(item).join(' | ')}.`);
-  if (pulled.includes(WEEK_BLOCKS_LEVER)) parts.push("Each job card draws its weeks as a row of blocks.");
-  return parts.join(' ');
-}
+/**
+ * Every lever, by mode, in the order the observer offers them: on every miss a help lever comes before fewer_jobs. A
+ * practice item offers none (the component passes no levers while one is open). The context is the learner's work.
+ */
+export const CSP_LEVERS = leverSet<CspItem, CspWork>({
+  modeOf: item => item.mode,
+  missesOf: mode => CSP_MISSES[mode as CspMode] ?? [],
+  specs: [
+    { id: CHECK_AS_YOU_GO_LEVER, type: 'marks', modes: ['sequence', 'dependency_chain'], answers: 'all',
+      when: AS_YOU_GO_WHEN, does: asYouGoDoes, fact: (_on: unknown, item, w) => asYouGoFact(item, w) },
+    { id: CHECK_AS_YOU_GO_LEVER, type: 'marks', modes: ['parallel'], answers: ['need_same_week', 'need_later', 'crew_over'],
+      when: AS_YOU_GO_WHEN, does: asYouGoDoes, fact: (_on: unknown, item, w) => asYouGoFact(item, w) },
+    { id: TICK_NEEDS_LEVER, type: 'marks', modes: ['dependency_chain'], answers: ['missed_second_need', 'job_before_need', 'wrong_first'],
+      when: 'The learner checks only one of the jobs a card needs.',
+      does: 'Puts a tick beside each need on a card once that need is in the plan.',
+      fact: 'Each need on a card gets a tick once that job is in the plan.' },
+    { id: SAME_NEEDS_LEVER, type: 'marks', modes: ['parallel'], answers: ['too_many_weeks'],
+      when: 'The learner gives every job its own week and runs past the goal.',
+      does: 'Puts a matching letter tag on the jobs that need exactly the same jobs. It names no week.',
+      fact: (_on: unknown, item) => {
+        const tags = sameNeedsTags(item);
+        const groups = Array.from(new Set(Object.values(tags))).map(t => `${t}: ${item.jobs.filter(j => tags[j.id] === t).map(j => j.name).join(', ')}`);
+        return `Tags on the cards; jobs with the same tag need exactly the same jobs (${groups.join('; ')}).`;
+      } },
+    { id: TRACE_CHAINS_LEVER, type: 'layout', modes: ['critical_path'], answers: ['added_all', 'shorter_chain', 'most_jobs_chain'],
+      when: 'The learner adds every job, or takes the wrong chain.',
+      does: 'Lists every chain of needs from a job that needs nothing to a job nothing needs, as a row of job names. It shows no totals.',
+      fact: (_on: unknown, item) => `The chains of needs are listed, with no totals: ${chainLines(item).join(' | ')}.` },
+    { id: WEEK_BLOCKS_LEVER, type: 'marks', modes: ['critical_path'], answers: ['counted_jobs', 'off_by_one', 'most_jobs_chain'],
+      when: 'The learner counts jobs instead of weeks, or miscounts.',
+      does: 'Draws each job card\'s weeks as a row of blocks. It adds nothing up.',
+      fact: 'Each job card draws its weeks as a row of blocks.' },
+    { id: FEWER_JOBS_LEVER, type: 'easier', answers: 'all',
+      when: 'The learner cannot hold all the jobs at once.',
+      does: 'Opens the same kind of task with one job fewer, on a different project. It is not graded; this item comes back after it.',
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's work can show (orders tried exhaustively up to 6 jobs, else sampled). */
 export function possibleMisses(item: CspItem): CspMiss[] {

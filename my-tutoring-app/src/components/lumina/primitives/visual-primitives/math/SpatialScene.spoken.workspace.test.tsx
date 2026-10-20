@@ -15,7 +15,11 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { SpatialSceneChallenge } from './SpatialScene';
-import { spatialSpokenMisses, wordExpectedAnswer } from './spatialSceneWorkspace';
+import { spatialKey, spatialSpokenMisses } from './spatialSceneWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+
+/** The key text the tutor judges with (`spokenKeyText` of the boss's key). */
+const wordExpectedAnswer = (c: SpatialSceneChallenge) => spokenKeyText(spatialKey(c)!);
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -52,8 +56,8 @@ it.each(SPOKEN)('%s: a wrong spoken word retries, a right one credited by the tu
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the/);
+  // The scene's facts never say the answer; the card's moves say how the learner answers.
+  expect(String(task.demand.constraints)).toMatch(/never say the position word/);
   expect(task.task).not.toMatch(/above|left/);
   expect(JSON.stringify(task.demand)).not.toMatch(/above|left of|correctPosition/);
   h.say(wrong); h.feedback('incorrect', 'retry');
@@ -117,7 +121,7 @@ it('expectedAnswer credits what the geometry makes true and names the near words
   // A gap: "on" means touching, so it is not it (contract R3).
   expect(wordExpectedAnswer(IDENTIFY)).toMatch(/"on" or "on top of" is not it: that word means touching/);
   // Touching: "on" is right too.
-  expect(wordExpectedAnswer(TOUCHING)).toMatch(/Said as "above", "over", "on" or "on top of"/);
+  expect(wordExpectedAnswer(TOUCHING)).toMatch(/^"above" \(also accept "over", "on", "on top of"\)/);
   // Left of, next to the box: a bare beside names no side.
   const left = wordExpectedAnswer(DESCRIBE);
   expect(left).toMatch(/A bare "beside" or "next to" is true but does not say which side/);

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * race-track-lab on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * race-track-lab on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The generic
+ * W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer, nothing on screen states it before credit (no speed readout, the predict race and the graph's race
+ * key (`raceKey`), nothing on screen states it before credit (no speed readout, the predict race and the graph's race
  * wait for credit, the log's speed reads "?"), observe and measure wait for Run the race, a wrong tap names its miss,
  * and every miss has a help lever first.
  */
@@ -22,13 +22,18 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { RaceTrackLabData } from './RaceTrackLab';
 import {
   buildRaceItems, choicesOf, endOf, fastestIndex, frontIndex, hasHeadStart, keyChoice, movedOf, RACE_MISSES, raceHarnessAnswers,
-  raceItems, raceMiss, seededRng, validRaceItem, winnerIndex, workspaceAssignment, workspaceScene,
+  raceItems, raceMiss, seededRng, validRaceItem, winnerIndex, workspaceScene,
   type RaceCar, type RaceItem, type RaceMode, type RaceTier,
 } from './raceTrackWorkspace';
 import {
-  GAP_BRACKET_LEVER, leverFact, numberLeak, ONE_SECOND_LEVER, possibleMisses, raceLevers, SECOND_MARKS_LEVER, simplerItem,
+  GAP_BRACKET_LEVER, numberLeak, ONE_SECOND_LEVER, possibleMisses, RACE_LEVERS, SECOND_MARKS_LEVER, simplerItem,
   SIMPLER_LEVERS, stepMarksLeak, STEP_MARKS_LEVER, TO_GO_LEVER, TRAIL_COUNT_LEVER, TRAIL_TICKS_LEVER,
 } from './raceTrackLevers';
+import { raceTrackLabBoss } from './raceTrackLab.boss';
+
+/** The levers an item declares once its race is on screen, and what the pulled ones show. */
+const declared = (i: RaceItem, pulled: string[] = []) => RACE_LEVERS.declare(i, { ran: true }, pulled);
+const leverFact = (i: RaceItem, pulled: string[]) => RACE_LEVERS.onScreen(i, { ran: true }, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -74,7 +79,8 @@ it.each(MODES)('%s binds as a spoken-or-tapped choice whose key stays out of the
   expect(getComponentById('race-track-lab')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(raceTrackLabBoss.assignment(item).task);
+  expect(raceTrackLabBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe('speech');
   expect(h.state().task!.workspace!.expectedAnswer).toContain(keyChoice(item));
   // The key is never in the scene facts beyond the choice list, and no speed readout, medal or Next is on screen.
@@ -125,11 +131,13 @@ it('observe: a wrong tap names its miss and closes the choices; Try again keeps 
   h.close();
 });
 
-it('observe: trail_count is refused before the race and commits after it, riding the next attempt', () => {
+it('observe: trail_count is offered only once the race has run, and commits then, riding the next attempt', () => {
   const h = mount('observe');
-  expect(levers(h)).toEqual([[TRAIL_COUNT_LEVER, 'help', false]]);
-  expect(h.dispatch('pull_lever', { lever: TRAIL_COUNT_LEVER }).status).not.toBe('committed');
+  expect(levers(h)).toEqual([]);
+  // Before the run there is nothing to pull: the tutor is offered no pull_lever at all.
+  expect(h.state().affordances.some(a => (a.action as { operation?: string }).operation === 'pull_lever')).toBe(false);
   run(h);
+  expect(levers(h)).toEqual([[TRAIL_COUNT_LEVER, 'help', false]]);
   answer(h, raceHarnessAnswers(O1).plainWrong);
   expect(nextLever(h.state().task!.workspace!.levers!, last(h)!.miss!)).toBe(TRAIL_COUNT_LEVER);
   const receipt = h.dispatch('pull_lever', { lever: TRAIL_COUNT_LEVER });
@@ -139,7 +147,7 @@ it('observe: trail_count is refused before the race and commits after it, riding
   answer(h, keyChoice(O1));
   expect(last(h)).toMatchObject({ correct: true, assisted: true, levers: [TRAIL_COUNT_LEVER] });
   // The head-start item offers a simpler race (two cars from square 0); the plain one is already that.
-  expect(raceLevers(O2, []).map(l => l.id)).toEqual([TRAIL_COUNT_LEVER, SIMPLER_LEVERS.observe]);
+  expect(declared(O2).map(l => l.id)).toEqual([TRAIL_COUNT_LEVER, SIMPLER_LEVERS.observe]);
   h.close();
 });
 
@@ -159,6 +167,8 @@ it('predict: the race waits for credit; step_marks and squares_to_go commit; sim
   const simpler = simplerItem(P2)!;
   expect(simpler.racers.some(r => r.name === G || r.name === Y)).toBe(false);
   expect(h.view.container.querySelector('[data-practice="simpler"]')).not.toBeNull();
+  // The practice race offers no lever: the full item's levers come back with it.
+  expect(levers(h)).toEqual([]);
   answer(h, keyChoice(simpler));
   expect(last(h)).toMatchObject({ itemId: 'predict-2~simpler', correct: true });
   h.dispatch('advance');
@@ -186,7 +196,7 @@ it('measure: the stop square is a named miss; trail_ticks needs the race, then c
   expect(raceMiss(M1, '3 squares')).toBe('time_as_distance');
   const by: RaceItem = { ...M1, ask: 'farther_by', target: 0, other: 1 };
   expect(choicesOf(by)).toEqual(['3 squares', '6 squares', '9 squares', '15 squares']);
-  expect(raceLevers(by, []).map(l => l.id)[0]).toBe(GAP_BRACKET_LEVER);
+  expect(declared(by).map(l => l.id)[0]).toBe(GAP_BRACKET_LEVER);
   h.close();
 });
 
@@ -208,7 +218,7 @@ it('calculate: the log reads "?" until credit; each wrong number is a named miss
   const medium: RaceItem = { ...C1, racers: [car(R, 4, 4)], time: 2 };
   expect(choicesOf(medium)).toEqual(['4 squares per second', '6 squares per second', '8 squares per second', '16 squares per second']);
   expect(raceMiss(medium, '6 squares per second')).toBe('ignored_start');
-  expect(raceLevers(C2, []).map(l => l.id)).toEqual([SECOND_MARKS_LEVER, SIMPLER_LEVERS.calculate]);
+  expect(declared(C2).map(l => l.id)).toEqual([SECOND_MARKS_LEVER, SIMPLER_LEVERS.calculate]);
   h.close();
 });
 
@@ -293,7 +303,7 @@ describe('the pure rules', () => {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...RACE_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
         for (const c of choicesOf(i)) expect(!!raceMiss(i, c), `${i.id} ${c}`).toBe(c !== keyChoice(i));
-        const ls = raceLevers(i, []);
+        const ls = declared(i);
         for (const miss of possibleMisses(i)) expect(ls.find(l => l.id === nextLever(ls, miss))!.kind, `${i.id} ${miss}`).toBe('help');
         for (const l of ls) expect(`${l.when} ${l.does}`).not.toContain(keyChoice(i));
       }
@@ -304,7 +314,7 @@ describe('the pure rules', () => {
   it('no lever draws the key: step marks stop short of the finish, numbered levers never show the key number, facts name no key', () => {
     for (const mode of MODES) for (const { i } of all(mode)) {
       expect(stepMarksLeak(i)).toBe(false);
-      const ids = raceLevers(i, []).filter(l => l.kind === 'help').map(l => l.id);
+      const ids = declared(i).filter(l => l.kind === 'help').map(l => l.id);
       for (const id of ids) {
         expect(numberLeak(i, id), `${i.id} ${id}`).toBe(false);
         const fact = leverFact(i, [id]);
@@ -324,7 +334,7 @@ describe('the pure rules', () => {
       expect(keyChoice(s)).not.toBe(keyChoice(i));
       expect(validRaceItem(s)).toBe(true);
       expect(simplerItem(s)).toBeNull();
-      expect(raceLevers(s, [])).toEqual([]);
+      expect(declared(s).filter(l => l.kind === 'simplify')).toEqual([]);
     }
     expect(simplerItem(O1)).toBeNull();
   });

@@ -9,18 +9,16 @@
  * - circularize: say or tap where and which way to fire once, to turn a stretched loop into a circle.
  *
  * Every item is built and keyed by code from the physics (`orbitWorkspace.ts`). Nothing flies before the answer is
- * checked, and no label says what a push or a rocket does. Two paths, chosen by `withWorkspaceController`: the scripted
- * path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain shape) commits
- * every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the
- * runtime move on. The levers live in `orbitLevers.ts`.
+ * checked, and no label says what a push or a rocket does. Taught only on the shared tutor/JEV workspace
+ * (`withWorkspaceOnly`; its wiring is `orbitMechanicsLab.card.ts` + `orbitMechanicsLab.boss.ts`): every check commits
+ * through `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor, and the runtime moves on.
+ * The levers are one lever set in `orbitLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OrbitMechanicsLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -36,21 +34,22 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   answerFlight, askOf, BURN_TEXT, burnResult, choiceKey, choiceLabel, CIRCLE_TEXT, COLOR_HEX, craftLabel,
   craftPeriod, describeOrbitWork, emptyWork, flightText, isTapItem, loopPoint, orbitCorrect, orbitItems, orbitMiss,
-  PATH_TEXT, pushLabel, pushPath, RE, tapKey, tapLabel, viewKm, workComplete, workspaceAssignment, workspaceScene,
+  PATH_TEXT, pushLabel, pushPath, RE, tapKey, tapLabel, viewKm, workComplete, workOption, workspaceScene,
   type ChoiceItem, type CircleItem, type OrbitItem, type OrbitMode, type OrbitTier, type OrbitWork, type Path,
   type TapItem,
 } from './orbitWorkspace';
 import {
-  BURN_CARD_LEVER, BURN_CARD_LINES, DROP_LEVER, dropTarget, leverFacts, MARK_POINTS_LEVER, NO_LEVERS, orbitLevers,
+  BURN_CARD_LEVER, BURN_CARD_LINES, DROP_LEVER, dropTarget, MARK_POINTS_LEVER, NO_LEVERS, ORBIT_LEVERS,
   PULL_CARD_LINE, PULL_LEVER, SAME_SIZE_LEVER, SPEED_ARROWS_LEVER, speedArrows, THROW_CARD_LINE, THROW_LEVER,
   type OrbitLeverState,
 } from './orbitLevers';
+import { orbitMechanicsLabBoss } from './orbitMechanicsLab.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -286,8 +285,9 @@ function trackPoints(radiusRe: number, angleDeg: number): Pt[] {
   });
 }
 
-const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  OrbitMechanicsLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<OrbitItem>) => Progress }) => {
+const useOrbitProgress = useWorkspaceProgressFor('orbit-mechanics-lab');
+
+const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId }: OrbitMechanicsLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -301,27 +301,24 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useOrbitProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: orbitMechanicsLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const item: OrbitItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [work, setWork] = useState<OrbitWork>(emptyWork);
   /** The checked answer whose flight is on screen (pick_speed, circularize: any check; the others once solved). */
   const [flown, setFlown] = useState<OrbitWork | null>(null);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -334,7 +331,7 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const leverOn = (id: string) => lever.pulled.includes(id);
 
   const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<OrbitMechanicsLabMetrics>({
     primitiveType: 'orbit-mechanics-lab',
@@ -343,21 +340,10 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'pick_speed', itemIndex: currentIndex + 1,
-    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'orbit-mechanics-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeLevel ? (gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`) : undefined, enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
-  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
+  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    if (retry) { clearItem(); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
     clearItem();
   };
 
@@ -375,13 +361,13 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const tap = (i: number) => {
     if (!item || !isTapItem(item) || closed || lever.dropped.includes(i)) return;
     SoundManager.select();
-    setWork({ pick: i, choice: null }); setFlown(null); setFeedback(null);
+    setWork({ pick: i, choice: null }); setFlown(null);
   };
   const choose = (c: string) => {
     if (!item || isTapItem(item) || closed) return;
     if (lever.dropped.includes((item.choices as string[]).indexOf(c))) return;
     SoundManager.select();
-    setWork({ pick: null, choice: c }); setFlown(null); setFeedback(null);
+    setWork({ pick: null, choice: c }); setFlown(null);
   };
 
   /** pick_speed and circularize fly the learner's own answer after any check; the others fly only the answer. */
@@ -392,31 +378,10 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     const correct = orbitCorrect(item, work);
     progress.commitCheck(describeOrbitWork(item, work), correct, correct ? undefined : orbitMiss(item, work));
     if (correct || fliesOwnAnswer(item)) setFlown({ ...work });
-    if (correct) {
-      SoundManager.playCorrect(); tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The flight now shows on screen. Praise briefly.`);
-      return;
-    }
+    if (correct) { SoundManager.playCorrect(); tappedCorrect.current = item.id; return; }
     SoundManager.playIncorrect();
-    if (tutorOwned) {
-      const at = isTapItem(item) ? work.pick! : (item.choices as string[]).indexOf(work.choice!);
-      editLevers(s => ({ picked: [...s.picked, at] }));
-      setWrongShown(true);
-      return;
-    }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      const keyWork = isTapItem(item) ? { pick: tapKey(item), choice: null } : { pick: null, choice: choiceKey(item) };
-      setWork(keyWork); setFlown(keyWork);
-      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer and its flight are now on screen; explain them.`);
-      return;
-    }
-    if (!fliesOwnAnswer(item)) setWork(emptyWork());
-    setFeedback(fliesOwnAnswer(item) ? `${flightText(item, work) ?? ''} That is not what was asked. Look again, and try once more.` : 'Not quite. Look again, and try once more.');
-    say(`[ANSWER_INCORRECT] ${describeOrbitWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+    editLevers(s => ({ picked: [...s.picked, workOption(item, work)] }));
+    setWrongShown(true);
   };
 
   const metrics = (): OrbitMechanicsLabMetrics => {
@@ -435,17 +400,6 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores (a second try is
-   *  recorded with its attempts, but a retried item never counts toward the score). */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -455,15 +409,14 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
-    const scene = workspaceScene(item, { work: flown ?? work, solved: revealed, flown: !!flown });
-    const levers = revealed ? [] : orbitLevers(item, lever);
-    const onScreen = leverFacts(item, lever);
+    if (!item || (isComplete && !solvedNow)) return;
+    const scene = workspaceScene(item, { work: flown ?? work, solved: revealed, flown: !!flown, grade: gradeLevel });
+    const leverCtx = { state: lever };
+    const levers = revealed ? [] : ORBIT_LEVERS.declare(item, leverCtx, lever.pulled);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: '', onScreen: ORBIT_LEVERS.onScreen(item, leverCtx, lever.pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -474,7 +427,7 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
           const far = dropTarget(item, lever);
           if (far === null) return 'Nothing more can be greyed out here; too few would be left.';
           editLevers(s => ({ pulled: [...s.pulled, id], dropped: [...s.dropped, far] }));
-          if (isTapItem(item) ? work.pick === far : (item.choices as string[]).indexOf(work.choice ?? '') === far) setWork(emptyWork());
+          if (workOption(item, work) === far) setWork(emptyWork());
           return true;
         }
         editLevers(s => ({ pulled: [...s.pulled, id] }));
@@ -484,14 +437,7 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   });
 
   // The workspace path keeps the last credited item on screen (its flight) until the session is submitted.
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The rocket, Earth and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || (isComplete && !solvedNow);
 
   if (!items.length) {
     return (
@@ -663,15 +609,11 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
             <div className="flex items-center gap-3">
               {item.mode === 'pick_speed' && <OutcomePicture path={item.ask} />}
               <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Look at the rocket, then answer."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
             </div>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the space view and choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {renderScene(item)}
               {flown && !revealed && fliesOwnAnswer(item) && (
                 <p className="text-center text-sm text-amber-200" data-flight-result>{flightText(item, flown)}</p>
@@ -710,7 +652,7 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
                   ))}
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -725,13 +667,6 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -739,8 +674,6 @@ const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const OrbitMechanicsLab = withWorkspaceController<OrbitMechanicsLabProps, ProgressOptions<OrbitItem>, Progress>(
-  'orbit-mechanics-lab', OrbitMechanicsLabSurface, useScriptedProgress, useWorkspaceProgressFor('orbit-mechanics-lab'));
+const OrbitMechanicsLab = withWorkspaceOnly<OrbitMechanicsLabProps>('orbit-mechanics-lab', OrbitMechanicsLabSurface, props => props.data.title);
 
 export default OrbitMechanicsLab;

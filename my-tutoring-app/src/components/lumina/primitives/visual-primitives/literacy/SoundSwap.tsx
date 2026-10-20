@@ -1,24 +1,24 @@
 'use client';
 
 /**
- * SoundSwap — the child sees a starting word and its sounds, may tap any sound to hear
- * it, and SAYS THE NEW WORD ALOUD after one sound is added, taken away or changed. It
- * runs only on the shared tutor/JEV teaching workspace (workspace rollout B2; the
- * scripted speech loop was retired, LA-14, user ruling 09-23: one path). The tutor
- * teaches in its own words, the observer judges the spoken word against `resultWord`,
- * and the runtime owns progression. An unbound mount shows the shared "needs the tutor"
- * card.
+ * SoundSwap, taught on the shared teaching workspace only (the boss: `soundSwap.card.ts` + `soundSwap.boss.ts`). A
+ * mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * WHY THE TASK IS ORAL (qa/di/BACKLOG.md item 16). Phoneme manipulation is holding a word
- * in your head, changing one sound and saying what is left. A child who cannot do that can
- * still tap a highlighted tile, so there are no answer buttons.
+ * WHAT THE CHILD DOES. The child sees a starting word and its sounds, may tap any sound to hear it, and SAYS THE NEW
+ * WORD ALOUD after one named sound is added, taken away or changed; the tutor judges it against the key. swap_build is
+ * the shared letter build (`LetterBuildSurface.tsx`): the child changes one letter of the word in the boxes to make a
+ * new real word, and the build checks it.
  *
- * ANSWER-LEAK RULE. The starting word and its sounds are the stimulus and are shown. The
- * result word and its picture description appear only while the credited word is held.
+ * WHY THE TASK IS ORAL (qa/di/BACKLOG.md item 16). Phoneme manipulation is holding a word in your head, changing one
+ * sound and saying what is left. A child who cannot do that can still tap a highlighted tile, so there are no answer
+ * buttons.
+ *
+ * ANSWER-LEAK RULE. The starting word and its sounds are the stimulus and are shown. The result word and its picture
+ * description appear only while the credited word is held. The domain is `soundSwapDomain.ts`, the levers
+ * `soundSwapLevers.ts`; nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -37,18 +37,18 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
-import type { LetterBuildItem } from './letterBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { swapAssignment, swapScene, swapSoundRequest } from './soundSwapWorkspace';
-import { EASIER_LEVER, MARK_LEVER, MODEL_LEVER, leversOnScreen, practiceItemFor, soundSwapLevers, swapModelFor, targetTile }
-  from './soundSwapLevers';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 import { speakablePhoneme } from './phonemeVoice';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { soundSwapPipPose } from '../../../pip/soundSwapPipPose';
+import { swapScene, swapSoundRequest, swapWords, type SwapWord } from './soundSwapDomain';
+import { MARK_LEVER, MODEL_LEVER, SWAP_LEVERS, swapBuildLevers, swapModelFor, targetTile } from './soundSwapLevers';
+import { soundSwapBoss } from './soundSwap.boss';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
@@ -98,7 +98,8 @@ export interface SoundSwapChallenge {
 export interface SoundSwapData {
   title: string;
   gradeLevel: string;
-  /** Within-mode support tier from the manifest. Threaded to the tutor. */
+  /** Within-mode support tier from the manifest: presentation, and when the model lever comes (the lever set's
+   *  `support` fact). Absent ⇒ medium for the model. */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SoundSwapChallenge[];
   /** `swap_build` (open build): the shared letter build surface runs the session from `buildItems`; `challenges` is empty. */
@@ -183,14 +184,15 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
+  const items = useMemo(() => swapWords({ challenges, supportTier: data.supportTier }), [challenges, data.supportTier]);
+  const leverCtx = useMemo(() => ({ challenges }), [challenges]);
 
   const [activeSoundIdx, setActiveSoundIdx] = useState<number | null>(null);
-  // In-item levers (`soundSwapLevers.ts`), keyed by the session item they were pulled on, and the easier
-  // practice item a simplify lever put on screen in its place.
+  // In-item levers, keyed by the session item they were pulled on, and the easier practice item a simplify lever put
+  // on screen in its place (ungraded; the full item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<SoundSwapChallenge | null>(null);
+  const [practice, setPractice] = useState<SwapWord | null>(null);
   /** Visual only: clears the tapped-sound highlight. Nothing here advances. */
   const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -232,10 +234,10 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
       undefined, diagnosisEvidence);
   };
 
-  const runner = useWorkspaceRunner<SoundSwapChallenge>({
+  const runner = useWorkspaceRunner<SwapWord>({
     primitiveId: 'sound-swap',
-    assignment: swapAssignment,
-    items: challenges,
+    assignment: soundSwapBoss.assignment,
+    items,
     workspace,
     objectiveId,
     planItemId: runtimePlanItemId,
@@ -254,17 +256,17 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   // ── Tap-to-hear — never withdrawn by band or tier ────────────────
-  // Asks for one SOUND of the starting word. A child who taps every sound has the word in
-  // pieces; making the change is still theirs to do. Silent, so it is not a learner turn.
-  const handlePlaySound = useCallback((index: number) => {
+  // Asks for one SOUND of the starting word. A child who taps every sound has the word in pieces; making the change
+  // is still theirs to do. Silent and host-authored, so the request is not a learner turn.
+  const handlePlaySound = (index: number) => {
     const phoneme = currentChallenge?.originalPhonemes[index];
     if (!phoneme) return;
     SoundManager.tap();
     setActiveSoundIdx(index);
-    ctx.sendText(swapSoundRequest(phoneme), { silent: true, author: 'host' });
+    runner.requestHear(swapSoundRequest(phoneme));
     if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
     soundTimerRef.current = setTimeout(() => setActiveSoundIdx(null), 1200);
-  }, [ctx, currentChallenge]);
+  };
 
   const highlightIdx = !currentChallenge || runner.revealHeld ? -1
     : pulledLevers.includes(MARK_LEVER) ? targetTile(currentChallenge)
@@ -275,57 +277,36 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
   const blankAt = currentChallenge?.operation === 'addition' && pulledLevers.includes(MARK_LEVER) && !runner.revealHeld
     ? (currentChallenge.addPosition ?? 'beginning') : null;
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionItem) return;
-    const levers = practice ? [] : soundSwapLevers(sessionItem, pulledLevers, challenges);
-    const scene = swapScene(currentChallenge, { highlighted: highlightIdx >= 0 });
-    const onScreen = leversOnScreen(currentChallenge, pulledLevers, challenges);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : SWAP_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = swapScene(currentChallenge, { highlighted: highlightIdx >= 0 });
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : SWAP_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : SWAP_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === EASIER_LEVER) {
-          const simpler = practiceItemFor(sessionItem, challenges);
-          if (!simpler) return 'There is no easier item here.';
+        if (lever.kind === 'simplify') {
+          const simpler = SWAP_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler || simpler.mode === 'swap_build') return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           setActiveSoundIdx(null);
-          return { practice: swapAssignment(simpler) };
+          return { practice: soundSwapBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
       },
       endPractice: () => { setPractice(null); setActiveSoundIdx(null); },
-    };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own sound taps; Pip
-  // never answers, judges, or moves to the next item.
-  const pip = usePipTargets(currentChallenge?.id ?? null, runner.running);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id === 'word' ? 'The starting word' : 'A sound'));
-    const pose = soundSwapPipPose({
-      running: runner.running, preparing: false,
-      stage: runner.revealHeld ? 'affirmed' : runner.running ? 'asking' : 'done',
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueOnItem: runner.cuedItemId === currentChallenge.id && !runner.revealHeld,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Sound swap',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -360,9 +341,8 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
       {currentChallenge.originalPhonemes.map((phoneme, i) => (
         <button
           key={`${currentChallenge.id}-${i}`}
-          ref={pip.ref(`sound-${i}`)}
-          data-pip-object={`sound-${i}`}
-          onClick={() => { pip.look(`sound-${i}`); handlePlaySound(i); }}
+          type="button"
+          onClick={() => handlePlaySound(i)}
           aria-label={`sound ${phoneme}`}
           // Perception scaffold, withdrawn at the hard tier. Exposed as an
           // attribute because it is styling otherwise, and a scaffold nobody
@@ -429,39 +409,38 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
               </div>
             )}
 
+            <PipDock />
+
             {/* The stage: the starting word and its sounds, and nothing that
                 names the new word. The reward appears only after the tutor has
                 credited the child's answer. */}
-            <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
-              {showImage && !isPreReader && (
-                <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
-              )}
-              <p ref={pip.ref('word')} data-pip-object="word"
-                className="text-4xl font-bold text-slate-100">{currentChallenge.originalWord}</p>
-              {renderSounds()}
-              {runner.revealHeld && (
-                <div className="mt-2 space-y-1" data-swap-reward="true">
-                  <p className="text-sm text-slate-500">→</p>
-                  <p className="text-3xl font-bold text-emerald-300 animate-bounce">{currentChallenge.resultWord}</p>
-                  {currentChallenge.resultImage && !isPreReader && (
-                    <p className="text-sm text-slate-500 italic">{currentChallenge.resultImage}</p>
-                  )}
-                </div>
-              )}
-              <div className="mt-2 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
-            </div>
+            <PipWorkspace className="space-y-4">
+              <div data-swap-stage={currentChallenge.operation}
+                className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+                {showImage && !isPreReader && (
+                  <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+                )}
+                <p className="text-4xl font-bold text-slate-100">{currentChallenge.originalWord}</p>
+                {renderSounds()}
+                {runner.revealHeld && (
+                  <div className="mt-2 space-y-1" data-swap-reward="true">
+                    <p className="text-sm text-slate-500">→</p>
+                    <p className="text-3xl font-bold text-emerald-300 animate-bounce">{currentChallenge.resultWord}</p>
+                    {currentChallenge.resultImage && !isPreReader && (
+                      <p className="text-sm text-slate-500 italic">{currentChallenge.resultImage}</p>
+                    )}
+                  </div>
+                )}
+                <div className="mt-2 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+              </div>
 
-            {swapModel && renderSwapModel(swapModel)}
+              {swapModel && renderSwapModel(swapModel)}
+            </PipWorkspace>
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
                 Tap a sound to hear it, then say the new word.
               </p>
-            )}
-
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
           </>
         )}
@@ -480,22 +459,28 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
   );
 }
 
-// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 /** swap_build's metrics in this primitive's shape. */
 const swapBuildMetrics = (s: LetterBuildSummary): SoundSwapMetrics => ({ type: 'sound-swap', operation: 'swap_build',
   challengesCorrect: s.solved, challengesTotal: s.total, additionAccuracy: 0, deletionAccuracy: 0, substitutionAccuracy: s.accuracy,
   attemptsCount: s.attemptsCount });
 
-/** One mount, one shape: the open build (`swap_build`) runs on the shared letter build surface. */
-function SoundSwapHost(props: SoundSwapProps) {
-  const { data } = props;
-  if (data.task === 'letter_build') {
-    return <LetterBuildSurface primitiveId="sound-swap" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={swapBuildMetrics} />;
-  }
-  return <SoundSwapSurface {...props} />;
+/** The open build (`swap_build`) on the shared letter build surface, wired from this boss. */
+function SwapBuildSurface({ data, className, runtimePlanItemId }: SoundSwapProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    const levers = swapBuildLevers({ challenges: [] }, tier);
+    return { assignment: (item: LetterBuildItem) => soundSwapBoss.assignment({ ...item, mode: 'swap_build', supportTier: tier }), levers };
+  }, [data.supportTier]);
+  return <LetterBuildSurface primitiveId="sound-swap" className={className} runtimePlanItemId={runtimePlanItemId}
+    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={swapBuildMetrics} boss={boss} />;
 }
 
+/** One mount, one shape: the open build (`swap_build`) runs on the shared letter build surface. */
+function SoundSwapHost(props: SoundSwapProps) {
+  return props.data.task === 'letter_build' ? <SwapBuildSurface {...props} /> : <SoundSwapSurface {...props} />;
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 const SoundSwap = withWorkspaceOnly<SoundSwapProps>('sound-swap', SoundSwapHost, props => props.data.title);
 
 export default SoundSwap;

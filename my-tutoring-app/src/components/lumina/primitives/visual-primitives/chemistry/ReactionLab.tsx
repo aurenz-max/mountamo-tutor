@@ -1,16 +1,13 @@
 'use client';
 
 /**
- * Reaction Lab: a virtual experiment station (predict, mix, observe, explain). Two paths, chosen by
- * `withWorkspaceController`:
- * - Scripted (no tutor runtime: the tester, a lesson without the live tutor): the notebook flow. Predict (the notebook
- *   prediction, then any predict challenge, before mixing), Experiment, Observe (the notebook), Explain (the other
- *   challenges), each challenge with its own Check and Next.
- * - Workspace (the live tutor owns the lesson, W1, ROLLOUT C26): every item is one challenge with a code-held key
- *   (`reactionLabWorkspace.ts`). A predict challenge is asked beside the unmixed substances; any other waits for the
- *   learner to press Mix Substances!, then is asked beside the reaction. Every check commits through
- *   `progress.commitCheck`, a spoken answer is judged by JEV, and the in-item levers (`reactionLabLevers.ts`) are
- *   published with the scene. No notebook, no Next: the runtime moves the item.
+ * Reaction Lab: a virtual experiment station (predict, mix, observe, explain), taught only on the shared tutor/JEV
+ * workspace (`withWorkspaceOnly`; its wiring is `reactionLab.card.ts` + `reactionLab.boss.ts`, a SAY_OR_SHOW card on
+ * the spoken preset). Every item is one challenge with a code-held key (`reactionLabWorkspace.ts`). A predict challenge
+ * is asked beside the unmixed substances; any other waits for the learner to press Mix Substances!, then is asked
+ * beside the reaction. A tap commits through `progress.commitCheck` with its named miss, a spoken answer is judged by
+ * the tutor, and the levers are one lever set (`reactionLabLevers.ts`) published with the scene. No Next: the runtime
+ * moves the item.
  */
 import React, { useState, useCallback, useLayoutEffect, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,22 +24,22 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ReactionLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   answerForm, describeReactionWork, effectLabel, equationHidden, itemChoices, keyValue, reactionCorrect, reactionItems,
-  reactionMiss, shownOptions, workspaceAssignment, workspaceScene, type ReactionChoice, type ReactionItem,
+  reactionMiss, workspaceScene, type ReactionChoice, type ReactionItem,
 } from './reactionLabWorkspace';
 import {
-  DROP_LEVER, LEGEND_LEVER, LEGEND_TITLE, NO_LEVERS, PARTICLE_LEVER, REPLAY_LEVER, SIGN_LEGEND, farChoice, leverFacts,
-  reactionLevers, type ReactionLeverState,
+  DROP_LEVER, LEGEND_LEVER, LEGEND_TITLE, NO_LEVERS, PARTICLE_LEVER, REACTION_LEVERS, REPLAY_LEVER, SIGN_LEGEND, farChoice,
+  type ReactionLeverState,
 } from './reactionLabLevers';
+import { reactionLabBoss } from './reactionLab.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -145,9 +142,6 @@ export interface ReactionLabData {
 // ============================================================================
 // Constants
 // ============================================================================
-
-const SIGN_LABELS: Record<string, { label: string; emoji: string }> = Object.fromEntries(
-  SIGN_LEGEND.map(l => [l.sign, { label: l.label, emoji: l.emoji }]));
 
 const EFFECT_STYLES: Record<string, string> = {
   bubbles: 'animate-bounce',
@@ -304,6 +298,7 @@ const SignsLegend: React.FC = () => (
   </div>
 );
 
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -317,15 +312,15 @@ interface ReactionLabProps {
   runtimeEvalMode?: string;
 }
 
-type Phase = 'predict' | 'experiment' | 'observe' | 'explain';
 type LeverMemo = { item: string } & ReactionLeverState;
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ReactionLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ReactionItem>) => Progress }) => {
+const useReactionProgress = useWorkspaceProgressFor('reaction-lab');
+
+const ReactionLabSurface = ({ data, className, runtimePlanItemId }: ReactionLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -334,8 +329,6 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     substances = [],
     reaction,
     animation,
-    challenges = [],
-    notebook,
     showOptions = {},
     gradeBand = '3-5',
     instanceId,
@@ -351,37 +344,34 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     showEquation = gradeBand === '6-8',
     showSafetyBadge = true,
     showTemperatureGauge = true,
-    showObservationNotebook = true,
-    showConservationCounter = gradeBand === '6-8',
   } = showOptions;
 
   const stableInstanceIdRef = useRef(instanceId || `reaction-lab-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Items: predict challenges first (asked before mixing), then the rest. The workspace keeps only keyed ones. ──
-  const items = useMemo(() => reactionItems(challenges, { checkedOnly: tutorOwned }), [challenges, tutorOwned]);
+  // ── Items: the challenges with a code-held key, predict challenges first (asked before mixing). ──
+  const items = useMemo(() => [...reactionLabBoss.items(data)], [data]);
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useReactionProgress({
     challenges: items,
     getChallengeId: (i) => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: reactionLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: (index) => solvedAloud.current(index),
     onFinished: (result) => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
 
   // ── State ──
-  const [currentPhase, setCurrentPhase] = useState<Phase>('predict');
   /** The substances have been mixed; the reaction stays shown from then on. */
   const [reactionRun, setReactionRun] = useState(false);
   const [animating, setAnimating] = useState(false);
@@ -389,26 +379,12 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   useEffect(() => () => { if (animationTimer.current) clearTimeout(animationTimer.current); }, []);
   const [particleViewActive, setParticleViewActive] = useState(false);
 
-  const [prediction, setPrediction] = useState('');
-  const [predictionSubmitted, setPredictionSubmitted] = useState(false);
-  const [observations, setObservations] = useState<Record<string, string>>({});
-  const [identifiedSigns, setIdentifiedSigns] = useState<Set<string>>(new Set());
-
   /** The choice picked on the current challenge (an option id, 'true'/'false', 'chemical'/'physical'). */
   const [choice, setChoice] = useState<string | null>(null);
-  /** Scripted path only: a typed answer to a challenge with no options. */
-  const [typedAnswer, setTypedAnswer] = useState('');
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-
-  const [classificationCorrect, setClassificationCorrect] = useState(0);
-  const [classificationTotal, setClassificationTotal] = useState(0);
-  const [equationBalanced, setEquationBalanced] = useState(false);
-  const [conservationUnderstood, setConservationUnderstood] = useState(false);
   const [safetyViewed, setSafetyViewed] = useState(false);
-  const [selectedSubstances, setSelectedSubstances] = useState<Set<string>>(new Set());
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   /** The item a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
@@ -416,20 +392,17 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const currentItem: ReactionItem | undefined = items[currentIndex];
   const currentChallenge = currentItem?.challenge ?? null;
   const solvedNow = !!currentItem && results.some((r) => r.challengeId === currentItem.id && r.correct);
-  const allChallengesComplete = isComplete;
   const lever: ReactionLeverState = leverMemo.item === currentItem?.id ? leverMemo : NO_LEVERS;
   const editLevers = (change: (s: ReactionLeverState) => Partial<ReactionLeverState>) => {
     const id = currentItem?.id ?? '';
     setLeverMemo((m) => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
   };
 
-  /** Workspace path: what the stage shows for the current item. */
-  const wsStage: 'before' | 'mix' | 'after' | 'done' = !currentItem || isComplete ? 'done'
+  /** What the stage shows for the current item. */
+  const stage: 'before' | 'mix' | 'after' | 'done' = !currentItem || isComplete ? 'done'
     : currentItem.stage === 'before' ? 'before' : reactionRun ? 'after' : 'mix';
-  /** The challenge card is on screen (scripted: in the predict phase after the prediction, or in the explain phase). */
-  const cardVisible = !!currentItem && !isComplete && (tutorOwned
-    ? wsStage === 'before' || wsStage === 'after'
-    : (currentPhase === 'predict' && predictionSubmitted && currentItem.stage === 'before') || currentPhase === 'explain');
+  /** The challenge card is on screen. */
+  const cardVisible = stage === 'before' || stage === 'after';
 
   // ── Evaluation ──
   const {
@@ -445,68 +418,12 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring (scripted path only) ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    experimentName: experiment.name,
-    experimentCategory: experiment.category,
-    reactionType: reaction.type,
-    signs: reaction.signs,
-    currentPhase,
-    isReacting: animating,
-    reactionComplete: reactionRun && !animating,
-    predictionSubmitted,
-    prediction,
-    substancesCount: substances.length,
-    selectedSubstancesCount: selectedSubstances.size,
-    observationsRecorded: Object.keys(observations).length,
-    observationPromptsTotal: notebook.observePrompts.length,
-    signsIdentified: identifiedSigns.size,
-    signsTotal: reaction.signs.length,
-    particleViewActive,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: items.length,
-    challengeType: currentChallenge?.type ?? 'predict',
-    instruction: currentChallenge?.instruction ?? experiment.name,
-    attemptNumber: currentAttempts + 1,
-    equation: reaction.equation,
-  }), [
-    gradeBand, experiment, reaction, currentPhase, animating, reactionRun, predictionSubmitted, prediction,
-    substances.length, selectedSubstances.size, observations, notebook.observePrompts.length, identifiedSigns.size,
-    particleViewActive, currentIndex, items.length, currentChallenge, currentAttempts,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'reaction-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? 'Kindergarten' : gradeBand === '3-5' ? 'Grade 3-5' : 'Grade 6-8',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] This is a Reaction Lab experiment: "${experiment.name}" for ${gradeBand}. `
-      + `Category: ${experiment.category}. Substances: ${substances.map(s => s.name).join(', ')}. `
-      + `Real-world connection: ${experiment.realWorldConnection}. `
-      + `Start by asking the student to make a prediction: "${notebook.predictPrompt}". Do not say what will happen.`,
-      { silent: true }
-    );
-  }, [tutorOwned, isConnected, experiment, gradeBand, substances, notebook.predictPrompt, sendText]);
-
   // ── Workspace callbacks ──
   /** A fresh item, or Try again: the choice is cleared; a retry counts one more wrong answer for the levers. */
   openItem.current = (_index, retry) => {
     setChoice(null);
     setWrongPick(null);
     setFeedback('');
-    setFeedbackType('');
     if (retry) editLevers((s) => ({ wrongs: s.wrongs + 1 }));
   };
   /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
@@ -517,7 +434,6 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setChoice(keyValue(solved.challenge));
     setWrongPick(null);
     setFeedback(solved.challenge.narration || 'Excellent work!');
-    setFeedbackType('success');
   };
 
   // ── Experiment ──
@@ -530,67 +446,11 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     }, Math.min(Math.max(animation.realView.duration || 3, 1), 6) * 1000);
   }, [animation.realView.duration]);
 
-  const handleSubmitPrediction = () => {
-    if (!prediction.trim()) return;
-    setPredictionSubmitted(true);
-    const predictionText = notebook.predictionOptions?.find(o => o.id === prediction)?.text || prediction;
-    sendText(
-      `[PREDICTION_MADE] Student predicted: "${predictionText}". `
-      + `Acknowledge their prediction warmly without saying whether it will happen: "Interesting idea! Let's test it."`,
-      { silent: true }
-    );
-    if (items[currentIndex]?.stage !== 'before') {
-      setFeedback('Great prediction! Now let\'s find out what happens...');
-      setFeedbackType('success');
-    }
-  };
-
-  const handleSelectSubstance = (substanceId: string) => {
-    if (hasSubmittedEvaluation || animating) return;
-    SoundManager.select();
-    setSelectedSubstances(prev => {
-      const next = new Set(prev);
-      if (next.has(substanceId)) next.delete(substanceId); else next.add(substanceId);
-      return next;
-    });
-  };
-
   const handleMixSubstances = () => {
     if (animating || learnerBlocked()) return;
-    if (!tutorOwned && selectedSubstances.size < 2) return;
     SoundManager.snap();
     setReactionRun(true);
     runAnimation();
-    if (tutorOwned) return;
-    sendText(
-      `[REACTION_STARTED] Student mixed the substances. The reaction is happening! `
-      + `Ask them to watch closely; do not name what they should see.`,
-      { silent: true }
-    );
-    const duration = Math.min(Math.max(animation.realView.duration || 3, 1), 6) * 1000;
-    setTimeout(() => {
-      setCurrentPhase(p => (p === 'experiment' ? 'observe' : p));
-      sendText('[REACTION_COMPLETE] The reaction finished. Ask the student to record what they saw, heard and felt.', { silent: true });
-    }, duration);
-  };
-
-  const handleObservationChange = (prompt: string, value: string) => setObservations(prev => ({ ...prev, [prompt]: value }));
-  const handleToggleSign = (sign: string) => setIdentifiedSigns(prev => {
-    const next = new Set(prev);
-    if (next.has(sign)) next.delete(sign); else next.add(sign);
-    return next;
-  });
-
-  const handleFinishObservations = () => {
-    const recordedCount = Object.values(observations).filter(v => v.trim()).length;
-    sendText(
-      `[OBSERVATIONS_RECORDED] Student recorded ${recordedCount}/${notebook.observePrompts.length} observations `
-      + `and marked ${identifiedSigns.size} signs of change. Now guide them to explain: "${notebook.explainPrompt}"`,
-      { silent: true }
-    );
-    setCurrentPhase('explain');
-    setFeedback('');
-    setFeedbackType('');
   };
 
   const handleToggleParticleView = () => {
@@ -606,112 +466,49 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   };
 
   const handleCheckChallenge = () => {
-    if (!currentItem || solvedNow || wrongPick !== null || learnerBlocked() || hasSubmittedEvaluation) return;
-    const c = currentItem.challenge;
-    const form = answerForm(c);
-    let correct: boolean;
-    let said: string;
-    if (form === 'open') {
-      // Scripted path only (the workspace keeps keyed challenges): the legacy typed-answer rule.
-      const typed = typedAnswer.trim().toLowerCase();
-      if (!typed) return;
-      correct = typed.includes(c.targetAnswer.toLowerCase()) || typed.length >= 15;
-      said = `Typed "${typedAnswer.trim()}"`;
-    } else {
-      if (choice === null) return;
-      correct = reactionCorrect(currentItem, choice);
-      said = describeReactionWork(currentItem, choice);
-    }
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
-    progress.commitCheck(said, correct, correct ? undefined : reactionMiss(currentItem, choice));
-    if (correct) progress.mergeResult({ challengeId: currentItem.id, correct: true, attempts: currentAttempts + 1, challengeType: c.type });
-
-    if (c.type === 'classify') {
-      setClassificationTotal(n => n + 1);
-      if (correct) setClassificationCorrect(n => n + 1);
-    }
-    if (correct && c.type === 'balance') setEquationBalanced(true);
-    if (correct && c.type === 'conservation') setConservationUnderstood(true);
-
+    if (!currentItem || solvedNow || wrongPick !== null || learnerBlocked() || hasSubmittedEvaluation || choice === null) return;
+    const correct = reactionCorrect(currentItem, choice);
+    // Counts the attempt and records the checked gesture with its named miss.
+    progress.commitCheck(describeReactionWork(currentItem, choice), correct, correct ? undefined : reactionMiss(currentItem, choice));
     if (correct) {
+      progress.mergeResult({ challengeId: currentItem.id, correct: true, attempts: currentAttempts + 1, challengeType: currentItem.challenge.type });
       SoundManager.playCorrect();
       tappedCorrect.current = currentItem.id;
-      setFeedback(c.narration || 'Excellent work!');
-      setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student answered correctly for challenge "${c.instruction}". Celebrate: "${c.narration}"`, { silent: true });
+      setFeedback(currentItem.challenge.narration || 'Excellent work!');
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) {
-      // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
-      const picked = choice;
-      setWrongPick(picked);
-      if (picked !== null) editLevers((s) => ({ picked: [...s.picked, picked] }));
-      return;
-    }
-    setFeedback(currentAttempts >= 1 ? c.hint : 'Not quite — try again!');
-    setFeedbackType('error');
-    sendText(
-      `[ANSWER_INCORRECT] Student answered "${said}" for "${c.instruction}" and it is wrong. Attempt ${currentAttempts + 1}. `
-      + `You are NOT told the right answer. Point them back at what the experiment showed. Hint: "${c.hint}"`,
-      { silent: true }
-    );
+    // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
+    setWrongPick(choice);
+    editLevers((s) => ({ picked: [...s.picked, choice] }));
   };
 
-  // ── Scripted path: Next and the submission ──
-  const submitScripted = () => {
-    if (hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
-    const correctCount = results.filter(r => r.correct).length;
-    const score = items.length > 0 ? Math.round((correctCount / items.length) * 100) : 0;
-    submitEvaluation(correctCount === items.length, score, buildMetrics(), {
-      challengeResults: results, prediction, observations });
+  // ── The scored session (under a lesson's evaluation provider only) ──
+  const buildMetrics = (): ReactionLabMetrics => {
+    const right = (types: readonly string[]) => items.filter(i => types.includes(i.challenge.type)
+      && results.some(r => r.challengeId === i.id && r.correct)).length;
+    const count = (types: readonly string[]) => items.filter(i => types.includes(i.challenge.type)).length;
+    const predictions = count(['predict']);
+    return {
+      type: 'reaction-lab',
+      predictionMade: predictions > 0 && results.some(r => items.find(i => i.id === r.challengeId)?.stage === 'before'),
+      predictionAccuracy: predictions ? right(['predict']) / predictions : 0,
+      observationsRecorded: 0,
+      observationPromptsTotal: 0,
+      chemicalVsPhysicalCorrect: right(['classify']),
+      classificationTotal: count(['classify']),
+      signsOfChangeIdentified: right(['identify_signs']),
+      signsTotal: count(['identify_signs']),
+      particleViewEngaged: particleViewActive,
+      equationBalanced: right(['balance']) > 0,
+      conservationUnderstood: right(['conservation']) > 0,
+      experimentsCompleted: reactionRun ? 1 : 0,
+      experimentsTotal: 1,
+      safetyAwarenessShown: safetyViewed,
+      attemptsCount: results.reduce((s, r) => s + r.attempts, 0),
+    };
   };
 
-  const buildMetrics = (): ReactionLabMetrics => ({
-    type: 'reaction-lab',
-    predictionMade: predictionSubmitted,
-    predictionAccuracy: predictionSubmitted
-      ? (notebook.correctPredictionId
-        ? (prediction === notebook.correctPredictionId ? 1 : 0)
-        : (prediction.toLowerCase().includes(reaction.signs[0]?.replace('_', ' ') || '') ? 1 : 0.5))
-      : 0,
-    observationsRecorded: Object.values(observations).filter(v => v.trim()).length,
-    observationPromptsTotal: notebook.observePrompts.length,
-    chemicalVsPhysicalCorrect: classificationCorrect,
-    classificationTotal,
-    signsOfChangeIdentified: identifiedSigns.size,
-    signsTotal: reaction.signs.length,
-    particleViewEngaged: particleViewActive,
-    equationBalanced,
-    conservationUnderstood,
-    experimentsCompleted: reactionRun ? 1 : 0,
-    experimentsTotal: 1,
-    safetyAwarenessShown: safetyViewed,
-    attemptsCount: results.reduce((s, r) => s + r.attempts, 0),
-  });
-
-  const advanceToNextChallenge = () => {
-    const next = items[currentIndex + 1];
-    setChoice(null);
-    setTypedAnswer('');
-    setFeedback('');
-    setFeedbackType('');
-    if (!progress.advance()) return;
-    // The predictions are done: the experiment runs before the next (after-mixing) challenge.
-    if (currentPhase === 'predict' && next?.stage === 'after') setCurrentPhase('experiment');
-    sendText(`[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${items.length}: "${next?.challenge.instruction}". Introduce it.`, { silent: true });
-  };
-
-  // Scripted path: the last right answer completes the set (no Next follows it), so the submission runs here. It
-  // never ran before 10-15: Next was hidden once every challenge was right, and only Next submitted.
-  useEffect(() => {
-    if (tutorOwned || !isComplete || hasSubmittedEvaluation) return;
-    sendText(`[ALL_COMPLETE] Student completed all ${items.length} challenges for "${experiment.name}"! Celebrate.`, { silent: true });
-    submitScripted();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorOwned, isComplete]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || items.length === 0) return;
     submitEvaluation(result.passed, result.accuracy, buildMetrics(),
@@ -725,31 +522,25 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const particleAllowed = showParticleView && animation.particleView.reactantMolecules.length > 0
     && animation.particleView.productMolecules.length > 0;
   // The equation prints the products and the balanced equation: hidden during the predictions and a balance challenge.
-  const equationShown = showEquation && !!reaction.equation && (tutorOwned
-    ? !(wsStage === 'before' || (wsStage === 'after' && equationHidden(currentChallenge, solvedNow)))
-    : !(currentPhase === 'predict' || (currentPhase === 'explain' && equationHidden(currentChallenge, solvedNow))));
-  // The counter prints "=" between reactants and products, the answer to a conservation statement: hidden on the
-  // workspace path, and on the scripted path while a conservation challenge is unsolved.
-  const counterShown = !tutorOwned && showConservationCounter
-    && !items.some(i => i.challenge.type === 'conservation' && !results.some(r => r.challengeId === i.id && r.correct));
+  const equationShown = showEquation && !!reaction.equation
+    && !(stage === 'before' || (stage === 'after' && equationHidden(currentChallenge, solvedNow)));
   const molecules = [...animation.particleView.reactantMolecules, ...animation.particleView.productMolecules];
-  const leverCtx = { reactionRun, animating, particleAllowed, particleOpen: particleViewActive, molecules };
-  const shownLevers = tutorOwned && cardVisible ? lever.pulled : [];
+  const leverCtx = { reactionRun, animating, particleAllowed, particleOpen: particleViewActive, molecules, state: lever };
+  const shownLevers = cardVisible ? lever.pulled : [];
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. Before the learner mixes,
-  // an after-mixing challenge holds the response.
+  // What the tutor and the observer are shown, republished every render. Before the learner mixes, an after-mixing
+  // challenge holds the response and offers no lever.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem || isComplete) return;
+    if (!currentItem || isComplete) return;
     const ready = currentItem.stage === 'before' || reactionRun;
     const scene = workspaceScene(currentItem, {
       reactionRun, animating, choice: wrongPick ?? choice, particleOpen: particleViewActive, equationShown,
       showTemperature: showTemperatureGauge,
     }, data);
-    const levers = ready ? reactionLevers(currentItem, lever, leverCtx) : [];
-    const onScreen = ready ? leverFacts(currentItem, lever, { animating }) : null;
+    const levers = ready ? REACTION_LEVERS.declare(currentItem, leverCtx, lever.pulled) : [];
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: REACTION_LEVERS.support(currentItem, leverCtx),
+        onScreen: ready ? REACTION_LEVERS.onScreen(currentItem, leverCtx, lever.pulled) : '' }),
       readyForResponse: ready,
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
@@ -757,6 +548,7 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         const l = levers.find((x) => x.id === id);
         if (!l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
+        // Drawing a pulled lever: the far choice greyed out, the reaction replayed, or the particle view opened.
         if (id === DROP_LEVER) {
           const far = farChoice(currentItem, lever);
           if (far === null) return 'No more choices can be greyed out here; too few would be left.';
@@ -778,17 +570,6 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     };
   });
 
-  // ── Pip shared surface ──
-  // A projection of this item's check state, the tutor's speech on it, and the child's touches; Pip points only at
-  // the workspace as a whole and never chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: hasSubmittedEvaluation || !cardVisible ? null : currentItem?.id ?? null,
-    label: 'The challenge and your answer',
-    solved: cardVisible && solvedNow && !!currentChallenge && answerForm(currentChallenge) !== 'open',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   // ── Render pieces ──
   const renderShelf = () => (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -805,30 +586,11 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
   const renderMixPanel = () => (
     <div className="space-y-3">
-      <p className="text-slate-300 text-sm text-center">
-        {tutorOwned ? 'Mix the substances and watch what happens:' : 'Select substances to mix:'}
-      </p>
-      {tutorOwned ? renderShelf() : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {substances.map(sub => {
-            const selected = selectedSubstances.has(sub.id);
-            return (
-              <button type="button" key={sub.id} onClick={() => handleSelectSubstance(sub.id)} aria-pressed={selected}
-                className={`rounded-lg border p-3 text-center cursor-pointer transition-all ${
-                  selected ? 'bg-cyan-500/15 border-cyan-400/40 scale-105' : 'bg-white/5 border-white/10 hover:bg-white/10'
-                }`}>
-                <div className="text-xl mb-1">{STATE_EMOJIS[sub.state] || '🧪'}</div>
-                <div className="text-slate-200 text-xs font-medium">{sub.name}</div>
-                <div className="text-slate-600 text-[10px]">{sub.amount}</div>
-                {selected && <Badge className="mt-1 text-[10px] bg-cyan-500/20 text-cyan-300 border-cyan-400/30">Selected</Badge>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <p className="text-slate-300 text-sm text-center">Mix the substances and watch what happens:</p>
+      {renderShelf()}
       <div className="flex justify-center">
         <Button variant="ghost" className="bg-cyan-500/10 border border-cyan-400/30 hover:bg-cyan-500/20 text-cyan-300"
-          onClick={handleMixSubstances} disabled={!tutorOwned && selectedSubstances.size < 2}>
+          onClick={handleMixSubstances}>
           Mix Substances!
         </Button>
       </div>
@@ -867,16 +629,6 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       {!animating && reaction.energyChange !== 'neutral' && (
         <div className={`text-center text-xs ${reaction.energyChange === 'exothermic' ? 'text-red-400' : 'text-blue-400'}`}>
           {reaction.energyChange === 'exothermic' ? '🔥 Exothermic — released heat' : '❄️ Endothermic — absorbed heat'}
-        </div>
-      )}
-      {counterShown && !animating && (
-        <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
-          <span className="text-slate-500 text-[10px] uppercase tracking-wider">Conservation of Mass</span>
-          <div className="flex items-center justify-center gap-3 mt-1">
-            <span className="text-blue-300 text-xs">Reactant atoms: {animation.particleView.reactantMolecules.length}</span>
-            <span className="text-slate-500">=</span>
-            <span className="text-emerald-300 text-xs">Product atoms: {animation.particleView.productMolecules.length}</span>
-          </div>
         </div>
       )}
     </div>
@@ -923,44 +675,34 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {shownLevers.includes(LEGEND_LEVER) && <SignsLegend />}
         {!solvedNow && (
           <>
-            {form === 'open' ? (
-              <textarea value={typedAnswer} onChange={e => setTypedAnswer(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 resize-none"
-                rows={2} aria-label="Your answer" />
-            ) : form === 'choice' ? (
+            {form === 'choice' ? (
               <div className="grid grid-cols-1 gap-2">{choices.map(c => choiceButton(c, true))}</div>
             ) : (
               <div className="flex gap-2 max-w-sm mx-auto">{choices.map(c => choiceButton(c, false))}</div>
             )}
             <Button variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
               onClick={handleCheckChallenge}
-              disabled={(form === 'open' ? !typedAnswer.trim() : choice === null) || wrongPick !== null || hasSubmittedEvaluation}>
+              disabled={choice === null || wrongPick !== null || hasSubmittedEvaluation || progress.canAttempt === false}>
               Check Answer
             </Button>
           </>
         )}
         {solvedNow && (
-          <p className="text-emerald-300 text-sm">✓ {choices.find(c => c.value === keyValue(currentChallenge))?.label ?? typedAnswer}</p>
+          <p className="text-emerald-300 text-sm">✓ {choices.find(c => c.value === keyValue(currentChallenge))?.label}</p>
         )}
       </div>
     );
   };
 
-  const renderChallengeArea = () => (
-    <>
-      {items.length > 0 && (
-        <div className="flex items-center gap-2">
-          {items.map((it, i) => (
-            <div key={it.id} className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-              results.some(r => r.challengeId === it.id && r.correct) ? 'bg-emerald-400'
-                : i === currentIndex ? 'bg-cyan-400 scale-125' : 'bg-slate-600'}`} />
-          ))}
-          <span className="text-slate-500 text-xs ml-auto">{Math.min(currentIndex + 1, items.length)} of {items.length}</span>
-        </div>
-      )}
-      {pip.store && cardVisible && <div {...pip.dock} />}
-      <div {...pip.workspace}>{cardVisible && renderChallengeCard()}</div>
-    </>
+  const renderProgressDots = () => items.length > 0 && (
+    <div className="flex items-center gap-2">
+      {items.map((it, i) => (
+        <div key={it.id} className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+          results.some(r => r.challengeId === it.id && r.correct) ? 'bg-emerald-400'
+            : i === currentIndex ? 'bg-cyan-400 scale-125' : 'bg-slate-600'}`} />
+      ))}
+      <span className="text-slate-500 text-xs ml-auto">{Math.min(currentIndex + 1, items.length)} of {items.length}</span>
+    </div>
   );
 
   const renderComplete = () => (
@@ -968,194 +710,6 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       <p className="text-emerald-400 text-sm font-medium mb-2">Experiment Complete!</p>
       <p className="text-slate-400 text-xs">{results.filter(r => r.correct).length} / {items.length} challenges correct</p>
     </div>
-  );
-
-  // ── Scripted phases ──
-  const renderPredictPhase = () => {
-    const options = notebook.predictionOptions?.length ? shownOptions(notebook.predictionOptions, `${resolvedInstanceId}-prediction`) : [];
-    return (
-      <div className="space-y-3">
-        {renderShelf()}
-        <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
-          <p className="text-slate-200 text-sm font-medium mb-2">{notebook.predictPrompt}</p>
-          {options.length > 0 ? (
-            <div className="grid grid-cols-1 gap-2">
-              {options.map(o => (
-                <Button key={o.value} variant="ghost" aria-label={o.label} disabled={predictionSubmitted}
-                  className={`h-auto text-left p-3 border transition-all duration-300 ${
-                    prediction === o.value ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
-                  onClick={() => !predictionSubmitted && setPrediction(o.value)}>
-                  <div className="flex items-center gap-3 w-full">
-                    <Badge className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border flex-shrink-0 bg-black/30 text-slate-400 border-white/10" aria-hidden="true">
-                      {o.letter}
-                    </Badge>
-                    <span className="text-sm text-slate-200 whitespace-normal">{o.label}</span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <textarea value={prediction} onChange={e => setPrediction(e.target.value)} placeholder="I think..." rows={2}
-              disabled={predictionSubmitted}
-              className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600 resize-none" />
-          )}
-          {!predictionSubmitted && (
-            <Button variant="ghost" className="mt-3 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={handleSubmitPrediction} disabled={!prediction.trim()}>
-              Submit Prediction
-            </Button>
-          )}
-        </div>
-        {predictionSubmitted && currentItem?.stage === 'before' && !isComplete && renderChallengeArea()}
-        {predictionSubmitted && (currentItem?.stage !== 'before' || isComplete) && (
-          <div className="flex justify-center">
-            <Button variant="ghost" className="bg-cyan-500/10 border border-cyan-400/30 hover:bg-cyan-500/20 text-cyan-300"
-              onClick={() => { setCurrentPhase('experiment'); setFeedback(''); setFeedbackType(''); }}>
-              Run the Experiment →
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderObservePhase = () => (
-    <div className="space-y-3">
-      <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5 space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm">📝</span>
-          <span className="text-slate-200 text-sm font-medium">Observation Notebook</span>
-        </div>
-        {notebook.observePrompts.map((prompt, i) => (
-          <div key={i}>
-            <label className="text-slate-400 text-xs block mb-1">{prompt}</label>
-            <input type="text" value={observations[prompt] || ''} onChange={e => handleObservationChange(prompt, e.target.value)}
-              placeholder="I noticed..."
-              className="w-full px-3 py-1.5 bg-slate-800/50 border border-white/15 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-cyan-400/50 placeholder:text-slate-600" />
-          </div>
-        ))}
-      </div>
-      {/* Marked signs stay one neutral colour: colouring each by the key let a learner tap them all to read it. */}
-      <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
-        <p className="text-slate-300 text-sm mb-2">Which signs of change did you observe?</p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(SIGN_LABELS).map(([key, { label, emoji }]) => (
-            <Button key={key} variant="ghost" aria-pressed={identifiedSigns.has(key)}
-              className={`h-auto py-1.5 px-3 text-xs ${identifiedSigns.has(key)
-                ? 'bg-cyan-500/15 border border-cyan-400/30 text-cyan-300'
-                : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'}`}
-              onClick={() => handleToggleSign(key)}>
-              {emoji} {label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      {showParticleView && (
-        <div>
-          <Button variant="ghost" className="w-full bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 text-sm"
-            onClick={handleToggleParticleView}>
-            🔬 {particleViewActive ? 'Hide' : 'Show'} Particle View
-          </Button>
-          {particleViewActive && (
-            <div className="mt-2">
-              <ParticleView animation={animation} animating={false} showProducts={reactionRun} caption={reaction.particleDescription} />
-            </div>
-          )}
-        </div>
-      )}
-      <div className="flex justify-center">
-        <Button variant="ghost" className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-          onClick={handleFinishObservations}>
-          Done Observing
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderScripted = () => (
-    <>
-      <div className="flex items-center gap-1">
-        {(['predict', 'experiment', 'observe', 'explain'] as Phase[]).map((phase, i) => {
-          const labels = { predict: 'Predict', experiment: 'Experiment', observe: 'Observe', explain: 'Explain' };
-          const emojis = { predict: '🤔', experiment: '🧪', observe: '📝', explain: '💡' };
-          const isActive = currentPhase === phase;
-          const isPast = ['predict', 'experiment', 'observe', 'explain'].indexOf(currentPhase) > i;
-          return (
-            <React.Fragment key={phase}>
-              {i > 0 && <div className={`flex-1 h-0.5 ${isPast ? 'bg-emerald-400' : 'bg-slate-700'}`} />}
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all ${
-                isActive ? 'bg-cyan-500/20 border border-cyan-400/30 text-cyan-300' : isPast ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-600'}`}>
-                <span>{emojis[phase]}</span>
-                <span className="hidden sm:inline">{labels[phase]}</span>
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
-      {currentPhase === 'predict' && renderPredictPhase()}
-      {currentPhase === 'experiment' && (
-        <div className="space-y-3">
-          {!reactionRun && renderMixPanel()}
-          {reactionRun && renderReaction(reaction.particleDescription)}
-          {reactionRun && !animating && (
-            <div className="flex justify-center">
-              <Button variant="ghost" className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={() => setCurrentPhase('observe')}>
-                Record Observations
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-      {currentPhase === 'observe' && showObservationNotebook && renderObservePhase()}
-      {currentPhase === 'observe' && !showObservationNotebook && (
-        <div className="flex justify-center">
-          <Button variant="ghost" className="bg-emerald-500/10 border border-emerald-400/30 text-emerald-300" onClick={handleFinishObservations}>
-            Done Observing
-          </Button>
-        </div>
-      )}
-      {currentPhase === 'explain' && (
-        <div className="space-y-3">
-          {!isComplete && renderChallengeArea()}
-          {allChallengesComplete && renderComplete()}
-        </div>
-      )}
-      {feedback && (
-        <div className={`text-center text-sm font-medium transition-all duration-300 ${
-          feedbackType === 'success' ? 'text-emerald-400' : feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'}`}>
-          {feedback}
-        </div>
-      )}
-      {cardVisible && solvedNow && (
-        <div className="flex justify-center">
-          <Button variant="ghost" className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-            onClick={advanceToNextChallenge}>
-            Next Challenge
-          </Button>
-        </div>
-      )}
-    </>
-  );
-
-  // ── Workspace stage ──
-  const renderWorkspace = () => (
-    <>
-      {wsStage === 'before' && renderShelf()}
-      {wsStage === 'mix' && renderMixPanel()}
-      {(wsStage === 'after' || (wsStage === 'done' && reactionRun)) && renderReaction(wsStage === 'done' ? reaction.particleDescription : null)}
-      {wsStage !== 'done' && wsStage !== 'mix' && renderChallengeArea()}
-      {feedback && feedbackType === 'success' && cardVisible && (
-        <div className="text-center text-sm font-medium text-emerald-400">{feedback}</div>
-      )}
-      {wsStage === 'done' && (
-        <>
-          {renderComplete()}
-          {/* The predictions are done: the learner may now run the experiment and see what happens (ungraded). */}
-          {!reactionRun && renderMixPanel()}
-        </>
-      )}
-    </>
   );
 
   return (
@@ -1188,7 +742,25 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {tutorOwned ? renderWorkspace() : renderScripted()}
+        {stage !== 'done' && renderProgressDots()}
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the experiment and the challenge as its region. */}
+        {stage !== 'done' && <PipDock />}
+        <PipWorkspace className="space-y-4">
+          {stage === 'before' && renderShelf()}
+          {stage === 'mix' && renderMixPanel()}
+          {(stage === 'after' || (stage === 'done' && reactionRun)) && renderReaction(stage === 'done' ? reaction.particleDescription : null)}
+          {cardVisible && renderChallengeCard()}
+          {feedback && cardVisible && solvedNow && (
+            <div className="text-center text-sm font-medium text-emerald-400">{feedback}</div>
+          )}
+          {stage === 'done' && (
+            <>
+              {renderComplete()}
+              {/* The predictions are done: the learner may now run the experiment and see what happens (ungraded). */}
+              {!reactionRun && renderMixPanel()}
+            </>
+          )}
+        </PipWorkspace>
 
         <Accordion type="single" collapsible>
           <AccordionItem value="connection" className="border-white/10">
@@ -1213,19 +785,11 @@ const ReactionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             </AccordionItem>
           )}
         </Accordion>
-
-        {!tutorOwned && currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && cardVisible && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
-            <p className="text-slate-400 text-xs italic">💡 {currentChallenge.hint}</p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ReactionLab = withWorkspaceController<ReactionLabProps, ProgressOptions<ReactionItem>, Progress>(
-  'reaction-lab', ReactionLabSurface, useScriptedProgress, useWorkspaceProgressFor('reaction-lab'));
+const ReactionLab = withWorkspaceOnly<ReactionLabProps>('reaction-lab', ReactionLabSurface, props => props.data.title);
 
 export default ReactionLab;

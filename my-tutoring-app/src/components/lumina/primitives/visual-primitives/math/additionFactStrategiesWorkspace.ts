@@ -1,13 +1,19 @@
 /**
- * Addition fact strategies on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape:
- * `useWorkspaceProgress` in place of `useChallengeProgress`. Every fact's answer is one number, so the learner may say
- * it or tap it on the 0-18 pad: the item is spoken, judged by JEV from the tutor's feedback against `expectedAnswer`,
- * and still takes the tap, which the activity's own check judges (as math-fact-fluency, 2026-10-13).
- * Response time stays a silent metric: nothing here advances or grades on a clock.
+ * Addition fact strategies on the shared tutor/JEV teaching workspace. Every fact's answer is one number, so the
+ * learner may say it or tap it on the 0-18 pad: the boss (`additionFactStrategies.boss.ts`) asks the fact with a
+ * spoken key (`additionFactKey`) and the assignment also takes the tap, which the activity's own check judges.
+ * Response time stays a silent metric: nothing here advances or grades on a clock, and nothing shows a timer.
+ *
+ * Pure: the component, the boss, the levers and the tests read the same ask, key, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberMisses, offByMisses, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { AdditionFactChallenge, AdditionFactStrategy } from './AdditionFactStrategies';
+import { ADDITION_FACT_MISSES, type AdditionFactMiss } from './additionFactStrategies.card';
+import { spokenIntegerWord } from './spokenNumberWords';
+
+export { ADDITION_FACT_MISSES, type AdditionFactMiss };
 
 export const STRATEGY_NAMES: Record<AdditionFactStrategy, string> = {
   plus_zero: 'Adding Zero', plus_one: 'Adding One', doubles: 'Doubles', turnaround: 'Turn-Around Facts',
@@ -15,32 +21,43 @@ export const STRATEGY_NAMES: Record<AdditionFactStrategy, string> = {
   facts_mixed: 'Mixed Big Facts',
 };
 
-/** A spoken answer's known wrong answers, with the tap's ids (`additionFactMiss`), most specific first. */
+/** The big-fact bands share one eval mode. */
+const BIG: readonly AdditionFactStrategy[] = ['facts_3_4', 'facts_5_6', 'facts_7_8', 'facts_mixed'];
+export const additionFactMode = (strategy: AdditionFactStrategy): string => (BIG.includes(strategy) ? 'big_facts' : strategy);
+
+/** The fact as the ask and the screen print it. */
+export const factText = (c: Pick<AdditionFactChallenge, 'a' | 'b'>) => `${c.a} + ${c.b}`;
+
+/** What the learner is asked. The fact's own numbers are said by design (`given`); the total never is. */
+export const additionFactAsk = (c: AdditionFactChallenge) => `What is ${factText(c)}?`;
+
+/** The key the tutor judges a spoken total against: the number word, its digits, and the miss that sounds right. */
+export function additionFactKey(c: AdditionFactChallenge): SpokenKey {
+  const echo = c.a !== c.sum && c.b !== c.sum
+    ? ` Saying ${c.a} or ${c.b} alone, as if nothing was added, is wrong.` : '';
+  return { answer: spokenIntegerWord(c.sum), alsoAccept: [String(c.sum)],
+    acceptRule: 'Counting on out loud and ending on the total is that answer.',
+    signatureError: `A different number is not the answer, however close it is.${echo}` };
+}
+
+/**
+ * A spoken answer's known wrong answers, with the tap's ids (`additionFactMiss`), most specific first. One `addend`
+ * entry names both printed numbers: a miss id appears once per item (journey J8).
+ */
 export function additionFactSpokenMisses(c: AdditionFactChallenge): KnownMiss[] {
-  const fact = `${c.a} + ${c.b}`;
+  const fact = factText(c);
+  const addends = numberMisses(c.sum, [c.a, c.b].map(value => ({ id: 'addend', value, pattern: (n: number) => String(n) })));
+  const named = addends.map(m => m.pattern);
   return [
-    ...numberMisses(c.sum, [c.a, c.b].map(value => ({ id: 'addend', value,
-      pattern: (n: number) => `The learner's answer is ${n}, one of the two numbers printed in ${fact}, as if nothing was added.` }))),
+    ...(addends.length ? [{ id: 'addend', examples: addends.flatMap(m => m.examples ?? []),
+      pattern: `The learner's answer is ${named.join(' or ')}, ${named.length > 1 ? 'one of the two numbers' : 'a number'} `
+        + `printed in ${fact}, as if nothing was added.` }] : []),
     ...offByMisses(c.sum, `the total of ${fact}`),
   ];
 }
 
-export function additionFactAssignment(c: AdditionFactChallenge): TeachingAssignment {
-  return { id: c.id, task: `What is ${c.a} + ${c.b}? The learner answers by saying the number, or tapping it on the number pad.`,
-    response: 'speech', acceptsGesture: true,
-    expectedAnswer: `${c.sum} (${c.a} + ${c.b} = ${c.sum}), said as a number, digits or words`,
-    misses: additionFactSpokenMisses(c) };
-}
-
 /** The activity's own check. */
 export const additionFactMatches = (c: AdditionFactChallenge, value: number) => value === c.sum;
-
-/**
- * What a wrong tap shows (`TeachingAttempt.miss`): `addend` (tapped one of the two printed numbers, as if
- * nothing was added), then how far off the tap is: `one_short` / `one_over` / `short_by_more` / `over_by_more`.
- */
-export type AdditionFactMiss = 'addend' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
-export const ADDITION_FACT_MISSES: AdditionFactMiss[] = ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
 export function additionFactMiss(c: AdditionFactChallenge | null, value: number): AdditionFactMiss | undefined {
   if (!c || value === c.sum) return undefined;
@@ -51,27 +68,30 @@ export function additionFactMiss(c: AdditionFactChallenge | null, value: number)
 /** The learner's checked work in their terms, never the key. */
 export const describeAdditionFactCheck = (value: number) => `Tapped ${value}`;
 
+/** What the tutor reads about the fact on screen. The lever set adds what pulled levers drew (`leverScene`). */
 export function additionFactScene(
   c: AdditionFactChallenge,
-  view: { strategy: AdditionFactStrategy; onScreen?: string; example?: { a: number; b: number } },
-): WorkspaceScene {
+  view: { strategy: AdditionFactStrategy; example?: { a: number; b: number } },
+): SceneOf {
   return { objects: [], facts: {
     strategy: STRATEGY_NAMES[view.strategy] ?? view.strategy,
-    problem: `${c.a} + ${c.b} = ?`,
+    problem: `${factText(c)} = ?`,
     // The worked example is a different fact; its total is printed on the card but never named here.
-    ...(view.example ? { example: `A worked example of the strategy is on screen: ${view.example.a} + ${view.example.b}, not one of this session's facts.` } : {}),
-    // What the pulled levers drew (`leverFacts`), never this fact's total.
-    ...(view.onScreen ? { onScreen: view.onScreen } : {}),
+    ...(view.example ? { example: `A worked example of the strategy is on screen: ${factText(view.example)}, not one of this session's facts.` } : {}),
     timing: 'No timer and no time limit. Never mention speed or hurry the learner.',
-    constraints: 'The learner says the total or taps it on a 0 to 18 number pad; a tap is checked by the activity. Before '
-      + 'the learner answers, never say the total, never count the objects aloud to the end, and never say a number that narrows it.',
+    constraints: 'Teach the strategy on screen, not counting all from one. Before the learner answers, never count the '
+      + 'objects aloud to the end, never say a number that narrows the total ("it is more than ten"), and never say the '
+      + 'total of a nearby fact or double that gives it away.',
   } };
 }
 
-type HarnessInput = { type: 'choose'; label: string };
-
-/** The journey's input for one fact, through the real pad. `wrong` taps one more than the sum (one less at 18). */
-export function additionFactHarnessInputs(c: AdditionFactChallenge, wrong: boolean): HarnessInput[] {
+/** The journey's tap for one fact, through the real pad. `wrong` taps one more than the sum (one less at 18). */
+export function additionFactHarnessInputs(c: AdditionFactChallenge, wrong: boolean): Array<{ type: 'choose'; label: string }> {
   const value = !wrong ? c.sum : c.sum < 18 ? c.sum + 1 : c.sum - 1;
   return [{ type: 'choose', label: `Answer ${value}` }];
+}
+
+/** The journey's spoken answers: the total's word, or a plainly different number (the off-by-one belongs to the probes). */
+export function additionFactHarnessWords(c: AdditionFactChallenge): { correct: string; plainWrong: string } {
+  return { correct: spokenIntegerWord(c.sum), plainWrong: spokenIntegerWord(c.sum >= 4 ? c.sum - 3 : c.sum + 4) };
 }

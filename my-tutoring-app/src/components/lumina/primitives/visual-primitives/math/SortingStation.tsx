@@ -224,7 +224,7 @@ function StationWorkspace({ data, items, className, runtimePlanItemId }: Sorting
     const levers = practice ? [] : SORTING_LEVERS.declare(sessionItem, leverCtx, pulled);
     workspace.current = {
       ...leverScene(workspaceScene(currentItem), {
-        support: practice ? '' : SORTING_LEVERS.support(sessionItem),
+        support: practice ? '' : SORTING_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : SORTING_LEVERS.onScreen(sessionItem, leverCtx, pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

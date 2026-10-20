@@ -1,31 +1,26 @@
 'use client';
 
 /**
- * CvcSpeller — three modes on one CVC word. It runs only on the shared tutor/JEV
- * teaching workspace (workspace rollout B2; the scripted speech loop was retired, LA-14,
- * user ruling 09-23: one path). The tutor teaches in its own words, the observer commits
- * outcomes, and the runtime owns progression. An unbound mount shows the shared "needs
- * the tutor" card.
+ * CvcSpeller, taught on the shared teaching workspace only (the boss: `cvcSpeller.card.ts` + `cvcSpeller.boss.ts`). A
+ * mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
  * WHAT THE CHILD DOES, PER MODE.
- *  - `fill-vowel` / `word-sort`: they hear the word and SAY THE MIDDLE SOUND aloud,
- *    judged against it.
- *  - `spell-word`: they hear the word and PUT A LETTER IN EACH BOX. The third letter
- *    landing is the commit, and the boxes are checked in code, never by the tutor.
+ *  - `fill-vowel` / `word-sort`: they hear the word and SAY THE MIDDLE SOUND aloud; the tutor judges it against the key.
+ *  - `spell-word`: they hear the word and PUT A LETTER IN EACH BOX. The third letter landing is the commit, and the
+ *    boxes are checked in code, never by the tutor.
+ *  - `make_word`: the shared letter build (`LetterBuildSurface.tsx`), wired from this boss.
  *
- * WHY THE SPOKEN MODES HAVE NO BUTTONS (qa/di/BACKLOG.md item 16). Two vowel buttons or
- * two sort buckets each printed one of two options including the answer: recognition, and
- * a leak for anyone who can read. `spell-word` stays in the hands: three ordered slots out
- * of a distractor bank is not guessable, and it is ENCODING.
+ * WHY THE SPOKEN MODES HAVE NO BUTTONS (qa/di/BACKLOG.md item 16). Two vowel buttons or two sort buckets each printed
+ * one of two options including the answer: recognition, and a leak for anyone who can read. `spell-word` stays in the
+ * hands: three ordered slots out of a distractor bank is not guessable, and it is ENCODING.
  *
- * ANSWER-LEAK RULE. The word, its picture and the empty boxes are the stimulus. The middle
- * sound and the spelling are the answer: nothing prints or offers them until credited.
- * `word-sort`'s columns are built out of answers already credited. Hear It says the WORD
- * and stops; isolating the middle sound on demand would be the answer.
+ * ANSWER-LEAK RULE. The word, its picture and the empty boxes are the stimulus. The middle sound and the spelling are
+ * the answer: nothing prints or offers them until credited. `word-sort`'s columns are built out of answers already
+ * credited. Hear It says the WORD and stops; isolating the middle sound on demand would be the answer. The domain is
+ * `cvcSpellerDomain.ts`, the levers `cvcSpellerLevers.ts`; nothing in this file writes a spoken line.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -51,14 +46,19 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { vowelKeyword, type CvcTask } from './cvcSpellerScript';
-import { cvcAssignment, cvcItem, cvcMiss, cvcScene, describeSpelling, hearWordRequest, spellingMatches } from './cvcSpellerWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
-import { KEYWORD_LEVER, MIDDLE_MODEL_LEVER, SMALL_WORD_LEVER, TOKENS_LEVER, VOWEL_LEVER, cvcLevers, isPracticeWord, keywordFor,
-  middleModelFor, modelMiddleSaid, sessionStimuli, smallerWord, vowelStrip } from './cvcSpellerLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { cvcSpellerPipPose } from '../../../pip/cvcSpellerPipPose';
+import {
+  cvcItem, cvcMiss, cvcScene, cvcWords, describeSpelling, hearWordRequest, spellingMatches, vowelKeyword,
+  type CvcTask, type CvcWord,
+} from './cvcSpellerDomain';
+import {
+  CVC_LEVERS, KEYWORD_LEVER, MIDDLE_MODEL_LEVER, TOKENS_LEVER, VOWEL_LEVER, cvcBuildLevers, isPracticeWord, keywordFor,
+  middleModelFor, sessionStimuli, vowelStrip,
+} from './cvcSpellerLevers';
+import { cvcSpellerBoss } from './cvcSpeller.boss';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
@@ -104,9 +104,8 @@ export interface CvcSpellerData {
   challenges: CvcSpellerChallenge[];
   gradeLevel?: string;
 
-  /** Within-mode support tier ('easy'|'medium'|'hard') — set by the generator
-   *  from config.difficulty. At `easy` the tutor repeats the word with its
-   *  vowel HELD before handing over; it never changes the words. */
+  /** Within-mode support tier ('easy'|'medium'|'hard') from config.difficulty: presentation, the starting vowel strip
+   *  on spell-word at easy, and when the model lever comes (the lever set's `support` fact). Absent ⇒ medium. */
   supportTier?: 'easy' | 'medium' | 'hard';
   /** `make_word` (open build): the shared letter build surface runs the session from `buildItems`; `challenges` is empty. */
   task?: 'letter_build';
@@ -193,8 +192,8 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
   } = data;
 
   const gradeLevel = data.gradeLevel ?? 'K';
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
+  const items = useMemo(() => cvcWords({ challenges, supportTier: data.supportTier }), [challenges, data.supportTier]);
 
   const [wordTapped, setWordTapped] = useState(false);
   // spell-word board
@@ -214,13 +213,13 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
   // In-item levers (`cvcSpellerLevers.ts`), keyed by the session item they were pulled on, and the
   // easier practice word a simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<CvcSpellerChallenge | null>(null);
-  const practiceRef = useRef<CvcSpellerChallenge | null>(null);
+  const [practice, setPractice] = useState<CvcWord | null>(null);
+  const practiceRef = useRef<CvcWord | null>(null);
   const [practiceSolved, setPracticeSolved] = useState(false);
   /** sound_tokens: how many blank tokens the learner has pushed into the boxes. Only their taps move it. */
   const [tokensPushed, setTokensPushed] = useState(0);
   const stimuli = useMemo(() => sessionStimuli(challenges), [challenges]);
-  const showPractice = (next: CvcSpellerChallenge | null) => {
+  const showPractice = (next: CvcWord | null) => {
     practiceRef.current = next;
     setPractice(next);
     setPracticeSolved(false);
@@ -270,10 +269,10 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
     setActiveSlotIndex(firstEmpty === -1 ? null : firstEmpty);
   };
 
-  const runner = useWorkspaceRunner<CvcSpellerChallenge>({
+  const runner = useWorkspaceRunner<CvcWord>({
     primitiveId: 'cvc-speller',
-    assignment: cvcAssignment,
-    items: challenges,
+    assignment: cvcSpellerBoss.assignment,
+    items,
     workspace,
     objectiveId,
     planItemId: runtimePlanItemId,
@@ -335,6 +334,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
     return letters;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
+  const leverCtx = { letterGroup: data.letterGroup, stimuli, bank: letterBank, vowelFocus };
 
   // ── The BUILD commit (spell-word): the third letter IS the commit ────
   const commitBuild = useCallback((placed: (string | null)[]) => {
@@ -379,41 +379,41 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
 
   // ── Hear It — never withdrawn by band or tier ─────────────────────
   // Asks for the WORD and stops: isolating the middle sound is the answer on two modes.
-  // Silent, so it is not a learner turn.
-  const handleHearWord = useCallback(() => {
+  // Silent and host-authored, so it is not a learner turn.
+  const handleHearWord = () => {
     if (!item) return;
     SoundManager.tap();
     hearTapsRef.current += 1;
     setWordTapped(true);
-    ctx.sendText(hearWordRequest(item.word), { silent: true, author: 'host' });
+    runner.requestHear(hearWordRequest(item.word));
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => setWordTapped(false), 1200);
-  }, [ctx, item]);
+  };
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice word carries no levers.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const levers = practice ? [] : cvcLevers(sessionChallenge, pulledLevers, data.letterGroup, stimuli, letterBank, vowelFocus);
-    const onScreen = levers.filter(l => l.pulled).map(l => l.id);
-    const model = onScreen.includes(MIDDLE_MODEL_LEVER) ? middleModelFor(sessionChallenge, stimuli) : null;
-    workspace.current = { ...cvcScene(currentChallenge, { boxes: slotsRef.current, levers: onScreen,
-      tokens: onScreen.includes(TOKENS_LEVER) ? tokensPushed : undefined, practice: !!practice,
-      model: model ? { word: model.word, said: modelMiddleSaid(model) } : undefined }),
+    const levers = practice ? [] : CVC_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(cvcScene(currentChallenge, { boxes: slotsRef.current,
+        tokens: leverOn(TOKENS_LEVER) ? tokensPushed : undefined, practice: !!practice }), {
+        support: practice ? '' : CVC_LEVERS.support(sessionChallenge, leverCtx),
+        onScreen: practice ? '' : CVC_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === SMALL_WORD_LEVER) {
-          const simpler = smallerWord(sessionChallenge, data.letterGroup, stimuli, vowelFocus);
-          if (!simpler) return 'There is no easier word for this item.';
+        if (lever.kind === 'simplify') {
+          const simpler = CVC_LEVERS.simpler(sessionChallenge, leverCtx, id);
+          if (!simpler || simpler.mode === 'make_word') return 'There is no easier word for this item.';
           setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
           showPractice(simpler);
           setTokensPushed(0);
           setBoard(EMPTY);
-          return { practice: cvcAssignment(simpler) };
+          return { practice: cvcSpellerBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
         return true;
@@ -422,30 +422,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
     };
   });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own box moves; Pip never
-  // places a letter, commits a build, or moves to the next item.
   const judging = !!item && item.task === 'spell-word' && runner.isAwaitingGesture();
-  const pip = usePipTargets(currentChallenge?.id ?? null,
-    runner.running && !judging && currentChallenge?.taskType === 'spell-word');
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id.startsWith('box-') ? `Box ${Number(id.slice(4)) + 1}` : id));
-    const pose = cvcSpellerPipPose({
-      running: runner.running, preparing: false,
-      stage: runner.revealHeld ? 'affirmed' : judging ? 'judging' : runner.running ? 'asking' : 'done',
-      task: currentChallenge.taskType,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueOnItem: runner.cuedItemId === currentChallenge.id && !runner.revealHeld,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Sounds and letters',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
 
   const phaseResults = useMemo(() => phaseResultsFromSummary(challenges, runner.practiceSummary, (challenge) => ({
     label: challenge.targetWord,
@@ -502,7 +479,6 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
           {item.letters[0]}
         </div>
         <div
-          ref={pip.ref('gap')}
           data-pip-object="gap"
           data-cvc-reward={credited ? 'true' : undefined}
           className={`w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center text-3xl font-bold uppercase transition-all ${
@@ -529,7 +505,6 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
       {showPicture && (
         <LuminaPanel className="flex items-center justify-center px-5 py-3">
           <span
-            ref={pip.ref('picture')}
             data-pip-object="picture"
             className="text-4xl"
             role="img"
@@ -557,7 +532,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
         </div>
       )}
 
-      <div ref={pip.ref('boxes')} data-pip-object="boxes" className="flex items-center justify-center gap-3">
+      <div data-pip-object="boxes" className="flex items-center justify-center gap-3">
         {slots.map((letter, index) => {
           const isActive = activeSlotIndex === index && boardOpen;
           const slotState: DropZoneState = boardFlash
@@ -565,9 +540,8 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
           return (
             <button
               key={index}
-              ref={pip.ref(`box-${index}`)}
               data-pip-object={`box-${index}`}
-              onClick={() => { pip.look(`box-${index}`); handleSlotTap(index); }}
+              onClick={() => handleSlotTap(index)}
               disabled={!boardOpen}
               aria-label={`box ${index + 1}`}
               className={`
@@ -609,12 +583,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
             <div key={`${letter}-${index}`} className="flex flex-col items-center gap-1">
             <button
               aria-label={`letter ${letter}`}
-              onClick={() => {
-                // Pip watches the box the letter lands in, never the bank letter.
-                const target = activeSlotIndex ?? slots.findIndex((s) => s === null);
-                if (target >= 0) pip.look(`box-${target}`);
-                handleSelectLetter(letter);
-              }}
+              onClick={() => handleSelectLetter(letter)}
               disabled={!boardOpen || activeSlotIndex === null}
               className={`
                 w-12 h-12 rounded-lg border-2 flex items-center justify-center
@@ -646,7 +615,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
       <div className="space-y-5">
         {showPicture && (
           <div className="flex justify-center">
-            <span ref={pip.ref('picture')} data-pip-object="picture"
+            <span data-pip-object="picture"
               className="text-5xl" role="img" aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}>
               {currentChallenge.emoji}
             </span>
@@ -691,7 +660,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
                 {vowelFocus && (
                   <LuminaBadge className="text-xs">{VOWEL_LABELS[vowelFocus] || vowelFocus}</LuminaBadge>
                 )}
-                <LuminaBadge accent="emerald" className="text-xs">{TASK_BADGE[item.task as CvcTask]}</LuminaBadge>
+                <LuminaBadge accent="emerald" className="text-xs">{TASK_BADGE[item.task]}</LuminaBadge>
               </div>
             )}
           </div>
@@ -729,15 +698,14 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
 
             {/* Pip's dock sits above the stage: a pointer to the gap, picture or boxes never
                 crosses the letter bank below them. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            <PipDock />
 
-            {item.task !== 'spell-word' && renderMiddleModel()}
-            {item.task === 'fill-vowel' && renderFillVowel()}
-            {item.task === 'spell-word' && renderSpellWord()}
-            {item.task === 'word-sort' && renderWordSort()}
+            <PipWorkspace className="space-y-4">
+              {item.task !== 'spell-word' && renderMiddleModel()}
+              {item.task === 'fill-vowel' && renderFillVowel()}
+              {item.task === 'spell-word' && renderSpellWord()}
+              {item.task === 'word-sort' && renderWordSort()}
+            </PipWorkspace>
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
@@ -765,22 +733,28 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
   );
 }
 
-// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 /** make_word's metrics in this primitive's shape. */
 const makeWordMetrics = (s: LetterBuildSummary): CvcSpellerMetrics => ({ type: 'cvc-speller', taskType: 'make-word',
   wordsSpelledCorrectly: s.solved, wordsTotal: s.total, vowelAccuracy: s.accuracy, consonantAccuracy: s.accuracy,
   commonErrors: [], stretchUsed: 0, attemptsCount: s.attemptsCount });
 
-/** One mount, one shape: the open build (`make_word`) runs on the shared letter build surface. */
-function CvcSpellerHost(props: CvcSpellerProps) {
-  const { data } = props;
-  if (data.task === 'letter_build') {
-    return <LetterBuildSurface primitiveId="cvc-speller" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={makeWordMetrics} />;
-  }
-  return <CvcSpellerSurface {...props} />;
+/** The open build (`make_word`) on the shared letter build surface, wired from this boss. */
+function MakeWordSurface({ data, className, runtimePlanItemId }: CvcSpellerProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    const levers = cvcBuildLevers({ letterGroup: data.letterGroup, stimuli: sessionStimuli([]), bank: [] }, tier);
+    return { assignment: (item: LetterBuildItem) => cvcSpellerBoss.assignment({ ...item, mode: 'make_word', supportTier: tier }), levers };
+  }, [data.supportTier, data.letterGroup]);
+  return <LetterBuildSurface primitiveId="cvc-speller" className={className} runtimePlanItemId={runtimePlanItemId}
+    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={makeWordMetrics} boss={boss} />;
 }
 
+/** One mount, one shape: the open build (`make_word`) runs on the shared letter build surface. */
+function CvcSpellerHost(props: CvcSpellerProps) {
+  return props.data.task === 'letter_build' ? <MakeWordSurface {...props} /> : <CvcSpellerSurface {...props} />;
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 const CvcSpeller = withWorkspaceOnly<CvcSpellerProps>('cvc-speller', CvcSpellerHost, props => props.data.title);
 
 export default CvcSpeller;

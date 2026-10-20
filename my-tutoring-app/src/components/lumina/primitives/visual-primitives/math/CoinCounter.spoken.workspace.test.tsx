@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 /**
- * Coin counter answered aloud (ROLLOUT.md VB-1): a typed total (every mixed count, and a like count from Grade 2), the
- * group worth more, and the change each ask for one amount or one group, so they are spoken items that still take the
- * typed or tapped answer and Check. The observer credits a spoken answer from the tutor's feedback; a Check stays
- * checked by the activity. Identify, the Kindergarten and Grade 1 like counts and the builds stay tap-only.
+ * Coin counter answered aloud (ROLLOUT.md VB-1; on the boss since 2026-10-19): a typed total (every mixed count, and a
+ * like count from Grade 2), the group worth more, and the change each ask for one amount or one group, so they are
+ * SAY_OR_SHOW items with a key (`coinKey`) that still take the typed or tapped answer and Check. The observer credits a
+ * spoken answer from the tutor's feedback; a Check stays checked by the activity. Identify, the Kindergarten and
+ * Grade 1 like counts and the builds have no key and stay tap-only.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
-vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
 vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
@@ -17,7 +17,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { CoinCounterChallenge, CoinCounterData } from './CoinCounter';
-import { coinExpectedAnswer, coinSpokenMisses, spokenCentsForms } from './coinCounterWorkspace';
+import { askLeaks, spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { coinAsk, coinGiven, coinKey, coinSpokenMisses, spokenCentsForms, type CoinItem } from './coinCounterWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -58,8 +59,8 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the answer/);
+  // The scene never says the answer; the task is the ask, and the key rides beside it.
+  expect(task.task.startsWith(c.instruction)).toBe(true);
   expect(sceneText(h)).not.toMatch(key);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
@@ -129,15 +130,28 @@ it('identify, the Kindergarten and Grade 1 like counts and the builds stay tap-o
   }
 });
 
-it('the expected answer names every natural way to say the amount or the group', () => {
+it('the key names the ways to say the amount or the group, and no ask says its answer', () => {
+  const item = (c: CoinCounterChallenge, band = '2'): CoinItem => ({ ...c, band });
+  const text = (c: CoinCounterChallenge) => spokenKeyText(coinKey(item(c))!);
   expect(spokenCentsForms(13)).toEqual(['13 cents', 'thirteen cents', 'thirteen', '13¢']);
   expect(spokenCentsForms(1)).toContain('one cent');
   expect(spokenCentsForms(125)).toEqual(expect.arrayContaining(['$1.25', 'one dollar and twenty-five cents', 'a dollar twenty-five']));
-  expect(coinExpectedAnswer(MIXED)).toContain('The number of coins (5) is not the total');
-  expect(coinExpectedAnswer(COMPARE)).toContain('"the second one"');
-  expect(coinExpectedAnswer({ ...COMPARE, groupB: [{ type: 'nickel', count: 1 }, { type: 'penny', count: 1 }], correctGroup: 'equal' }))
-    .toMatch(/^they are worth the same/);
-  expect(coinExpectedAnswer(CHANGE)).toContain('The price, the amount paid');
+  expect(text(MIXED)).toMatch(/^"32 cents" \(also accept "thirty-two cents"\)\. The number alone \(32\) counts\./);
+  expect(text(MIXED)).toContain('The number of coins (5) is not the total');
+  expect(text(COMPARE)).toContain('"the second one"');
+  expect(text(COMPARE)).toContain('chooses one word from "group A", "group B", "the same"');
+  expect(text({ ...COMPARE, groupB: [{ type: 'nickel', count: 1 }, { type: 'penny', count: 1 }], correctGroup: 'equal' }))
+    .toMatch(/^"the same"/);
+  expect(text(CHANGE)).toContain('The price, the amount paid');
+  // A compare asks its three answers; a change whose price equals it says it by design.
+  expect(coinAsk(COMPARE)).toBe('Which group has more money? Group A, group B, or the same?');
+  const even = { ...CHANGE, instruction: 'A ball costs 25 cents. You pay 50 cents. What is your change?', itemCost: 25, correctChange: 25 };
+  expect(askLeaks(coinAsk(even), coinKey(item(even))!, coinGiven(even))).toEqual([]);
+  expect(askLeaks('How much money is shown? It is 32 cents.', coinKey(item(MIXED))!, coinGiven(MIXED))).toEqual(['says the answer "32 cents"']);
+  // An enacted like count has no key; from Grade 2 it is spoken.
+  expect(coinKey(item(LIKE, 'K'))).toBeNull();
+  expect(coinKey(item(LIKE, '1'))).toBeNull();
+  expect(coinKey(item(LIKE, '2'))?.answer).toBe('20 cents');
 });
 
 it('every spoken miss is one the catalog lists for its mode, and no example is a way to say the key', () => {

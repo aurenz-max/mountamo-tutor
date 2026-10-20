@@ -1,22 +1,25 @@
 /**
- * The in-item levers on a reaction-lab challenge (`/add-support-tiers`, report
+ * The in-item levers on a reaction-lab challenge, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/reaction-lab-levers-2026-10-15.md). No real-learner evidence: the misses are what `reactionMiss`
- * names and the catalog's documented struggles. Pure: the component draws from these, the workspace publishes them,
- * the tests hold each leak rule.
+ * names and the catalog's documented struggles. Pure: the component draws from these, the tests hold each leak rule.
  *
- * - `signs_legend` (help, shown): a card of the seven signs that a new substance may be forming, with their pictures,
- *   none marked. Withheld when a choice is itself one of the card's signs, and on a question about signs whose right
- *   choice alone names one (the card would single it out).
- * - `replay_reaction` (help, shown): the beaker plays the reaction again. After the reaction has run, while it is not
- *   already playing. It shows only what the learner already saw.
- * - `particle_view` (help, shown): opens the particle view (reactant and product molecules, bonds breaking and
- *   forming) with no caption, on an explain-mode challenge. Withheld when a choice is one of the molecules.
- * - `drop_far_choice` (simplify, shown): greys out one wrong choice, the one sharing the fewest words with the right
+ * - `signs_legend` (clue, shown; predict, observe): a card of the seven signs that a new substance may be forming, with
+ *   their pictures, none marked. Withheld when a choice is itself one of the card's signs, and on a question about
+ *   signs whose right choice alone names one (the card would single it out).
+ * - `replay_reaction` (custom, shown; observe, explain): the beaker plays the reaction again. After the reaction has
+ *   run, while it is not already playing. It shows only what the learner already saw.
+ * - `particle_view` (layout; explain): opens the particle view (reactant and product molecules, bonds breaking and
+ *   forming) with no caption. Withheld when a choice is one of the molecules.
+ * - `drop_far_choice` (custom, shown): greys out one wrong choice, the one sharing the fewest words with the right
  *   one, on the item itself (user ruling 09-27). At least two untried choices stay, so a 4-choice question has it after
  *   one wrong answer and a 3-choice one only before any.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { answerForm, itemChoices, keyValue, keyLabel, REACTION_MISSES, type ReactionItem, type ReactionMiss } from './reactionLabWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
+import { REACTION_MISSES } from './reactionLab.card';
+import {
+  answerForm, itemChoices, keyValue, keyLabel, reactionKey, reactionMode, type ReactionItem, type ReactionMode,
+} from './reactionLabWorkspace';
 
 export const LEGEND_LEVER = 'signs_legend';
 export const REPLAY_LEVER = 'replay_reaction';
@@ -62,7 +65,6 @@ export function particleLeak(item: ReactionItem, molecules: readonly string[]): 
   return hit ? `the choice "${hit.label}" is a molecule in the particle view` : null;
 }
 
-const EXPLAIN_TYPES = ['explain', 'balance', 'conservation'];
 const wordsOf = (s: string) => new Set(norm(s).split(' ').filter(w => w.length >= 3));
 
 /** The wrong choice `drop_far_choice` greys out now, or null when too few untried choices would be left. */
@@ -79,56 +81,61 @@ export function farChoice(item: ReactionItem, s: ReactionLeverState): string | n
   return [...foils].sort((a, b) => shared(a.label) - shared(b.label) || live.indexOf(b) - live.indexOf(a))[0].value;
 }
 
-/** The mode whose miss list an item's levers answer, from its challenge type. */
-const modeOf = (item: ReactionItem): keyof typeof REACTION_MISSES =>
-  item.stage === 'before' ? 'predict' : EXPLAIN_TYPES.includes(item.challenge.type) ? 'explain' : 'observe';
-
-export interface LeverContext {
+/** What the levers read beside the item: the screen, and this item's lever state. */
+export interface ReactionLeverContext {
   reactionRun: boolean;
   animating: boolean;
   /** The particle view may be drawn at this grade band, and the reaction has molecules to show. */
   particleAllowed: boolean;
   particleOpen: boolean;
   molecules: readonly string[];
+  state: ReactionLeverState;
 }
 
-/** The levers this item declares, with their state. A lever that cannot be pulled now and was not pulled is left out. */
-export function reactionLevers(item: ReactionItem | null | undefined, s: ReactionLeverState, ctx: LeverContext): WorkspaceLever[] {
-  if (!item) return [];
-  const on = (id: string) => s.pulled.includes(id);
-  const misses = REACTION_MISSES[modeOf(item)];
-  const levers: WorkspaceLever[] = [];
-  if (on(LEGEND_LEVER) || (modeOf(item) !== 'explain' && !legendLeak(item))) levers.push({ id: LEGEND_LEVER, kind: 'help',
-    carrier: 'shown', pulled: on(LEGEND_LEVER), answers: misses,
-    when: 'The learner picks a wrong choice or is stuck, and does not know what to look for in a reaction.',
-    does: `Shows a card beside the question: "${LEGEND_TITLE}", the seven signs with their pictures, none marked. Never say which sign this reaction shows, and never ask which choice matches a sign on the card: whether this reaction shows a sign at all is part of the question.` });
-  if (item.stage === 'after' && ctx.reactionRun && (on(REPLAY_LEVER) || !ctx.animating)) levers.push({ id: REPLAY_LEVER, kind: 'help',
-    carrier: 'shown', pulled: on(REPLAY_LEVER), answers: misses,
-    when: 'The learner picks a wrong choice about what happened, or did not watch the reaction closely.',
-    does: 'Plays the reaction again in the beaker. Ask the learner to watch; never say what to look for.' });
-  if (modeOf(item) === 'explain' && ctx.reactionRun && ctx.particleAllowed && (on(PARTICLE_LEVER)
-    || (!ctx.particleOpen && !particleLeak(item, ctx.molecules)))) levers.push({ id: PARTICLE_LEVER, kind: 'help',
-    carrier: 'shown', pulled: on(PARTICLE_LEVER), answers: misses,
-    when: 'The learner cannot say why the reaction happened, or mixes up what changes and what stays.',
-    does: 'Opens the particle view to the right of the beaker: the reactant molecules, an arrow, the product molecules, with no caption. Say only where it is; never say what the particles do or turn into, or which choice they show.' });
-  if (on(DROP_LEVER) || farChoice(item, s) !== null) levers.push({ id: DROP_LEVER, kind: 'simplify', carrier: 'shown',
-    pulled: on(DROP_LEVER), answers: misses.filter((m): m is ReactionMiss => m !== 'true_false_flipped'),
-    when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
-    does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.' });
-  return levers;
-}
+const pulled = (ctx: ReactionLeverContext, id: string) => ctx.state.pulled.includes(id);
 
-/** What the pulled levers put on screen, for the tutor and JEV. Names the greyed-out choice, never the key. */
-export function leverFacts(item: ReactionItem, s: ReactionLeverState, ctx: Pick<LeverContext, 'animating'>): string | null {
-  const parts: string[] = [];
-  if (s.pulled.includes(LEGEND_LEVER)) parts.push(`a card beside the question lists "${LEGEND_TITLE}": `
-    + `${SIGN_LEGEND.map(l => l.label.toLowerCase()).join(', ')}; none is marked`);
-  if (s.pulled.includes(REPLAY_LEVER)) parts.push(ctx.animating ? 'the reaction is playing again in the beaker' : 'the reaction was played again');
-  if (s.pulled.includes(PARTICLE_LEVER)) parts.push('the particle view is open to the right of the beaker, with no caption');
-  const choices = itemChoices(item.challenge);
-  for (const v of s.dropped) {
-    const x = choices.find(ch => ch.value === v);
-    if (x) parts.push(`choice ${x.letter}, "${x.label}", is greyed out and is not the answer`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
+export const REACTION_LEVERS = leverSet<ReactionItem, ReactionLeverContext>({
+  modeOf: reactionMode,
+  missesOf: mode => REACTION_MISSES[mode as ReactionMode] ?? [],
+  // The legend's words never name the key or a way of saying it.
+  answersOf: item => keyAnswers(reactionKey(item)),
+  specs: [
+    { id: LEGEND_LEVER, type: 'clue', carrier: 'shown', modes: ['predict', 'observe'], answers: 'all',
+      when: 'The learner picks a wrong choice or is stuck, and does not know what to look for in a reaction.',
+      does: `Shows a card beside the question: "${LEGEND_TITLE}", the seven signs with their pictures, none marked. Never say `
+        + 'which sign this reaction shows, and never ask which choice matches a sign on the card: whether this reaction '
+        + 'shows a sign at all is part of the question.',
+      content: (item, ctx) => (pulled(ctx, LEGEND_LEVER) || !legendLeak(item) ? true : null),
+      fact: `A card beside the question lists "${LEGEND_TITLE}": `
+        + `${SIGN_LEGEND.map(l => l.label.toLowerCase()).join(', ')}; none is marked.` },
+    { id: REPLAY_LEVER, type: 'custom', carrier: 'shown', modes: ['observe', 'explain'], answers: 'all',
+      why: 'It plays the learner\'s own reaction again in the beaker; no stock type replays what already happened.',
+      when: 'The learner picks a wrong choice about what happened, or did not watch the reaction closely.',
+      does: 'Plays the reaction again in the beaker. Ask the learner to watch; never say what to look for.',
+      content: (item, ctx) => item.stage === 'after' && ctx.reactionRun,
+      // Kept while pulled; otherwise offered only while the beaker is not already playing.
+      offer: (_item, ctx) => pulled(ctx, REPLAY_LEVER) || !ctx.animating,
+      fact: (_c, _item, ctx) => (ctx.animating ? 'The reaction is playing again in the beaker.' : 'The reaction was played again.') },
+    { id: PARTICLE_LEVER, type: 'layout', modes: ['explain'], answers: 'all',
+      when: 'The learner cannot say why the reaction happened, or mixes up what changes and what stays.',
+      does: 'Opens the particle view to the right of the beaker: the reactant molecules, an arrow, the product molecules, '
+        + 'with no caption. Say only where it is; never say what the particles do or turn into, or which choice they show.',
+      content: (item, ctx) => ctx.reactionRun && ctx.particleAllowed && !particleLeak(item, ctx.molecules),
+      // Kept while pulled: the view it opened stays open.
+      offer: (_item, ctx) => pulled(ctx, PARTICLE_LEVER) || !ctx.particleOpen,
+      fact: 'The particle view is open to the right of the beaker, with no caption.' },
+    { id: DROP_LEVER, type: 'custom', carrier: 'shown', answers: 'all',
+      // A true-false statement has no choice to grey out.
+      answersOn: item => REACTION_MISSES[reactionMode(item)].filter(m => m !== 'true_false_flipped'),
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
+      does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.',
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (item, ctx) => (pulled(ctx, DROP_LEVER) || farChoice(item, ctx.state) !== null ? ctx.state.dropped : null),
+      fact: (dropped: readonly string[], item) => {
+        const choices = itemChoices(item.challenge);
+        return dropped.flatMap(v => choices.filter(x => x.value === v))
+          .map(x => `Choice ${x.letter}, "${x.label}", is greyed out and is not the answer.`).join(' ');
+      } },
+  ],
+});

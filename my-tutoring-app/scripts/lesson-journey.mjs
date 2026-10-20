@@ -22,7 +22,7 @@ try {
   const { parseLessonPackage } = await runner.import('/src/components/lumina/service/qa/lessonBench/lessonPackage.ts');
   const { ContentLearner, MODEL_VERSION, PROFILES, runJourney, validateScenario } = await runner.import('/src/components/lumina/service/qa/lessonBench/journey/run.ts');
   const { extractLesson } = await runner.import('/src/components/lumina/service/qa/lessonBench/journey/extract.ts');
-  const { PRODUCIBLE_LETTERS } = await runner.import('/src/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript.ts');
+  const { PRODUCIBLE_LETTERS } = await runner.import('/src/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkDomain.ts');
   validateScenario(scenario);
   let profiles = scenario.profiles ?? PROFILES;
   const profile = opt('profile', 'all');
@@ -74,8 +74,8 @@ try {
     ...readdirSync('src/components/lumina/service/qa/lessonBench/journey').filter((f) => f.endsWith('.ts')).map((f) => `src/components/lumina/service/qa/lessonBench/journey/${f}`),
     'src/components/lumina/primitives/visual-primitives/direct-instruction/diLetterSoundsDomain.ts',
     'src/components/lumina/primitives/visual-primitives/direct-instruction/diWordReadingDomain.ts',
-    'src/components/lumina/primitives/visual-primitives/literacy/phonicsBlenderScript.ts',
-    'src/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript.ts',
+    'src/components/lumina/primitives/visual-primitives/literacy/phonicsBlenderDomain.ts',
+    'src/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkDomain.ts',
   ];
   let gitSha = null;
   try { gitSha = execFileSync('git', ['-c', `safe.directory=${resolve('..').replaceAll('\\', '/')}`, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* source hashes remain authoritative in dirty/unowned trees */ }

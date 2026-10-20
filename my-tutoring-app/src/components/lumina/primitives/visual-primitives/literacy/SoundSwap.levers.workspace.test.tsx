@@ -34,7 +34,8 @@ it('addition: an empty tile appears before the sounds, with no letter; the model
   expect(blank[0].nextElementSibling?.getAttribute('aria-label')).toBe('sound /æ/');
   const receipt = h.dispatch('pull_lever', { lever: 'swap_model' });
   expect(q(h, '[data-lever="swap-model"]')).toHaveLength(1);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/a model on other words: in, add \/p\/ at the beginning, makes pin/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/A model on other words: in, add \/p\/ at the beginning, makes pin/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/An empty tile sits at the beginning of the word/);
   expect(text(h)).not.toMatch(/\bcat\b/);
   h.say('cat'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['mark_target_sound', 'swap_model'] });

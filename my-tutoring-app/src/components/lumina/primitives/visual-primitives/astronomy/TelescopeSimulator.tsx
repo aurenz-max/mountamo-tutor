@@ -9,16 +9,16 @@
  * - pick_instrument: say or tap the least powerful instrument that shows a named detail.
  *
  * Every item is built and keyed by code (`telescopeWorkspace.ts`). No name, ring or badge marks an object before the
- * answer is credited. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own
- * Next and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
- * `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the runtime move on.
- * The levers live in `telescopeLevers.ts`.
+ * answer is credited. Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is
+ * `telescopeSimulator.card.ts` + `telescopeSimulator.boss.ts`): every check commits through `progress.commitCheck`
+ * with a named miss, a spoken answer is judged by the tutor, the runtime owns Try again and Next, and the in-item
+ * levers are one lever set in `telescopeLevers.ts`.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TelescopeSimulatorMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -34,21 +34,22 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   askOf, brightFootprint, brightness, capital, choiceKey, choiceLabel, clueTags, describeTelescopeWork, detailDef, emptyWork,
   isTapItem, KIND_TEXT, objectDef, SCOPE_TEXT, scopeRank, shows, skyTarget, tapKey, telescopeCorrect, telescopeItems,
-  telescopeMiss, workComplete, workspaceAssignment, workspaceScene,
+  telescopeMiss, workComplete, workspaceScene,
   type ChoiceItem, type Kind, type LookTag, type Scope, type SkyObjectDef, type TapItem, type TelescopeItem,
   type TelescopeMode, type TelescopeTier, type TelescopeWork,
 } from './telescopeWorkspace';
 import {
-  CLOSER_LEVER, CLUE_PICTURES_LEVER, DROP_LEVER, dropTarget, LADDER_LEVER, ladderLines, leverFacts, MY_PICK_LEVER,
-  myPickLine, NO_LEVERS, SAME_SIZE_LEVER, SIDE_BY_SIDE_LEVER, telescopeLevers, TYPE_PICTURES_LEVER, viewScope,
+  CLOSER_LEVER, CLUE_PICTURES_LEVER, DROP_LEVER, dropTarget, LADDER_LEVER, ladderLines, MY_PICK_LEVER, myPickLine,
+  NO_LEVERS, SAME_SIZE_LEVER, SIDE_BY_SIDE_LEVER, TELESCOPE_LEVERS, TYPE_PICTURES_LEVER, viewScope,
   type TelescopeLeverState,
 } from './telescopeLevers';
+import { telescopeSimulatorBoss } from './telescopeSimulator.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -311,8 +312,9 @@ function KindModel({ kind }: { kind: Kind }) {
 
 type LeverMemo = { item: string } & TelescopeLeverState;
 
-const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TelescopeSimulatorProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TelescopeItem>) => Progress }) => {
+const useTelescopeProgress = useWorkspaceProgressFor('telescope-simulator');
+
+const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId }: TelescopeSimulatorProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, overview, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -323,31 +325,30 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
   const resolvedInstanceId = instanceId || stableInstanceId.current;
   const startTime = useRef(Date.now());
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useTelescopeProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: telescopeSimulatorBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const item: TelescopeItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [work, setWork] = useState<TelescopeWork>(emptyWork);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   const [submitted, setSubmitted] = useState(false);
+  /** The item a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
 
   const lever: TelescopeLeverState = item && leverMemo.item === item.id ? leverMemo : NO_LEVERS;
@@ -357,8 +358,7 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
   };
   const leverOn = (id: string) => lever.pulled.includes(id);
 
-  const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = !!item && results.some(r => r.challengeId === item.id && r.correct);
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<TelescopeSimulatorMetrics>({
     primitiveType: 'telescope-simulator',
@@ -367,11 +367,9 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
-
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
-    clearItem();
+    setWork(emptyWork()); setWrongShown(false);
+    if (retry) editLevers(s => ({ wrongs: s.wrongs + 1 }));
   };
 
   /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
@@ -387,14 +385,14 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
   const tapObject = (i: number) => {
     if (!item || !isTapItem(item) || closed || lever.dropped.includes(i)) return;
     SoundManager.select();
-    setWork({ pick: i, choice: null }); setFeedback(null);
+    setWork({ pick: i, choice: null });
   };
   const choose = (c: string) => {
     if (!item || isTapItem(item) || closed) return;
     const i = (item.choices as string[]).indexOf(c);
     if (lever.dropped.includes(i)) return;
     SoundManager.select();
-    setWork({ pick: null, choice: c }); setFeedback(null);
+    setWork({ pick: null, choice: c });
   };
 
   const check = () => {
@@ -403,22 +401,9 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
     progress.commitCheck(describeTelescopeWork(item, work, viewScope(item, lever)), correct, correct ? undefined : telescopeMiss(item, work));
     if (correct) { SoundManager.playCorrect(); tappedCorrect.current = item.id; return; }
     SoundManager.playIncorrect();
-    if (tutorOwned) {
-      const at = isTapItem(item) ? work.pick! : (item.choices as string[]).indexOf(work.choice!);
-      editLevers(s => ({ picked: [...s.picked, at], lastPick: item.mode === 'pick_instrument' ? (work.choice as Scope) : s.lastPick }));
-      setWrongShown(true);
-      return;
-    }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      setWork(isTapItem(item) ? { pick: tapKey(item), choice: null } : { pick: null, choice: choiceKey(item) });
-      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      return;
-    }
-    setWork(emptyWork());
-    setFeedback('Not quite. Look again, and try once more.');
+    const at = isTapItem(item) ? work.pick! : (item.choices as string[]).indexOf(work.choice!);
+    editLevers(s => ({ picked: [...s.picked, at], lastPick: item.mode === 'pick_instrument' ? (work.choice as Scope) : s.lastPick }));
+    setWrongShown(true);
   };
 
   const metrics = (): TelescopeSimulatorMetrics => {
@@ -441,15 +426,7 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-  };
-
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -459,16 +436,15 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    if (!item || (isComplete && !revealed)) return;
     const scope = item.mode === 'pick_instrument' && revealed ? detailDef(item.detail)!.min : viewScope(item, lever);
     const scene = workspaceScene(item, { work, solved: revealed, scope });
-    const levers = revealed ? [] : telescopeLevers(item, lever);
-    const onScreen = leverFacts(item, lever);
+    const ctx = { state: lever };
+    const levers = revealed ? [] : TELESCOPE_LEVERS.declare(item, ctx, lever.pulled);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: '', onScreen: TELESCOPE_LEVERS.onScreen(item, ctx, lever.pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -489,15 +465,8 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   });
 
-  // The workspace path keeps the last credited item on screen (its names and detail) until the session is submitted.
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The telescope view and your answer',
-    solved: revealed,
-    tutorSpeaking: false,
-  });
+  // The last credited item stays on screen (its names and detail) until the session is submitted.
+  const done = hasSubmitted || submitted || (isComplete && !revealed);
 
   if (!items.length) {
     return (
@@ -589,8 +558,9 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
           <>
             <LuminaPrompt accent="cyan">{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the view and the choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {tapItem ? renderTapView(tapItem) : choiceItem ? renderCenterView(choiceItem) : null}
               <p className="text-center text-xs text-slate-400" data-seen-through={shownScope}>
                 {`Seen ${SCOPE_TEXT[shownScope].with}${tapItem || choiceItem?.mode === 'object_type' ? ' · sizes not to scale' : ''}`}
@@ -647,26 +617,15 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
                   ))}
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
                 <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>Check Answer</LuminaActionButton>
               </div>
             )}
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {revealText(item)}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{revealText(item)}</LuminaFeedbackCard>}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -674,7 +633,7 @@ const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOw
   );
 };
 
-/** The worked explanation once an item is solved or revealed. */
+/** The worked explanation once an item is credited. */
 function revealText(item: TelescopeItem): string {
   if (item.mode === 'find_by_look') {
     const o = objectDef(item.objects[tapKey(item)].object)!;
@@ -693,8 +652,6 @@ function revealText(item: TelescopeItem): string {
 }
 const describeTagsShort = (item: TelescopeItem & { mode: 'find_by_look' }) => askOf(item).replace(/^Find /, '').replace(/\.$/, '');
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TelescopeSimulator = withWorkspaceController<TelescopeSimulatorProps, ProgressOptions<TelescopeItem>, Progress>(
-  'telescope-simulator', TelescopeSimulatorSurface, useScriptedProgress, useWorkspaceProgressFor('telescope-simulator'));
+const TelescopeSimulator = withWorkspaceOnly<TelescopeSimulatorProps>('telescope-simulator', TelescopeSimulatorSurface, props => props.data.title);
 
 export default TelescopeSimulator;

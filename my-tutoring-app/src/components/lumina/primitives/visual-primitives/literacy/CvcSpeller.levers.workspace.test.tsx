@@ -48,7 +48,7 @@ it('a middle-box miss: the observer pulls the vowel strip, which appears in the 
   expect(receipt.status).toBe('committed');
   const strip = Array.from(q(h, '[data-lever="vowel-strip"] > div')).map(d => d.textContent);
   expect(strip).toEqual(['🍎a', '🥚e', '🤏i']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/every vowel/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/every vowel/);
   // A second pull is refused and changes nothing.
   const assistance = h.state().assistance.length;
   expect(h.dispatch('pull_lever', { lever: 'vowel_keywords' }).status).toBe('blocked');
@@ -153,7 +153,7 @@ it.each(['fill_vowel', 'word_sort'])('%s: middle_model lights the middle of anot
   expect(['ai', 'ee', 'ea', 'oa']).toContain(boxes[1]);
   const word = q(h, '[data-lever="middle-model"] [role="img"]')[0].getAttribute('aria-label')!;
   expect(['cat', 'bed', 'pig', 'dog', 'sun']).not.toContain(word);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(`another word, ${word}`));
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(new RegExp(`Another word, ${word}`));
   // Its only lever is up, so pull_lever is no longer offered.
   expect(h.offer('pull_lever')).toBeUndefined();
   h.say('ah'); h.feedback('correct');

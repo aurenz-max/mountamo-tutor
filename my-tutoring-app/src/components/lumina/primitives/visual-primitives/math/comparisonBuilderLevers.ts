@@ -1,30 +1,31 @@
 /**
- * The in-item levers on comparison-builder, every mode (`/add-support-tiers`, handoff 21 M2; table
- * qa/support-levers/m2-lever-tables-2026-09-28.md). No real-learner evidence: the misses are what `comparisonMiss`
- * observes, plus the catalog's documented struggles (judging groups by spread, < and > confused, counting on from
- * the wrong number).
+ * The in-item levers on comparison-builder, every mode, as one lever set (`bossLevers.ts`; `/add-support-tiers`,
+ * handoff 21 M2; table qa/support-levers/m2-lever-tables-2026-09-28.md). No real-learner evidence: the misses are what
+ * `comparisonMiss` observes, plus the documented struggles (judging groups by spread, < and > confused, counting on
+ * from the wrong number). Declared in the order the tutor reaches for them.
  *
  * compare_groups — which side has more IS the answer, so the help acts on a model outside the item or on the
  * learner's own counting, never on the item's pairing (LEV-CB-1: live match lines leaked it).
- * - `model_match` (help): a small model with two rows of dots the item does not use, matched in pairs, the extras
- *   ringed. Starts pulled at easy (it replaces the leaked live lines).
- * - `tap_count` (help): tapping an object stamps its running count on that side. Counts only what was tapped.
- * - `far_groups` (simplify): an ungraded pair, both at most 6 and 3 or more apart, sharing no count with the item.
+ * - `model_match` (model): a small model with two rows of dots the item does not use, matched in pairs, the extras
+ *   ringed. When it comes is the set's `support` (by the lesson's tier).
+ * - `tap_count` (marks): tapping an object stamps its running count on that side. Counts only what was tapped.
+ * - `far_groups` (easier): an ungraded pair, both at most 6 and 3 or more apart, sharing no count with the item.
  * compare_numbers
- * - `quantity_marks` (help): under each numeral, its amount as ten-sticks and dots, drawn alike on both sides.
- * - `far_numbers` (simplify): an ungraded pair 5 or more apart, sharing no number with the item.
+ * - `quantity_marks` (marks): under each numeral, its amount as ten-sticks and dots, drawn alike on both sides.
+ * - `far_numbers` (easier): an ungraded pair 5 or more apart, sharing no number with the item.
  * order
- * - `slot_steps` (help): a bar under each slot that grows (or shrinks) in the building direction. Never a card.
- * - `quantity_marks` (help): each card shows its amount as ten-sticks and dots. No rank.
- * - `three_far` (simplify): three cards 3 or more apart, none of the item's numbers (R3: never a subset).
+ * - `slot_steps` (marks): a bar under each slot that grows (or shrinks) in the building direction. Never a card.
+ * - `quantity_marks` (marks): each card shows its amount as ten-sticks and dots. No rank.
+ * - `three_far` (easier): three cards 3 or more apart, none of the item's numbers (R3: never a subset).
  * one_more_less
- * - `learner_hops` (help): the target cell reads 0 and each cell from the target to the learner's own pick reads its
+ * - `learner_hops` (marks): the target cell reads 0 and each cell from the target to the learner's own pick reads its
  *   hop count. Nothing is drawn beyond the learner's pick.
- * - `single_small` (simplify): one "one more" ask on a target of 5 or less whose neighbours are not the item's.
+ * - `single_small` (easier): one "one more" ask on a target of 5 or less whose neighbours are not the item's.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ComparisonBuilderChallenge } from './ComparisonBuilder';
-import { ownNumbers } from './comparisonBuilderExample';
+import { COMPARISON_MISSES } from './comparisonBuilder.card';
+import { COMPARISON_MODE, ownNumbers, type ComparisonItem } from './comparisonBuilderWorkspace';
 
 export const MATCH_LEVER = 'model_match';
 export const TAP_LEVER = 'tap_count';
@@ -35,7 +36,6 @@ export const STEPS_LEVER = 'slot_steps';
 export const THREE_FAR_LEVER = 'three_far';
 export const HOPS_LEVER = 'learner_hops';
 export const SMALL_LEVER = 'single_small';
-const SIMPLIFY = new Set([FAR_GROUPS_LEVER, FAR_NUMBERS_LEVER, THREE_FAR_LEVER, SMALL_LEVER]);
 
 export type Band = 'K' | '1';
 const bandMax = (band: Band) => band === 'K' ? 10 : 20;
@@ -47,6 +47,7 @@ const MODEL_PAIRS: ReadonlyArray<readonly [number, number]> = [[5, 3], [4, 2], [
 
 /** The model_match rows: bigger first, neither count one the item uses. */
 export function modelPair(c: ComparisonBuilderChallenge): readonly [number, number] | null {
+  if (c.type !== 'compare-groups') return null;
   const own = ownNumbers(c);
   return MODEL_PAIRS.find(([a, b]) => !own.includes(a) && !own.includes(b)) ?? null;
 }
@@ -105,7 +106,7 @@ export function singleSmall(c: ComparisonBuilderChallenge): ComparisonBuilderCha
     : { id: simplerId(c), type: 'one-more-one-less', instruction: c.instruction, targetNumber: next, askFor: 'one-more' };
 }
 
-/** The easier item a simplify lever opens on this challenge, if there is one. */
+/** The easier challenge a simplify lever opens on this challenge, if there is one. */
 export function simplerItem(c: ComparisonBuilderChallenge, band: Band): ComparisonBuilderChallenge | null {
   switch (c.type) {
     case 'compare-groups': return farGroups(c);
@@ -113,6 +114,12 @@ export function simplerItem(c: ComparisonBuilderChallenge, band: Band): Comparis
     case 'order': return threeFar(c, band);
     default: return singleSmall(c);
   }
+}
+
+/** The practice item a simplify lever opens, run as the lesson runs its items (band and tier carried over). */
+export function practiceItem(c: ComparisonItem): ComparisonItem | null {
+  const easier = simplerItem(c, c.band ?? 'K');
+  return easier ? { ...easier, band: c.band ?? 'K', ...(c.tier ? { tier: c.tier } : {}) } : null;
 }
 
 // ── Render helpers (pure, so the leak rules are testable) ───────────────────
@@ -133,73 +140,62 @@ export function hopLabels(target: number, pick: number | null): Map<number, numb
   return labels;
 }
 
-// ── Declarations ─────────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────
 
-/** Levers the tier starts pulled: a starting position, never a recorded pull. */
-export const startLevers = (c: ComparisonBuilderChallenge | null, tier?: string) =>
-  c?.type === 'compare-groups' && tier === 'easy' && modelPair(c) ? [MATCH_LEVER] : [];
+/** What the screen holds that a lever's words read: the objects the learner has tapped on each side. */
+export interface ComparisonLeverContext { tapped: { left: number; right: number } }
 
-export function comparisonLevers(c: ComparisonBuilderChallenge | null, pulled: readonly string[], band: Band): WorkspaceLever[] {
-  if (!c) return [];
-  const lever = (id: string, carrier: WorkspaceLever['carrier'], answers: string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind: SIMPLIFY.has(id) ? 'simplify' : 'help', carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerItem(c, band) ? [c] : [];
-  switch (c.type) {
-    case 'compare-groups': return [
-      ...(modelPair(c) ? [lever(MATCH_LEVER, 'both', ['reversed', 'said_equal', 'missed_equal'],
-        'The learner judges the groups by how they look, not by matching or counting.',
-        'Shows a small model beside the groups: two rows of dots, a different pair, joined in pairs with the extra dots ringed.')] : []),
-      lever(TAP_LEVER, 'both', ['reversed', 'said_equal', 'missed_equal'],
-        'The learner loses track while counting the groups.',
-        'Lets the learner tap each object; a tapped object shows its count on its side. Nothing is counted for them.'),
-      ...simpler.map(() => lever(FAR_GROUPS_LEVER, 'shown', ['reversed', 'said_equal'],
-        'These two groups are too close to compare yet.',
-        'Opens an easier pair of groups first, small and far apart. It is not graded; the full item comes back after it.')),
-    ];
-    case 'compare-numbers': return [
-      lever(MARKS_LEVER, 'shown', ['reversed', 'said_equal', 'missed_equal'],
-        'The learner does not see how big each written number is.',
-        'Shows each number\'s amount under it as sticks of ten and dots, drawn the same way on both sides.'),
-      ...simpler.map(() => lever(FAR_NUMBERS_LEVER, 'shown', ['reversed', 'said_equal'],
-        'These two numbers are too close to compare yet.',
-        'Opens an easier pair of numbers first, far apart. It is not graded; the full item comes back after it.')),
-    ];
-    case 'order': return [
-      lever(STEPS_LEVER, 'shown', ['reversed'],
-        'The learner builds the order the wrong way round.',
-        'Puts a bar under each slot that grows in the direction the numbers go. It names no number.'),
-      lever(MARKS_LEVER, 'shown', ['two_swapped', 'other_order'],
-        'The learner mixes up which numbers are bigger.',
-        'Shows each card\'s amount on it as sticks of ten and dots.'),
-      ...simpler.map(() => lever(THREE_FAR_LEVER, 'shown', ['two_swapped', 'other_order'],
-        'There are too many numbers, or they are too close, to order yet.',
-        'Opens an easier set first: three numbers far apart, none of these. It is not graded; the full item comes back after it.')),
-    ];
-    default: return [
-      lever(HOPS_LEVER, 'shown', ['no_step', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        'The learner does not step one number from the target, or steps the wrong way.',
-        'Marks the target 0 and numbers the hops from the target to the learner\'s own pick. Nothing past their pick.'),
-      ...simpler.map(() => lever(SMALL_LEVER, 'shown', ['wrong_way', 'short_by_more', 'over_by_more'],
-        'Both directions, or this big a number, is too much yet.',
-        'Opens an easier ask first: one more than a small number. It is not graded; the full item comes back after it.')),
-    ];
-  }
-}
+const RELATION_MISSES = COMPARISON_MISSES.compare_groups;
+const EASIER_DOES = 'It is not graded; the full item comes back after it.';
 
-/** What the pulled levers put on screen, as a scene fact. Never the item's answer; counts only what the learner tapped. */
-export function leverFacts(c: ComparisonBuilderChallenge | null, pulled: readonly string[],
-  tapped: { left: number; right: number }): string {
-  if (!c) return '';
-  const pair = modelPair(c);
-  return [
-    c.type === 'compare-groups' && pulled.includes(MATCH_LEVER) && pair
-      && `A model beside the groups shows ${pair[0]} dots and ${pair[1]} dots joined in pairs, the ${pair[0] - pair[1]} extra ringed.`,
-    c.type === 'compare-groups' && pulled.includes(TAP_LEVER)
-      && `Each object the learner taps shows its count. Tapped so far: ${tapped.left} on the left, ${tapped.right} on the right.`,
-    c.type === 'compare-numbers' && pulled.includes(MARKS_LEVER) && 'Each number shows its amount under it as sticks of ten and dots.',
-    c.type === 'order' && pulled.includes(STEPS_LEVER) && 'Each slot has a bar under it that grows in the direction the numbers go.',
-    c.type === 'order' && pulled.includes(MARKS_LEVER) && 'Each card shows its amount as sticks of ten and dots.',
-    c.type === 'one-more-one-less' && pulled.includes(HOPS_LEVER)
-      && 'The target cell reads 0 and the cells up to the learner\'s own pick show their hop count.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const COMPARISON_LEVERS = leverSet<ComparisonItem, ComparisonLeverContext>({
+  modeOf: c => COMPARISON_MODE[c.type],
+  missesOf: mode => COMPARISON_MISSES[mode as keyof typeof COMPARISON_MISSES] ?? [],
+  support: { tier: c => c.tier ?? 'medium', different: 'a different pair of groups, matched one to one',
+    own: 'which group has more' },
+  specs: [
+    { id: MATCH_LEVER, type: 'model', modes: ['compare_groups'], answers: RELATION_MISSES,
+      when: 'The learner judges the groups by how they look, not by matching or counting.',
+      does: 'Shows a small model beside the groups: two rows of dots, a different pair, joined in pairs with the extra dots ringed.',
+      content: modelPair,
+      fact: (pair: readonly [number, number]) =>
+        `A model beside the groups shows ${pair[0]} dots and ${pair[1]} dots joined in pairs, the ${pair[0] - pair[1]} extra ringed.` },
+    { id: TAP_LEVER, type: 'marks', modes: ['compare_groups'], carrier: 'both', answers: RELATION_MISSES,
+      when: 'The learner loses track while counting the groups.',
+      does: 'Lets the learner tap each object; a tapped object shows its count on its side. Nothing is counted for them.',
+      fact: (_on: unknown, _c: ComparisonItem, { tapped }: ComparisonLeverContext) =>
+        `Each object the learner taps shows its count. Tapped so far: ${tapped.left} on the left, ${tapped.right} on the right.` },
+    { id: FAR_GROUPS_LEVER, type: 'easier', modes: ['compare_groups'], carrier: 'shown', answers: ['reversed', 'said_equal'],
+      when: 'These two groups are too close to compare yet.',
+      does: `Opens an easier pair of groups first, small and far apart. ${EASIER_DOES}`,
+      content: practiceItem },
+    { id: MARKS_LEVER, type: 'marks', modes: ['compare_numbers'], answers: COMPARISON_MISSES.compare_numbers,
+      when: 'The learner does not see how big each written number is.',
+      does: 'Shows each number\'s amount under it as sticks of ten and dots, drawn the same way on both sides.',
+      fact: 'Each number shows its amount under it as sticks of ten and dots.' },
+    { id: FAR_NUMBERS_LEVER, type: 'easier', modes: ['compare_numbers'], carrier: 'shown', answers: ['reversed', 'said_equal'],
+      when: 'These two numbers are too close to compare yet.',
+      does: `Opens an easier pair of numbers first, far apart. ${EASIER_DOES}`,
+      content: practiceItem },
+    { id: STEPS_LEVER, type: 'marks', modes: ['order'], answers: ['reversed'],
+      when: 'The learner builds the order the wrong way round.',
+      does: 'Puts a bar under each slot that grows in the direction the numbers go. It names no number.',
+      fact: 'Each slot has a bar under it that grows in the direction the numbers go.' },
+    { id: MARKS_LEVER, type: 'marks', modes: ['order'], answers: ['two_swapped', 'other_order'],
+      when: 'The learner mixes up which numbers are bigger.',
+      does: 'Shows each card\'s amount on it as sticks of ten and dots.',
+      fact: 'Each card shows its amount as sticks of ten and dots.' },
+    { id: THREE_FAR_LEVER, type: 'easier', modes: ['order'], carrier: 'shown', answers: ['two_swapped', 'other_order'],
+      when: 'There are too many numbers, or they are too close, to order yet.',
+      does: `Opens an easier set first: three numbers far apart, none of these. ${EASIER_DOES}`,
+      content: practiceItem },
+    { id: HOPS_LEVER, type: 'marks', modes: ['one_more_less'], answers: COMPARISON_MISSES.one_more_less,
+      when: 'The learner does not step one number from the target, or steps the wrong way.',
+      does: 'Marks the target 0 and numbers the hops from the target to the learner\'s own pick. Nothing past their pick.',
+      fact: 'The target cell reads 0 and the cells up to the learner\'s own pick show their hop count.' },
+    { id: SMALL_LEVER, type: 'easier', modes: ['one_more_less'], carrier: 'shown', answers: ['wrong_way', 'short_by_more', 'over_by_more'],
+      when: 'Both directions, or this big a number, is too much yet.',
+      does: `Opens an easier ask first: one more than a small number. ${EASIER_DOES}`,
+      content: practiceItem },
+  ],
+});

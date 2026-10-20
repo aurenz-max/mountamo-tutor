@@ -1,6 +1,5 @@
 import { expect, it } from 'vitest';
 import { calendarMiss, calendarSpokenMisses } from './calendarExplorerWorkspace';
-import type { CalendarSequenceItem } from './calendarExplorerScript';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
 
 const ch = (type: CalendarExplorerChallenge['type'], correctAnswer: string, extra: Partial<CalendarExplorerChallenge> = {}) =>
@@ -24,13 +23,13 @@ it.each([
 });
 
 // day_sequence's known wrong answers (handoff 20 Part B): ids in precedence order, and no example is the successor.
-const next = (currentDay: string, expectedDay: string) => ({ id: 's', type: 'day_sequence', currentDay, expectedDay }) as CalendarSequenceItem;
+const next = (currentDay: string, expectedDay: string) => ch('day_sequence', expectedDay, { currentDay, expectedDay });
 it.each([
   [next('Saturday', 'Sunday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Saturday', 'Monday', 'Friday', 'Wednesday'], 'Sunday'],
   [next('Monday', 'Tuesday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Monday', 'Wednesday', 'Sunday', 'Friday'], 'Tuesday'],
-  [{ id: 'm', type: 'month_sequence', currentMonth: 'May', expectedMonth: 'June' } as CalendarSequenceItem,
+  [ch('month_sequence', 'June', { currentMonth: 'May', expectedMonth: 'June' }),
     ['start_month', 'month_after', 'month_before_start', 'other_month'], ['May', 'July', 'April', 'October'], 'June'],
-  [{ id: 'm', type: 'month_sequence', currentMonth: 'December', expectedMonth: 'January' } as CalendarSequenceItem,
+  [ch('month_sequence', 'January', { currentMonth: 'December', expectedMonth: 'January' }),
     ['start_month', 'month_after', 'month_before_start', 'other_month'], ['December', 'February', 'November', 'May'], 'January'],
 ] as const)('spoken row %#', (item, ids, examples, key) => {
   const misses = calendarSpokenMisses(item);

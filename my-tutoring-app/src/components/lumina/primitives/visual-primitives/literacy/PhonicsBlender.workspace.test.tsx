@@ -14,6 +14,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
+import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
+import buildPayload from '../../../components/live-activity/runtime/testing/w1-payloads/phonics-blender.build_blend.json';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -27,7 +29,7 @@ const DATA = { title: 'Blend', gradeLevel: 'K', patternType: 'cvc',
 it.each(['cvc', 'cvce_blend', 'digraph', 'advanced', 'mixed'])('%s binds: every item is the spoken word', mode => {
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'phonics-blender', pin: mode, objectiveIds: ['o'], data: DATA })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'phonics-blender', evalMode: mode, data: DATA });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('cat');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"cat"\. Sounding it out first/);
   expect(h.state().task!.task).not.toContain('cat');
 });
 
@@ -63,4 +65,13 @@ it('a tapped letter asks for its sound silently, as the host, never the word', (
 it('the adapter refuses a word with no letters', () => {
   const broken = { ...DATA, words: [{ id: 'w1', targetWord: 'cat', phonemes: [] }] };
   expect(() => LIVE_ADAPTERS['phonics-blender'].validate(broken)).toThrow();
+});
+
+it('build_blend: the boss wires the shared letter build, and Pip comes from the runner there too', () => {
+  const store = new PipSurfaceStore();
+  const h = mountWorkspace({ primitiveId: 'phonics-blender', evalMode: 'build_blend', data: buildPayload.data, pipStore: store });
+  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect((h.state().task!.workspace!.levers ?? []).map(l => l.id)).toEqual(['pattern_card', 'model_word', 'small_bank']);
+  expect(h.view.container.querySelector('[data-pip-dock="ws"]')).not.toBeNull();
+  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['workspace']);
 });

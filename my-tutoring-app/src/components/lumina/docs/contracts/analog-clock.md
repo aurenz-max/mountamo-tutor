@@ -4,7 +4,7 @@
   binding relies on and the requirements already in the code.
 - **Component:** `primitives/visual-primitives/math/AnalogClock.tsx` · **Domain:** `analogClockWorkspace.ts` ·
   **Generator:** `service/math/gemini-analog-clock.ts` · **Oracle:** `service/qa/oracles/analog-clock.ts` ·
-  **Adapter:** `components/live-activity/adapters/analogClockLive.ts`
+  **Card / boss:** `analogClock.card.ts` · `analogClock.boss.ts` (spoken preset; the adapter is `bossAdapter`)
 - **Modes (7):** `hand_name`, `count_face`, `hear_time` (K clock parts), `read`, `set_time`, `match`, `elapsed`.
 
 ## Requirements
@@ -19,21 +19,26 @@
 ### R2 — `count_face` never scores a wrong count · OBSERVED
 - A number out of order restarts the count; Check opens only at 1-12 in order, so the mode has no miss.
 
-### R3 — shared teaching workspace (W1, plain shape) · OBSERVED (NEW 2026-10-09)
-- `withWorkspaceController('analog-clock', ...)`; every Check is `commitCheck(describeClockWork, correct, clockMiss)`.
+### R3 — shared teaching workspace · OBSERVED (NEW 2026-10-09; re-based on the boss 2026-10-19)
+- `withWorkspaceOnly('analog-clock', ...)`, assignment `analogClockBoss.assignment`; every Check is
+  `commitCheck(describeClockWork, correct, clockMiss)`. No scripted path: an unbound mount shows the shared
+  needs-the-tutor card. Pip comes from the runner (`<PipDock />`, `<PipWorkspace>`).
   The tutor gets the task, the options on screen and the learner's work; never the dial's time, the right option,
   the asked-for hand or the duration (a spoken mode's key goes to the observer only, R5). Untiered sessions state no
   reading aid as hidden.
-- On the workspace path: no Next, no scripted `sendText`, `useLuminaAI` disabled, no generated hint on screen after a
+- No Next, no scripted `sendText`, no `useLuminaAI`, no generated hint on screen after a
   miss (read/match hints can name where the hands point), and Try again opens the challenge blank (hands back at
   12:00 on `set_time`, the stopwatch reset on `elapsed`).
 - Misses: `other_hand`; `hands_swapped`, `next_hour`, `previous_hour`, `wrong_hour`, `minute_as_number`,
-  `wrong_minute`, `other_time`; `hour_off`, `too_short`, `too_long` (catalog `teachingWorkspace.misses`).
+  `wrong_minute`, `other_time`; `hour_off`, `too_short`, `too_long` (`CLOCK_MISSES` in the card).
+- The never-say rules of the old catalog guidance are the scene's `constraints`, per mode (`clockScene`); rules the
+  shared doctrine already states (read the ask aloud, confirm nothing on a board before Check, do nothing for the
+  learner) are not repeated.
 - **Probe:** `AnalogClock.workspace.test.tsx`; journey sweep on `w1-payloads/analog-clock.*.json`.
 
 ### R4 — levers never draw or say the answer · OBSERVED (NEW 2026-10-09)
-- Every mode declares levers (`analogClockLevers.ts`, catalog `levers: true`); each starts released, and a tier aid
-  already on screen is declared pulled. Leak rules in code, unit-tested (`analogClockLevers.test.ts`):
+- Every mode declares levers (one lever set, `CLOCK_LEVERS` in `analogClockLevers.ts`; card `levers: true`); each
+  starts released, and a tier aid already on screen is declared pulled (`tierPulled`). Leak rules in code, unit-tested (`analogClockLevers.test.ts`):
   `running_model` is a second clock whose hours stay two or more from the item's (`modelLeaks`), labels no hand, and
   is the only help on `hand_name` (where which hand tells the hour IS the answer); the legend never on `hand_name`;
   the digital echo only on `set_time` (`echoOffered`); `start_and_sweep` draws only the learner's own run; lever facts
@@ -45,8 +50,9 @@
 - Every pull is recorded on the next attempt (`assisted`, `levers`). **Probe:** `AnalogClock.levers.workspace.test.tsx`.
 
 ### R5 — read, match, elapsed and hand_name take a spoken answer beside the tap · OBSERVED (NEW 2026-10-13)
-- `response: 'speech'`, `acceptsGesture: true` (ROLLOUT.md VB-1): JEV judges the spoken time, duration or hand from
-  the tutor's feedback against `expectedAnswer` (`clockExpectedAnswer`, every natural form: "three o'clock", "3:00",
+- SAY_OR_SHOW card modes (`response: 'speech'`, `acceptsGesture: true`, built by `spokenBoss`): JEV judges the spoken
+  time, duration or hand from the tutor's feedback against the key (`clockKey`, a `SpokenKey`; hand_name is a menu key,
+  "the short one or the long one", said in the ask; every natural form: "three o'clock", "3:00",
   "quarter past three", "three fifteen", "quarter to four"); the pick and Check stays the activity's check. Spoken
   misses use the tap's catalog ids (`clockSpokenMisses`): the next/previous hour, the hands swapped, the long hand's
   number as the minutes; an hour off on elapsed; the other hand. "The hour hand" alone is not credited on hand_name.
@@ -87,3 +93,6 @@
 - 2026-10-13 — R5 spoken answers on read, match, elapsed and hand_name (VB-1); R3 re-based (the key reaches the observer only).
 - 2026-10-13 — R6 item-space path (`/add-item-space`; qa/difficulty-demo/2026-10-13/time-money/). Untiered path: set_time
   band fits its targets, elapsed instruction names the end time.
+- 2026-10-19 — moved onto the boss framework (`analogClock.card.ts` + `analogClock.boss.ts`): R3 re-based
+  (workspace only, runner Pip, guidance rules as scene constraints), R4 levers as one lever set, R5 key as a `SpokenKey`.
+  hear_time is TAP_ONE; count_face and set_time are boards.

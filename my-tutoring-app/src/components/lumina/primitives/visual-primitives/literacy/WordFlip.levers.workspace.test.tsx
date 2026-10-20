@@ -28,7 +28,7 @@ it('plural_s: the rule model is another word, before and after; the item stays a
   h.say('dog'); h.feedback('incorrect', 'retry');
   const receipt = h.dispatch('pull_lever', { lever: 'rule_model_cards' });
   expect(q(h, '[data-lever="rule-model"] [role="img"]').map(p => p.getAttribute('aria-label'))).toEqual(['hat', 'hats']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/one hat, two hats/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/one hat, two hats/);
   expect(text(h)).not.toMatch(/\bdogs\b/);
   h.say('dogs'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['rule_model_cards'] });

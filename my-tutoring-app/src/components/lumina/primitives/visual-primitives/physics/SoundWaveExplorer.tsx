@@ -8,18 +8,17 @@
  * - apply: a Before wave and an After wave; which change made the After sound?
  *
  * Every item is built and keyed by code (`soundWaveWorkspace.ts`). Nothing that answers the item is drawn or played
- * before the answer is credited (or, on the scripted path, shown after two misses): the After wave is "?", the observe
- * picture shows the moment before the change, and the classify sounds do not play. Two paths, chosen by
- * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
- * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a
- * spoken answer judged against the key, and lets the runtime move on. The levers live in `soundWaveLevers.ts`.
+ * before the answer is credited: the After wave is "?", the observe picture shows the moment before the change, and the
+ * classify sounds do not play. Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is
+ * `soundWaveExplorer.card.ts` + `soundWaveExplorer.boss.ts`): every check commits through `progress.commitCheck` with a
+ * named miss, a spoken answer is judged by the tutor against the key, and the runtime moves on. The levers are one
+ * lever set in `soundWaveLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { SoundWaveExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -36,18 +35,18 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   afterWave, AMP_PX, askOf, choicesOf, CREST_COUNT, CREST_HZ, describeSoundWork, keyChoice, MAKER_NAME, soundCorrect,
-  soundItems, soundMiss, WAVE_LABELS, workspaceAssignment, workspaceScene, type Maker, type ObserveEvent, type ObserveItem,
+  soundItems, soundMiss, WAVE_LABELS, workspaceScene, type Maker, type ObserveEvent, type ObserveItem,
   type SoundFocus, type SoundItem, type SoundMode, type SoundTier, type Wave,
 } from './soundWaveWorkspace';
 import {
-  changeLines, CHANGE_LEVER, CREST_LEVER, FEATURE_LEVER, FEATURE_LINES, leverFact, shakeLines, SHAKE_LEVER, simplerItem,
-  soundLevers,
+  changeLines, CHANGE_LEVER, CREST_LEVER, FEATURE_LEVER, FEATURE_LINES, shakeLines, SHAKE_LEVER, SOUND_LEVERS,
 } from './soundWaveLevers';
+import { soundWaveExplorerBoss } from './soundWaveExplorer.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -259,10 +258,11 @@ const ShakeCard = ({ item }: { item: ObserveItem }) => (
 // Component
 // ============================================================================
 
-const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  SoundWaveExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SoundItem>) => Progress }) => {
+const useSoundProgress = useWorkspaceProgressFor('sound-wave-explorer');
+
+const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId }: SoundWaveExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, gradeLevel = '1', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   useEffect(() => { ensureVibrateKeyframes(); }, []);
 
   const items = useMemo(() => soundItems(data),
@@ -271,37 +271,34 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const stableInstanceId = useRef(instanceId || `sound-wave-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useSoundProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: soundWaveExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: SoundItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<SoundItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [choice, setChoice] = useState<string | null>(null);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<string | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -309,7 +306,7 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   // The run: once credited, play what the change made (observe's sound, predict's and apply's After sound).
   const playedFor = useRef<string | null>(null);
@@ -327,24 +324,10 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeLevel, mode: item?.mode ?? 'observe', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
-  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'sound-wave-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`, enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
-  const clearItem = () => {
-    setChoice(null); setWrongPick(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
-  };
+  const clearItem = () => { setChoice(null); setWrongPick(null); setPracticeSolved(false); };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setChoice(null); setWrongPick(null); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { setChoice(null); setWrongPick(null); setPracticeSolved(false); return; }
     setPractice(null); clearItem();
   };
 
@@ -367,7 +350,7 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const pick = (c: string) => {
     if (!item || revealed || wrongPick !== null || learnerBlocked()) return;
     SoundManager.select();
-    setChoice(c); setFeedback(null);
+    setChoice(c);
   };
 
   const check = () => {
@@ -377,23 +360,10 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} The result now shows and plays. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongPick(choice); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is on screen ("${keyChoice(item)}"); explain it plainly with the shaking.`);
-      return;
-    }
-    setChoice(null);
-    setFeedback('Not quite. Look again at the shaking and the waves, and try once more.');
-    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what `
-      + 'the shaking does, without naming a choice.');
+    setWrongPick(choice);
   };
 
   const metrics = (): SoundWaveExplorerMetrics => {
@@ -410,16 +380,6 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 70, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} sound items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -429,16 +389,19 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { choice: wrongPick ?? choice, solved: revealed });
-    const levers = practice ? [] : soundLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    // No lever on the practice item: the full item's levers come back with it.
+    const leverCtx = { pulled };
+    const levers = practice || !sessionItem ? [] : SOUND_LEVERS.declare(sessionItem, leverCtx, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : SOUND_LEVERS.onScreen(sessionItem, leverCtx, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -446,10 +409,10 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = SOUND_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: soundWaveExplorerBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -458,14 +421,7 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The sound maker, the waves, and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -534,8 +490,9 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
           <>
             <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the waves and choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {stage()}
               {item.mode === 'observe' && leverOn(SHAKE_LEVER) && !practice && <ShakeCard item={item} />}
               {(item.mode === 'predict' || item.mode === 'apply') && leverOn(CHANGE_LEVER) && !practice && (
@@ -553,7 +510,7 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
                   </LuminaAnswerChoice>
                 ))}
               </div>
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -562,18 +519,11 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
             )}
 
             {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+              <LuminaFeedbackCard status="correct">
                 {`${key}.${item.mode === 'observe' ? ' The shaking and the sound go together.' : ''}`}
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -581,8 +531,6 @@ const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const SoundWaveExplorer = withWorkspaceController<SoundWaveExplorerProps, ProgressOptions<SoundItem>, Progress>(
-  'sound-wave-explorer', SoundWaveExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('sound-wave-explorer'));
+const SoundWaveExplorer = withWorkspaceOnly<SoundWaveExplorerProps>('sound-wave-explorer', SoundWaveExplorerSurface, props => props.data.title);
 
 export default SoundWaveExplorer;

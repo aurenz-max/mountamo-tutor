@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 /**
- * construction-sequence-planner on the shared teaching workspace (W1, plain shape) and its levers: what is its own.
- * The generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * construction-sequence-planner on its boss (three plan boards and a SAY_OR_SHOW total on the spoken preset) and its
+ * lever set: what is its own. The generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover
+ * ownership, the packet and the wiring.
  * sequence, dependency_chain and parallel are plans checked by code (no key reaches the tutor); critical_path is a
- * total said aloud or tapped, keyed as the spoken expectedAnswer. A wrong plan names its miss, is built on screen up to
- * where it stops, and every miss has a help lever first.
+ * total said aloud or tapped, keyed only as the spoken key (`cspKey`). A wrong plan names its miss, is built on screen
+ * up to where it stops, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -21,13 +22,17 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { ConstructionSequencePlannerData } from './ConstructionSequencePlanner';
 import {
   askOf, buildCspItems, buildOrder, chainsOf, criticalOptions, criticalWeeks, CSP_MISSES, CSP_MODES, cspCorrect, cspHarnessAnswers,
-  cspItems, cspMiss, cspTaps, fewestWeeks, PROJECT_IDS, seededRng, SIZE, validCspItem, workspaceAssignment,
+  cspItems, cspKey, cspMiss, cspTaps, emptyWork, fewestWeeks, PROJECT_IDS, seededRng, SIZE, validCspItem,
   type CspItem, type CspMode, type CspTier, type Job,
 } from './constructionSequenceWorkspace';
 import {
-  chainLines, CHECK_AS_YOU_GO_LEVER, cspLevers, FEWER_JOBS_LEVER, leverFact, leverLeak, possibleMisses, SAME_NEEDS_LEVER,
+  chainLines, CHECK_AS_YOU_GO_LEVER, CSP_LEVERS, FEWER_JOBS_LEVER, leverLeak, possibleMisses, SAME_NEEDS_LEVER,
   sameNeedsTags, simplerItem, TICK_NEEDS_LEVER, TRACE_CHAINS_LEVER, WEEK_BLOCKS_LEVER,
 } from './constructionSequenceLevers';
+import { constructionSequencePlannerBoss } from './constructionSequencePlanner.boss';
+
+const cspLevers = (i: CspItem, pulled: string[] = []) => CSP_LEVERS.declare(i, emptyWork(), pulled);
+const leverFact = (i: CspItem, pulled: string[]) => CSP_LEVERS.onScreen(i, emptyWork(), pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -72,23 +77,27 @@ const enter = (h: WorkspaceHarness, item: CspItem, work: ReturnType<typeof cspHa
 };
 const flush = () => act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
 
-it.each(CSP_MODES)('%s binds with its key out of the scene and off the screen', mode => {
+it.each(CSP_MODES)('%s binds with its key only in the spoken key, out of the scene and off the screen', mode => {
   const h = mount(mode);
   const item = BY_MODE[mode][0];
   expect(getComponentById('construction-sequence-planner')!.evalModes!.map(m => m.evalMode)).toEqual(CSP_MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(constructionSequencePlannerBoss.assignment(item).task);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/build ran|stopped at|timeline is drawn/i);
   expect(h.view.container.querySelector('[data-lever], [data-build-run], [data-timeline]')).toBeNull();
   expect(text(h)).not.toMatch(/Next →|Finish|Critical Path|Hint/);
+  // Taught only on the workspace: no read-the-task button, Next or reveal of its own.
   expect(h.view.container.querySelector('[aria-label="Read the task to me"]')).toBeNull();
   if (mode === 'critical_path') {
+    expect(constructionSequencePlannerBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
     expect(demand(h).response).toBe('speech');
+    expect(cspKey(item)).toMatchObject({ answer: '9 weeks', alsoAccept: ['9', 'nine'] });
     expect(h.state().task!.workspace!.expectedAnswer).toContain('"9"');
     expect(String(demand(h).question)).not.toMatch(/\d/);
   } else {
+    expect(cspKey(item)).toBeNull();
     expect(demand(h).response).toBe('gesture');
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   }
@@ -96,6 +105,17 @@ it.each(CSP_MODES)('%s binds with its key out of the scene and off the screen', 
   if (mode === 'sequence') { expect(facts).not.toMatch(/\(needs|needs nothing/); expect(text(h)).not.toMatch(/Needs/); }
   else expect(text(h)).toMatch(/Needs/);
   h.close();
+});
+
+it('the harness says the critical_path total, and plays every plan through its cards and the check', () => {
+  const play = (right: boolean, item: CspItem) => constructionSequencePlannerBoss.drive.play(right, item, {} as never);
+  expect(play(true, CRIT).at(-1)).toEqual({ type: 'answer', text: '9 weeks' });
+  expect(play(false, CRIT).at(-1)).not.toEqual({ type: 'answer', text: '9 weeks' });
+  for (const item of [SEQ, DEP, PAR]) {
+    const a = cspHarnessAnswers(item);
+    expect(play(true, item)).toEqual([...cspTaps(item, a.correct).map(label => ({ type: 'choose', label })), { type: 'check' }]);
+    expect(play(false, item)).toEqual([...cspTaps(item, a.plainWrong).map(label => ({ type: 'choose', label })), { type: 'check' }]);
+  }
 });
 
 it('sequence: a wrong plan names its miss and stops the build there; check_as_you_go marks; fewer_jobs opens a simpler chain', async () => {
@@ -293,7 +313,6 @@ describe('the pure rules', () => {
       expect(s.jobs.some(j => i.jobs.some(k => k.name === j.name))).toBe(false);
       if (mode === 'critical_path') expect(criticalWeeks(s)).not.toBe(criticalWeeks(i));
       expect(simplerItem(s)).toBeNull();
-      expect(cspLevers(s, [])).toEqual([]);
     }
   });
 

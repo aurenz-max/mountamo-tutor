@@ -1,5 +1,7 @@
 /**
- * countingBoardScript — the pedagogy lives here (pure, real — no jsdom).
+ * countingBoardScript — the retired scripted cue protocol (pure, real — no jsdom). The live tutor teaches this
+ * family from its boss (`countingBoard.boss.ts`) and no longer receives these cues; they stay for the generation
+ * probes that read the asks through them (scripts/probe-counting-board-*.mjs), so their gates stay held here.
  *
  * What this locks in:
  *  1. The pack passes the contract gates: no blocked response class, no
@@ -35,10 +37,7 @@ import {
   spokenSpansOf,
   type JudgedScriptPack,
 } from '../../../hooks/judgedScriptContract';
-import {
-  checkDiCatalogEntry,
-  checkPackGates,
-} from '../../../hooks/judgedScriptContract.testkit';
+import { checkPackGates } from '../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../service/manifest/catalog/math';
 import {
   ACTION_FOR_KIND,
@@ -65,7 +64,6 @@ import {
   type CountingItem,
   type CountingItemKind,
 } from './countingBoardScript';
-import { DI_PORTS } from '../../../service/qa/di/diDrivePlan';
 
 const item = (
   kind: CountingItemKind,
@@ -129,11 +127,6 @@ describe('contract gates', () => {
       item('count_all', 5, { id: 'ca-1' }),
       item('count_all', 7, { id: 'ca-2' }),
     ]))).toEqual([]);
-  });
-
-  it('the catalog keeps its side: audio mode, contextKeys, template keys, sentinel scan', () => {
-    const entry = MATH_CATALOG.find((p) => p.id === 'counting-board')!;
-    expect(checkDiCatalogEntry(entry, packOf(FIXTURES), FIXTURES[0])).toEqual([]);
   });
 
   it('response classes split at 20 (standing gate 1, per item)', () => {
@@ -401,7 +394,7 @@ describe('the state block is ANSWER-FREE (the targetCount regression guard)', ()
 
   it('no catalog prose names a targetCount key any more', () => {
     const entry = MATH_CATALOG.find((p) => p.id === 'counting-board')!;
-    expect(JSON.stringify(entry.tutoring)).not.toContain('targetCount');
+    expect(JSON.stringify(entry)).not.toContain('targetCount');
   });
 });
 
@@ -503,50 +496,6 @@ describe('harness answers mirror the judging contract', () => {
   });
 });
 
-describe('the registered DI adapter', () => {
-  const adapter = DI_PORTS['counting-board'];
-
-  it('is registered, so `--di` can drive this port', () => {
-    expect(adapter).toBeDefined();
-  });
-
-  it('rebuilds the SAME items the component builds, from the raw generator payload', () => {
-    const data = {
-      objects: { type: 'bears' },
-      challenges: [
-        { id: 'a', type: 'count_all', targetAnswer: 5, count: 5 },
-        { id: 'b', type: 'count_on', targetAnswer: 8, count: 8 },          // dropped
-        { id: 'c', type: 'subitize_perceptual', targetAnswer: 2, count: 2 },
-      ],
-    } as unknown as Record<string, unknown>;
-    const built = adapter.build(data);
-    expect(built.items.map((i) => i.id)).toEqual(['a', 'c']);
-    expect(built.dropped).toBe(1);
-    expect(built.surface.primitiveType).toBe('counting-board');
-    // The surface it returns IS the exported one, cues included.
-    expect(built.surface.itemCue(built.items[0], { opening: false, howToPlay: false }))
-      .toBe(itemCue(built.items[0] as CountingItem, { opening: false, howToPlay: false }));
-  });
-
-  it('a custom object type reaches the tutor as a sayable word', () => {
-    const built = adapter.build({
-      objects: { type: 'custom' },
-      challenges: [{ id: 'a', type: 'count_all', targetAnswer: 4, count: 4 }],
-    } as unknown as Record<string, unknown>);
-    expect((built.items[0] as CountingItem).objectWord).toBe('objects');
-  });
-
-  it('the gesture verdict is code-computed from the tapped finger count', () => {
-    const built = adapter.build({
-      objects: { type: 'stars' },
-      challenges: [{ id: 'h', type: 'subitize_perceptual', targetAnswer: 3, count: 3 }],
-    } as unknown as Record<string, unknown>);
-    const hands = built.items[0];
-    expect(adapter.gestureVerdictCue!(hands, 3)).toContain('MATCHES');
-    expect(adapter.gestureVerdictCue!(hands, 1)).toContain('does NOT match');
-  });
-});
-
 describe('the two-branch law (cap-drill finding, 2026-08-15)', () => {
   it('every judged contract states the law BEFORE its branches', () => {
     for (const f of FIXTURES.filter((i) => i.answerKind === 'voice')) {
@@ -595,22 +544,6 @@ describe('the two-branch law (cap-drill finding, 2026-08-15)', () => {
       .toContain('the same line on every wrong answer for this item');
   });
 
-  it('THE CATALOG SCAFFOLD RUNGS CARRY A SENTINEL — a bare rung stalls the loop', () => {
-    // The cap drill caught the model speaking level 2 and level 3 verbatim on
-    // corrections 2 and 3; neither opened with a sentinel, so the loop recorded
-    // di-no-verdict twice and the counter froze. The rungs now route the same
-    // pedagogy through the correction branch.
-    const entry = MATH_CATALOG.find((p) => p.id === 'counting-board')!;
-    const levels = Object.values(entry.tutoring!.scaffoldingLevels ?? {}) as string[];
-    expect(levels).toHaveLength(3);
-    for (const level of levels) {
-      expect(level).toMatch(/scripted correction|say nothing further/i);
-    }
-    // The two lines the model actually spoke are gone from the catalog.
-    const prose = JSON.stringify(entry.tutoring);
-    expect(prose).not.toContain('Touch each one just one time as you count"');
-    expect(prose).not.toContain('Point at the first one. Count with your finger.');
-  });
 });
 
 describe('the submitted eval mode is the catalog mode (CNB-3)', () => {

@@ -11,16 +11,15 @@
  * Every item is built and keyed by code (`raceTrackWorkspace.ts`). Nothing on screen states the answer before credit:
  * no speed readout, medal or finish time; the cars are named by colour, never by an animal whose usual speed hints
  * the answer; the predict race and the graph's race play only once the answer is credited; the log's speed reads "?".
- * Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries
- * before a reveal; the workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a
- * named miss, takes a spoken answer judged by the tutor, and lets the runtime move on. Levers: `raceTrackLevers.ts`.
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `raceTrackLab.card.ts` +
+ * `raceTrackLab.boss.ts`): every check commits through `progress.commitCheck` with a named miss, a spoken answer is
+ * judged by the tutor, and the runtime moves on. The levers are one lever set in `raceTrackLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RaceTrackLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -37,18 +36,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, cardText, choicesOf, describeRaceWork, endOf, finishTime, fmtNum, isNameAsk, keyChoice, needsRun, positionAt,
-  raceCorrect, raceItems, raceMiss, runTime, workspaceAssignment, workspaceScene,
+  askOf, cardText, choicesOf, describeRaceWork, endOf, finishTime, fmtNum, keyChoice, needsRun, positionAt,
+  raceCorrect, raceItems, raceMiss, runTime, workspaceScene,
   type RaceItem, type RaceMode, type RaceTier,
 } from './raceTrackWorkspace';
 import {
-  GAP_BRACKET_LEVER, leverFact, NEEDS_RUN_LEVERS, ONE_SECOND_LEVER, raceLevers, SECOND_MARKS_LEVER, simplerItem, stepLines,
+  GAP_BRACKET_LEVER, ONE_SECOND_LEVER, RACE_LEVERS, SECOND_MARKS_LEVER, stepLines,
   stepMarks, STEP_MARKS_LEVER, TO_GO_LEVER, TRAIL_COUNT_LEVER, TRAIL_TICKS_LEVER,
 } from './raceTrackLevers';
+import { raceTrackLabBoss } from './raceTrackLab.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -255,8 +255,9 @@ const RaceGraph = ({ item, overlays }: { item: RaceItem; overlays: readonly stri
 // Component
 // ============================================================================
 
-const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  RaceTrackLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RaceItem>) => Progress }) => {
+const useRaceProgress = useWorkspaceProgressFor('race-track-lab');
+
+const RaceTrackLabSurface = ({ data, className, runtimePlanItemId }: RaceTrackLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -266,37 +267,34 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
   const stableInstanceId = useRef(instanceId || `race-track-lab-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useRaceProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: raceTrackLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: RaceItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<RaceItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [choice, setChoice] = useState<string | null>(null);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<string | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   /** observe, measure: the learner pressed Run the race. */
   const [ran, setRan] = useState(false);
   /** Bumped to play the race on the track. */
@@ -307,7 +305,7 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
 
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
   const waitingForRun = !!item && needsRun(item) && !ran;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<RaceTrackLabMetrics>({
@@ -317,26 +315,14 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    mode: item?.mode ?? 'observe', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
-  }), [item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'race-track-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: data.grade ? (data.grade === 'K' ? 'Kindergarten' : `Grade ${data.grade}`) : 'Grade 3', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
   const clearItem = () => {
-    setChoice(null); setWrongPick(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setChoice(null); setWrongPick(null); setPracticeSolved(false);
     setRan(false); setRunKey(0);
   };
 
   openItem.current = (_index, retry) => {
     // Try again keeps the race on the track; a new item starts on the start line.
-    if (retry) { setChoice(null); setWrongPick(null); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { setChoice(null); setWrongPick(null); setPracticeSolved(false); return; }
     setPractice(null); clearItem();
   };
 
@@ -355,7 +341,7 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     setChoice(keyChoice(practice)); setWrongPick(null);
   };
 
-  // Once credited (or revealed), a race the learner has not watched plays: predict to the finish, the log, the graph's race.
+  // Once credited, a race the learner has not watched plays: predict to the finish, the log, the graph's race.
   const playedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!item || !revealed || needsRun(item) || playedFor.current === item.id) return;
@@ -374,7 +360,7 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
   const pick = (c: string) => {
     if (!item || revealed || waitingForRun || wrongPick !== null || learnerBlocked()) return;
     SoundManager.select();
-    setChoice(c); setFeedback(null);
+    setChoice(c);
   };
 
   const check = () => {
@@ -384,24 +370,10 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongPick(choice); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is on screen ("${keyChoice(item)}"); explain it plainly with squares and seconds.`);
-      return;
-    }
-    setChoice(null);
-    setFeedback(isNameAsk(item.ask) ? 'Not quite. Look again at how far each car goes in the same time, and try once more.'
-      : 'Not quite. Count the squares again, and try once more.');
-    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what `
-      + 'the track shows about squares and seconds, without naming a choice.');
+    setWrongPick(choice);
   };
 
   const metrics = (attempts: number): RaceTrackLabMetrics => {
@@ -414,16 +386,6 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(results.reduce((s, r) => s + r.attempts, 0)), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} races. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -433,16 +395,19 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { choice: wrongPick ?? choice, ran, solved: revealed });
-    const levers = practice ? [] : raceLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    // No lever on the practice race: the full item's levers come back with it.
+    const leverCtx = { ran };
+    const levers = practice || !sessionItem ? [] : RACE_LEVERS.declare(sessionItem, leverCtx, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler race of the same kind, with other cars, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler race of the same kind, with other cars, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : RACE_LEVERS.onScreen(sessionItem, leverCtx, pulled) }),
       // observe and measure wait for the learner to run the race: before that there is nothing to answer from.
       readyForResponse: !waitingForRun,
       levers,
@@ -450,13 +415,12 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
         const l = levers.find(x => x.id === id);
         if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
-        if (NEEDS_RUN_LEVERS.includes(id) && !ran) return 'The race has not run yet: ask the learner to press Run the race first.';
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = RACE_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!simpler) return 'There is no simpler race here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: raceTrackLabBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -465,14 +429,7 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The race track and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -520,8 +477,9 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
           <>
             <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the track and choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {item.mode === 'predict' && (
                 <LuminaPanel>
                   <table className="w-full text-sm" aria-label="The cars">
@@ -585,7 +543,7 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
                   </LuminaAnswerChoice>
                 ))}
               </div>
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -599,13 +557,6 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -613,8 +564,6 @@ const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const RaceTrackLab = withWorkspaceController<RaceTrackLabProps, ProgressOptions<RaceItem>, Progress>(
-  'race-track-lab', RaceTrackLabSurface, useScriptedProgress, useWorkspaceProgressFor('race-track-lab'));
+const RaceTrackLab = withWorkspaceOnly<RaceTrackLabProps>('race-track-lab', RaceTrackLabSurface, props => props.data.title);
 
 export default RaceTrackLab;

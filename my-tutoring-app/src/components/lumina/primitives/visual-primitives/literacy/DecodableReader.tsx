@@ -275,7 +275,7 @@ function ReaderWorkspace({ data, items, mode, instanceId, className, runtimePlan
     const levers = practice ? [] : DECODABLE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     workspace.current = {
       ...leverScene(decodableReaderScene(currentItem, !!practice), {
-        support: practice ? '' : DECODABLE_LEVERS.support(sessionItem),
+        support: practice ? '' : DECODABLE_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : DECODABLE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

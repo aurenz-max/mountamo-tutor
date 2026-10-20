@@ -148,9 +148,9 @@ it('make-change: change_bar draws only paid, cost and "?"; round_change keeps th
   expect(bar.querySelectorAll('line')).toHaveLength(2);
   expect(String(demand(h).onScreen)).not.toMatch(/15/);
   h.dispatch('pull_lever', { lever: ROUND_CHANGE_LEVER });
-  // The easier ask is spoken too: its task adds how the learner answers.
-  expect(h.state().task).toMatchObject({ itemId: 'x1~smaller' });
-  expect(h.state().task!.task).toContain('You pay 50¢ for something that costs 40¢. How much change do you get? The learner answers by saying');
+  // The easier ask is spoken too: its key is the easier change.
+  expect(h.state().task).toMatchObject({ itemId: 'x1~smaller', task: 'You pay 50¢ for something that costs 40¢. How much change do you get?' });
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"10 cents"/);
   expect(demand(h)).toMatchObject({ paid: '50¢', itemCost: '40¢' });
   expect(q(h, 'svg[data-lever="change-bar"]')).toHaveLength(0);
   write(h, 'Change in cents', '10'); check(h);

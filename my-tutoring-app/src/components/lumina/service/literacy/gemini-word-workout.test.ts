@@ -7,7 +7,7 @@ vi.mock('../geminiClient', () => ({
 }));
 
 import { generateWordWorkout } from './gemini-word-workout';
-import { itemsFromChallenges } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { itemsFromChallenges } from '../../primitives/visual-primitives/literacy/wordWorkoutDomain';
 
 const contextFor = (
   targetEvalMode: string | undefined,

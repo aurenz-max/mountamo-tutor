@@ -11,11 +11,12 @@ import { TRAIN_YARD_MISSES, type TrainYardMiss } from '../../../primitives/visua
 import { TOWER_MISSES, type TowerMiss } from '../../../primitives/visual-primitives/engineering/towerWorkspace';
 import { GEAR_MISSES, type GearMiss } from '../../../primitives/visual-primitives/engineering/gearWorkspace';
 import { FIND_PART_MISSES, FLIGHT_PLAN_MISSES, type AirplaneMiss } from '../../../primitives/visual-primitives/engineering/airplaneModel';
-import type { FlightMiss } from '../../../primitives/visual-primitives/engineering/flightForcesWorkspace';
-import type { CspMiss } from '../../../primitives/visual-primitives/engineering/constructionSequenceWorkspace';
-import type { PropulsionMiss } from '../../../primitives/visual-primitives/engineering/propulsionWorkspace';
-import { TRANSPORT_MISSES, type TransportMiss } from '../../../primitives/visual-primitives/engineering/transportWorkspace';
-import type { VehicleMiss } from '../../../primitives/visual-primitives/engineering/vehicleComparisonWorkspace';
+import { flightForcesExplorerCard } from '../../../primitives/visual-primitives/engineering/flightForcesExplorer.card';
+import { constructionSequencePlannerCard } from '../../../primitives/visual-primitives/engineering/constructionSequencePlanner.card';
+import { propulsionLabCard } from '../../../primitives/visual-primitives/engineering/propulsionLab.card';
+import { transportChallengeCard } from '../../../primitives/visual-primitives/engineering/transportChallenge.card';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { vehicleComparisonLabCard } from '../../../primitives/visual-primitives/engineering/vehicleComparisonLab.card';
 import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
@@ -366,46 +367,9 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'construction-sequence-planner',
     description: 'Construction planner ("Build It Right"): job cards for a real project (house, bridge, tower, road or playground), and four planning tasks. Students tap the jobs into the order they must happen (a roof needs walls under it), order jobs whose cards say which jobs each one needs (a job can need two), plan one-week jobs into weeks so jobs that do not need each other happen at the same time and the build meets a deadline, and find the fewest weeks a build can take when crews work at the same time (the longest chain of needs, the critical path). A checked plan is built on screen block by block and stops at the first job whose need was not done, so students see the consequence of their own order; nothing on screen gives the order, a week for a job or the total first. Teaches first-then-last sequencing, dependencies, parallel vs sequential work, and the critical path. ESSENTIAL for teaching planning, sequencing and construction project management.',
     constraints: 'Best for grades K-5. Code builds every job card, need, deadline and answer from a library of real jobs; the manifest picks the project and the topic, never the jobs. K-1: sequence (3-5 jobs in a straight chain, needs hidden). 2-3: sequence or dependency_chain (4-6 jobs, needs shown, a job that needs two). 3-4: parallel (5-7 one-week jobs into weeks to meet a deadline; hard: two crews). 4-5: critical_path (the fewest weeks a branching build takes, said or tapped). Evaluable: every plan and total is checked by code.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['build', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
-    tutoring: {
-      taskDescription: 'Planning a {{projectType}} build: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}).',
-      contextKeys: ['projectType', 'gradeLevel', 'mode', 'taskCount', 'itemIndex', 'totalItems', 'ask'],
-      scaffoldingLevels: {
-        level1: '"Which job could the builders do with nothing else done yet?"',
-        level2: '"Pick one job. What has to be there before the builders can start it?"',
-        level3: '"Read each card: what does this job need? Can it go before the jobs it needs?"',
-      },
-      commonStruggles: [
-        { pattern: 'Places the roof before the walls', response: '"What does the roof sit on? Is that built yet in your plan?"' },
-        { pattern: 'Gives every job its own week', response: '"Which jobs need exactly the same jobs before them?"' },
-        { pattern: 'Adds up every job to find the fewest weeks', response: '"Can two crews work at the same time? Which jobs have to wait for each other?"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item; you are not told the order, a plan or the total. A checked plan is built on screen and '
-        + 'stops at the first job whose need was not done; the screen does not say which need was missing, and neither do you. '
-        + 'SEQUENCE: the cards do not show what a job needs: working that out is the task. Never say which job comes first, next or '
-        + 'last, which job another job needs, or that one job goes before another ("the roof sits on the walls"); you may ask what a '
-        + 'job the learner names needs before it, but never describe the needed job by where it is, what it looks like or what it '
-        + 'does ("the part in the middle that holds the floors", "what the pipes go inside"). DEPENDENCY_CHAIN: each card shows '
-        + 'its needs; never say where a job '
-        + 'goes, which job to place next, or that a job is missing one of its needs; ask the learner to read a card. PARALLEL: never '
-        + 'say which jobs share a week, which week a job goes in, or that two jobs can happen at the same time; ask which jobs need the '
-        + 'same jobs. CRITICAL_PATH: never say a total, the weeks of a chain, which chain is longest, or that the weeks should not all be '
-        + 'added; ask how the learner got their number. After a miss, never say what the wrong answer came from, or which jobs to '
-        + 'swap, switch or move, or where a job goes ("swap the last two", "put it after the core"). Describe a lever '
-        + 'card only by what the scene says it shows. You cannot tap, place or check for the learner.',
-      // sequence and dependency_chain publish check_as_you_go (dependency_chain also tick_needs); parallel check_as_you_go and
-      // same_needs; critical_path trace_chains and week_blocks; fewer_jobs on items above the smallest size
-      // (`constructionSequenceLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`cspMiss`) on a plan or a tapped total, and the same ids as critical_path's known spoken misses.
-      misses: missLists<CspMiss>({ sequence: ['reversed', 'swapped_neighbors', 'wrong_first', 'job_before_need'],
-        dependency_chain: ['wrong_first', 'missed_second_need', 'job_before_need'],
-        parallel: ['need_same_week', 'need_later', 'crew_over', 'too_many_weeks'],
-        critical_path: ['added_all', 'shorter_chain', 'most_jobs_chain', 'counted_jobs', 'off_by_one'] }),
-    },
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['build', 'tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
+    // The live wiring (three plan boards and a SAY_OR_SHOW total on the spoken preset) is the boss's card.
+    ...bossEntry(constructionSequencePlannerCard),
     evalModes: [
       { evalMode: 'sequence', affordances: { answers: ['build'] }, label: 'Sequence (Basic)', beta: -1.0, scaffoldingMode: 2, challengeTypes: ['sequence'], description: 'Tap 3-5 jobs in a straight chain into the order they must happen; the cards do not show what a job needs (hard: 5 jobs)' },
       { evalMode: 'dependency_chain', affordances: { answers: ['build'] }, label: 'Dependency Chain (Intermediate)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['dependency_chain'], description: 'Order 4-6 jobs whose cards show their needs, with a job that needs two, so no job comes before a job it needs' },
@@ -446,50 +410,12 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     description: 'A plane in the sky with its four force arrows drawn to scale in counted units: lift up, weight down, thrust forward, drag back. Students work out what the plane does from how each pair compares (lift against weight sets the height, thrust against drag sets the speed), and the plane moves only after their answer, so nothing on screen names the result first. Three tasks: predict what a plane flying level does after one change (a load of water, the throttle, the landing gear, the nose angle, a stall); read a plane\'s arrows and say whether it climbs, sinks or stays level and whether it speeds up, slows down or keeps its speed; and set the thrust and the nose angle so the plane meets a goal (climb at a steady speed), where a steeper nose adds drag and too steep a nose stalls the wing. Air streams past the wing, and swirls off it in a stall. Perfect for K-5 lessons on the four forces of flight, balanced and unbalanced forces, and how a pilot controls a plane. ESSENTIAL for answering "How does an airplane fly?"',
     constraints: 'Best for grades K-5. K-2: predict only, with the force that changes named. 3-5: all three tasks. Code builds every item, force size and answer; the manifest picks the plane and the topic, never the questions. Not for wing shape or airflow over an airfoil (airfoil-lab) or the parts of an airplane (airplane-diorama). Evaluable: every answer is checked by code.',
     affordances: { representation: 'pictorial', reader: 'developing', answers: ['tap', 'spoken', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student works out what a plane does from its four forces: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}).',
-      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Which two arrows decide whether the plane goes up or down? Which two decide its speed?"',
-        level2: '"Compare lift with weight. Then compare thrust with drag. Which one of each pair is longer?"',
-        level3: '"When the up arrow and the down arrow are the same length, the height does not change. When one is longer, the plane moves that way. Now look at your pair."',
-      },
-      commonStruggles: [
-        { pattern: 'Does not know which force a pilot action changes', response: '"What does that do to the plane: does it make it heavier, push it forward, catch more air, or make the wings push more?"' },
-        { pattern: 'Thinks a plane with its nose up must be climbing', response: '"The nose tells us where the plane points. Which arrows tell us where it actually goes?"' },
-        { pattern: 'Thinks a steeper nose always makes more lift', response: '"What happens to the air over the wing when the nose is tilted past the stall angle?"' },
-        { pattern: 'Raises the nose and forgets that drag grows too', response: '"Look at the drag arrow after you tilted the nose. What does the thrust need to match now?"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item; you are not told the key. The plane holds still until an answer is credited '
-        + '(predict, observe) or flown (adjust), and no label says what it is doing. PREDICT: a plane flying level at a steady '
-        + 'speed, then one change; the learner says or taps what happens to its height or speed. When the ask does not name '
-        + 'the force, never say which force the action changes; never say a pair is now bigger, smaller or equal ("lift is '
-        + 'smaller than weight", "when lift is much smaller than weight, what happens?"), even when a card or the arrows show it, or what the plane does. When the ask says "a little '
-        + 'later", never say what happens to the speed or that the speed changes the lift: that step is the task. OBSERVE: the arrows are drawn at set lengths; never compare a pair for the learner ("lift is longer") '
-        + 'or count its units; ask which two arrows decide the height and which two the speed. ADJUST: the learner sets the '
-        + 'thrust and the nose angle with buttons and presses Fly and check; the arrows change as they set them. Never say '
-        + 'which control to change, which way or by how much, and never tell the learner to balance, match or even out a pair '
-        + '(that is the answer on a level or steady goal); after a flight, ask what the plane did and which pair of arrows '
-        + 'explains it. The dashed marks only show where an arrow would equal its partner: never call them targets or say an '
-        + 'arrow must reach or match them. After a miss, never say what the wrong choice came from. Describe a lever card only by what the scene '
-        + 'says it shows, never as the conclusion. You cannot tap, set, check or fly for the learner.',
-      // predict publishes force_link (when the ask does not name the force), show_arrows and one_step on hard items;
-      // observe pair_up, count_units and one_axis on two-direction items; adjust target_marks, stall_mark on stall items
-      // and one_control on two-control items (`flightForcesLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`flightMiss`) on a tap or a flight, and the same ids as each spoken item's known misses.
-      misses: missLists<FlightMiss>({ predict: ['stall_more_lift', 'missed_balance', 'said_no_change', 'opposite_way'],
-        observe: ['followed_nose', 'missed_balance', 'said_no_change', 'opposite_way'],
-        adjust: ['stalled', 'forgot_drag', 'lift_vs_weight', 'thrust_vs_drag'] }),
-    },
     evalModes: [
       { evalMode: 'predict', affordances: { answers: ['tap', 'spoken'] }, label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'A plane flying level at a steady speed, then one change (a load, the throttle, the landing gear, the nose angle): predict what happens to its height or speed before the change runs (hard: a two-step effect, a stall, or two changes that cancel)' },
       { evalMode: 'observe', affordances: { answers: ['tap', 'spoken'] }, label: 'Observe (Medium)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['observe'], description: 'Read a plane\'s four force arrows and say whether it climbs, sinks or stays level and whether it speeds up, slows down or keeps its speed (hard: one-unit differences, a nose that points up while the plane sinks)' },
       { evalMode: 'adjust', affordances: { answers: ['manipulate'] }, label: 'Adjust (Hard)', beta: 1.0, scaffoldingMode: 5, challengeTypes: ['adjust'], description: 'Set the thrust and the nose angle so the plane meets a goal such as climbing at a steady speed (hard: a steeper nose also adds drag, and the top angle stalls the wing)' },
     ],
+    ...bossEntry(flightForcesExplorerCard),
     supportsEvaluation: true,
   },
   {
@@ -544,43 +470,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         description: 'Rule out the vehicles that miss a job\'s minimums (people, cargo, distance or speed), then choose the one that leads the priority among the rest; the overall leader always misses a minimum (easy: one minimum; hard: two, and two vehicles that each miss one).',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student reads a table of vehicle data about {{topicFocus}}: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}, attempt {{attemptNumber}}).',
-      contextKeys: ['topicFocus', 'gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Which column does the question need? Put your finger on it."',
-        level2: '"Read each number in that column out loud, one row at a time. Which words tell you whether bigger or smaller is better?"',
-        level3: '"Compare two numbers at a time: count their digits first, then look at the first digit. Keep the winner of each pair and compare it with the next row."',
-      },
-      commonStruggles: [
-        { pattern: 'Compares numbers by their first digit (9,800 looks bigger than 13,000)', response: '"How many digits does each number have? A number with more digits is bigger."' },
-        { pattern: 'Reads a different column from the one the question needs', response: '"Which column heading matches what the question asks about?"' },
-        { pattern: 'Picks the biggest number for CO₂, where smaller is better', response: '"For pollution, do we want more or less?"' },
-        { pattern: 'Picks a vehicle that misses a minimum in a trade-off', response: '"Before choosing, check every vehicle against each minimum. Which ones can do the job at all?"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item from the numbers in the table; you are not told the key. The rows are not '
-        + 'sorted and nothing marks a leader until an answer is credited. LEADER: the ask names one column; never say which '
-        + 'number is bigger or smaller, which vehicle is ahead, or compare two rows; never say which numbers have the most '
-        + 'digits or point to them; ask the learner to read the numbers in that column aloud. EVIDENCE: a job with one need; never say which column the job needs, never link the need to a column '
-        + '("the job is about how far it goes"), never single out one definition on the column card, and never say which '
-        + 'vehicle leads any column. TRADE-OFF: never say which '
-        + 'vehicles meet or miss a minimum or which one leads the priority; ask the learner to check each vehicle against each '
-        + 'minimum. Never call a vehicle the best, fastest or biggest, and after a miss never say what the wrong choice came '
-        + 'from. Describe a lever card only by what the scene says it shows. You cannot tap, choose or check for the learner.',
-      // metric_leader publishes smaller_is_better (CO2), focus_column (extra columns), count_digits and two_rows;
-      // evidence_choice column_meanings, count_digits and fewer_columns; constraint_tradeoff mark_minimums,
-      // count_digits and one_minimum (`vehicleComparisonLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`comparisonMiss`) on a tap, and the same ids as each spoken item's known misses.
-      misses: missLists<VehicleMiss>({
-        metric_leader: ['leading_digit', 'other_column_leader', 'reversed', 'runner_up', 'not_leader'],
-        evidence_choice: ['wrong_evidence', 'other_column_leader', 'misread_column', 'not_leader'],
-        constraint_tradeoff: ['ignored_minimum', 'reversed', 'not_priority_leader'],
-      }),
-    },
+    ...bossEntry(vehicleComparisonLabCard),
     supportsEvaluation: true,
   },
   {
@@ -588,53 +478,12 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     description: 'A small craft with one or two engines (a jet engine, a rocket engine, a propeller, or a sail) on a track on Earth or floating in space. Students work out how it moves from Newton\'s Third Law: an engine pushes the craft the opposite way from its blast, two equal pushes the opposite way cancel, and a jet engine, a propeller and a sail need air while a rocket engine carries everything it needs and works in space. The craft moves only after the answer, so nothing on screen names the result first. Three tasks: predict what a craft does when its engines start (engines turned around, two engines pushing opposite ways, an engine with no air to push); watch what streams out of a clamped craft\'s engines and say which way it goes when let go; and set up two fair tests (engine, place, throttle) that answer a question such as "does a jet engine need air?". Perfect for grades 1-5 lessons on Newton\'s Third Law, action and reaction, why rockets work in space, and fair tests. ESSENTIAL for teaching Newton\'s Third Law through real vehicles.',
     constraints: 'Best for grades 1-5. 1-2: predict and observe. 3-5: all three tasks. Code builds every item, engine, place and answer; the manifest picks the topic, never the questions. Not for the four forces of flight (flight-forces-explorer) or the history of vehicles (propulsion-timeline). Evaluable: every answer is checked by code.',
     affordances: { representation: 'pictorial', reader: 'developing', answers: ['tap', 'spoken', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student works out how a craft\'s engines move it: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}).',
-      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Which way is each engine aimed to blast? What does it need to push?"',
-        level2: '"An engine blasts one way. Which way does that push the craft?"',
-        level3: '"Look at each engine on its own first: can it push anything where the craft is, and which way would it push the craft? Then put the engines together."',
-      },
-      commonStruggles: [
-        { pattern: 'Thinks a propeller or a jet engine works in space', response: '"What does a propeller push on? Is there any of that in space?"' },
-        { pattern: 'Thinks the craft goes the way the blast goes', response: '"When you push off a wall, which way do you go?"' },
-        { pattern: 'Does not see that two equal pushes cancel', response: '"What happens when two people push a box equally hard from opposite sides?"' },
-        { pattern: 'Changes two things in a test', response: '"If two things are different, can you tell which one made the difference?"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item; you are not told the key. The craft holds still until an answer is credited '
-        + '(predict, observe) or the tests are run (experiment), and no label says what it does. PREDICT: the craft and its engines '
-        + 'are described and drawn, switched off; the learner says or taps what it does when they start. Until it is credited, '
-        + 'never say whether an engine can work where the craft is or what it needs, whether there is air in space, or which '
-        + 'way an engine pushes the craft, and never put two engines together ("both pushing equally", "the stronger one") '
-        + 'or single out the bigger one. Ask about each engine in turn: which way it is aimed, and what it pushes out. Quote the how-it-works card as it '
-        + 'reads. Once credited, say what the run showed. OBSERVE: the craft is clamped with its engines '
-        + 'running. Until it is credited, never say which way a stream pushes the craft, the rule that a craft goes the opposite way from its stream, '
-        + 'or that two streams are equal or which is longer; ask what comes out of each engine and which way it leaves. '
-        + 'EXPERIMENT: the learner sets Test A and Test B with buttons and presses Run and check; the check is whether the two '
-        + 'tests can answer the question. Never say which setting to change or keep, what should stay the same, that only one '
-        + 'thing may differ ("just the throttle", "the one thing", "test only what the question asks"), or which engine, place '
-        + 'or throttle to choose; after a run, ask what is different between the two tests and what the question asks about. '
-        + 'After a miss, never say what the wrong choice came from. Describe a lever card only by what the scene says it shows, '
-        + 'never as the conclusion. You cannot tap, set, check or run for the learner.',
-      // predict publishes how_it_works, air_marks, blast_arrows (engines only) and one_step (two engines, or one turned
-      // around); observe label_streams, stream_units and one_stream on two-stream items; experiment compare_tests,
-      // can_push on throttle questions and one_test when both tests are free (`propulsionLevers.ts`). Every miss is
-      // answered by a help lever first.
-      levers: true,
-      // The activity's own check (`propulsionMiss`) on a tap or a run, and the same ids as each spoken item's known misses.
-      misses: missLists<PropulsionMiss>({ predict: ['missed_cancel', 'said_moves', 'said_still', 'wrong_way'],
-        observe: ['missed_cancel', 'said_moves', 'said_still', 'wrong_way'],
-        experiment: ['same_tests', 'changed_more_than_one', 'changed_other', 'wrong_subject', 'cannot_show'] }),
-    },
     evalModes: [
       { evalMode: 'predict', affordances: { answers: ['tap', 'spoken'] }, label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'A craft with a jet engine, rocket engine, propeller or sail, on Earth or in space, its engines off: predict whether it moves left, moves right or stays still when they start (hard: two engines pushing opposite ways)' },
       { evalMode: 'observe', affordances: { answers: ['tap', 'spoken'] }, label: 'Observe (Medium)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['observe'], description: 'Watch what streams out of a clamped craft\'s engines and say which way it goes when let go (hard: two opposite streams one unit apart)' },
       { evalMode: 'experiment', affordances: { answers: ['manipulate'] }, label: 'Experiment (Hard)', beta: 1.0, scaffoldingMode: 5, challengeTypes: ['experiment'], description: 'Set up two fair tests (engine, place, throttle) that answer a question such as "does a jet engine need air?" (hard: the tests start two changes apart, or where the engine has nothing to push)' },
     ],
+    ...bossEntry(propulsionLabCard),
     supportsEvaluation: true,
   },
   {
@@ -883,40 +732,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         description: 'Three limits and no vehicle keeps them all: find the one vehicle that breaks only one limit',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student plans a transport job: {{ask}} (job {{itemIndex}} of {{totalItems}}, {{mode}}).',
-      contextKeys: ['mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Pick one vehicle. How many trips would it need to move everything? Look at how much one trip carries."',
-        level2: '"Divide what must be moved by what one trip carries. If some is left over, that is one more trip. Now multiply the trips by the cost of one trip."',
-        level3: '"Do that for each vehicle and each limit, then compare every total with its limit. Only the totals decide, not the cost of one trip."',
-      },
-      commonStruggles: [
-        { pattern: 'Picks the fastest or biggest vehicle without checking the budget', response: '"That one carries a lot. How many trips is that, and what do all of them cost together?"' },
-        { pattern: 'Picks the cheapest per trip without counting trips', response: '"That one is cheap for one trip. How many trips will it need? What is the TOTAL?"' },
-        { pattern: 'Does not count a part-full last trip', response: '"After the full trips, is anything left to move? That still needs a trip."' },
-        { pattern: 'Checks one limit and forgets another', response: '"You checked one limit. What about the other one?"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every job; you are not told the key. Each card shows what ONE trip of a vehicle carries and '
-        + 'its cost, hours and CO2 per trip. A vehicle does every trip itself, so trips = the load divided by what a trip carries, '
-        + 'rounded up, and each total = trips times the per-trip figure. No card shows trips or totals: they are the work. Never say '
-        + 'how many trips a vehicle needs, a total, or whether a vehicle keeps or breaks a limit, unless that vehicle\'s number is '
-        + 'already on screen (a lever card, the learner\'s own checked run); never compare two vehicles for the learner. Name only '
-        + 'a vehicle the learner has already picked or named: to choose the next card, ask which one the learner wants to work, and '
-        + 'never suggest a vehicle or list the ones left to check ("look at the minivan\'s twelve trips", "the delivery truck or the '
-        + 'semi truck"), even right after a lever puts numbers on every card. '
-        + 'Ask the learner to take one vehicle at a time: its trips, then its totals, then each limit. After a checked pick, its run '
-        + 'is on screen: ask which limit it broke. You cannot tap or check for the learner.',
-      // show_trips and times_setup on every item; smaller_job when the first two cards build a smaller job
-      // (`transportLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`vehicleMiss`) on a tapped pick, and the same ids as each spoken item's known misses.
-      misses: missLists<TransportMiss>({ single_constraint: [...TRANSPORT_MISSES.single_constraint],
-        multi_constraint: [...TRANSPORT_MISSES.multi_constraint], full_optimization: [...TRANSPORT_MISSES.full_optimization] }),
-    },
+    ...bossEntry(transportChallengeCard),
     supportsEvaluation: true,
   },
   {

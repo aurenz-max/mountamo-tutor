@@ -66,6 +66,8 @@ export interface Progress extends UseChallengeProgressReturn {
   recordsEvaluation?: boolean;
   /** Workspace only: republish `workspace.current` outside a render (the workspace publishes after every render). */
   publishWorkspace?: () => void;
+  /** Workspace only: a tap-to-hear request (`useWorkspaceRunner.requestHear`): silent and host-authored. */
+  requestHear?: (text: string) => void;
   practiceSummary?: TeachingSummary | null;
   teachingResult?: TeachingEvaluationResult | null;
 }
@@ -138,6 +140,7 @@ export function useWorkspaceProgressFor(primitiveId: string) {
         now.commitGesture({ response, correct, miss, cue: () => '' });
       },
       canAttempt: run.canAttempt, practiceSolved: run.practiceSolved, recordsEvaluation, publishWorkspace: run.publishWorkspace,
+      requestHear: run.requestHear,
       practiceSummary: run.practiceSummary, teachingResult: run.teachingResult,
     };
   };

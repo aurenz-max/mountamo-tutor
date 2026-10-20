@@ -1,28 +1,35 @@
 /**
- * The in-item levers on sound-swap (`/add-support-tiers`, handoff 22 L2). The answer is the new word said aloud;
- * no lever prints it, pictures it or says it before credit (contract R2), and none turns it into a choice (R2 of
- * the handoff).
+ * The in-item levers on sound-swap, as one lever set (`bossLevers.ts`; `/add-support-tiers`, handoff 22 L2). The
+ * answer is the new word said aloud; no lever prints it, pictures it or says it before credit (contract R2), and none
+ * turns it into a choice (R2 of the handoff).
  *
- * - `mark_target_sound` (help, shown): the tile of the sound to change or take away pulses; for an addition, an
- *   empty dashed tile appears where the new sound goes. The new sound's letter is never drawn.
- * - `swap_model` (help, both): the same operation on model words the session never uses, shown and said end to
- *   end (in, pin). Its sound is never the item's sound, and its new word never rhymes with the item's answer.
- * - `easier_operation_item` (simplify): an ungraded item of the same operation on the FIRST sound, with a held
- *   sound (ox, fox), from words the session never uses.
- *
- * Misses are spoken and not emitted yet (handoff 20 Part B): declared here, unanswered for J9.
+ * Spoken items (addition, deletion, substitution):
+ * - `swap_model` (model): the same operation on model words the session never uses, shown and said end to end (in,
+ *   pin). Its sound is never the item's sound, and its new word never rhymes with the item's answer.
+ * - `mark_target_sound` (marks): the tile of the sound to change or take away pulses; for an addition, an empty dashed
+ *   tile appears where the new sound goes. The new sound's letter is never drawn. Not offered where the tier's own
+ *   highlight is already up.
+ * - `easier_operation_item` (easier): an ungraded item of the same operation on the FIRST sound, with a held sound
+ *   (ox, fox), from words the session never uses.
+ * Build items (swap_build, the shared letter build's helpers in `letterBuild.ts`):
+ * - `pattern_card` (clue): the given word with "keep two letters, change one", no letter to choose.
+ * - `model_word` (model): one solved change on other words, none of them an answer to this item.
+ * - `small_bank` (easier): the same ask, one word, only the letters two answers need.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { speakablePhoneme } from './phonemeVoice';
 import { MODEL_RHYME_SETS, rimeOfWord } from './rhymeModels';
 import type { SoundSwapChallenge } from './SoundSwap';
+import { SWAP_OPERATIONS, soundSwapCard } from './soundSwap.card';
+import { asSwapBuild, asSwapWord, isSwapBuild, type SoundSwapItem, type SwapBuild } from './soundSwapDomain';
+import { modelFor, patternFor, smallBankFor, type LetterBuildItem } from './letterBuild';
 
 export const MARK_LEVER = 'mark_target_sound';
 export const MODEL_LEVER = 'swap_model';
 export const EASIER_LEVER = 'easier_operation_item';
-
-export const SWAP_MISSES = ['echo_start', 'other_position', 'nonword', 'sounds_no_word'] as const;
-export type SwapMiss = typeof SWAP_MISSES[number];
+export const PATTERN_LEVER = 'pattern_card';
+export const MODEL_WORD_LEVER = 'model_word';
+export const SMALL_BANK_LEVER = 'small_bank';
 
 type Op = SoundSwapChallenge['operation'];
 /** A worked operation: `from` changed by `sound` (at `position`) makes `to`. */
@@ -131,33 +138,78 @@ export function targetTile(c: SoundSwapChallenge): number {
 const markable = (c: SoundSwapChallenge) => c.operation === 'addition'
   || (targetTile(c) >= 0 && (c.operation === 'deletion' || c.showTargetHighlight === false));
 
-/** What the pulled help levers put on screen, for the tutor. Never the new word. */
-export function leversOnScreen(item: SoundSwapChallenge, pulled: readonly string[], challenges: readonly SoundSwapChallenge[]): string | null {
-  const parts: string[] = [];
-  if (pulled.includes(MARK_LEVER)) parts.push(item.operation === 'addition'
-    ? `an empty tile at the ${item.addPosition ?? 'beginning'} of the word, where the new sound goes. Never say the new word`
-    : 'the tile of the sound to change pulses. Never say the new word');
-  const model = pulled.includes(MODEL_LEVER) ? swapModelFor(item, challenges) : null;
-  if (model) parts.push(`a model on other words: ${model.from}, ${model.op === 'substitution' ? `${sayOf(model.oldSound)} changed to ${sayOf(model.sound)}`
-    : model.op === 'addition' ? `add ${sayOf(model.sound)} at the ${model.position}` : `take away ${sayOf(model.sound)}`}, makes ${model.to}. `
-    + 'Say the model through; it is not this item');
-  return parts.length ? parts.join('; ') : null;
-}
+// ── the lever set ────────────────────────────────────────────────────────────
 
-/** The levers this item declares, with their state. */
-export function soundSwapLevers(item: SoundSwapChallenge | null, pulled: readonly string[], challenges: readonly SoundSwapChallenge[]): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly SwapMiss[], when: string, does: string) =>
-    levers.push({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  // The model first: with no named miss the ladder pulls it, and it teaches the whole move.
-  if (swapModelFor(item, challenges)) add(MODEL_LEVER, 'help', 'both', ['echo_start', 'nonword', 'sounds_no_word'],
-    'The learner says the starting word back, a made-up word, or the sounds with no word.',
-    'Shows the same change on other words, start to finish. Say it through; never this item\'s new word.');
-  if (markable(item)) add(MARK_LEVER, 'help', 'shown', ['other_position'], 'The learner changes a different sound.',
-    item.operation === 'addition' ? 'Shows an empty tile where the new sound goes.' : 'Makes the tile of the sound to change pulse.');
-  if (practiceItemFor(item, challenges)) add(EASIER_LEVER, 'simplify', 'shown', SWAP_MISSES,
-    'The learner still cannot make the new word after help.',
-    'Opens an easier practice item first: the same kind of change, on the first sound, with a sound you can hold. Not graded; the full item comes back after it.');
-  return levers;
+/** What the set reads beyond the item: the session's challenges (a model or practice item uses none of their words). */
+export interface SwapLeverContext { challenges: readonly SoundSwapChallenge[] }
+
+const SPOKEN = SWAP_OPERATIONS;
+const BUILD = ['swap_build'] as const;
+const word = (item: SoundSwapItem) => (isSwapBuild(item) ? null : item);
+const build = (item: SoundSwapItem) => (isSwapBuild(item) ? item : null);
+
+/** The model as the tutor reads it: the starting word, the change, the word it makes. */
+const modelFact = (m: SwapExample) => `A model on other words: ${m.from}, ${m.op === 'substitution'
+  ? `${sayOf(m.oldSound)} changed to ${sayOf(m.sound)}` : m.op === 'addition' ? `add ${sayOf(m.sound)} at the ${m.position}`
+    : `take away ${sayOf(m.sound)}`}, makes ${m.to}. Say the model through; it is not this item.`;
+
+export const SWAP_LEVERS = leverSet<SoundSwapItem, SwapLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => soundSwapCard.modes[mode].misses,
+  answersOf: item => (isSwapBuild(item) ? item.examples : [item.resultWord]),
+  // Both models show a different item solved; the lesson's tier says when (items carry it, default medium).
+  support: { tier: item => item.supportTier,
+    different: item => (isSwapBuild(item) ? 'one solved change on other words' : 'the same kind of change on other words'),
+    own: item => (isSwapBuild(item) ? 'a word that answers this ask' : 'this item\'s new word') },
+  specs: [
+    // The model first: with no named miss the ladder pulls it, and it teaches the whole move.
+    { id: MODEL_LEVER, type: 'model', modes: SPOKEN, answers: ['echo_start', 'nonword', 'sounds_no_word'],
+      when: 'The learner says the starting word back, a made-up word, or the sounds with no word.',
+      does: 'Shows the same change on other words, start to finish. Say it through; never this item\'s new word.',
+      content: (item, ctx) => { const w = word(item); return w ? swapModelFor(w, ctx.challenges) : null; },
+      fact: (m: SwapExample) => modelFact(m) },
+    { id: MARK_LEVER, type: 'marks', modes: SPOKEN, answers: ['other_position'],
+      when: 'The learner changes a different sound.',
+      does: item => (!isSwapBuild(item) && item.operation === 'addition'
+        ? 'Shows an empty tile where the new sound goes.' : 'Makes the tile of the sound to change pulse.'),
+      content: item => { const w = word(item); return w && markable(w) ? w : null; },
+      fact: (w: SoundSwapChallenge) => (w.operation === 'addition'
+        ? `An empty tile sits at the ${w.addPosition ?? 'beginning'} of the word, where the new sound goes; it shows no letter.`
+        : 'The tile of the sound to change pulses.') },
+    { id: EASIER_LEVER, type: 'easier', modes: SPOKEN, carrier: 'shown', answers: 'all',
+      when: 'The learner still cannot make the new word after help.',
+      does: 'Opens an easier practice item first: the same kind of change, on the first sound, with a sound you can '
+        + 'hold. Not graded; the full item comes back after it.',
+      content: (item, ctx) => { const w = word(item); const p = w && practiceItemFor(w, ctx.challenges);
+        return w && p ? asSwapWord(p, w.supportTier) : null; } },
+    { id: PATTERN_LEVER, type: 'clue', modes: BUILD, carrier: 'shown', answers: ['not_cvc', 'same_as_given', 'changed_more'],
+      when: 'The learner\'s word is not three letters, is the given word back, or changes more than one letter.',
+      does: 'Shows a pattern card above the boxes: the given word with "keep two letters, change one". No letter the '
+        + 'learner must choose is shown.',
+      content: item => { const b = build(item); return b ? patternFor(b) : null; },
+      fact: (pattern: string) => `A pattern card above the boxes shows: ${pattern}.` },
+    { id: MODEL_WORD_LEVER, type: 'model', modes: BUILD, answers: ['not_a_word'],
+      when: 'The learner makes letters that are not a real word.',
+      does: 'Shows one solved change on other words, so the learner sees how a real word comes out. It shares no answer '
+        + 'with this item.',
+      content: item => { const b = build(item); return b ? modelFor(b) : null; },
+      fact: (model: string) => `A solved example on other letters is shown: ${model}.` },
+    { id: SMALL_BANK_LEVER, type: 'easier', modes: BUILD, carrier: 'shown', answers: ['not_a_word'],
+      when: 'The learner keeps making letters that are not a word, or cannot start with so many letters.',
+      does: 'Opens the same ask first with a smaller letter bank, one word only. It is not graded; the full item comes '
+        + 'back after it.',
+      content: item => { const b = build(item); const small = b && smallBankFor(b); return b && small ? asSwapBuild(small, b.supportTier) : null; } },
+  ],
+});
+
+/** The build levers bound for the shared letter build surface: its items carry no mode or tier, so they are stamped. */
+export function swapBuildLevers(ctx: SwapLeverContext, supportTier: SwapBuild['supportTier']) {
+  const bound = SWAP_LEVERS.bind(ctx);
+  const stamp = (item: LetterBuildItem) => asSwapBuild(item, supportTier);
+  return {
+    declare: (item: LetterBuildItem, pulled: readonly string[]) => bound.declare(stamp(item), pulled),
+    onScreen: (item: LetterBuildItem, pulled: readonly string[]) => bound.onScreen(stamp(item), pulled),
+    simpler: (item: LetterBuildItem, lever: string) => bound.simpler(stamp(item), lever) as SwapBuild | null,
+    support: (item: LetterBuildItem) => bound.support(stamp(item)),
+  };
 }

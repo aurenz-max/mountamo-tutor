@@ -5,7 +5,7 @@ import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
-import { isSentinelSafeWord } from "../../primitives/visual-primitives/literacy/rhymeStudioScript";
+import { isSentinelSafeWord } from "../../primitives/visual-primitives/literacy/rhymeModels";
 import { K_RHYME_FAMILIES } from "../../primitives/visual-primitives/literacy/rhymeModels";
 import {
   resolveEvalModes,

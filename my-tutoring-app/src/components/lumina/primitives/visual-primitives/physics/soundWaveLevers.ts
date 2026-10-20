@@ -1,5 +1,6 @@
 /**
- * The in-item levers on sound-wave-explorer (`/add-support-tiers`; report qa/eval-reports/sound-wave-explorer-levers-2026-10-15.md).
+ * The in-item levers on sound-wave-explorer, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/sound-wave-explorer-levers-2026-10-15.md).
  * No real-learner evidence: the misses are what `soundMiss` observes; the failures behind them come from the catalog's
  * old commonStruggles (pitch and loudness confused, sound without vibration, sound in a vacuum, louder read as faster)
  * and the task itself. Every lever starts released; `config.difficulty` changes the items, not the levers.
@@ -23,9 +24,11 @@
  * - `one_change` (simplify; apply medium and hard): hard, only the loudness change of the two; medium, the same
  *   change kind in shaking words, the other way round.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
+import { SOUND_MISSES } from './soundWaveExplorer.card';
 import {
-  afterWave, choicesOf, keyChoice, MAKER_NAME, SOUND_MISSES, soundMiss,
+  afterWave, choicesOf, keyChoice, MAKER_NAME, soundKey, soundMiss,
   type ApplyItem, type Change, type Feature, type ObserveItem, type PredictItem, type SoundItem, type SoundWaveMiss,
 } from './soundWaveWorkspace';
 
@@ -128,65 +131,71 @@ export function simplerItem(item: SoundItem): SoundItem | null {
 }
 const otherKey = (f: Feature): 'amp' | 'crests' => (f === 'loudness' ? 'crests' : 'amp');
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly SoundWaveMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'both', pulled: pulled.includes(id), answers, when, does });
+/** What the levers read beside the item: the levers already pulled on it (feature_card waits for change_card). */
+export interface SoundLeverContext { pulled: readonly string[] }
 
-/** The levers on the current session item. A practice item has none. */
-export function soundLevers(item: SoundItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const misses = SOUND_MISSES[item.mode];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(item);
-  if (item.mode === 'observe') {
-    out.push(lever(SHAKE_LEVER, 'help', pulled, misses, 'The learner does not connect the shaking and the sound.',
-      FORWARD.includes(item.event)
+const physicalPredict = (item: SoundItem) => item.mode === 'predict' && item.wording === 'physical';
+const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
+const simplerSpec = (id: string, mode: SoundItem['mode'], does: (item: SoundItem) => string) => ({
+  id, type: 'easier' as const, modes: [mode], answers: 'all' as const,
+  when: mode === 'observe' ? 'The learner cannot work it out the way round this item asks.' : 'The learner cannot do this item even with the cards.',
+  does: (item: SoundItem) => `Opens a simpler item first: ${does(item)} ${PRACTICE_NOTE}`,
+  content: (item: SoundItem) => simplerItem(item),
+});
+
+export const SOUND_LEVERS = leverSet<SoundItem, SoundLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => SOUND_MISSES[mode as SoundItem['mode']] ?? [],
+  // No card names the key or a way of saying it.
+  answersOf: item => keyAnswers(soundKey(item)),
+  specs: [
+    { id: SHAKE_LEVER, type: 'clue', modes: ['observe'], answers: 'all',
+      when: 'The learner does not connect the shaking and the sound.',
+      does: item => (FORWARD.includes((item as ObserveItem).event)
         ? 'Shows a card with a picture of a child humming with a hand on the throat: the throat shakes while the hum sounds, and both stop together. It is not about this item\'s sound maker.'
-        : 'Shows a card with a picture of a window rattling as a loud truck goes past: a strong sound can make something light shake. It is not about this item\'s objects.'));
-    if (simpler) out.push(lever(PLAIN_LINK_LEVER, 'simplify', pulled, misses, 'The learner cannot work it out the way round this item asks.',
-      `Opens a simpler item first: the ${MAKER_NAME[simpler.maker]} is ${(simpler as ObserveItem).event === 'struck' ? 'played and starts to shake' : 'held still'}, and the learner says what happens to the sound. It is not graded; this item comes back after it.`));
-    return out;
-  }
-  if ((item.mode === 'predict' || item.mode === 'apply') && item.wording === 'physical') {
-    out.push(lever(CHANGE_LEVER, 'help', pulled, misses, 'The learner cannot tell what the change does to the shaking.',
-      item.mode === 'predict' ? 'Shows a card saying what this change does to the shaking (it swings farther, it shakes faster). It names no sound word.'
-        : 'Shows a card saying what each kind of change does to the shaking. It names no sound word and no wave.'));
-  }
-  // A physical predict item goes shaking first, then sound: the feature card is offered once the change card is up,
-  // so a reply never has to state what the change does to the shaking to use it (replay r3, 10-15).
-  const physicalPredict = item.mode === 'predict' && item.wording === 'physical';
-  if (!physicalPredict || pulled.includes(CHANGE_LEVER)) {
-    out.push(lever(FEATURE_LEVER, 'help', pulled, misses, item.mode === 'predict'
-      ? 'The learner knows what the change does to the shaking but not what that does to the sound, or mixes up loudness and pitch.'
-      : 'The learner mixes up loudness and pitch, or does not know what part of the wave shows each.',
-      'Shows a card with two small waves: bigger shakes draw a taller wave and are louder; faster shakes pack the crests closer and are higher. It names no wave and no choice of this item.'));
-  }
-  if (item.mode === 'classify' || item.mode === 'apply') {
-    out.push(lever(CREST_LEVER, 'help', pulled, misses, 'The learner cannot compare the waves by eye.',
-      'Numbers the crests of every wave and draws a line at every wave\'s top, on every wave at once.'));
-  }
-  if (simpler) {
-    const does = item.mode === 'predict' ? 'Opens a simpler item first: the same kind of question with the change named in shaking words. It is not graded; this item comes back after it.'
-      : item.mode === 'classify' ? 'Opens a simpler item first: two waves that differ in only one way. It is not graded; this item comes back after it.'
-        : (item as ApplyItem).changes.length === 2 ? 'Opens a simpler item first: the same sound maker with only one thing done differently. It is not graded; this item comes back after it.'
-          : 'Opens a simpler item first: the same sound maker with the changes named in shaking words. It is not graded; this item comes back after it.';
-    const id = item.mode === 'predict' ? EASIER_CHANGE_LEVER : item.mode === 'classify' ? ONE_DIFFERENCE_LEVER : ONE_CHANGE_LEVER;
-    out.push(lever(id, 'simplify', pulled, misses, 'The learner cannot do this item even with the cards.', does));
-  }
-  return out;
-}
-
-/** What the pulled levers put on screen, as a scene fact. Never a key, never which wave is taller. */
-export function leverFact(item: SoundItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(SHAKE_LEVER) && item.mode === 'observe') parts.push(`A card: ${shakeLines(item).join(' ')}`);
-  if (pulled.includes(CHANGE_LEVER) && (item.mode === 'predict' || item.mode === 'apply')) parts.push(`A card: ${changeLines(item).join(' ')}`);
-  if (pulled.includes(FEATURE_LEVER)) parts.push(`A card with two small waves: ${FEATURE_LINES.join(' ')}`);
-  if (pulled.includes(CREST_LEVER)) parts.push('Every wave now has its crests numbered and a line at its top (you are not told the counts).');
-  return parts.join(' ');
-}
+        : 'Shows a card with a picture of a window rattling as a loud truck goes past: a strong sound can make something light shake. It is not about this item\'s objects.'),
+      content: item => (item.mode === 'observe' ? shakeLines(item) : null),
+      fact: (lines: string[]) => `A card: ${lines.join(' ')}` },
+    { id: CHANGE_LEVER, type: 'clue', modes: ['predict', 'apply'], answers: 'all',
+      when: 'The learner cannot tell what the change does to the shaking.',
+      does: item => (item.mode === 'predict'
+        ? 'Shows a card saying what this change does to the shaking (it swings farther, it shakes faster). It names no sound word.'
+        : 'Shows a card saying what each kind of change does to the shaking. It names no sound word and no wave.'),
+      // Only where the change is named physically: in shaking words the ask already says it.
+      content: item => ((item.mode === 'predict' || item.mode === 'apply') && item.wording === 'physical' ? changeLines(item) : null),
+      fact: (lines: string[]) => `A card: ${lines.join(' ')}` },
+    { id: FEATURE_LEVER, type: 'custom', carrier: 'both', modes: ['predict', 'classify', 'apply'], answers: 'all',
+      why: 'It states the general rule linking each wave feature to a sound word, so it names "louder" and "higher" by '
+        + 'design; the clue and meaning leak check would drop it on every item keyed by one of those words.',
+      when: item => (item.mode === 'predict'
+        ? 'The learner knows what the change does to the shaking but not what that does to the sound, or mixes up loudness and pitch.'
+        : 'The learner mixes up loudness and pitch, or does not know what part of the wave shows each.'),
+      does: 'Shows a card with two small waves: bigger shakes draw a taller wave and are louder; faster shakes pack the crests closer and are higher. It names no wave and no choice of this item.',
+      // A physical predict item goes shaking first, then sound: offered once change_card is up, so a reply never has
+      // to state what the change does to the shaking to use it (replay r3, 10-15).
+      offer: (item, { pulled }) => !physicalPredict(item) || pulled.includes(CHANGE_LEVER),
+      fact: `A card with two small waves: ${FEATURE_LINES.join(' ')} Read it whole or not at all: never only the half `
+        + 'about the asked feature, never a question about that half ("which wave is taller?" on a loudness question), '
+        + 'and never the step it leaves ("so plucking harder makes it louder"); ask what it tells them.' },
+    { id: CREST_LEVER, type: 'marks', modes: ['classify', 'apply'], answers: 'all',
+      when: 'The learner cannot compare the waves by eye.',
+      does: 'Numbers the crests of every wave and draws a line at every wave\'s top, on every wave at once.',
+      fact: 'Every wave now has its crests numbered and a line at its top (you are not told the counts). The marks show '
+        + 'height and spacing on every wave: never ask about only the one the question needs.' },
+    simplerSpec(PLAIN_LINK_LEVER, 'observe', item => {
+      const s = simplerItem(item) as ObserveItem | null;
+      return `the ${MAKER_NAME[(s ?? item).maker]} is ${s?.event === 'struck' ? 'played and starts to shake' : 'held still'}, `
+        + 'and the learner says what happens to the sound.';
+    }),
+    simplerSpec(EASIER_CHANGE_LEVER, 'predict', () => 'the same kind of question with the change named in shaking words.'),
+    simplerSpec(ONE_DIFFERENCE_LEVER, 'classify', () => 'two waves that differ in only one way.'),
+    simplerSpec(ONE_CHANGE_LEVER, 'apply', item => ((item as ApplyItem).changes.length === 2
+      ? 'the same sound maker with only one thing done differently.'
+      : 'the same sound maker with the changes named in shaking words.')),
+  ],
+});
 
 /** For tests: every miss this item's choices can show. */
 export const possibleMisses = (item: SoundItem): SoundWaveMiss[] =>

@@ -191,7 +191,8 @@ it('binds an item with no resolved mode (a frontier probe) as mixed, on the work
 });
 
 it.each([
-  ['a mode the family does not have', { family: 'counting-board', mode: 'identify' }],
+  // A family that still keeps a scripted drill beside its workspace (counting-board is workspace-only since its boss).
+  ['a mode the family does not have', { family: 'number-sequencer', mode: 'identify' }],
 ] as const)('keeps the scripted drill and the per-item AI helper for %s', async (_, input) => {
   await mount([input as ItemInput]);
   expect(workspace()).toBeNull();

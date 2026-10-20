@@ -1,30 +1,30 @@
 /**
- * Hundreds chart on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C9), plain shape: `useWorkspaceProgress` in place of
- * `useChallengeProgress`. The chart's own Check judges every tap, and the scene never states the key:
- *   - highlight_sequence / complete_sequence: the learner taps cells and presses Check (gesture only: the
- *     answer is a set of cells, tapped one by one);
- *   - identify_pattern / find_skip_value: the learner taps a choice and presses Check, or says the choice
- *     (VB-1, 2026-10-13): the item is spoken with `acceptsGesture`, JEV judges the spoken description or skip
- *     value from the tutor's feedback against `expectedAnswer`, and a tap and Check is still checked by the chart.
+ * Hundreds chart on the shared tutor/JEV teaching workspace: the ask, the spoken key, the chart's own check and the
+ * scene, which the boss (`hundredsChart.boss.ts`), the component, the levers and the tests read. Every challenge is
+ * one workspace item:
+ *   - highlight_sequence / complete_sequence: the learner taps cells and presses Check; the chart checks the whole
+ *     set (a board). No key;
+ *   - identify_pattern / find_skip_value: the learner says the choice, or taps it and presses Check (VB-1,
+ *     2026-10-13). The tutor judges the words against the key; a tap and Check is checked by the chart.
+ *
+ * Pure: no React.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberMisses, spokenNumber, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { HundredsChartChallenge } from './HundredsChart';
+import { HUNDREDS_MISSES, type HundredsChartMiss } from './hundredsChart.card';
+
+export { HUNDREDS_MISSES, type HundredsChartMiss };
 
 export const CELL_TYPES = new Set<HundredsChartChallenge['type']>(['highlight_sequence', 'complete_sequence']);
 
-/** The choice a spoken item is judged against: the description or the skip value; null on the cell modes. */
-export const hundredsChartKey = (c: HundredsChartChallenge): string | null =>
+/** The choice a spoken item is answered with: the description or the skip value; null on the cell modes. */
+export const answerChoice = (c: HundredsChartChallenge): string | null =>
   c.type === 'identify_pattern' ? (c.correctAnswer || null) : c.type === 'find_skip_value' ? String(c.skipValue) : null;
 
-export function hundredsChartAssignment(c: HundredsChartChallenge): TeachingAssignment {
-  const expectedAnswer = hundredsChartExpectedAnswer(c);
-  if (!expectedAnswer) return { id: c.id, task: c.instruction, response: 'gesture' };
-  const how = c.type === 'identify_pattern' ? 'saying which description matches' : 'saying the skip value';
-  return { id: c.id, task: `${c.instruction} The learner answers by ${how}, or tapping it and pressing Check.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer, misses: hundredsChartSpokenMisses(c) };
-}
+/** What the learner is asked: the instruction, which the generator writes in code and never names a choice. */
+export const hundredsChartAsk = (c: HundredsChartChallenge): string => c.instruction;
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 const place = (c: HundredsChartChallenge, option: string) => {
@@ -32,30 +32,39 @@ const place = (c: HundredsChartChallenge, option: string) => {
   return i >= 0 && ORDINAL[i] ? `the ${ORDINAL[i]} one` : null;
 };
 
-/** The answer a spoken item is judged against, with the ways of saying it and what is not it. */
-export function hundredsChartExpectedAnswer(c: HundredsChartChallenge): string | undefined {
-  const key = hundredsChartKey(c);
-  if (key === null) return undefined;
-  const at = place(c, key);
+/** The key a spoken answer is judged against; null on a cell item, which the chart checks. */
+export function hundredsChartKey(c: HundredsChartChallenge): SpokenKey | null {
+  const key = answerChoice(c);
+  if (key === null) return null;
   if (c.type === 'identify_pattern') {
+    const at = place(c, key);
     const others = c.options.filter(o => o !== key).map(o => `"${o}"`).join(', ');
-    return `the choice "${key}"${at ? ` (${at} of the ${c.options.length} choices)` : ''}: the shape the highlighted cells `
-      + `make. Said as its words, the same shape in the learner's own words${at ? `, or by its place ("${at}")` : ''}. `
-      + `Describing what another choice describes${others ? ` (${others})` : ''} is not it.`;
+    return {
+      answer: key,
+      alsoAccept: at ? [at] : [],
+      acceptRule: 'The same shape the highlighted cells make, described in the learner\'s own words, counts.',
+      ...(others ? { signatureError: `Describing what another choice describes (${others}) is not it.` } : {}),
+    };
   }
   const S = c.skipValue;
-  return `${S}: ${S} is added each step; said as "${S}", "${spokenNumber(S)}", "by ${S}s", "plus ${S}", "it counts by ${S}s". `
-    + 'A highlighted number that is not the step, the number of highlighted cells, or any other number is not it.';
+  const cells = c.givenCells ?? [];
+  return {
+    answer: String(S),
+    alsoAccept: Array.from(new Set([spokenNumber(S), `by ${S}s`, `plus ${S}`, `${S} each time`])),
+    acceptRule: `${S} said alone, or in a sentence about how much is added each step, counts.`,
+    signatureError: `A highlighted number that is not the step, ${cells.length !== S ? 'the number of highlighted cells, ' : ''}`
+      + 'or any other number is not it.',
+  };
 }
 
 /**
- * A spoken item's known wrong answers, with the tap's ids (`hundredsChartMiss`, the catalog's lists). identify_pattern:
+ * A spoken item's known wrong answers, with the tap's ids (`hundredsChartMiss`, the card's lists). identify_pattern:
  * each other choice under the id of the shape it describes (`describedShape`), choices sharing a shape in one entry.
  * find_skip_value: `twice_the_step`, `half_the_step`, `one_short`, `one_over`, then the two ranges. A number that is
  * the key is never an example.
  */
 export function hundredsChartSpokenMisses(c: HundredsChartChallenge): KnownMiss[] {
-  const key = hundredsChartKey(c);
+  const key = answerChoice(c);
   if (key === null) return [];
   if (c.type === 'identify_pattern') {
     const byShape = new Map<string, string[]>();
@@ -77,6 +86,12 @@ export function hundredsChartSpokenMisses(c: HundredsChartChallenge): KnownMiss[
   ];
 }
 
+/** The journey's spoken answers: the key's own words, and another printed choice. */
+export function hundredsChartHarnessWords(c: HundredsChartChallenge): { correct: string; plainWrong: string } {
+  const key = answerChoice(c) ?? '';
+  return { correct: key, plainWrong: c.options.find(o => o !== key) ?? String(c.skipValue + 3) };
+}
+
 /** The cells a cell-mode challenge wants the learner to add: the pattern minus the cells already shown. */
 export const neededCells = (c: HundredsChartChallenge) => {
   const given = new Set(c.givenCells ?? []);
@@ -93,19 +108,6 @@ export function hundredsChartMatches(c: HundredsChartChallenge, view: { cells: S
   return view.option === String(c.skipValue);
 }
 
-/**
- * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
- * - cells: `stopped_early` (only pattern numbers, the last ones left untapped), `gaps_left` (only pattern
- *   numbers, some in the middle left), `extra_cells` (the whole pattern and more), `other_step` (a run that
- *   counts by another amount), `stray_cells` (numbers outside the pattern in place of some in it);
- * - a skip value: `twice_the_step`, `half_the_step`, then `one_short` / `one_over` / `short_by_more` / `over_by_more`;
- * - a description (identify_pattern), by what the chosen sentence describes: `chose_diagonal` (a diagonal, zigzag or
- *   shifting shape), `chose_columns`, `chose_rows`, else `chose_scattered` (no shape: scattered, checkerboard, whole grid).
- */
-export type HundredsChartMiss = 'stopped_early' | 'gaps_left' | 'extra_cells' | 'other_step' | 'stray_cells'
-  | 'twice_the_step' | 'half_the_step' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more'
-  | 'chose_diagonal' | 'chose_columns' | 'chose_rows' | 'chose_scattered';
-
 /** What a description sentence describes, for the miss on a wrong one. */
 export function describedShape(option: string): 'chose_diagonal' | 'chose_columns' | 'chose_rows' | 'chose_scattered' {
   const o = option.toLowerCase();
@@ -113,6 +115,7 @@ export function describedShape(option: string): 'chose_diagonal' | 'chose_column
     : /row/.test(o) ? 'chose_rows' : 'chose_scattered';
 }
 
+/** What a wrong Check shows, from the same work the check reads (the ids are the card's `HundredsChartMiss`). */
 export function hundredsChartMiss(c: HundredsChartChallenge | null, view: { cells: Set<number>; option: string | null }):
   HundredsChartMiss | undefined {
   if (!c || hundredsChartMatches(c, view)) return undefined;
@@ -151,17 +154,15 @@ export function describeHundredsChartCheck(c: HundredsChartChallenge, view: { ce
   return `Chose "${view.option ?? '?'}"`;
 }
 
+/** What each mode's answer is, which the tutor never says before the learner answers. */
 const CONSTRAINTS: Record<HundredsChartChallenge['type'], string> = {
-  highlight_sequence: 'The learner taps every number in the pattern and presses Check; the chart checks the whole set. '
-    + 'Which numbers belong is the answer.',
-  complete_sequence: 'The first numbers of the pattern are already highlighted. The learner taps the rest and presses '
-    + 'Check; the chart checks the whole set. The numbers still to tap are the answer.',
-  identify_pattern: 'The learner says the description that matches the shape the highlighted cells make, or taps it '
-    + 'and presses Check; a Check is checked by the chart. A spoken answer is a real answer: say plainly whether it is '
-    + 'right. Before the learner has answered, never name the shape or point to the matching choice.',
-  find_skip_value: 'The learner says how much is added each step, or taps it and presses Check; a Check is checked by '
-    + 'the chart. A spoken answer is a real answer: say plainly whether it is right. Before the learner has answered, '
-    + 'never say the skip value or the difference between two highlighted numbers.',
+  highlight_sequence: 'Which numbers belong is the answer: never say them, and never count the pattern on for the learner.',
+  complete_sequence: 'The numbers still to tap are the answer: never say them, and never count on past the highlighted '
+    + 'numbers or give the difference between two of them.',
+  identify_pattern: 'The shape the highlighted cells make is the answer: before the learner has answered, never name '
+    + 'the shape or point to the matching choice.',
+  find_skip_value: 'The skip value is the answer: before the learner has answered, never say it or the difference '
+    + 'between two highlighted numbers.',
 };
 
 /** How far the tutor may go at this support tier, so it never says what the tier withheld on screen. */
@@ -177,14 +178,14 @@ function coaching(c: HundredsChartChallenge): string | undefined {
 }
 
 /** `option`: the choice tapped so far on a choice mode, published as the learner's work (as the other families do). */
-export function hundredsChartScene(c: HundredsChartChallenge, view: { gridMax: number; option?: string | null }): WorkspaceScene {
+export function hundredsChartScene(c: HundredsChartChallenge, view: { gridMax: number; option?: string | null }): SceneOf {
   const tip = coaching(c);
   const choice = !CELL_TYPES.has(c.type);
   return { objects: [], facts: {
     kind: c.type,
     board: `A chart of the numbers 1 to ${view.gridMax}, ten to a row`,
     ...(c.givenCells?.length ? { highlighted: c.givenCells.join(', ') } : {}),
-    ...(c.options?.length && !CELL_TYPES.has(c.type) ? { choices: c.options.join(' | ') } : {}),
+    ...(c.options?.length && choice ? { choices: c.options.join(' | ') } : {}),
     ...(c.supportTier ? { supportTier: c.supportTier } : {}),
     ...(tip ? { coaching: tip } : {}),
     ...(choice ? { learnerWork: view.option ? `Tapped "${view.option}"` : 'No choice tapped yet' } : {}),
@@ -213,7 +214,7 @@ export function hundredsChartHarnessInputs(c: HundredsChartChallenge, wrong: boo
     }
     return [...cells.map(n => ({ type: 'touch' as const, target: `cell-${n}` })), check];
   }
-  const key = c.type === 'identify_pattern' ? c.correctAnswer : String(c.skipValue);
+  const key = answerChoice(c) ?? '';
   const pick = wrong ? c.options.find(o => o !== key)! : key;
   return [{ type: 'touch', target: `option-${pick}` }, check];
 }

@@ -15,7 +15,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { HundredsChartChallenge } from './HundredsChart';
-import { hundredsChartExpectedAnswer, hundredsChartSpokenMisses } from './hundredsChartWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { hundredsChartKey, hundredsChartSpokenMisses } from './hundredsChartWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -48,7 +49,6 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  expect(String(task.demand.constraints)).toMatch(/The learner says/);
   // The scene lists the printed choices, but never which one is right.
   expect(JSON.stringify(task.demand)).not.toMatch(/correct|is added 5|by 5/i);
   h.say(wrong); h.feedback('incorrect', 'retry');
@@ -121,5 +121,6 @@ it('every spoken miss is one the catalog lists for its mode, and no example is a
   const scattered = hundredsChartSpokenMisses(cases[4]).find(m => m.id === 'chose_scattered')!;
   expect(scattered.examples).toEqual(['They are scattered randomly', 'the first one', 'A checkerboard pattern', 'the second one']);
   expect(hundredsChartSpokenMisses(FIND).map(m => m.id)).toEqual(['twice_the_step', 'one_short', 'one_over', 'short_by_more', 'over_by_more']);
-  expect(hundredsChartExpectedAnswer(IDENTIFY)).toContain('("the third one")');
+  expect(spokenKeyText(hundredsChartKey(IDENTIFY)!)).toContain('"the third one"');
+  expect(hundredsChartKey(HIGHLIGHT)).toBeNull();
 });

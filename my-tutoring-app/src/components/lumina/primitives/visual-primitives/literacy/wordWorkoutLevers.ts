@@ -1,36 +1,38 @@
 /**
  * The in-item levers on word-workout (`/add-support-tiers`, handoff 22): picture match (L1) and the spoken read
- * modes (L3). Every printed word here is read cold, so every help lever is a visual mark from the shared kit
- * overlay (`LuminaPrintSupport`) and nothing is said: no audio of unread print.
+ * modes (L3), declared once as a lever set (`components/live-activity/bossLevers.ts`). Every printed word here is read
+ * cold, so every help lever is a visual mark from the shared kit overlay (`LuminaPrintSupport`) and nothing is said:
+ * no audio of unread print.
  *
- * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
- * - `sound_dots` (help): a dot under each grapheme of the printed word or words and a left-to-right arrow. Leak
+ * Pure: the component draws from these, the boss carries the set, and the tests hold each leak rule.
+ * - `sound_dots` (marks): a dot under each grapheme of the printed word or words and a left-to-right arrow. Leak
  *   rule: visual only, the letters unchanged, no picture marked.
- * - `two_far_pictures` (simplify, picture match): an ungraded practice item first, a new printed CVC word and two
+ * - `two_far_pictures` (easier, picture match): an ungraded practice item first, a new printed CVC word and two
  *   pictures, the foil sharing neither its first nor its last letter. Both words use only the lesson's vowels
  *   (contract R1), so in a one-vowel lesson the foil shares the vowel. Leak rule: never a session word or a session
  *   word's rime, and no session picture.
- * - `changed_letter` (help, word chains where the tier hid the change): the letter that changed from the word
+ * - `changed_letter` (marks, word chains where the tier hid the change): the letter that changed from the word
  *   before is lit. Its place only.
- * - `short_chain` (simplify, word chains): two new words, only the first letter changes, the change lit.
- * - `chunk_divider` (help, inflected and compound, only after a first try): a bar between the base and its ending,
- *   or the two words. The word's chunks are shown only after a cold attempt (contract R10), so a pull before one is refused.
- * - `easier_ending` (simplify, inflected -ing/-ed): a new pool word with the -s ending.
- * - `tracking_underline` (help, sentence reading): one underline under each word, left to right.
- * - `three_word_sentence` (simplify, sentence reading): a new three-word decodable line from the code pool.
- * - `question_word_icon` (help, the sentence question): an icon for the kind of answer (who, what, where).
+ * - `short_chain` (easier, word chains): two new words, only the first letter changes, the change lit.
+ * - `chunk_divider` (marks, inflected and compound, only after a first try): a bar between the base and its ending,
+ *   or the two words. The word's chunks are shown only after a cold attempt (contract R10), so it is offered only
+ *   once the item has had a wrong answer.
+ * - `easier_ending` (easier, inflected -ing/-ed): a new pool word with the -s ending.
+ * - `tracking_underline` (marks, sentence reading): one underline under each word, left to right.
+ * - `three_word_sentence` (easier, sentence reading): a new three-word decodable line from the code pool.
+ * - `question_word_icon` (clue, the sentence question): an icon for the kind of answer (who, what, where).
  *
- * Every simplify item is built here from a code pool and prints no word the session prints (R3).
- * Spoken misses are declared (`WORD_WORKOUT_SPOKEN_MISSES`) and not emitted until handoff 20 Part B lands.
+ * Every easier item is built here from a code pool and prints no word the session prints (R3).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { chunkBreak, dotsLeak, graphemes } from '../../../ui/printSupport';
 import { PRACTICE_WORDS } from './cvcSpellerLevers';
 import { practiceLine, printedSet, wordsOf } from './decodablePracticeLines';
 import { EARLY_EXTENDED_WORDS } from './wordWorkoutEarlyDecoding';
-import { COMMON_CVC_WORDS, type WordWorkoutItem } from './wordWorkoutScript';
+import { WORD_WORKOUT_SPOKEN_MISSES, wordWorkoutCard } from './wordWorkout.card';
+import { COMMON_CVC_WORDS, wordWorkoutEvalMode, type WordWorkoutItem } from './wordWorkoutDomain';
 
-export { dotsLeak, graphemes };
+export { dotsLeak, graphemes, WORD_WORKOUT_SPOKEN_MISSES, wordWorkoutEvalMode };
 
 export const DOTS_LEVER = 'sound_dots';
 export const TWO_PICTURES_LEVER = 'two_far_pictures';
@@ -95,33 +97,6 @@ export function twoFarPictures(item: WordWorkoutItem, items: readonly WordWorkou
 
 // ── L3: the spoken read modes ───────────────────────────────────────────────
 
-/** The catalog eval mode an item belongs to. */
-export function wordWorkoutEvalMode(item: WordWorkoutItem): keyof typeof WORD_WORKOUT_SPOKEN_MISSES | 'picture_match' {
-  switch (item.kind) {
-    case 'real_word': return 'real_vs_nonsense';
-    case 'picture_tap': return 'picture_match';
-    case 'chain_word': return 'word_chains';
-    case 'read_extended_word': case 'answer_word_meaning': return item.wordMode === 'compound-word' ? 'read_compound' : 'read_inflected';
-    case 'read_context_word': case 'choose_context_word': return 'choose_in_context';
-    case 'read_sentence': case 'answer_question': return 'sentence_reading';
-  }
-}
-
-/**
- * The misses a spoken answer will name, per mode: what was said, never a guessed cause. None is emitted until
- * spoken misses land (handoff 20 Part B), so the catalog lists every one as unanswered for J9 until then.
- * `wrong_fit` (choose in context) gets no lever by decision: with two printed words, any mark about fit points at
- * the answer, and the ask already says the sentence aloud.
- */
-export const WORD_WORKOUT_SPOKEN_MISSES = {
-  real_vs_nonsense: ['said_nonword'],
-  word_chains: ['previous_word', 'other_word'],
-  read_inflected: ['base_only', 'other_word'],
-  read_compound: ['base_only', 'other_word'],
-  choose_in_context: ['misread_word', 'wrong_fit'],
-  sentence_reading: ['word_swap', 'word_skip', 'lifted_word'],
-} as const;
-
 /** Every word the session prints, sentences and near words included: a practice item may use none of them (R3). */
 export function printedBySession(items: readonly WordWorkoutItem[]): Set<string> {
   const out = printedSet(...items.flatMap(i => [i.sentence, i.contextSentence, ...(i.pair ?? []), ...(i.contextWords ?? []),
@@ -175,17 +150,6 @@ export const questionIcon = (item: WordWorkoutItem) =>
 export const chunkFor = (item: WordWorkoutItem) =>
   item.kind === 'read_extended_word' ? chunkBreak(item.targetWord ?? '', item.decodingParts ?? []) : null;
 
-/** The practice item a simplify lever opens, or null. */
-export function practiceFor(id: string, item: WordWorkoutItem, items: readonly WordWorkoutItem[], vowels: readonly string[]): WordWorkoutItem | null {
-  switch (id) {
-    case TWO_PICTURES_LEVER: return twoFarPictures(item, items, vowels);
-    case SHORT_CHAIN_LEVER: return shortChain(item, items, vowels);
-    case EASIER_ENDING_LEVER: return easierEnding(item, items, vowels);
-    case SHORT_SENTENCE_LEVER: return threeWordSentence(item, items);
-    default: return null;
-  }
-}
-
 /** R3 for a spoken practice item: true when any word it prints is a word the session prints. */
 export function spokenPracticeLeak(practice: WordWorkoutItem, items: readonly WordWorkoutItem[]): boolean {
   const printed = printedBySession(items);
@@ -194,90 +158,83 @@ export function spokenPracticeLeak(practice: WordWorkoutItem, items: readonly Wo
   return words.some(w => printed.has(w.toLowerCase()));
 }
 
-/** What the pulled levers put on screen, for the scene. Names the marks, never a word or the answer. */
-export function leversOnScreen(item: WordWorkoutItem, pulled: readonly string[]): string | null {
-  const on: string[] = [];
-  if (pulled.includes(DOTS_LEVER)) on.push(item.kind === 'real_word' ? 'a dot under each sound of both printed words and an arrow under them'
-    : 'a dot under each sound of the printed word and an arrow under it, left to right');
-  if (pulled.includes(CHANGED_LETTER_LEVER)) on.push('the letter that changed from the word before is lit');
-  if (pulled.includes(CHUNK_LEVER)) on.push('a bar between the two parts of the word');
-  if (pulled.includes(TRACK_LEVER)) on.push('an underline under each word of the sentence, left to right');
-  const icon = pulled.includes(QUESTION_ICON_LEVER) ? questionIcon(item) : null;
-  if (icon) on.push(`an icon beside the question showing the answer is ${icon.label}`);
-  return on.length ? `${on.join('; ')}; nothing is said` : null;
-}
+// ── The lever set ───────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: 'help' | 'simplify', pulled: readonly string[], answers: readonly string[], when: string,
-  does: string): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers: [...answers], when, does });
+/** One lesson's context: its items, its vowels, and the session item that has had a wrong answer. */
+export interface WordWorkoutLeverCtx {
+  items: readonly WordWorkoutItem[];
+  vowels: readonly string[];
+  /** The session item with a first wrong try: an extended word's chunks show only after one (contract R12). */
+  missed?: string;
+}
 
 const NOTHING_SAID = ' Nothing is said: do not read the word or its sounds.';
+const DOTS_FACT = 'A dot under each sound of the printed word and an arrow under it, left to right; nothing is said.';
+const dotsOn = (...kinds: WordWorkoutItem['kind'][]) => (item: WordWorkoutItem) => (kinds.includes(item.kind) ? true : null);
 
-/** The levers this item declares, with their state. */
-export function wordWorkoutLevers(item: WordWorkoutItem | null, pulled: readonly string[], items: readonly WordWorkoutItem[],
-  vowels: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const out: WorkspaceLever[] = [];
-  switch (item.kind) {
-    case 'picture_tap': {
-      if (!item.targetWord) return [];
-      const all = ['same_start', 'same_end', 'same_vowel', 'other_word'];
-      out.push(lever(DOTS_LEVER, 'help', pulled, all,
-        'The learner taps a picture without reading the whole word, for example one that only starts the same.',
-        'Puts a dot under each sound of the printed word and an arrow under it, left to right, so the learner reads every sound. '
-        + 'Nothing is said: do not read the word or its sounds.'));
-      if (twoFarPictures(item, items, vowels)) out.push(lever(TWO_PICTURES_LEVER, 'simplify', pulled, all,
-        'The learner cannot yet tell apart pictures whose words look alike.',
-        'Opens an easier practice item first: a different short word and only two pictures, the other one starting and ending differently. '
-        + 'It is not graded; the full item comes back after it.'));
-      break;
-    }
-    case 'real_word':
-      out.push(lever(DOTS_LEVER, 'help', pulled, ['said_nonword'], 'The learner says the made-up word, picked by its first letter or shape.',
-        'Puts a dot under each sound of both printed words and an arrow under them, so the learner reads every sound of each.'
-        + ' Nothing is said: do not read either word or its sounds.'));
-      break;
-    case 'chain_word':
-      if (item.chainCueLevel === 'none' && item.changedIndex !== undefined) out.push(lever(CHANGED_LETTER_LEVER, 'help', pulled, ['previous_word'],
-        'The learner says the word before it again, reading the row from memory.',
-        'Lights the one letter that changed from the word before: its place only.' + NOTHING_SAID));
-      out.push(lever(DOTS_LEVER, 'help', pulled, ['other_word'], 'The learner reads a different word.',
-        'Puts a dot under each sound of the lit word and an arrow under it.' + NOTHING_SAID));
-      if (shortChain(item, items, vowels)) out.push(lever(SHORT_CHAIN_LEVER, 'simplify', pulled, ['previous_word', 'other_word'],
-        'The learner cannot yet read a word that changed by one letter.',
-        'Opens an easier practice item first: two new words where only the first letter changes, the change lit. '
-        + 'It is not graded; the chain comes back after it.'));
-      break;
-    case 'read_extended_word':
-      if (chunkFor(item) !== null) out.push(lever(CHUNK_LEVER, 'help', pulled, ['base_only'],
-        'After a first try: the learner reads only the first part of the word.',
-        `Draws a bar between the ${item.wordMode === 'compound-word' ? 'two small words' : 'base and its ending'}.` + NOTHING_SAID));
-      if (easierEnding(item, items, vowels)) out.push(lever(EASIER_ENDING_LEVER, 'simplify', pulled, ['base_only', 'other_word'],
-        'The learner cannot yet read a word with this ending.',
-        'Opens an easier practice word first: a different word with the -s ending. It is not graded; the word comes back after it.'));
-      break;
-    case 'read_context_word':
-      out.push(lever(DOTS_LEVER, 'help', pulled, ['misread_word'], 'The learner reads the lit word as its near neighbour or another word.',
-        'Puts a dot under each sound of the lit word and an arrow under it.' + NOTHING_SAID));
-      break;
-    case 'read_sentence':
-      out.push(lever(TRACK_LEVER, 'help', pulled, ['word_swap', 'word_skip'], 'The learner swaps or skips a small word.',
-        'Draws an underline under each word of the sentence, left to right, so every word is its own place to look.'
-        + ' Nothing is said: do not read the sentence or any word of it.'));
-      if (threeWordSentence(item, items)) out.push(lever(SHORT_SENTENCE_LEVER, 'simplify', pulled, ['word_swap', 'word_skip'],
-        'The learner cannot yet read a sentence this long.',
-        'Opens an easier practice sentence first: three new words. It is not graded; the sentence comes back after it.'));
-      break;
-    case 'answer_question': {
-      const icon = questionIcon(item);
-      if (icon) out.push(lever(QUESTION_ICON_LEVER, 'help', pulled, ['lifted_word'],
-        'The learner says a word from the sentence that does not answer the question.',
-        `Shows an icon beside the question for the kind of answer: ${icon.label}. It names the kind, never the word.`));
-      break;
-    }
-    // Meaning and fit answers get no lever (see WORD_WORKOUT_SPOKEN_MISSES).
-    case 'answer_word_meaning':
-    case 'choose_context_word':
-      break;
-  }
-  return out;
-}
+export const WORD_WORKOUT_LEVERS = leverSet<WordWorkoutItem, WordWorkoutLeverCtx>({
+  modeOf: wordWorkoutEvalMode,
+  missesOf: mode => wordWorkoutCard.modes[mode].misses,
+  answersOf: item => [item.answerWord ?? ''].filter(Boolean),
+  specs: [
+    { id: CHANGED_LETTER_LEVER, type: 'marks', modes: ['word_chains'], answers: ['previous_word'],
+      when: 'The learner says the word before it again, reading the row from memory.',
+      does: `Lights the one letter that changed from the word before: its place only.${NOTHING_SAID}`,
+      content: item => (item.kind === 'chain_word' && item.chainCueLevel === 'none' && item.changedIndex !== undefined ? item.changedIndex : null),
+      fact: 'The letter that changed from the word before is lit; nothing is said.' },
+    { id: DOTS_LEVER, type: 'marks', modes: ['picture_match'], answers: 'all', content: dotsOn('picture_tap'),
+      when: 'The learner taps a picture without reading the whole word, for example one that only starts the same.',
+      does: `Puts a dot under each sound of the printed word and an arrow under it, left to right, so the learner reads every sound.${NOTHING_SAID}`,
+      fact: DOTS_FACT },
+    { id: DOTS_LEVER, type: 'marks', modes: ['real_vs_nonsense'], answers: ['said_nonword'], content: dotsOn('real_word'),
+      when: 'The learner says the made-up word, picked by its first letter or shape.',
+      does: 'Puts a dot under each sound of both printed words and an arrow under them, so the learner reads every sound of each.'
+        + ' Nothing is said: do not read either word or its sounds.',
+      fact: 'A dot under each sound of both printed words and an arrow under them; nothing is said.' },
+    { id: DOTS_LEVER, type: 'marks', modes: ['word_chains'], answers: ['other_word'], content: dotsOn('chain_word'),
+      when: 'The learner reads a different word.',
+      does: `Puts a dot under each sound of the lit word and an arrow under it.${NOTHING_SAID}`, fact: DOTS_FACT },
+    { id: DOTS_LEVER, type: 'marks', modes: ['choose_in_context'], answers: ['misread_word'], content: dotsOn('read_context_word'),
+      when: 'The learner reads the lit word as its near neighbour or another word.',
+      does: `Puts a dot under each sound of the lit word and an arrow under it.${NOTHING_SAID}`, fact: DOTS_FACT },
+    { id: TWO_PICTURES_LEVER, type: 'easier', modes: ['picture_match'], answers: 'all',
+      when: 'The learner cannot yet tell apart pictures whose words look alike.',
+      does: 'Opens an easier practice item first: a different short word and only two pictures, the other one starting and ending '
+        + 'differently. It is not graded; the full item comes back after it.',
+      content: (item, ctx) => twoFarPictures(item, ctx.items, ctx.vowels) },
+    { id: SHORT_CHAIN_LEVER, type: 'easier', modes: ['word_chains'], answers: ['previous_word', 'other_word'],
+      when: 'The learner cannot yet read a word that changed by one letter.',
+      does: 'Opens an easier practice item first: two new words where only the first letter changes, the change lit. '
+        + 'It is not graded; the chain comes back after it.',
+      content: (item, ctx) => shortChain(item, ctx.items, ctx.vowels) },
+    { id: CHUNK_LEVER, type: 'marks', modes: ['read_inflected', 'read_compound'], answers: ['base_only'],
+      when: 'After a first try: the learner reads only the first part of the word.',
+      does: item => `Draws a bar between the ${item.wordMode === 'compound-word' ? 'two small words' : 'base and its ending'}.${NOTHING_SAID}`,
+      content: chunkFor, offer: (item, ctx) => ctx.missed === item.id,
+      fact: 'A bar between the two parts of the word; nothing is said.' },
+    { id: EASIER_ENDING_LEVER, type: 'easier', modes: ['read_inflected'], answers: ['base_only', 'other_word'],
+      when: 'The learner cannot yet read a word with this ending.',
+      does: 'Opens an easier practice word first: a different word with the -s ending. It is not graded; the word comes back after it.',
+      content: (item, ctx) => easierEnding(item, ctx.items, ctx.vowels) },
+    { id: TRACK_LEVER, type: 'marks', modes: ['sentence_reading'], answers: ['word_swap', 'word_skip'], content: dotsOn('read_sentence'),
+      when: 'The learner swaps or skips a small word.',
+      does: 'Draws an underline under each word of the sentence, left to right, so every word is its own place to look.'
+        + ' Nothing is said: do not read the sentence or any word of it.',
+      fact: 'An underline under each word of the sentence, left to right; nothing is said.' },
+    { id: SHORT_SENTENCE_LEVER, type: 'easier', modes: ['sentence_reading'], answers: ['word_swap', 'word_skip'],
+      when: 'The learner cannot yet read a sentence this long.',
+      does: 'Opens an easier practice sentence first: three new words. It is not graded; the sentence comes back after it.',
+      content: (item, ctx) => threeWordSentence(item, ctx.items) },
+    // Shown, not said: the icon names the kind of answer, never the word.
+    { id: QUESTION_ICON_LEVER, type: 'clue', carrier: 'shown', modes: ['sentence_reading'], answers: ['lifted_word'],
+      when: 'The learner says a word from the sentence that does not answer the question.',
+      does: item => `Shows an icon beside the question for the kind of answer: ${questionIcon(item)?.label}. It names the kind, never the word.`,
+      content: questionIcon,
+      fact: (icon: { label: string }) => `An icon beside the question shows the answer is ${icon.label}.` },
+  ],
+});
+
+/** The practice item the item's mode's easier lever opens, or null (the journey rebuilds `~simpler` items with it). */
+export const practiceFor = (item: WordWorkoutItem, ctx: WordWorkoutLeverCtx): WordWorkoutItem | null =>
+  WORD_WORKOUT_LEVERS.specs.filter(spec => spec.type === 'easier')
+    .map(spec => WORD_WORKOUT_LEVERS.simpler(item, ctx, spec.id)).find(Boolean) ?? null;

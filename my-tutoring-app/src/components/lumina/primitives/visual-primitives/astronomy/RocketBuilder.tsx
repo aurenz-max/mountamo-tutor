@@ -10,18 +10,16 @@
  * - reach_target: say or tap the rocket that flies highest (or least high).
  *
  * Every item is built and keyed by code from one toy flight model (`rocketWorkspace.ts`). Nothing launches before the
- * answer is checked, and no total, ratio or readout is drawn. Two paths, chosen by `withWorkspaceController`: the
- * scripted path (tester, no tutor) has its own Next and up to two tries before a reveal; the workspace path (W1, plain
- * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
- * tutor, and lets the runtime move on. The levers live in `rocketLevers.ts`.
+ * answer is checked, and no total, ratio or readout is drawn. Taught only on the shared tutor/JEV workspace
+ * (`withWorkspaceOnly`; its wiring is `rocketBuilder.card.ts` + `rocketBuilder.boss.ts`): every check commits through
+ * `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor, and the runtime moves on. The levers
+ * are one lever set in `rocketLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RocketBuilderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -37,19 +35,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   askOf, COLOR_HEX, describeRocketWork, emptyWork, flightOf, isManyItem, keyOf, LIFT_CHOICES, LIFT_TEXT, lifts,
-  optionCount, optionLabel, partLabel, revealText, rocketCorrect, rocketItems, rocketLabel, rocketMiss, withPart,
-  workComplete, workspaceAssignment, workspaceScene,
+  partLabel, revealText, rocketCorrect, rocketItems, rocketLabel, rocketMiss, withPart, workComplete, workspaceScene,
   type Part, type Rocket, type RocketItem, type RocketMode, type RocketTier, type RocketWork,
 } from './rocketWorkspace';
 import {
-  COUNT_LEVER, DROP_LEVER, dropTarget, FUEL_CARD_LEVER, FUEL_CARD_LINES, LIFT_CARD_LEVER, LIFT_CARD_LINE, leverFacts,
-  NO_LEVERS, OWN_WEIGHT_LEVER, OWN_WEIGHT_LINE, rocketLevers, type RocketLeverState,
+  COUNT_LEVER, DROP_LEVER, dropTarget, FUEL_CARD_LEVER, FUEL_CARD_LINES, LIFT_CARD_LEVER, LIFT_CARD_LINE,
+  NO_LEVERS, OWN_WEIGHT_LEVER, OWN_WEIGHT_LINE, ROCKET_LEVERS, type RocketLeverState,
 } from './rocketLevers';
+import { rocketBuilderBoss } from './rocketBuilder.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -290,8 +288,9 @@ function FuelCard() {
 
 type LeverMemo = { item: string } & RocketLeverState;
 
-const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  RocketBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RocketItem>) => Progress }) => {
+const useRocketProgress = useWorkspaceProgressFor('rocket-builder');
+
+const RocketBuilderSurface = ({ data, className, runtimePlanItemId }: RocketBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -305,27 +304,24 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useRocketProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: rocketBuilderBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const item: RocketItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [work, setWork] = useState<RocketWork>(emptyWork);
   /** add_to_lift: the checked part, on the rocket and launched. */
   const [flown, setFlown] = useState<RocketWork | null>(null);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -338,7 +334,7 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const leverOn = (id: string) => lever.pulled.includes(id);
 
   const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<RocketBuilderMetrics>({
     primitiveType: 'rocket-builder',
@@ -347,21 +343,10 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'can_it_lift', itemIndex: currentIndex + 1,
-    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'rocket-builder', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeLevel ? (gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`) : undefined, enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
-  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
+  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    if (retry) { clearItem(); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
     clearItem();
   };
 
@@ -379,41 +364,18 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const tap = (i: number) => {
     if (!item || closed || lever.dropped.includes(i)) return;
     SoundManager.select();
-    setWork({ pick: i }); setFlown(null); setFeedback(null);
+    setWork({ pick: i }); setFlown(null);
   };
-
-  /** Two choices reveal after one wrong try; more choices after two. */
-  const triesBeforeReveal = (it: RocketItem) => (optionCount(it) <= 2 ? 1 : 2);
 
   const check = () => {
     if (!item || closed || !workComplete(item, work)) return;
     const correct = rocketCorrect(item, work);
     progress.commitCheck(describeRocketWork(item, work), correct, correct ? undefined : rocketMiss(item, work));
     if (correct || item.mode === 'add_to_lift') setFlown({ ...work });
-    if (correct) {
-      SoundManager.playCorrect(); tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The launch now shows on screen. Praise briefly.`);
-      return;
-    }
+    if (correct) { SoundManager.playCorrect(); tappedCorrect.current = item.id; return; }
     SoundManager.playIncorrect();
-    if (tutorOwned) {
-      editLevers(s => ({ picked: [...s.picked, work.pick!] }));
-      setWrongShown(true);
-      return;
-    }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= triesBeforeReveal(item)) {
-      setScriptedReveal(true);
-      const keyWork = { pick: keyOf(item) };
-      setWork(keyWork); setFlown(keyWork);
-      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] The learner missed: ${askOf(item)} The answer and its launch are now on screen; explain them.`);
-      return;
-    }
-    if (item.mode !== 'add_to_lift') setWork(emptyWork());
-    setFeedback(item.mode === 'add_to_lift' ? 'The rocket still stays on the pad. Look again, and try once more.' : 'Not quite. Look again, and try once more.');
-    say(`[ANSWER_INCORRECT] ${describeRocketWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+    editLevers(s => ({ picked: [...s.picked, work.pick!] }));
+    setWrongShown(true);
   };
 
   const metrics = (): RocketBuilderMetrics => {
@@ -428,16 +390,6 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -447,15 +399,14 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    if (!item || (isComplete && !solvedNow)) return;
     const scene = workspaceScene(item, { work: flown ?? work, solved: revealed, flown: !!flown });
-    const levers = revealed ? [] : rocketLevers(item, lever);
-    const onScreen = leverFacts(item, lever);
+    const leverCtx = { state: lever };
+    const levers = revealed ? [] : ROCKET_LEVERS.declare(item, leverCtx, lever.pulled);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: '', onScreen: ROCKET_LEVERS.onScreen(item, leverCtx, lever.pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -476,14 +427,7 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   });
 
   // The workspace path keeps the last credited item on screen (its launch) until the session is submitted.
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The rockets and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || (isComplete && !solvedNow);
 
   if (!items.length) {
     return (
@@ -590,17 +534,11 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-center gap-3">
-              <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Look at the rocket, then answer."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan">{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the rockets and choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {!isManyItem(item) && renderSingle(item)}
               {flightLine && <p className="text-center text-sm text-amber-200" data-flight-result>{flightLine}</p>}
 
@@ -609,7 +547,7 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               {leverOn(OWN_WEIGHT_LEVER) && <p className="text-center text-xs text-rose-200" data-lever="own-weight">{OWN_WEIGHT_LINE}</p>}
 
               {renderChoices(item)}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -624,13 +562,6 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -638,8 +569,6 @@ const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const RocketBuilder = withWorkspaceController<RocketBuilderProps, ProgressOptions<RocketItem>, Progress>(
-  'rocket-builder', RocketBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('rocket-builder'));
+const RocketBuilder = withWorkspaceOnly<RocketBuilderProps>('rocket-builder', RocketBuilderSurface, props => props.data.title);
 
 export default RocketBuilder;

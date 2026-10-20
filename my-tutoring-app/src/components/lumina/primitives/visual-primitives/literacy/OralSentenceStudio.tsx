@@ -181,7 +181,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
     const levers = ORAL_SENTENCE_LEVERS.declare(item, undefined, pulledLevers);
     workspace.current = {
       ...leverScene(oralSentenceScene(item), {
-        support: ORAL_SENTENCE_LEVERS.support(item),
+        support: ORAL_SENTENCE_LEVERS.support(item, undefined),
         onScreen: ORAL_SENTENCE_LEVERS.onScreen(item, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

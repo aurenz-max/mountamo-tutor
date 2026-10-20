@@ -17,7 +17,7 @@
  * for sound-swap the walk should not be there at all: *"she does sound funny
  * during that part, i think not necessary — the 'an… Add /p/' works great and
  * the student can clearly hear the instructions, but the gibberish comes across
- * as a distraction."* So sound-swap's walk is DELETED (`soundSwapScript.ts`),
+ * as a distraction."* So sound-swap's walk is DELETED (`soundSwapDomain.ts` `moveAsk`),
  * and this module now serves the two places a phoneme genuinely cannot be
  * removed: the ASK itself (`Change /æ/ to /ɛ/` — the phoneme IS the
  * instruction), and phonics-blender's model line, where running the sounds

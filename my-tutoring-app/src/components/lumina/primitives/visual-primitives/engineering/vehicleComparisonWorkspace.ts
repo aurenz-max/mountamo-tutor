@@ -1,5 +1,6 @@
 /**
- * vehicle-comparison-lab on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C32).
+ * vehicle-comparison-lab's domain: the items, their keys, checks and misses, and the scene. Its live wiring is
+ * `vehicleComparisonLab.card.ts` + `vehicleComparisonLab.boss.ts` (a SAY_OR_SHOW card on the spoken preset).
  *
  * The model supplies a roster of real vehicles with their statistics; code builds every item and its key from those
  * numbers. Each item is a data table: some vehicles (rows) and some measures (columns), in an order that is not
@@ -16,11 +17,12 @@
  *   two vehicles that each miss only one of them, and an extra column.
  * Every answer is one vehicle (with a column on evidence_choice), said aloud or tapped (J14).
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { VEHICLE_MISSES } from './vehicleComparisonLab.card';
 import type { VehicleVisualCategory, VehicleVisualKind } from './vehicleVisualKind';
 import { plausible } from './vehiclePlausibility';
 
@@ -66,7 +68,7 @@ export const METRIC_LABEL: Record<MetricKey, string> = {
   topSpeed: 'Top speed', weight: 'Weight', passengerCapacity: 'Passengers', cargoCapacity: 'Cargo', range: 'Range',
   yearIntroduced: 'Year introduced', co2PerPassengerKm: 'CO₂ per rider',
 };
-const METRIC_NAME: Record<MetricKey, string> = {
+export const METRIC_NAME: Record<MetricKey, string> = {
   topSpeed: 'top speed', weight: 'weight', passengerCapacity: 'passengers', cargoCapacity: 'cargo', range: 'range',
   yearIntroduced: 'year introduced', co2PerPassengerKm: 'CO₂ per rider',
 };
@@ -165,12 +167,7 @@ export type LeaderMiss = 'leading_digit' | 'other_column_leader' | 'reversed' | 
 export type EvidenceMiss = 'wrong_evidence' | 'other_column_leader' | 'misread_column' | 'not_leader';
 export type TradeoffMiss = 'ignored_minimum' | 'reversed' | 'not_priority_leader';
 export type VehicleMiss = LeaderMiss | EvidenceMiss | TradeoffMiss;
-/** Each mode's misses, most specific first: an answer that fits two is named by the first. */
-export const VEHICLE_MISSES: Record<VehicleMode, readonly VehicleMiss[]> = {
-  metric_leader: ['leading_digit', 'other_column_leader', 'reversed', 'runner_up', 'not_leader'],
-  evidence_choice: ['wrong_evidence', 'other_column_leader', 'misread_column', 'not_leader'],
-  constraint_tradeoff: ['ignored_minimum', 'reversed', 'not_priority_leader'],
-};
+export { VEHICLE_MISSES };
 
 const firstDigit = (n: number) => Number(String(Math.floor(Math.abs(n))).replace(/^0+/, '')[0] ?? 0);
 /** The chosen value would lead if only the first digits were compared, but loses on the whole number. */
@@ -545,16 +542,22 @@ const SAY_COLUMN: Record<MetricKey, string> = {
   co2PerPassengerKm: '"CO2", "CO2 per rider" or "pollution"',
 };
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function vehicleExpectedAnswer(item: VehicleItem): string {
-  const key = keyOf(item), name = keyName(item);
-  const vehicle = `"${name}" (any clear way of naming that vehicle, or its row, "the ${rowPlace(item, key.vehicle)} one")`;
+/**
+ * The key a spoken reply is judged against: the vehicle (by name or by its row), and on evidence_choice also the column
+ * whose numbers prove it. The other vehicles are the signature error.
+ */
+export function vehicleKey(item: VehicleItem): SpokenKey {
+  const key = keyOf(item), name = keyName(item), place = `the ${rowPlace(item, key.vehicle)} one`;
+  const others = item.rows.filter(x => x.id !== key.vehicle).map(x => `"${x.name}"`);
+  const vehicle = `Any clear way of naming ${name}, or its row, counts for the vehicle.`;
   if (item.mode === 'evidence_choice') {
-    return `Two parts, both needed: the vehicle ${vehicle}; and the evidence, the ${METRIC_LABEL[item.metric]} column (${SAY_COLUMN[item.metric]}). `
-      + 'The right vehicle with another column, or only one part said, is not credited.';
+    const column = METRIC_NAME[item.metric];
+    return { answer: `${name}, because of ${column}`, alsoAccept: [`${place}, because of ${column}`],
+      acceptRule: `Two parts, both needed: the vehicle and the ${METRIC_LABEL[item.metric]} column (${SAY_COLUMN[item.metric]}). ${vehicle}`,
+      signatureError: `The right vehicle with another column, only one part said, or another vehicle (${others.join(', ')}) is not credited.` };
   }
-  const others = item.rows.filter(x => x.id !== key.vehicle).map(x => `"${x.name}"`).join(', ');
-  return `${vehicle} counts. ${others} are wrong, and so is naming two or hedging between them.`;
+  return { answer: name, alsoAccept: [place], acceptRule: vehicle,
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.` };
 }
 
 const WHAT: Record<VehicleMiss, string> = {
@@ -589,20 +592,11 @@ export function vehicleSpokenMisses(item: VehicleItem): KnownMiss[] {
   }));
 }
 
-const HOW = 'The learner answers by saying it, or by tapping a vehicle and pressing Check.';
-const HOW_EVIDENCE = 'The learner answers by saying both, or by tapping a vehicle and a column button and pressing Check.';
-
-export function workspaceAssignment(item: VehicleItem): TeachingAssignment {
-  const misses = vehicleSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${item.mode === 'evidence_choice' ? HOW_EVIDENCE : HOW}`, response: 'speech',
-    acceptsGesture: true, expectedAnswer: vehicleExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface VehicleView {
   work: VehicleWork;
-  /** Credited (or revealed on the scripted path): the answer and its reason are on screen. */
+  /** Credited: the answer and its reason are on screen. */
   solved: boolean;
 }
 
@@ -627,9 +621,20 @@ export function explanation(item: VehicleItem): string {
 const tableText = (item: VehicleItem) => item.rows
   .map((x, i) => `Row ${i + 1} ${x.name}: ${item.columns.map(c => `${METRIC_NAME[c]} ${cellText(item, x, c)}`).join(', ')}`).join('; ');
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping and pressing Check; the activity judges the tap. '
-  + 'The rows are not sorted, and nothing on screen marks a leader, a winner or which vehicles meet a minimum. '
-  + 'You cannot tap, choose or check for the learner.';
+const LAYOUT = 'The rows are in no order of any value, and nothing on screen marks a leader, a winner or which vehicles '
+  + 'meet a minimum until the answer is credited.';
+
+/** What this mode's task forbids saying, beyond the shared rules (kept from the catalog's guidance before the boss). */
+const NEVER_SAY: Record<VehicleMode, string> = {
+  metric_leader: 'Never say which number is bigger or smaller, which vehicle is ahead, or compare two rows; never say which '
+    + 'numbers have the most digits or point to them. Ask the learner to read the numbers in that column aloud.',
+  evidence_choice: 'Never say which column the job needs, never link the need to a column ("the job is about how far it '
+    + 'goes"), never single out one definition on the column card, and never say which vehicle is ahead in any column.',
+  constraint_tradeoff: 'Never say which vehicles meet or miss a minimum, or which one is ahead on the priority. Ask the '
+    + 'learner to check each vehicle against each minimum.',
+};
+const NEVER_RANK = 'Never call a vehicle the best, fastest or biggest, and after a miss never say what the wrong choice came '
+  + 'from. Describe a lever card only by what the scene says it shows.';
 
 /** What is drawn and asked: the table as printed, never which row leads or which column fits. */
 export function workspaceScene(item: VehicleItem, view: VehicleView): WorkspaceScene {
@@ -643,11 +648,12 @@ export function workspaceScene(item: VehicleItem, view: VehicleView): WorkspaceS
   if (item.mode === 'evidence_choice') facts.evidenceChoices = item.columns.map(c => METRIC_LABEL[c]).join(', ');
   facts.learnerWork = describeVehicleWork(item, view.work);
   if (view.solved) facts.shown = `The answer and its reason are now on screen: ${explanation(item)}`;
-  facts.constraints = CONSTRAINTS;
+  facts.layout = LAYOUT;
+  facts.constraints = `${NEVER_SAY[item.mode]} ${NEVER_RANK}`;
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ───────────────────────────
 
 /** The journey's answers: the key, and a wrong answer showing the mode's first-listed miss it can. */
 export function vehicleHarnessAnswers(item: VehicleItem): { correct: VehicleWork; plainWrong: VehicleWork } {

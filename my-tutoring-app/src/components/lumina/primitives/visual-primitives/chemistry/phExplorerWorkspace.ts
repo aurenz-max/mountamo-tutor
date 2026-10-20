@@ -1,5 +1,6 @@
 /**
- * ph-explorer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C26).
+ * ph-explorer's items, keys, misses and scene: the pure half of its boss (`phExplorer.boss.ts`, a SAY_OR_SHOW card on
+ * the spoken preset).
  *
  * Every item is built and keyed by code from the lesson's substances; the generator writes only the substances (name,
  * pH, a real-world line). Each mode is one closed choice the learner taps and checks, or says (J14):
@@ -8,11 +9,13 @@
  * - neutralize: 1 cup of hydrochloric acid at a given pH; choose how many cups of sodium hydroxide at a given pH make
  *   it neutral. Key: 10^(14 - acid pH - base pH) cups, from the two pH values (strong acid and strong base only).
  *
- * Pure: the component, the adapter, the journey row and the tests read the same items, checks, misses and scene.
+ * Pure: the component, the boss, the levers and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { PhExplorerData, Substance } from './PhExplorer';
+import { PH_MISSES } from './phExplorer.card';
 
 export type PhMode = 'test' | 'indicator' | 'neutralize';
 export const PH_MODES: PhMode[] = ['test', 'indicator', 'neutralize'];
@@ -162,12 +165,6 @@ export type IndicatorMiss = 'other_side' | 'next_band' | 'far_band';
 export type NeutralizeMiss = 'equal_amounts' | 'too_little' | 'too_much';
 export type PhExplorerMiss = TestMiss | IndicatorMiss | NeutralizeMiss;
 
-export const PH_MISSES: Record<PhMode, readonly PhExplorerMiss[]> = {
-  test: ['acid_base_swapped', 'said_neutral', 'missed_neutral'],
-  indicator: ['other_side', 'next_band', 'far_band'],
-  neutralize: ['equal_amounts', 'too_little', 'too_much'],
-};
-
 const PURPLE = 2;
 export function phMiss(item: PhItem | undefined, choice: string | null): PhExplorerMiss | undefined {
   if (!item || choice === null || phCorrect(item, choice) || !item.choices.includes(choice)) return undefined;
@@ -185,7 +182,9 @@ export function phMiss(item: PhItem | undefined, choice: string | null): PhExplo
   return said < key ? 'too_little' : 'too_much';
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The ask and the spoken key ───────────────────────────────────────────────────────────
+
+export const phMode = (item: PhItem): PhMode => item.mode;
 
 export function askOf(item: PhItem): string {
   if (item.mode === 'test') return `Test ${item.substance.name} with litmus paper. Is it an acid, a base, or neutral?`;
@@ -193,29 +192,39 @@ export function askOf(item: PhItem): string {
   return `The beaker holds 1 cup of ${item.acid.name} at pH ${item.acid.pH}. How many cups of ${item.base.name} at pH ${item.base.pH} make it neutral?`;
 }
 
-const SAY: Record<PhKind, string> = {
-  acid: '"acid", "acidic" or "an acid"',
-  base: '"base", "basic", "a base" or "alkaline"',
-  neutral: '"neutral" or "neither an acid nor a base"',
+/** What the ask says by design: a neutralize ask names the 1 cup of acid, which is also an amount to choose. */
+export const phGiven = (item: PhItem): string[] => (item.mode === 'neutralize' ? [`1 cup of ${item.acid.name}`] : []);
+
+const SAY: Record<PhKind, string[]> = {
+  acid: ['acidic', 'an acid'],
+  base: ['basic', 'a base', 'alkaline'],
+  neutral: ['neither an acid nor a base'],
 };
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function phExpectedAnswer(item: PhItem): string {
+/**
+ * The key a spoken reply is judged against. test is a menu key (the ask says acid, base and neutral); indicator is
+ * the range said any way or one whole number inside it; neutralize is the amount said any way. Each also takes the
+ * choice's place in the list.
+ */
+export function phKey(item: PhItem): SpokenKey {
   const key = keyChoice(item), at = item.choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
+  const place = `the ${ORDINAL[at] ?? 'last'} one`;
   const others = item.choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
   if (item.mode === 'test') {
     const kind = kindOf(item.substance.pH);
-    return `${kind}: ${SAY[kind]} or ${place} count. ${others} are wrong, and so is naming two or hedging between them.`;
+    return { answer: kind, menu: ['acid', 'base', 'neutral'], alsoAccept: [...SAY[kind], place],
+      signatureError: `${others} are wrong, and so is naming two or hedging between them.` };
   }
   if (item.mode === 'indicator') {
     const [lo, hi] = key.replace('pH ', '').split('-');
-    return `"${key}": the range said any way ("${lo} to ${hi}", "between ${lo} and ${hi}"), one whole number from ${lo} to ${hi}, `
-      + `or ${place} counts. ${others} are wrong, and so is a number outside ${lo} to ${hi}.`;
+    return { answer: key, alsoAccept: [`${lo} to ${hi}`, `between ${lo} and ${hi}`, place],
+      acceptRule: `One whole number from ${lo} to ${hi} counts too.`,
+      signatureError: `${others} are wrong, and so is a number outside ${lo} to ${hi}.` };
   }
   const amount = AMOUNTS.find(a => a.label === key)!;
-  return `"${key}" of ${item.base.name} (${amount.said}): that amount said any way, or ${place}, counts. ${others} are wrong.`;
+  return { answer: key, alsoAccept: [amount.said, place], acceptRule: 'That amount said any way counts.',
+    signatureError: `${others} are wrong.` };
 }
 
 const quoted = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(', ');
@@ -245,18 +254,6 @@ export function phSpokenMisses(item: PhItem): KnownMiss[] {
     pattern: `${fact} The learner's answer ${what[m]}: ${quoted(groups.get(m)!)}.`, examples: groups.get(m)!.slice(0, 6) }));
 }
 
-const HOW: Record<PhMode, string> = {
-  test: 'The learner answers by saying it, or tapping Acid, Base or Neutral and pressing Check Answer.',
-  indicator: 'The learner answers by saying it, or tapping one pH range and pressing Check Answer.',
-  neutralize: 'The learner answers by saying it, or tapping one amount and pressing Mix and check.',
-};
-
-export function workspaceAssignment(item: PhItem): TeachingAssignment {
-  const misses = phSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: phExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface PhView {
@@ -272,8 +269,14 @@ export interface PhView {
 export const describePhWork = (item: PhItem | undefined, view: Pick<PhView, 'choice'>) =>
   item && view.choice ? `Chose "${view.choice}"` : 'Nothing chosen yet';
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-  + 'You cannot tap, check, dip or mix for the learner.';
+/** What the learner reads off the screen is the question: never said for them. How they answer is the card's `moves`. */
+const CONSTRAINTS: Record<PhMode, string> = {
+  test: 'What the paper colours mean is the question: never say which result means an acid, a base or neutral, and '
+    + 'never call the substance sour, slippery, a cleaner or a food as a clue to its kind.',
+  indicator: 'What the juice colour shows is the question: never say which pH range or which side of the scale it means.',
+  neutralize: 'Never say which amount is right, whether the two liquids are equally strong, or which is farther from 7; '
+    + 'ask what the two pH values tell the learner.',
+};
 
 /** What is drawn and asked. The choices are named, never which is right. */
 export function workspaceScene(item: PhItem, view: PhView): WorkspaceScene {
@@ -297,7 +300,7 @@ export function workspaceScene(item: PhItem, view: PhView): WorkspaceScene {
     }
   }
   facts.learnerWork = describePhWork(item, view);
-  facts.constraints = CONSTRAINTS;
+  facts.constraints = CONSTRAINTS[item.mode];
   return { objects: [], facts };
 }
 

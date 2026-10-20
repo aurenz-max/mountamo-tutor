@@ -2,10 +2,10 @@ import { missLists, sameMisses } from './missLists';
 import { bossEntry } from '../../../components/live-activity/boss';
 import type { ArrayMiss } from '../../../primitives/visual-primitives/math/arrayGridWorkspace';
 import type { AddSubMiss, SpokenAddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
-import type { BarModelMiss, SpokenGraphMiss } from '../../../primitives/visual-primitives/math/barModelWorkspace';
+import { barModelCard } from '../../../primitives/visual-primitives/math/barModel.card';
 import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
-import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { coinCounterCard } from '../../../primitives/visual-primitives/math/coinCounter.card';
 import { REGROUP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
 import { PERCENT_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/percentBarWorkspace';
 import { TRANSFORM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/transformationLabWorkspace';
@@ -30,24 +30,24 @@ import type { MeasureMiss } from '../../../primitives/visual-primitives/math/mea
 import type { MeasurementMiss } from '../../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import type { AreaModelMiss } from '../../../primitives/visual-primitives/math/areaModelWorkspace';
 import type { MultiplicationMiss } from '../../../primitives/visual-primitives/math/multiplicationExplorerWorkspace';
-import type { LengthMiss } from '../../../primitives/visual-primitives/math/lengthLabWorkspace';
-import type { ClockMiss } from '../../../primitives/visual-primitives/math/analogClockWorkspace';
-import type { TimeSequencerMiss } from '../../../primitives/visual-primitives/math/timeSequencerWorkspace';
+import { lengthLabCard } from '../../../primitives/visual-primitives/math/lengthLab.card';
+import { analogClockCard } from '../../../primitives/visual-primitives/math/analogClock.card';
+import { timeSequencerCard } from '../../../primitives/visual-primitives/math/timeSequencer.card';
 import type { AreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaWorkspace';
 import type { BuildAreaMiss, BuildPerimeterMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
-import type { CompareOrderMiss, SpokenCompareMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
-import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/comparisonBuilderWorkspace';
-import type { CountMiss, SpokenCountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
+import { compareObjectsCard } from '../../../primitives/visual-primitives/math/compareObjects.card';
+import { comparisonBuilderCard } from '../../../primitives/visual-primitives/math/comparisonBuilder.card';
+import { countingBoardCard } from '../../../primitives/visual-primitives/math/countingBoard.card';
 import type { EquationBuilderMiss } from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import type { FractionMiss } from '../../../primitives/visual-primitives/math/fractionCirclesLevers';
 import type { FractionBarMiss, FractionCompareMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 import type { FunctionMachineMiss } from '../../../primitives/visual-primitives/math/functionMachineWorkspace';
-import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
-import { SKIP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/skipCountingWorkspace';
-import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
-import type { AdditionFactMiss } from '../../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
+import { hundredsChartCard } from '../../../primitives/visual-primitives/math/hundredsChart.card';
+import { skipCountingCard } from '../../../primitives/visual-primitives/math/skipCounting.card';
+import { mathFactFluencyCard } from '../../../primitives/visual-primitives/math/mathFactFluency.card';
+import { additionFactStrategiesCard } from '../../../primitives/visual-primitives/math/additionFactStrategies.card';
 import { CLASSIC_MISSES as ANGLE_CLASSIC_MISSES, MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
 import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
 import type { SpokenBondMiss } from '../../../primitives/visual-primitives/math/numberBondWorkspace';
@@ -56,10 +56,10 @@ import type { BuildHopsMiss } from '../../../primitives/visual-primitives/math/n
 import type { OrderMiss, SpokenSequencerMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
 import type { NumberTracerMiss } from '../../../primitives/visual-primitives/math/numberTracerWorkspace';
 import type { ShapeTracerMiss } from '../../../primitives/visual-primitives/math/shapeTracerWorkspace';
-import type { LineMiss, SpokenOrdinalMiss } from '../../../primitives/visual-primitives/math/ordinalLineWorkspace';
+import { ordinalLineCard } from '../../../primitives/visual-primitives/math/ordinalLine.card';
 import type { PatternBuilderMiss } from '../../../primitives/visual-primitives/math/patternBuilderWorkspace';
 import type { PlaceValueMiss, SpokenPlaceValueMiss } from '../../../primitives/visual-primitives/math/placeValueWorkspace';
-import type { SpatialMiss } from '../../../primitives/visual-primitives/math/spatialSceneWorkspace';
+import { spatialSceneCard } from '../../../primitives/visual-primitives/math/spatialScene.card';
 import type { StrategyPickerMiss } from '../../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFrameLevers';
 import type { SpokenFrameMiss } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
@@ -94,37 +94,7 @@ import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Most modes are answered on the graph: a tapped number, a tapped row, stickers placed row by row and then '
-        + 'Check my chart, or bars and a scale step set and then Submit graph. The graph checks those answers itself. The '
-        + 'number a row stands for, which row has the most or fewest, the sticker counts and the right step are each the '
-        + 'answer on their mode: never say one before the check. One-picture-for-one-thing rows print no numbers; counting '
-        + 'a row with the learner, one picture at a time, is teaching, and saying its total is not. The two spoken modes '
-        + '(say what the graph shows, compare two graphs) are answered aloud: the learner tells one true comparison (more, '
-        + 'fewer, the same, most, fewest) in their own words, judged against the comparisons in the expected answer. A '
-        + 'reversed claim, a bare number or a row name alone is not a comparison, and comparing two graphs must compare the '
-        + 'two surveys. On make a graph the learner fills an empty graph to fit the ask, then presses I\'m done!; many graphs '
-        + 'fit, so never say how many pictures a bar needs or which bar to change. A Kindergarten learner cannot read: read the '
-        + 'question and the row names aloud. You cannot tap, place stickers, set bars or choose a step for the learner.',
-      levers: true,
-      // The graph's own check (`barModelMiss`), and the two spoken modes' known wrong comparisons (`barModelSpokenMisses`).
-      misses: (() => {
-        const off: BarModelMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-        // A scaled bar graph has no picture key, so `picked_icon_count` is named on picture_graph only; two bars have no
-        // middle row, so compare_bars names only `reversed`. Every miss here is answered by a lever (barModelLevers.ts).
-        const scaled: BarModelMiss[] = ['another_row', 'one_step_off', ...off];
-        const rows: BarModelMiss[] = ['rows_swapped', 'several_rows_off', ...off];
-        return missLists<BarModelMiss | SpokenGraphMiss>({
-          read_one_to_one: ['another_row', ...off], read_scale: scaled, picture_graph: ['picked_icon_count', ...scaled],
-          scaled_bar_graph: scaled, graph_word_problem: scaled, compare_bars: ['reversed'], most_least: ['reversed', 'other_row'],
-          match_to_bar: off, build_one_to_one: rows, build_graph: [...rows, 'wrong_step'],
-          make_graph: ['reversed', 'tied', 'other_row', 'not_same', 'left_empty', ...off],
-          say_what_it_shows: ['reversed_comparison', 'same_for_different', 'no_comparison'],
-          compare_two_graphs: ['reversed_comparison', 'same_for_different', 'rows_not_graphs', 'no_comparison'],
-        });
-      })(),
-    },
+    ...bossEntry(barModelCard),
     // Only picture_graph emits selection evidence; other modes supply none, so capture skips them.
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -132,53 +102,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges in a pinned mode or an intent-resolved blend, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Work through {{totalChallenges}} {{graphStyle}} graph challenges. Mode: {{evalMode}}. Currently on challenge {{currentChallengeIndex}}. Values: {{values}}.',
-      contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
-      scaffoldingLevels: {
-        level1: '"Which bar is taller? What does that tell us?"',
-        level2: '"Look at the difference between the bars. How much more is the larger one?"',
-        level3: '"The first bar shows {{value1}} and the second shows {{value2}}. Subtract to find the difference."',
-      },
-      commonStruggles: [
-        { pattern: 'Ignoring scale', response: '"Look at the numbers on the axis, not just the bar height. Each tick mark is {{scaleStep}}."' },
-        { pattern: 'Confusing more/less', response: '"Taller bar = bigger number. Which bar is taller?"' },
-        { pattern: 'Reading picture graph as 1:1', response: '"Each icon stands for {{iconValue}}, not 1. Count the icons, then multiply."' },
-        { pattern: 'Pre-picking scale in build_graph', response: '"Look at your largest value. Which step lets the bars fit without leaving lots of empty space?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'COMPARISON & SCALE LANGUAGE COACHING',
-          instruction:
-            'Model precise comparison language: "more than," "less than," "the difference is." '
-            + 'For K-1 (compare_bars): use concrete language — "This bar is taller, so there are MORE." '
-            + 'For grades 2-3 (read_scale, picture_graph): tie bar height/icon count to the axis — '
-            + '"Each tick is {{scaleStep}}, so this bar reaches {{value}}." For picture graphs, '
-            + 'always say "{{iconValue}} per icon" before reading. For grades 3-5 (scaled_bar_graph, '
-            + 'graph_word_problem, build_graph): guide toward arithmetic — "How many more? Subtract." '
-            + 'Never just say "bigger" — always tie bar size to the actual quantity it represents.',
-        },
-        {
-          title: 'K ONE-TO-ONE COACHING',
-          instruction:
-            'For the K modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) the whole '
-            + 'skill is one-to-one correspondence: ONE picture for ONE thing. Coach the touching, not '
-            + 'the number — "touch each one as you say it", "did every animal get a sticker?". NEVER '
-            + 'say how many are in a pile, a row or a group, and never name the row that wins; that is '
-            + 'the answer. If the child loses their place, say "start at this end and go one at a time" '
-            + 'rather than counting for them. Keep every sentence short enough to be read aloud to a '
-            + 'five-year-old.',
-        },
-        {
-          title: 'BUILD_GRAPH SCALE-CHOICE COACHING',
-          instruction:
-            'When the student is constructing a graph, the scale choice IS the learning goal '
-            + '(3.MD.B.3). Never tell them what step to use. Instead, ask: "Look at your biggest value. '
-            + 'If you used a step of 1, how many tick marks would you need? If you used a step of 10, '
-            + 'how many?" Let them discover that bigger data needs bigger steps.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -197,7 +120,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.4,
         scaffoldingMode: 1,
         challengeTypes: ['most_least'],
-        description: 'Say which of 3-4 one-to-one rows has the most or the fewest. K.MD.B.3.',
+        description: 'Tap which of 3-4 one-to-one rows has the most or the fewest. K.MD.B.3.',
       },
       {
         evalMode: 'compare_bars',
@@ -281,7 +204,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_graph',
-        affordances: { answers: ['tap', 'type'] },
+        affordances: { answers: ['tap', 'build'] },
         label: 'Build Graph (3-5)',
         beta: 5.5,
         scaffoldingMode: 4,
@@ -3139,39 +3062,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      // Handovers and hand matches publish levers (`countingBoardLevers.ts`, handoff 21 M1); the spoken kinds publish
-      // theirs from `countingBoardSpokenLevers.ts` (M1 spoken slice).
-      levers: true,
-      guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
-        + 'Handovers and hand choices are checked directly by the board. '
-        + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching. '
-        + 'On a build, the learner makes the set and does the counting: never say how many are on the board or how '
-        + 'many more are needed. If they stop before pressing done, invite them to count what they have, one at a time.',
-      // The board's own check (`countMiss`) on handovers and hands; the spoken modes' known wrong answers
-      // (`countingBoardSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<CountMiss | SpokenCountMiss>({
-        give_me_n: ['one_short', 'one_over', 'gave_all', 'short_by_more', 'over_by_more'],
-        build_n: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        subitize_perceptual: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        count: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        ...sameMisses<SpokenCountMiss>(['recount_moved', 'subitize'], ['one_short', 'one_over', 'short_by_more', 'over_by_more']),
-        count_on: ['skipped_a_number', 'said_start', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        group: ['said_group_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        compare: ['smaller_group', 'said_total', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        ...sameMisses<SpokenCountMiss>(['take_away', 'add_more'], ['said_start', 'said_change', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-      }),
-      // recount_moved: no lever helps across the move (holding the number is the task); `line_up` steadies the count
-      // before it and `smaller_set` moves a smaller set (class sweep 2026-10-08), so every miss has a lever.
-      // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/510 right-answer and 0/393
-      // non-answer readings named wrong.
-      missFromWords: ['count'],
-    },
+    ...bossEntry(countingBoardCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: countingBoardDeliveryEligible },
-    description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group — at K that group sits under a basket, so it must be counted on from rather than counted), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). It also covers the K counting-OUT family: give-me-N (hand back a named number of objects from a pile), same-number-after-they-move (count a set, watch it rearrange, say how many now — conservation), take-away (take some off and say how many are left), and add-more (put more on and say how many altogether). Builds one-to-one correspondence, cardinality principle, conservation, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
+    description: 'Live tutor-judged Pre-K to Grade 1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks, judges the spoken number word, and helps after a miss; the board itself checks a handover, a build and a hand pick. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group — at K that group sits under a basket, so it must be counted on from rather than counted), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). It also covers the K counting-OUT family: give-me-N (hand back a named number of objects from a pile), same-number-after-they-move (count a set, watch it rearrange, say how many now — conservation), take-away (take some off and say how many are left), and add-more (put more on and say how many altogether). Builds one-to-one correspondence, cardinality principle, conservation, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
     constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects; count_all, subitize, and the counting-out family (give_me_n, recount_moved, take_away, add_more), plus count_on with the started group hidden under a basket. Grade 1: count to 30, count-on and group counting. In take_away and add_more the bound the objective names is the number the child ENDS on; the app splits the board and chooses how many change. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -3275,143 +3170,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Determine which group has more. Comparative reasoning with reduced prompts.',
       },
     ],
-    audioInput: { manual_activity: true },
-    tutoring: {
-      // ANSWER-FREE STATE BLOCK (di-math-facts rule, ten-frame/number-bond
-      // precedent). This clause used to read "The correct count for the current
-      // board: {{targetCount}}" — the graded spoken answer, standing in the
-      // state block for the whole item. The per-turn judging contract inside
-      // each cue already names the answer where it is needed, and this copy was
-      // the exact text the model was caught NARRATING to a child (19h-i-a). It
-      // also contradicted the PRE-NUMERIC directive below, which forbids the
-      // tutor any number word, in the same assembled prompt.
-      taskDescription: 'LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. What is on the board right now: {{stimulus}}. Every cue you receive carries the answer for that turn — nothing outside the cue does, and you never state the count on your own.',
-      contextKeys: ['challengeType', 'objectType', 'stimulus'],
-      // ON A JUDGED LOOP THE CORRECTION *IS* THE SCAFFOLD — there is no third
-      // reply channel. These three rungs used to be bare lines ("Touch each one
-      // just one time as you count."), and the 2026-08-15 cap drill caught the
-      // model speaking level 2 and level 3 VERBATIM on corrections 2 and 3.
-      // Neither opens with a sentinel, so the loop recorded no verdict twice
-      // and the counter froze with the child still waiting (`di-no-verdict`
-      // ×2). Same content, routed through the branch that carries a sentinel.
-      scaffoldingLevels: {
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the count and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
-      },
-      commonStruggles: [
-        { pattern: 'Double-counts or skips objects while tapping', response: 'The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count.' },
-        { pattern: 'Long silence', response: 'Silence is the child counting — wait. If they truly seem stuck, re-speak the current ask once; never count for them.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'THE CHILD IS COUNTING — WAIT',
-          instruction:
-            'Think time is unbounded. Never count along, never prompt mid-count, never fill silence. '
-            + 'Counting aloud that ends on the correct number IS a correct answer — the last number said tells the total.',
-        },
-        {
-          title: 'PRE-NUMERIC ITEMS ARE NUMBER-FREE',
-          instruction:
-            'On subitize_perceptual items say no number word and no digit at any point. The child answers by tapping a hand; '
-            + 'you wait in silence and speak only the scripted verdict lines.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
     {
       id: 'comparison-builder',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      // Every mode publishes levers (`comparisonBuilderLevers.ts`, handoff 21 M2).
-      levers: true,
-      guidance: 'Comparing groups or numbers, or finding one more or one less, the learner may say the answer or tap it; '
-        + 'a spoken answer is real, so tell them plainly whether it is right. Number cards in order and a one-more-and-one-less '
-        + 'pair are tap only. Every tap is checked by the activity. Which side has more, the symbol, the sorted order and the number one more or one '
-        + 'less are each the answer: never say one before the learner has answered. Counting each group with the learner is teaching; naming the winner is not. '
-        + 'A Kindergarten learner cannot read: read the instruction aloud and name the choice being made, because the '
-        + 'pictures, arrows and bars on screen carry no words. You cannot tap, choose or order anything for the learner.',
-      // The activity's own check (`comparisonMiss`), every mode.
-      misses: missLists<ComparisonMiss>({
-        compare_groups: ['reversed', 'said_equal', 'missed_equal'],
-        compare_numbers: ['reversed', 'said_equal', 'missed_equal'],
-        order: ['reversed', 'two_swapped', 'other_order'],
-        one_more_less: ['no_step', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
       misconceptionScope: 'primitive',
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
     constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      // taskDescription is flat — no {{#if}} handlebars. interpolate_template does
-      // key substitution only, so conditional blocks render as literal junk in the
-      // prompt. The specific counts/numbers/target already appear in RUNTIME STATE.
-      taskDescription: 'Student is comparing quantities and numbers. Challenge type: {{challengeType}}. Instruction on screen: {{instruction}}. Attempt: {{attemptNumber}}. See RUNTIME STATE for the exact counts, numbers, or target for this challenge.',
-      contextKeys: ['challengeType', 'leftCount', 'rightCount', 'leftNumber', 'rightNumber', 'correctAnswer', 'targetNumber', 'askFor', 'gradeBand', 'useAlligatorMnemonic', 'instruction', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Which group looks like it has more? Can you tell just by looking?"',
-        // No {{#if}} handlebars (they render literally). The mnemonic line is
-        // always safe to offer; it only bites for compare-numbers.
-        level2: '"Count each group carefully, then tell me which side has more. Remember: the alligator always opens its mouth toward the bigger number."',
-        // ANSWER-FREE: never interpolate {{correctAnswer}} into a spoken line —
-        // this is a script the tutor reads to the child. Coach the counting
-        // strategy instead of naming which side wins.
-        level3: '"Let\'s count together. Point to each one on the left and count out loud: 1, 2, 3... now do the same on the right. Whichever side you said a bigger number for is the side with more."',
-      },
-      commonStruggles: [
-        { pattern: 'Student confuses < and > symbols', response: 'Use the alligator mnemonic: the alligator mouth always opens toward the bigger number because it wants to eat more!' },
-        { pattern: 'Student cannot compare groups without counting', response: 'Encourage one-to-one matching: "Try pointing to one on the left and one on the right. Match them up. Which side has leftovers?"' },
-        { pattern: 'Student reverses ascending/descending order', response: 'Clarify the direction: "Least to greatest means we start with the smallest number. Which is the smallest here?"' },
-        { pattern: 'Student confuses one-more with one-less', response: 'Use the number line: "If we go forward one step from the target, what do we land on? That is one more."' },
-      ],
-      // ORIENT + DISAMBIGUATE beat. The live K failure (2026-07-13) was the tutor
-      // greeting warmly but never READING the on-screen question or NAMING the
-      // specific comparison — the child (a non-reader) never learned what to decide.
-      // aiDirectives render into the standalone system prompt AND the lesson
-      // [PRIMITIVE SWITCH]/greeting injection, so this survives the "one sentence"
-      // transition cap that drops a soft component sendText clause.
-      aiDirectives: [
-        {
-          title: 'READ THE QUESTION ALOUD AND ASK THE SPECIFIC COMPARISON — the student is a K–1 child who cannot read',
-          instruction:
-            'The student CANNOT read the instruction on screen — you are their voice. '
-            + 'Whenever a new challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is to '
-            + 'say, in one warm child-friendly sentence, exactly what to do — and NAME the specific choice so the child knows what they are deciding. '
-            + 'Match the wording to the challenge type ({{challengeType}}): '
-            + 'compare-groups → "Which side has MORE — the left side or the right side? Tap that side. If they are the same, tap the equals in the middle."; '
-            + 'compare-numbers → "Which number is bigger, {{leftNumber}} or {{rightNumber}}? Tap the bigger number. If they are the same, tap the equals sign in the middle." (a reader who sees alligator mouths can pick the mouth that eats the bigger number instead); '
-            + 'one-more-one-less → we start at {{targetNumber}}, and you voice EVERY question the screen shows (askFor: {{askFor}}), giving "one less" exactly the same attention as "one more": '
-            + 'if it asks for one more, say "Find the number that is one MORE than {{targetNumber}} and tap it."; if it asks for one less, say "Find the number that is one LESS than {{targetNumber}} and tap it."; '
-            + 'if it asks for BOTH, voice both asks equally — "Find one MORE than {{targetNumber}}, and also find one LESS than {{targetNumber}} — tap a number for each." Never skip or shortchange the "one less" side; '
-            + 'order → "Let\'s put these numbers in order. Which one is the smallest? Tap it first." '
-            + 'Reading and asking the question IS your greeting for this activity — this overrides any instruction to keep the transition to a single sentence. '
-            + 'Never just say "let\'s compare!" and stop, and NEVER say which side or which answer is correct — only ask the question. Then wait for the child to act.',
-        },
-      ],
-    },
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'compare_groups',
-        affordances: { representation: 'pictorial', answers: ['tap'] },
+        affordances: { representation: 'pictorial', answers: ['tap', 'spoken'] },
         label: 'Compare Groups (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3420,7 +3190,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'one_more_less',
-        affordances: { representation: 'symbolic', answers: ['tap'] },
+        affordances: { representation: 'symbolic', answers: ['tap', 'spoken'] },
         label: 'One More / One Less (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3429,7 +3199,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare_numbers',
-        affordances: { representation: 'symbolic', answers: ['tap'] },
+        affordances: { representation: 'symbolic', answers: ['tap', 'spoken'] },
         label: 'Compare Numbers (Scaffold 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3447,6 +3217,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    ...bossEntry(comparisonBuilderCard),
   },
   {
     id: 'pattern-builder',
@@ -3556,22 +3327,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along, predict landing spots, identify skip values, fill missing numbers, and connect to multiplication facts. Parallel array visualization links skip counting to multiplication. Supports forward and backward counting. ESSENTIAL for grades 1-3 skip counting, multiplication foundations, and number pattern recognition.',
     constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type', 'spoken'], role: ['visualize', 'apply'], minutes: 4 },
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'On predict, find the skip value, multiplication, and a fill missing item with one "?", the learner may '
-        + 'say the number or type it and press Check: the next landing (predict), the hidden number, how far each jump '
-        + 'goes, or how many jumps reach the number (the box completes "? × jump size = number reached"). A spoken answer '
-        + 'is a real answer, so tell them plainly whether it is right; a Check is checked by the activity. Count along is '
-        + 'tap only: the learner taps the number where the character lands next, one jump at a time, then presses Check, '
-        + 'and a tap further on is a miss. A fill missing item with two or more "?" is typed, one number at a time. '
-        + 'Before the learner has answered, never say the answer, never count on past the character or across a "?", '
-        + 'never give the difference between two landings when the jump size is asked, and never count the jumps to the '
-        + 'end. Ask what changes from one number to the next. Say the instruction in your own words first. You cannot '
-        + 'tap, type or jump for the learner.',
-      // The runner's own check (`skipMiss`); levers in skipCountingLevers.ts.
-      misses: missLists(SKIP_MISSES_BY_MODE),
-    },
     evalModes: [
       {
         evalMode: 'count_along',
@@ -3593,8 +3348,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fill_missing',
-        // Spoken only on a one-gap item (the easy tier); two or more gaps are typed one at a time, so not tagged spoken.
-        affordances: { answers: ['type'] },
+        // Spoken on a one-gap item (the easy tier); two or more gaps are typed one at a time.
+        affordances: { answers: ['type', 'spoken'] },
         label: 'Fill Missing (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3620,32 +3375,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Link skip counting to multiplication facts.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is skip counting by {{skipValue}}s. Direction: {{direction}}. Current position: {{currentPosition}}. Jump count: {{jumpCount}}. Challenge: {{instruction}}. Challenge type: {{challengeType}}. Attempt: {{attemptNumber}}. Current streak: {{currentStreak}}.',
-      contextKeys: ['skipValue', 'direction', 'currentPosition', 'jumpCount', 'instruction', 'challengeType', 'attemptNumber', 'currentPhase', 'currentStreak', 'landingSpots', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Let\'s count together by {{skipValue}}s: {{landingSpots}}... what comes next?"',
-        level2: '"You\'re at {{currentPosition}}. Add {{skipValue}} more. What is {{currentPosition}} + {{skipValue}}?"',
-        level3: '"You made {{jumpCount}} jumps of {{skipValue}}. That\'s {{jumpCount}} × {{skipValue}} = {{currentPosition}}! Skip counting IS multiplication!"',
-      },
-      commonStruggles: [
-        { pattern: 'Losing count rhythm', response: '"Let\'s slow down. Start from the beginning: {{landingSpots}}. Say each number as the character lands!"' },
-        { pattern: 'Prediction errors', response: '"Think about adding {{skipValue}} to {{currentPosition}}. Use your fingers if you need to!"' },
-        { pattern: 'Not seeing multiplication connection', response: '"Count the jumps: {{jumpCount}}. Each jump is {{skipValue}}. So {{jumpCount}} groups of {{skipValue}} = {{currentPosition}}. That\'s multiplication!"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'RHYTHMIC COUNTING APPROACH',
-          instruction:
-            'Count along rhythmically with the student: "5... 10... 15... 20!" '
-            + 'Use a playful, rhythmic cadence. Celebrate streaks: "3 in a row! You\'re on fire!" '
-            + 'Connect to multiplication naturally: "4 jumps of 5 is 4 times 5. That\'s 20!" '
-            + 'For digit patterns: "Look at the ones digits when counting by 5s: 5, 0, 5, 0... see the pattern?" '
-            + 'For backward counting: "Now let\'s go backwards! Countdown: 20... 15... 10..."',
-        },
-      ],
-    },
     supportsEvaluation: true,
+    ...bossEntry(skipCountingCard),
   },
   {
     id: 'hundreds-chart',
@@ -3692,65 +3423,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Determine the skip interval from highlighted cells.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is working with a hundreds chart. Challenge type: {{challengeType}}. Instruction: {{instruction}}. Skip value: {{skipValue}}. Start number: {{startNumber}}. Given cells: {{givenCells}}. Attempt: {{attemptNumber}}. Cells selected so far: {{selectedCount}}.',
-      contextKeys: ['challengeType', 'instruction', 'skipValue', 'startNumber', 'givenCells', 'attemptNumber', 'currentPhase', 'selectedCount'],
-      scaffoldingLevels: {
-        level1: '"Look at the chart. Can you see which numbers are highlighted? What do they have in common?"',
-        level2: '"The pattern skips by {{skipValue}}. Start at {{startNumber}} and count by {{skipValue}}s: {{startNumber}}, then add {{skipValue}}..."',
-        level3: '"Let me help: starting at {{startNumber}}, count by {{skipValue}}s. Look at the column — numbers that end in the same digit are in the same column. The pattern goes: {{startNumber}}, {{startNumber}} + {{skipValue}}, {{startNumber}} + {{skipValue}} + {{skipValue}}..."',
-      },
-      commonStruggles: [
-        { pattern: 'Missing cells in highlight sequence', response: '"Count carefully by {{skipValue}}s from {{startNumber}}. Say each number out loud as you click it: {{startNumber}}, then add {{skipValue}}..."' },
-        { pattern: 'Clicking wrong cells in complete sequence', response: '"Look at the numbers already highlighted. What is the difference between each one? That tells you the skip value!"' },
-        { pattern: 'Cannot identify the visual pattern', response: '"Look at where the highlighted cells sit. Are they in the same column (vertical line)? The same row? Or do they make a diagonal? Columns mean the ones digit stays the same!"' },
-        { pattern: 'Wrong skip value guess', response: '"Pick any two highlighted numbers next to each other. Subtract the smaller from the bigger — that difference IS the skip value!"' },
-      ],
-      // ORIENT beat (reader-fit PRE 2026-09-05): K lessons open counting-to-10
-      // objectives on this board, and the child cannot read the instruction.
-      // aiDirectives render into the standalone prompt AND the lesson greeting /
-      // [PRIMITIVE SWITCH] injection, so the beat survives the one-sentence cap
-      // that drops a component sendText clause alone.
-      aiDirectives: [
-        {
-          title: 'SAY THE INSTRUCTION — THE STUDENT MAY NOT BE ABLE TO READ IT',
-          instruction:
-            'At the start of the activity ([PRIMITIVE SWITCH] or [ACTIVITY_START]) and on every [NEXT_ITEM], your FIRST action is to say the current instruction out loud in child terms: "{{instruction}}". '
-            + 'On a small board (numbers to 10 or 20) the task is counting in order: "Tap 1, then 2, then 3, all the way to the end." '
-            + 'Saying the instruction IS your greeting for this activity and overrides any one-sentence cap. Never tell the student to read the screen.',
-        },
-        {
-          title: 'HUNDREDS CHART COACHING',
-          instruction:
-            'Connect grid position to place value: "Numbers in the same column end in the same digit!" '
-            + 'For skip counting: "Let\'s count together: 5, 10, 15, 20... see how they make a pattern on the chart?" '
-            + 'Highlight spatial patterns: "Counting by 10s goes straight down — same column!" '
-            + 'For Grade 1: keep to 2s, 5s, 10s. For Grade 2-3: introduce 3s, 4s, and diagonals. '
-            + 'Celebrate pattern discovery: "You found it! Counting by 5s makes two columns — the 5s and the 0s!"',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'On identify the pattern and find the skip value the learner may say the answer or tap the choice and press '
-        + 'Check; a spoken answer is a real answer, so tell them plainly whether it is right. A Check is checked by the '
-        + 'chart. Highlighting and completing a pattern are tap only: the learner taps the numbers and presses Check. The '
-        + 'learner may not read the instruction: say it in your own words first; on a board that ends at 10 or 20 the task '
-        + 'is counting in order, one tap per number. Which numbers belong, the shape the highlighted cells make and the '
-        + 'skip value are the answers: before the learner has answered, never say them, never count the pattern on past '
-        + 'the highlighted numbers, and never give the difference between two highlighted numbers. You cannot tap or pick '
-        + 'for the learner.',
-      // The chart's own check (`hundredsChartMiss`); identify_pattern names what the chosen description describes.
-      // Levers: hundredsChartLevers.ts (report qa/eval-reports/hundreds-chart-levers-2026-10-08.md).
-      misses: missLists<HundredsChartMiss>({
-        highlight_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
-        complete_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
-        identify_pattern: ['chose_rows', 'chose_columns', 'chose_diagonal', 'chose_scattered'],
-        find_skip_value: ['twice_the_step', 'half_the_step', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
+    ...bossEntry(hundredsChartCard),
   },
   {
     id: 'regrouping-workbench',
@@ -4671,125 +4345,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ordinal-line',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Say which end is the front, as the task names it, whenever you ask: the end labels are words a pre-reader cannot read. The place labels under the line stay hidden until an answer is credited, '
-        + 'because on a spoken item the label is the answer. A story item\'s story and a build item\'s clues are never printed: '
-        + 'say them aloud as the task gives them before the learner answers. Wherever the answer is a place word, the counting '
-        + 'number said alone (three for third) is not the answer; where it is a name, a pointing word such as "that one" is not. '
-        + 'The line checks a build itself once the learner stops touching, whether or not every place is filled; talk about a '
-        + 'part-built line is teaching, not a verdict. You cannot move, place, mark or count the pictures.',
-      // build_sequence publishes levers (`ordinalLineLevers.ts`, handoff 21 M2), the spoken modes theirs
-      // (`ordinalLineSpokenLevers.ts`, handoff 23); every miss is answered.
-      levers: true,
-      // The line's own check of a build (`lineMiss`), and the four spoken modes' known wrong answers (`ordinalSpokenMisses`).
-      misses: missLists<LineMiss | SpokenOrdinalMiss>({
-        build_sequence: ['place_left_empty', 'reversed', 'two_swapped', 'other_order'],
-        identify: ['cardinal_for_ordinal', 'wrong_end', 'next_to_place'],
-        match: ['cardinal_for_ordinal', 'next_to_place'],
-        relative_position: ['said_anchor', 'wrong_side'],
-        sequence_story: ['cardinal_for_ordinal', 'next_to_place'],
-      }),
-    },
+    ...bossEntry(ordinalLineCard),
     misconceptionScope: 'primitive',
-    description: 'Live tutor-judged ordinal positions (DI modality) on a line of characters in a race, parade, lunch line, train or bookshelf. The Live tutor names which end is the FRONT, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill and the grade: at Kindergarten they SAY THE NAME of the one in the place the tutor asks for, and at Grade 1 the tutor names a character and they SAY ITS PLACE (identify — one eval mode, band-split, because naming the place is the harder rung and is the vocabulary the standard is about); they READ ONE PLACE SYMBOL ALOUD, one card at a time (match); they SAY THE NAME of the one right before or right after a marked place (relative-position); they LISTEN to a spoken story and SAY the place one character has in it (sequence-story); and they answer WITH THEIR HANDS by putting pictures into places from spoken clues (build-sequence) — there the arrangement IS the answer. Builds the ordinal vocabulary first through tenth by SAYING it. ESSENTIAL for Kindergarten and Grade 1 number sense.',
+    description: 'Live tutor-judged ordinal positions (DI modality) on a line of characters in a race, parade, lunch line, train or bookshelf. The Live tutor names which end is the FRONT, asks one item at a time and judges what the child says; the activity checks a build. What the child produces depends on the skill and the grade: at Kindergarten they SAY THE NAME of the one in the place the tutor asks for, and at Grade 1 the tutor names a character and they SAY ITS PLACE (identify — one eval mode, band-split, because naming the place is the harder rung and is the vocabulary the standard is about); they READ ONE PLACE SYMBOL ALOUD, one card at a time (match); they SAY THE NAME of the one right before or right after a marked place (relative-position); they LISTEN to a spoken story and SAY the place one character has in it (sequence-story); and they answer WITH THEIR HANDS by putting pictures into places from spoken clues (build-sequence) — there the arrangement IS the answer. Builds the ordinal vocabulary first through tenth by SAYING it. ESSENTIAL for Kindergarten and Grade 1 number sense.',
     constraints: 'Best for grades K-1. Requires a microphone: four of the five answers are spoken and judged by the Live tutor, and there is no Check button, no Next button, no multiple-choice row, no matching grid and no tap-on-the-line anywhere. Positions run 1-10 so every spoken place word is a single benched word (first..tenth); maxPosition 5 for Kindergarten, up to 10 for Grade 1, and a line shorter than 3 has no ordinal work in it. Character names are read aloud and said back, so they must be plain sayable names, tellable apart by ear, and must never contain a position or a number — a character called First-Place Freddie or Number Three answers the question out loud. Story challenges are HEARD, not read: at most 5 characters, under 60 words, no quotation marks. Build challenges give at most 4 spoken clues, which is what a child can hold from speech. A challenge whose answer key disagrees with its target position, whose printed word and printed symbol are different ordinals, or whose clues leave a gap in the line is discarded before the child ever sees it.',
     // reader: 'none' at the primitive level — every mode but `match` is spoken/hands (no Check,
     // no multiple-choice row, no tap-on-the-line, per constraints above); `match` alone requires
     // reading a printed ordinal symbol aloud ("READ ONE PLACE SYMBOL ALOUD"), so it is overridden
     // to 'emerging' below. No dedicated qa/reader-fit PRE file for this primitive.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED ordinal position practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
-      // line of its own. A quoted hint here is a sanctioned-sounding
-      // replacement for the scripted correction at exactly the moment 18c makes
-      // the model want one — it opens with neither sentinel, so the engine sees
-      // no verdict and the correction counter stalls. The ladder commands script
-      // fidelity; it never supplies an alternative. The click-era ladder here
-      // was a three-rung reveal that ended by counting the answer out for the
-      // child, which is now the CORRECTION's job and must never be improvised
-      // on top of it.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count the line aloud and never name any part of the answer.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the scripted "My turn:" correction from the cue again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction line counts the line from the front and re-asks for you. Never invent encouragement, a new question, a softer hint, or a counting walk of your own.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child looking and counting — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Counts from the wrong end of the line and names the mirror-image one', response: 'This is the mistake the activity is for, and the scripted correction handles it AFTER the attempt is judged: it counts from the front and re-asks. Speak only that line, and never interrupt mid-count.' },
-        { pattern: 'Says the counting number instead of the place word (three for third)', response: 'That says how many, not which one, so it is WRONG however close it sounds: speak the scripted "My turn:" correction, which is where the difference between the two words gets taught.' },
-        { pattern: 'Names the character the question POINTS AT instead of its neighbour', response: 'That is the anchor, not the answer, so it is wrong: speak the scripted correction, which counts to the anchor and then names the one beside it.' },
-        { pattern: 'Answers with a pointing word instead of a name (that one, the next one)', response: 'That does not answer the question, so it is wrong: speak the scripted correction, which asks for the name again.' },
-        { pattern: 'Counts out loud on the way to a place (first, second, third)', response: 'That is the child working, not answering. Only the word they FINISH on is their answer — judge that, and count a correct landing as correct.' },
-        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it. '
-            + 'In particular, never count the line out loud before the first ask and never say which end is which beyond what the cue says.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE AND BY GRADE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants — this activity asks for two different kinds and you must never assume which. '
-            + 'On identify the answer is EITHER one character name OR one place word, and the cue says which: at Kindergarten the child names the one in the place you asked for, at Grade 1 you name a character and the child says its place. '
-            + 'On match the answer is the PLACE WORD the card shows — first, second, third and so on. '
-            + 'On relative-position the answer is ONE character name, and a pointing word with no name does not answer the question. '
-            + 'On sequence-story the answer is the PLACE WORD one character has in the story you just read. '
-            + 'Wherever the answer is a place word, the plain counting number said on its own — three for third — is WRONG, not close: it says how many rather than which one, and that is the confusion this activity exists to undo. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a HANDS item (build-sequence) the child answers by putting the pictures into places, and you are told what line they made and whether it matches. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another place, or the next item, '
-            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong place.',
-        },
-        {
-          title: 'NEVER COUNT THE LINE ALOUD',
-          instruction:
-            'Counting the characters from the front is the one thing this activity trains, so it belongs to the child. '
-            + 'Never count out loud during their turn, never read the place labels off the screen, and never say how many are in the line. '
-            + 'The scripted correction counts it with them, and that is the only time it is ever said.',
-        },
-        {
-          title: 'BUILDING ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no naming which picture goes where. '
-            + 'You will be told what line they made and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never count for them, and never prompt while the child is looking at the line. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer. On a story item that means reading the whole story again, because it is never printed.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'identify',
@@ -5176,11 +4740,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'math-fact-fluency',
     description: 'Math fact fluency practice with 5 progressive challenge types: visual facts with dot arrays/ten-frames, bare equation solving, missing number problems, visual-equation matching, and aid-free rapid recall. Builds automaticity for addition and subtraction facts within 3, 5, or 10 through calm, untimed practice (no countdown, no time pressure). Perfect for K-1 fact fluency development. ESSENTIAL for Kindergarten and Grade 1 math fact recall.',
     constraints: 'Facts limited to addition and subtraction within maxNumber (3, 5, or 10). Visual aids only in visual-fact and match phases. Rapid-recall (speed-round) has no multiple choice and no visual aids. No timers — students answer at their own pace; response time is measured silently for the automaticity signal only.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'type'], role: 'apply', minutes: 4 },
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap', 'type'], role: 'apply', minutes: 4 },
     evalModes: [
       {
         evalMode: 'visual_fact',
-        affordances: { representation: 'pictorial', answers: ['tap'] },
+        affordances: { representation: 'pictorial', answers: ['spoken', 'tap'] },
         label: 'Visual Fact (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -5198,7 +4762,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'equation_solve',
-        affordances: { representation: 'symbolic', answers: ['tap'] },
+        affordances: { representation: 'symbolic', answers: ['spoken', 'tap'] },
         label: 'Equation Solve (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -5207,7 +4771,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing_number',
-        affordances: { representation: 'symbolic', answers: ['type'] },
+        affordances: { representation: 'symbolic', answers: ['spoken', 'type'] },
         label: 'Missing Number (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -5216,7 +4780,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'speed_round',
-        affordances: { representation: 'symbolic', answers: ['type'] },
+        affordances: { representation: 'symbolic', answers: ['spoken', 'type'] },
         label: 'Rapid Recall (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -5224,45 +4788,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Rapid recall of bare facts without visual aids or countdown — the top automaticity rung. Response time is measured silently; the student is never rushed.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is practicing math fact fluency. Current challenge type: {{challengeType}}. Equation: {{equation}} ({{operation}}). Unknown position: {{unknownPosition}}. This is about building automaticity through calm, untimed practice — there is no timer, so never rush the student or mention speed.',
-      contextKeys: ['challengeType', 'equation', 'operation', 'unknownPosition', 'correctAnswer', 'operand1', 'operand2', 'result', 'attemptNumber', 'streak', 'accuracy', 'averageTime'],
-      scaffoldingLevels: {
-        level1: '"Take your time! Look at the numbers. What do you get when you put {{operand1}} and {{operand2}} together?"',
-        level2: '"Think: {{operand1}}... then count on {{operand2}} more. Use your fingers if you need to!"',
-        level3: '"Let me help: start at {{operand1}}, now count up {{operand2}} more... what number do you land on?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student answers correctly but is still counting on fingers', response: 'Affirm correctness and reassure: "You got it! The more you practice, the more these will just pop into your head — no rush."' },
-        { pattern: 'Student struggles with subtraction facts', response: 'Connect to addition: "If 3 + 2 = 5, then 5 - 2 = ?"' },
-        { pattern: 'Student struggles with missing-number problems', response: 'Encourage think-backwards strategy: "If 3 + __ = 5, think: what do I add to 3 to get to 5?"' },
-        { pattern: 'Student seems anxious or rushed', response: 'Reassure that there is no clock: "Take all the time you need — we are just practicing getting the right answer."' },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'When the answer is a number, the learner may say it aloud or tap it (or set it with the − and + buttons and '
-        + 'press Submit); a spoken number is a real answer, so tell the learner plainly whether it is right. A tap or Submit '
-        + 'is checked by the activity. A match between an equation and a picture is answered by tapping only, and you are '
-        + 'not told which one matches. The learner may not '
-        + 'read: say the instruction and the printed fact in your own words first. There is no timer: never mention speed, '
-        + 'never hurry the learner, and let them think. Before the learner has answered, never say the answer, how many a '
-        + 'picture shows, or which choice matches; coach only as far as the support tier allows (count the picture, count '
-        + 'on from the bigger number, think backwards from the total). You cannot tap or enter a number for the learner.',
-      // The activity's own check (`mathFactMiss`), every mode.
-      misses: sameMisses<MathFactMiss>(['visual_fact', 'match', 'equation_solve', 'missing_number', 'speed_round'],
-        ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-      // speed_round is aid-free recall (user ruling 2026-10-02): a picture would make it equation_solve, and recall
-      // has no step to make simpler, so none of its misses has a lever.
-      unanswered: { speed_round: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] },
-    },
+    ...bossEntry(mathFactFluencyCard),
   },
   {
     id: 'addition-fact-strategies',
-    description: 'Strategy-sequenced ADDITION FACTS WITHIN 20 for Grades 1-2 math (1.OA.C.6 add within 20 using strategies; 2.OA.B.2 fluently add within 20 from memory). Single-digit addends, sums 0-18. Each session practises ONE fact family in the classic strategy order: +0 facts, +1 facts (counting on one), doubles (3+3, 7+7), turn-around / commutative facts (3+8 and 8+3), +2 facts (counting on two), then the remaining "big facts" in bands (3s and 4s, 5s and 6s, 7s and 8s, mixed). Opens with a one-card worked example of the strategy (hop strip for counting on, mirrored butterfly wings for doubles, flipped cards for turn-around) on a fact the session never asks, then 6-10 facts the student answers by typing the sum on a 0-18 number pad — production recall, no multiple choice. A miss reveals strategy help (the known flipped fact, tappable object groups to count, then the count said aloud) and the missed fact returns two facts later. Untimed; response time is measured silently for automaticity. Use for addition fact strategies and fact fluency within 20. Differs from math-fact-fluency (K-1, within 10, addition AND subtraction, five picture-to-recall challenge types) and from strategy-picker (compares several strategies on ONE equation).',
+    description: 'Strategy-sequenced ADDITION FACTS WITHIN 20 for Grades 1-2 math (1.OA.C.6 add within 20 using strategies; 2.OA.B.2 fluently add within 20 from memory). Single-digit addends, sums 0-18. Each session practises ONE fact family in the classic strategy order: +0 facts, +1 facts (counting on one), doubles (3+3, 7+7), turn-around / commutative facts (3+8 and 8+3), +2 facts (counting on two), then the remaining "big facts" in bands (3s and 4s, 5s and 6s, 7s and 8s, mixed). Opens with a one-card worked example of the strategy (hop strip for counting on, mirrored butterfly wings for doubles, flipped cards for turn-around) on a fact the session never asks, then 6-10 facts the student answers by saying the sum or tapping it on a 0-18 number pad — production recall, no multiple choice. When the student is stuck the tutor can put strategy help on screen (the known flipped fact, hops from the bigger number, a near double, tappable object groups to count) or open a smaller fact first. Untimed; response time is measured silently for automaticity. Use for addition fact strategies and fact fluency within 20. Differs from math-fact-fluency (K-1, within 10, addition AND subtraction, five picture-to-recall challenge types) and from strategy-picker (compares several strategies on ONE equation).',
     constraints: 'Addition only — no subtraction, no missing-addend items. Single-digit addends (0-9), sums 0-18. One strategy family per session, chosen from the lesson topic/intent (a "doubles" lesson gets doubles; a "+1" or "counting on" lesson gets +1; a "turn-around" or "commutative" lesson gets turn-around facts). The manifest must NOT supply specific facts, numbers or answers — the pool service builds the facts deterministically for the chosen family. No timer.',
+    affordances: { representation: 'symbolic', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     // Modes follow the source game's strategy path (+0, +1, doubles, turn-around, +2, big facts).
     // The big-fact bands (3s/4s, 5s/6s, 7s/8s, mixed) are one task identity at different number
     // ranges, so they share one mode and the topic picks the band.
@@ -5274,49 +4807,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'plus_two', label: 'Two More (Step 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['plus_two'], description: 'Recall n + 2 and 2 + n by counting on two from the bigger number.' },
       { evalMode: 'big_facts', label: 'Big Facts (Step 5)', beta: 5.5, scaffoldingMode: 5, challengeTypes: ['facts_3_4', 'facts_5_6', 'facts_7_8', 'facts_mixed'], description: 'Recall the remaining facts with addends 3-9 (sums to 17), by band or mixed, toward automatic recall.' },
     ],
-    tutoring: {
-      taskDescription: 'The child is recalling addition facts by strategy ({{strategyName}}). Fact {{currentChallenge}} of {{totalChallenges}}: {{fact}}. '
-        + 'They answer by tapping the sum on a 0-18 number pad. Help on screen so far: {{helpShown}}. Comeback of a missed fact: {{comeback}}. '
-        + 'Never say the sum of the current fact before the child has tapped it; the child must produce it.',
-      contextKeys: ['strategyName', 'fact', 'helpShown', 'comeback', 'currentChallenge', 'totalChallenges'],
-      scaffoldingLevels: {
-        level1: '"Which strategy helps here? Think about {{strategyName}}."',
-        level2: '"Which number in {{fact}} is bigger?" Ask only this one question, then start from that number. For doubles, ask instead whether they know that double; for turn-around facts, whether they know the other order.',
-        level3: '"Say the bigger number with me, then count on one step for each of the smaller number, together." Stop before the last number and let the child say it. For doubles or big facts, use a double the child knows that is NOT this fact and add or take one, without saying the sum of this fact.',
-      },
-      commonStruggles: [
-        { pattern: 'Counts all from 1 on a +1 or +2 fact', response: 'Start at the bigger number and count on. "You already have that many. Just add the one (or two) more."' },
-        { pattern: 'Answers 0 or the other addend on a +0 fact, or adds one', response: 'Adding zero adds nothing: "How many did we add? None. So how many do we have?"' },
-        { pattern: 'Misses a turn-around fact it already knows in the other order', response: 'Point to the known-fact card once it shows: "Same numbers, other order. The total does not change."' },
-        { pattern: 'Taps a number one away from the sum (off by one)', response: 'Count on again slowly from the bigger number, one finger per step.' },
-        { pattern: 'Stuck on a big fact like 7 + 8', response: 'Bridge from a double: ask "What is 7 + 7?" and let the child answer it, then "This one has one more." Never state the sum of the double or of the current fact yourself.' },
-        { pattern: 'Misses a comeback fact again', response: 'Keep it short and calm; count the objects together, then move on.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ADDITION FACT TAGS',
-          instruction: '[STRATEGY_INTRO]: say the strategy in one short sentence. [NEXT_ITEM] and [COMEBACK]: read the fact as "a plus b?" and nothing else. '
-            + '[ANSWER_INCORRECT]: one short sentence that points at the help now on screen; never the sum and never a number that narrows it ("it is more than ten"). '
-            + '[ANSWER_CORRECT]: a few words of praise; you may say the full fact. [ALL_COMPLETE]: celebrate briefly and name the strategy. '
-            + 'The child is timed silently; never mention speed or hurry them.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Grade 1', 'Grade 2'],
-      guidance: 'The learner may say the total aloud or tap it on a 0 to 18 number pad; a spoken number is a real answer, so '
-        + 'tell the learner plainly whether it is right. A tap is checked by the activity. Each session practises one strategy, named on screen; teach that strategy (adding zero, '
-        + 'one more, doubles, the turn-around, two more, or using a fact they know for the big facts), not counting all from '
-        + 'one. The first fact sits beside a worked example of a different fact. There is no timer: never mention speed or '
-        + 'hurry the learner. Before the learner has answered, never say the total, count the objects aloud to their end, or '
-        + 'say a number that narrows it. After a miss the screen adds help on its own (the flipped fact, then objects to '
-        + 'count); point to it in your own words. You cannot tap a number for the learner.',
-      // The activity's own check (`additionFactMiss`), every mode.
-      misses: sameMisses<AdditionFactMiss>(['plus_zero', 'plus_one', 'doubles', 'turnaround', 'plus_two', 'big_facts'],
-        ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-    },
+    ...bossEntry(additionFactStrategiesCard),
   },
   {
     id: 'strategy-picker',
@@ -5471,38 +4963,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'length-lab',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'On compare and indirect the learner may say the answer or tap one choice; a spoken answer is a real '
-        + 'answer, so tell them plainly whether it is right. A tap is checked by the activity. Laying units along an object '
-        + '(+ and Check), measuring with two units, and putting three objects in order (Check Order) are tap only, checked '
-        + 'by the activity; you are not told any length, unit count or order. Before the learner has answered, and after '
-        + 'a wrong answer, never say which object is longer or '
-        + 'shorter, how many units reach the end, whether to add or take away units, which unit was needed more, or where an object goes: ask the learner to look where their units end against the object. Teaching is how to '
-        + 'measure: line up the starting ends and look at the far ends; lay units end to end with no gaps and no overlaps, '
-        + 'from one end of the object to the other, and count each one once; compare two objects at a time; on indirect, '
-        + 'read the clues as a chain through the reference object. A guess is never marked: any number is fine, and do not '
-        + 'say whether it is close. When unit marks or the fit line are hidden on screen, do not count cells or say whether '
-        + 'the units fit. The learner may not read: read the instruction, the clues and the choices aloud. You cannot tap, '
-        + 'lay or place for the learner.',
-      // Every mode declares levers (`lengthLabLevers.ts`); every miss is answered by one on every item.
-      levers: true,
-      // The activity's own check (`lengthMiss`), every mode.
-      misses: missLists<LengthMiss>({
-        compare: ['reversed', 'said_same', 'missed_same'],
-        estimate_then_tile: ['tiled_to_guess', 'one_short', 'one_over', 'short', 'over'],
-        two_unit_compare: ['chose_bigger_unit'],
-        tile_and_count: ['one_short', 'one_over', 'short', 'over'],
-        order: ['reversed_order', 'swapped_pair', 'other_order'],
-        indirect: ['chose_shorter', 'said_same'],
-      }),
-    },
+    ...bossEntry(lengthLabCard),
     description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. The units can be classroom objects (cubes, paper clips, bears, erasers) or the body a child already has (hands, fingers, feet) when the objective asks them to measure with their hands. Two more K tasks: GUESS how many units it will take before any unit appears and then measure to find out, and measure the SAME object with two different-sized units and say which one was needed more of. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
     constraints: 'Objects limited to 1-12 unit lengths. In estimate_then_tile the guess is recorded and never marked wrong — the measuring is what is scored. In two_unit_compare the app picks both units and both counts so the object is a whole number of each, and the bigger unit is drawn wider so "fewer of them reach the end" is visible rather than asserted. K: compare, tile and order. G1 adds indirect (transitive reasoning through a reference object). `order` came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): every object is drawn as a length bar and the picker chip carries the same colour, so the child matches a picture rather than reading a name. K.MD.2 asks for exactly this.',
     // reader: 'none' — BACKLOG direct-manipulation sibling audit (qa/reader-fit/BACKLOG.md,
     // "Systemic items" section) cleared length-lab: "TilingWorkspace derives from placedUnits =
     // good" — the answer comes from what the child tiles/points at, never a read-then-type proxy.
-    affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
+    affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'compare',
@@ -5559,53 +5026,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Compare two objects transitively using a reference object.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is measuring and comparing lengths using {{unitType}}. Grade: {{gradeBand}}. Challenge type: {{challengeType}}. Comparing {{objectName0}} and {{objectName1}}.',
-      contextKeys: ['unitType', 'gradeBand', 'challengeType', 'objectName0', 'objectName1', 'correctAnswer', 'challengeCount'],
-      scaffoldingLevels: {
-        level1: '"Look at both objects carefully. Which one sticks out farther? Which one is longer?"',
-        level2: '"Put your finger at the start of each object and slide to the end. The {{objectName0}} goes to here, and the {{objectName1}} goes to here. Which one goes farther?"',
-        level3: '"Line up both objects at the same starting point. Now look at the other end — the one that sticks out farther is longer. Count the units if you need to: {{objectName0}} is {{objectLength0}} units, {{objectName1}} is {{objectLength1}} units."',
-      },
-      commonStruggles: [
-        { pattern: 'Student does not align objects at the same starting point', response: '"Make sure both objects start at the same line! If one starts ahead, it might look longer even if it is not."' },
-        { pattern: 'Student confuses longer and shorter', response: '"Longer means it takes up MORE space. Shorter means it takes up LESS space. Which object takes up more space?"' },
-        { pattern: 'Student leaves gaps between tiles when measuring', response: '"Put each tile right next to the last one with no space in between. Gaps make the count wrong!"' },
-        { pattern: 'Student overlaps tiles when measuring', response: '"Each tile should just touch the next one — no stacking on top! Start at one end and line them up carefully."' },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'analog-clock',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'On read, match, elapsed and hand_name the learner may say the answer or pick it and press Check; a spoken '
-        + 'answer is a real answer, so tell them plainly whether it is right. A Check is checked by the activity. Setting the '
-        + 'hands, counting the face and picking a face on hear_time are tap only. Before the learner has answered, and after a '
-        + 'wrong answer, never say the time a clock shows, which choice or face is right, whether the short or the long hand is '
-        + 'the one asked for, or how long something took. Teaching is fine: one hand is short and one is long, ask which '
-        + 'number the short hand is on or just past, count by fives round the face together without saying where the count '
-        + 'stops. On hand_name which hand tells the hour or the minutes is the question, and there are only two: say how '
-        + 'each hand moves (fast or slow), never tell the learner to pick the other hand, even after a wrong answer, and if '
-        + 'they say only "the hour hand", ask which one that is. When the minute numbers or the hand legend are hidden, do '
-        + 'not supply them: ask. On set_time the time to show is the task, so you may say it, but do not tell the learner '
-        + 'the hands are right before Check. A Kindergarten learner may not read: read the question aloud; on hear_time '
-        + 'saying the time asked for is the task, not the answer. You cannot touch, pick or move anything for the learner.',
-      // Every mode publishes levers (`analogClockLevers.ts`); every miss below is answered by one on every saved payload
-      // item (`analogClockLevers.test.ts`).
-      levers: true,
-      // The activity's own check (`clockMiss`). count_face has none: a number out of order restarts the count, so a
-      // Check is only ever twelve in order.
-      misses: missLists<ClockMiss>({
-        hand_name: ['other_hand'],
-        hear_time: ['next_hour', 'previous_hour', 'wrong_hour'],
-        read: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
-        match: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
-        set_time: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
-        elapsed: ['hour_off', 'too_short', 'too_long'],
-      }),
-    },
+    ...bossEntry(analogClockCard),
     description:
       'Interactive analog clock with draggable hands, digital display sync, and timeline scrubber. '
       + 'Students read clock faces, set times by dragging hands, match analog to digital, and measure elapsed time with a stopwatch. '
@@ -5615,7 +5040,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints:
       'K clock parts (hand_name, count_face, hear_time) need no time-telling at all — the child points, counts round the face, or matches a spoken hour to a face. '
       + 'K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'hand_name',
@@ -5681,117 +5106,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Determine elapsed time using real-time stopwatch',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Student is working on a {{challengeType}} clock challenge. Target time: {{targetTime}}. '
-        + 'Currently showing: {{displayedTime}}. Grade: {{gradeBand}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'challengeType', 'targetTime', 'displayedTime', 'instruction', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Look at where the short hand is pointing. Which number is it closest to?"',
-        level2:
-          '"The short hand shows the hour — it\'s pointing near {{targetTime}}. The long hand shows minutes — when it points straight up, that\'s :00 (o\'clock)."',
-        level3:
-          '"The short hand (hour) points to the hour number. The long hand (minute) tells us the minutes: pointing up is :00, pointing right is :15, pointing down is :30, pointing left is :45. '
-          + 'For {{targetTime}}, the short hand points to the hour and the long hand points to the minutes."',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student confuses hour and minute hands',
-          response:
-            '"The SHORT hand tells the HOUR — it moves slowly. The LONG hand tells the MINUTES — it moves faster. Look for the short one first!"',
-        },
-        {
-          pattern: 'Student reads the number the minute hand points to as the minute value',
-          response:
-            '"When the long hand points to 6, it doesn\'t mean 6 minutes — it means 30 minutes! Each number means 5 more minutes: 1=5, 2=10, 3=15..."',
-        },
-        {
-          pattern: 'Student struggles with half-hour positions',
-          response:
-            '"When the long hand points straight down to 6, that means half past — :30. The hour hand will be halfway between two numbers."',
-        },
-        {
-          pattern: 'Student cannot drag hands to correct position',
-          response:
-            '"Try dragging the long hand first. Point it straight up for :00, straight down for :30. Then check if the short hand is on the right number."',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'coin-counter',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'Counting coins to a total, comparing two groups and making change, the learner may say the answer or type '
-        + 'or tap it and press Check; a spoken answer is a real answer, so tell them plainly whether it is right. A Check is '
-        + 'checked by the activity. Identify, the Kindergarten and Grade 1 count of like coins, and building an amount are '
-        + 'answered on the screen only. On identify the coins are drawn by size and color only: never name, number or point '
-        + 'to the coin to tap; describing what a named coin looks like is teaching. Before the learner has answered, and '
-        + 'after a wrong answer, never say a total, the group with more money, the change, or which coin to add or take '
-        + 'out. When coin values are hidden on screen, do not say what a coin is worth: ask the learner. Counting aloud '
-        + 'together by a coin’s value is teaching; saying where the count ends is not. A Kindergarten or Grade 1 learner may '
-        + 'not read: read the instruction aloud, and on a count of like coins tell them to tap each coin once to count it '
-        + '(at Grade 1, then type the total). On show-amount the learner makes the amount any way they like and presses '
-        + '“I’m done!”. Never say how much is on the tray or how much more is needed; if they stop, invite them to count '
-        + 'what their coins are worth. You cannot tap, place or type for the learner.',
-      // Every mode publishes levers (`coinCounterLevers.ts`); every miss below is answered by one on every saved payload
-      // item (`coinCounterLevers.test.ts`). fewest-coins renders and checks as make-amount, so it has make-amount's.
-      levers: true,
-      // The activity's own check (`coinMiss`), every mode. Kindergarten like coins check themselves on the last tap.
-      misses: missLists<CoinMiss>({
-        identify: ['dime_nickel', 'dime_penny', 'silver_coins', 'other_coin'],
-        'count-like': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
-        'count-mixed': ['counted_coins', 'all_one_kind', 'one_coin_short', 'one_coin_over', 'short', 'over'],
-        compare: ['more_coins', 'said_equal', 'missed_equal', 'reversed'],
-        'make-amount': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
-        'fewest-coins': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
-        'make-change': ['gave_cost', 'gave_paid', 'added', 'short', 'over'],
-        'show-amount': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
-      }),
-    },
+    ...bossEntry(coinCounterCard),
     // Records failed sessions' evidence, named misses included, as skill-scoped observations. Recording only:
     // the generator declares no `learningObservations`, so nothing it builds reads them.
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     description: 'Interactive coin workspace for grades K-3. Students identify coins by appearance, count mixed coin sets, drag coins to make target amounts, compare groups, and make change. Supports pennies, nickels, dimes, and quarters with skip-counting scaffolds. Progressive difficulty from single-coin identification through greedy-algorithm fewest-coins challenges. ESSENTIAL for grades K-3 money skills and financial literacy foundations.',
     constraints: 'Best for grades K-3. K-1: identify coins and count like coins only. Grades 2-3: mixed counting, make-amount, compare, and make-change challenges.',
-    affordances: { representation: 'concrete', answers: ['tap', 'manipulate', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student is working with coins — identifying, counting, or making amounts. Instruction: {{instruction}}. Grade band: {{gradeBand}}.',
-      contextKeys: ['instruction', 'targetCoin', 'correctTotal', 'targetAmount', 'correctGroup', 'correctChange', 'displayedCoins', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"What coin is this? Look at its size and color."',
-        level2: '"A dime is 10¢. Count by 10s for each dime, then add the pennies."',
-        level3: '"You have 2 dimes and 3 pennies. 10, 20... then 21, 22, 23. The total is 23¢."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing dime/penny (small coin ≠ small value)', response: '"A dime is small but worth 10¢ — more than a big nickel (5¢) or penny (1¢). Size doesn\'t equal value with coins!"' },
-        { pattern: 'Skip-counting by mixed values', response: '"Sort the coins first: quarters, then dimes, then nickels, then pennies. Count the big values first: 25, 50... then 60, 70... then 75, 80..."' },
-        { pattern: 'Making change requires subtraction', response: '"You paid {{targetAmount}}¢ and the item costs less. Subtract the price from what you paid to find the change."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'COIN COACHING APPROACH',
-          instruction:
-            'For K-1: focus on coin recognition — "This small silver coin is a dime. It\'s worth 10 pennies!" '
-            + 'For grade 2: model skip counting — "Let\'s count the dimes: 10, 20, 30. Now add the nickels: 35, 40." '
-            + 'For grade 3: guide efficient strategies — "Start with the biggest coins first. Can you use fewer coins?" '
-            + 'Always connect coin values to skip counting patterns. '
-            + 'Celebrate correct identification and counting streaks.',
-        },
-        {
-          title: 'GRADE 1 COUNT-LIKE — ENACTED TAP COUNT',
-          instruction:
-            'When gradeBand is 1 and the student is counting LIKE coins (single denomination), the coins '
-            + 'on screen are tappable: the student taps each coin once to count it, and the total entry box '
-            + 'appears only after every coin is tagged. When you read the counting instruction, ALSO tell the '
-            + 'student to tap each coin to count it, then type the total — this protocol line is part of the '
-            + 'instruction, even when asked to keep it brief. If the running total is hidden on screen, coach '
-            + 'skip counting out loud ("5, 10, 15…") on struggle, but NEVER state the final total.',
-        },
-      ],
-    },
+    affordances: { representation: 'concrete', answers: ['tap', 'manipulate', 'type', 'spoken'], role: 'apply', minutes: 5 },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -5805,7 +5131,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count-like',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Count Like Coins (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -5870,6 +5196,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'time-sequencer',
+    ...bossEntry(timeSequencerCard),
     description: 'Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, order activity cards that each carry an analog CLOCK FACE at a whole hour, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.',
     constraints: 'Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching, before/after reasoning, duration comparison and clock-sequence. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier\'s perception anchor is a sun-position picture the generator derives from each event\'s typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task. clock-sequence is the ONE exception to the no-clock-at-K rule, and the exception is the objective: K TIME001-03-G asks the child to connect whole-hour times to daily activities in sequence, under the skill "Telling Time to the Hour". Its cards carry an analog FACE, which is a picture, never printed digits — and the generator DROPS any challenge whose times are not all whole hours inside one half of the day, because a 12-hour face cannot separate 8 in the morning from 8 at night.',
     // reader: 'none' — qa/reader-fit/how-it-works-PRE-2026-07-21.md names time-sequencer as the
@@ -5880,51 +5207,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     // time on every card and told the child to read it (10/10 items on the K probe), because
     // resolveSupportStructure had no grade to consult. The tag is true again now that the K band
     // gets a sun-position picture instead — qa/reader-fit/k-band-floor-2026-09-08.md.
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student is ordering daily events or matching activities to times of day. Connects to personal routines.',
-      contextKeys: ['instruction', 'events', 'correctOrder', 'event', 'correctPeriod', 'referenceEvent', 'relation', 'schedule', 'targetTime', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Think about your day. What do you do first when you wake up?" At gradeBand K you may also point at the sky picture on the cards — the sun comes up, climbs, goes down, then it is dark — but never name a time, a clock or a number.',
-        level2: '"Breakfast comes in the morning. Is the morning before or after lunchtime?"',
-        level3: '"Here\'s the order: wake up comes first, then breakfast, then school. You got 2 out of 3 right!"',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing afternoon/evening boundary', response: '"Afternoon is after lunch but before dinner. Evening starts around dinnertime when it gets dark."' },
-        { pattern: 'Sequencing events they don\'t personally experience (e.g., "go to work")', response: '"Think about what grown-ups do — they go to work after breakfast, like you go to school!"' },
-        { pattern: 'Reading clock times on schedules (bridge to AnalogClock) — GRADE 1-2 ONLY; at gradeBand K no PRINTED clock time is ever on screen and you must never introduce one. The ONE exception is challengeType clock-sequence, where an analog FACE on each card IS the task', response: '"Look at the number before the colon. If it\'s small like 7 or 8, that\'s morning. If it\'s bigger like 3 or 4, that\'s afternoon."' },
-      ],
-    },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: 'apply', minutes: 5 },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'On a one-choice challenge (a time of day, a card, which takes longer, an activity) the learner may say the '
-        + 'answer or tap it and press Check; a spoken answer is a real answer, so tell them plainly whether it is right. A tap is checked by '
-        + 'the activity. Putting cards in order is tap only: the learner taps the cards in the order they happen, then '
-        + 'presses Check; tapping a placed card takes it back out. Before the learner has answered, and after a wrong '
-        + 'answer, never say the order, which card comes first or next, '
-        + 'the time of day, which activity takes longer, or what happens at the schedule time. Asking about the learner’s '
-        + 'own day (what do you do when you wake up? is it light or dark then?) is teaching; then stop and let the learner '
-        + 'answer: never answer it for them or tie it to a choice (not “that is the morning”, not “a cookie is quick”). At '
-        + 'Kindergarten no clock time is printed: never say a time, a clock or a number, except on clock-sequence, where '
-        + 'each card’s analog face is the task: ask where the short hand points, never say the hour. On read-schedule, '
-        + 'help the learner find the asked time in the table and read across; do not read the activity out. A '
-        + 'Kindergarten or Grade 1 learner may not read: read the instruction and the card names aloud. You cannot tap '
-        + 'or order cards for the learner.',
-      // Every mode publishes a help and a simplify lever (`timeSequencerLevers.ts`); each answers every miss of its mode.
-      levers: true,
-      // The activity's own check (`timeSequencerMiss`), every mode.
-      // A spoken choice names the same ids (`timeSpokenMisses`); the orders stay tap-only.
-      misses: missLists<TimeSequencerMiss>({
-        'sequence-3': ['reversed', 'swapped_pair', 'wrong_first'],
-        'time-of-day': ['next_period', 'far_period'],
-        'sequence-5': ['reversed', 'swapped_pair', 'wrong_first', 'out_of_order'],
-        'before-after': ['other_event'],
-        'duration-compare': ['said_same', 'missed_same', 'shorter_one'],
-        'clock-sequence': ['reversed', 'swapped_pair', 'wrong_first', 'out_of_order'],
-        'read-schedule': ['next_row', 'other_row', 'not_on_schedule'],
-      }),
-    },
     evalModes: [
       {
         evalMode: 'sequence-3',
@@ -6003,43 +5287,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     // family is pure tap-to-enact with no text answer surface, so 'none' is the primitive default
     // and identify/describe are overridden to 'emerging' below. No formal reader-fit PRE verdict.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student identifies, places, or describes positions of objects using spatial vocabulary (above, below, beside, in, between, in front of, behind). Spoken describe_scene answers are judged for both relation and reference object from a fixed YOU viewpoint.',
-      contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'referenceObjectName2', 'scenePerspective', 'options', 'steps', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Look at the picture. Can you point to the {{targetObject.name}}?"',
-        level2: '"The {{targetObject.name}} is higher up than the {{referenceObjectName}}. What position word means \'higher up\'?"',
-        level3: '"When something is higher up, we say it is \'above\'. The {{targetObject.name}} is above the {{referenceObjectName}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing "above" and "below" (vertical reversal)', response: '"Think about where the sky is — above! Where the ground is — below! Now look at the picture again."' },
-        { pattern: 'Using "beside" when "between" is more precise (two reference objects)', response: '"Count how many objects are next to it. If there is one on EACH side, we say between."' },
-        { pattern: 'Following multi-step directions while keeping track of already-placed objects', response: '"Let\'s go one step at a time. First, where did you put the last object? Now read just the next direction."' },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'On a word choice the learner says the position word, or taps one and presses Check. A spoken answer is '
-        + 'real: you are told the right word, so tell the learner plainly whether it is right. A tap is checked by the '
-        + 'scene. Placing a thing (a cell tap or a direction step) is tap only, and the scene checks it. Never say the '
-        + 'position word or cell before the learner has answered. On the spoken scene '
-        + 'the learner says where the object is from the YOU arrow, naming the relation and the other object; left '
-        + 'and right are as the learner sees them, and in front of means nearer the arrow. Never give the relation '
-        + 'before an attempt. You cannot pick, tap or place for the learner.',
-      levers: true,
-      // The scene's own check (`spatialMiss`); levers in `spatialSceneLevers.ts`.
-      // describe_scene names only the reversed relation (`spatialSpokenMisses`); the rest of a description is open.
-      misses: missLists<SpatialMiss>({
-        describe_scene: ['opposite_word'],
-        identify: ['opposite_word', 'same_axis_word', 'other_axis_word'],
-        describe: ['opposite_word', 'same_axis_word', 'other_axis_word'],
-        place: ['opposite_cell', 'same_axis_cell', 'other_axis_cell', 'off_line_cell'],
-        place_in: ['other_object', 'next_to_container', 'away_from_container'],
-        place_between: ['next_to_one', 'touches_neither'],
-        follow_directions: ['later_step_cell', 'other_cell'],
-      }),
-    },
+    ...bossEntry(spatialSceneCard),
     evalModes: [
       {
         evalMode: 'identify',
@@ -6105,7 +5354,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Describe a shown left/right or front/behind relation aloud from a fixed YOU viewpoint; the judge requires the relation and reference object.',
       },
     ],
-    audioInput: JUDGED_AUDIO_INPUT,
   },
   {
     id: 'shape-composer',
@@ -6445,107 +5693,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'compare-objects',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The board checks an ordering itself once the learner stops touching; talk about a part-built order is '
-        + 'teaching, not a verdict. Under identify_attribute, the learner\'s own words for the attribute (how long, how tall, '
-        + 'how heavy, how much it holds) are as right as the grown-up word. Under compare_two the answer is one object\'s name; '
-        + 'a pointing word such as "that one" is not an answer. Under non_standard, counting aloud is working; the number the '
-        + 'learner lands on is the answer. You cannot touch, reorder or measure the objects.',
-      // The board's own check of an ordering (`compareOrderMiss`), and the three spoken modes' known wrong answers
-      // (`compareObjectsSpokenMisses`).
-      // order_three publishes levers (`compareObjectsLevers.ts`, handoff 21 M2), the spoken modes theirs
-      // (`compareObjectsSpokenLevers.ts`, handoff 23); every miss is answered.
-      levers: true,
-      misses: missLists<CompareOrderMiss | SpokenCompareMiss>({
-        order_three: ['not_all_placed', 'reversed', 'two_swapped', 'other_order'],
-        compare_two: ['other_object'],
-        identify_attribute: ['other_attribute'],
-        non_standard: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
+    ...bossEntry(compareObjectsCard),
     misconceptionScope: 'primitive',
     description: 'Live tutor-taught measurement comparison on drawings of real-world objects. The Live tutor teaches each item in its own words; the child\'s answer is checked (an ordering by the board itself, a spoken answer from the tutor\'s feedback) and a checked answer advances the lesson. What the child produces depends on the skill: they SAY OUT LOUD what the picture lets us measure — how long, how tall, how heavy, or how much it holds (identify-attribute, both grades); they SAY THE NAME of the object that is longer, taller, heavier or holds more (compare-two, both grades); they SAY THE COUNT of non-standard units laid along an object (non-standard, Grade 1); and they answer WITH THEIR HANDS by touching three objects in order (order-three, Grade 1) — there the arrangement IS the answer. Builds the measurement vocabulary K.MD.1 asks children to SPEAK. ESSENTIAL for Kindergarten and Grade 1 measurement and data (K.MD.1-2).',
     constraints: 'Best for grades K-1. Requires a microphone: three of the four answers are spoken and judged by the Live tutor, and there is no Check button, no attribute chips, no object buttons and no typed number anywhere. Kindergarten uses identify-attribute, compare-two and order-three; non-standard is Grade 1. order-three came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the objects are drawings scaled by visualSize and the answer is the order the child touches them in, so nothing on that path is read. Unit counts run 1-20, so every spoken number is a single word. A comparison whose drawing disagrees with its answer, whose two object names cannot be told apart by ear, or whose attribute menu offers both length and height is discarded before the child ever sees it.',
     // reader: 'none' — "no Check button, no attribute chips, no object buttons and no typed
     // number anywhere" (constraints above); three of four modes are spoken, order_three is hands.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED measurement comparison practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the screen, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a speakable
-      // line of its own. A quoted hint here is a sanctioned-sounding
-      // replacement for the scripted correction at exactly the moment 18c
-      // makes the model want one — it opens with neither sentinel, so the
-      // engine sees no verdict and the correction counter stalls. The ladder
-      // commands script fidelity; it never supplies an alternative.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never compare the objects aloud and never name any part of the answer.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction line models the comparison and re-asks for you. Never invent encouragement, a new question, or a softer hint.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Names the object that is the other way round (says the longer one when asked which is shorter)', response: 'The scripted correction handles this AFTER the attempt is judged: it models how to compare and re-asks. Never interrupt mid-attempt.' },
-        { pattern: 'Answers with a pointing word instead of a name ("that one", "the first one")', response: 'That does not answer the question, so it is wrong: speak the scripted correction, which asks for the name again.' },
-        { pattern: 'Counts the object\'s starting edge as a unit and lands one too many', response: 'The scripted correction counts the units with the child and re-asks. Speak only that line.' },
-        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On identify-attribute the answer is what the picture lets us measure, in the child\'s words or the grown-up word — both are right. '
-            + 'On compare-two the answer is ONE object name and nothing else; a pointing word with no name does not answer the question. '
-            + 'On non-standard the answer is ONE number word, and counting out loud on the way to it is the child working, not answering. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a HANDS item (order-three) the child answers by touching the objects in order, and you are told what order they made and whether it matches. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another object, or the next item, '
-            + 'even one you can see on the screen. The next ask always arrives as its own cue.',
-        },
-        {
-          title: 'ORDERING ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no naming which one comes first. '
-            + 'You will be told what order they made and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never compare the objects out loud, and never prompt while the child is looking. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'identify_attribute',
@@ -6584,7 +5738,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // β HELD — the same touch-in-order surface; only the Check button
         // became a stillness close, and an incomplete order now commits (and is
         // corrected) where it used to be refused with a nudge.
-        description: 'Put 3 objects in order by a measurable attribute, touching them one at a time; the tutor judges the committed order. The arrangement IS the answer, so this one is answered with hands. Kindergarten and Grade 1 (K.MD.2 orders 3 objects by one attribute).',
+        description: 'Put 3 objects in order by a measurable attribute, touching them one at a time; the board checks the committed order once the child stops touching. The arrangement IS the answer, so this one is answered with hands. Kindergarten and Grade 1 (K.MD.2 orders 3 objects by one attribute).',
       },
       {
         evalMode: 'non_standard',

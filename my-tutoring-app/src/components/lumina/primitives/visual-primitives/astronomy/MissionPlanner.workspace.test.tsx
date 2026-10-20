@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * mission-planner on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * mission-planner on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The generic
+ * W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every mode is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer. Nothing that answers the question is drawn before the answer. A wrong answer names its miss, and every
- * miss is answered by a lever. K-1 is the ungraded story and never binds.
+ * key (`missionKey`). Nothing that answers the question is drawn before the answer. A wrong answer names its miss, and
+ * every miss is answered by a lever. K-1 is the ungraded story and never binds.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -17,19 +17,23 @@ import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { validateMissionPlannerData } from '../../../components/live-activity/adapters/missionPlannerLive';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { MissionPlannerData } from './MissionPlanner';
 import {
-  askOf, buildMissionItems, keyOf, MISSION_MISSES, missionCorrect, missionHarnessAnswers, missionItems, missionMiss,
-  optionCount, packsNeeded, PLACE_AU, PLACES, revealText, seededRng, separation, slipValue, validMissionItem,
-  windowDistance, workspaceAssignment, workspaceScene,
+  askOf, buildMissionItems, keyOf, MISSION_MISSES, missionCorrect, missionHarnessAnswers, missionItems, missionKey,
+  missionMiss, optionCount, packsNeeded, PLACE_AU, PLACES, revealText, seededRng, separation, slipValue, validMissionItem,
+  windowDistance, workspaceScene,
   type AssistItem, type FartherItem, type MissionItem, type MissionMode, type MissionTier, type PackItem, type WindowItem,
 } from './missionWorkspace';
 import {
-  ASK_ARROW_LEVER, ASSIST_CARD_LEVER, CREW_ROWS_LEVER, DISTANCE_LINES_LEVER, DROP_LEVER, FUEL_CARD_LEVER, HOME_LEG_LEVER, leverFacts,
-  LIMIT_LINE_LEVER, missionLevers, NO_LEVERS, possibleMisses,
+  ASK_ARROW_LEVER, ASSIST_CARD_LEVER, CREW_ROWS_LEVER, DISTANCE_LINES_LEVER, DROP_LEVER, FUEL_CARD_LEVER, HOME_LEG_LEVER,
+  LIMIT_LINE_LEVER, MISSION_LEVERS, NO_LEVERS, possibleMisses, type MissionLeverState,
 } from './missionLevers';
+import { missionPlannerBoss, validateMissionPlannerData } from './missionPlanner.boss';
+
+const declared = (i: MissionItem, s: MissionLeverState = NO_LEVERS) => MISSION_LEVERS.declare(i, { state: s }, s.pulled);
+const leverFacts = (i: MissionItem, s: MissionLeverState) => MISSION_LEVERS.onScreen(i, { state: s }, s.pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -68,14 +72,16 @@ it.each(MODES)('%s binds with its key out of the scene and nothing answered on s
   expect(getComponentById('mission-planner')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(missionPlannerBoss.assignment(item).task);
+  expect(missionPlannerBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(all(h, '[data-distance-strip], [data-ship-path], [data-distance-line], [data-limit-line], [data-day="home"]')).toBe(0);
   expect(h.view.container.textContent).not.toMatch(/Next →|Finish|Best|optimal|closest!/);
   expect(demand(h).credited).toBeUndefined();
   expect(demand(h).response).toBe('speech');
-  const expected = { farther_closer: /^"Neptune" \(choice 2 of 4\)/, pick_window: /^"July 2027" \(choice 2 of 3\)/,
-    pack_days: /^"24 packs" \(choice 2 of 4\)/, assist_tradeoff: /^"Route B" \(choice 2 of 4\)/ }[mode];
+  const expected = { farther_closer: /^"Neptune" \(also accept "the second one"\)/,
+    pick_window: /^"July 2027" \(also accept "July", "the July one", "the second one"\)/,
+    pack_days: /^"24 packs" \(also accept "24"\)/, assist_tradeoff: /^"Route B" \(also accept "B", "the second one"\)/ }[mode];
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(expected);
   expect(levers(h)).toEqual({ farther_closer: [ASK_ARROW_LEVER, DROP_LEVER], pick_window: [DISTANCE_LINES_LEVER, FUEL_CARD_LEVER, DROP_LEVER],
     pack_days: [HOME_LEG_LEVER, CREW_ROWS_LEVER, DROP_LEVER], assist_tradeoff: [ASSIST_CARD_LEVER, LIMIT_LINE_LEVER, DROP_LEVER] }[mode]);
@@ -253,14 +259,14 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...MISSION_MISSES[mode]].sort());
       for (const i of TIERS.flatMap(t => many(mode, t))) {
-        const ls = missionLevers(i, NO_LEVERS);
+        const ls = declared(i);
         const misses = possibleMisses(i);
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
           expect(MISSION_MISSES[mode]).toContain(m);
           expect(ls.some(l => l.answers?.includes(m)), `${i.id} ${m}`).toBe(true);
           // farther_closer is recall: no help lever may order the places, so next_in_line and in_between go to simplify.
-          if (m !== 'next_in_line' && m !== 'in_between') expect(ls.find(l => l.id === nextLever(ls, m))?.kind, `${i.id} ${m}`).toBe('help');
+          if (m !== 'next_in_line' && m !== 'in_between') expect(nextLever(ls, m), `${i.id} ${m}`).not.toBe(DROP_LEVER);
         }
         const a = missionHarnessAnswers(i);
         expect(missionCorrect(i, a.correct), i.id).toBe(true);
@@ -280,9 +286,12 @@ describe('the pure rules', () => {
 
   it('no ask, scene or lever line states the key, an order, a distance or a total before the answer', () => {
     for (const mode of MODES) for (const i of TIERS.flatMap(t => many(mode, t))) {
-      const s = { ...NO_LEVERS, pulled: missionLevers(i, NO_LEVERS).filter(l => l.kind === 'help').map(l => l.id) };
+      const s = { ...NO_LEVERS, pulled: declared(i).filter(l => l.id !== DROP_LEVER).map(l => l.id) };
       const scene = workspaceScene(i, { work: { pick: null }, solved: false });
-      const lines = [askOf(i), ...Object.values(scene.facts!).map(String), leverFacts(i, s) ?? ''];
+      // The constraints name what is never said; every other fact and line describes the screen.
+      const { constraints: _never, ...facts } = scene.facts!;
+      const lines = [askOf(i), ...Object.values(facts).map(String), leverFacts(i, s)];
+      expect(askLeaks(askOf(i), missionKey(i)), i.id).toEqual([]);
       for (const v of Object.values(scene.facts!)) expect(String(v).length, i.id).toBeLessThanOrEqual(500);
       expect(scene.facts!.credited).toBeUndefined();
       for (const l of lines) {
@@ -305,5 +314,16 @@ describe('the pure rules', () => {
     const items = missionItems(legacy);
     expect(new Set(items.map(i => i.mode))).toEqual(new Set(['farther_closer', 'pick_window']));
     expect(missionItems(legacy)).toEqual(items);
+  });
+
+  it('a legacy payload (destinations, windows, supplies; no items) binds with code items by grade', () => {
+    const legacy = { title: 'Mars Mission', gradeLevel: '3', destinations: [{ id: 'mars' }], launchWindows: [] };
+    const h = mountWorkspace({ primitiveId: 'mission-planner', evalMode: 'farther_closer', instanceId: 'mission-planner', data: legacy as never });
+    h.settle(1000);
+    expect(h.state().owner).toBe('tutor');
+    expect(h.view.container.textContent).toMatch(/Near or far\? · item 1 of 6/);
+    expect(h.view.container.querySelector('[data-distance-strip]')).toBeNull();
+    expect(h.view.container.textContent).not.toMatch(/Best|\bAU\b|days away|closest!/i);
+    h.close();
   });
 });

@@ -1,7 +1,7 @@
 # Contract: letter-spotter
 
 - **Derived:** 2026-09-28 · evidence window: eval-reports 2026-03-15 + 2026-06-21 + DI port reports 2026-08-16 + workspace rollout C2 live 2026-09-24 + authored map (live backend, 2026-09-28) + git to 2026-03
-- **Component:** `primitives/visual-primitives/literacy/LetterSpotter.tsx` (+ `letterSpotterWorkspace.ts`, `letterSpotterScript.ts` helpers) · **Generator:** `service/literacy/gemini-letter-spotter.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:2375` · **Pip pose:** `pip/letterSpotterPipPose.ts`
+- **Component:** `primitives/visual-primitives/literacy/LetterSpotter.tsx` (+ `letterSpotterDomain.ts`, `letterSpotterLevers.ts`) · **Boss:** `letterSpotter.card.ts` + `letterSpotter.boss.ts` · **Generator:** `service/literacy/gemini-letter-spotter.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`...bossEntry(letterSpotterCard)`) · **Pip:** framework (`<PipDock />` + `<PipWorkspace>`)
 - **Status:** CONFLICTED (C1 open: the find_it tier reference prints the same form as the target; edits to the find_it reference must fork, see C1)
 
 Derived as step 1 of handoff 22 L1 (`qa/live-runtime-handoffs/22-literacy-levers.md`), before
@@ -19,7 +19,7 @@ from QA and code.
 | DI port 11 / judged-loop harness (name_it spoken, taps code-checked) | eval + live [2] | `qa/tutor-reports/letter-spotter-19h-i-b-port6-2026-08-16.md`; `HUMAN-CHECKS.md` #97 | 2026-08-16 |
 | Shared teaching workspace (W1 binding C2) + live journey harness | live [2] + code | `qa/tutor-reports/workspace-rollout-C2-2026-09-24.md:15,28,45-46`; `liveJourneySpec.ts:1336-1356` | 2026-09-24 |
 | Named misses for the trigger ladder (A5) | code [5] | `1a0cd42a`; catalog `teachingWorkspace.misses` (`literacy.ts:2410`) | 2026-09 |
-| Pip shared surface | code [5] | `e7beca56`; `pip/LetterSpotter.surface.test.tsx` | 2026-09-15 |
+| Pip shared surface | code [5] | `e7beca56`; shared `pip/WorkspacePip.surface.test.tsx` since the boss move | 2026-10-20 |
 | Authored map | [3] | none (0 of language_arts mappings) | 2026-09-28 |
 
 Real-usage channel [4]: unknown (auth), not zero.
@@ -35,24 +35,24 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R2 — Mode identity and answer modality · OBSERVED
 - **Property:** `name_it` is SPOKEN (no tiles; `options` ignored). `find_it`: the tutor names a letter; the child taps ONE cell of a 16-cell uppercase grid holding the target EXACTLY once (build gate drops any other grid: `itemFromChallenge`, length 16 and 1 target). `match_it`: an uppercase letter is printed; the child taps its lowercase form from the options (answer present, at least one distractor, else dropped). On both tap modes the tap IS the commit, checked in code (`commitGesture`); no Check / Next / Skip button. A spoken letter is not an answer on the tap modes, and a tap is not an answer on name_it.
 - **Demanded by:** DI port ruling 2026-08-13 (drive 6ada8c0a1bcf); workspace C2.
-- **Evidence:** `letterSpotterScript.ts:280-352`; `LetterSpotter.workspace.test.tsx:69` (grid without exactly one target refused); catalog `literacy.ts:2375-2395`.
-- **Probe:** `npm test -- LetterSpotter letterSpotterWorkspace`.
+- **Evidence:** `letterSpotterDomain.ts` `itemFromChallenge`; `letterSpotterDomain.test.ts` (build gates); `LetterSpotter.workspace.test.tsx` (grid without exactly one target refused by `letterSpotterBoss.validate`).
+- **Probe:** `npm test -- LetterSpotter letterSpotterDomain`.
 
 ### R3 — Nothing shows or names the answer before credit · OBSERVED
-- **Property:** name_it: the star covers the target word's first character until credit. find_it: the answer is a POSITION; the tutor may say the letter but never its position, row, column or neighbours; nothing marks the target cell; Pip outlines the grid as a whole, never a cell. match_it: the ask never names the big letter, no option is marked, Pip points at the big letter, never a little one. The find_it assignment publishes no `expectedAnswer`.
+- **Property:** name_it: the star covers the target word's first character until credit. find_it: the answer is a POSITION; the tutor may say the letter but never its position, row, column or neighbours; nothing marks the target cell; Pip outlines the grid as a whole, never a cell. match_it: the ask never names the big letter, no option is marked. Pip watches the answer surface as a whole (`<PipWorkspace>`), never a cell or tile. The find_it and match_it assignments publish no `expectedAnswer` (null key on the boss); name_it's key is a `SpokenKey` (the letter, or its sound in slashes).
 - **Demanded by:** every consumer (Pedagogy rule #1).
-- **Evidence:** `letterSpotterWorkspace.ts:13-37`; `pip/letterSpotterPipPose.ts:14-19`; `LetterSpotter.workspace.test.tsx:43,52`; `pip/LetterSpotter.surface.test.tsx:40,51,64`; catalog aiDirectives `literacy.ts:2542`.
-- **Probe:** `npm test -- LetterSpotter.workspace LetterSpotter.surface`.
+- **Evidence:** `letterSpotterDomain.ts` `askFor`, `letterSpotterKey`, `letterSpotterScene` (constraints); `letterSpotterDomain.test.ts` (what the ask may say; `askLeaks` with `askGiven`); `LetterSpotter.workspace.test.tsx`; `pip/WorkspacePip.surface.test.tsx` (shared Pip contract).
+- **Probe:** `npm test -- LetterSpotter.workspace letterSpotterDomain WorkspacePip.surface`.
 
 ### R4 — No shape description in voice · OBSERVED
 - **Property:** the tutor never describes what a letter LOOKS like (curves, lines, dots, sticks, what it resembles) at any tier, for any letter on screen. A shape description is the answer said another way. Help about letterforms is therefore visual, never spoken.
 - **Demanded by:** DI port (live drive 42edfc52e539: the "hint at its shape" branch fired every item); workspace guidance.
-- **Where it lives:** `teachingWorkspace.guidance` (`literacy.ts:2403-2407`, "Never say, spell or describe the shape of the answer letter before the learner has tried"), which is what bound workspace sessions receive (`workspaceAdapter` sends `tutoring: null`, `adapterContract.ts:158`); the older aiDirective "NEVER DESCRIBE WHAT THE ANSWER LOOKS LIKE" (`literacy.ts:2542`) no longer reaches bound sessions. Also stated at `letterSpotterScript.ts:440-450` (lead-in ladder) and the component header.
+- **Where it lives:** each item's scene `constraints` (`letterSpotterScene`): name_it "never say, spell or describe the shape of the letter behind the star", find_it "never say where the named letter is … or describe what any letter looks like", match_it "never name the big letter or the little letters, and never describe what any letter looks like". The prose guidance and the catalog `tutoring` block (with its aiDirective) are deleted; the boss guidance is built from the card.
 - **Evidence:** component header "The shape hint"; `HUMAN-CHECKS.md` #97.
 - **Probe:** live journey transcript (`run_live_runtime.py --primitive letter-spotter --mode find_it|match_it`): no shape words about any on-screen letter.
 
 ### R5 — Support-tier invariants · INFERRED (find_it/match_it tier path never swept, eval 2026-06-21)
-- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: distractor similarity easy far / medium mixed / hard near (confusable clusters b d p q g · m n h r u · i l t j f · c e o a s · v w y x z k), saturating inside the group. find_it: `showTargetReference` true at easy and medium ("Looking for X", the SAME uppercase form as the grid), false at hard. match_it option count easy 3 / medium 4 / hard 4. A tier never changes the target, the one-target grid or the answer, except on name_it's key-word path (R11), where it picks the letter and the key word. The spoken lead-in is tier-composed (find_it model line "Look at one row at a time, all the way across").
+- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: distractor similarity easy far / medium mixed / hard near (confusable clusters b d p q g · m n h r u · i l t j f · c e o a s · v w y x z k), saturating inside the group. find_it: `showTargetReference` true at easy and medium ("Looking for X", the SAME uppercase form as the grid), false at hard. match_it option count easy 3 / medium 4 / hard 4. A tier never changes the target, the one-target grid or the answer, except on name_it's key-word path (R11), where it picks the letter and the key word. The tier reaches the tutor as the lever set's `support` fact; at easy the name_it ask also says the word alone (re-based 2026-10-20: the scripted lead-in ladder is deleted).
 - **Note:** the grid cycles through all ranked pool letters, so in a small group (group 1: 6 letters) all five non-targets appear at every tier and the similarity axis barely moves.
 - **Demanded by:** support-tier campaign.
 - **Evidence:** `gemini-letter-spotter.ts:193-240,305-445,1023-1097`; `LetterSpotter.tsx:501-525`.
@@ -61,8 +61,8 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R6 — Named miss on a checked tap · OBSERVED
 - **Property:** a wrong tap commits with `letterSpotterMiss`: find_it `same_shape_family` | `other_letter` (no `mirror_form`: the grid is uppercase); match_it `mirror_form` (b/d, p/q, b/p, d/q, n/u, m/w) | `same_shape_family` | `other_letter`. Matches catalog `teachingWorkspace.misses`. A second tap before Try again is not an attempt; Try again clears the tap.
 - **Demanded by:** trigger ladder / named misses (A5); workspace C2.
-- **Evidence:** `1a0cd42a`; `letterSpotterWorkspace.ts:40-58`; `letterSpotterWorkspace.test.ts`; `LetterSpotter.workspace.test.tsx:52`.
-- **Probe:** `npm test -- letterSpotterWorkspace LetterSpotter.workspace`.
+- **Evidence:** `1a0cd42a`; `letterSpotterDomain.ts` `letterSpotterMiss`; card `LETTER_SPOTTER_MISSES`; `letterSpotterDomain.test.ts`; `LetterSpotter.workspace.test.tsx`.
+- **Probe:** `npm test -- letterSpotterDomain LetterSpotter.workspace`.
 
 ### R7 — Workspace-only path and evaluation · OBSERVED
 - **Property:** runs only bound to the teaching workspace (`withWorkspaceOnly`). One evaluation per session with `LetterSpotterMetrics`; `confusedLetterPairs` come only from wrong taps and single-letter spoken misses, never from a word said back; the first-response gate fails a run of corrected misses.
@@ -73,7 +73,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R8 — Stable tap targets and hear-again · OBSERVED
 - **Property:** grid cells are `data-pip-object="cell-<n>"` with `n` the index into the item's `letterGrid`; match_it tiles are `option-<letter>`; mount probes `grid` / `letter` / `marker`. The live harness computes the cell index from `item.letterGrid`. Hear-again sends a silent request to repeat the question only, never more help than the first ask.
 - **Demanded by:** live journey harness; workspace C2.
-- **Evidence:** `liveJourneySpec.ts:1344-1356`; `qa/tutor-reports/letter-spotter-w1-find_it-text-2026-09-24.json` (PASS); `letterSpotterWorkspace.ts:61-62`.
+- **Evidence:** `letterSpotter.boss.ts` `drive` (`letterTap`, `mounted`); `qa/tutor-reports/letter-spotter-w1-find_it-text-2026-09-24.json` (PASS); `letterSpotterDomain.ts` `hearQuestionRequest`, sent through `runner.requestHear`. The cell and tile `data-pip-object` ids stay as harness targets only (Pip no longer reads them).
 - **Probe:** `run_live_runtime.py --primitive letter-spotter --mode find_it` presses `cell-<n>`.
 
 ### R9 — Pre-reader chrome · INFERRED
@@ -83,7 +83,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** mount at grade K → no `Group` badge.
 
 ### R10 — In-item levers on find_it and match_it · OBSERVED
-- **Property:** `letterSpotterLevers.ts`; name_it declares none. find_it: `other_case_reference` (the named letter in lowercase beside the capital grid, only where the cases differ in shape), `row_scan` (a highlight sweeping the four rows on a 900 ms clock, alike on every row), `small_far_grid` (simplify: a 2x2 practice grid, new letter the session never targets, far letters). match_it: `wrong_choice_partner` (declared only after a wrong tap; the capital of each wrongly tapped tile on that tile, never the target's, kept through Try again), `two_far_choices` (simplify: new capital, two lowercase tiles). Every lever is visual (R4). Practice items are ungraded, stay out of `confusedLetterPairs`, and answer no session letter (the session invariant). A pull is a synchronous commit; the next attempt records the lever.
+- **Property:** one lever set, `LETTER_SPOTTER_LEVERS` in `letterSpotterLevers.ts` (types: `other_case_reference` clue, `row_scan` and `wrong_choice_partner` marks, `small_far_grid` and `two_far_choices` easier, `first_letter_model` model; see the 09-29 changelog for name_it). find_it: `other_case_reference` (the named letter in lowercase beside the capital grid, only where the cases differ in shape), `row_scan` (a highlight sweeping the four rows on a 900 ms clock, alike on every row), `small_far_grid` (simplify: a 2x2 practice grid, new letter the session never targets, far letters). match_it: `wrong_choice_partner` (declared only after a wrong tap; the capital of each wrongly tapped tile on that tile, never the target's, kept through Try again), `two_far_choices` (simplify: new capital, two lowercase tiles). Every lever is visual (R4). Practice items are ungraded, stay out of `confusedLetterPairs`, and answer no session letter (the session invariant). A pull is a synchronous commit; the next attempt records the lever.
 - **Demanded by:** handoff 22 L1; trigger ladder (handoff 21 S2).
 - **Evidence:** `qa/eval-reports/letter-spotter-levers-2026-09-28.md`.
 - **Probe:** `npm test -- letterSpotterLevers LetterSpotter.levers.workspace`.
@@ -109,12 +109,14 @@ None of the five conflicts with R1-R9 when scoped as above; `other_case_referenc
 
 ## Catalog projection
 
-- **description:** stale in one clause: "The tutor asks, waits and responds, and a credited answer moves the lesson on" still reads as the retired DI clock; otherwise faithful. Not applied here.
+- **description:** faithful (the runner-era clause rewritten 2026-10-20).
 - **constraints:** faithful.
-- **evalModes:** faithful. `match_it` says "from four"; easy gives three (R5).
-- **tutoring.aiDirectives:** stale (the `[LSP_*]` scripted-runner tags); bound sessions receive `tutoring: null`, so the live shape rule is `teachingWorkspace.guidance` (R4). Removal is an `/add-live-tutor-tools` cleanup.
+- **evalModes:** faithful (`match_it` now says "from three or four").
+- **teachingWorkspace / tutoring:** built from the card (`bossEntry`); the `tutoring` block is deleted.
 
 ## Changelog
+- 2026-10-20 — **Moved onto the boss framework** (`/add-live-tutor-tools`, wave 2). Card + boss on `spokenBoss`: name_it `SPOKEN` (key: the letter, or its sound in slashes; the word said back is the signature error), find_it and match_it `TAP_ONE` with null keys played through `speech.show`. Script + workspace modules merged into `letterSpotterDomain.ts` (cue builders, DISTAR lead-in ladder, tap verdict cues deleted); levers on one lever set (`first_letter_model` now a `model` lever, so the tier's `support` fact says when it comes); catalog `teachingWorkspace` prose, `audioInput` and the `tutoring` block replaced by `...bossEntry(letterSpotterCard)`; `DI_PORTS` row, live adapter, Pip pose and hand Pip deleted. Re-based: R2/R3/R6/R8 evidence onto the domain and boss; R4 now lives in each item's scene `constraints`; R7 unchanged (same evaluation metrics). The lead-in tier ladder (R5's last sentence) is gone with the script: the tier reaches the tutor as the `support` fact and, at easy, the word said alone in the ask. Catalog: the description's runner-era clause and match_it's "names neither case until it corrects" / "from four" were rewritten. C1 still open.
+
 - 2026-10-13 — **R11 name_it key words** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/letter-spotter/before.txt`): name_it was s/sun, a/ant, t/top at every tier. After: group 1 easy t/towel, p/pudding → hard a/apple, s/scoop; group 3 easy b/bacon, f/fog → hard g/grill, c/coach. R5 narrowed. `LETTER_GROUPS`/`NEW_LETTERS` now come from `letterGroups.ts`.
 
 - 2026-09-29 — handoff 24: `name_it` declares `first_letter_model` (help, both): another picture word, printed, its first letter lit; its first letter is no session target and it is no word of any session sentence (`firstLetterModelLeak`). R3 holds (the star still covers the item's letter). All three name_it misses answered. Catalog `levers: true` set. `npm test -- letterSpotter LetterSpotter` 99/99.

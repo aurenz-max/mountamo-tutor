@@ -1,14 +1,14 @@
 /**
- * Planetary explorer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, C23).
+ * Planetary explorer's items, keys, misses and scene: the pure half of its boss (`planetaryExplorer.boss.ts`, a
+ * SAY_OR_SHOW card on the spoken preset).
  *
- * Pure: the component, the journey and the tests read the same items, assignment, scene, miss and answers. Every item
- * is one generated question with a code-held key (`correctIndex`): the per-planet questions in journey order, then the
- * identify mode's quiz. A choice is tapped and checked by the activity, or said aloud (VB-1, user ruling 10-13: a
- * sayable choice takes speech as well as the tap); JEV judges speech against `expectedAnswer`.
+ * Every item is one generated question with a code-held key (`correctIndex`): the per-planet questions in journey order,
+ * then the identify mode's quiz. A choice is tapped and checked by the activity, or said aloud (VB-1, user ruling 10-13:
+ * a sayable choice takes speech as well as the tap); the tutor judges speech against `planetKey`.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import { containsPhrase, type SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { PlanetQuestion, PlanetStat, PlanetStop } from './PlanetaryExplorer';
 
 /** One question the session asks: a stop's question, or a quiz question after the last stop (identify). */
@@ -19,13 +19,15 @@ export interface PlanetItem {
   planetIndex: number;
   planetId?: string;
   question: PlanetQuestion;
+  /** The trip's planets, which a choice is compared with (another planet's card names a miss). */
+  trip: readonly PlanetStop[];
 }
 
 export function planetItems(planets: readonly PlanetStop[], quiz: readonly PlanetQuestion[] = []): PlanetItem[] {
   return [
     ...planets.flatMap((p, pi) => p.questions.map((question, qi): PlanetItem =>
-      ({ id: `${p.planetId}-q${qi}`, kind: 'planet', planetIndex: pi, planetId: p.planetId, question }))),
-    ...quiz.map((question, i): PlanetItem => ({ id: `quiz-q${i}`, kind: 'quiz', planetIndex: -1, question })),
+      ({ id: `${p.planetId}-q${qi}`, kind: 'planet', planetIndex: pi, planetId: p.planetId, question, trip: planets }))),
+    ...quiz.map((question, i): PlanetItem => ({ id: `quiz-q${i}`, kind: 'quiz', planetIndex: -1, question, trip: planets })),
   ];
 }
 
@@ -55,6 +57,15 @@ export const isNumberMenu = (q: PlanetQuestion) => {
   const ms = q.options.map(measureOf);
   return q.options.length > 1 && ms.every(m => !!m) && new Set(ms.map(m => m!.unit)).size === 1;
 };
+
+/** The catalog's eval modes. */
+export type PlanetMode = 'explore' | 'identify' | 'compare' | 'apply';
+/**
+ * A mode of the card an item belongs to. The items carry no session mode, and every mode is wired alike (SAY_OR_SHOW,
+ * the same moves), so this names the mode whose schema the item's kind is unique to, else explore.
+ */
+export const planetMode = (item: PlanetItem): PlanetMode =>
+  (item.kind === 'quiz' ? 'identify' : item.question.questionType === 'compare' ? 'compare' : 'explore');
 
 /** The ask the tutor is given: the question as printed, a true-false statement as one. */
 export const askOf = (item: PlanetItem) => isTrueFalse(item.question)
@@ -112,21 +123,38 @@ export const describePlanetWork = (item: PlanetItem | null | undefined, choiceIn
 const stripEnd = (t: string) => t.trim().replace(/[.!?]+$/, '');
 const quoted = (xs: readonly string[]) => xs.map(x => `"${stripEnd(x)}"`).join(', ');
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function planetExpectedAnswer(item: PlanetItem): string {
-  const q = item.question, key = keyText(q);
+const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+const LETTERS = 'ABCDEFGH';
+
+/**
+ * The key a spoken reply is judged against. A true-false statement is a menu key (the ask says both words); a choice is
+ * the choice's words, its letter or its place in the list.
+ */
+export function planetKey(item: PlanetItem): SpokenKey {
+  const q = item.question, key = stripEnd(keyText(q));
   if (isTrueFalse(q)) {
-    const truth = /^t/i.test(key.trim());
-    return `${truth ? 'true' : 'false'}: the statement is ${truth ? 'true' : 'false'}. `
-      + `${truth ? '"yes", "yeah", "right", "it is"' : '"no", "nope", "wrong", "it is not"'} count too, alone or in a short `
-      + 'sentence. The statement said back gives no verdict and is not it.';
+    const truth = /^t/i.test(key);
+    return { answer: truth ? 'true' : 'false', menu: ['true', 'false'],
+      alsoAccept: truth ? ['yes', 'yeah', 'right', 'it is'] : ['no', 'nope', 'wrong', 'it is not'],
+      signatureError: `"${truth ? 'false' : 'true'}" is wrong. The statement said back gives no verdict and is not it.` };
   }
   const others = q.options.filter((_, i) => i !== q.correctIndex);
-  return `"${stripEnd(key)}" (choice ${q.correctIndex + 1} of ${q.options.length}). The whole choice, the part that tells it `
-    + `apart from the others, or its place in the list ("the ${ORDINAL[q.correctIndex] ?? 'last'} one") all count. `
-    + `${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`;
+  return {
+    answer: key,
+    alsoAccept: [`choice ${LETTERS[q.correctIndex] ?? q.correctIndex + 1}`, `the ${ORDINAL[q.correctIndex] ?? 'last'} one`],
+    ...(key.split(/\s+/).length > 1 ? { acceptRule: 'The part of the choice that tells it apart from the others counts too.' } : {}),
+    signatureError: `${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`,
+  };
 }
-const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+
+/**
+ * What the ask says by design: a compare question names the planets it compares ("Mars or Jupiter?"), the key among
+ * them. Only when the ask names two or more of the choices, the key one of them; an ask naming the key alone is a leak.
+ */
+export function planetGiven(item: PlanetItem): string[] {
+  const ask = askOf(item), named = item.question.options.filter(o => containsPhrase(ask, stripEnd(o)));
+  return named.length >= 2 && named.includes(keyText(item.question)) ? named.map(stripEnd) : [];
+}
 
 /**
  * A spoken item's known wrong answers, most specific first, with the tap's ids (the catalog's lists): each wrong
@@ -157,14 +185,19 @@ export function planetSpokenMisses(item: PlanetItem, planets: readonly PlanetSto
     other_choice: xs => `is ${quoted(xs)}`,
   };
   const order: PlanetMiss[] = ['neighbour_planet', 'same_family_planet', 'other_family_planet', 'other_planet', 'other_planet_fact', 'other_number', 'other_choice'];
-  return order.filter(m => groups.has(m)).map(m => ({ id: m, pattern: `${fact} The learner's answer ${what[m](groups.get(m)!)}.`,
-    examples: groups.get(m)!.slice(0, 6) }));
-}
-
-export function workspaceAssignment(item: PlanetItem, planets: readonly PlanetStop[] = []): TeachingAssignment {
-  const misses = planetSpokenMisses(item, planets);
-  return { id: item.id, task: `${askOf(item)} The learner answers by saying it, or tapping one choice and pressing Check Answer.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: planetExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
+  // Long sentence choices (apply's why questions) do not fit a pattern (`validSpokenMissRequest`: 400 characters); the
+  // pattern then says what kind of choice it is, and the examples carry the choices themselves.
+  const short: Record<PlanetMiss, string> = {
+    true_false_flipped: '', neighbour_planet: 'names the planet next to it in order from the Sun',
+    same_family_planet: 'names a planet of the same kind', other_family_planet: 'names a planet of the other kind',
+    other_planet: 'names a different planet', other_planet_fact: 'is a fact about another planet on the journey',
+    other_number: 'is another number', other_choice: 'is another of the choices, as in the examples',
+  };
+  return order.filter(m => groups.has(m)).map(m => {
+    const full = `${fact} The learner's answer ${what[m](groups.get(m)!)}.`;
+    return { id: m, pattern: full.length <= 400 ? full : `${fact.length <= 300 ? fact : 'The right choice is another one.'} The learner's answer ${short[m]}.`,
+      examples: groups.get(m)!.slice(0, 6) };
+  });
 }
 
 export interface PlanetView {
@@ -175,14 +208,17 @@ export interface PlanetView {
   solved: boolean;
   /** Planets visited before this stop, in journey order. */
   visited: readonly string[];
+  /** The lesson's grade rung ('K', '1', ... or 'Grade 4'). */
   grade?: string;
 }
+
+const PRE_READER = /^(k|1|kindergarten|grade 1)$/i;
 
 /**
  * What is drawn and asked. The choices are named, never which is right. A quiz question describes a planet without
  * naming it, and while it is open the map's planets wear no names.
  */
-export function workspaceScene(item: PlanetItem, view: PlanetView, planets: readonly PlanetStop[]): WorkspaceScene {
+export function workspaceScene(item: PlanetItem, view: PlanetView, planets: readonly PlanetStop[]): SceneOf {
   const q = item.question, stop = item.kind === 'planet' ? planets[item.planetIndex] : undefined;
   const choices = q.options.map((o, i) => `${i + 1}) ${o}`).join('  ');
   const facts: Record<string, string> = {};
@@ -192,7 +228,7 @@ export function workspaceScene(item: PlanetItem, view: PlanetView, planets: read
       + (view.visited.length ? `; visited before: ${view.visited.map(capitalize).join(', ')}` : '') + `. Focus: ${stop.focusTheme}.`;
     facts.shown = view.readingCard
       ? `${name}'s card is on screen: a short description, fact cards (${stop.keyStats.map(s => s.label).join(', ')}) and a fun fact. `
-        + 'The question opens when the learner presses Ready for Questions.'
+        + 'The question is not open yet.'
       : `The question about ${name}, with its choices. ${name}'s card is not on screen now`
         + ' (the learner read it before the question opened).';
   } else {
@@ -204,8 +240,16 @@ export function workspaceScene(item: PlanetItem, view: PlanetView, planets: read
     facts.choices = choices;
     facts.learnerWork = describePlanetWork(item, view.choice);
   }
-  facts.constraints = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-    + 'You cannot tap, check or point at a choice for the learner.';
+  // How the learner answers is the card's `moves`; the rules below are this question's own facts.
+  const rules: string[] = [];
+  if (!view.readingCard) {
+    rules.push('A planet\'s nickname or best-known description ("the Red Planet", "the one with rings") answers a question '
+      + 'about it: never say one while the question is open, not even as a clue.');
+    if (/\bwhy\b/i.test(q.question)) rules.push('Why is the question: never name the reason or the facts the right choice uses.');
+    if (item.kind === 'quiz') rules.push('The question means a planet it does not name: never name or describe that planet.');
+  }
+  if (view.grade && PRE_READER.test(view.grade.trim())) rules.push('Say no units or decimals: tell sizes, temperatures and distances in plain words.');
+  if (rules.length) facts.constraints = rules.join(' ');
   return { objects: [], facts };
 }
 

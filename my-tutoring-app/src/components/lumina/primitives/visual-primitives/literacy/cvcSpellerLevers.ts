@@ -1,23 +1,23 @@
 /**
- * The in-item levers on a CVC spelling (`/add-support-tiers`, handoff 22 L1; spoken modes handoff 24).
+ * The in-item levers on cvc-speller, as one lever set (`bossLevers.ts`; `/add-support-tiers`, handoff 22 L1; spoken
+ * modes handoff 24). Pure: the component draws from these and the tests hold each leak rule.
  *
- * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
- * Four levers, one per group of `cvcMiss` patterns (qa/eval-reports/cvc-speller-levers-2026-09-28.md):
- * - `vowel_keywords` (help): a strip of every vowel in the letter group with its keyword picture. Answers
+ * spell_word, one lever per group of `cvcMiss` patterns (qa/eval-reports/cvc-speller-levers-2026-09-28.md):
+ * - `vowel_keywords` (legend): a strip of every vowel in the letter group with its keyword picture. Answers
  *   `middle_letter`. Leak rule: at least two vowels, all drawn alike; none is marked.
- * - `consonant_keywords` (help): a keyword picture under every consonant in the bank, distractors included.
+ * - `consonant_keywords` (legend): a keyword picture under every consonant in the bank, distractors included.
  *   Answers `first_letter` / `last_letter`. Leak rule: no keyword pictures a word of the session (a cat
  *   under `c` on a "cat" item answers the first box), so a colliding keyword falls back to the next one.
- * - `sound_tokens` (help): three blank tokens the learner pushes into the boxes, one per sound they say.
+ * - `sound_tokens` (custom): three blank tokens the learner pushes into the boxes, one per sound they say.
  *   Answers `letters_out_of_order` / `two_or_more_letters`. Leak rule: a token carries no letter and moves
  *   only on the learner's tap; the count of three is the same for every CVC word.
- * - `small_word` (simplify): an ungraded practice word first, a new picturable CVC word inside the letter
+ * - `small_word` (easier): an ungraded practice word first, a new picturable CVC word inside the letter
  *   group with a four-letter bank. Answers `two_or_more_letters`. Leak rule: never a session word, never a
  *   session word's rime, and at most one letter in the same box as the learner's item.
  *
  * fill_vowel and word_sort (the middle sound, said aloud). A vowel keyword is the answer there (contract R3),
  * so the one lever acts on a word outside the item:
- * - `middle_model` (help, both): another picture word in three boxes with the middle box lit; the tutor says the
+ * - `middle_model` (model): another picture word in three boxes with the middle box lit; the tutor says the
  *   model word and its middle sound. Answers `whole_word`, `first_sound`, `last_sound` (which part of the word is
  *   wanted) and `letter_name` (a sound, said short, not a name). Leak rule (`middleModelLeak`): never a session word
  *   or picture, and its middle sound is none the session asks; when every short vowel is asked, a long-vowel word
@@ -25,10 +25,18 @@
  * - `other_vowel` has no lever by decision: any cue that separates short vowels names the item's vowel, or teaches
  *   on a practice word a vowel that answers a session item. No simplify: a practice word asks the same task with
  *   no fewer steps, and one with the item's vowel answers the item.
+ *
+ * make_word (the shared letter build's helpers in `letterBuild.ts`):
+ * - `pattern_card` (clue): the part the ask fixes with blanks for the rest (_ a _), no letter to choose.
+ * - `model_word` (model): one solved word of the same kind on other letters, none of them an answer to this item.
+ * - `small_bank` (easier): the same ask, one word, only the letters two answers need.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { cvcUsableLetters, groupVowels, isCvcSpelling, normalizeLetterGroup, type LetterGroup } from '../../../service/literacy/letterGroups';
 import type { CvcSpellerChallenge } from './CvcSpeller';
+import { cvcSpellerCard } from './cvcSpeller.card';
+import { asCvcBuild, asCvcWord, isCvcBuild, type CvcBuild, type CvcSpellerItem, type CvcWord as CvcWordItem } from './cvcSpellerDomain';
+import { modelFor, patternFor, smallBankFor, type LetterBuildItem } from './letterBuild';
 import { CVC_POOL, LONG_MIDDLE_POOL, type CvcWord } from './phonemeExplorerLevers';
 import { speakablePhoneme } from './phonemeVoice';
 
@@ -175,44 +183,100 @@ export function middleModelFor(c: CvcSpellerChallenge, s: SessionStimuli): CvcWo
   return [...CVC_POOL, ...LONG_MIDDLE_POOL].find(w => !middleModelLeak(w, s)) ?? null;
 }
 
-/**
- * The levers this spelling declares, with their state. Empty on the spoken modes. A lever is declared only
- * when pulling it would change the screen and pass its leak rule.
- */
-export function cvcLevers(c: CvcSpellerChallenge | null, pulled: readonly string[], letterGroup: number | undefined,
-  s: SessionStimuli, bank: readonly string[], vowelFocus?: string): WorkspaceLever[] {
-  if (!c) return [];
-  if (c.taskType !== 'spell-word') return middleModelFor(c, s) ? [{
-    id: MIDDLE_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(MIDDLE_MODEL_LEVER),
-    answers: ['whole_word', 'first_sound', 'last_sound', 'letter_name'],
-    when: 'The learner says the whole word, its first or last sound, or a letter name.',
-    does: 'Shows another picture word in three boxes with the middle box lit. Say that word, then its middle sound, '
-      + 'short; never this item\'s sound.',
-  }] : [];
-  const levers: WorkspaceLever[] = [];
-  const strip = vowelStrip(c, letterGroup, s);
-  if (strip.length && !vowelStripLeak(strip)) levers.push({
-    id: VOWEL_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(VOWEL_LEVER), answers: ['middle_letter'],
-    when: 'The learner puts the wrong letter in the middle box.',
-    does: 'Shows every vowel of this letter group with its keyword picture (apple, egg...), all alike, above the letters.',
-  });
-  const consonants = bank.filter(l => !VOWELS.has(l));
-  if (consonants.length && consonants.every(l => keywordFor(l, s))) levers.push({
-    id: KEYWORD_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(KEYWORD_LEVER), answers: ['first_letter', 'last_letter'],
-    when: 'The learner puts the wrong letter in the first or last box.',
-    does: 'Puts a keyword picture under every consonant in the letter bank, so each letter shows a word that starts with its sound.',
-  });
-  levers.push({
-    id: TOKENS_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(TOKENS_LEVER),
-    answers: ['letters_out_of_order', 'two_or_more_letters'],
-    when: 'The learner mixes up the order of the letters, or gets two or more boxes wrong.',
-    does: 'Shows three blank sound tokens above the boxes. The learner says the word slowly and taps a token into a box for each sound, left to right, then spells.',
-  });
-  if (smallerWord(c, letterGroup, s, vowelFocus)) levers.push({
-    id: SMALL_WORD_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SMALL_WORD_LEVER), answers: ['two_or_more_letters'],
-    when: 'The learner cannot yet spell a word with this many letters to choose from.',
-    does: 'Opens an easier practice word first: a different short word with only four letters to choose from. '
-      + 'It is not graded; the full item comes back after it.',
-  });
-  return levers;
+// ── the lever set ────────────────────────────────────────────────────────────
+
+/** What the set reads beyond the item: the letter group, the session's stimuli, the bank on screen, the named vowel. */
+export interface CvcLeverContext {
+  letterGroup?: number;
+  stimuli: SessionStimuli;
+  /** The spelling's letter bank as drawn (consonant_keywords needs a keyword under every consonant in it). */
+  bank: readonly string[];
+  vowelFocus?: string;
 }
+
+export const PATTERN_LEVER = 'pattern_card';
+export const MODEL_WORD_LEVER = 'model_word';
+export const SMALL_BANK_LEVER = 'small_bank';
+
+const SPELL = ['spell_word'] as const;
+const SPOKEN = ['fill_vowel', 'word_sort'] as const;
+const BUILD = ['make_word'] as const;
+const word = (item: CvcSpellerItem) => (isCvcBuild(item) ? null : item);
+const build = (item: CvcSpellerItem) => (isCvcBuild(item) ? item : null);
+
+export const CVC_LEVERS = leverSet<CvcSpellerItem, CvcLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => cvcSpellerCard.modes[mode].misses,
+  answersOf: item => (isCvcBuild(item) ? item.examples : [item.targetWord]),
+  // Both models show a different item solved; the lesson's tier says when (items carry it, default medium).
+  support: { tier: item => item.supportTier,
+    different: item => (isCvcBuild(item) ? 'one solved word on other letters' : 'another word with its middle sound lit'),
+    own: item => (isCvcBuild(item) ? 'a word that answers this ask' : 'this word\'s middle sound') },
+  specs: [
+    { id: VOWEL_LEVER, type: 'legend', modes: SPELL, answers: ['middle_letter'],
+      when: 'The learner puts the wrong letter in the middle box.',
+      does: 'Shows every vowel of this letter group with its keyword picture (apple, egg...), all alike, above the letters.',
+      content: (item, ctx) => { const w = word(item); const strip = w ? vowelStrip(w, ctx.letterGroup, ctx.stimuli) : [];
+        return strip.length && !vowelStripLeak(strip) ? strip : null; },
+      fact: 'A strip of every vowel in this letter group, each with its keyword picture, all alike, is above the letters.' },
+    { id: KEYWORD_LEVER, type: 'legend', modes: SPELL, answers: ['first_letter', 'last_letter'],
+      when: 'The learner puts the wrong letter in the first or last box.',
+      does: 'Puts a keyword picture under every consonant in the letter bank, so each letter shows a word that starts with its sound.',
+      content: (item, ctx) => { const consonants = ctx.bank.filter(l => !VOWELS.has(l));
+        return word(item) && consonants.length && consonants.every(l => keywordFor(l, ctx.stimuli)) ? consonants : null; },
+      fact: 'A keyword picture sits under every consonant in the letter bank.' },
+    { id: TOKENS_LEVER, type: 'custom', modes: SPELL, carrier: 'shown', answers: ['letters_out_of_order', 'two_or_more_letters'],
+      why: 'The learner moves the tokens, one per sound they say; no stock type is a thing the learner acts on.',
+      when: 'The learner mixes up the order of the letters, or gets two or more boxes wrong.',
+      does: 'Shows three blank sound tokens above the boxes. The learner says the word slowly and taps a token into a box '
+        + 'for each sound, left to right, then spells.',
+      content: item => word(item),
+      fact: 'Three blank sound tokens sit above the boxes; the learner pushes one into a box for each sound they say.' },
+    { id: SMALL_WORD_LEVER, type: 'easier', modes: SPELL, carrier: 'shown', answers: ['two_or_more_letters'],
+      when: 'The learner cannot yet spell a word with this many letters to choose from.',
+      does: 'Opens an easier practice word first: a different short word with only four letters to choose from. '
+        + 'It is not graded; the full item comes back after it.',
+      content: (item, ctx) => { const w = word(item); const simpler = w && smallerWord(w, ctx.letterGroup, ctx.stimuli, ctx.vowelFocus);
+        return w && simpler ? asCvcWord(simpler, w.supportTier) : null; } },
+    { id: MIDDLE_MODEL_LEVER, type: 'model', modes: SPOKEN, answers: ['whole_word', 'first_sound', 'last_sound', 'letter_name'],
+      when: 'The learner says the whole word, its first or last sound, or a letter name.',
+      does: 'Shows another picture word in three boxes with the middle box lit. Say that word, then its middle sound, '
+        + 'short; never this item\'s sound.',
+      content: (item, ctx) => { const w = word(item); return w ? middleModelFor(w, ctx.stimuli) : null; },
+      fact: (m: CvcWord) => `Another word, ${m.word}, is shown in three boxes with the middle box lit; its middle sound is "${modelMiddleSaid(m)}".` },
+    { id: PATTERN_LEVER, type: 'clue', modes: BUILD, carrier: 'shown', answers: ['not_cvc', 'wrong_vowel', 'same_as_given', 'wrong_family'],
+      when: 'The learner\'s word does not have the shape the ask needs (the wrong middle sound, a different ending, or the given word back).',
+      does: 'Shows a pattern card above the boxes with the part the ask fixes and blanks for the rest, such as _ a _ or '
+        + '_ a t. No letter the learner must choose is filled in.',
+      content: item => { const b = build(item); return b ? patternFor(b) : null; },
+      fact: (pattern: string) => `A pattern card above the boxes shows: ${pattern}.` },
+    { id: MODEL_WORD_LEVER, type: 'model', modes: BUILD, answers: ['not_a_word'],
+      when: 'The learner makes letters that are not a real word.',
+      does: 'Shows one solved word of the same kind made with other letters (another vowel or family), so the learner '
+        + 'sees how a real word comes out. It shares no answer with this item.',
+      content: item => { const b = build(item); return b ? modelFor(b) : null; },
+      fact: (model: string) => `A solved example on other letters is shown: ${model}.` },
+    { id: SMALL_BANK_LEVER, type: 'easier', modes: BUILD, carrier: 'shown', answers: ['not_a_word'],
+      when: 'The learner keeps making letters that are not a word, or cannot start with so many letters.',
+      does: 'Opens the same ask first with a smaller letter bank, one word only. It is not graded; the full item comes '
+        + 'back after it.',
+      content: item => { const b = build(item); const small = b && smallBankFor(b); return b && small ? asCvcBuild(small, b.supportTier) : null; } },
+  ],
+});
+
+/** The build levers bound for the shared letter build surface: its items carry no mode or tier, so they are stamped. */
+export function cvcBuildLevers(ctx: CvcLeverContext, supportTier: CvcBuild['supportTier']) {
+  const bound = CVC_LEVERS.bind(ctx);
+  const stamp = (item: LetterBuildItem) => asCvcBuild(item, supportTier);
+  return {
+    declare: (item: LetterBuildItem, pulled: readonly string[]) => bound.declare(stamp(item), pulled),
+    onScreen: (item: LetterBuildItem, pulled: readonly string[]) => bound.onScreen(stamp(item), pulled),
+    simpler: (item: LetterBuildItem, lever: string) => bound.simpler(stamp(item), lever) as CvcBuild | null,
+    support: (item: LetterBuildItem) => bound.support(stamp(item)),
+  };
+}
+
+/** A word item's practice word when `small_word` is pulled, else null (the journey rebuilds `~simpler` with it). */
+export const practiceWordFor = (item: CvcWordItem, ctx: CvcLeverContext) =>
+  CVC_LEVERS.simpler(item, ctx, SMALL_WORD_LEVER) as CvcWordItem | null;
+

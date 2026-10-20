@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
- * gravity-drop-tower on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every item is code-keyed from one physics model: the key is published only as the spoken expectedAnswer, nothing on
+ * gravity-drop-tower on its boss (SAY_OR_SHOW modes and a compare board on the spoken preset) and its lever set: what
+ * is its own. The generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet
+ * and the wiring.
+ * Every item is code-keyed from one physics model: the key is published only as the spoken key (`dropKey`), nothing on
  * screen or in the scene states it before credit (the asked drop has not run, the asked row reads "?"), observe opens
  * its choices only after the learner drops, a wrong answer names its miss, and every miss has a help lever first.
  */
@@ -21,14 +22,18 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { GravityDropTowerData } from './GravityDropTower';
 import {
   askOf, buildDropItems, choicesOf, DROP_MISSES, dropHarnessAnswers, dropItems, dropMiss, fallen, FALLERS, fallTime, G, keyChoice,
-  keyOrder, landTogether, seededRng, tapLabel, validDropItem, workspaceAssignment,
+  keyOrder, landTogether, seededRng, tapLabel, validDropItem,
   type DropItem, type DropMode, type DropTier,
 } from './gravityDropWorkspace';
 import {
-  AIR_LEVER, airLines, dropLevers, FALL_LEVER, fallLines, FILL_LEVER, fillLines, FORMULA_LEVER, formulaLines, leverLeak,
+  AIR_LEVER, airLines, DROP_LEVERS, FALL_LEVER, fallLines, FILL_LEVER, fillLines, FORMULA_LEVER, formulaLines, leverLeak,
   MOON_LEVER, MOON_LINES, ONE_ROW_LEVER, OUTCOME_LEVER, PATTERN_LEVER, patternLines, possibleMisses, SAME_LOOK_LEVER,
   simplerItem, SLOW_LEVER, TIME_FIRST_LEVER, TWO_DROPS_LEVER,
 } from './gravityDropLevers';
+import { gravityDropTowerBoss } from './gravityDropTower.boss';
+
+/** The levers an item declares. */
+const declared = (i: DropItem) => DROP_LEVERS.declare(i, {}, []);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -70,7 +75,8 @@ it.each(MODES)('%s binds with its key out of the scene and off the screen, and n
   expect(getComponentById('gravity-drop-tower')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(gravityDropTowerBoss.assignment(item).task);
+  expect(gravityDropTowerBoss.assignment(item)).toMatchObject(mode === 'compare' ? { response: 'gesture' } : { response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe(mode === 'compare' ? 'gesture' : 'speech');
   if (mode !== 'compare') expect(h.state().task!.workspace!.expectedAnswer).toContain(keyChoice(item));
   else expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
@@ -289,7 +295,7 @@ describe('the pure rules', () => {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...DROP_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
         if (i.ask !== 'order') for (const c of choicesOf(i)) expect(!!dropMiss(i, { choice: c, order: [] }), `${i.id} ${c}`).toBe(c !== keyChoice(i));
-        const ls = dropLevers(i, []);
+        const ls = declared(i);
         for (const miss of possibleMisses(i)) {
           expect(DROP_MISSES[mode]).toContain(miss);
           expect(ls.find(l => l.id === nextLever(ls, miss))?.kind, `${i.id} ${miss}`).toBe('help');
@@ -318,12 +324,20 @@ describe('the pure rules', () => {
       expect(validDropItem(s)).toBe(true);
       expect(keyChoice(s)).not.toBe(keyChoice(i));
       expect(simplerItem(s)).toBeNull();
-      expect(dropLevers(s, [])).toEqual([]);
+      expect(declared(s).filter(l => l.kind === 'simplify')).toEqual([]);
     }
     expect(simplerItem(OBS_AIR)).toBeNull();
-    expect(dropLevers(OBS_AIR, []).map(l => l.id)).toEqual([SLOW_LEVER]);
-    expect(dropLevers(CMP, []).map(l => l.id)).toEqual([SAME_LOOK_LEVER, FALL_LEVER, TWO_DROPS_LEVER]);
-    expect(dropLevers(MEAS, []).map(l => l.id)).toEqual([PATTERN_LEVER, ONE_ROW_LEVER]);
+    expect(declared(OBS_AIR).map(l => l.id)).toEqual([SLOW_LEVER]);
+    expect(declared(CMP).map(l => l.id)).toEqual([SAME_LOOK_LEVER, FALL_LEVER, TWO_DROPS_LEVER]);
+    expect(declared(MEAS).map(l => l.id)).toEqual([PATTERN_LEVER, ONE_ROW_LEVER]);
+  });
+
+  it('every built item passes the boss: no ask says its key, and only compare has no key', () => {
+    for (const mode of MODES) for (const tier of TIERS) for (const seed of [1, 2, 3]) {
+      const items = buildDropItems({ modes: [mode], tier, rng: seededRng(`${mode}${tier}${seed}`) });
+      expect(() => gravityDropTowerBoss.validate({ title: 'Drops', challengeTypes: [mode], items }), `${mode} ${tier} ${seed}`).not.toThrow();
+      for (const i of items) expect(gravityDropTowerBoss.spoken!.key(i) === null).toBe(mode === 'compare');
+    }
   });
 
   it('a legacy lesson (challenges with types) still builds code items in its modes, the same every time', () => {

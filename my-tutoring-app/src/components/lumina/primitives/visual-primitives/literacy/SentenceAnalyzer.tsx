@@ -311,7 +311,7 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
     const levers = practice ? [] : SENTENCE_LEVERS.declare(sessionItem, session, pulledLevers);
     workspace.current = {
       ...leverScene(sentenceScene(currentItem), {
-        support: practice ? '' : SENTENCE_LEVERS.support(sessionItem),
+        support: practice ? '' : SENTENCE_LEVERS.support(sessionItem, session),
         onScreen: practice ? '' : SENTENCE_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

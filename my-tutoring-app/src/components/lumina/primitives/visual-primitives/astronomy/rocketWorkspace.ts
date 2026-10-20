@@ -23,14 +23,17 @@
  *   lowest). easy: 2 rockets, one difference; medium: 3 in a chain of differences; hard: 4, the one with the most fuel is
  *   too heavy to lift off.
  *
- * Every item is a sayable closed choice (J14, user 10-13): spoken and judged against `expectedAnswer`, or tapped and
- * checked by code.
+ * Every item is a sayable closed choice (J14, user 10-13): said and judged by the tutor against its key (`rocketKey`), or
+ * tapped and checked by code. The boss (`rocketBuilder.boss.ts`) builds the assignment from them.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { ROCKET_MISSES } from './rocketBuilder.card';
+
+export { ROCKET_MISSES };
 
 export type RocketMode = 'can_it_lift' | 'add_to_lift' | 'on_budget' | 'reach_target';
 export const ROCKET_MODES: RocketMode[] = ['can_it_lift', 'add_to_lift', 'on_budget', 'reach_target'];
@@ -152,12 +155,6 @@ export type AddMiss = 'added_no_push' | 'heavy_engine' | 'too_weak';
 export type BudgetMiss = 'over_budget' | 'no_lift' | 'fails_both';
 export type ReachMiss = 'picked_no_lift' | 'picked_lower' | 'picked_higher';
 export type RocketMiss = LiftMiss | AddMiss | BudgetMiss | ReachMiss;
-export const ROCKET_MISSES: Record<RocketMode, readonly RocketMiss[]> = {
-  can_it_lift: ['said_equal_lifts', 'said_lifts', 'said_stays'],
-  add_to_lift: ['heavy_engine', 'added_no_push', 'too_weak'],
-  on_budget: ['fails_both', 'over_budget', 'no_lift'],
-  reach_target: ['picked_no_lift', 'picked_lower', 'picked_higher'],
-};
 
 export function optionMiss(item: RocketItem, i: number): RocketMiss | undefined {
   const key = keyOf(item);
@@ -534,28 +531,29 @@ export function revealText(item: RocketItem): string {
   return `The ${rocketLabel(k).toLowerCase()} flies least high${above ? `: the ${rocketLabel(above).toLowerCase()} beats it because ${betterBecause(above, k)}` : ''}.`;
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 const optionLabels = (item: RocketItem) => Array.from({ length: optionCount(item) }, (_, i) => optionLabel(item, i));
 
-function keySays(item: RocketItem, at: number): string {
-  if (item.mode === 'can_it_lift') return at === 0 ? '"yes", "it lifts off", "it goes up", "it flies"' : '"no", "it stays", "it stays on the pad", "it does not lift off"';
+/** The ways a learner says choice `at`, beside its label. */
+function waysToSay(item: RocketItem, at: number): string[] {
+  if (item.mode === 'can_it_lift') return at === 0 ? ['yes', 'it lifts off', 'it goes up', 'it flies'] : ['no', 'it stays', 'it stays on the pad', 'it does not lift off'];
+  const place = `the ${ORDINAL[at]} one`;
   if (item.mode === 'add_to_lift') {
     const p = item.options[at];
-    return p.kind === 'engine' ? `"the ${p.color} engine", "the ${p.color} one", "${p.color}"` : `"the ${partLabel(p).toLowerCase()}"`;
+    return p.kind === 'engine' ? [`the ${p.color} engine`, `the ${p.color} one`, `${p.color}`, place] : [`the ${partLabel(p).toLowerCase()}`, place];
   }
   const c = item.rockets[at].color;
-  return `"the ${c} rocket", "the ${c} one", "${c}"`;
+  return [`the ${c} rocket`, `the ${c} one`, c, place];
 }
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function rocketExpectedAnswer(item: RocketItem): string {
+/** The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. */
+export function rocketKey(item: RocketItem): SpokenKey {
   const labels = optionLabels(item), at = keyOf(item);
-  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`).join(', ');
-  const place = item.mode === 'can_it_lift' ? '' : `, or its place in the row ("the ${ORDINAL[at]} one")`;
-  return `"${labels[at]}" (choice ${at + 1} of ${labels.length}): ${keySays(item, at)}${place} count. `
-    + `${others} ${labels.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`);
+  return { answer: labels[at], alsoAccept: waysToSay(item, at),
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.` };
 }
 
 const MISS_WORDS: Record<RocketMiss, string> = {
@@ -587,20 +585,6 @@ export function rocketSpokenMisses(item: RocketItem): KnownMiss[] {
   return out;
 }
 
-const HOW: Record<RocketMode, string> = {
-  can_it_lift: 'The learner answers by saying yes or no, or tapping a choice and pressing Check; the rocket launches only after that.',
-  add_to_lift: 'The learner answers by saying which part, or tapping one and pressing Add it and check; the rocket launches only after that.',
-  on_budget: 'The learner answers by saying which rocket, or tapping one and checking it.',
-  reach_target: 'The learner answers by saying which rocket, or tapping one and checking it; the rockets launch only after that.',
-};
-
-/** Every item is a sayable closed choice: spoken (judged against `expectedAnswer`) or tapped and checked by code. */
-export function workspaceAssignment(item: RocketItem): TeachingAssignment {
-  const misses = rocketSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: rocketExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface RocketView {
@@ -630,8 +614,7 @@ export function describeRocketWork(item: RocketItem | undefined, w: RocketWork):
   return item.mode === 'can_it_lift' ? `Chose "${optionLabel(item, w.pick)}"` : `Picked the ${optionLabel(item, w.pick).toLowerCase()}`;
 }
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. No total, sum or '
-  + 'comparison of push and weight is drawn. You cannot tap or check for the learner.';
+const CONSTRAINTS = 'No total, sum or comparison of push and weight is drawn.';
 /** What launches when (replay 10-16: after a miss the tutor said "the rocket stayed on the pad", the key of a yes-or-no item). */
 const LAUNCHES: Record<RocketMode, string> = {
   can_it_lift: 'The rocket launches only once the answer is credited. After a wrong answer nothing has launched: the screen shows no rocket flying or staying down.',

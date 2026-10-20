@@ -1,17 +1,17 @@
 /**
- * Mixing and dissolving on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, C26).
+ * Mixing and dissolving's items, keys, misses and scene: the pure half of its boss (`mixingAndDissolving.boss.ts`).
  *
  * Every item is one challenge with a key held by code (`correctOptionIndex`). The learner can test substances in the
- * beaker first, then answers by tapping one choice and Submit Answer, or by saying it (VB-1, user ruling 10-13: a
- * sayable choice takes speech as well as the tap); JEV judges speech against `expectedAnswer`.
+ * beaker first, then says the answer (the tutor judges it against `dissolvingKey`) or taps one choice and presses
+ * Submit Answer (the activity checks the tap): a SAY_OR_SHOW card (`mixingAndDissolving.card.ts`).
  *
  * Mode items: `dissolve` sorts (built here from each substance's own `type`, the same field the beaker draws from)
  * plus the generator's particle question; `classify` is built here from `type` (solution, suspension, two layers);
- * `separate` is the generator's method question. Pure: the generator, component, adapter, journey and tests read it.
+ * `separate` is the generator's method question. Pure: the generator, component, boss, journey and tests read it.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { DissolvingChallenge, MixingAndDissolvingData, SubstanceEntry } from './MixingAndDissolving';
 
 // ── Code-built items (the generator calls these under a pinned mode) ─────────
@@ -139,21 +139,30 @@ export const dissolvingCorrect = (ch: DissolvingChallenge | null | undefined, ch
 export const describeDissolvingWork = (ch: DissolvingChallenge | null | undefined, choiceIndex: number | null) =>
   ch && choiceIndex !== null && ch.options[choiceIndex] !== undefined ? `Chose "${ch.options[choiceIndex]}"` : 'Nothing chosen yet';
 
-// ── Assignment ───────────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────
+
+/** The catalog's eval modes. A challenge type no mode pins (the 6-7 factor, saturation and concentration questions)
+ *  counts as dissolve, the mode of the open lab. */
+export type DissolvingMode = 'dissolve' | 'classify' | 'separate';
+export const dissolvingMode = (ch: Pick<DissolvingChallenge, 'type'>): DissolvingMode =>
+  (ch.type === 'classify' ? 'classify' : ch.type === 'separate' ? 'separate' : 'dissolve');
 
 const stripEnd = (t: string) => t.trim().replace(/[.!?]+$/, '');
 const quoted = (xs: readonly string[]) => xs.map(x => `"${stripEnd(x)}"`).join(', ');
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function dissolvingExpectedAnswer(ch: DissolvingChallenge): string {
+/** The key a spoken reply is judged against: the right choice, the ways a learner says it, and the others as wrong. */
+export function dissolvingKey(ch: DissolvingChallenge): SpokenKey {
   const key = keyText(ch), others = ch.options.filter((_, i) => i !== ch.correctOptionIndex);
   const side = ch.type === 'dissolve_sort' ? sortSide(key) : null;
-  const sayings = side === 'yes' ? ' "Yes", "it dissolves" or "it disappears into the water" count too.'
-    : side === 'no' ? ' "No", "it does not dissolve" or "it stays there" count too.' : '';
-  return `"${stripEnd(key)}" (choice ${ch.correctOptionIndex + 1} of ${ch.options.length}). The whole choice, the part that tells it `
-    + `apart from the others, or its place in the list ("the ${ORDINAL[ch.correctOptionIndex] ?? 'last'} one") all count.${sayings} `
-    + `${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`;
+  const sayings = side === 'yes' ? ['yes', 'it dissolves', 'it disappears into the water']
+    : side === 'no' ? ['no', 'it does not dissolve', 'it stays there'] : [];
+  return {
+    answer: stripEnd(key),
+    alsoAccept: [`the ${ORDINAL[ch.correctOptionIndex] ?? 'last'} one`, ...sayings],
+    ...(key.trim().split(/\s+/).length > 1 ? { acceptRule: 'The part of the choice that tells it apart from the others counts too.' } : {}),
+    signatureError: `${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`,
+  };
 }
 
 /** A spoken item's known wrong answers, most specific first, with the tap's ids: each wrong choice under its miss. */
@@ -170,12 +179,6 @@ export function dissolvingSpokenMisses(ch: DissolvingChallenge): KnownMiss[] {
     id, pattern: `${fact} The learner's answer is ${quoted(xs)}.`,
     examples: [...xs, ...(id === 'chose_dissolves' ? ['yes'] : id === 'chose_does_not_dissolve' ? ['no'] : [])].slice(0, 6),
   }));
-}
-
-export function workspaceAssignment(ch: DissolvingChallenge): TeachingAssignment {
-  const misses = dissolvingSpokenMisses(ch);
-  return { id: ch.id, task: `${ch.instruction.trim()} The learner answers by saying it, or tapping one choice and pressing Submit Answer.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: dissolvingExpectedAnswer(ch), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────
@@ -204,9 +207,9 @@ export function workspaceScene(ch: DissolvingChallenge, view: DissolvingView, la
     question: ch.instruction.trim(),
     choices: ch.options.map((o, i) => `${i + 1}) ${o}`).join('  '),
     learnerWork: describeDissolvingWork(ch, view.choice),
-    constraints: 'The learner can test substances in the beaker, then answers by saying it, or by tapping one choice and '
-      + 'Submit Answer; the activity judges the tap. What the beaker shows after a substance goes in is the learner\'s to '
-      + 'see: never say whether it dissolved, sank or floats. You cannot add, stir, tap or point at a choice for the learner.',
+    // How the learner answers is the card's `moves`; what the beaker shows is the learner's to read.
+    constraints: 'What the beaker shows after a substance goes in is the learner\'s to see: never say whether it '
+      + 'dissolved, sank or floats.',
   };
   return { objects: [], facts };
 }

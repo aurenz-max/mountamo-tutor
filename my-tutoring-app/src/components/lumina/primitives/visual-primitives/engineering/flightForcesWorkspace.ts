@@ -1,5 +1,7 @@
 /**
- * flight-forces-explorer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C29).
+ * flight-forces-explorer's domain: the items, their keys, checks and misses, and the scene. Its live wiring is
+ * `flightForcesExplorer.card.ts` + `flightForcesExplorer.boss.ts` (SAY_OR_SHOW choices and an adjust flight on the
+ * spoken preset).
  *
  * Every item is built and keyed by code from four force sizes in whole units (lift up, weight down, thrust forward,
  * drag back). The motion follows from comparing each pair: lift against weight sets the height (climbs, sinks, stays
@@ -14,11 +16,12 @@
  *   easy has one control; medium two; hard two where raising the nose also adds drag, with a stall angle in reach.
  * predict and observe are closed choices said aloud or tapped (J14); adjust is a gesture checked by code.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { FLIGHT_MISSES } from './flightForcesExplorer.card';
 
 export type FlightMode = 'predict' | 'observe' | 'adjust';
 export const FLIGHT_MODES: FlightMode[] = ['predict', 'observe', 'adjust'];
@@ -186,11 +189,7 @@ export type PredictMiss = 'stall_more_lift' | 'missed_balance' | 'said_no_change
 export type ObserveMiss = 'followed_nose' | 'missed_balance' | 'said_no_change' | 'opposite_way';
 export type AdjustMiss = 'stalled' | 'forgot_drag' | 'lift_vs_weight' | 'thrust_vs_drag';
 export type FlightMiss = PredictMiss | ObserveMiss | AdjustMiss;
-export const FLIGHT_MISSES: Record<FlightMode, readonly FlightMiss[]> = {
-  predict: ['stall_more_lift', 'missed_balance', 'said_no_change', 'opposite_way'],
-  observe: ['followed_nose', 'missed_balance', 'said_no_change', 'opposite_way'],
-  adjust: ['stalled', 'forgot_drag', 'lift_vs_weight', 'thrust_vs_drag'],
-};
+export { FLIGHT_MISSES };
 
 /** The miss of one wrong row. */
 function rowMiss(item: PredictItem | ObserveItem, axis: Axis, chose: string): FlightMiss {
@@ -469,30 +468,50 @@ export function flightItems(d: FlightItemsSource): FlightItem[] {
     rng: seededRng(`${d.title ?? 'flight'}:${resolveAircraft(d)}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third'];
-const SAY: Record<string, string> = {
-  Climbs: '"climbs", "goes up", "rises" or "gains height"',
-  Sinks: '"sinks", "goes down", "drops", "descends" or "loses height"',
-  'Stays level': '"stays level", "flies level" or "stays at the same height"',
-  'Speeds up': '"speeds up", "goes faster" or "accelerates"',
-  'Slows down': '"slows down", "goes slower" or "loses speed"',
-  'Keeps its speed': '"keeps its speed", "stays at the same speed" or "steady speed"',
+/** The ways a learner says each choice, beside the choice itself. */
+const SAY: Record<string, readonly string[]> = {
+  Climbs: ['goes up', 'rises', 'gains height'],
+  Sinks: ['goes down', 'drops', 'descends', 'loses height'],
+  'Stays level': ['flies level', 'stays at the same height'],
+  'Speeds up': ['goes faster', 'accelerates'],
+  'Slows down': ['goes slower', 'loses speed'],
+  'Keeps its speed': ['stays at the same speed', 'steady speed'],
 };
+const said = (choice: string) => choice.toLowerCase();
+const ways = (choice: string) => [said(choice), ...SAY[choice]].map(w => `"${w}"`).join(', ');
+const place = (item: PredictItem | ObserveItem, a: Axis) => `the ${ORDINAL[choicesFor(a).indexOf(keyLabel(item, a))]} one`;
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function flightExpectedAnswer(item: PredictItem | ObserveItem): string {
+/**
+ * The key a spoken reply is judged against: the choice on each asked row, in any of its everyday wordings or by its
+ * place in the row. On a two-row item both parts are needed. The other choices are the signature error. An adjust item
+ * has no key: the activity checks the flight.
+ */
+export function flightKey(item: FlightItem): SpokenKey | null {
+  if (item.mode === 'adjust') return null;
   const axes = askedAxes(item);
-  const part = (a: Axis) => {
-    const key = keyLabel(item, a), at = choicesFor(a).indexOf(key);
-    return `the ${a}: "${key}" (${SAY[key]}, or its place in the ${a} row, "the ${ORDINAL[at]} one")`;
-  };
   if (axes.length === 1) {
-    const others = choicesFor(axes[0]).filter(c => c !== keyLabel(item, axes[0])).map(c => `"${c}"`).join(', ');
-    return `${part(axes[0]).replace(/^the \w+: /, '')} counts. ${others} are wrong, and so is naming two or hedging between them.`;
+    const a = axes[0], key = keyLabel(item, a);
+    const others = choicesFor(a).filter(c => c !== key).map(c => `"${said(c)}"`).join(', ');
+    return { answer: said(key), alsoAccept: [...SAY[key], place(item, a)],
+      acceptRule: `Its place in the ${a} row ("${place(item, a)}") names it too.`,
+      signatureError: `${others} are wrong, and so is naming two or hedging between them.` };
   }
-  return `Two parts, both needed: ${part('height')}; and ${part('speed')}. One part wrong, or only one part said, is not credited.`;
+  const h = keyLabel(item, 'height'), s = keyLabel(item, 'speed');
+  return { answer: `${said(h)} and ${said(s)}`, alsoAccept: [`${said(s)} and ${said(h)}`],
+    acceptRule: `Two parts, both needed, in any order: the height (${ways(h)}, or "${place(item, 'height')}" in the height row) `
+      + `and the speed (${ways(s)}, or "${place(item, 'speed')}" in the speed row).`,
+    signatureError: 'One part wrong, or only one part said, is not credited.' };
+}
+
+/** A predict ask states the plane before the change by design ("flying level at a steady speed"). */
+export const flightGiven = (item: FlightItem): readonly string[] => (item.mode === 'predict' ? ['flying level at a steady speed'] : []);
+
+/** How a learner says a choice item's work aloud (the harness's spoken answers). */
+export function flightSaid(item: PredictItem | ObserveItem, w: FlightWork): string {
+  return askedAxes(item).map(a => said(w[a] ?? '')).join(' and ');
 }
 
 const WHAT: Record<FlightMiss, string> = {
@@ -517,16 +536,6 @@ export function flightSpokenMisses(item: PredictItem | ObserveItem): KnownMiss[]
     }
   }
   return out;
-}
-
-const HOW_CHOICE = 'The learner answers by saying it, or tapping a choice and pressing Check Answer.';
-const HOW_ADJUST = 'The learner sets the controls with the buttons and presses Fly and check.';
-
-export function workspaceAssignment(item: FlightItem): TeachingAssignment {
-  if (item.mode === 'adjust') return { id: item.id, task: `${askOf(item)} ${HOW_ADJUST}`, response: 'gesture' };
-  const misses = flightSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${item.mode === 'observe' && item.asked === 'both' ? HOW_CHOICE.replace('a choice', 'one choice in each row') : HOW_CHOICE}`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: flightExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -554,10 +563,29 @@ export function describeFlightWork(item: FlightItem | undefined, w: FlightWork):
   return chosen.length ? `Chose ${chosen.join(' and ')}` : 'Nothing chosen yet';
 }
 
-const CONSTRAINTS_CHOICE = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. '
-  + 'Nothing on screen names what the plane is doing; the plane moves only after the answer is credited. You cannot tap, check or move the plane for the learner.';
-const CONSTRAINTS_ADJUST = 'The learner sets the controls and presses Fly and check; the activity judges the setting against the goal. '
-  + 'No label names what the plane is doing; it moves only when flown. You cannot press the controls or fly it for the learner.';
+const LAYOUT_CHOICE = 'Nothing on screen names what the plane is doing; the plane holds still until the answer is credited.';
+const LAYOUT_ADJUST = 'No label names what the plane is doing; it holds still until it is flown.';
+
+const PAIR_RULE = 'never say a pair is now bigger, smaller or equal ("lift is smaller than weight", "when lift is much smaller '
+  + 'than weight, what happens?"), even when a card or the arrows show it, or what the plane does.';
+/** What this item's task forbids saying, beyond the shared rules (kept from the catalog's guidance before the boss). */
+function neverSay(item: FlightItem): string {
+  if (item.mode === 'predict') {
+    return [item.named ? `Never ${PAIR_RULE.slice('never '.length)}` : `Never say which force the action changes; ${PAIR_RULE}`,
+      item.later ? 'Never say what happens to the speed or that the speed changes the lift: that step is the task.' : '']
+      .filter(Boolean).join(' ');
+  }
+  if (item.mode === 'observe') {
+    return 'Never compare a pair for the learner ("lift is longer") or count its units; ask which two arrows decide the '
+      + 'height and which two the speed.';
+  }
+  return 'Never say which control to change, which way or by how much, and never tell the learner to balance, match or '
+    + 'even out a pair (that is the answer on a level or steady goal); after a flight, ask what the plane did and which pair '
+    + 'of arrows explains it. The dashed marks only show where an arrow would equal its partner: never call them targets '
+    + 'or say an arrow must reach or match them.';
+}
+const NEVER_EXPLAIN = 'After a miss, never say what the wrong choice came from. Describe a lever card only by what the scene '
+  + 'says it shows, never as the conclusion.';
 
 /** What is drawn and asked. Choices named, never which is right; the motion only once credited (or flown). */
 export function workspaceScene(item: FlightItem, view: FlightView): WorkspaceScene {
@@ -584,11 +612,13 @@ export function workspaceScene(item: FlightItem, view: FlightView): WorkspaceSce
     }
   }
   facts.learnerWork = describeFlightWork(item, view.work);
-  facts.constraints = item.mode === 'adjust' ? CONSTRAINTS_ADJUST : CONSTRAINTS_CHOICE;
+  facts.layout = item.mode === 'adjust' ? LAYOUT_ADJUST : LAYOUT_CHOICE;
+  facts.constraints = neverSay(item);
+  facts.neverSay = NEVER_EXPLAIN;
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ──────────────────────────────
 
 /** The journey's answers: the key, and a wrong answer showing the mode's first-listed miss it can. */
 export function flightHarnessAnswers(item: FlightItem): { correct: FlightWork; plainWrong: FlightWork } {

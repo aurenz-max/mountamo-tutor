@@ -56,16 +56,12 @@ vi.mock('@/lib/authApiClient', () => ({ authApi: { post: vi.fn(), get: vi.fn() }
 
 type Loader = () => Promise<{ default: React.ComponentType<{ data: Record<string, unknown> }> }>;
 const COMPONENTS: Record<string, Loader> = {
-  'compare-objects': () => import('../../primitives/visual-primitives/math/CompareObjects'),
-  'counting-board': () => import('../../primitives/visual-primitives/math/CountingBoard'),
   'ten-frame': () => import('../../primitives/visual-primitives/math/TenFrame'),
   'di-deduction': () => import('../../primitives/visual-primitives/direct-instruction/DiDeduction'),
   'di-dice-roll': () => import('../../primitives/visual-primitives/direct-instruction/DiDiceRoll'),
   'di-word-problem-setup': () => import('../../primitives/visual-primitives/direct-instruction/DiWordProblemSetup'),
   'di-worked-procedure': () => import('../../primitives/visual-primitives/direct-instruction/DiWorkedProcedure'),
-  'letter-sound-link': () => import('../../primitives/visual-primitives/literacy/LetterSoundLink'),
   'oral-sentence-studio': () => import('../../primitives/visual-primitives/literacy/OralSentenceStudio'),
-  'ordinal-line': () => import('../../primitives/visual-primitives/math/OrdinalLine'),
   'place-value-chart': () => import('../../primitives/visual-primitives/math/PlaceValueChart'),
   'sentence-analyzer': () => import('../../primitives/visual-primitives/literacy/SentenceAnalyzer'),
   'sorting-station': () => import('../../primitives/visual-primitives/math/SortingStation'),

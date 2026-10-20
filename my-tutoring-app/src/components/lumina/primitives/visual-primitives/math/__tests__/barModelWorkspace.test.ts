@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { graphComparisonFacts, graphExplanationAsk, workspaceAssignment } from '../barModelWorkspace';
+import { graphComparisonFacts, graphExplanationAsk } from '../barModelWorkspace';
+import { barModelBoss } from '../barModel.boss';
 import type { BarModelChallenge } from '../BarModel';
 import { barModelOracle } from '../../../../service/qa/oracles/bar-model';
 
@@ -32,7 +33,7 @@ describe('graph explanation meaning contract', () => {
   it('keeps facts private in the ask; the facts reach the tutor only as the expected answer', () => {
     const ask = graphExplanationAsk(pair);
     expect(ask).not.toMatch(/[0-9]| four | two |have the most|than Afternoon/);
-    const assigned = workspaceAssignment(pair);
+    const assigned = barModelBoss.assignment(pair);
     expect(assigned).toMatchObject({ response: 'speech', task: ask });
     expect(assigned.expectedAnswer).toContain('Morning has fewer Pears than Afternoon.');
   });

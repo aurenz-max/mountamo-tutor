@@ -20,7 +20,8 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { ConstellationChallenge, StarData } from './ConstellationBuilder';
-import { identifyOptions, nameHarnessAnswers, traceHarnessTaps, workspaceAssignment } from './constellationWorkspace';
+import { identifyOptions, nameHarnessAnswers, traceHarnessTaps } from './constellationWorkspace';
+import { constellationBuilderBoss } from './constellationBuilder.boss';
 import { practiceItem } from './constellationLevers';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
@@ -49,12 +50,12 @@ const mount = (mode: string, challenges: ConstellationChallenge[], extra: Record
   return h;
 };
 /** The journey's inputs, through the real controls. */
-function perform(h: WorkspaceHarness, c: ConstellationChallenge, all: ConstellationChallenge[], intent: 'wrong' | 'correct') {
+function perform(h: WorkspaceHarness, c: ConstellationChallenge, intent: 'wrong' | 'correct') {
   if (c.type === 'guided_trace' || c.type === 'free_connect') {
     const taps = traceHarnessTaps(c);
     for (const id of intent === 'wrong' ? taps.plainWrong : taps.correct) h.touch(`star-${id}`);
   } else {
-    const answers = nameHarnessAnswers(c, all);
+    const answers = nameHarnessAnswers(c);
     h.press(intent === 'wrong' ? answers.plainWrong : answers.correct);
     if (c.type === 'seasonal') h.press('Check Answer');
   }
@@ -76,7 +77,7 @@ it.each(Object.keys(CHALLENGES))('%s: tutor-owned with no scripted cue; a wrong 
     const task = h.state().task!;
     if (mode === 'identify' || mode === 'seasonal') {
       // A name may be said: the observer judges it against the key, which the tutor needs to judge it.
-      expect(task.workspace!.expectedAnswer).toBe('Cassiopeia');
+      expect(task.workspace!.expectedAnswer).toBe('"Cassiopeia".');
       expect(task.demand.response).toBe('speech');
       // The screen and the task ask the plain question; the name is on screen once, as one of the choices.
       expect(h.view.container.textContent).not.toMatch(/W-shaped|queen/);
@@ -88,14 +89,14 @@ it.each(Object.keys(CHALLENGES))('%s: tutor-owned with no scripted cue; a wrong 
       // Never which star is next or which stars join.
       expect(JSON.stringify(task)).not.toMatch(/\bp[1-5]\b/);
     }
-    perform(h, c, [c], 'wrong');
+    perform(h, c, 'wrong');
     expect(h.state().task!.evidence.correctness).toBe('incorrect');
     const miss = attempts(h).at(-1)?.miss;
     expect(getComponentById('constellation-builder')!.teachingWorkspace!.misses![mode]).toContain(miss);
     // The answer is still not drawn after the miss: no Star Lore card.
     expect(h.view.container.textContent).not.toContain('Star Lore');
     h.dispatch('retry'); h.confirmVisible();
-    perform(h, c, [c], 'correct');
+    perform(h, c, 'correct');
     expect(h.state().task!.evidence.correctness).toBe('correct');
     h.dispatch('advance'); h.confirmVisible();
     expect(h.state().status).toBe('completed');
@@ -170,14 +171,14 @@ it('identify: a spoken name the tutor credits shows as a correct tap; a wrong on
   const c = CHALLENGES.identify;
   const h = mount('identify', [c, { ...c, id: 'i2' }]);
   // The known wrong names reach the spoken-miss observer, never the tutor's packet.
-  expect(workspaceAssignment(c, [c]).misses?.map(m => [m.id, m.examples])).toEqual([['wrong_name', ['Orion', 'Leo']]]);
+  expect(constellationBuilderBoss.assignment(c).misses?.map(m => [m.id, m.examples])).toEqual([['wrong_name', ['Orion', 'Leo']]]);
   h.say('Orion'); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
   h.say('Cassiopeia'); h.feedback('correct');
   expect(h.view.container.textContent).toContain("Yes! That's Cassiopeia!");
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('i2');
-  perform(h, c, [c], 'correct');
+  perform(h, c, 'correct');
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
   await flushScoring();
@@ -190,7 +191,7 @@ it('identify: the easier pattern is ungraded practice with two names, neither on
   const h = mount('identify', [c], { title: 'Meet Cassiopeia' });
   // The title names the answer while the item is open: masked.
   expect(h.view.container.textContent).not.toContain('Meet Cassiopeia');
-  perform(h, c, [c], 'wrong');
+  perform(h, c, 'wrong');
   const receipt = h.dispatch('pull_lever', { lever: 'easier_pattern' });
   expect(receipt.status).toBe('committed');
   expect(receipt.state.task!.itemId).toBe('i~easier');
@@ -205,7 +206,7 @@ it('identify: the easier pattern is ungraded practice with two names, neither on
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('i');
   expect(h.view.container.textContent).not.toMatch(/Practice/);
-  perform(h, c, [c], 'correct');
+  perform(h, c, 'correct');
   expect(attempts(h).map(a => [a.itemId, a.correct])).toEqual([['i', false], ['i~easier', true], ['i', true]]);
   expect(attempts(h).at(-1)).toMatchObject({ levers: ['easier_pattern'] });
   h.close();
@@ -221,4 +222,15 @@ it('seasonal: another seasonal item seen in the same season is not offered as a 
   h.press('Cassiopeia'); h.press('Orion'); h.press('Check Answer'); h.settle();
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'several_names' });
   h.close();
+});
+
+it('the never-say rules ride in the scene: never the next star, and no star counts for a learner who cannot read', () => {
+  const k = mount('guided_trace', [CHALLENGES.guided_trace], { gradeLevel: 'K' });
+  expect(String(demand(k).constraints)).toMatch(/never say which star is next, where a star is or which stars join/);
+  expect(String(demand(k).constraints)).toMatch(/no star counts or step numbers/);
+  k.close();
+  const g3 = mount('identify', [CHALLENGES.identify]);
+  expect(String(demand(g3).constraints)).toMatch(/Never say the answer, its shape, its figure/);
+  expect(String(demand(g3).constraints)).not.toMatch(/star counts/);
+  g3.close();
 });

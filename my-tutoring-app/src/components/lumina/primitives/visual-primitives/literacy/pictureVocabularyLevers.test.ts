@@ -8,10 +8,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
-import { clueLeak, itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
-import { CLUE_LEVER, MODEL_LEVER, TWO_CARDS_LEVER, leversOnScreen, modelFor, modelLeak, pictureVocabLevers, pictureVocabMiss, practiceItemFor,
+import { clueLeak, itemsFromChallenges, pictureVocabSpokenMisses, type PictureVocabItem } from './pictureVocabularyDomain';
+import { CLUE_LEVER, MODEL_LEVER, PICTURE_VOCAB_LEVERS, TWO_CARDS_LEVER, modelFor, modelLeak, pictureVocabMiss, practiceItemFor,
   practiceLeak } from './pictureVocabularyLevers';
-import { PICTURE_VOCAB_SPOKEN_MISSES, pictureVocabSpokenMisses } from './pictureVocabularyWorkspace';
+import { PICTURE_VOCAB_SPOKEN_MISSES } from './pictureVocabulary.card';
 
 const load = (file: string): PictureVocabItem[] => itemsFromChallenges(JSON.parse(readFileSync(join(__dirname,
   '../../../components/live-activity/runtime/testing/w1-payloads', file), 'utf8')).data.challenges);
@@ -19,6 +19,8 @@ const tap = load('picture-vocabulary.receptive_match.levers.json');
 const say = load('picture-vocabulary.naming.levers.json');
 const old = load('picture-vocabulary.receptive_match.json');
 const entry = LITERACY_CATALOG.find(x => x.id === 'picture-vocabulary')!.teachingWorkspace!;
+const pictureVocabLevers = (item: PictureVocabItem, pulled: readonly string[], items: readonly PictureVocabItem[]) =>
+  PICTURE_VOCAB_LEVERS.declare(item, { items }, pulled);
 
 describe('picture-vocabulary misses', () => {
   it('a wrong tap is named against the target kind; right taps and spoken items name none', () => {
@@ -96,7 +98,8 @@ describe('relation modes: a worked model on other words (handoff 24)', () => {
       expect([...levers[0].answers!].sort()).toEqual([...entry.misses![mode]].sort());
       for (const miss of entry.misses![mode]) expect(nextLever(levers, miss)).toBe(MODEL_LEVER[mode]);
       // The scene fact names the model, never the item's answer.
-      const fact = leversOnScreen(item, [MODEL_LEVER[mode]!], saved[mode])!;
+      const fact = PICTURE_VOCAB_LEVERS.onScreen(item, { items: saved[mode] }, [MODEL_LEVER[mode]!]);
+      expect(fact).toBeTruthy();
       expect(fact.toLowerCase()).not.toMatch(new RegExp(`\\b${item.word.toLowerCase()}\\b`));
     }
   });

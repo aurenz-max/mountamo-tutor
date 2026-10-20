@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Fast fact on the teaching workspace: what is its own. The generic W1 contract
- * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * fast-fact on its boss (a SAY_OR_SHOW card on the spoken preset, split per item): what is its own. The generic W1
+ * contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -13,10 +13,10 @@ import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { LIVE_JOURNEYS } from '../../../components/live-activity/liveJourneySpec';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { FastFactChallenge } from './FastFact';
-import { fastFactMiss, workspaceScene } from './fastFactWorkspace';
+import { factHarnessChoices, fastFactMiss, workspaceScene } from './fastFactWorkspace';
+import { fastFactBoss } from './fastFact.boss';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -41,10 +41,11 @@ const data = (challenges: FastFactChallenge[]) => ({
   phaseConfig: { core: { label: 'Core', icon: '⚡', accentColor: 'blue' } }, gradeBand: 'K-2', challenges,
 }) as unknown as Record<string, unknown>;
 
-/** The journey row's own inputs, through the real buttons. */
+/** The harness's choices (the boss's `show` taps), through the real buttons. */
 function perform(h: ReturnType<typeof mountWorkspace>, d: Record<string, unknown>, intent: 'wrong' | 'correct') {
-  const inputs = LIVE_JOURNEYS['fast-fact'].inputsFor(intent, { itemId: h.state().task!.itemId, data: d } as never);
-  for (const input of inputs) if (input.type === 'choose') h.press(input.label);
+  const c = (d.challenges as FastFactChallenge[]).find(x => x.id === h.state().task!.itemId)!;
+  const { correct, wrong } = factHarnessChoices(c);
+  h.press(intent === 'correct' ? correct : wrong);
 }
 
 it('every catalog mode has a hand-built challenge', () => {
@@ -62,11 +63,10 @@ it.each(Object.keys(CHALLENGES))('%s: one checked tap; a wrong one names its mis
     const task = h.state().task!;
     expect(task.task).toContain(c.prompt.text);
     // Every choice can be said, so the item also takes it spoken: the observer judges against the key.
-    expect(task.workspace!.expectedAnswer).toBe(c.correctAnswer);
+    expect(task.workspace!.expectedAnswer).toMatch(new RegExp(`^"${c.correctAnswer}"`));
     expect(task.demand.response).toBe('speech');
     expect(JSON.stringify(task)).not.toMatch(/correctAnswer|acceptableAnswers|Because it is/);
     expect(task.demand).toMatchObject({ choices: c.options.join(' | '), learnerWork: 'No choice tapped yet' });
-    expect(seam.legacyAI).not.toHaveBeenCalled();
     expect(h.view.container.textContent).not.toMatch(/next challenge/i);
 
     perform(h, d, 'wrong');
@@ -105,6 +105,17 @@ it('picture choices stay a tap and publish no key', () => {
   const h = mountWorkspace({ primitiveId: 'fast-fact', evalMode: 'recognize', data: data([c]) });
   expect(h.state().task!.demand.response).toBe('gesture');
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+});
+
+it('per item inside one say-or-show mode: a question that names its answer is tap-only; one that says every choice gets a menu key', () => {
+  const named = fact('n', 'recognize', 'Tap the number 7.', '7', ['1', '7', '4']);
+  expect(fastFactBoss.assignment(named)).toEqual({ id: 'n', task: 'Tap the number 7.', response: 'gesture' });
+  const menu = fact('m', 'recall', 'Is 7 odd or even?', 'odd', ['odd', 'even']);
+  expect(fastFactBoss.assignment(menu)).toMatchObject({ response: 'speech', acceptsGesture: true });
+  expect(fastFactBoss.assignment(menu).expectedAnswer).toContain('The learner chooses one word from "odd", "even"');
+  // Given operands may be the answer: 3 × 1 asks for 3.
+  expect(fastFactBoss.assignment(fact('g', 'recall', '3 × 1 = ?', '3', ['1', '3', '4']))).toMatchObject({ response: 'speech' });
+  expect(workspaceScene(named, { picked: null }).facts.constraints).toContain('answered only by a tap');
 });
 
 it('a counting picture\'s label drops the count the alt text states', () => {

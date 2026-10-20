@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * energy-of-reactions on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer, nothing on screen states it before credit, a wrong tap names its miss, and every miss has a lever.
+ * energy-of-reactions on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set, mounted the way a lesson
+ * mounts it. Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as
+ * the spoken key (`energyKey`), nothing on screen states it before credit, a wrong tap names its miss, and every miss
+ * has a lever.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -18,15 +18,21 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { EnergyOfReactionsData } from './EnergyOfReactions';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import {
-  ABSORB, BOND_REACTIONS, bondCandidates, bondDeltaH, classifyReactions, DIAGRAMS, diagramCandidates, energyCorrect, energyHarnessAnswers,
-  energyItems, energyMiss, ENERGY_MISSES, keyChoice, NAME_LEAKS, RELEASE, releases, THERMO_REACTIONS, workspaceAssignment,
+  ABSORB, askOf, BOND_REACTIONS, bondCandidates, bondDeltaH, classifyReactions, DIAGRAMS, diagramCandidates, energyCorrect,
+  energyHarnessAnswers, energyItems, energyKey, energyMiss, keyChoice, NAME_LEAKS, RELEASE, releases, THERMO_REACTIONS,
   type DiagramKind, type EnergyItem, type EnergyMode,
 } from './energyOfReactionsWorkspace';
 import {
-  energyLevers, FEWER_LEVER, FLOW_LEVER, LINE_LEVER, MARK_LEVER, ROWS_LEVER, SIMPLER_LEVER, simplerItem, totalsLeak, totalsLines,
+  ENERGY_LEVERS, FEWER_LEVER, FLOW_LEVER, LINE_LEVER, MARK_LEVER, ROWS_LEVER, SIMPLER_LEVER, simplerItem, totalsLeak, totalsLines,
   TOTALS_LEVER, VALUES_LEVER,
 } from './energyOfReactionsLevers';
+import { ENERGY_MISSES } from './energyOfReactions.card';
+import { energyOfReactionsBoss } from './energyOfReactions.boss';
+
+/** The levers on an item once its reaction has run (start_mark waits for the run). */
+const energyLevers = (item: EnergyItem) => ENERGY_LEVERS.declare(item, { ran: true }, []);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -54,10 +60,13 @@ it.each(MODES)('%s binds as a spoken-or-tapped choice whose key stays out of the
   expect(getComponentById('energy-of-reactions')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(energyOfReactionsBoss.assignment(item).task);
+  expect(energyOfReactionsBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   const ws = h.state().task!.workspace!;
   expect(demand(h).response).toBe('speech');
-  expect(ws.expectedAnswer).toContain(keyChoice(item));
+  expect(ws.expectedAnswer).toContain(`"${energyKey(item).answer}"`);
+  // The scene's rule is this item's fact, never how the learner answers (the card's moves).
+  expect(String(demand(h).constraints)).not.toMatch(/tap|Check Answer|Run the reaction/i);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/answer is|correct|gets cold/i);
   if (item.mode === 'classify') expect(facts).not.toContain(item.reaction.fact);
@@ -108,11 +117,12 @@ it('classify: Run changes the reading; a wrong tap names its miss and closes the
   h.close();
 });
 
-it('classify: start_mark is refused before the run, then marks the start; heat_flow_card rides the next attempt', () => {
+it('classify: start_mark is offered only after the run, then marks the start; heat_flow_card rides the next attempt', () => {
   const h = mount('classify');
-  expect(levers(h)).toEqual([[MARK_LEVER, 'help', false], [FLOW_LEVER, 'help', false]]);
+  expect(levers(h)).toEqual([[FLOW_LEVER, 'help', false]]);
   expect(h.dispatch('pull_lever', { lever: MARK_LEVER }).status).toBe('blocked');
   h.press('Run the reaction'); h.settle();
+  expect(levers(h)).toEqual([[MARK_LEVER, 'help', false], [FLOW_LEVER, 'help', false]]);
   answer(h, energyHarnessAnswers(current(h, 'classify')).plainWrong);
   expect(nextLever(h.state().task!.workspace!.levers!, last(h)!.miss!)).toBe(MARK_LEVER);
   const receipt = h.dispatch('pull_lever', { lever: MARK_LEVER });
@@ -200,12 +210,22 @@ describe('the pure rules', () => {
         expect(!!energyMiss(item, c), `${item.id} ${c}`).toBe(c !== keyChoice(item));
         expect(energyCorrect(item, c)).toBe(c === keyChoice(item));
       }
-      const ls = energyLevers(item, []);
+      const ls = energyLevers(item);
       for (const c of item.choices.filter(c => c !== keyChoice(item))) {
         expect(ls.find(l => l.id === nextLever(ls, energyMiss(item, c)!))!.kind, `${item.id} ${c}`).toBe('help');
       }
       for (const l of ls) expect(`${l.when} ${l.does}`).not.toContain(keyChoice(item));
     }
+  });
+
+  it('no ask says its spoken key, and the key takes the ways a learner says the choice', () => {
+    for (const item of [...all('5-6'), ...all('7-8')]) expect(askLeaks(askOf(item), energyKey(item)), item.id).toEqual([]);
+    const cools = energyItems(data('classify')).find(i => i.mode === 'classify' && !releases(i.reaction))!;
+    expect(energyKey(cools)).toMatchObject({ answer: 'absorb', menu: ['release', 'absorb'] });
+    expect(energyKey(cools).alsoAccept).toContain('endothermic');
+    const bond = energyItems(data('bond_energy'))[0];
+    expect(energyKey(bond)).toMatchObject({ answer: '−185 kJ' });
+    expect(energyKey(bond).acceptRule).toMatch(/^The number 185 said any way.*"minus", "negative" or "released" with 185/);
   });
 
   it('diagram keys are arithmetic on the drawn levels, with every distractor a different number', () => {
@@ -246,7 +266,7 @@ describe('the pure rules', () => {
       if (simpler.mode === 'bond_energy' && item.mode === 'bond_energy') expect(simpler.reaction.id).not.toBe(item.reaction.id);
       expect(simpler.choices).toContain(keyChoice(simpler));
       expect(simplerItem(simpler)).toBeNull();
-      expect(energyLevers(simpler, [])).toEqual([]);
+      expect(ENERGY_LEVERS.simpler(simpler, { ran: true }, simpler.mode === 'bond_energy' ? SIMPLER_LEVER : FEWER_LEVER)).toBeNull();
     }
   });
 });

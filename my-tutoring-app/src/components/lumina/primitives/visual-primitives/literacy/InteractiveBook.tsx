@@ -1,49 +1,20 @@
 'use client';
 
 /**
- * InteractiveBook — a picture book: the child taps a printed book part (title, author,
- * heading, caption, page number) or reads a glowing word out loud. It runs only on the
- * shared tutor/JEV teaching workspace (workspace rollout C3; the scripted runner was
- * retired, LA-14, user ruling 09-23: one path). A tap is checked by the activity; a read
- * word is judged by the observer; the runtime owns progression. An unbound mount shows the
- * shared "needs the tutor" card. There is no advance timer and no Next button, and no
- * answer is on screen before it is credited.
+ * InteractiveBook, taught on the shared teaching workspace only (the boss: `interactiveBook.card.ts` +
+ * `interactiveBook.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * WHAT WENT, AND WHY:
- *  - **The push-to-talk capture and the tap-to-choose voice hook.** This was the
- *    last literacy surface where the child tapped a mic before answering — the
- *    open-mic doctrine violation this port discharges. The mic is now open for
- *    the whole run and the runner brackets every turn.
- *  - **The tap-the-glowing-word fallback.** Tapping the word completed an ORAL
- *    READING task without reading anything — the costume test kills it. The
- *    glowing word is read out loud or it is corrected out loud; there is no
- *    third path. (Tap only ever earned partial credit here, which was the tell.)
- *  - **The read-advance delay timer and the whole voice-mode fork.** Progression
- *    now has exactly one cause: the tutor's verdict.
- *  - **The three-attempt reveal-and-lock ladder and its printed reveal.**
- *    Corrections cap in the runner and the lesson moves on; the moveOn line
- *    names the answer so a capped item never ends with the link unmade.
- *  - **Free page navigation during the run.** The arrows let a child wander off
- *    the target page mid-question — the click-era catalog had a struggle entry
- *    for exactly that state. The screen now follows the lesson: each item shows
- *    its own page, which is what "the tutor owns the clock, the screen only
- *    follows" means for a book.
- *  - **The hint disclosure, the focus-word exploration side-quest, and seven
- *    improvised tutor sends.** The cues carry the entire spoken surface;
- *    tap-to-hear (🔊) re-speaks the question and is never withdrawn.
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - read-focus-word: the tutor reads a real book sentence up to one glowing word and stops; the child READS that word
+ *    out loud, and the tutor judges it against the key. Nothing in a paragraph is a button: tapping the word would
+ *    complete an oral-reading task without reading anything.
+ *  - find-feature: the tutor names a printed book part (title, author, heading, caption, page number); the child TAPS
+ *    it on the page. The tap IS the commit, checked by the activity (`commitGesture`); the tutor never sees the key.
+ * The screen follows the lesson: each item shows its own view (cover or page); there is no free page navigation, no
+ * advance timer and no Next button, and no answer is on screen before it is credited.
  *
- * WHAT STAYED:
- *  - **The book itself** — generated cover, pages, paragraphs, pictures. It is
- *    the page on the table; find-feature items tap its real printed parts (no
- *    menu is ever added), and read-focus-word items read its real sentence with
- *    the target glowing in place.
- *  - **The answer-leak architecture**: the manifest supplies no book text, no
- *    answers, no challenges; the generator derives every scored contract from
- *    the visible book, and the script's build gates re-check each item at the
- *    seam (interactiveBookScript.ts, one address for both sides of the wire).
- *
- * Cue lines, judging contracts and build gates live in `interactiveBookScript.ts`
- * (hand-authored, DISTAR). Nothing in this file writes a spoken line.
+ * The domain (build gates, ask, key, misses, scene) is `interactiveBookDomain.ts`; the levers
+ * `interactiveBookLevers.ts`. Nothing in this file writes a spoken line.
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -65,31 +36,30 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { InteractiveBookMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { itemsFromChallenges, type InteractiveBookItem } from './interactiveBookScript';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   describeBookTap,
   hearQuestionRequest,
-  interactiveBookAssignment,
-  interactiveBookScene,
-  hotspotsFor,
   interactiveBookMiss,
+  interactiveBookScene,
+  partsOf,
   tapMatches,
   type BookHotspot,
-} from './interactiveBookWorkspace';
-import { CVC_FOCUS_LEVER, FOCUS_DOTS_LEVER, MODEL_LEVER, TWO_PARTS_LEVER, cvcFocus, interactiveBookLevers, modelFor, practicePage }
-  from './interactiveBookLevers';
+  type InteractiveBookItem,
+} from './interactiveBookDomain';
+import { interactiveBookBoss, interactiveBookItems } from './interactiveBook.boss';
+import { FOCUS_DOTS_LEVER, INTERACTIVE_BOOK_LEVERS, MODEL_LEVER, modelFor } from './interactiveBookLevers';
 import { generateConceptImage } from '../../../service/geminiClient-api';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { interactiveBookPipPose } from '../../../pip/interactiveBookPipPose';
 
 export type InteractiveBookMode = 'text-features' | 'focus-word-reading' | 'mixed';
 export type InteractiveBookChallengeType = 'find-feature' | 'read-focus-word';
@@ -151,6 +121,8 @@ export interface InteractiveBookData {
   mode: InteractiveBookMode;
   challengeType: InteractiveBookChallengeType | 'mixed';
   wordDifficulty: BookWordDifficulty;
+  /** The lesson's support tier (config.difficulty): when the model lever comes. Absent: medium. */
+  supportTier?: SupportTier;
   /** V1 contains one book. The array shape preserves the PRD's story/compare expansion seam. */
   books: [InteractiveBookVolume, ...InteractiveBookVolume[]];
   /** 4-6 required challenges, synthesized from the generated book. */
@@ -191,6 +163,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   const {
     title,
     challenges,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -199,32 +172,27 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     onEvaluationSubmit,
   } = data;
   const book = data.books[0];
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `interactive-book-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
+  /** The boss's builder: the component, the boss and the journey drop the same unaskable items. */
   const items = useMemo<InteractiveBookItem[]>(
-    () => itemsFromChallenges(challenges),
-    [challenges],
+    () => interactiveBookItems({ challenges, supportTier }),
+    [challenges, supportTier],
   );
 
   // ── Per-item stage state ───────────────────────────────────────────────────
   /** The tapped feature text (find-feature) — cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
-  const tappedRef = useRef<string | null>(null);
   // In-item levers (`interactiveBookLevers.ts`), keyed by the session item they were pulled on, and the practice
-  // page a simplify lever put on screen in place of the book page.
+  // item (a page with its own parts, or a sentence) a simplify lever put on screen in place of the book view.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  /** A practice page (find-feature: its tappable parts) or a practice sentence (read-focus-word: its line). */
-  type Practice = { item: InteractiveBookItem; parts: BookHotspot[]; line?: string };
-  const [practice, setPracticeState] = useState<Practice | null>(null);
-  const practiceRef = useRef<Practice | null>(null);
+  const [practice, setPracticeState] = useState<InteractiveBookItem | null>(null);
+  const practiceRef = useRef<InteractiveBookItem | null>(null);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const setPractice = (next: Practice | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
+  const setPractice = (next: InteractiveBookItem | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
 
   // ── Generated pictures (stimulus-side; prompts forbid printed text) ────────
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
@@ -310,7 +278,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
 
   const runner = useWorkspaceRunner<InteractiveBookItem>({
     primitiveId: 'interactive-book',
-    assignment: interactiveBookAssignment,
+    assignment: interactiveBookBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -320,21 +288,19 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     onFinished: finish,
     onItemOpened: () => {
       setTapped(null);
-      tappedRef.current = null;
       setPractice(null);
     },
     onCorrectionRetry: () => {
       // Try again frees the page for another go.
       setTapped(null);
-      tappedRef.current = null;
-      pip.clear();
     },
   });
 
   const sessionItem = runner.currentItem;
-  /** What is on screen: the practice page's item while a simplify lever holds it, else the session item. */
-  const currentItem = practice?.item ?? sessionItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const leverCtx = useMemo(() => ({ book }), [book]);
   const model = !practice && pulledLevers.includes(MODEL_LEVER) && sessionItem && book ? modelFor(sessionItem, book) : null;
   const focusDots = !practice && pulledLevers.includes(FOCUS_DOTS_LEVER);
   /** Credited: the first moment the answer may appear on screen. */
@@ -346,11 +312,10 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   const currentPage = currentPageId === 'cover'
     ? null
     : book?.pages.find((page) => page.id === currentPageId) ?? null;
-  const bookHotspots = useMemo(
-    () => (book ? hotspotsFor(book, currentPageId) : []),
-    [book, currentPageId],
+  const hotspots = useMemo(
+    () => (book && currentItem ? partsOf(currentItem, book) : []),
+    [book, currentItem],
   );
-  const hotspots = practice?.parts ?? bookHotspots;
 
   const currentImage = useMemo(() => {
     if (!book) return null;
@@ -376,92 +341,57 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     }
   }, [currentImage, ensureImage]);
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase, the glowing word, and the child's own
-  // tap on a printed part; Pip never answers, taps, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = interactiveBookPipPose({
-      mode: currentItem.mode,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Interactive book', dock: pip.dock.current, targets, pose };
-  });
-
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : interactiveBookLevers(sessionItem, pulledLevers, book);
-    const scene = interactiveBookScene(currentItem);
-    const lit = model?.parts.find(part => part.lit);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(model && lit ? { levers_on_screen: `a small model ${model.kind} beside the book, not this book, with its ${lit.feature.replace('-', ' ')} `
-          + `outlined ("${lit.text}"); the book's own parts are not marked` } : {}),
-        ...(focusDots ? { levers_on_screen: 'a dot under each sound of the glowing word; nothing is said' } : {}),
-        ...(practice?.line ? { shown: 'a practice sentence, not from the book, with one short word glowing.',
-          practice: 'An easier practice sentence, ungraded. The book page comes back after it.' } : {}),
-        ...(practice && !practice.line ? { shown: `a practice page, not from the book, with two printed parts: ${practice.parts.map(part => `"${part.text}"`).join(' and ')}`,
-          practice: 'An easier practice page, ungraded. The book page comes back after it.' } : {}) },
+    const levers = practice ? [] : INTERACTIVE_BOOK_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(interactiveBookScene(currentItem), {
+        support: practice ? '' : INTERACTIVE_BOOK_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : INTERACTIVE_BOOK_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
-        if (!lever || !book) return `No lever ${id} on this item.`;
+        if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === CVC_FOCUS_LEVER) {
-          const simpler = cvcFocus(sessionItem, book);
-          if (!simpler) return 'There is no easier sentence for this item.';
-          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-          setPractice({ item: simpler.item, parts: [], line: simpler.line });
-          return { practice: interactiveBookAssignment(simpler.item) };
-        }
-        if (id === TWO_PARTS_LEVER) {
-          const simpler = practicePage(sessionItem, book);
-          if (!simpler) return 'There is no easier page for this item.';
+        if (lever.kind === 'simplify') {
+          const simpler = INTERACTIVE_BOOK_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler) return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          setTapped(null); tappedRef.current = null;
-          return { practice: interactiveBookAssignment(simpler.item) };
+          setTapped(null);
+          return { practice: interactiveBookBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
       },
-      endPractice: () => { setPractice(null); setTapped(null); tappedRef.current = null; },
+      endPractice: () => { setPractice(null); setTapped(null); },
     };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
   const hearQuestion = useCallback(() => {
     if (!currentItem) return;
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearQuestionRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── The tap IS the commit (find-feature), checked by the activity ─────────
   const handleHotspotTap = useCallback((hotspot: BookHotspot) => {
-    const item = practiceRef.current?.item ?? runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.mode !== 'find-feature') return;
     if (!runner.canAttempt || showSummary) return;
     // `canAttempt` closes the pending window through batched React state; this
     // ref flips synchronously and stops a second tap in the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    pip.look(`part-${hotspot.id}`);
     setTapped(hotspot.text);
-    tappedRef.current = hotspot.text;
     // The practice page is ungraded: its success is local and never affirms the book item.
     if (practiceRef.current && tapMatches(item, hotspot.text)) setPracticeSolved(true);
     commitGesture(runner, { response: describeBookTap(hotspot.text), correct: tapMatches(item, hotspot.text),
       cue: () => describeBookTap(hotspot.text), miss: interactiveBookMiss(item, hotspot) });
-  }, [runner, showSummary, pip]);
+  }, [runner, showSummary]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -502,7 +432,6 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
     return (
       <button
         key={hotspot.id}
-        ref={pip.ref(`part-${hotspot.id}`)}
         data-pip-object={`part-${hotspot.id}`}
         type="button"
         onClick={() => handleHotspotTap(hotspot)}
@@ -564,9 +493,9 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
   /**
    * A page paragraph. During a read-focus-word item on this page, the target
    * word GLOWS in place — the print is the stimulus and the child reads it out
-   * loud. On affirm it turns emerald (reveal-on-affirm is a state change, not
-   * new information: the word was always visible, reading it is the task).
-   * Nothing in a paragraph is a button: the answer leaves the mouth.
+   * loud. On credit it turns emerald (a state change, not new information: the
+   * word was always visible, reading it is the task). Nothing in a paragraph is
+   * a button: the answer leaves the mouth.
    */
   const renderParagraph = (paragraph: string, paragraphIndex: number) => {
     const isReadItem = currentItem?.mode === 'read-focus-word'
@@ -580,7 +509,6 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
           return (
             <span
               key={tokenIndex}
-              ref={pip.ref('glow')}
               data-pip-object="glow"
               className={`rounded px-0.5 font-semibold underline decoration-2 underline-offset-4 transition-all ${
                 revealed
@@ -649,13 +577,10 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
               </button>
             </div>
 
-            {/* Pip's dock sits above the book: the glowing word and the page
-                outline are both below it, and find-feature parts are never pointed through. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            {/* Pip's dock sits above the book; Pip watches the book as a whole and never singles out a part. */}
+            <PipDock />
 
+            <PipWorkspace className="space-y-4">
             {/* model_page: a model outside the book, the asked kind of part outlined. Its parts are not tappable. */}
             {model && (
               <div data-lever="model-page" className="mx-auto max-w-xs rounded-2xl border border-dashed border-cyan-300/40 bg-cyan-950/20 p-3 text-sm text-slate-200">
@@ -674,19 +599,19 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
 
             {practice?.line ? (
               // cvc_focus: a practice sentence, not from the book, its short word glowing. Read aloud by the learner.
-              <div ref={pip.ref('page')} data-pip-object="page" data-lever="practice-line" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 text-center shadow-2xl">
+              <div data-pip-object="page" data-lever="practice-line" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 text-center shadow-2xl">
                 {renderParagraph(practice.line, 0)}
               </div>
-            ) : practice ? (
+            ) : practice?.parts ? (
               // two_part_page: a practice page, not from the book, with two tappable parts in the page's own places.
-              <div ref={pip.ref('page')} data-pip-object="page" data-lever="practice-page" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
+              <div data-pip-object="page" data-lever="practice-page" className="mx-auto max-w-md rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
                 {practice.parts.filter(part => part.feature !== 'caption').map(part => renderHotspot(part,
                   part.feature === 'heading' ? 'text-2xl font-black text-cyan-50' : 'float-right text-sm font-bold'))}
                 <div className="clear-both my-4 flex h-24 items-center justify-center rounded-xl bg-white/5 text-4xl" aria-hidden="true">🖼️</div>
                 {practice.parts.filter(part => part.feature === 'caption').map(part => renderHotspot(part, 'w-full text-center italic'))}
               </div>
             ) : currentPageId === 'cover' ? (
-              <div ref={pip.ref('page')} data-pip-object="page" className={`mx-auto max-w-xl rounded-r-[2rem] rounded-l-lg bg-gradient-to-br ${COVER_GRADIENTS[book.coverColor]} p-5 shadow-2xl ring-1 ring-white/15`}>
+              <div data-pip-object="page" className={`mx-auto max-w-xl rounded-r-[2rem] rounded-l-lg bg-gradient-to-br ${COVER_GRADIENTS[book.coverColor]} p-5 shadow-2xl ring-1 ring-white/15`}>
                 {renderImage()}
                 <div className="mt-5 space-y-3 text-white">
                   {renderHotspot(hotspots[0], 'w-full text-3xl font-black tracking-tight')}
@@ -694,7 +619,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
                 </div>
               </div>
             ) : currentPage ? (
-              <div ref={pip.ref('page')} data-pip-object="page" className="rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
+              <div data-pip-object="page" className="rounded-[2rem] border border-white/10 bg-slate-900/75 p-5 shadow-2xl">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   {renderHotspot(hotspots[0], 'text-2xl font-black text-cyan-50')}
                   {renderHotspot(hotspots[2], 'shrink-0 text-sm font-bold')}
@@ -712,7 +637,7 @@ function InteractiveBookSurface({ data, className, runtimePlanItemId }: Interact
                 </div>
               </div>
             ) : null}
-
+            </PipWorkspace>
           </>
         )}
 

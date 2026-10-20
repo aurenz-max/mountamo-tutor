@@ -3,10 +3,10 @@
 /**
  * Constellation Builder: trace a constellation by tapping its stars, name a drawn one, or name the one a season shows.
  *
- * Shared teaching workspace (W1, plain shape): `constellationWorkspace.ts` holds the options, the assignment, the
- * scene, the checks and the misses; `constellationLevers.ts` the in-item levers. The activity's own checks commit
- * through `progress.commitCheck`, and the runtime owns Try again and Next. The scripted path (no tutor) keeps its
- * cues, its Next button and its scoring.
+ * Taught only on the shared teaching workspace (boss: `constellationBuilder.card.ts` + `constellationBuilder.boss.ts`):
+ * `constellationWorkspace.ts` holds the items, options, scene, checks and misses; `constellationLevers.ts` the lever
+ * set. The activity's own checks commit through `progress.commitCheck`, and the runtime owns Try again and Next. An
+ * unbound mount shows the shared "needs the tutor" card.
  */
 import React, { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,24 +14,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ConstellationBuilderMetrics } from '../../../evaluation/types';
-import { LuminaReadAloud } from '../../../ui';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, practiceScore, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { constellationBuilderBoss } from './constellationBuilder.boss';
 import {
-  describeNames, describeTrace, freeMiss, guidedMiss, identifyOptions, isPatternLine, maskAnswer, nameCorrect, nameMiss,
-  patternStars, seasonalOptions, shownInstruction, traceComplete, workspaceAssignment, workspaceScene,
+  constellationItems, describeNames, describeTrace, freeMiss, guidedMiss, isPatternLine, maskAnswer, nameCorrect, nameMiss,
+  nameOptions as optionsOf, patternStars, shownInstruction, traceComplete, workspaceScene,
 } from './constellationWorkspace';
 import {
-  BRIGHT_STARS_LEVER, PRACTICE_NOTE, SHAPE_CARD_LEVER, SPOTLIGHT_LEVER, constellationLevers, leverFacts, practiceItem,
-  shapeCardLines,
+  BRIGHT_STARS_LEVER, CONSTELLATION_LEVERS, PRACTICE_NOTE, SHAPE_CARD_LEVER, SPOTLIGHT_LEVER, shapeCardLines,
 } from './constellationLevers';
 
 // =============================================================================
@@ -70,7 +68,7 @@ export interface ConstellationChallenge {
   distractorName2?: string;
   /** An easier practice item (`easier_pattern`) carries its own star field, in place of the session's. */
   stars?: StarData[];
-  /** An easier practice item's two names, built with it. */
+  /** The names on screen: an easier practice item's two, or a seasonal item's, stamped from the lesson (`constellationItems`). */
   choices?: string[];
 }
 
@@ -161,15 +159,15 @@ const ShapeCard: React.FC<{ challenge: ConstellationChallenge; stars: StarData[]
 // Main Component
 // =============================================================================
 
-const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ConstellationBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ConstellationChallenge>) => Progress }) => {
+const useConstellationProgress = useWorkspaceProgressFor('constellation-builder');
+
+const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId }: ConstellationBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     gradeLevel,
     stars,
-    challenges,
     instanceId,
     skillId,
     subskillId,
@@ -177,11 +175,11 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     exhibitId,
   } = data;
 
-  // reader-fit: the instruction line, the constellation names, the "Tap star 3
-  // of 5" counter and the Star Lore card are all text a K-1 child cannot read,
-  // and this primitive had NO channel to the tutor at all — the catalog
-  // tutoring block reached the backend with every contextKey "(not set)" and
-  // zero moments wired, so the tutor went silent after the greeting.
+  // The lesson's items: each seasonal challenge carries its choices, built from the whole lesson.
+  const challenges = useMemo(() => constellationItems(data), [data]);
+
+  // reader-fit: the instruction line, the constellation names, the "Tap star 3 of 5" counter and the Star Lore card
+  // are text a K-1 child cannot read; the tutor reads them from the scene.
   const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
 
   // Evaluation hook
@@ -199,8 +197,8 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   // Timer
   const startTimeRef = useRef(Date.now());
 
-  // Challenge progress. On the workspace path the runtime moves the index; a fresh item and Try again clear the
-  // work (bound below), and a spoken name the observer credited is shown as a tapped one (`onSolved`).
+  // Challenge progress. The runtime moves the index; a fresh item and Try again clear the work (bound below), and a
+  // spoken name the observer credited is shown as a tapped one (`onSolved`).
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
@@ -208,11 +206,11 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
+  const progress = useConstellationProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (ch) => workspaceAssignment(ch, challenges),
+    workspace, assignment: constellationBuilderBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
     onSolved: (index) => solvedAloud.current(index),
@@ -223,13 +221,11 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -269,8 +265,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   const [drawnConnections, setDrawnConnections] = useState<ConnectionLine[]>([]);
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [guidedStep, setGuidedStep] = useState(0); // for guided_trace: which star in order
-  /** Last star the student touched — a catalog contextKey the tutor reads. */
-  const [lastStarTapped, setLastStarTapped] = useState<string>('none yet');
   const [showMythology, setShowMythology] = useState(false);
   const [identifyAnswer, setIdentifyAnswer] = useState<string | null>(null);
   const [seasonalSelections, setSeasonalSelections] = useState<string[]>([]);
@@ -285,7 +279,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     setDrawnConnections([]);
     setSelectedStarId(null);
     setGuidedStep(0);
-    setLastStarTapped('none yet');
     setShowMythology(false);
     setIdentifyAnswer(null);
     setSeasonalSelections([]);
@@ -311,86 +304,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     [currentChallenge],
   );
 
-  // ---------------------------------------------------------------------------
-  // Tutor channel (reader-fit) — the scripted path only
-  // ---------------------------------------------------------------------------
-
-  /** How many stars of the target pattern the student has placed so far. */
-  const connectedCount = currentChallenge?.type === 'guided_trace'
-    ? guidedStep
-    : drawnConnections.length;
-  /** Stars in the target pattern — starOrder when present, else derived from the lines. */
-  const totalStars = currentChallenge
-    ? (currentChallenge.starOrder.length || currentChallenge.correctConnections.length + 1)
-    : 0;
-
-  // Flat object literal — a bag assembled behind statements makes tutor-test
-  // report every contextKey as "dynamic, verify at runtime".
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    gradeLevel,
-    constellationName: currentChallenge?.constellationName ?? 'a star pattern',
-    connectedCount,
-    totalStars,
-    evalMode: currentChallenge?.type ?? 'guided_trace',
-    season: currentChallenge?.season ?? 'year-round',
-    lastStarTapped,
-    mythologyFact: currentChallenge?.mythologyFact ?? '',
-    instruction: currentChallenge?.instruction ?? '',
-  }), [title, gradeLevel, currentChallenge, connectedCount, totalStars, lastStarTapped]);
-
-  // The scripted tutor's context names the answer: off on the workspace path, and its cues send nothing there.
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'constellation-builder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[CONSTELLATION_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  // ORIENT — fires once so a non-reader learns the task without having to ask.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current || !currentChallenge) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[CONSTELLATION_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a star-pattern activity: "${title}". The screen reads: "${shownInstruction(currentChallenge)}". `
-      + `Say that aloud in child words — they tap stars in the sky to draw ${currentChallenge.constellationName}. `
-      + `Do NOT say which star to tap; the screen already rings it.`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, title, currentChallenge]);
-
-  // The instruction line and the whole sky change when the challenge does, and a
-  // non-reader cannot see that the words changed. Skips the first run — ORIENT
-  // already covered it.
-  const lastChallengeIdRef = useRef(currentChallenge?.id);
-  useEffect(() => {
-    if (!currentChallenge) return;
-    if (lastChallengeIdRef.current === currentChallenge.id) return;
-    lastChallengeIdRef.current = currentChallenge.id;
-    sendText(
-      `[CONSTELLATION_CHALLENGE_CHANGED] The sky just changed to a new pattern, ${currentChallenge.constellationName}, `
-      + `and the screen now reads: "${shownInstruction(currentChallenge)}". SAY that aloud in child words. `
-      + `Do not tell them which star to tap.`,
-      { silent: true },
-    );
-  }, [sendText, currentChallenge]);
-
   // Check if current connections match the target
   const isConstellationComplete = useMemo(
     () => !!currentChallenge && traceComplete(currentChallenge, drawnConnections),
@@ -402,10 +315,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   // Latched per challenge id. `isConstellationComplete` STAYS true once the
   // pattern is traced, so without the latch this body re-runs on every change to
   // any dep — re-firing SoundManager, re-setting `feedback` to a fresh object
-  // (which itself re-renders), and re-sending the celebration beat, so the tutor
-  // would read the star story again and again. It also makes the effect immune
-  // to a `sendText` whose identity is not stable: an unstable one turned this
-  // into a render loop that OOM-killed a vitest worker.
+  // (which itself re-renders), and committing the check again.
   const completedChallengeIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!currentChallenge) return;
@@ -418,17 +328,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     setShowMythology(true);
     setFeedback({ type: 'correct', message: `You traced ${currentChallenge.constellationName}!` });
 
-    // The Star Lore card that just appeared is silent text at K-1. This is the
-    // STIMULUS beat: the fact only reaches a non-reader if the tutor reads it.
-    sendText(
-      `[CONSTELLATION_COMPLETE] They finished ${currentChallenge.constellationName}! Celebrate warmly by name, `
-      + `then read this star story aloud, word for word — it is on screen as text they cannot read: `
-      + `"${currentChallenge.mythologyFact}"`
-      + `${isPreReader ? ' Finish by telling them to tap the big button to go on — they cannot read its label either.' : ''}`,
-      { silent: true },
-    );
-
-    // Counts the attempt and records the result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records the result.
     commitCheck.current(describeTrace(currentChallenge, drawnConnections.length), true);
     if (!practice) {
       mergeResult({
@@ -438,7 +338,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
         score: Math.max(0, 100 - (currentAttempts * 10)),
       });
     }
-  }, [isConstellationComplete, currentChallenge, currentAttempts, mergeResult, sendText, isPreReader, drawnConnections.length, practice]);
+  }, [isConstellationComplete, currentChallenge, currentAttempts, mergeResult, drawnConnections.length, practice]);
 
   // ----- Interaction handlers -----
 
@@ -446,8 +346,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     if (!currentChallenge || learnerBlocked()) return;
     if (currentChallenge.type === 'identify' || currentChallenge.type === 'seasonal') return;
     if (isConstellationComplete) return;
-
-    setLastStarTapped(starId);
 
     // Guided trace: stars must be tapped in order
     if (currentChallenge.type === 'guided_trace') {
@@ -470,8 +368,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
         // L3: specific directive hint at easy/legacy, generic (never silent) at medium/hard
         // At K-1 the step counter is gone and the only affordance is the pulsing
         // ring, so "the numbered star" names something that is not on screen —
-        // and it is the line an adult sitting alongside would read out. Match the
-        // register the tutor uses in [CONSTELLATION_WRONG_STAR].
+        // and it is the line an adult sitting alongside would read out.
         setFeedback({
           type: 'hint',
           message: tierWithdrawn
@@ -480,14 +377,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
               ? 'Look for the star with the sparkly circle!'
               : 'Look for the numbered star!',
         });
-        // The correction above is text a non-reader cannot read, and the sound
-        // alone does not say what to do instead.
-        sendText(
-          `[CONSTELLATION_WRONG_STAR] They tapped a star that is not the next one in `
-          + `${currentChallenge.constellationName}. Send them back to the star with the pulsing ring — `
-          + `say "look for the star with the sparkly circle around it". Do NOT name it or say where it is.`,
-          { silent: true },
-        );
       }
       return;
     }
@@ -498,12 +387,6 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
         commitCheck.current(describeTrace(currentChallenge, drawnConnections.length, 'background_star'), false, 'background_star');
         // L3: the discriminating-feature hint ("brighter") is easy/legacy support
         setFeedback({ type: 'wrong', message: tierWithdrawn ? GENERIC_HINT : 'That star isn\'t part of this constellation. Try a brighter one!' });
-        sendText(
-          `[CONSTELLATION_WRONG_STAR] They tapped a dim background star that is not part of `
-          + `${currentChallenge.constellationName}. Tell them warmly to look for a brighter one. `
-          + `Do NOT name the star or say where it is.`,
-          { silent: true },
-        );
         setSelectedStarId(null);
         return;
       }
@@ -536,7 +419,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
       }
       setSelectedStarId(null);
     }
-  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, tierWithdrawn, sendText, isPreReader, isConstellationComplete]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, tierWithdrawn, isPreReader, isConstellationComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle identify mode answer
   const handleIdentifyAnswer = useCallback((answer: string) => {
@@ -556,11 +439,9 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
 
     commitCheck.current(describeNames([answer]), correct, nameMiss(currentChallenge, [answer]));
     if (practice) return;
-    const score = correct ? Math.max(0, 100 - (currentAttempts * 15)) : 0;
-    // The scripted path records a miss and moves on; the workspace path reopens it with Try again.
-    if (correct) mergeResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score });
-    else if (!tutorOwned) recordResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score });
-  }, [currentChallenge, currentAttempts, identifyAnswer, recordResult, mergeResult, practice, tutorOwned]); // eslint-disable-line react-hooks/exhaustive-deps
+    // A miss reopens with Try again; only the credited answer is recorded.
+    if (correct) mergeResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score: Math.max(0, 100 - (currentAttempts * 15)) });
+  }, [currentChallenge, currentAttempts, identifyAnswer, mergeResult, practice]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle seasonal mode
   const handleSeasonalToggle = useCallback((constellationName: string) => {
@@ -588,10 +469,8 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
 
     commitCheck.current(describeNames(seasonalSelections), correct, nameMiss(currentChallenge, seasonalSelections));
     if (practice) return;
-    const score = correct ? Math.max(0, 100 - (currentAttempts * 15)) : 0;
-    if (correct) mergeResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score });
-    else if (!tutorOwned) recordResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score });
-  }, [currentChallenge, seasonalSelections, currentAttempts, recordResult, mergeResult, practice, tutorOwned, feedback]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (correct) mergeResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1, score: Math.max(0, 100 - (currentAttempts * 15)) });
+  }, [currentChallenge, seasonalSelections, currentAttempts, mergeResult, practice, feedback]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A spoken name the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
   // tap records, and the name shown as a correct tap shows it. The shared lifecycle plays the success sound.
@@ -616,38 +495,8 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
     setShowMythology(true);
   };
 
-  // Advance to next challenge (scripted path)
-  const handleNext = useCallback(() => {
-    resetChallengeState();
-    if (!advanceProgress()) {
-      // All challenges complete — submit evaluation
-      const elapsedMs = Date.now() - startTimeRef.current;
-      const totalCorrect = challengeResults.filter(r => r.correct).length;
-      const overallScore = Math.round(
-        challengeResults.reduce((sum, r) => sum + (r.score ?? (r.correct ? 100 : 0)), 0) / challengeResults.length
-      );
-
-      const metrics: ConstellationBuilderMetrics = {
-        type: 'constellation-builder',
-        totalChallenges: challenges.length,
-        correctChallenges: totalCorrect,
-        totalAttempts: challengeResults.reduce((sum, r) => sum + r.attempts, 0),
-        accuracy: totalCorrect / challenges.length,
-        averageScore: overallScore,
-        durationMs: elapsedMs,
-      };
-
-      setSubmittedResult({ score: overallScore });
-      if (!tutorOwned && progress.recordsEvaluation !== false) submitResult(
-        totalCorrect === challenges.length,
-        overallScore,
-        metrics,
-      );
-    }
-  }, [advanceProgress, resetChallengeState, challengeResults, challenges, submitResult, tutorOwned, progress.recordsEvaluation]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (evaluation.hasSubmitted || challenges.length === 0) return;
     const metrics: ConstellationBuilderMetrics = {
@@ -675,12 +524,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   }, [fieldStars]);
 
   // ----- Choices, built in code in a stable order -----
-  const nameOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    if (currentChallenge.type === 'identify') return identifyOptions(currentChallenge);
-    if (currentChallenge.type === 'seasonal') return seasonalOptions(currentChallenge, challenges);
-    return [];
-  }, [currentChallenge, challenges]);
+  const nameOptions = useMemo(() => (currentChallenge ? optionsOf(currentChallenge) : []), [currentChallenge]);
 
   // Overall score for display
   const localOverallScore = useMemo(() => {
@@ -691,28 +535,23 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   }, [challengeResults]);
 
   const elapsedMs = Date.now() - startTimeRef.current;
-
-  // Check if current challenge is answered (for Next button visibility)
-  const currentChallengeAnswered = useMemo(() => {
-    if (!currentChallenge) return false;
-    return challengeResults.some(r => r.challengeId === currentChallenge.id);
-  }, [currentChallenge, challengeResults]);
   const solved = feedback?.type === 'correct';
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration targets
-  // and no presentation; every mode declares its levers.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; the lever set (`CONSTELLATION_LEVERS`) writes the levers and their facts.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge || allChallengesComplete) return;
-    const scene = workspaceScene(currentChallenge, {
+    if (!currentChallenge || !sessionChallenge || allChallengesComplete) return;
+    const drawn = workspaceScene(currentChallenge, {
       drawn: drawnConnections.length, numbered: true, selected: !!selectedStarId, membersBright: highlightMembers,
-      dimTappable: tierWithdrawn && currentChallenge.type === 'free_connect',
+      dimTappable: tierWithdrawn && currentChallenge.type === 'free_connect', preReader: isPreReader,
       chosen: currentChallenge.type === 'identify' ? (identifyAnswer ? [identifyAnswer] : []) : seasonalSelections, solved,
-    }, challenges);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : constellationLevers(sessionChallenge, pulledLevers, tierHighlight, challenges);
+    });
+    const scene = { ...drawn, facts: { ...drawn.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) } };
+    const ctx = { membersBright: tierHighlight };
+    const onScreen = practice ? '' : CONSTELLATION_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers);
+    const levers = practice ? [] : CONSTELLATION_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...leverScene(scene, { support: CONSTELLATION_LEVERS.support(practice ? null : sessionChallenge, ctx), onScreen }),
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -720,29 +559,17 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
         if (lever.pulled) return `${id} is already on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, challenges);
+          const easier = CONSTELLATION_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); resetChallengeState(); setPractice(easier);
-          return { practice: workspaceAssignment(easier, challenges) };
+          return { practice: constellationBuilderBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { setPractice(null); resetChallengeState(); },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
-    label: 'The stars and your answer',
-    solved: practice ? solved : challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   // The session item's name stays masked while its easier practice item is on screen.
@@ -787,20 +614,9 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
           <>
             {practice ? <div className="text-center text-xs text-amber-300" data-practice>Practice</div> : null}
             <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-              <div className="flex items-center gap-3">
-                <p className={`flex-1 text-slate-200 font-medium ${isPreReader ? 'text-base' : 'text-sm'}`}>
-                  {shownInstruction(currentChallenge)}
-                </p>
-                {/* Sends the text to the scripted tutor; with the workspace tutor the learner asks it to repeat. */}
-                {isPreReader && !tutorOwned && (
-                  <LuminaReadAloud
-                    iconOnly
-                    size="sm"
-                    aria-label="Hear what to do"
-                    onClick={() => readAloud(shownInstruction(currentChallenge))}
-                  />
-                )}
-              </div>
+              <p className={`text-slate-200 font-medium ${isPreReader ? 'text-base' : 'text-sm'}`}>
+                {shownInstruction(currentChallenge)}
+              </p>
               {/* "Tap star 3 of 5" is a step counter — adult chrome at K-1, and the
                   pulsing ring on the SVG already says which star is next without
                   a word. Kept from grade 2, where the count is part of the task. */}
@@ -816,9 +632,10 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
               )}
             </div>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the activity, and the
+                activity as one region, never a single star or name. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
             {/* Star field */}
             {(currentChallenge.type === 'guided_trace' || currentChallenge.type === 'free_connect' || currentChallenge.type === 'identify') && (
               <div className="relative bg-slate-950 rounded-lg border border-white/10 overflow-hidden">
@@ -1002,7 +819,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
                         className={`bg-white/5 border border-white/20 hover:bg-white/10 ${
                           isSelected ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'text-slate-200'
                         }`}
-                        disabled={solved || (!tutorOwned && currentChallengeAnswered)}
+                        disabled={solved}
                         onClick={() => handleSeasonalToggle(name)}
                       >
                         {name}
@@ -1010,7 +827,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
                     );
                   })}
                 </div>
-                {!solved && !(!tutorOwned && currentChallengeAnswered) && (
+                {!solved && (
                   <Button
                     variant="ghost"
                     className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
@@ -1023,7 +840,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
               </div>
             )}
 
-            </div>
+            </PipWorkspace>
 
             {/* Feedback message */}
             {feedback && (
@@ -1036,48 +853,14 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
               </div>
             )}
 
-            {/* Mythology card */}
+            {/* Mythology card; the tutor reads it from the scene's star story once the answer is credited. */}
             {showMythology && currentChallenge.mythologyFact && (
               <div className="bg-indigo-500/10 border border-indigo-400/20 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <p className="flex-1 text-indigo-200 text-xs font-medium mb-1">
-                    {isPreReader ? '✨ Star Lore' : 'Star Lore'}
-                  </p>
-                  {/* The [CONSTELLATION_COMPLETE] beat already reads this aloud once;
-                      the button is the replay a non-reader needs to hear it again. */}
-                  {isPreReader && !tutorOwned && (
-                    <LuminaReadAloud
-                      iconOnly
-                      size="sm"
-                      aria-label="Hear the star story"
-                      onClick={() => readAloud(currentChallenge.mythologyFact)}
-                    />
-                  )}
-                </div>
+                <p className="text-indigo-200 text-xs font-medium mb-1">
+                  {isPreReader ? '✨ Star Lore' : 'Star Lore'}
+                </p>
                 <p className="text-slate-300 text-sm">{currentChallenge.mythologyFact}</p>
               </div>
-            )}
-
-            {/* Next / Continue button — the scripted path; the runtime owns progression on the workspace path */}
-            {!tutorOwned && currentChallengeAnswered && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 w-full"
-                onClick={handleNext}
-              >
-                {currentChallengeIndex < challenges.length - 1 ? 'Next Constellation' : 'See Results'}
-              </Button>
-            )}
-
-            {/* Final submit when on last challenge and answered */}
-            {!tutorOwned && currentChallengeAnswered && currentChallengeIndex === challenges.length - 1 && !submittedResult && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 text-emerald-300 w-full"
-                onClick={handleNext}
-              >
-                Submit Results
-              </Button>
             )}
           </>
         )}
@@ -1086,8 +869,7 @@ const ConstellationBuilderSurface = ({ data, className, runtimePlanItemId, tutor
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ConstellationBuilder = withWorkspaceController<ConstellationBuilderProps, ProgressOptions<ConstellationChallenge>, Progress>(
-  'constellation-builder', ConstellationBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('constellation-builder'));
+const ConstellationBuilder = withWorkspaceOnly<ConstellationBuilderProps>('constellation-builder', ConstellationBuilderSurface,
+  (props) => props.data.title);
 
 export default ConstellationBuilder;

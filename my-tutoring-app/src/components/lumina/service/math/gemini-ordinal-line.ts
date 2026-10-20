@@ -18,7 +18,7 @@ import {
   positionOfSymbol,
   ORDINAL_WORDS,
   ORDINAL_SYMBOLS,
-} from "../../primitives/visual-primitives/math/ordinalLineScript";
+} from "../../primitives/visual-primitives/math/ordinalLineDomain";
 import { namesEarSeparable } from "../../primitives/visual-primitives/math/spokenNameGates";
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 /**
- * fast-fact levers: leak rules per lever and mode, the drop guard, and "this wrong answer, then this lever" as code.
+ * fast-fact's lever set (`FAST_FACT_LEVERS`): leak rules per lever and mode, the drop guard, and "this wrong answer,
+ * then this lever" as code.
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
@@ -7,8 +8,12 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { FastFactChallenge } from './FastFact';
 import { fastFactMiss } from './fastFactWorkspace';
 import {
-  DROP_LEVER, MODEL_LEVER, NO_LEVERS, SPREAD_LEVER, countModel, farChoice, fastFactLevers, leversOnScreen, modelLeak, spreadLeak,
+  DROP_LEVER, FAST_FACT_LEVERS, MODEL_LEVER, NO_LEVERS, SPREAD_LEVER, countModel, farChoice, modelLeak, spreadLeak,
+  type FastFactLeverState,
 } from './fastFactLevers';
+
+const fastFactLevers = (c: FastFactChallenge, s: FastFactLeverState) => FAST_FACT_LEVERS.declare(c, { state: s }, s.pulled);
+const leversOnScreen = (c: FastFactChallenge, s: FastFactLeverState) => FAST_FACT_LEVERS.onScreen(c, { state: s }, s.pulled);
 
 const fact = (challengeType: FastFactChallenge['challengeType'], text: string, correctAnswer: string, options: string[],
   extra: Partial<FastFactChallenge> = {}): FastFactChallenge =>
@@ -30,7 +35,7 @@ describe('spread_pictures', () => {
   it.each(MODES)('%s: its scene fact never says how many', mode => {
     for (let n = 1; n <= 20; n++) {
       const c = { ...stars(n), challengeType: mode };
-      const fact = leversOnScreen(c, { ...NO_LEVERS, pulled: [SPREAD_LEVER] })!;
+      const fact = leversOnScreen(c, { ...NO_LEVERS, pulled: [SPREAD_LEVER] });
       expect(fact).toContain('spread apart');
       expect(fact).not.toMatch(/\d/);
     }
@@ -55,7 +60,7 @@ describe('count_model', () => {
       for (const [op, value] of [['+', a + b], ['-', a - b], ['×', a * b]] as const) {
         const c = fact(mode, `${a} ${op} ${b} = ?`, String(value), [String(value - 1), String(value), String(value + 1)]);
         if (modelLeak(c)) continue;
-        const said = leversOnScreen(c, { ...NO_LEVERS, pulled: [MODEL_LEVER] })!;
+        const said = leversOnScreen(c, { ...NO_LEVERS, pulled: [MODEL_LEVER] });
         const numbers = (said.match(/\d+/g) ?? []).map(Number);
         expect(numbers.every(n => n === a || n === b), `${a} ${op} ${b}: ${said}`).toBe(true);
       }
@@ -75,6 +80,8 @@ describe('drop_far_choice', () => {
     const three = fact('apply', 'Denver is the capital of which state?', 'Colorado', ['Utah', 'Colorado', 'Kansas']);
     expect(farChoice(three, NO_LEVERS)).toBe('Kansas');
     expect(farChoice(three, { ...NO_LEVERS, picked: ['Utah'] })).toBeNull();
+    // A wrong answer said aloud names no choice, but it counts as one tried.
+    expect(farChoice(three, { ...NO_LEVERS, wrongs: 1 })).toBeNull();
     expect(farChoice(fact('recall', 'Is 7 odd?', 'Yes', ['Yes', 'No']), NO_LEVERS)).toBeNull();
   });
   it.each(MODES)('%s: over many menus, the drop is never a credited choice', mode => {

@@ -18,8 +18,9 @@ import type { AdditionFactChallenge, AdditionFactStrategiesData, AdditionFactStr
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
-const fact = (id: string, a: number, b: number, turn = false): AdditionFactChallenge =>
-  ({ id, type: turn ? 'turnaround' : 'facts_mixed', a, b, sum: a + b, ...(turn ? { knownFact: { a: b, b: a } } : {}) });
+/** A fact of the session's family: its `type` is the strategy (contract R1). */
+const fact = (id: string, a: number, b: number, type: AdditionFactStrategy): AdditionFactChallenge =>
+  ({ id, type, a, b, sum: a + b, ...(type === 'turnaround' ? { knownFact: { a: b, b: a } } : {}) });
 const session = (strategy: AdditionFactStrategy, challenges: AdditionFactChallenge[], extra: Partial<AdditionFactStrategiesData> = {}) =>
   ({ title: 'Facts', description: 'Practise', challengeType: 'recall' as const, strategy, objectEmoji: '🍎', challenges, ...extra });
 
@@ -28,7 +29,7 @@ const drawn = (h: WorkspaceHarness, name: string) => h.view.container.querySelec
 const tap = (h: WorkspaceHarness, n: number) => h.press(`Answer ${n}`);
 
 it('plus_one: hop_strip draws blank hops from the bigger number in the same commit; the scene states no total; the next attempt carries it', () => {
-  const c = fact('f1', 1, 7), next = fact('f2', 4, 1);
+  const c = fact('f1', 1, 7, 'plus_one'), next = fact('f2', 4, 1, 'plus_one');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'plus_one', data: session('plus_one', [c, next]) });
   expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([['hop_strip', 'help', false], ['count_groups', 'help', false], ['smaller_fact', 'simplify', false]]);
   tap(h, 9);
@@ -59,7 +60,7 @@ it('plus_one: hop_strip draws blank hops from the bigger number in the same comm
 });
 
 it('big facts: near_double draws the double and the extra dot, captioned with the double and no total', () => {
-  const c = fact('f1', 7, 8);
+  const c = fact('f1', 7, 8, 'facts_7_8');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'big_facts', data: session('facts_7_8', [c]) });
   h.dispatch('pull_lever', { lever: 'near_double' });
   const model = drawn(h, 'near-double')[0];
@@ -71,7 +72,7 @@ it('big facts: near_double draws the double and the extra dot, captioned with th
 });
 
 it('turnaround: known_fact shows the flipped fact card only when pulled', () => {
-  const c = fact('f1', 3, 8, true);
+  const c = fact('f1', 3, 8, 'turnaround');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'turnaround', data: session('turnaround', [c]) });
   expect(drawn(h, 'known-fact')).toHaveLength(0);
   h.dispatch('pull_lever', { lever: 'known_fact' });
@@ -81,7 +82,7 @@ it('turnaround: known_fact shows the flipped fact card only when pulled', () => 
 });
 
 it('count_groups numbers only the objects the learner taps, and tapping checks nothing', () => {
-  const c = fact('f1', 3, 4);
+  const c = fact('f1', 3, 4, 'facts_3_4');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'big_facts', data: session('facts_3_4', [c]) });
   h.dispatch('pull_lever', { lever: 'count_groups' });
   const objects = () => Array.from(drawn(h, 'count-groups')[0].querySelectorAll('button'));
@@ -93,7 +94,7 @@ it('count_groups numbers only the objects the learner taps, and tapping checks n
 });
 
 it('easy starts with the objects on screen: a starting position, not a recorded pull', () => {
-  const c = fact('f1', 6, 6);
+  const c = fact('f1', 6, 6, 'doubles');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'doubles', data: session('doubles', [c], { supportTier: 'easy' }) });
   expect(levers(h).find(l => l.id === 'count_groups')!.pulled).toBe(true);
   expect(drawn(h, 'count-groups')).toHaveLength(1);
@@ -103,7 +104,7 @@ it('easy starts with the objects on screen: a starting position, not a recorded 
 });
 
 it('a simplify pull opens an ungraded smaller fact, keeps it on Try again, then returns to the full item, which alone is credited', () => {
-  const c = fact('f1', 7, 7), next = fact('f2', 6, 6);
+  const c = fact('f1', 7, 7, 'doubles'), next = fact('f2', 6, 6, 'doubles');
   const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'doubles', data: session('doubles', [c, next]) });
   tap(h, 13);
   const receipt = h.dispatch('pull_lever', { lever: 'smaller_fact' });

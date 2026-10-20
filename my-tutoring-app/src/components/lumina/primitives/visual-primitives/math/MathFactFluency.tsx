@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -22,20 +21,19 @@ import type { MathFactFluencyMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  describeMathFactCheck, formatMathFact, mathFactAssignment, mathFactMatches, mathFactMiss, mathFactScene,
-  type MathFactResponse,
+  describeMathFactCheck, formatMathFact, mathFactMatches, mathFactMiss, mathFactScene, type MathFactResponse,
 } from './mathFactFluencyWorkspace';
 import {
-  DOTS_LEVER, MARKS_LEVER, PARTS_LEVER, WHOLE_LEVER, factModel, leverFacts, mathFactLevers, simplerItem, startLevers,
+  DOTS_LEVER, FLUENCY_LEVERS, MARKS_LEVER, PARTS_LEVER, WHOLE_LEVER, factModel, helpLevers, startLevers,
 } from './mathFactFluencyLevers';
+import { mathFactFluencyBoss } from './mathFactFluency.boss';
 import type { StepSegment } from '../../../components/live-activity/runtime/contract';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { mathFactFluencyPipPose } from '../../../pip/mathFactFluencyPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -290,7 +288,6 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `math-fact-fluency-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -308,7 +305,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: mathFactAssignment,
+    workspace, assignment: mathFactFluencyBoss.assignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -540,12 +537,12 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    const scene = mathFactScene(currentChallenge, { maxNumber });
-    const onScreen = leverFacts(currentChallenge, pulledLevers);
-    const levers = practice ? [] : mathFactLevers(sessionChallenge, pulledLevers, maxNumber);
+    const leverCtx = { maxNumber };
+    const levers = practice || !sessionChallenge ? [] : FLUENCY_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    // On the easier fact the session item's pulls stay drawn, so the scene names what is drawn on it.
+    const onScreen = FLUENCY_LEVERS.onScreen(currentChallenge, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(mathFactScene(currentChallenge, { maxNumber }), { support: '', onScreen }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -554,11 +551,11 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge, maxNumber);
+          const easier = FLUENCY_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'There is no easier fact for this one.';
           setLeverState(pulled);
           reopen.current(true); setPractice(easier);
-          return { practice: mathFactAssignment(easier) };
+          return { practice: mathFactFluencyBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -577,37 +574,6 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   }, [allChallengesComplete, challenges, challengeResults]);
 
   // -------------------------------------------------------------------------
-  // Pip shared surface
-  // -------------------------------------------------------------------------
-  // A projection of this fact's check state, the tutor's speech on it, and the
-  // child's last touch; Pip never picks an answer, checks, or advances. Tutor
-  // audio counts only while the tutor is on this block and began on this fact.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !currentSolved && !allChallengesComplete);
-  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
-    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
-  const speechOnFact = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets = pip.targets();
-    const pose = mathFactFluencyPipPose({
-      running: true, preparing: false, currentSolved, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnFact,
-      type: currentChallenge.type, matchDirection: currentChallenge.matchDirection,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Math facts',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-  // Pip's dock sits between what the fact is read from (above) and the answer
-  // choices (below), so a pointer to the picture or equation never crosses a choice.
-  const pipDock = pipStore && (
-    <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-      className="mx-auto my-3 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-  );
-
-  // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
   // Grading-state color language for the answerable options comes from the kit
@@ -618,7 +584,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const inputClosed = currentSolved || allChallengesComplete || !canAttempt;
 
   // The levers on screen for this fact (pulled on the session item, or its starting position).
-  const leverOn = (id: string) => pulledLevers.includes(id);
+  const leverOn = (id: string) => pulledLevers.includes(id) && !!currentChallenge && helpLevers(currentChallenge).includes(id);
   const modelUnderFact = !currentChallenge ? null
     : (currentChallenge.type === 'equation-solve' || currentChallenge.type === 'match') && leverOn(DOTS_LEVER) ? 'fact-dots'
       : currentChallenge.type === 'missing-number' && leverOn(WHOLE_LEVER) ? 'part-whole' : null;
@@ -647,11 +613,10 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
       {options.map((opt) => (
         <button
           key={opt}
-          ref={pip.ref(`option-${opt}`)}
           data-pip-object={`option-${opt}`}
           type="button"
           className={`w-16 h-16 text-2xl font-bold border rounded-xl transition-all duration-200 ${answerStateClass(choiceState(selectedAnswer === opt))}`}
-          onClick={() => { if (learnerBlocked()) return; pip.look(`option-${opt}`); handleSelectOption(opt); }}
+          onClick={() => { if (learnerBlocked()) return; handleSelectOption(opt); }}
           disabled={inputClosed}
         >
           {opt}
@@ -674,12 +639,12 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
 
   const renderTypedInput = () => (
     <div className="flex flex-col items-center gap-3">
-      <div ref={pip.ref('entry')} data-pip-object="entry" className="flex items-center gap-2">
+      <div data-pip-object="entry" className="flex items-center gap-2">
         {/* Minus button */}
         <LuminaButton
           aria-label="One less"
           className="w-14 h-14 text-2xl font-bold rounded-xl"
-          onClick={() => { pip.look('entry'); handleDecrement(); }}
+          onClick={handleDecrement}
           disabled={numericValue <= 0 || inputClosed}
         >
           &minus;
@@ -696,7 +661,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
         <LuminaButton
           aria-label="One more"
           className="w-14 h-14 text-2xl font-bold rounded-xl"
-          onClick={() => { pip.look('entry'); handleIncrement(); }}
+          onClick={handleIncrement}
           disabled={inputClosed}
         >
           +
@@ -705,7 +670,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
 
       <LuminaActionButton
         action="check"
-        onClick={() => { pip.look('entry'); handleTypedSubmit(); }}
+        onClick={handleTypedSubmit}
         disabled={typedAnswer === '' || inputClosed}
       >
         Submit
@@ -718,11 +683,10 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
       {eqOptions.map((eq, idx) => (
         <button
           key={eq}
-          ref={pip.ref(`equation-${idx}`)}
           data-pip-object={`equation-${idx}`}
           type="button"
           className={`h-12 text-lg font-mono border rounded-xl transition-all ${answerStateClass(choiceState(selectedEquation === eq))}`}
-          onClick={() => { if (learnerBlocked()) return; pip.look(`equation-${idx}`); handleSelectEquation(eq); }}
+          onClick={() => { if (learnerBlocked()) return; handleSelectEquation(eq); }}
           disabled={inputClosed}
         >
           {eq}
@@ -736,11 +700,10 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
       {visOptions.map((vo, idx) => (
         <button
           key={idx}
-          ref={pip.ref(`picture-${idx}`)}
           data-pip-object={`picture-${idx}`}
           type="button"
           className={`p-3 rounded-lg border transition-all ${answerStateClass(choiceState(selectedVisualIdx === idx))}`}
-          onClick={() => { if (learnerBlocked()) return; pip.look(`picture-${idx}`); handleSelectVisual(idx); }}
+          onClick={() => { if (learnerBlocked()) return; handleSelectVisual(idx); }}
           disabled={inputClosed}
         >
           {/* Bespoke interaction surface — the SVG visual the student picks. */}
@@ -807,12 +770,14 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
           </LuminaPrompt>
         )}
 
-        {/* Main Challenge Area */}
+        {/* Main Challenge Area. Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): its dock sits between
+            what the fact is read from (above) and the answers (below), and it outlines the answers as one region,
+            never a single choice. */}
         {currentChallenge && !allChallengesComplete && (
           <div className="relative">
             {/* Visual Aid (visual-fact phase) — bespoke SVG interaction surface */}
             {currentChallenge.type === 'visual-fact' && currentChallenge.visualType && (
-              <div ref={pip.ref('visual')} data-pip-object="visual" className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
+              <div data-pip-object="visual" className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
                 {renderPicture(currentChallenge.visualType)}
               </div>
             )}
@@ -820,7 +785,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
             {/* Equation Display — bespoke math readout */}
             {(currentChallenge.type !== 'match' || currentChallenge.matchDirection === 'equation-to-visual') && (
               <div className="text-center py-6">
-                <span ref={pip.ref('problem')} data-pip-object="problem" className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
+                <span data-pip-object="problem" className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
                   {formatMathFact(currentChallenge)}
                 </span>
                 {/* fact_dots / part_whole levers: the printed numbers as dots under the fact; nothing for the "?". */}
@@ -831,31 +796,31 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
             {/* Match: Visual-to-equation — show visual then equation options */}
             {currentChallenge.type === 'match' && currentChallenge.matchDirection === 'visual-to-equation' && (
               <div className="space-y-4">
-                <div ref={pip.ref('visual')} data-pip-object="visual" className="p-4 bg-slate-800/20 rounded-xl border border-white/5">
+                <div data-pip-object="visual" className="p-4 bg-slate-800/20 rounded-xl border border-white/5">
                   {renderPicture(currentChallenge.visualType || 'dot-array')}
                 </div>
-                {pipDock}
-                {currentChallenge.equationOptions && renderMatchEquationOptions(currentChallenge.equationOptions)}
+                <PipDock />
+                {currentChallenge.equationOptions && <PipWorkspace>{renderMatchEquationOptions(currentChallenge.equationOptions)}</PipWorkspace>}
               </div>
             )}
 
             {/* Match: Equation-to-visual — show equation then visual options */}
             {currentChallenge.type === 'match' && currentChallenge.matchDirection === 'equation-to-visual' && currentChallenge.visualOptions && (
               <div className="space-y-4">
-                {pipDock}
-                {renderMatchVisualOptions(currentChallenge.visualOptions)}
+                <PipDock />
+                <PipWorkspace>{renderMatchVisualOptions(currentChallenge.visualOptions)}</PipWorkspace>
               </div>
             )}
 
             {/* Answer Inputs (non-match types) */}
-            {currentChallenge.type !== 'match' && pipDock}
+            {currentChallenge.type !== 'match' && <PipDock />}
             {currentChallenge.type !== 'match' && (
-              <div className="mt-4">
+              <PipWorkspace className="mt-4">
                 {currentChallenge.options && currentChallenge.options.length > 0
                   ? renderChoiceButtons(currentChallenge.options)
                   : renderTypedInput()
                 }
-              </div>
+              </PipWorkspace>
             )}
           </div>
         )}

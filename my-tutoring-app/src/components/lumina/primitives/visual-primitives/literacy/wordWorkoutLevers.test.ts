@@ -5,9 +5,11 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { PRACTICE_WORDS } from './cvcSpellerLevers';
-import type { WordWorkoutItem } from './wordWorkoutScript';
-import { wordWorkoutMiss } from './wordWorkoutWorkspace';
-import { dotsLeak, graphemes, lessonVowels, practiceLeak, twoFarPictures, wordWorkoutLevers } from './wordWorkoutLevers';
+import { wordWorkoutMiss, type WordWorkoutItem } from './wordWorkoutDomain';
+import { WORD_WORKOUT_LEVERS, dotsLeak, graphemes, lessonVowels, practiceLeak, twoFarPictures } from './wordWorkoutLevers';
+
+const wordWorkoutLevers = (item: WordWorkoutItem, pulled: string[], items: readonly WordWorkoutItem[], vowels: string[]) =>
+  WORD_WORKOUT_LEVERS.declare(item, { items, vowels }, pulled);
 
 const pic = (id: string, word: string, emoji: string, ...foils: Array<[string, string]>): WordWorkoutItem => ({
   id, kind: 'picture_tap', answerKind: 'gesture', responseClass: 'manipulation', action: 'picture_tap', targetWord: word,

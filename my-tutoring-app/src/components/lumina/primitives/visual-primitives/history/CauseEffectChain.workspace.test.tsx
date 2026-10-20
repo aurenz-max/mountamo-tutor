@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Cause-effect chain on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Cause-effect chain on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared
+ * contract over every boss (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -15,10 +16,9 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
 import CauseEffectChain from './CauseEffectChain';
-import { causeEffectItems } from './causeEffectChainWorkspace';
+import { causeEffectItems } from './causeEffectChainDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -31,8 +31,8 @@ const IDENTIFY = { ...ROOT, id: 'cec-id', type: 'identify_cause',
 const BY_MODE: Record<string, unknown> = { identify_cause: IDENTIFY, build_chain: CHAIN, root_vs_proximate: ROOT };
 const MODES = Object.keys(BY_MODE);
 const payload = (mode: string) => ({ ...GENERATED, challengeType: mode, challenges: [BY_MODE[mode]] });
-const mount = (mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'cause-effect-chain', evalMode: mode, data: payload(mode), instanceId: 'cause-effect-chain', pipStore });
+const mount = (mode: string) =>
+  mountWorkspace({ primitiveId: 'cause-effect-chain', evalMode: mode, data: payload(mode), instanceId: 'cause-effect-chain' });
 const itemsOf = (mode: string) => causeEffectItems(payload(mode));
 const text = (id: string) => CHAIN.nodes.find((n: { id: string }) => n.id === id).text as string;
 const placeAll = (ids: string[]) => ids.forEach(id => fireEvent.click(screen.getByRole('button', { name: new RegExp(`^Place "${text(id).slice(0, 20)}`) })));
@@ -54,7 +54,7 @@ it('identify asks one card at a time, balanced, with the consequence refused', (
   expect(items.map(i => i.kind === 'identify_cause' && i.isCause).filter(Boolean).length).toBe(items.length / 2);
   const h = mount('identify_cause');
   const first = items[0] as Extract<typeof items[0], { kind: 'identify_cause' }>;
-  expect(h.state().task!.workspace!.expectedAnswer!.startsWith(first.isCause ? 'yes' : 'no')).toBe(true);
+  expect(h.state().task!.workspace!.expectedAnswer!.startsWith(first.isCause ? '"yes"' : '"no"')).toBe(true);
 });
 
 it('root: the key names the card and refuses the others', () => {
@@ -98,15 +98,6 @@ it('the right chain commits once and completes the lesson with its metrics', asy
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'cause-effect-chain', correctCount: 1, totalChallenges: 1 });
-});
-
-it('Pip outlines the ending and the events and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('cause-effect-chain');
-  const h = mount('root_vs_proximate', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('railway crews'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a lesson with nothing askable; outside a runtime the surface shows the needs-the-tutor card', () => {

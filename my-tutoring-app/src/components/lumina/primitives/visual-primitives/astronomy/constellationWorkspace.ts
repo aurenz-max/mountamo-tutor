@@ -1,17 +1,19 @@
 /**
- * Constellation builder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md; report qa/tutor-reports/constellation-builder-w1-2026-10-15.md).
+ * Constellation builder's domain on the shared tutor/JEV teaching workspace (boss: `constellationBuilder.boss.ts`).
  *
- * Pure: the component, the journey and the tests read the same options, assignment, scene, checks and misses.
+ * Pure: the component, the boss and the tests read the same items, options, key, scene, checks and misses.
  * - guided_trace / free_connect: star taps checked by the activity against `starOrder` / `correctConnections`. The
  *   tutor is never handed which star is next or which stars are joined.
- * - identify / seasonal: one constellation name, tapped (identify) or tapped and checked (seasonal), or said aloud:
- *   a speech item with `acceptsGesture`, judged from the tutor's feedback against `expectedAnswer`.
+ * - identify / seasonal: one constellation name, tapped (identify) or tapped and checked (seasonal), or said aloud
+ *   and judged by the tutor against the key (`constellationBuilder.boss.ts`).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { stableShuffle } from '../../../utils/choiceOrder';
-import type { ConnectionLine, ConstellationChallenge } from './ConstellationBuilder';
+import type { ConnectionLine, ConstellationBuilderData, ConstellationChallenge } from './ConstellationBuilder';
+import type { ConstellationMiss } from './constellationBuilder.card';
+
+export type { ConstellationMiss } from './constellationBuilder.card';
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export const sameName = (a: string, b: string) => norm(a) === norm(b);
@@ -50,8 +52,7 @@ const seasonOf = (s: string) => { const n = norm(s); return n.includes('autumn')
 
 /** The identify choices, in a stable shuffled order: the name and its distractors. */
 export function identifyOptions(c: ConstellationChallenge): string[] {
-  if (c.choices?.length) return stableShuffle(c.choices, c.id);
-  return stableShuffle(dedupe([c.constellationName, ...distractors(c)]), c.id);
+  return stableShuffle(c.choices?.length ? c.choices : dedupe([c.constellationName, ...distractors(c)]), c.id);
 }
 
 function dedupe(names: string[]): string[] {
@@ -61,11 +62,10 @@ function dedupe(names: string[]): string[] {
 }
 
 /**
- * The seasonal choices: this item's name, the other seasonal items' names and its distractors. Another seasonal
- * item's name seen in the SAME season is left out: both would be right, and only one is credited.
+ * The seasonal pool, unshuffled: this item's name, the other seasonal items' names and its distractors. Another
+ * seasonal item's name seen in the SAME season is left out: both would be right, and only one is credited.
  */
-export function seasonalOptions(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[]): string[] {
-  if (c.choices?.length) return stableShuffle(c.choices, c.id);
+function seasonalPool(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[]): string[] {
   const others = challenges.filter(o => o.type === 'seasonal' && o.id !== c.id && seasonOf(o.season) !== seasonOf(c.season))
     .map(o => o.constellationName);
   const options = dedupe([c.constellationName, ...others, ...distractors(c)]);
@@ -74,8 +74,25 @@ export function seasonalOptions(c: ConstellationChallenge, challenges: readonly 
     if (options.length >= 3) break;
     if (!options.some(o => sameName(o, name))) options.push(name);
   }
-  return stableShuffle(options, c.id);
+  return options;
 }
+
+/** The seasonal choices in a stable shuffled order: the item's own `choices` (stamped by `constellationItems`), or its pool. */
+export function seasonalOptions(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[] = []): string[] {
+  return stableShuffle(c.choices?.length ? c.choices : seasonalPool(c, challenges), c.id);
+}
+
+/**
+ * The lesson's items: the challenges, each seasonal one with its choices stamped from the whole lesson, so an item
+ * alone carries everything its ask, key, scene and check read.
+ */
+export function constellationItems(d: Pick<ConstellationBuilderData, 'challenges'>): ConstellationChallenge[] {
+  return d.challenges.map(c => (c.type === 'seasonal' && !c.choices?.length ? { ...c, choices: seasonalPool(c, d.challenges) } : c));
+}
+
+/** The names on screen on a name item. */
+export const nameOptions = (c: ConstellationChallenge): string[] =>
+  (c.type === 'identify' ? identifyOptions(c) : c.type === 'seasonal' ? seasonalOptions(c) : []);
 
 /** Every star the pattern joins, from the lines the checker reads. */
 export function patternStars(c: Pick<ConstellationChallenge, 'correctConnections'>): Set<string> {
@@ -90,18 +107,6 @@ export const traceComplete = (c: ConstellationChallenge, drawn: readonly Connect
 
 /** A spoken name answers identify and seasonal; the trace modes are star taps. */
 export const namesAnswer = (c: ConstellationChallenge) => c.type === 'identify' || c.type === 'seasonal';
-
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20):
- * - guided_trace: `later_star` (a star further along the order than the ringed one), `traced_star` (one already
- *   joined), `other_star` (a star not in the order);
- * - free_connect: `background_star` (a star that is not in the pattern), `wrong_pair` (two pattern stars the
- *   pattern does not join);
- * - identify: `wrong_name` (another name on screen);
- * - seasonal: `other_name` (one name, not the answer), `several_names` (more than one name chosen).
- */
-export type ConstellationMiss = 'later_star' | 'traced_star' | 'other_star' | 'background_star' | 'wrong_pair'
-  | 'wrong_name' | 'other_name' | 'several_names';
 
 export function guidedMiss(c: ConstellationChallenge, step: number, starId: string): ConstellationMiss {
   const at = c.starOrder.indexOf(starId);
@@ -127,20 +132,13 @@ export const describeNames = (chosen: readonly string[]) =>
   chosen.length ? `Chose ${chosen.map(n => `"${n}"`).join(', ')}` : 'Nothing chosen yet';
 
 /** A spoken name's known wrong answers: each other name on screen. Each pattern names the answer. */
-export function constellationSpokenMisses(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[]): KnownMiss[] {
+export function constellationSpokenMisses(c: ConstellationChallenge): KnownMiss[] {
   if (!namesAnswer(c)) return [];
-  const others = (c.type === 'identify' ? identifyOptions(c) : seasonalOptions(c, challenges)).filter(o => !sameName(o, c.constellationName));
+  const others = nameOptions(c).filter(o => !sameName(o, c.constellationName));
   if (!others.length) return [];
   return [{ id: c.type === 'identify' ? 'wrong_name' : 'other_name',
     pattern: `The answer is "${c.constellationName}". The learner names another constellation on screen: ${others.map(o => `"${o}"`).join(', ')}.`,
     examples: others.slice(0, 6) }];
-}
-
-export function workspaceAssignment(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[] = []): TeachingAssignment {
-  const task = shownInstruction(c);
-  if (!namesAnswer(c)) return { id: c.id, task, response: 'gesture' };
-  return { id: c.id, task: `${task} The learner answers by saying the name, or ${c.type === 'identify' ? 'tapping it' : 'tapping it and pressing Check Answer'}.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: c.constellationName, misses: constellationSpokenMisses(c, challenges) };
 }
 
 export interface ConstellationView {
@@ -154,48 +152,55 @@ export interface ConstellationView {
   membersBright: boolean;
   /** free_connect: dim stars can be tapped too (the medium and hard tiers). */
   dimTappable: boolean;
+  /** Kindergarten or Grade 1: the learner cannot read, and the screen hides counts and step numbers. */
+  preReader: boolean;
   chosen: readonly string[];
   solved: boolean;
 }
+
+/** What the tutor never says on a trace item (the old guidance's never-say rules, kept as this item's facts). */
+const TRACE_NEVER = 'Before an attempt never say which star is next, where a star is or which stars join.';
+const PRE_READER_NEVER = ' This learner cannot read yet: give no star counts or step numbers.';
+/** What the tutor never says on a name item. */
+const NAME_NEVER = 'Never say the answer, its shape, its figure (a hunter, a bear) or its story: not as a statement, a '
+  + 'choice to try, or a yes-or-no question. After a wrong name, do not say which season or shape that name has: it '
+  + 'rules out choices for the learner.';
 
 /**
  * What is drawn and asked. Never which star is next, where a pattern star is, or which stars are joined; on
  * identify and seasonal the name is not stated here (the spoken key reaches the observer as `expectedAnswer`).
  */
-export function workspaceScene(c: ConstellationChallenge, view: ConstellationView, challenges: readonly ConstellationChallenge[]): WorkspaceScene {
+export function workspaceScene(c: ConstellationChallenge, view: ConstellationView): WorkspaceScene {
   const drawn: Record<string, string> = {};
   const total = c.correctConnections.length;
   if (c.type === 'guided_trace') {
-    drawn.scene = `A star field. The learner draws ${c.constellationName} by tapping its stars in order; the next star to tap `
+    drawn.scene = `A star field with ${c.constellationName} to draw; the next star to tap `
       + `has a pulsing ring around it${view.numbered ? ' with its number' : ''}, and only the pattern's stars can be tapped`;
     drawn.progress = view.solved ? `all ${total} lines are drawn` : `${view.drawn} of ${total} lines drawn`;
-    drawn.howToAnswer = 'tap the ringed star, then the next ringed star, until the picture is finished';
   } else if (c.type === 'free_connect') {
-    drawn.scene = `A star field. The learner draws ${c.constellationName} by joining its stars two at a time, with no numbers. `
+    drawn.scene = `A star field with ${c.constellationName} to draw, two stars at a time, with no numbers. `
       + (view.membersBright ? 'The pattern\'s stars are drawn brighter than the others. ' : 'Every star is drawn by its own brightness; the pattern\'s stars are not marked. ')
       + (view.dimTappable ? 'Dim background stars can be tapped too.' : 'Only the pattern\'s stars can be tapped.');
     drawn.progress = view.solved ? `all ${total} lines are drawn` : `${view.drawn} of ${total} lines drawn${view.selected ? '; one star is selected, waiting for the star to join it to' : ''}`;
-    drawn.howToAnswer = 'tap one star, then the star it joins to, for each line';
   } else if (c.type === 'identify') {
     drawn.scene = view.solved ? 'The constellation is named and its star story is shown.'
       : 'The lines of one constellation are drawn on a star field. No name is shown: the name is the answer';
     drawn.choices = identifyOptions(c).join(' | ');
-    drawn.howToAnswer = 'say the name, or tap one name';
   } else {
     drawn.scene = view.solved ? 'The answer is shown with its star story.'
       : `No star field: only the season (${c.season}) and a list of constellation names. Which one is best seen then is the answer`;
-    drawn.choices = seasonalOptions(c, challenges).join(' | ');
-    drawn.howToAnswer = 'say the name, or tap one name and press Check Answer';
+    drawn.choices = seasonalOptions(c).join(' | ');
   }
+  const approach = c.type === 'identify' ? 'Ask what the lines look like.'
+    : c.type === 'seasonal' ? 'Ask what the learner remembers about the night sky in that season.' : '';
   return {
     objects: [],
     facts: {
       kind: c.type, ...drawn,
       learnerWork: namesAnswer(c) ? describeNames(view.chosen) : describeTrace(c, view.drawn),
-      ...(view.solved && c.mythologyFact ? { starStory: c.mythologyFact } : {}),
-      constraints: namesAnswer(c)
-        ? 'The learner answers by saying a name or tapping one; the activity checks a tap. You cannot tap or check for the learner.'
-        : 'The learner answers by tapping stars; the activity checks every tap. You cannot tap a star or draw a line for the learner.',
+      ...(view.solved && c.mythologyFact ? { starStory: c.mythologyFact, story: 'The answer is credited: you may read the star story aloud.' } : {}),
+      constraints: (namesAnswer(c) ? NAME_NEVER : TRACE_NEVER) + (view.preReader ? PRE_READER_NEVER : ''),
+      ...(approach ? { approach } : {}),
     },
   };
 }
@@ -213,8 +218,8 @@ export function traceHarnessTaps(c: ConstellationChallenge): { correct: string[]
 }
 
 /** The journey's answers for a name item: the key, and the first other name on screen. */
-export function nameHarnessAnswers(c: ConstellationChallenge, challenges: readonly ConstellationChallenge[]): { correct: string; plainWrong: string } {
-  const options = c.type === 'identify' ? identifyOptions(c) : seasonalOptions(c, challenges);
+export function nameHarnessAnswers(c: ConstellationChallenge): { correct: string; plainWrong: string } {
+  const options = nameOptions(c);
   const wrong = options.find(o => !sameName(o, c.constellationName));
   if (!wrong) throw new Error(`constellation-builder ${c.type} ${c.id}: no wrong name on screen`);
   return { correct: options.find(o => sameName(o, c.constellationName)) ?? c.constellationName, plainWrong: wrong };

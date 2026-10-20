@@ -1,6 +1,6 @@
 /**
- * sound-swap's levers (`/add-support-tiers`, handoff 22 L2): models and practice stay off the session's words and
- * sound, practice keeps the operation, and the misses are the catalog's.
+ * sound-swap's levers (`/add-support-tiers`, handoff 22 L2), as one lever set: models and practice stay off the
+ * session's words and sound, practice keeps the operation, and every miss of every mode is answered.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,7 +9,9 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { rimeOfWord } from './rhymeModels';
 import type { SoundSwapChallenge } from './SoundSwap';
-import { SWAP_MISSES, operatedSound, practiceItemFor, practiceLeak, soundSwapLevers, swapModelFor, swapSessionWords, targetTile } from './soundSwapLevers';
+import { SWAP_MISSES } from './soundSwap.card';
+import { asSwapWord } from './soundSwapDomain';
+import { SWAP_LEVERS, operatedSound, practiceItemFor, practiceLeak, swapModelFor, swapSessionWords, targetTile } from './soundSwapLevers';
 
 const saved: SoundSwapChallenge[] = JSON.parse(readFileSync(join(__dirname,
   '../../../components/live-activity/runtime/testing/w1-payloads/sound-swap.addition.json'), 'utf8')).data.challenges;
@@ -19,6 +21,8 @@ const ch = (id: string, operation: SoundSwapChallenge['operation'], from: string
 const DEL = ch('d', 'deletion', 'stop', 'top', { deletePhoneme: '/s/', deletePosition: 'beginning' });
 const SUB = ch('s', 'substitution', 'cat', 'cot', { oldPhoneme: '/a/', newPhoneme: '/o/', substitutePosition: 'middle' });
 const END = ch('e', 'addition', 'car', 'card', { addPhoneme: '/d/', addPosition: 'end' });
+const declare = (c: SoundSwapChallenge, session: readonly SoundSwapChallenge[]) =>
+  SWAP_LEVERS.declare(asSwapWord(c, 'medium'), { challenges: session }, []);
 
 describe.each([['saved addition', saved], ['deletion', [DEL, ...saved]], ['substitution', [SUB, DEL]], ['end addition', [END, SUB]]] as const)('%s', (_l, session) => {
   it('the model and the practice item use no session word, not the item\'s sound, and no rhyme of its answer', () => {
@@ -32,6 +36,9 @@ describe.each([['saved addition', saved], ['deletion', [DEL, ...saved]], ['subst
       expect(practice, item.id).toBeTruthy();
       expect(practiceLeak(practice, item, session)).toBe(false);
       expect(practice.id).toBe(`${item.id}~simpler`);
+      // The easier lever opens that item, stamped with the parent's mode and tier.
+      expect(SWAP_LEVERS.simpler(asSwapWord(item, 'easy'), { challenges: session }, 'easier_operation_item'))
+        .toMatchObject({ id: practice.id, mode: item.operation, supportTier: 'easy' });
     }
   });
 });
@@ -51,21 +58,30 @@ describe('the item', () => {
   });
 
   it('mark is offered where it adds something: never over the tier\'s own highlight', () => {
-    const ids = (c: SoundSwapChallenge) => soundSwapLevers(c, [], [c, ...saved]).map(l => l.id);
+    const ids = (c: SoundSwapChallenge) => declare(c, [c, ...saved]).map(l => l.id);
     expect(ids(saved[0])).toEqual(['swap_model', 'mark_target_sound', 'easier_operation_item']);
     expect(ids(SUB)).toEqual(['swap_model', 'easier_operation_item']);
     expect(ids({ ...SUB, showTargetHighlight: false })).toEqual(['swap_model', 'mark_target_sound', 'easier_operation_item']);
     expect(ids(DEL)).toContain('mark_target_sound');
   });
 
-  it('carriers count at K; the catalog declares every miss, unanswered until spoken misses land', () => {
+  it('carriers count at K; the catalog declares every miss, and a lever answers each', () => {
     const entry = LITERACY_CATALOG.find(c => c.id === 'sound-swap')!.teachingWorkspace!;
     for (const mode of ['addition', 'deletion', 'substitution']) {
       expect(entry.misses![mode]).toEqual(SWAP_MISSES);
-      expect(entry.unanswered![mode]).toEqual(SWAP_MISSES);
+      expect(entry.unanswered?.[mode]).toBeUndefined();
     }
-    for (const l of soundSwapLevers(DEL, [], [DEL])) expect(['shown', 'both']).toContain(l.carrier);
-    expect(nextLever(soundSwapLevers(DEL, [], [DEL]), 'echo_start')).toBe('swap_model');
+    const levers = declare(DEL, [DEL]);
+    for (const l of levers) expect(['shown', 'both']).toContain(l.carrier);
+    expect(new Set(levers.flatMap(l => l.answers ?? []))).toEqual(new Set(SWAP_MISSES));
+    expect(nextLever(levers, 'echo_start')).toBe('swap_model');
     expect(operatedSound(DEL)).toBe('/s/');
+  });
+
+  it('a pulled lever\'s fact never names the new word', () => {
+    for (const c of [DEL, SUB, END, ...saved]) {
+      const fact = SWAP_LEVERS.onScreen(asSwapWord(c, 'medium'), { challenges: [c] }, ['swap_model', 'mark_target_sound']);
+      expect(fact, c.id).not.toMatch(new RegExp(`\\b${c.resultWord}\\b`));
+    }
   });
 });

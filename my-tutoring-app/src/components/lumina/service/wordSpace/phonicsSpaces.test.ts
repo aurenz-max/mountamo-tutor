@@ -4,8 +4,8 @@ import { mulberry32, tierPick, tierPickFocus } from './pick';
 import { blendFocus, blendScope, blendSpace, blendTiles, type BlendPattern } from './phonicsSpaces';
 import { scopeFromObjective } from './scope';
 import { isBlendWordUsable, pickBundledPattern } from '../literacy/gemini-phonics-blender';
-import { blendItems, } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
-import { soundWalk } from '../../primitives/visual-primitives/literacy/phonicsBlenderScript';
+import { blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderDomain';
+import { speakableWalk } from '../../primitives/visual-primitives/literacy/phonemeVoice';
 import type { SupportTier } from '../generation/generationContext';
 
 const TIERS: SupportTier[] = ['easy', 'medium', 'hard'];
@@ -24,8 +24,8 @@ describe.each(CASES)('phonics-blender %s space, grade %s', (pattern, grade) => {
       const x = lexWord(w.targetWord)!;
       const sounding = w.phonemes.filter((t) => t.sound !== '//');
       expect(sounding.length).toBe(x.gpcs!.length);
-      // The tutor can say the walk for every word that has no silent e.
-      if (pattern !== 'cvce') expect(soundWalk(blendItems([w])[0]).length, w.targetWord).toBeGreaterThan(0);
+      // The tutor can say every sound a tapped letter asks for, on every word that has no silent e.
+      if (pattern !== 'cvce') expect(speakableWalk(blendItems([w])[0].phonemes.map(p => p.sound))?.length ?? 0, w.targetWord).toBeGreaterThan(0);
     }
   });
   it('easy < medium < hard, distinct words per tier', () => {

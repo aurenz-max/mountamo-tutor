@@ -198,13 +198,13 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
   required relation and the named reference object.
 - **Demanded by:** LA004-01-F, LA004-05-C, LA004-05-E, LA004-05-F, LA004-05-I.
 - **Evidence:** `buildPerspectiveDescriptionChallenges` owns the geometry;
-  `spatialSceneDescriptionPack` owns the spoken contract; focused suites verify all four
+  `spatialKey` (`spatialSceneWorkspace.ts`, on the boss since 2026-10-20) owns the spoken key; focused suites verify all four
   perspective relations, answer-safe prompts, and relation/reference criteria.
 - **Probe:** generate `targetEvalMode=describe_scene`; recompute the relation from the
   two object coordinates and inspect the spoken cue before and after one judged attempt.
 
 ### R17 — in-item levers never state the answer, and practice is ungraded · OBSERVED
-- **Property:** `spatialSceneLevers.ts` levers: `mark_reference` rings only the thing(s) compared with (never the
+- **Property:** `spatialSceneLevers.ts` levers (one lever set, `SPATIAL_LEVERS`, since 2026-10-20): `mark_reference` rings only the thing(s) compared with (never the
   target, an empty cell or an answer cell; never offered on `place_in`, whose container IS the answer); `word_picture`
   draws a dot-and-square picture of EVERY option word on identify/describe, or of the asked word only on the cell modes,
   never with the scene's things; `side_labels` (describe_scene) are the same left/right/nearer marks on every scene.
@@ -222,7 +222,7 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
 ### R18 — `identify`/`describe` take the word said OR tapped; geometry judges both · OBSERVED (2026-10-13)
 - **Property:** A tap and Check is checked by the scene against `correctPosition` (R12 unchanged). The same word may be
   said aloud: the item is spoken with `acceptsGesture`, and JEV credits only from the tutor's feedback against
-  `expectedAnswer` (`wordExpectedAnswer`). That key credits every word R3's geometry makes true for the drawn pair
+  `expectedAnswer` (`spatialKey`, a `SpokenKey` the boss turns into the key text). That key credits every word R3's geometry makes true for the drawn pair
   (`on`/`on top of` beside `above` only when the two touch), names the contact word as NOT it when there is a gap, and
   does not credit a bare "beside"/"next to" when the answer names a side. The ask and scene facts never name the word.
   Spoken misses reuse the tap's ids (`opposite_word`/`same_axis_word`/`other_axis_word`). Cell modes stay tap-only.
@@ -320,7 +320,16 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-10-13 (latest)** — VB-1 voice beside the tap: R18 added. `identify`/`describe` are spoken items with
+- **2026-10-20 (latest)** — boss migration (wave 2, `/add-live-tutor-tools`): `spatialScene.card.ts` + `spatialScene.boss.ts`
+  on `spokenBoss`. identify/describe are `SAY_OR_SHOW`, describe_scene `SPOKEN`, the four placing modes `manipulate`
+  checked by the scene (follow_directions one step at a time, not a board: each step is checked as it is placed). The
+  spoken keys are `SpokenKey` objects (`spatialKey`); the identify/describe ask is built from the item's names, so it
+  never carries an accepted word. R16 re-based: the runner-era `spatialSceneDescriptionPack` (scripted cues) is deleted;
+  its judging rules (relation AND reference, YOU viewpoint, opposite relation and vague answers refused) now live in
+  the describe_scene key. R17 re-based onto one lever set (same ids, words, carriers and offers; easy still starts with
+  the ring shown, not pulled). R18 holds: the same words are credited and refused, now as key fields. R1-R15 untouched
+  (no generator, check or render change). Contract-compatible.
+- **2026-10-13** — VB-1 voice beside the tap: R18 added. `identify`/`describe` are spoken items with
   `acceptsGesture`; the key now reaches the observer as `expectedAnswer` (it was gesture-only with no key). R12 holds: the
   tap still has one defensible option; the spoken key is wider only where R3 geometry makes another word true. R3 holds:
   `on`/`under` stay contact-scoped in the spoken key. R11/R13/R14/R16/R17 untouched; cell modes stay gesture. Compatible.

@@ -637,7 +637,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
     const scene = pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed, practice: !!practice });
     workspace.current = {
       ...leverScene(scene, {
-        support: practice ? '' : ARENA_LEVERS.support(sessionItem),
+        support: practice ? '' : ARENA_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : ARENA_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       readyForResponse: item.kind !== 'observe' || observed,
       levers,

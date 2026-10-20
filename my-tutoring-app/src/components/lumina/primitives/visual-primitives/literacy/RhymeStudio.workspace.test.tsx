@@ -26,10 +26,10 @@ const IDF = { id: 'idf', mode: 'identification', targetWord: 'sun', targetWordIm
 const PRO = { id: 'pro', mode: 'production', targetWord: 'bed', targetWordImage: '', rhymeFamily: '-ed' };
 const COL = { id: 'col', mode: 'collection', targetWord: 'hat', targetWordImage: '', rhymeFamily: '-at' };
 const BY_MODE: Record<string, { challenge: unknown; key: RegExp }> = {
-  recognition: { challenge: REC, key: /^No: cat and dog do not rhyme/ },
-  identification: { challenge: IDF, key: /^bun, the choice/ },
-  production: { challenge: PRO, key: /^Any real word that rhymes with bed/ },
-  collection: { challenge: COL, key: /^A real word that rhymes with hat/ },
+  recognition: { challenge: REC, key: /^"no" \(also accept "nope"\)\. cat and dog do not end with the same sound/ },
+  identification: { challenge: IDF, key: /^"bun"\. It is the choice on the screen \((bun, sock|sock, bun)\) that rhymes with sun/ },
+  production: { challenge: PRO, key: /^"any real word that rhymes with bed"\. Any real word that ends with the same sound as bed \(-ed\)/ },
+  collection: { challenge: COL, key: /^"a new real word that rhymes with hat"\./ },
 };
 
 it.each(Object.keys(BY_MODE))('%s binds: one spoken answer judged against the key; the ask never names the ending', mode => {
@@ -38,6 +38,8 @@ it.each(Object.keys(BY_MODE))('%s binds: one spoken answer judged against the ke
   const h = mountWorkspace({ primitiveId: 'rhyme-studio', evalMode: mode, data: d });
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(BY_MODE[mode].key);
   expect(h.state().task!.task).not.toMatch(/-(at|un|ed)\b/);
+  // The key of an open mode carries the rule and names no example rhyme (contract R3).
+  if (mode === 'production' || mode === 'collection') expect(h.state().task!.workspace!.expectedAnswer).not.toMatch(/\b(red|fed|led|bat|cat|mat)\b/);
 });
 
 it('identification marks the rhyming choice only after credit; a miss reopens with nothing marked', () => {
@@ -55,7 +57,7 @@ it('collection fills each spot with the credited word, tells the next slot what 
   expect(screen.getByLabelText('Empty rhyme spot 1')).toBeTruthy();
   h.say('I said mat'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(screen.getByLabelText('Rhyme 1: mat')).toBeTruthy();
-  expect(h.state().task!.workspace!.expectedAnswer).toContain('not one already collected (mat)');
+  expect(h.state().task!.workspace!.expectedAnswer).toContain('not one the family already holds (mat)');
   expect(h.state().task!.demand?.collected).toBe('mat');
   h.say('bat'); h.feedback('correct', 'advance'); h.confirmVisible();
   h.say('sat'); h.feedback('correct', 'advance'); h.confirmVisible();

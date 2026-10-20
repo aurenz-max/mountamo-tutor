@@ -1,5 +1,6 @@
 /**
- * gas-laws-simulator on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C27).
+ * gas-laws-simulator's items, keys, misses and scene: the pure half of its boss (`gasLawsSimulator.boss.ts`, a
+ * SAY_OR_SHOW card on the spoken preset).
  *
  * Every item is built and keyed by code: a container of gas (a steel tank, a cylinder with a free piston, a sealed
  * syringe in a water bath, or a cylinder whose piston can be pressed), its state before, one or two changes, and the
@@ -14,11 +15,12 @@
  * inverse relations and fractional factors; hard = the held quantities left to infer from the container (observe,
  * with "stays the same" keys) or temperatures in degrees Celsius (predict, calculate).
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks,
- * misses and scene.
+ * Pure: the component, the generator, the boss, the levers and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { GAS_MISSES } from './gasLawsSimulator.card';
 
 export type GasMode = 'observe' | 'predict' | 'calculate';
 export const GAS_MODES: GasMode[] = ['observe', 'predict', 'calculate'];
@@ -107,11 +109,6 @@ export type ObserveMiss = 'opposite_direction' | 'said_unchanged' | 'missed_unch
 export type PredictMiss = 'inverse_factor' | 'kept_value' | 'celsius_ratio';
 export type CalculateMiss = 'first_change_only' | 'second_change_only' | 'ratio_inverted' | 'celsius_ratio';
 export type GasLawsMiss = ObserveMiss | PredictMiss | CalculateMiss;
-export const GAS_MISSES: Record<GasMode, readonly GasLawsMiss[]> = {
-  observe: ['opposite_direction', 'said_unchanged', 'missed_unchanged'],
-  predict: ['inverse_factor', 'kept_value', 'celsius_ratio'],
-  calculate: ['first_change_only', 'second_change_only', 'ratio_inverted', 'celsius_ratio'],
-};
 
 export interface GasChoice { label: string; value: number; kind: 'key' | GasLawsMiss }
 
@@ -401,26 +398,33 @@ export function gasItems(d: GasItemsSource): GasItem[] {
     rng: seededRng(`${d.title ?? 'gas'}:${resolveFocus(d)}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
+
+export const gasMode = (item: GasItem): GasMode => item.mode;
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
-const SAY_DIRECTION: Record<Direction, string> = {
-  'Goes up': '"goes up", "increases", "rises", "gets bigger" or "higher"',
-  'Goes down': '"goes down", "decreases", "drops", "gets smaller" or "lower"',
-  'Stays the same': '"stays the same", "does not change" or "unchanged"',
+const SAY_DIRECTION: Record<Direction, string[]> = {
+  'Goes up': ['increases', 'rises', 'gets bigger', 'higher'],
+  'Goes down': ['decreases', 'drops', 'gets smaller', 'lower'],
+  'Stays the same': ['does not change', 'unchanged'],
 };
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function gasExpectedAnswer(item: GasItem): string {
+/**
+ * The key a spoken reply is judged against: the direction said any way, or the new value with or without its unit.
+ * Each also takes the choice's place in the list. The bare number is a rule, not an accepted answer, so a number the
+ * ask states for another quantity ("4 L" beside a key of "4 atm") is not read as the answer.
+ */
+export function gasKey(item: GasItem): SpokenKey {
   const key = keyChoice(item), choices = choicesOf(item), at = choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
+  const place = `the ${ORDINAL[at] ?? 'last'} one`;
   const others = choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
   if (item.mode === 'observe') {
-    return `The ${NAME[item.asked]} ${key.toLowerCase()}: ${SAY_DIRECTION[key as Direction]}, or ${place}, count. `
-      + `${others} are wrong, and so is naming two or hedging between them.`;
+    return { answer: key.toLowerCase(), alsoAccept: [...SAY_DIRECTION[key as Direction], place],
+      signatureError: `${others} are wrong, and so is naming two or hedging between them.` };
   }
   const [num, unit] = key.split(' ');
-  return `"${key}": the number ${num} said any way, with or without "${unit}", or ${place}, counts. ${others} are wrong.`;
+  return { answer: key, alsoAccept: [place], acceptRule: `The number ${num} said any way, with or without "${unit}", counts.`,
+    signatureError: `${others} are wrong.` };
 }
 
 const WHAT: Record<GasLawsMiss, string> = {
@@ -447,14 +451,6 @@ export function gasSpokenMisses(item: GasItem): KnownMiss[] {
     pattern: `${fact} The learner's answer ${WHAT[m]}: ${groups.get(m)!.map(x => `"${x}"`).join(', ')}.`, examples: groups.get(m)! }));
 }
 
-const HOW = 'The learner answers by saying it, or tapping one choice and pressing Check Answer.';
-
-export function workspaceAssignment(item: GasItem): TeachingAssignment {
-  const misses = gasSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: gasExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface GasView {
@@ -473,8 +469,25 @@ const DRAWN: Record<Apparatus, string> = {
   cylinder: 'a cylinder closed by a piston',
 };
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-  + 'The change is run on screen only after the answer is credited. You cannot tap, check or run the change for the learner.';
+/**
+ * What the learner works out is the question: never said for them. How they answer is the card's `moves`. observe:
+ * the direction, and (when the ask does not name it) what the container holds; predict and calculate: the value, the
+ * factor, and after a miss where the wrong value came from.
+ */
+function constraintsOf(item: GasItem): string {
+  if (item.mode === 'observe') {
+    const held = item.heldNamed ? '' : 'What the container keeps the same is part of the question: never say it, or ask a '
+      + 'yes-or-no question that settles it (can the steel stretch, can the piston move, does the bath keep the '
+      + 'temperature); ask what the container keeps the same. ';
+    return `${held}Never say which way the ${NAME[item.asked]} moves or that it stays the same; ask what the change does `
+      + 'to the particles (pressure is how hard and how often they hit the walls, temperature how fast they move, volume '
+      + 'the room they have).';
+  }
+  const celsius = item.celsius ? 'The temperatures are written in degrees Celsius; a gas-law ratio needs kelvin. ' : '';
+  return `${celsius}Never say which value is right, that the ${NAME[item.asked]} doubles, halves or stays the same, or which `
+    + 'factor to multiply or divide by. After a miss, never say what the wrong value came from or which change the '
+    + 'learner left out or turned round; ask how each change on the table affects it.';
+}
 
 /** What is drawn and asked. The choices are named, never which is right; the after value only once credited. */
 export function workspaceScene(item: GasItem, view: GasView): WorkspaceScene {
@@ -492,7 +505,7 @@ export function workspaceScene(item: GasItem, view: GasView): WorkspaceScene {
     facts.run = `The change has been run on the container, and the table's "?" now reads ${showValue(item, item.asked, after[item.asked])}.`;
   }
   facts.learnerWork = describeGasWork(item, view);
-  facts.constraints = CONSTRAINTS;
+  facts.constraints = constraintsOf(item);
   return { objects: [], facts };
 }
 

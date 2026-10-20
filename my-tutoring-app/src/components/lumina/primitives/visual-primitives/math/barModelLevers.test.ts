@@ -1,5 +1,5 @@
 /**
- * bar-model levers (`barModelLevers.ts`) on the twelve modes other than make_graph: which lever answers which miss,
+ * bar-model levers (`BAR_LEVERS`, barModelLevers.ts) on the twelve modes other than make_graph: which lever answers which miss,
  * each leak rule, and the easier graphs over many generated shapes, on the saved payloads and on built items.
  */
 import { readFileSync } from 'fs';
@@ -11,15 +11,18 @@ import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
 import { barModelMiss } from './barModelWorkspace';
 import {
   BAR_VALUES, DATA_BESIDE, GROUP_FIVES, GUIDE_LINE, ICON_VALUES, MARK_BARS, MARK_ROW, MINOR_TICKS, PAIR_ROWS, PILE_ROW, SIMPLER,
-  SORT_PILE, STEP_MARKS, WORD_MODEL, barModelLevers, barValuesLeak, dataBesideLeaks, fivesRows, leverFacts, leverRefusal, markRowLeaks,
-  namedRows, simplerGraph, simplerLeaks, simplerParent, stepMarks, wordModel, wordModelLeaks,
+  SORT_PILE, STEP_MARKS, WORD_MODEL, BAR_LEVERS, barValuesLeak, dataBesideLeaks, fivesRows, markRowLeaks,
+  namedRows, simplerGraph, simplerLeaks, simplerParent, stepMarks, tierPulled, wordModel, wordModelLeaks,
 } from './barModelLevers';
 
 const MODES: BarModelEvalMode[] = ['read_one_to_one', 'most_least', 'compare_bars', 'match_to_bar', 'build_one_to_one',
   'say_what_it_shows', 'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem', 'build_graph'];
 const payload = (mode: string): BarModelChallenge[] => JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/bar-model.${mode}.json`), 'utf8')).data.challenges;
-const ids = (c: BarModelChallenge, pulled: string[] = []) => barModelLevers(c, pulled).map(l => l.id);
+/** The levers on an item as the component declares them: the tier's help counts as pulled; `built` is the bars on screen. */
+const barModelLevers = (c: BarModelChallenge, pulled: readonly string[], built: readonly { value: number }[] = c.values) =>
+  BAR_LEVERS.declare(c, { built }, [...pulled, ...tierPulled(c)]);
+const ids = (c: BarModelChallenge, pulled: string[] = [], built?: readonly { value: number }[]) => barModelLevers(c, pulled, built).map(l => l.id);
 const entry = getComponentById('bar-model')!.teachingWorkspace!;
 
 const K = (mode: BarModelEvalMode, counts: number[], extra: Partial<BarModelChallenge> = {}): BarModelChallenge => ({
@@ -73,7 +76,8 @@ describe('which lever answers which miss', () => {
   it('every lever answers only its mode\'s catalog misses; on the saved payloads every catalog miss is answered', () => {
     for (const mode of MODES) {
       const items = payload(mode);
-      const answered = new Set(items.flatMap(c => barModelLevers(c, []).flatMap(l => l.answers ?? [])));
+      // With a bar set, as at a check: step_marks counts to the learner's tallest bar.
+      const answered = new Set(items.flatMap(c => barModelLevers(c, [], c.values.map(() => ({ value: 6 }))).flatMap(l => l.answers ?? [])));
       const declared = entry.misses![mode];
       answered.forEach(m => expect(declared, mode).toContain(m));
       expect(declared.filter(m => !answered.has(m)), mode).toEqual(entry.unanswered?.[mode] ?? []);
@@ -118,13 +122,14 @@ describe('leak rules', () => {
       expectedDataset: [{ label: 'Apples', value: 12 }, { label: 'Pears', value: 16 }], expectedScaleStep: 2, availableScaleSteps: [1, 2, 5] });
     expect(dataBesideLeaks(build)).toBe(false);
     expect(dataBesideLeaks({ ...build, prompt: 'Build the graph from the survey.' })).toBe(true);
-    expect(ids({ ...build, prompt: 'Build the graph from the survey.' })).toEqual([STEP_MARKS]);
+    expect(ids({ ...build, prompt: 'Build the graph from the survey.' }, [], [{ value: 4 }, { value: 0 }])).toEqual([STEP_MARKS]);
     for (const c of payload('build_graph')) expect(dataBesideLeaks(c), c.id).toBe(false);
   });
-  it('step_marks counts to the learner\'s own tallest bar and refuses before a bar is set', () => {
+  it('step_marks counts to the learner\'s own tallest bar and is not offered before a bar is set', () => {
     const build = payload('build_graph')[0];
     expect(stepMarks([1, 2, 5, 10], [{ value: 0 }])).toBeNull();
-    expect(leverRefusal(build, STEP_MARKS, build.values)).toMatch(/Set a bar first/);
+    expect(ids(build, [], build.values.map(() => ({ value: 0 })))).not.toContain(STEP_MARKS);
+    expect(ids(build, [], build.values.map((_, i) => ({ value: i === 0 ? 6 : 0 })))).toContain(STEP_MARKS);
     expect(stepMarks([1, 2, 5, 10], [{ value: 12 }, { value: 20 }])).toEqual({ 1: 20, 2: 10, 5: 4, 10: 2 });
   });
   it('mark_bars marks only rows the question names', () => {
@@ -134,7 +139,7 @@ describe('leak rules', () => {
   it('no scene fact states an answer: on every saved payload with every lever pulled, the fact names no key number on K modes', () => {
     for (const mode of MODES) for (const c of payload(mode)) {
       const levers = barModelLevers(c, []).map(l => l.id);
-      const fact = leverFacts(c, id => levers.includes(id), c.values) ?? '';
+      const fact = BAR_LEVERS.onScreen(c, { built: c.values }, levers);
       expect(fact).not.toMatch(/\b(answer|correct|is the (most|fewest))\b/i);
       if (['read_one_to_one', 'most_least', 'match_to_bar', 'build_one_to_one', 'say_what_it_shows', 'compare_two_graphs'].includes(mode)) {
         const own = [...c.values.map(v => v.value), ...(c.expectedCounts ?? []), c.stimulusCount ?? -1, c.expectedValue ?? -1].filter(n => n > 0);

@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * CauseEffectChain — runs only on the shared tutor/JEV teaching workspace (workspace
- * rollout C8; the scripted runner was retired, LA-14, user ruling 09-23: one path).
- * The observer judges each spoken answer, the activity checks the built chain, and the
+ * CauseEffectChain — taught on the shared teaching workspace only (the boss:
+ * `causeEffectChain.card.ts` + `causeEffectChain.boss.ts`). The tutor judges each
+ * spoken answer against its key, the activity checks the built chain, and the
  * runtime owns progression. There is no Next or Check button, no mic panel, and no
- * answer on screen before credit. An unbound mount shows the shared "needs the tutor"
- * card; the adapter refuses a lesson with no askable chain.
+ * answer on screen before credit. A mount with no tutor shows the shared "needs the
+ * tutor" card (`withWorkspaceOnly`); the boss refuses a lesson with no askable chain.
  *
- * ⭐ THE ANSWER-MATERIAL FORK (`causeEffectChainScript.ts`, standing gate 1):
+ * ⭐ THE ANSWER-MATERIAL FORK (`causeEffectChainDomain.ts`):
  *   identify_cause     SPOKEN — one yes/no per card      the child SAYS it
  *   build_chain        HANDS  — the cards placed in order the arrangement IS the answer
  *   root_vs_proximate  SPOKEN — which card                the child SAYS it
@@ -45,12 +45,11 @@
  * never correctness-gated: a wrong full chain commits exactly as readily as a
  * right one.
  *
- * Asks and build gates live in `causeEffectChainScript.ts`; the assignment and
- * scene the tutor receives live in `causeEffectChainWorkspace.ts`.
+ * Asks, keys, build gates and the scene live in `causeEffectChainDomain.ts`; the
+ * levers in `causeEffectChainLevers.ts`.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -80,28 +79,27 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
-  correctChoiceOf,
-  type CauseEffectChainItem,
-  type ChainCard,
-  type ChainKind,
-  type ChainTier,
-} from './causeEffectChainScript';
-import {
-  causeEffectAssignment,
   causeEffectItems,
   causeEffectScene,
   chainMatches,
   chainMiss,
+  correctChoiceOf,
   describeChain,
   hearBackgroundRequest,
-} from './causeEffectChainWorkspace';
+  placeLabel,
+  type CauseEffectChainItem,
+  type ChainCard,
+  type ChainKind,
+  type ChainTier,
+} from './causeEffectChainDomain';
 import {
-  ENDS_MODEL_LEVER, MODEL_CHAIN_LEVER, ROLE_MODEL_LEVER, ROLE_TAG, TWO_TESTS_LEVER,
-  causeEffectLevers, chainModelFor, leversOnScreen, orderedPractice, practiceItem, roleModelFor, startingLevers,
-  type ChainSession,
+  CHAIN_LEVERS, ENDS_MODEL_LEVER, MODEL_CHAIN_LEVER, ROLE_MODEL_LEVER, ROLE_TAG, TWO_TESTS_LEVER,
+  chainModelFor, orderedPractice, roleModelFor, startingLevers,
 } from './causeEffectChainLevers';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { causeEffectChainBoss, chainSession } from './causeEffectChain.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -333,7 +331,8 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
     practiceRef.current = p;
     setPracticeState(p);
   }, []);
-  const session = useMemo<ChainSession>(() => ({ items, gradeLevel, tier: supportTier }), [items, gradeLevel, supportTier]);
+  const session = useMemo(() => chainSession({ challenges, periodLabel, gradeLevel, supportTier }, items),
+    [challenges, periodLabel, gradeLevel, supportTier, items]);
 
   const evaluation = usePrimitiveEvaluation<CauseEffectChainMetrics>({
     primitiveType: 'cause-effect-chain',
@@ -380,7 +379,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
 
   const runner = useWorkspaceRunner<CauseEffectChainItem>({
     primitiveId: 'cause-effect-chain',
-    assignment: causeEffectAssignment,
+    assignment: causeEffectChainBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -402,25 +401,24 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
   const sessionItem = runner.currentItem;
   const shownItem = practice ?? sessionItem;
-  const starting = practice ? [] : startingLevers(supportTier, sessionItem);
+  const starting = practice || !sessionItem ? [] : startingLevers(sessionItem.tier, sessionItem);
   const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
   const leverOn = (id: string) => !practice && (starting.includes(id) || pulledLevers.includes(id));
   const roleModel = sessionItem && leverOn(ROLE_MODEL_LEVER) ? roleModelFor(sessionItem, session) : null;
   const chainModel = sessionItem && (leverOn(MODEL_CHAIN_LEVER) || leverOn(ENDS_MODEL_LEVER))
     ? chainModelFor(sessionItem, session) : null;
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation; every item is answerable once it opens. The lever set writes the support and on-screen facts.
   useLayoutEffect(() => {
     if (!sessionItem || !shownItem) return;
-    const scene = causeEffectScene(shownItem, context, placedRef.current);
-    const levers = practice ? [] : causeEffectLevers(sessionItem, session, pulledLevers, starting);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, [...starting, ...pulledLevers], session);
+    const scene = causeEffectScene(shownItem, context, placedRef.current, !!practice);
+    // No lever on a practice item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : CHAIN_LEVERS.declare(sessionItem, session, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: `An easier practice item, ungraded. The full item comes back after it.${orderedPractice(practice)
-          ? ' Its cards are drawn in order, earliest at the top, each leading to the next and the ending last.' : ''}` } : {}) },
+      ...leverScene(scene, {
+        support: practice ? '' : CHAIN_LEVERS.support(sessionItem, session),
+        onScreen: practice ? '' : CHAIN_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -428,10 +426,10 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, session);
+          const easier = CHAIN_LEVERS.simpler(sessionItem, session, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); resetBoard(easier);
-          return { practice: causeEffectAssignment(easier) };
+          return { practice: causeEffectChainBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -441,10 +439,6 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The ending and the events', finished: showSummary,
-    handover: runner.currentItem?.kind === 'build_chain',
-  });
 
   // ── Hands: place, remove, and the stillness close ─────────────────────────
   /** Called by the stillness window once the full chain has sat still. Reads the
@@ -500,9 +494,8 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   }, [runner]);
 
   // ── The background read-aloud: a silent host request, never an answer ─────
-  const ctx = useLuminaAIContext();
   const readContext = () => {
-    if (context) ctx.sendText(hearBackgroundRequest(context), { silent: true, author: 'host' });
+    if (context) runner.requestHear(hearBackgroundRequest(context));
   };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -706,7 +699,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
                 className="max-w-full whitespace-normal py-3 text-left"
                 onClick={() => handlePlace(card.id)}
                 disabled={!live}
-                aria-label={`Place "${card.text}"`}
+                aria-label={placeLabel(card)}
               >
                 {renderCardBody(card)}
               </LuminaChip>
@@ -843,11 +836,12 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
                 </LuminaPrompt>
               )}
 
-              {pip.store && <div {...pip.dock} />}
+              {/* Pip outlines the ending and the events as a whole, never one card. */}
+              <PipDock />
               {practice && !showReveal && (
                 <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
               )}
-              {staged && <div {...pip.target('stimulus')}>{renderStage(staged)}</div>}
+              {staged && <PipWorkspace><div data-pip-object="stimulus">{renderStage(staged)}</div></PipWorkspace>}
               {!showReveal && renderModels()}
 
               {/* Reveal-on-affirm: the teaching note, for exactly as long as the

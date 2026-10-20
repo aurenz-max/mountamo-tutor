@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Story bridge on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Story bridge on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the
+ * shared contract over every boss (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,9 +15,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import { FALLBACK_PAIR, challengesFromPair } from '../../../service/literacy/gemini-story-bridge';
-import { itemsFromChallenges } from './storyBridgeScript';
+import { itemsFromChallenges } from './storyBridgeDomain';
 import type { StoryBridgeChallengeType } from './StoryBridge';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -76,16 +76,6 @@ it('the replay button asks for both stories silently, as the host, never the com
   const [text, options] = seam.send.mock.calls.at(-1)!;
   expect(text).toContain(FALLBACK_PAIR.a.title);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip points at the ringed friend on a character match and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('bridge');
-  const d = data('match_character');
-  const h = mountWorkspace({ primitiveId: 'story-bridge', evalMode: 'match_character', data: d, instanceId: 'bridge', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toContain('anchor');
-  h.touch(`choice-${firstItem(d).correctChoiceId}`);
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a bridge without its story pair', () => {

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding, plain shape: the real ComparisonBuilder on the shared teaching workspace, with
- * the real TeachingSession, LiveLessonRuntime, transport and rendering shell. The builder's own
- * check commits a checked gesture; the runtime owns progression. Only microphone hardware,
- * evaluation writes, sound and the legacy AI-context hook are substituted.
+ * The real ComparisonBuilder on its boss (`comparisonBuilder.boss.ts`), with the real TeachingSession,
+ * LiveLessonRuntime, transport and rendering shell. The builder's own check commits a checked gesture;
+ * the runtime owns progression. Only microphone hardware, evaluation writes and sound are substituted, and
+ * the legacy AI-context hook is mocked to prove nothing calls it.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -29,6 +29,7 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 import ComparisonBuilder, { type ComparisonBuilderChallenge, type ComparisonBuilderData } from './ComparisonBuilder';
+import { comparisonAsk } from './comparisonBuilderWorkspace';
 
 beforeEach(() => { vi.clearAllMocks(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); seam.evaluationContext = null; });
@@ -76,7 +77,8 @@ it.each(Object.keys(MODE_KIND))('%s mounts under tutor ownership with no scripte
   const c = challengeFor(MODE_KIND[mode]);
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task.startsWith(c.instruction)).toBe(true);
+  // The tutor is handed the boss's ask, built in code from the item, never the generated instruction.
+  expect(h.state().task!.task).toBe(comparisonAsk({ ...c, band: '1' }));
   // One sayable answer is a spoken item that still takes the tap; the order stays a tap with no key.
   if (mode === 'order') {
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
@@ -92,10 +94,11 @@ it.each(Object.keys(MODE_KIND))('%s mounts under tutor ownership with no scripte
   expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();
 });
 
-it('Kindergarten counts stay off the packet, and the Read-me button (a legacy tutor cue) is hidden', () => {
+it('Kindergarten counts stay off the packet, there is no Read-me button, and the ask names the group to pick', () => {
   const h = mount('compare_groups', [challengeFor('compare-groups')], 'K');
   expect(h.state().task!.demand).not.toHaveProperty('countsOnScreen');
   expect(screen.queryByRole('button', { name: /read/i })).toBeNull();
+  expect(h.state().task!.task).toBe('Which group has more, the left group or the right group? Or do they have the same?');
 });
 
 it('Check commits a wrong answer, input stays closed until Try again clears it, then a right one completes once', () => {

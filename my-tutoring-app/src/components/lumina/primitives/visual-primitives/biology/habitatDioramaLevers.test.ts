@@ -1,16 +1,22 @@
-/** habitat-diorama observe/connect levers: the leak rules, the simpler-item builders, and miss → lever. */
+/** habitat-diorama's lever set: the leak rules, the simpler-item builders, and miss → lever. */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { HabitatChallenge, Organism, Relationship } from './HabitatDiorama';
-import { itemFromChallenge, type HabitatItem } from './habitatDioramaScript';
-import { habitatMiss } from './habitatDioramaWorkspace';
+import { habitatMiss, itemFromChallenge, type HabitatItem } from './habitatDioramaDomain';
 import {
   BODY_CLUES_LEVER, CARD_PICTURES_LEVER, CHANGE_MARK_LEVER, DIRECTION_MODEL_LEVER, EASIER_CHANGE_LEVER, EASIER_CLAIM_LEVER,
   EASIER_CLUE_LEVER, EASIER_LINK_LEVER, FOOD_LINES_LEVER, ITS_PARTNERS_LEVER, PLAIN_CLUE, START_LINES_LEVER, ZONE_PICTURES_LEVER,
   bodyClues, cardPictures, changeMarks, directionModel, easierConnectItem, easierDefendItem, easierObserveItem,
-  easierPredictItem, foodLinesLeak, habitatDioramaLeverFacts, habitatDioramaLevers, namedIds, organismEmoji,
+  easierPredictItem, foodLinesLeak, HABITAT_LEVERS, namedIds, organismEmoji,
   restorePartners, simplerLeaks, startPartners,
 } from './habitatDioramaLevers';
+
+type Data = { organisms: Organism[]; relationships: Relationship[] };
+/** The levers offered on a session item (`HABITAT_LEVERS.declare`) and the scene fact of the pulled ones. */
+const levers = (item: HabitatItem, data: Data, shown: readonly string[], pulled: readonly string[]) =>
+  HABITAT_LEVERS.declare(item, { data, shownEmojis: shown }, pulled);
+const facts = (item: HabitatItem, pulled: readonly string[], shown: readonly string[], data: Data) =>
+  HABITAT_LEVERS.onScreen(item, { data, shownEmojis: shown }, pulled);
 
 const org = (id: string, commonName: string, role: Organism['role']): Organism =>
   ({ id, commonName, role, imagePrompt: id, position: { x: '50%', y: '50%' }, description: `${commonName}.`, adaptations: [] });
@@ -43,7 +49,7 @@ describe('observe', () => {
     expect(foodLinesLeak(oak, [])).toBe(true);
     expect(foodLinesLeak(oak, [pred('oak', 'hare')])).toBe(true);
     expect(foodLinesLeak(oak, FOREST.relationships)).toBe(false);
-    expect(habitatDioramaLevers(observe('hare'), FOREST, [], [], false).map(l => l.id)).not.toContain(FOOD_LINES_LEVER);
+    expect(levers(observe('hare'), FOREST, [], []).map(l => l.id)).not.toContain(FOOD_LINES_LEVER);
   });
 
   it('the easier clue: two choices, a plain role clue of another role, never the stuck answer', () => {
@@ -109,9 +115,9 @@ describe('connect', () => {
   });
 
   it('the scene facts name the start and the model, never the destination', () => {
-    const facts = habitatDioramaLeverFacts(hareFox, [DIRECTION_MODEL_LEVER, START_LINES_LEVER], FOREST.organisms.map(organismEmoji));
-    expect(facts).toMatch(/Snowshoe Hare/);
-    expect(facts).not.toMatch(/Red Fox/);
+    const said = facts(hareFox, [DIRECTION_MODEL_LEVER, START_LINES_LEVER], FOREST.organisms.map(organismEmoji), FOREST);
+    expect(said).toMatch(/Snowshoe Hare/);
+    expect(said).not.toMatch(/Red Fox/);
   });
 });
 
@@ -124,19 +130,16 @@ describe('a miss, then the lever', () => {
   ])('connect: tapping %s is %s, then %s', (toId, miss, lever) => {
     const m = habitatMiss(hareFox, { toId }, FOREST.relationships);
     expect(m).toBe(miss);
-    expect(nextLever(habitatDioramaLevers(hareFox, FOREST, shown, [], false), m)).toBe(lever);
+    expect(nextLever(levers(hareFox, FOREST, shown, []), m)).toBe(lever);
   });
   it('connect: with the help pulled, the simpler link comes next', () => {
-    expect(nextLever(habitatDioramaLevers(hareFox, FOREST, shown, [START_LINES_LEVER, DIRECTION_MODEL_LEVER], false), 'unconnected'))
+    expect(nextLever(levers(hareFox, FOREST, shown, [START_LINES_LEVER, DIRECTION_MODEL_LEVER]), 'unconnected'))
       .toBe(EASIER_LINK_LEVER);
   });
   it('observe: another choice is answered by the lines, then the easier clue', () => {
     const oak = observe('oak');
-    expect(nextLever(habitatDioramaLevers(oak, FOREST, shown, [], false), 'other_choice')).toBe(FOOD_LINES_LEVER);
-    expect(nextLever(habitatDioramaLevers(oak, FOREST, shown, [FOOD_LINES_LEVER], false), 'other_choice')).toBe(EASIER_CLUE_LEVER);
-  });
-  it('a practice item has no levers', () => {
-    expect(habitatDioramaLevers(observe('oak'), FOREST, shown, [], true)).toEqual([]);
+    expect(nextLever(levers(oak, FOREST, shown, []), 'other_choice')).toBe(FOOD_LINES_LEVER);
+    expect(nextLever(levers(oak, FOREST, shown, [FOOD_LINES_LEVER]), 'other_choice')).toBe(EASIER_CLUE_LEVER);
   });
 });
 
@@ -164,9 +167,12 @@ describe('predict', () => {
 
   it('change_mark leak rule: rings what the change names, never the answer; refused when it names only the answer', () => {
     expect(changeMarks(stuck)).toEqual(['heron']);
-    const onlyAnswer = predict('heron', 'A storm scares the herons');
+    // The item gate now drops a change that names the answer (`askNamesAnswer`); the lever's own rule still holds.
+    expect(itemFromChallenge({ id: 'p', type: 'predict', prompt: 'Look.', explanation: 'Because.', affectedOrganismId: 'heron',
+      expectedTrend: 'increase', disruptionEvent: 'A storm scares the herons' } as HabitatChallenge, POND)).toBeNull();
+    const onlyAnswer: HabitatItem = { ...stuck, focusOrganismId: 'heron', answerText: 'Grey Heron', disruptionEvent: 'A storm scares the herons' };
     expect(changeMarks(onlyAnswer)).toEqual([]);
-    expect(habitatDioramaLevers(onlyAnswer, POND, [], [], false).map(l => l.id)).not.toContain(CHANGE_MARK_LEVER);
+    expect(levers(onlyAnswer, POND, [], []).map(l => l.id)).not.toContain(CHANGE_MARK_LEVER);
   });
 
   it('the easier change: one step, two choices, a far foil, never the stuck answer or cause', () => {
@@ -200,12 +206,12 @@ describe('predict', () => {
   });
 
   it('another choice gets the ring, then the arrows, then the easier change', () => {
-    const levers = (pulled: string[]) => habitatDioramaLevers(stuck, POND, [], pulled, false);
-    expect(levers([]).map(l => l.id)).toEqual([CHANGE_MARK_LEVER, FOOD_LINES_LEVER, EASIER_CHANGE_LEVER]);
-    expect(nextLever(levers([]), 'other_choice')).toBe(CHANGE_MARK_LEVER);
-    expect(nextLever(levers([CHANGE_MARK_LEVER, FOOD_LINES_LEVER]), 'other_choice')).toBe(EASIER_CHANGE_LEVER);
-    expect(habitatDioramaLeverFacts(stuck, [CHANGE_MARK_LEVER], [])).toMatch(/Grey Heron/);
-    expect(habitatDioramaLeverFacts(stuck, [CHANGE_MARK_LEVER, FOOD_LINES_LEVER], [])).not.toMatch(/Sunfish/);
+    const offered = (pulled: string[]) => levers(stuck, POND, [], pulled);
+    expect(offered([]).map(l => l.id)).toEqual([CHANGE_MARK_LEVER, FOOD_LINES_LEVER, EASIER_CHANGE_LEVER]);
+    expect(nextLever(offered([]), 'other_choice')).toBe(CHANGE_MARK_LEVER);
+    expect(nextLever(offered([CHANGE_MARK_LEVER, FOOD_LINES_LEVER]), 'other_choice')).toBe(EASIER_CHANGE_LEVER);
+    expect(facts(stuck, [CHANGE_MARK_LEVER], [], POND)).toMatch(/Grey Heron/);
+    expect(facts(stuck, [CHANGE_MARK_LEVER, FOOD_LINES_LEVER], [], POND)).not.toMatch(/Sunfish/);
   });
 });
 
@@ -226,18 +232,18 @@ describe('restore', () => {
     expect(bodyClues(restore('snail', 'water'), POND_B.organisms)).toEqual([]);
   });
   it('zone_pictures is always offered; the facts never name the zone', () => {
-    expect(habitatDioramaLevers(restore('worm', 'underground'), POND_B, [], [], false).map(l => l.id)).toEqual([ZONE_PICTURES_LEVER]);
-    expect(habitatDioramaLevers(heron, POND_B, [], [], false).map(l => l.id)).toEqual([ZONE_PICTURES_LEVER, ITS_PARTNERS_LEVER, BODY_CLUES_LEVER]);
-    const facts = habitatDioramaLeverFacts(heron, [ZONE_PICTURES_LEVER, ITS_PARTNERS_LEVER, BODY_CLUES_LEVER], [], POND_B);
-    expect(facts).toMatch(/Sunfish/);
-    expect(facts).toMatch(/Long legs for wading/);
-    expect(facts).not.toMatch(/shore/i);
+    expect(levers(restore('worm', 'underground'), POND_B, [], []).map(l => l.id)).toEqual([ZONE_PICTURES_LEVER]);
+    expect(levers(heron, POND_B, [], []).map(l => l.id)).toEqual([ZONE_PICTURES_LEVER, ITS_PARTNERS_LEVER, BODY_CLUES_LEVER]);
+    const said = facts(heron, [ZONE_PICTURES_LEVER, ITS_PARTNERS_LEVER, BODY_CLUES_LEVER], [], POND_B);
+    expect(said).toMatch(/Sunfish/);
+    expect(said).toMatch(/Long legs for wading/);
+    expect(said).not.toMatch(/shore/i);
   });
   it.each([['water', 'water_for_land'], ['canopy', 'other_land_zone']] as const)('a tap in %s is %s, then zone_pictures, then its_partners', (zone, miss) => {
     const m = habitatMiss(heron, { zone }, POND.relationships);
     expect(m).toBe(miss);
-    expect(nextLever(habitatDioramaLevers(heron, POND_B, [], [], false), m)).toBe(ZONE_PICTURES_LEVER);
-    expect(nextLever(habitatDioramaLevers(heron, POND_B, [], [ZONE_PICTURES_LEVER], false), m)).toBe(ITS_PARTNERS_LEVER);
+    expect(nextLever(levers(heron, POND_B, [], []), m)).toBe(ZONE_PICTURES_LEVER);
+    expect(nextLever(levers(heron, POND_B, [], [ZONE_PICTURES_LEVER]), m)).toBe(ITS_PARTNERS_LEVER);
   });
 });
 
@@ -253,7 +259,7 @@ describe('defend', () => {
   it('card_pictures leak rule: refused when only the key shares a living thing with the claim', () => {
     expect(cardPictures(onlyKey)).toBeNull();
     expect(cardPictures(shared)).toEqual([['fish', 'heron'], ['heron'], ['bacteria']]);
-    expect(habitatDioramaLevers(onlyKey, POND, [], [], false).map(l => l.id)).not.toContain(CARD_PICTURES_LEVER);
+    expect(levers(onlyKey, POND, [], []).map(l => l.id)).not.toContain(CARD_PICTURES_LEVER);
   });
 
   it('the easier claim: two cards, a link the stuck item never names, the supporting card is the key', () => {
@@ -266,9 +272,9 @@ describe('defend', () => {
   });
 
   it('another card, then card pictures, then the arrows, then the easier claim', () => {
-    const levers = (pulled: string[]) => habitatDioramaLevers(shared, POND, [], pulled, false);
-    expect(nextLever(levers([]), 'other_choice')).toBe(CARD_PICTURES_LEVER);
-    expect(nextLever(levers([CARD_PICTURES_LEVER]), 'other_choice')).toBe(FOOD_LINES_LEVER);
-    expect(nextLever(levers([CARD_PICTURES_LEVER, FOOD_LINES_LEVER]), 'other_choice')).toBe(EASIER_CLAIM_LEVER);
+    const offered = (pulled: string[]) => levers(shared, POND, [], pulled);
+    expect(nextLever(offered([]), 'other_choice')).toBe(CARD_PICTURES_LEVER);
+    expect(nextLever(offered([CARD_PICTURES_LEVER]), 'other_choice')).toBe(FOOD_LINES_LEVER);
+    expect(nextLever(offered([CARD_PICTURES_LEVER, FOOD_LINES_LEVER]), 'other_choice')).toBe(EASIER_CLAIM_LEVER);
   });
 });

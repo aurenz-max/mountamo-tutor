@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * rocket-builder on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * rocket-builder on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The generic
+ * W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every mode is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer. Nothing launches before the check (add_to_lift launches the learner's own part after any check). A
+ * key (`rocketKey`). Nothing launches before the check (add_to_lift launches the learner's own part after any check). A
  * wrong answer names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -22,13 +22,17 @@ import type { RocketBuilderData } from './RocketBuilder';
 import {
   askOf, buildRocketItems, costOf, flightOf, keyOf, lifts, optionCount, pushOf, revealText, ROCKET_MISSES,
   rocketCorrect, rocketHarnessAnswers, rocketItems, rocketMiss, seededRng, tanksOf, validRocketItem, weightOf,
-  workspaceAssignment, workspaceScene,
+  workspaceScene,
   type AddItem, type BudgetItem, type LiftItem, type Part, type ReachItem, type RocketItem, type RocketMode, type RocketTier,
 } from './rocketWorkspace';
 import {
-  COUNT_LEVER, DROP_LEVER, FUEL_CARD_LEVER, leverFacts, LIFT_CARD_LEVER, NO_LEVERS, OWN_WEIGHT_LEVER, possibleMisses,
-  rocketLevers,
+  COUNT_LEVER, DROP_LEVER, FUEL_CARD_LEVER, LIFT_CARD_LEVER, NO_LEVERS, OWN_WEIGHT_LEVER, possibleMisses, ROCKET_LEVERS,
+  type RocketLeverState,
 } from './rocketLevers';
+import { rocketBuilderBoss } from './rocketBuilder.boss';
+
+const declared = (i: RocketItem, s: RocketLeverState = NO_LEVERS) => ROCKET_LEVERS.declare(i, { state: s }, s.pulled);
+const leverFacts = (i: RocketItem, s: RocketLeverState) => ROCKET_LEVERS.onScreen(i, { state: s }, s.pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -55,10 +59,10 @@ const REACH: ReachItem = { id: 'reach_target-1', mode: 'reach_target', ask: 'hig
   { color: 'green', parts: [E(9, 1), T(), T(), C(2)], staged: true }] };
 const BY_MODE: Record<RocketMode, RocketItem[]> = { can_it_lift: [LIFT], add_to_lift: [ADD], on_budget: [BUDGET], reach_target: [REACH] };
 
-const data = (mode: RocketMode): RocketBuilderData =>
-  ({ title: 'Ready for Lift-Off?', overview: 'Predict.', challengeTypes: [mode], items: BY_MODE[mode], gradeLevel: '4' });
-const mount = (mode: RocketMode) => {
-  const h = mountWorkspace({ primitiveId: 'rocket-builder', evalMode: mode, instanceId: 'rocket-builder', data: data(mode) as never });
+const data = (mode: RocketMode, gradeLevel = '4'): RocketBuilderData =>
+  ({ title: 'Ready for Lift-Off?', overview: 'Predict.', challengeTypes: [mode], items: BY_MODE[mode], gradeLevel });
+const mount = (mode: RocketMode, gradeLevel?: string) => {
+  const h = mountWorkspace({ primitiveId: 'rocket-builder', evalMode: mode, instanceId: 'rocket-builder', data: data(mode, gradeLevel) as never });
   h.settle(1000);
   return h;
 };
@@ -77,16 +81,30 @@ it.each(MODES)('%s binds with its key out of the scene and nothing launched', mo
   expect(getComponentById('rocket-builder')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(rocketBuilderBoss.assignment(item).task);
+  expect(rocketBuilderBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(launches(h).every(l => l === 'none')).toBe(true);
   expect(text(h)).not.toMatch(/Next →|Finish|\bkg\b|\bkN\b|ratio/);
   expect(demand(h).credited).toBeUndefined();
   expect(demand(h).flight).toBeUndefined();
   expect(demand(h).response).toBe('speech');
-  const expected = { can_it_lift: /^"No, it stays on the pad" \(choice 2 of 2\): "no"/, add_to_lift: /^"Red engine" \(choice 3 of 4\): "the red engine"/,
-    on_budget: /^"Red rocket" \(choice 1 of 3\)/, reach_target: /^"Green rocket" \(choice 3 of 3\)/ }[mode];
+  const expected = { can_it_lift: /^"No, it stays on the pad" \(also accept "no"/, add_to_lift: /^"Red engine" \(also accept "the red engine".*"the third one"/,
+    on_budget: /^"Red rocket" \(also accept "the red rocket".*"Blue rocket", "Green rocket" are wrong/, reach_target: /^"Green rocket" \(also accept/ }[mode];
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(expected);
+  h.close();
+});
+
+it('K: a yes-or-no tap on a drawn rocket, with no input, unit, ratio, total or item count', () => {
+  const h = mount('can_it_lift', 'K');
+  const c = h.view.container;
+  expect(c.querySelector('input')).toBeNull();
+  expect(c.querySelector('button[aria-label="Yes, it lifts off"]')).not.toBeNull();
+  expect(c.querySelector('button[aria-label="No, it stays on the pad"]')).not.toBeNull();
+  expect(text(h)).not.toMatch(/\bkg\b|\bkN\b|\bkm\b|thrust|weight ratio|TWR|GRADE K|item \d of/i);
+  // Blocks and arrows are drawn per part; no number sits beside them until the count lever is pulled.
+  expect(c.querySelectorAll('[data-weight]').length).toBe(4);
+  expect(c.querySelector('[data-count]')).toBeNull();
   h.close();
 });
 
@@ -244,7 +262,7 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...ROCKET_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
-        const ls = rocketLevers(i, NO_LEVERS);
+        const ls = declared(i);
         const misses = possibleMisses(i);
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
@@ -261,9 +279,9 @@ describe('the pure rules', () => {
 
   it('no ask, scene or lever line states the key, a total, or the comparison before the answer', () => {
     for (const mode of MODES) for (const { i } of all(mode)) {
-      const s = { ...NO_LEVERS, pulled: rocketLevers(i, NO_LEVERS).filter(l => l.kind === 'help').map(l => l.id) };
+      const s = { ...NO_LEVERS, pulled: declared(i).filter(l => l.id !== DROP_LEVER).map(l => l.id) };
       const scene = workspaceScene(i, { work: { pick: null }, solved: false, flown: false });
-      const lines = [askOf(i), String(scene.facts!.shown), leverFacts(i, s) ?? '',
+      const lines = [askOf(i), String(scene.facts!.shown), leverFacts(i, s),
         ...Object.entries(scene.facts!).filter(([k]) => k.startsWith('rocket_')).map(([, v]) => String(v))];
       for (const v of Object.values(scene.facts!)) expect(String(v).length, i.id).toBeLessThanOrEqual(500);
       expect(scene.facts!.flight).toBeUndefined();

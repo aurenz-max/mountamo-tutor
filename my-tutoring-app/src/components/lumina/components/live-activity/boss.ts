@@ -114,6 +114,8 @@ export interface BossDrive<I = any> {
   /** The current item, when it is not one of `items(data)` by id (an easier practice item rebuilt from its parent). */
   current?: (ctx: JourneyContext) => I | undefined;
   play: (right: boolean, item: I, ctx: JourneyContext) => DriverInput[];
+  /** The tutor replay's keys when the answer is typed or tapped in parts (`LiveJourney.replayKeys`). */
+  replayKeys?: (ctx: JourneyContext) => string[];
 }
 
 export interface Boss<D extends { title: string } = any, I = any, M extends string = string> {
@@ -306,7 +308,7 @@ export function renderBoss(boss: Boss, evalModes: readonly EvalModeDefinition[] 
         ...(w.moves ? [line('Moves', w.moves)] : []),
         line('Judged by', JUDGE_WORDS[w.judge]),
         line('Item flow', w.flow === 'board' ? 'a board of parts, checked together' : 'one item at a time')]),
-      line('Levers', levers.length ? levers.join(', ') : card.levers ? 'declared in the component (not on the boss yet)' : 'none'),
+      line('Levers', levers.length ? levers.join(', ') : boss.levers ? 'none in this mode' : card.levers ? 'declared in the component (not on the boss yet)' : 'none'),
       line('Misses it names', m.misses.length ? m.misses.join(', ') : 'none'),
       ...(m.unanswered?.length ? [line('No lever answers', m.unanswered.join(', '))] : []),
       ...(m.missFromWords ? [line('Misses from speech', 'yes: a named wrong answer is recorded from the learner\'s words')] : []),

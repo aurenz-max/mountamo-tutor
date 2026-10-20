@@ -1,7 +1,7 @@
 /**
- * The in-item levers on habitat-diorama's observe and connect (`/add-support-tiers`, class sweep 2026-10-08; report
- * qa/eval-reports/habitat-diorama-levers-2026-10-08.md). build_habitat's levers live in `habitatBuild.ts`. No
- * real-learner evidence: the misses are what `habitatSpokenMisses` and `habitatMiss` name.
+ * habitat-diorama's in-item levers, one lever set by type (`HABITAT_LEVERS`, `components/live-activity/bossLevers.ts`;
+ * `/add-support-tiers` class sweeps 2026-10-08/09, report qa/eval-reports/habitat-diorama-levers-2026-10-08.md). No
+ * real-learner evidence: the misses are what `habitatSpokenMisses`, `habitatMiss` and `readHabitatBuild` name.
  *
  * observe (a spoken choice of a living thing from a clue)
  * - `food_lines` (help): draws every relationship in the habitat as an arrow, the way the explore view does. Answers
@@ -36,10 +36,13 @@
  * - defend `easier_claim` (simplify): an ungraded two-card defend first, written by code from one eating link of
  *   living things the stuck item never names ("The X needs other living things for its food.") against a
  *   true-looking card that does not support it. Then the full item.
+ * build_habitat (the open build, `habitatBuild.ts`): `needs_list` (legend), `piece_tags` (marks), `fewer_needs` (easier).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { HABITAT_MISSES } from './habitatDiorama.card';
 import type { HabitatChallenge, HabitatZone, Organism, Relationship } from './HabitatDiorama';
-import { itemFromChallenge, predationDirectionOk, type HabitatItem } from './habitatDioramaScript';
+import { ZONE_LABELS, fewerNeedsItem, itemFromChallenge, predationDirectionOk, type HabitatItem } from './habitatDioramaDomain';
+import { FEWER_NEEDS_LEVER, NEEDS_LIST_LEVER, PIECE_TAGS_LEVER } from './habitatBuild';
 
 export const FOOD_LINES_LEVER = 'food_lines';
 export const EASIER_CLUE_LEVER = 'easier_clue';
@@ -341,103 +344,100 @@ export function easierDefendItem(item: HabitatItem | null, data: HabitatData): H
   return null;
 }
 
-// ── declarations ────────────────────────────────────────────────────────────
+// ── the lever set ───────────────────────────────────────────────────────────
 
-/** The levers on an observe or connect item. A practice item has none. */
-export function habitatDioramaLevers(item: HabitatItem | null, data: HabitatData, shownEmojis: readonly string[],
-  pulled: readonly string[], practice: boolean): WorkspaceLever[] {
-  if (!item || practice) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const practiceDoes = 'Opens an easier one of the same kind first. It is not graded; the full item comes back after it.';
-  if (item.kind === 'observe') return [
-    ...(!foodLinesLeak(item, data.relationships) ? [lever(FOOD_LINES_LEVER, 'help', ['other_choice'],
-      'The learner names a living thing the clue does not fit.',
-      'Draws an arrow for every relationship in the habitat, from the one eaten or helped to the one that eats or gets help. No living thing is marked.')] : []),
-    ...(easierObserveItem(item, data) ? [lever(EASIER_CLUE_LEVER, 'simplify', ['other_choice'],
-      'The learner cannot yet match this clue to a living thing.', practiceDoes)] : []),
-  ];
-  if (item.kind === 'connect') return [
-    ...(directionModel(item.relationshipType, shownEmojis) ? [lever(DIRECTION_MODEL_LEVER, 'help', ['leads_to_start', 'other_kind_link'],
-      'The learner connects the start the wrong way round, or by another kind of relationship.',
-      'Shows beside the habitat a model pair of two other pictures with an arrow the way this kind of relationship goes. It is not these living things.')] : []),
-    ...(startPartners(item, data.relationships).length ? [lever(START_LINES_LEVER, 'help', ['unconnected'],
-      'The learner taps a living thing the start has no relationship with.',
-      'Draws plain lines, with no arrowheads, from the start to every living thing it has a relationship with.')] : []),
-    ...(easierConnectItem(item, data) ? [lever(EASIER_LINK_LEVER, 'simplify', ['unconnected', 'other_kind_link', 'leads_to_start'],
-      'The learner cannot yet find this connection.', practiceDoes)] : []),
-  ];
-  const foodLines = !foodLinesLeak(item, data.relationships) ? [lever(FOOD_LINES_LEVER, 'help', ['other_choice'],
-    item.kind === 'defend' ? 'The learner says a card that does not back the claim.' : 'The learner names a population the change does not move that way.',
-    'Draws an arrow for every relationship in the habitat, from the one eaten or helped to the one that eats or gets help. No living thing is marked.')] : [];
-  if (item.kind === 'predict') return [
-    ...(changeMarks(item).length ? [lever(CHANGE_MARK_LEVER, 'help', ['other_choice'],
-      'The learner answers without finding where the change happens on the habitat.',
-      'Puts a ring on the habitat around each living thing the change names, so the learner can start from it. No choice is marked.')] : []),
-    ...foodLines,
-    ...(easierPredictItem(item, data) ? [lever(EASIER_CHANGE_LEVER, 'simplify', ['other_choice'],
-      'The learner cannot yet follow this change through the habitat.', practiceDoes)] : []),
-  ];
-  if (item.kind === 'restore') {
-    const zoneMisses = ['water_for_land', 'land_for_water', 'other_land_zone'];
-    return [
-      lever(ZONE_PICTURES_LEVER, 'help', zoneMisses,
-        'The learner taps a zone without knowing what each zone is.',
-        'Puts a picture on each of the six zone buttons: tree tops, grass, open water, a beach, leaves, a worm. All six alike; none is marked.'),
-      ...(restorePartners(item, data.relationships).length ? [lever(ITS_PARTNERS_LEVER, 'help', zoneMisses,
-        'The learner places it where it could not get its food or live with its partners.',
-        'Puts a ring on the habitat around each living thing the missing one has a relationship with. No zone is marked.')] : []),
-      ...(bodyClues(item, data.organisms).length ? [lever(BODY_CLUES_LEVER, 'help', zoneMisses,
-        'The learner places it without thinking about its body.',
-        'Shows the missing living thing\'s body clues beside it (what its body has). None names a place.')] : []),
-    ];
-  }
-  if (item.kind === 'defend') return [
-    ...(cardPictures(item) ? [lever(CARD_PICTURES_LEVER, 'help', ['other_choice'],
-      'The learner cannot tell which living things each card is about.',
-      'Puts on each evidence card the pictures of the living things it names. Every card that names one gets them; no card is marked.')] : []),
-    ...foodLines,
-    ...(easierDefendItem(item, data) ? [lever(EASIER_CLAIM_LEVER, 'simplify', ['other_choice'],
-      'The learner cannot yet tell evidence that backs the claim from a true detail that does not.', practiceDoes)] : []),
-  ];
-  return [];
-}
+/** What the lever set reads beside the item: the habitat, and the pictures its living things wear. */
+export interface HabitatLeverCtx { data: HabitatData; shownEmojis: readonly string[] }
 
-/** What the pulled levers put on screen, as a scene fact. Never the answer: no living thing is singled out. */
-export function habitatDioramaLeverFacts(item: HabitatItem | null, pulled: readonly string[], shownEmojis: readonly string[],
-  data?: HabitatData): string {
-  if (!item) return '';
-  const model = item.kind === 'connect' ? directionModel(item.relationshipType, shownEmojis) : null;
-  const named = (ids: readonly string[]) => ids.map(id => item.organismNames[id]).filter(Boolean).join(', ');
-  const missing = item.organismNames[item.restorationEntityId ?? ''] ?? 'the missing living thing';
-  const clues = data && item.kind === 'restore' ? bodyClues(item, data.organisms) : [];
-  return [
-    item.kind === 'predict' && pulled.includes(CHANGE_MARK_LEVER)
-      && `A ring now marks ${named(changeMarks(item))} on the habitat: the living thing the change names.`,
-    item.kind === 'restore' && pulled.includes(ZONE_PICTURES_LEVER)
-      && `Each zone button now has a picture: ${(Object.keys(ZONE_PICTURES) as HabitatZone[]).map(z => ZONE_PICTURES[z]).join(' ')}. None is marked.`,
-    item.kind === 'restore' && data && pulled.includes(ITS_PARTNERS_LEVER)
-      && `Rings now mark the living things ${missing} has a relationship with: ${named(restorePartners(item, data.relationships))}. No zone is marked.`,
-    clues.length && pulled.includes(BODY_CLUES_LEVER)
-      && `Beside ${missing} are its body clues: ${clues.map(c => `"${c}"`).join('; ')}.`,
-    item.kind === 'defend' && pulled.includes(CARD_PICTURES_LEVER)
-      && 'Each evidence card now shows pictures of the living things it names. No card is marked.',
-    FOOD_LINES_KINDS.includes(item.kind) && pulled.includes(FOOD_LINES_LEVER)
-      && 'Arrows now join the living things for every relationship in the habitat, pointing to the one that eats or gets help. None is marked.',
-    model && pulled.includes(DIRECTION_MODEL_LEVER)
-      && `Beside the habitat is a model pair, ${model[0]} → ${model[1]}, not living things from this habitat. ${MODEL_CAPTION[item.relationshipType!]}`,
-    item.kind === 'connect' && pulled.includes(START_LINES_LEVER)
-      && `Plain lines with no arrowheads join ${item.organismNames[item.fromId ?? ''] ?? 'the start'} to each living thing it has a relationship with.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+const named = (item: HabitatItem, ids: readonly string[]) => ids.map(id => item.organismNames[id]).filter(Boolean).join(', ');
+const missingName = (item: HabitatItem) => item.organismNames[item.restorationEntityId ?? ''] ?? 'the missing living thing';
+const PRACTICE_DOES = 'Opens an easier one of the same kind first. It is not graded; the full item comes back after it.';
+const ZONE_MISSES = HABITAT_MISSES.restore;
 
-/** The simpler item a simplify lever opens on this item's kind (the component and the journey call the same one). */
-export function easierItemFor(item: HabitatItem | null, data: HabitatData): HabitatItem | null {
-  switch (item?.kind) {
-    case 'observe': return easierObserveItem(item, data);
-    case 'connect': return easierConnectItem(item, data);
-    case 'predict': return easierPredictItem(item, data);
-    case 'defend': return easierDefendItem(item, data);
-    default: return null;
-  }
-}
+/**
+ * Every lever of every mode, by type, in the order a miss reaches them (`nextLever` takes the first that answers it).
+ * A practice item gets none: the component declares levers on the session item only.
+ */
+export const HABITAT_LEVERS = leverSet<HabitatItem, HabitatLeverCtx>({
+  modeOf: item => item.kind,
+  missesOf: mode => HABITAT_MISSES[mode as keyof typeof HABITAT_MISSES] ?? [],
+  // Only body_clues is worded: its clues never name the zone the missing living thing goes in.
+  answersOf: item => (item.kind === 'restore' && item.restorationZone ? [ZONE_LABELS[item.restorationZone]] : [item.answerText]),
+  // connect's model pair is a different relationship, drawn solved.
+  support: {
+    tier: item => item.supportTier ?? 'medium',
+    different: 'two other pictures joined by an arrow the way this kind of relationship goes',
+    own: 'which living thing this one connects to',
+  },
+  specs: [
+    { id: CHANGE_MARK_LEVER, type: 'marks', modes: ['predict'], answers: ['other_choice'],
+      when: 'The learner answers without finding where the change happens on the habitat.',
+      does: 'Puts a ring on the habitat around each living thing the change names, so the learner can start from it. No choice is marked.',
+      content: item => (changeMarks(item).length ? changeMarks(item) : null),
+      fact: (ids: string[], item) => `A ring now marks ${named(item, ids)} on the habitat: the living thing the change names.` },
+    { id: CARD_PICTURES_LEVER, type: 'marks', modes: ['defend'], answers: ['other_choice'],
+      when: 'The learner cannot tell which living things each card is about.',
+      does: 'Puts on each evidence card the pictures of the living things it names. Every card that names one gets them; no card is marked.',
+      content: item => cardPictures(item),
+      fact: 'Each evidence card now shows pictures of the living things it names. No card is marked.' },
+    { id: FOOD_LINES_LEVER, type: 'marks', modes: FOOD_LINES_KINDS, answers: ['other_choice'],
+      when: item => (item.kind === 'observe' ? 'The learner names a living thing the clue does not fit.'
+        : item.kind === 'defend' ? 'The learner says a card that does not back the claim.'
+          : 'The learner names a population the change does not move that way.'),
+      does: 'Draws an arrow for every relationship in the habitat, from the one eaten or helped to the one that eats or gets help. No living thing is marked.',
+      offer: (item, ctx) => !foodLinesLeak(item, ctx.data.relationships),
+      fact: 'Arrows now join the living things for every relationship in the habitat, pointing to the one that eats or gets help. None is marked.' },
+    { id: EASIER_CLUE_LEVER, type: 'easier', modes: ['observe'], answers: ['other_choice'],
+      when: 'The learner cannot yet match this clue to a living thing.', does: PRACTICE_DOES,
+      content: (item, ctx) => easierObserveItem(item, ctx.data) },
+    { id: EASIER_CHANGE_LEVER, type: 'easier', modes: ['predict'], answers: ['other_choice'],
+      when: 'The learner cannot yet follow this change through the habitat.', does: PRACTICE_DOES,
+      content: (item, ctx) => easierPredictItem(item, ctx.data) },
+    { id: EASIER_CLAIM_LEVER, type: 'easier', modes: ['defend'], answers: ['other_choice'],
+      when: 'The learner cannot yet tell evidence that backs the claim from a true detail that does not.', does: PRACTICE_DOES,
+      content: (item, ctx) => easierDefendItem(item, ctx.data) },
+    { id: DIRECTION_MODEL_LEVER, type: 'model', modes: ['connect'], answers: ['leads_to_start', 'other_kind_link'],
+      when: 'The learner connects the start the wrong way round, or by another kind of relationship.',
+      does: 'Shows beside the habitat a model pair of two other pictures with an arrow the way this kind of relationship goes. It is not these living things.',
+      content: (item, ctx) => directionModel(item.relationshipType, ctx.shownEmojis),
+      fact: (model: readonly [string, string], item) => `Beside the habitat is a model pair, ${model[0]} → ${model[1]}, not living things `
+        + `from this habitat. ${MODEL_CAPTION[item.relationshipType ?? 'predation']}` },
+    { id: START_LINES_LEVER, type: 'marks', modes: ['connect'], answers: ['unconnected'],
+      when: 'The learner taps a living thing the start has no relationship with.',
+      does: 'Draws plain lines, with no arrowheads, from the start to every living thing it has a relationship with.',
+      content: (item, ctx) => (startPartners(item, ctx.data.relationships).length ? startPartners(item, ctx.data.relationships) : null),
+      fact: (_ids: string[], item) => `Plain lines with no arrowheads join ${item.organismNames[item.fromId ?? ''] ?? 'the start'} `
+        + 'to each living thing it has a relationship with.' },
+    { id: EASIER_LINK_LEVER, type: 'easier', modes: ['connect'], answers: ['unconnected', 'other_kind_link', 'leads_to_start'],
+      when: 'The learner cannot yet find this connection.', does: PRACTICE_DOES,
+      content: (item, ctx) => easierConnectItem(item, ctx.data) },
+    { id: ZONE_PICTURES_LEVER, type: 'legend', modes: ['restore'], answers: ZONE_MISSES,
+      when: 'The learner taps a zone without knowing what each zone is.',
+      does: 'Puts a picture on each of the six zone buttons: tree tops, grass, open water, a beach, leaves, a worm. All six alike; none is marked.',
+      fact: `Each zone button now has a picture: ${(Object.keys(ZONE_PICTURES) as HabitatZone[]).map(z => ZONE_PICTURES[z]).join(' ')}. None is marked.` },
+    { id: ITS_PARTNERS_LEVER, type: 'marks', modes: ['restore'], answers: ZONE_MISSES,
+      when: 'The learner places it where it could not get its food or live with its partners.',
+      does: 'Puts a ring on the habitat around each living thing the missing one has a relationship with. No zone is marked.',
+      content: (item, ctx) => (restorePartners(item, ctx.data.relationships).length ? restorePartners(item, ctx.data.relationships) : null),
+      fact: (ids: string[], item) => `Rings now mark the living things ${missingName(item)} has a relationship with: ${named(item, ids)}. No zone is marked.` },
+    { id: BODY_CLUES_LEVER, type: 'clue', modes: ['restore'], answers: ZONE_MISSES,
+      when: 'The learner places it without thinking about its body.',
+      does: 'Shows the missing living thing\'s body clues beside it (what its body has). None names a place.',
+      content: (item, ctx) => (bodyClues(item, ctx.data.organisms).length ? bodyClues(item, ctx.data.organisms) : null),
+      fact: (clues: string[], item) => `Beside ${missingName(item)} are its body clues: ${clues.map(c => `"${c}"`).join('; ')}.` },
+    // build_habitat: knowing the needs IS the task, so the item starts bare and these come on a miss.
+    { id: NEEDS_LIST_LEVER, type: 'legend', modes: ['build_habitat'], answers: ['several_needs_unmet', 'one_need_unmet'],
+      when: 'The learner puts in pieces without thinking about what an animal needs to stay alive.',
+      does: 'Shows beside the habitat the kinds of thing every animal needs to live. Nothing on it is ticked or crossed off.',
+      fact: 'Beside the habitat is a list of the kinds of thing every animal needs to live.' },
+    { id: PIECE_TAGS_LEVER, type: 'marks', modes: ['build_habitat'], answers: ['other_animals_piece', 'harmful_piece', 'one_need_unmet'],
+      when: 'The learner puts in pieces that are for other animals, or one that would hurt this one.',
+      does: 'Puts a small tag on each piece the learner put in the habitat: what it gives this animal, or that it is not for it.',
+      fact: 'Each piece in the habitat has a tag saying what it gives this animal, or that it is not for it.' },
+    { id: FEWER_NEEDS_LEVER, type: 'easier', modes: ['build_habitat'], answers: ['several_needs_unmet', 'other_animals_piece'],
+      when: 'The learner cannot build the whole habitat yet.',
+      does: 'Opens an easier ask first: the same animal on an empty habitat, with two of its needs named. It is not graded; '
+        + 'the full habitat comes back after it.',
+      content: item => fewerNeedsItem(item) },
+  ],
+});

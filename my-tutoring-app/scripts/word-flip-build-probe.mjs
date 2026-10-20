@@ -32,7 +32,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateWordFlip } = await loader.import('/src/components/lumina/service/literacy/gemini-word-flip.ts');
-  const { validateWordFlipData } = await loader.import('/src/components/lumina/components/live-activity/adapters/wordFlipLive.ts');
+  const { validateWordFlipData } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/wordFlipDomain.ts');
   const { wordFlipOracle } = await loader.import('/src/components/lumina/service/qa/oracles/word-flip.ts');
   const cases = [
     ['pinned-g1', 'build_inflect', '1', 'Animals at the farm', 'Make words that mean more than one, and words that tell it already happened', undefined],

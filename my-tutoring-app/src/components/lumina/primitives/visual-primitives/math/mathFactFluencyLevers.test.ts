@@ -9,9 +9,13 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { MathFactFluencyChallenge } from './MathFactFluency';
 import { equationResult, mathFactMatches, mathFactMiss, type MathFactResponse } from './mathFactFluencyWorkspace';
-import { factModel, farMatch, leverFacts, mathFactLevers, simplerItem, smallerFact, startLevers } from './mathFactFluencyLevers';
+import { FLUENCY_LEVERS, factModel, farMatch, simplerItem, smallerFact, startLevers } from './mathFactFluencyLevers';
+import { mathFactFluencyCard } from './mathFactFluency.card';
 
 type C = MathFactFluencyChallenge;
+/** The levers the set declares on an item, and what the pulled ones put on screen (`bossLevers.ts`). */
+const mathFactLevers = (c: C, pulled: readonly string[], maxNumber: number) => FLUENCY_LEVERS.declare(c, { maxNumber }, pulled);
+const leverFacts = (c: C, pulled: readonly string[]) => FLUENCY_LEVERS.onScreen(c, { maxNumber: 10 }, pulled);
 const fact = (type: C['type'], a: number, op: '+' | '-', b: number, unknown: C['unknownPosition'] = 'result', extra: Partial<C> = {}): C => {
   const operation = op === '+' ? 'addition' : 'subtraction';
   const result = op === '+' ? a + b : a - b;
@@ -109,6 +113,17 @@ describe('leak rules', () => {
       expect(drawn).toBe(whole);
       if (c.unknownPosition === 'result') expect(segs.some(s => s.tone === 'empty')).toBe(false);
     }
+  });
+});
+
+describe('the lever set', () => {
+  it('answers every miss of every mode but speed_round, which lists them unanswered (user ruling 2026-10-02)', () => {
+    for (const [mode, m] of Object.entries(mathFactFluencyCard.modes)) {
+      const answered = new Set(FLUENCY_LEVERS.specs.filter(s => !s.modes || s.modes.includes(mode))
+        .flatMap(s => (s.answers === 'all' ? m.misses : s.answers)));
+      for (const miss of m.misses) expect(answered.has(miss) || !!m.unanswered?.includes(miss), `${mode} ${miss}`).toBe(true);
+    }
+    expect(FLUENCY_LEVERS.idsFor('speed_round')).toEqual([]);
   });
 });
 

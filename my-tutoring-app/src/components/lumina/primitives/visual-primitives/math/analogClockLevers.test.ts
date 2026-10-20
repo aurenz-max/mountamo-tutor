@@ -1,5 +1,5 @@
 /**
- * analog-clock levers (`analogClockLevers.ts`): each leak rule per mode, each easier-item builder over every item of
+ * analog-clock levers (`analogClockLevers.ts`, one lever set): each leak rule per mode, each easier-item builder over every item of
  * its mode, the miss → lever table, and that every miss the catalog lists for a mode is answered on every saved
  * payload item (J12 per item).
  */
@@ -10,9 +10,15 @@ import type { ClockChallenge } from './AnalogClock';
 import { clockMiss, elapsedMinutes, type ClockView } from './analogClockWorkspace';
 import {
   DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER, SHORT_HANDS_LEVER,
-  SIMPLER_LEVER, START_SWEEP_LEVER, analogClockLevers, dialHour, echoOffered, legendOffered, leverFacts, modelLeaks,
-  onTheHour, practiceItem, practiceLeaks, practiceParent, runningModelHour, sweptMinutes, twoChoices, twoFaces, wholeHours,
+  SIMPLER_LEVER, START_SWEEP_LEVER, CLOCK_LEVERS, PLAIN_CLOCK_VIEW, dialHour, echoOffered, legendOffered, modelLeaks,
+  onTheHour, practiceItem, practiceLeaks, practiceParent, runningModelHour, sweptMinutes, tierPulled, twoChoices, twoFaces,
+  wholeHours, type ClockLeverView,
 } from './analogClockLevers';
+
+/** The levers the component declares on a session item: a tier aid already on screen counts as pulled. */
+const analogClockLevers = (c: ClockChallenge, pulled: readonly string[], view: ClockLeverView = PLAIN_CLOCK_VIEW) =>
+  CLOCK_LEVERS.declare(c, view, [...pulled, ...tierPulled(c, view)]);
+const leverFacts = (c: ClockChallenge, pulled: readonly string[]) => CLOCK_LEVERS.onScreen(c, PLAIN_CLOCK_VIEW, pulled);
 
 const ids = (levers: { id: string }[]) => levers.map(l => l.id);
 const hhmm = (h: number, m: number) => `${dialHour(h)}:${String(m).padStart(2, '0')}`;
@@ -117,7 +123,7 @@ describe('simpler items', () => {
     expect(practiceItem(countFace)).toBeNull();
     const c = choice('read', 3, 30), p = practiceItem(c)!;
     expect(practiceItem(p)).toBeNull();
-    expect(analogClockLevers(p, [])).toEqual([]);
+    expect(ids(analogClockLevers(p, []))).not.toContain(SIMPLER_LEVER);
     expect(practiceParent(p.id, [choice('read', 5, 0), c])).toBe(c);
     expect(practiceParent(c.id, [c])).toBeNull();
   });

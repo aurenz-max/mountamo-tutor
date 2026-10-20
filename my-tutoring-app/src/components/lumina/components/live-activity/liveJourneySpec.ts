@@ -35,17 +35,16 @@ import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cell
 import { shapeSorterBoss } from '../../primitives/visual-primitives/math/shapeSorter.boss';
 import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
 import { settledView } from '../../primitives/visual-primitives/math/numberLineView';
-import { CHANGE_ONE_LEVER, COUNT_ON_LEVER, FEWER_GROUPS_LEVER, SMALLER_SET_LEVER, spokenPractice }
-  from '../../primitives/visual-primitives/math/countingBoardSpokenLevers';
-import { itemsFromChallenges as countingItems } from '../../primitives/visual-primitives/math/countingBoardDomain';
+import { countingBoardBoss } from '../../primitives/visual-primitives/math/countingBoard.boss';
 import { hopsHarnessBuilds, hopsTaskOf, simplerHops } from '../../primitives/visual-primitives/math/numberLineBuildHops';
 import type { NumberLineChallenge } from '../../primitives/visual-primitives/math/NumberLine';
-import { simplerItem as simplerComparison } from '../../primitives/visual-primitives/math/comparisonBuilderLevers';
-import { simplerItem as simplerMathFact } from '../../primitives/visual-primitives/math/mathFactFluencyLevers';
-import { farThree } from '../../primitives/visual-primitives/math/compareObjectsLevers';
+import { comparisonBuilderBoss } from '../../primitives/visual-primitives/math/comparisonBuilder.boss';
+import { compareObjectsBoss } from '../../primitives/visual-primitives/math/compareObjects.boss';
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
-import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
-import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { ordinalLineBoss } from '../../primitives/visual-primitives/math/ordinalLine.boss';
+import { coinCounterBoss } from '../../primitives/visual-primitives/math/coinCounter.boss';
+import { lengthLabBoss } from '../../primitives/visual-primitives/math/lengthLab.boss';
+import { analogClockBoss } from '../../primitives/visual-primitives/math/analogClock.boss';
 import { evaluateRule as functionRuleAt } from '../../primitives/visual-primitives/math/functionMachineDomain';
 import { harnessMachines as functionMachines, harnessWrongRule as functionWrongRule, observePairsNeeded, ruleTiles }
   from '../../primitives/visual-primitives/math/functionMachineWorkspace';
@@ -96,19 +95,15 @@ import { practiceItem as distributionPracticeItem, practiceParent as distributio
 import { practiceParent as circlePracticeParent, simplerCircle } from '../../primitives/visual-primitives/math/circleExplorerLevers';
 import { practiceParent as regroupPracticeParent, smallerProblem as smallerRegroupProblem }
   from '../../primitives/visual-primitives/math/regroupingWorkbenchLevers';
-import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
-import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParent } from '../../primitives/visual-primitives/math/analogClockLevers';
 import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
 import { practiceItem as rulerPracticeItem, practiceParent as rulerPracticeParent } from '../../primitives/visual-primitives/math/measurementToolsLevers';
 import { convertValue as rulerConvert, defaultConvertTo, type LengthUnit, lessonOf as rulerLessonOf, measurementItems } from '../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import { cellProducts as areaCellProducts, partsFit as areaPartsFit } from '../../primitives/visual-primitives/math/areaModelWorkspace';
 import { practiceItem as areaPracticeItem, practiceParent as areaPracticeParent } from '../../primitives/visual-primitives/math/areaModelLevers';
-import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
-import { simplerLength } from '../../primitives/visual-primitives/math/lengthLabLevers';
+import { timeSequencerBoss } from '../../primitives/visual-primitives/math/timeSequencer.boss';
 import { simplerShape } from '../../primitives/visual-primitives/math/shapeComposerLevers';
-import { fastFactMiss, isAnswerCorrect as isFactCorrect } from '../../primitives/visual-primitives/core/fastFactWorkspace';
-import { SECTION_LABEL as FACT_FILE_SECTION, factChecks, factFileHarnessAnswers, fileTabs as factFileTabs, fileText as factFileText }
-  from '../../primitives/visual-primitives/core/factFileWorkspace';
+import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.boss';
+import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
@@ -135,15 +130,12 @@ import { practiceItem } from '../../primitives/visual-primitives/math/tenFrameLe
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
-import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
-  from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
-import { fartherPair } from '../../primitives/visual-primitives/literacy/letterSoundLinkLevers';
+import { letterSoundLinkBoss } from '../../primitives/visual-primitives/literacy/letterSoundLink.boss';
 import { itemsFromChallenges as frameItems, tenFrameHarnessAnswers, type TenFrameItem }
   from '../../primitives/visual-primitives/math/tenFrameScript';
 import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
 import { buildBondItems, familyFormKeyFor } from '../../primitives/visual-primitives/math/numberBondScript';
 import { expandNumberBondInteractions } from '../../primitives/visual-primitives/math/numberBondModes';
-import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
 import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
 import { letterWorkshopHarnessStrokes } from '../../primitives/visual-primitives/literacy/letterWorkshopWorkspace';
@@ -157,43 +149,31 @@ import { baseTenHarnessAnswers, itemsFromChallenges as baseTenItems, usesBaseTen
   from '../../primitives/visual-primitives/math/baseTenScript';
 import { practiceFromId as baseTenPracticeFromId } from '../../primitives/visual-primitives/math/baseTenLevers';
 import { blockNoun, blockNounPlural, readCount } from '../../primitives/visual-primitives/math/baseTenModel';
-import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import { equalityItems, equalityProblem, WEIGHTS } from '../../primitives/visual-primitives/math/balanceEqualityModel';
 import { isHands, TRAY, workshopItems, workshopProblem } from '../../primitives/visual-primitives/math/balanceWorkshopModel';
-import type { BarModelChallenge } from '../../primitives/visual-primitives/math/BarModel';
-import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
-import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
-import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/soundSwapWorkspace';
+import { phonicsBlenderBoss } from '../../primitives/visual-primitives/literacy/phonicsBlender.boss';
+import { wordFlipBoss } from '../../primitives/visual-primitives/literacy/wordFlip.boss';
+import { soundSwapBoss } from '../../primitives/visual-primitives/literacy/soundSwap.boss';
 import { dictationItems, spellingHarnessAnswers } from '../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
 import { practiceItem as spellingPracticeItem, practiceParent as spellingPracticeParent } from '../../primitives/visual-primitives/literacy/spellingPatternLevers';
-import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
-import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
-  from '../../primitives/visual-primitives/math/barModelWorkspace';
-import { simplerGraph, simplerParent } from '../../primitives/visual-primitives/math/barModelLevers';
-import { twoBarPractice } from '../../primitives/visual-primitives/math/barModelBuild';
+import { cvcSpellerBoss } from '../../primitives/visual-primitives/literacy/cvcSpeller.boss';
+import { barModelBoss } from '../../primitives/visual-primitives/math/barModel.boss';
 import { youAndMeBoss } from '../../primitives/visual-primitives/literacy/youAndMe.boss';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
 import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
-import { itemsFromChallenge as rhymeItems } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
-import { rhymeHarnessAnswers } from '../../primitives/visual-primitives/literacy/rhymeStudioWorkspace';
-import { itemsFromChallenges as workoutItems } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
-import { wordWorkoutJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
+import { rhymeStudioBoss } from '../../primitives/visual-primitives/literacy/rhymeStudio.boss';
+import { wordWorkoutBoss } from '../../primitives/visual-primitives/literacy/wordWorkout.boss';
 import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
 import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import { wordSorterBoss } from '../../primitives/visual-primitives/literacy/wordSorter.boss';
 import { storyRibbonBoss } from '../../primitives/visual-primitives/literacy/storyRibbon.boss';
 import { oralSentenceStudioBoss } from '../../primitives/visual-primitives/literacy/oralSentenceStudio.boss';
-import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
-import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
-import { passingPairs, picturePairItemsFrom, picturePairMiss } from '../../primitives/visual-primitives/literacy/picturePairBuild';
-import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
-import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import { pictureVocabularyBoss } from '../../primitives/visual-primitives/literacy/pictureVocabulary.boss';
+import { letterSpotterBoss } from '../../primitives/visual-primitives/literacy/letterSpotter.boss';
 import { decodableReaderBoss } from '../../primitives/visual-primitives/literacy/decodableReader.boss';
-import { itemsFromChallenges as bookItems } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
-import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
-import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-primitives/literacy/storyBridgeScript';
-import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
+import { interactiveBookBoss } from '../../primitives/visual-primitives/literacy/interactiveBook.boss';
+import { storyBridgeBoss } from '../../primitives/visual-primitives/literacy/storyBridge.boss';
 import type { StoryMapData } from '../../primitives/visual-primitives/literacy/StoryMap';
 import { CONFLICT_LABELS as STORY_CONFLICT_LABELS, arcLabels as storyArcLabels, eventBank as storyEventBank, settingChoices }
   from '../../primitives/visual-primitives/literacy/storyMapWorkspace';
@@ -214,20 +194,12 @@ import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primi
 import { practiceParent as addSubPracticeParent, smallerStory as addSubSmallerStory }
   from '../../primitives/visual-primitives/math/additionSubtractionSceneLevers';
 import { threeDShapeExplorerBoss } from '../../primitives/visual-primitives/math/threeDShapeExplorer.boss';
-import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
-import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
-  from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
-import { calendarPracticeItem, calendarPracticeParent } from '../../primitives/visual-primitives/calendar/calendarExplorerLevers';
+import { calendarExplorerBoss } from '../../primitives/visual-primitives/calendar/calendarExplorer.boss';
 import { practiceParentId as timelinePracticeParent, practiceTimeline } from '../../primitives/visual-primitives/calendar/timelineBuilderLevers';
 import { tapPlaces as lifeCycleTapPlaces } from '../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
 import { lifeCycleJourneyItem } from '../../primitives/visual-primitives/biology/lifeCycleSequencerLevers';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
-import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
-import { fewerNeedsItem as habitatFewerNeedsItem, habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
-import { SIMPLER_SUFFIX as HABITAT_SIMPLER, easierItemFor as habitatEasierItem }
-  from '../../primitives/visual-primitives/biology/habitatDioramaLevers';
-import { FEWER_SUFFIX as HABITAT_FEWER, animalById as habitatAnimalById, pieceById as habitatPieceById }
-  from '../../primitives/visual-primitives/biology/habitatBuild';
+import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
 import { feedingRelations as foodWebRelations, foodWebHarnessInputs } from '../../primitives/visual-primitives/biology/foodWebWorkspace';
 import { shorterChain, smallerWeb } from '../../primitives/visual-primitives/biology/foodWebLevers';
 import { towerHarnessInputs } from '../../primitives/visual-primitives/engineering/towerWorkspace';
@@ -250,65 +222,37 @@ import { sentenceAnalyzerBoss } from '../../primitives/visual-primitives/literac
 import { readAloudItems } from './adapters/readAloudStudioLive';
 import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
 import { shortLine as readAloudShortLine } from '../../primitives/visual-primitives/literacy/readAloudStudioLevers';
-import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
-import { practiceItem as causeEffectPracticeItem, practiceParent as causeEffectPracticeParent }
-  from '../../primitives/visual-primitives/history/causeEffectChainLevers';
+import { causeEffectChainBoss } from '../../primitives/visual-primitives/history/causeEffectChain.boss';
 import { eraExplorerBoss } from '../../primitives/visual-primitives/history/eraExplorer.boss';
-import { periodicItems, periodicJourneyAnswers } from '../../primitives/chemistry-primitives/periodicTableWorkspace';
-import { periodicPracticeItem, periodicPracticeParent } from '../../primitives/chemistry-primitives/periodicTableLevers';
+import { periodicTableBoss } from '../../primitives/periodicTable.boss';
 import { knowledgeCheckItems, knowledgeCheckJourneyAnswers } from '../../primitives/knowledgeCheckWorkspace';
-import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
-import { planetHarnessAnswers, planetItems } from '../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
-import { choiceLabel as telescopeChoiceLabel, isTapItem as telescopeTapItem, skyTarget, telescopeHarnessAnswers, telescopeItems }
-  from '../../primitives/visual-primitives/astronomy/telescopeWorkspace';
-import { choiceLabel as orbitChoiceLabel, isTapItem as orbitTapItem, orbitHarnessAnswers, orbitItems, tapLabel as orbitTapLabel }
-  from '../../primitives/visual-primitives/astronomy/orbitWorkspace';
-import { optionLabel as rocketOptionLabel, rocketHarnessAnswers, rocketItems }
-  from '../../primitives/visual-primitives/astronomy/rocketWorkspace';
-import { missionHarnessAnswers, missionItems, optionLabel as missionOptionLabel }
-  from '../../primitives/visual-primitives/astronomy/missionWorkspace';
-import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
-import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
-import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
-import { BOTH as STOICH_BOTH, convertValue, fmt as stoichFmt, limitingOf, stoichHarnessAnswers, stoichItems, yieldOf as stoichYieldOf }
-  from '../../primitives/visual-primitives/chemistry/stoichiometryLabWorkspace';
-import { easierItem as stoichEasierItem, practiceParent as stoichPracticeParent } from '../../primitives/visual-primitives/chemistry/stoichiometryLabLevers';
-import { gasHarnessAnswers, gasItems } from '../../primitives/visual-primitives/chemistry/gasLawsWorkspace';
-import { practiceParent as gasPracticeParent, simplerItem as gasSimplerItem } from '../../primitives/visual-primitives/chemistry/gasLawsLevers';
-import { dropHarnessAnswers, dropItems } from '../../primitives/visual-primitives/physics/gravityDropWorkspace';
-import { practiceParent as dropPracticeParent, simplerItem as dropSimplerItem } from '../../primitives/visual-primitives/physics/gravityDropLevers';
-import { soundHarnessAnswers, soundItems } from '../../primitives/visual-primitives/physics/soundWaveWorkspace';
-import { practiceParent as soundPracticeParent, simplerItem as soundSimplerItem } from '../../primitives/visual-primitives/physics/soundWaveLevers';
-import { needsRun as raceNeedsRun, raceHarnessAnswers, raceItems } from '../../primitives/visual-primitives/physics/raceTrackWorkspace';
-import { practiceParent as racePracticeParent, simplerItem as raceSimplerItem } from '../../primitives/visual-primitives/physics/raceTrackLevers';
-import { balancerHarnessAnswers, balancerItems } from '../../primitives/visual-primitives/chemistry/equationBalancerWorkspace';
-import { practiceParent as balancerPracticeParent, simplerItem as balancerSimplerItem } from '../../primitives/visual-primitives/chemistry/equationBalancerLevers';
-import { energyHarnessAnswers, energyItems } from '../../primitives/visual-primitives/chemistry/energyOfReactionsWorkspace';
-import { practiceParent as energyPracticeParent, simplerItem as energySimplerItem } from '../../primitives/visual-primitives/chemistry/energyOfReactionsLevers';
-import { dissolvingHarnessAnswers } from '../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace';
-import { practiceItem as shadowPracticeItem, practiceParent as shadowPracticeParent }
-  from '../../primitives/visual-primitives/astronomy/lightShadowLevers';
-import { nameHarnessAnswers as constellationNameAnswers, traceHarnessTaps as constellationTraceTaps }
-  from '../../primitives/visual-primitives/astronomy/constellationWorkspace';
-import { practiceItem as constellationPracticeItem, practiceParent as constellationPracticeParent }
-  from '../../primitives/visual-primitives/astronomy/constellationLevers';
+import { planetaryExplorerBoss } from '../../primitives/visual-primitives/astronomy/planetaryExplorer.boss';
+import { telescopeSimulatorBoss } from '../../primitives/visual-primitives/astronomy/telescopeSimulator.boss';
+import { orbitMechanicsLabBoss } from '../../primitives/visual-primitives/astronomy/orbitMechanicsLab.boss';
+import { rocketBuilderBoss } from '../../primitives/visual-primitives/astronomy/rocketBuilder.boss';
+import { missionPlannerBoss } from '../../primitives/visual-primitives/astronomy/missionPlanner.boss';
+import { lightShadowLabBoss } from '../../primitives/visual-primitives/astronomy/lightShadowLab.boss';
+import { reactionLabBoss } from '../../primitives/visual-primitives/chemistry/reactionLab.boss';
+import { phExplorerBoss } from '../../primitives/visual-primitives/chemistry/phExplorer.boss';
+import { stoichiometryLabBoss } from '../../primitives/visual-primitives/chemistry/stoichiometryLab.boss';
+import { gasLawsSimulatorBoss } from '../../primitives/visual-primitives/chemistry/gasLawsSimulator.boss';
+import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics/gravityDropTower.boss';
+import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
+import { vehicleComparisonLabBoss } from '../../primitives/visual-primitives/engineering/vehicleComparisonLab.boss';
+import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
+import { equationBalancerBoss } from '../../primitives/visual-primitives/chemistry/equationBalancer.boss';
+import { energyOfReactionsBoss } from '../../primitives/visual-primitives/chemistry/energyOfReactions.boss';
+import { mixingAndDissolvingBoss } from '../../primitives/visual-primitives/chemistry/mixingAndDissolving.boss';
+import { constellationBuilderBoss } from '../../primitives/visual-primitives/astronomy/constellationBuilder.boss';
 import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diSpokenPracticeBoss } from '../../primitives/visual-primitives/direct-instruction/diSpokenPractice.boss';
-import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
-import { spatialPathHarnessInputs } from '../../primitives/visual-primitives/math/spatialPathWorkspace';
-import { practiceParent as spatialPathPracticeParent, threeRoutes as spatialPathThreeRoutes }
-  from '../../primitives/visual-primitives/math/spatialPathLevers';
-import { practiceItem as spatialPracticeItem, practiceParent as spatialPracticeParent } from '../../primitives/visual-primitives/math/spatialSceneLevers';
-import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
-import { practiceItem as hundredsChartPracticeItem, practiceParent as hundredsChartPracticeParent }
-  from '../../primitives/visual-primitives/math/hundredsChartLevers';
-import { skipHarnessInputs } from '../../primitives/visual-primitives/math/skipCountingWorkspace';
-import { practiceItem as skipPracticeItem, practiceParent as skipPracticeParent }
-  from '../../primitives/visual-primitives/math/skipCountingLevers';
-import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
-import { additionFactHarnessInputs } from '../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
-import { smallerFact as smallerAdditionFact } from '../../primitives/visual-primitives/math/additionFactStrategiesLevers';
+import { spatialSceneBoss } from '../../primitives/visual-primitives/math/spatialScene.boss';
+import { spatialPathBoss } from '../../primitives/visual-primitives/math/spatialPath.boss';
+import { hundredsChartBoss } from '../../primitives/visual-primitives/math/hundredsChart.boss';
+import { skipCountingBoss } from '../../primitives/visual-primitives/math/skipCounting.boss';
+import { mathFactFluencyBoss } from '../../primitives/visual-primitives/math/mathFactFluency.boss';
+import { additionFactStrategiesBoss } from '../../primitives/visual-primitives/math/additionFactStrategies.boss';
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { practiceItem as equationBuilderPracticeItem, practiceParent as equationBuilderPracticeParent } from '../../primitives/visual-primitives/math/equationBuilderLevers';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
@@ -333,24 +277,13 @@ import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/
 import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
   from '../../primitives/visual-primitives/math/strategyPickerLevers';
 import { tanksNeeded as airplaneTanksNeeded } from '../../primitives/visual-primitives/engineering/airplaneModel';
-import { askedAxes as flightAxes, flightHarnessAnswers, flightItems, pressesTo as flightPresses } from '../../primitives/visual-primitives/engineering/flightForcesWorkspace';
-import { practiceParent as flightPracticeParent, simplerItem as flightSimplerItem } from '../../primitives/visual-primitives/engineering/flightForcesLevers';
-import { cspHarnessAnswers, cspItems, cspTaps } from '../../primitives/visual-primitives/engineering/constructionSequenceWorkspace';
-import { practiceParent as cspPracticeParent, simplerItem as cspSimplerItem } from '../../primitives/visual-primitives/engineering/constructionSequenceLevers';
-import { deckOf as timelineDeck, emptyWork as timelineEmptyWork, movesTo as timelineMoves, optionLabel as timelineOptionLabel,
-  timelineHarnessAnswers, timelineItems, titleOf as timelineTitle } from '../../primitives/visual-primitives/core/timelineExplorerWorkspace';
-import { practiceParent as tlxPracticeParent, simplerItem as tlxSimplerItem } from '../../primitives/visual-primitives/core/timelineExplorerLevers';
-import { vocabHarnessAnswers as vocabExplorerAnswers, vocabItems as vocabExplorerItems } from '../../primitives/visual-primitives/core/vocabularyExplorerWorkspace';
-import { practiceParent as vocabPracticeParent, simplerMatch as vocabSimplerMatch } from '../../primitives/visual-primitives/core/vocabularyExplorerLevers';
-import { howHarnessAnswers, howItems, howPresses, isPictures as howPictures, processSteps as howSteps }
-  from '../../primitives/visual-primitives/core/howItWorksWorkspace';
-import { practiceParent as howPracticeParent, simplerItem as howSimplerItem } from '../../primitives/visual-primitives/core/howItWorksLevers';
-import { METRIC_LABEL as VEHICLE_METRIC_LABEL, rowById as vehicleRowById, vehicleHarnessAnswers, vehicleItems } from '../../primitives/visual-primitives/engineering/vehicleComparisonWorkspace';
-import { practiceParent as vehiclePracticeParent, simplerItem as vehicleSimplerItem } from '../../primitives/visual-primitives/engineering/vehicleComparisonLevers';
-import { propulsionHarnessAnswers, propulsionItems, pressesTo as propulsionPresses } from '../../primitives/visual-primitives/engineering/propulsionWorkspace';
-import { practiceParent as propulsionPracticeParent, simplerItem as propulsionSimplerItem } from '../../primitives/visual-primitives/engineering/propulsionLevers';
-import { transportHarnessAnswers, transportItems } from '../../primitives/visual-primitives/engineering/transportWorkspace';
-import { practiceParent as transportPracticeParent, simplerItem as transportSimplerItem } from '../../primitives/visual-primitives/engineering/transportLevers';
+import { flightForcesExplorerBoss } from '../../primitives/visual-primitives/engineering/flightForcesExplorer.boss';
+import { constructionSequencePlannerBoss } from '../../primitives/visual-primitives/engineering/constructionSequencePlanner.boss';
+import { timelineExplorerBoss } from '../../primitives/visual-primitives/core/timelineExplorer.boss';
+import { vocabularyExplorerBoss } from '../../primitives/visual-primitives/core/vocabularyExplorer.boss';
+import { howItWorksBoss } from '../../primitives/visual-primitives/core/howItWorks.boss';
+import { propulsionLabBoss } from '../../primitives/visual-primitives/engineering/propulsionLab.boss';
+import { transportChallengeBoss } from '../../primitives/visual-primitives/engineering/transportChallenge.boss';
 import { keyLabel as digitalKeyLabel, skillHarnessAnswers as digitalHarnessAnswers, skillItems as digitalSkillItems, type Point as DigitalPoint }
   from '../../primitives/visual-primitives/core/digitalSkillsWorkspace';
 import { practiceParent as digitalPracticeParent, simplerItem as digitalSimplerItem } from '../../primitives/visual-primitives/core/digitalSkillsLevers';
@@ -361,7 +294,7 @@ import { answerLabel as dnlAnswerLabel, ratioLineHarnessValues as dnlHarnessValu
 import { practiceParent as dnlPracticeParent, simplerLine as dnlSimplerLine }
   from '../../primitives/visual-primitives/math/doubleNumberLineLevers';
 
-import { flyRoute as mapFlight, type TownMap as MapExplorerTown } from '../../primitives/visual-primitives/history/map/mapModel';
+import { mapExplorerBoss } from '../../primitives/visual-primitives/history/mapExplorer.boss';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -459,6 +392,7 @@ const bossJourney = (boss: Boss): LiveJourney => ({
     return boss.drive.play(intent === 'correct', item, ctx);
   },
   probes: { mounted: { selector: boss.drive.mounted }, ...boss.drive.probes },
+  ...(boss.drive.replayKeys ? { replayKeys: boss.drive.replayKeys } : {}),
 });
 
 /** regrouping-workbench's current item; an easier practice problem (`~simpler`) is rebuilt from its parent with the same builder. */
@@ -651,42 +585,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="frame"]' } },
   },
 
-  'counting-board': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/CountingBoard.tsx', instanceId: 'board',
-    defaults: { grade: 'Kindergarten', mode: 'give_me_n', di: false, topic: 'Giving a requested number of objects from a larger collection' },
-    leakTokens: ['CB_', 'COUNT_'],
-    prompts: WORKSPACE_PROMPTS,
-    // The easier ask (the `smaller_give` lever) is not a generated challenge: the same pile, about half as many,
-    // as `smallerGive` builds it. A spoken kind's easier board (`~simpler`) is rebuilt from its parent with the
-    // same builder (`spokenPractice`). A hand match picks the hand by its finger count; the wrong one is one finger off.
-    inputsFor: (intent, ctx) => {
-      const parent = ctx.itemId?.endsWith('~smaller')
-        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~smaller` === ctx.itemId) : null;
-      const simpler = ctx.itemId?.endsWith('~simpler') ? (() => {
-        const session = countingItems(ctx.data.challenges ?? [], { objectWord: ctx.data.objects?.type ?? 'objects' });
-        const from = session.find(i => `${i.id}~simpler` === ctx.itemId);
-        const lever = from && ({ count_all: SMALLER_SET_LEVER, recount_moved: SMALLER_SET_LEVER, take_away: CHANGE_ONE_LEVER,
-          add_more: CHANGE_ONE_LEVER, count_on: COUNT_ON_LEVER, group_count: FEWER_GROUPS_LEVER } as Record<string, string>)[from.kind];
-        const easier = from && lever ? spokenPractice(from, lever, session) : null;
-        return easier ? { ...(ctx.data.challenges ?? []).find((c: { id: string }) => c.id === from!.id), ...easier.challenge } : null;
-      })() : null;
-      const ch = parent ? { ...parent, targetAnswer: Math.ceil(parent.targetAnswer / 2) } : simpler ?? ctx.challenge;
-      if (!ch) throw new Error('No current counting task');
-      if (intent === 'warmup') return [];
-      const n = ch.targetAnswer + (intent === 'wrong' ? 1 : 0);
-      if (ch.type === 'subitize_perceptual')
-        return [{ type: 'touch', target: `hand-${intent === 'wrong' ? (ch.targetAnswer === 3 ? 2 : ch.targetAnswer + 1) : ch.targetAnswer}` }];
-      if (ch.type === 'give_me_n') return [...Array.from({ length: n }, (_, index) => ({ type: 'touch' as const, index })), { type: 'give' as const }];
-      const work: DriverInput[] = ch.type === 'take_away' ? Array.from({ length: ch.changeBy }, (_, index) => ({ type: 'touch', index }))
-        : ch.type === 'add_more' ? Array.from({ length: ch.changeBy }, (_, index) => ({ type: 'touch', index: ch.count + index }))
-        : ch.type === 'recount_moved' ? Array.from({ length: ch.count }, (_, index) => ({ type: 'touch', index })) : [];
-      return [...work, { type: 'answer', text: ch.type === 'count_all'
-        ? Array.from({ length: n }, (_, i) => String(i + 1)).join(' ') : String(n) }];
-    },
-    probes: { mounted: { selector: '[data-pip-object^="object-"]', kind: 'count' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
-  },
+  'counting-board': bossJourney(countingBoardBoss),
   'number-sequencer': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/NumberSequencer.tsx',
@@ -761,34 +660,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-dock]' } },
   },
-  'ordinal-line': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/OrdinalLine.tsx',
-    instanceId: 'line-up',
-    defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
-      topic: 'Saying which place someone is standing in a line' },
-    leakTokens: ['OL_'],
-    prompts: WORKSPACE_PROMPTS,
-    // A spoken item says the pack's own answer (a name or a place word); a build touches
-    // each real picture and then its place, in the clued order or reversed (the wrong-end
-    // error through the hands), so a wrong line is complete.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const built = ordinalItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K', context: ctx.data.context ?? 'race' }).items;
-      // An easier line (the simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? threePlaces(parent)?.item : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current ordinal-line assignment');
-      if (item.answerKind === 'gesture') {
-        const order = intent === 'wrong' ? [...item.answerOrder].reverse() : item.answerOrder;
-        return order.flatMap((name, i) => [{ type: 'touch' as const, target: `picture-${name}` },
-          { type: 'touch' as const, target: `slot-${i + 1}` }]);
-      }
-      const answers = ordinalLineHarnessAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stage"]' } },
-  },
+  'ordinal-line': bossJourney(ordinalLineBoss),
   'sorting-station': bossJourney(sortingStationBoss),
   'number-tracer': {
     execution: 'workspace',
@@ -868,51 +740,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="canvas"]' } },
   },
-  'comparison-builder': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/ComparisonBuilder.tsx',
-    instanceId: 'compare',
-    // Grade 1, because that is the band with labelled choice buttons and a Check
-    // button the driver can press. Kindergarten answers by tapping the group
-    // pictures themselves, which is an SVG gesture the driver has no verb for.
-    defaults: { grade: 'Grade 1', mode: 'compare_groups', di: false,
-      topic: 'Deciding which of two groups has more' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'DISAMBIGUATE', 'ACTIVITY_START'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every Grade-1 mode through its real buttons, then Check. A wrong answer is the
-    // mode's signature error: the opposite word or symbol, the reversed order, a step
-    // the wrong way. Derived from the mounted challenge, not from Python.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const all = ctx.data.challenges ?? [];
-      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
-      const c = parent ? simplerComparison(parent, ctx.data.gradeBand ?? 'K') : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current comparison-builder challenge');
-      if ((ctx.data.gradeBand ?? 'K') !== '1') throw new Error(`comparison-builder ${c.type}: Kindergarten taps pictures; the row drives Grade 1`);
-      const wrong = intent === 'wrong';
-      const check: DriverInput = { type: 'check' };
-      if (c.type === 'compare-groups') {
-        const label = (answer: string) => answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer';
-        return [{ type: 'choose', label: label(wrong ? (c.correctAnswer === 'more' ? 'less' : 'more') : c.correctAnswer) }, check];
-      }
-      if (c.type === 'compare-numbers') {
-        const symbol = wrong ? (c.correctSymbol === '<' ? '>' : '<') : c.correctSymbol;
-        return [{ type: 'choose', label: symbol }, check];
-      }
-      if (c.type === 'order') {
-        const sorted = [...c.numbers].sort((a: number, b: number) => c.direction === 'descending' ? b - a : a - b);
-        return [...(wrong ? sorted.reverse() : sorted).map((n: number): DriverInput => ({ type: 'choose', label: String(n) })), check];
-      }
-      const step = (c.askFor === 'one-less' ? -1 : 1) * (wrong ? -1 : 1);
-      // Both rows: each cell is named by its row ("one more 9"); wrong exchanges the two answers.
-      if (c.askFor !== 'one-more' && c.askFor !== 'one-less') return [
-        { type: 'choose', label: `one more ${c.targetNumber + (wrong ? -1 : 1)}` },
-        { type: 'choose', label: `one less ${c.targetNumber + (wrong ? 1 : -1)}` }, check];
-      return [{ type: 'choose', label: String(c.targetNumber + step) }, check];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'comparison-builder': bossJourney(comparisonBuilderBoss),
   'function-machine': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/FunctionMachine.tsx',
@@ -971,74 +799,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'coin-counter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/CoinCounter.tsx',
-    instanceId: 'coins',
-    defaults: { grade: 'Grade 2', mode: 'count-mixed', di: false, topic: 'Counting mixed coins' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', '[TIER', '[G1 ENACTED'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every type through its real controls, then Check. A wrong answer is the mode's signature error from
-    // `coinMiss`: another silver coin, the number of coins for a total, one coin too many, the group with more
-    // coins, the price given as the change. Kindergarten like coins have no wrong check: the wrong intent taps
-    // one coin twice, a double count the activity refuses on the coin itself.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier item (`~smaller`) is rebuilt from its parent with the same builder.
-      const parent = coinPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
-      const c: any = parent ? coinPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current coin-counter challenge');
-      const wrong = intent === 'wrong', band = ctx.data.gradeBand ?? '1';
-      const check: DriverInput = { type: 'check' };
-      const count = (coins: { count: number }[]) => coins.reduce((n, x) => n + x.count, 0);
-      const coinTaps = (n: number): DriverInput[] => Array.from({ length: n }, (_, i) => ({ type: 'choose', label: `Coin ${i + 1}` }));
-      if (c.type === 'identify') {
-        const options: string[] = c.options ?? ['penny', 'nickel', 'dime', 'quarter'];
-        const silver = ['nickel', 'dime', 'quarter', 'half-dollar'];
-        const pick = wrong ? options.find(o => o !== c.targetCoin && silver.includes(o) === silver.includes(c.targetCoin))
-          ?? options.find(o => o !== c.targetCoin)! : c.targetCoin;
-        return [{ type: 'choose', label: `Coin ${options.indexOf(pick) + 1}` }, check];
-      }
-      if (c.type === 'count') {
-        const n = count(c.displayedCoins), total = c.correctTotal;
-        if (band === 'K' && c.countMode === 'like') return wrong ? [...coinTaps(1), ...coinTaps(1)] : coinTaps(n);
-        const typedTotal = !wrong ? total : n !== total ? n : total - 1;
-        const tags = band === '1' && c.countMode === 'like' ? coinTaps(n) : [];
-        return [...tags, { type: 'write', label: 'Total in cents', text: String(typedTotal) }, check];
-      }
-      if (c.type === 'make-amount') {
-        const available = c.availableCoins ?? ['penny', 'nickel', 'dime', 'quarter'];
-        const coins = fewestCoins(c.targetAmount, available);
-        if (!coins) throw new Error(`coin-counter make-amount: ${c.targetAmount}¢ cannot be made from ${available.join(', ')}`);
-        const smallest = [...available].sort((a, b) => COIN_CENTS[a as keyof typeof COIN_CENTS] - COIN_CENTS[b as keyof typeof COIN_CENTS])[0];
-        return [...(wrong ? [...coins, smallest] : coins).map((coin): DriverInput => ({ type: 'choose', label: `Add a ${coin}` })), check];
-      }
-      if (c.type === 'show-amount') {
-        // Open build: Try again keeps the tray, so the driver reads what is on it (`centsMade`) and adds to it. A wrong
-        // build is one coin short; pressing done again on the kept build is the second wrong.
-        const bins = c.availableCoins ?? ['penny', 'nickel', 'dime'];
-        const made = Number(ctx.demand?.centsMade ?? 0), target = c.targetAmount;
-        const add = (coins: string[]) => coins.map((coin): DriverInput => ({ type: 'choose', label: `Add a ${coin}` }));
-        const done: DriverInput = { type: 'choose', label: "I'm done!" };
-        if (made > target || (wrong && made === target)) throw new Error(`coin-counter show-amount: ${made}¢ on the tray for ${target}¢`);
-        if (wrong) return made ? [done] : [...add((fewestCoins(target, bins) ?? []).slice(0, -1)), done];
-        const rest = fewestCoins(target - made, bins);
-        if (!rest) throw new Error(`coin-counter show-amount: ${target - made}¢ cannot be made from ${bins.join(', ')}`);
-        return [...add(rest), done];
-      }
-      if (c.type === 'compare') {
-        const label = (g: string) => g === 'equal' ? "They're Equal" : `Group ${g}`;
-        if (!wrong) return [{ type: 'choose', label: label(c.correctGroup) }, check];
-        if (c.correctGroup === 'equal') return [{ type: 'choose', label: 'Group A' }, check];
-        const other = c.correctGroup === 'A' ? 'B' : 'A';
-        return [{ type: 'choose', label: label(other) }, check];
-      }
-      const change = c.correctChange ?? (c.paidAmount - c.itemCost);
-      const typedChange = !wrong ? change : c.itemCost !== change ? c.itemCost : change + 1;
-      return [{ type: 'write', label: 'Change in cents', text: String(typedChange) }, check];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'coin-counter': bossJourney(coinCounterBoss),
   'regrouping-workbench': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/RegroupingWorkbench.tsx',
@@ -1707,143 +1468,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object]' } },
   },
-  'length-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/LengthLab.tsx',
-    instanceId: 'length',
-    defaults: { grade: 'Kindergarten', mode: 'compare', di: false, topic: 'Comparing and measuring lengths' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', '[ESTIMATE', '[TIER'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every type through its real controls. A wrong answer is the mode's signature error from `lengthMiss`: the
-    // other comparison, one unit too many, tiling to the guess, the bigger unit, the order reversed, the other object.
-    // A guess kept from a wrong attempt (Try again keeps it) is read from the scene's `guess` fact.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier item (`~simpler`) is rebuilt from its parent with the same builder.
-      const parentId = String(ctx.itemId ?? '').replace(/~simpler$/, '');
-      const found = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
-      const c: any = found && parentId !== ctx.itemId ? simplerLength(found, ctx.data.unitType) : found;
-      if (!c) throw new Error('No current length-lab challenge');
-      const wrong = intent === 'wrong', check: DriverInput = { type: 'check' };
-      const unitOf = (u?: string) => (u || ctx.data.unitType || 'cubes').replace('_', ' ');
-      const lay = (unit: string, n: number): DriverInput[] => Array.from({ length: n }, () => ({ type: 'choose', label: `Add ${unit}` }));
-      const truth: number = c.correctUnitCount || c.objectLength0;
-      if (c.type === 'compare') {
-        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'same' ? 'longer' : c.correctAnswer === 'longer' ? 'shorter' : 'longer';
-        return [{ type: 'choose', label: pick === 'same' ? 'They are the same length' : `${c.objectName0} is ${pick}` }];
-      }
-      if (c.type === 'tile_and_count') return [...lay(unitOf(c.unitType), wrong ? truth + 1 : truth), check];
-      if (c.type === 'estimate_then_tile') {
-        const kept = Number(ctx.demand?.guess);
-        const guess = Number.isInteger(kept) ? kept
-          : wrong ? (c.estimateOptions ?? []).find((g: number) => g !== truth) ?? truth : truth;
-        const pick: DriverInput[] = Number.isInteger(kept) ? [] : [{ type: 'choose', label: String(guess) }];
-        return [...pick, ...lay(unitOf(c.unitType), !wrong ? truth : guess !== truth ? guess : truth + 1), check];
-      }
-      if (c.type === 'two_unit_compare') {
-        const a = unitOf(c.unitType), b = unitOf(c.unitTypeB);
-        const more = c.correctUnitCount > c.correctUnitCountB ? a : b;
-        return [...lay(a, c.correctUnitCount), check, ...lay(b, c.correctUnitCountB), check,
-          { type: 'choose', label: wrong ? (more === a ? b : a) : more }];
-      }
-      if (c.type === 'order') {
-        const names = String(c.correctOrderCsv ?? '').split(',').map((s: string) => s.trim());
-        return [...(wrong ? [...names].reverse() : names).map((label): DriverInput => ({ type: 'choose', label })), check];
-      }
-      if (c.type === 'indirect') {
-        const other = c.correctAnswer === c.objectName0 ? c.objectName1 : c.objectName0;
-        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'same' ? c.objectName0 : other;
-        return [{ type: 'choose', label: pick === 'same' ? 'Same length' : `${pick} is longer` }];
-      }
-      throw new Error(`length-lab: no driver input for ${c.type}`);
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'analog-clock': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/AnalogClock.tsx',
-    instanceId: 'clock',
-    defaults: { grade: 'Grade 1', mode: 'read', di: false, topic: 'Telling time to the hour and half hour' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', 'SUPPORT TIER'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every type through its real controls, then Check. A wrong answer is another option or face, or the other hand
-    // (`clockMiss`). count_face has no wrong check: a number out of order restarts the count, so wrong is empty.
-    // set_time moves the hands by dragging the dial or the bar under it; the driver has no drag input.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // A simpler item (`~simpler`, the simplify lever) is rebuilt from its parent with the same builder.
-      const parent = clockPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
-      const c: any = parent ? clockPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current analog-clock challenge');
-      const wrong = intent === 'wrong';
-      const check: DriverInput = { type: 'check' };
-      if (c.type === 'set_time') throw new Error('analog-clock set_time: the hands move by drag (dial or time bar); the driver has no drag input');
-      if (c.type === 'count_face') {
-        if (wrong) return [];
-        return [...Array.from({ length: 12 }, (_, i): DriverInput => ({ type: 'touch', target: `number-${i + 1}` })), check];
-      }
-      if (c.type === 'hand_name') {
-        const hand = (c.targetHand === 'hour') !== wrong ? 'short' : 'long';
-        return [{ type: 'touch', target: `hand-${hand}` }, check];
-      }
-      const options: string[] = [c.option0, c.option1, c.option2, c.option3].filter(Boolean);
-      // A wrong option that does not contain the right one's words ("2 hours 45 minutes" holds "45 minutes").
-      const right = options[c.correctOptionIndex] ?? '';
-      const at = wrong ? options.findIndex((o, i) => i !== c.correctOptionIndex && !o.includes(right)) : c.correctOptionIndex;
-      if (at < 0 || !options[at]) throw new Error(`analog-clock ${c.type}: no ${intent} option`);
-      return [{ type: 'choose', label: c.type === 'hear_time' ? `Clock face ${at + 1}` : options[at] }, check];
-    },
-    probes: { mounted: { selector: '[data-pip-object="clock"]' } },
-  },
-  'time-sequencer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/TimeSequencer.tsx',
-    instanceId: 'times',
-    defaults: { grade: 'Kindergarten', mode: 'sequence-3', di: false, topic: 'Daily routines and the order of the day' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every type through its real buttons (cards and choices are named by their `aria-label`), then Check. A wrong
-    // answer is the mode's signature error from `timeSequencerMiss`: the day reversed (after a pre-placed first card,
-    // the rest reversed), the neighbouring time of day, another card, the shorter activity, another schedule row.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const all = ctx.data.challenges ?? [], parent = timePracticeParent(ctx.itemId, all);
-      const c: any = parent ? timePracticeItem(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current time-sequencer challenge');
-      const wrong = intent === 'wrong';
-      const check: DriverInput = { type: 'check' };
-      const choose = (label: string): DriverInput => ({ type: 'choose', label });
-      const labelOf = (cards: { id: string; label: string }[], id: string) => cards.find(e => e.id === id)!.label;
-      if (c.type === 'sequence-events' || c.type === 'clock-sequence') {
-        const order: string[] = c.correctOrder;
-        // The start-here card is already placed (and placed again after Try again): tapping it would take it out.
-        const rest = c.prelabelFirstSlot && order.length > 1 ? order.slice(1) : order;
-        if (wrong && rest.length < 2) throw new Error(`time-sequencer ${c.type}: one card left to place has no wrong order`);
-        return [...(wrong ? [...rest].reverse() : rest).map(id => choose(labelOf(c.events, id))), check];
-      }
-      if (c.type === 'match-time-of-day') {
-        const periods = ['morning', 'afternoon', 'evening', 'night'];
-        // A two-choice practice item offers only its own time of day and the opposite one.
-        const pick = !wrong ? c.correctPeriod : c.periodChoices ? c.periodChoices.find((p: string) => p !== c.correctPeriod)
-          : periods[(periods.indexOf(c.correctPeriod) + 1) % 4];
-        return [choose(pick.charAt(0).toUpperCase() + pick.slice(1)), check];
-      }
-      if (c.type === 'before-after') {
-        const pick = wrong ? c.options.find((e: { id: string }) => e.id !== c.correctEvent).id : c.correctEvent;
-        return [choose(labelOf(c.options, pick)), check];
-      }
-      if (c.type === 'duration-compare') {
-        const label = (k: string) => k === 'same' ? 'About the Same' : (k === 'A' ? c.eventA : c.eventB).label;
-        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'A' ? 'B' : 'A';
-        return [choose(label(pick)), check];
-      }
-      const options: string[] = c.activityOptions ?? c.schedule.map((r: { activity: string }) => r.activity);
-      return [choose(wrong ? options.find(o => o !== c.correctActivity)! : c.correctActivity), check];
-    },
-    probes: { mounted: { selector: '[data-pip-object="events"], [data-pip-object="event"], [data-pip-object="reference"], '
-      + '[data-pip-object="durations"], [data-pip-object="schedule"]' } },
-  },
+  'length-lab': bossJourney(lengthLabBoss),
+  'analog-clock': bossJourney(analogClockBoss),
+  'time-sequencer': bossJourney(timeSequencerBoss),
   'angle-workshop': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/AngleWorkshop.tsx',
@@ -1958,33 +1585,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'compare-objects': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/CompareObjects.tsx',
-    instanceId: 'measure',
-    defaults: { grade: 'Kindergarten', mode: 'compare_two', di: false,
-      topic: 'Deciding which of two objects is longer' },
-    leakTokens: ['CO_'],
-    prompts: WORKSPACE_PROMPTS,
-    // A spoken item says the pack's own answer; an ordering touches the real object
-    // buttons, in the right order or reversed (the mode's signature error).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const band = ctx.data.gradeBand ?? 'K', built = buildCompareItems(ctx.data.challenges ?? [], { band }).items;
-      // An easier order (the simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? farThree(parent, (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === parent.id))?.item
-        : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current compare-objects assignment');
-      if (item.answerKind === 'gesture') {
-        const order = intent === 'wrong' ? [...item.answerNames].reverse() : item.answerNames;
-        return order.map(name => ({ type: 'touch' as const, target: `pick-${name}` }));
-      }
-      const answers = compareObjectsHarnessAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="drawing"]' } },
-  },
+  'compare-objects': bossJourney(compareObjectsBoss),
   'fraction-circles': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/FractionCircles.tsx',
@@ -2264,181 +1865,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'di-word-reading': bossJourney(diWordReadingBoss),
   'di-sentence-reading': bossJourney(diSentenceReadingBoss),
   'di-math-facts': bossJourney(diMathFactsBoss),
-  'letter-sound-link': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/LetterSoundLink.tsx',
-    instanceId: 'links',
-    defaults: { grade: 'Kindergarten', mode: 'see_hear', di: false,
-      topic: 'Saying the sound a printed letter makes' },
-    leakTokens: ['LSL_'],
-    prompts: WORKSPACE_PROMPTS,
-    // The only MIXED-CHANNEL journey: two directions answer with an utterance
-    // and `hear_see` answers by tapping a letter card, whose label is the
-    // uppercase letter the stage prints. Both answers come from the domain —
-    // the harness invents neither a phoneme nor a grapheme.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const built = buildLetterSoundLinkItems(ctx.data.challenges ?? [], ctx.data.supportTier);
-      // A far_letter_pair practice item (`~simpler`) is rebuilt from its parent with the component's builder.
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? fartherPair(parent, built, ctx.data.letterGroup) : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current letter-sound assignment');
-      const answers = letterSoundLinkWorkspaceAnswers(item);
-      const value = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [item.answerKind === 'gesture' ? { type: 'choose', label: value } : { type: 'answer', text: value }];
-    },
-    probes: { mounted: { selector: '[data-letter-stage]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
-      // The keyword anchor, so a transcript inspection can check mechanically
-      // that no picture or word appeared before a committed success.
-      reward: { selector: '[data-letter-revealed]', kind: 'count' } },
-  },
-  'bar-model': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/BarModel.tsx',
-    instanceId: 'graph',
-    defaults: { grade: 'Kindergarten', mode: 'read_one_to_one', di: false,
-      topic: 'Reading a picture graph where one picture stands for one thing' },
-    leakTokens: ['ACTIVITY_START', 'CHALLENGE_START', 'PHASE_COMPLETE', 'ALL_COMPLETE', 'GRAPH_'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through its real controls, derived from the mounted challenge. A spoken item says a
-    // true comparison from the rows or the same claim reversed; a number or row choice picks the key
-    // or another; a sticker chart or built graph is complete, with one row a sticker off or the wrong step.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = (ctx.data.challenges ?? []) as BarModelChallenge[];
-      // An easier graph (a simplify lever) is not a generated challenge: rebuild it from its parent with the same builder.
-      const twoParent = ctx.itemId?.endsWith('~two') ? all.find(x => `${x.id}~two` === ctx.itemId) : undefined;
-      const simpler = simplerParent(ctx.itemId, all);
-      const c = all.find(x => x.id === ctx.itemId) ?? (simpler ? simplerGraph(simpler) : twoParent ? twoBarPractice(twoParent) : null);
-      if (!c) throw new Error('No current bar-model challenge');
-      const wrong = intent === 'wrong';
-      if (isSpokenGraph(c)) {
-        const answers = barModelHarnessAnswers(c);
-        return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
-      }
-      if (OPTION_MODES.has(c.evalMode)) {
-        const pick = wrong ? (c.options ?? []).find(o => o !== c.expectedValue) : c.expectedValue;
-        return [{ type: 'choose', label: String(pick) }];
-      }
-      const row = (i: number) => `${c.values[i].label} row`;
-      if (ROW_TAP_MODES.has(c.evalMode)) {
-        const target = c.targetBarIndex ?? 0;
-        return [{ type: 'choose', label: row(wrong ? (target + 1) % c.values.length : target) }];
-      }
-      const presses = (label: string, n: number): DriverInput[] => {
-        if (n < 0) throw new Error(`bar-model ${c.evalMode}: the chart starts above its target`);
-        return Array.from({ length: n }, () => ({ type: 'choose' as const, label }));
-      };
-      if (c.evalMode === 'build_one_to_one') {
-        const counts = (c.expectedCounts ?? []).map((n, i) => wrong && i === 0 ? (n === 0 ? 1 : n - 1) : n);
-        return [...counts.flatMap((n, i) => presses(row(i), n - c.values[i].value)), { type: 'check' }];
-      }
-      // An open build keeps its graph through Try again, so the inputs move each bar from what the scene says it holds.
-      // A fitting graph per ask; the wrong one ties (most, fewest), differs by one (same) or has one too many (N more).
-      if (c.evalMode === 'make_graph' && c.graphRule) {
-        const r = c.graphRule, other = r.a === 0 ? 1 : 0;
-        const want = c.values.map((_, i) => r.kind === 'most' ? (i === r.a ? (wrong ? 2 : 3) : wrong && i === other ? 2 : 1)
-          : r.kind === 'fewest' ? (i === r.a || wrong && i === other ? 1 : 3)
-            : r.kind === 'same' ? (i === r.a ? 2 : i === r.b ? (wrong ? 3 : 2) : 1)
-              : i === r.a ? 1 + (r.by ?? 1) + (wrong ? 1 : 0) : 1);
-        return [...c.values.flatMap((v, i) => {
-          const now = Number(ctx.demand?.[v.label] ?? 0);
-          return Array.from({ length: Math.abs(want[i] - now) }, () => ({ type: 'touch' as const, target: `${want[i] > now ? 'row' : 'top'}-${i}` }));
-        }), { type: 'choose', label: "I'm done!" }];
-      }
-      const steps = c.availableScaleSteps ?? [1, 2, 5, 10];
-      const step = wrong ? steps.find(s => s !== c.expectedScaleStep) : c.expectedScaleStep;
-      return [...(c.expectedDataset ?? []).flatMap(e => presses(`Increase ${e.label}`,
-        e.value - (c.values.find(v => v.label === e.label)?.value ?? 0))),
-        { type: 'choose', label: `Step of ${step}` }, { type: 'choose', label: 'Submit graph' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="graph"]' } },
-  },
-  'phonics-blender': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/PhonicsBlender.tsx',
-    instanceId: 'blend',
-    defaults: { grade: 'Kindergarten', mode: 'cvc', di: false,
-      topic: 'Blending the sounds of short-vowel CVC words into whole words' },
-    leakTokens: ['DI_BLEND_ITEM', 'DI_BLEND_MOVE_ON', 'DI_BLEND_COMPLETE', 'PRONOUNCE_SOUND'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken word per item: the word itself, or a plainly different word.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // build_blend is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
-      if (ctx.data.task === 'letter_build') throw new Error('phonics-blender build_blend is judged by the word judge, not driven at W1');
-      const item = blendItems(ctx.data.words ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current phonics-blender word');
-      const answers = blendHarnessAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    // The reward picture, counted so a transcript inspection can check it never shows before a credit.
-    probes: { mounted: { selector: '[data-pip-object="letters"], [data-testid="lb-row"]' }, reward: { selector: '[data-blend-reward]', kind: 'count' } },
-  },
-  'word-flip': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/WordFlip.tsx',
-    instanceId: 'flip',
-    defaults: { grade: 'Kindergarten', mode: 'plural_s', di: false,
-      topic: 'Saying the plural of a noun when there is more than one' },
-    leakTokens: ['DI_FLIP_ITEM', 'DI_FLIP_MOVE_ON', 'DI_FLIP_COMPLETE', 'SAY_WORD'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken word per item: the changed word, or the source word said back unchanged.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // build_inflect is checked in code, then by the shared literacy judge (a model), which the dry sweep has none of;
-      // WordFlip.buildInflect.workspace.test.tsx drives the commit with a stubbed judge.
-      if (ctx.data.task === 'build_inflect') throw new Error('word-flip build_inflect is judged by the word judge, not driven at W1');
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current word-flip challenge');
-      const answers = flipHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="frame"], [data-testid="wb-row"]' }, reward: { selector: '[data-flip-reward]', kind: 'count' } },
-  },
-  'sound-swap': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/SoundSwap.tsx',
-    instanceId: 'swap',
-    defaults: { grade: 'Kindergarten', mode: 'addition', di: false,
-      topic: 'Adding one sound to the beginning of a word to make a new word' },
-    leakTokens: ['DI_SWAP_ITEM', 'DI_SWAP_MOVE_ON', 'DI_SWAP_COMPLETE', 'PRONOUNCE_SOUND'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken word per item: the new word, or the starting word said back unchanged.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // swap_build is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
-      if (ctx.data.task === 'letter_build') throw new Error('sound-swap swap_build is judged by the word judge, not driven at W1');
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current sound-swap challenge');
-      const answers = swapHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="word"], [data-testid="lb-row"]' }, reward: { selector: '[data-swap-reward]', kind: 'count' } },
-  },
-  'cvc-speller': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/CvcSpeller.tsx',
-    instanceId: 'cvc',
-    defaults: { grade: 'Kindergarten', mode: 'spell_word', di: false,
-      topic: 'Spelling short-vowel CVC words by putting a letter in each sound box' },
-    leakTokens: ['DI_CVC_ITEM', 'DI_CVC_MOVE_ON', 'DI_CVC_COMPLETE', 'DI_CVC_BUILD', 'SAY_WORD'],
-    prompts: WORKSPACE_PROMPTS,
-    // A spoken item says the middle sound or the whole word back; a spelling presses bank letters
-    // into the boxes, the right word or its first letter swapped. The third letter is the commit.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // make_word is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
-      if (ctx.data.task === 'letter_build') throw new Error('cvc-speller make_word is judged by the word judge, not driven at W1');
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current cvc-speller challenge');
-      const answers = cvcHarnessAnswers(c, ctx.demand?.boxes as string | undefined)[intent === 'wrong' ? 'plainWrong' : 'correct'];
-      return c.taskType === 'spell-word' ? answers.map(l => ({ type: 'choose' as const, label: `letter ${l}` }))
-        : [{ type: 'answer', text: answers[0] }];
-    },
-    probes: { mounted: { selector: '[aria-label="hear the word"], [data-testid="lb-row"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
-  },
+  'letter-sound-link': bossJourney(letterSoundLinkBoss),
+  'bar-model': bossJourney(barModelBoss),
+  'phonics-blender': bossJourney(phonicsBlenderBoss),
+  'word-flip': bossJourney(wordFlipBoss),
+  'sound-swap': bossJourney(soundSwapBoss),
+  'cvc-speller': bossJourney(cvcSpellerBoss),
   'spelling-pattern-explorer': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/SpellingPatternExplorer.tsx',
@@ -2600,162 +2032,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-construction-scene]' } },
   },
-  'map-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/history/MapExplorer.tsx',
-    instanceId: 'map',
-    defaults: { grade: 'Grade 1', mode: 'find_by_direction', di: false, topic: 'Using a compass rose to find places on a map' },
-    leakTokens: [],
-    prompts: WORKSPACE_PROMPTS,
-    // Every answer goes through the real controls, and the tap (or Go) is the check: find_by_direction taps a place
-    // (wrong: the place the ask starts from); name_direction a compass arm (wrong: the opposite arm); find_on_globe
-    // and world_direction a continent or ocean (wrong: another continent, or the starting continent); build_route
-    // presses the arrows, one hop each, then Land (wrong: the east-west leg mirrored).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = ctx.challenge as { type?: string; targetId?: string; fromId?: string; direction?: string } | null;
-      const data = ctx.data as { townMap?: MapExplorerTown };
-      const opposite: Record<string, string> = { north: 'south', south: 'north', east: 'west', west: 'east' };
-      if (!c?.targetId) throw new Error(`map-explorer: no current ask ${ctx.itemId}`);
-      if (c.type === 'find_by_direction') return [{ type: 'touch', target: intent === 'wrong' ? c.fromId! : c.targetId }];
-      if (c.type === 'name_direction') return [{ type: 'touch', target: `arm-${intent === 'wrong' ? opposite[c.direction!] : c.direction}` }];
-      if (c.type === 'find_on_globe')
-        return [{ type: 'touch', target: `region-${intent === 'wrong' ? (c.targetId === 'africa' ? 'asia' : 'africa') : c.targetId}` }];
-      if (c.type === 'world_direction') return [{ type: 'touch', target: `region-${intent === 'wrong' ? c.fromId : c.targetId}` }];
-      if (c.type === 'build_route') {
-        if (!data.townMap) throw new Error('map-explorer build_route: no map');
-        const { wanted } = mapFlight(data.townMap, c as never, []);
-        const e = Math.round(wanted.east), n = Math.round(wanted.north);
-        const ew = e > 0 ? 'East' : 'West', ns = n > 0 ? 'North' : 'South';
-        const firstLeg = intent === 'wrong' ? (ew === 'East' ? 'West' : 'East') : ew;
-        return [
-          ...Array.from({ length: Math.abs(e) }, (): DriverInput => ({ type: 'choose', label: firstLeg })),
-          ...Array.from({ length: Math.abs(n) }, (): DriverInput => ({ type: 'choose', label: ns })),
-          { type: 'choose', label: 'Land!' },
-        ];
-      }
-      throw new Error(`map-explorer ${c.type} is not driven`);
-    },
-    probes: { mounted: { selector: '[data-live-map]' } },
-  },
-  'timeline-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/core/TimelineExplorer.tsx',
-    instanceId: 'timeline-explorer',
-    defaults: { grade: 'Grade 4', mode: 'order', di: false, topic: 'The road to American independence, 1765-1783' },
-    leakTokens: ['EVENT_SELECTED', 'QUESTIONS_START', 'CHALLENGE_CORRECT', 'CHALLENGE_INCORRECT', 'ANSWER_REVEALED', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // While the timeline is being read (presentation not ready), open every event and press Begin the questions.
-    // identify and date tap one choice (its aria-label) and Check Answer; order presses Move <title> up from the
-    // starting order and Check Order; cause_effect taps each Cause: then its Effect: and Check Matches. A wrong answer
-    // is the nearest wrong choice, two neighbouring cards swapped, or two causes' effects swapped. The simpler practice
-    // item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const data = ctx.data as never as { events: never[] };
-      const deck = timelineDeck(data.events ?? []);
-      const items = timelineItems(ctx.data as never);
-      const parent = tlxPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? tlxSimplerItem(deck, full, items) : full;
-      if (!item) throw new Error(`No current timeline-explorer item ${ctx.itemId}`);
-      const reading: DriverInput[] = ctx.demand?.presentation !== 'ready'
-        ? [...deck.events.map((_, i): DriverInput => ({ type: 'choose', label: `Event ${i + 1}` })), { type: 'choose', label: 'Begin the questions' }] : [];
-      const answers = timelineHarnessAnswers(deck, item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (item.kind === 'order') {
-        return [...reading, ...timelineMoves(deck, timelineEmptyWork(item).order, work.order).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-      }
-      if (item.kind === 'cause_effect') {
-        return [...reading, ...item.causes.flatMap((c): DriverInput[] => [{ type: 'choose', label: `Cause: ${timelineTitle(deck, c)}` },
-          { type: 'choose', label: `Effect: ${timelineTitle(deck, work.pairs[c])}` }]), { type: 'check' }];
-      }
-      return [...reading, { type: 'choose', label: timelineOptionLabel(deck, item, work.choice!) }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[aria-label="Event 1"], [data-pip-object="workspace"]' } },
-  },
-  'flight-forces-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/engineering/FlightForcesExplorer.tsx',
-    instanceId: 'flight-forces-explorer',
-    defaults: { grade: 'Grade 4', mode: 'predict', di: false, topic: 'The four forces of flight: lift, weight, thrust and drag' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // predict and observe tap one choice per asked row (its aria-label) and Check Answer; adjust presses the thrust and
-    // nose buttons from the start setting and Fly and check. A wrong answer shows the mode's first-listed miss the item
-    // can. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = flightItems(ctx.data as never);
-      const parent = flightPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? flightSimplerItem(full) : full;
-      if (!item) throw new Error(`No current flight-forces-explorer item ${ctx.itemId}`);
-      const answers = flightHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (item.mode === 'adjust') {
-        return [...flightPresses(item.start, work.setting).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-      }
-      return [...flightAxes(item).map((a): DriverInput => ({ type: 'choose', label: work[a]! })), { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'vocabulary-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/core/VocabularyExplorer.tsx',
-    instanceId: 'vocabulary-explorer',
-    defaults: { grade: 'Grade 4', mode: 'recall', di: false, topic: 'The water cycle' },
-    leakTokens: ['TERM_SELECTED', 'CHECK_STARTED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // The word cards come first: Start the check while they are open (the scene is not ready). A match taps each word
-    // (`term-<n>`) then its meaning (`meaning-<n>`, by its place in the meaning column) and Check Matches; wrong swaps
-    // the first two words' meanings. A sentence or situation item chooses the word (its aria-label) and Check Answer;
-    // wrong is the most telling other word. The smaller practice match (`~simpler`) is rebuilt with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const bank = (ctx.data.terms ?? []) as never[];
-      const items = vocabExplorerItems(ctx.data as never);
-      const parent = vocabPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? vocabSimplerMatch(full, bank) : full;
-      if (!item) throw new Error(`No current vocabulary-explorer item ${ctx.itemId}`);
-      const start: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Start the check' }] : [];
-      const answers = vocabExplorerAnswers(item, bank), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (item.kind === 'match') {
-        return [...start, ...item.terms.flatMap((t, i): DriverInput[] => [{ type: 'touch', target: `term-${i + 1}` },
-          { type: 'touch', target: `meaning-${item.defs.indexOf(work.pairs[t]) + 1}` }]), { type: 'check' }];
-      }
-      const word = (ctx.data.terms ?? []).find((t: { id: string }) => t.id === work.picked)?.word;
-      if (!word) throw new Error(`vocabulary-explorer ${item.id}: no word for choice ${work.picked}`);
-      return [...start, { type: 'choose', label: word }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-study="cards"], [data-pip-object="workspace"]' } },
-  },
-  'how-it-works': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/core/HowItWorks.tsx',
-    instanceId: 'how-it-works',
-    defaults: { grade: 'Grade 4', mode: 'sequence', di: false, topic: 'How a bicycle turns pedaling into motion' },
-    leakTokens: ['ACTIVITY_START', 'ACTIVITY_START_PRE', 'DETAIL_EXPANDED', 'READ_QUESTION', 'NEXT_QUESTION', 'CHALLENGE_CORRECT',
-      'CHALLENGE_INCORRECT', 'ANSWER_REVEALED', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // While the steps are being read (scene phase `reading`), press Start the questions. A choice item taps the choice
-    // (its aria-label) and Check Answer (a pre-reader's tap checks itself); a sequence taps each card into the next slot
-    // and Check Answer. A wrong answer is the item's first-listed miss: a neighbouring step, a later step, or the first
-    // two cards swapped. The easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const steps = howSteps(ctx.data as never), pictures = howPictures(ctx.data as never);
-      const items = howItems(ctx.data as never);
-      const parent = howPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? howSimplerItem(steps, full, pictures) : full;
-      if (!item) throw new Error(`No current how-it-works item ${ctx.itemId}`);
-      const start: DriverInput[] = ctx.demand?.phase === 'reading' ? [{ type: 'choose', label: 'Start the questions' }] : [];
-      const answers = howHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [...start, ...howPresses(steps, item, work).map((label): DriverInput => ({ type: 'choose', label })),
-        ...(pictures ? [] : [{ type: 'check' } as DriverInput])];
-    },
-    probes: { mounted: { selector: '[data-how-it-works]' } },
-  },
+  'map-explorer': bossJourney(mapExplorerBoss),
+  'timeline-explorer': bossJourney(timelineExplorerBoss),
+  'flight-forces-explorer': bossJourney(flightForcesExplorerBoss),
+  'vocabulary-explorer': bossJourney(vocabularyExplorerBoss),
+  'how-it-works': bossJourney(howItWorksBoss),
   'digital-skills-sim': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/core/DigitalSkillsSim.tsx',
@@ -2780,99 +2061,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'transport-challenge': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/engineering/TransportChallenge.tsx',
-    instanceId: 'transport-challenge',
-    defaults: { grade: 'Grade 4', mode: 'single_constraint', di: false, topic: 'Choosing vehicles for a transport job under a budget, time and CO2 limits' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Tap the vehicle's card (its aria-label is the vehicle's name) and Check my pick. A wrong pick shows the mode's
-    // first-listed miss the job can. The smaller practice job (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = transportItems(ctx.data as never);
-      const parent = transportPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? transportSimplerItem(full) : full;
-      if (!item) throw new Error(`No current transport-challenge job ${ctx.itemId}`);
-      const answers = transportHarnessAnswers(item);
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'propulsion-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/engineering/PropulsionLab.tsx',
-    instanceId: 'propulsion-lab',
-    defaults: { grade: 'Grade 4', mode: 'predict', di: false, topic: "Newton's third law: how engines push a craft forward" },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // predict and observe tap one choice (its aria-label) and Check Answer; experiment presses the test buttons
-    // ("Test B: Space") from the start setups and Run and check. A wrong answer shows the mode's first-listed miss the
-    // item can (experiment: one change too many). The simpler practice item (`~simpler`) is rebuilt with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = propulsionItems(ctx.data as never);
-      const parent = propulsionPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? propulsionSimplerItem(full) : full;
-      if (!item) throw new Error(`No current propulsion-lab item ${ctx.itemId}`);
-      const answers = propulsionHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (item.mode === 'experiment') {
-        return [...propulsionPresses(item.start, { a: work.a, b: work.b }).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-      }
-      return [{ type: 'choose', label: work.choice! }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'vehicle-comparison-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/engineering/VehicleComparisonLab.tsx',
-    instanceId: 'vehicle-comparison-lab',
-    defaults: { grade: 'Grade 4', mode: 'evidence_choice', di: false, topic: 'Comparing vehicles that move people and goods by speed, capacity and range' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item taps one vehicle row (its aria-label is the vehicle's name), evidence_choice also a column button
-    // (its label), then Check. A wrong answer shows the mode's first-listed miss the item can. The simpler practice
-    // item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = vehicleItems(ctx.data as never);
-      const parent = vehiclePracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? vehicleSimplerItem(full) : full;
-      if (!item) throw new Error(`No current vehicle-comparison-lab item ${ctx.itemId}`);
-      const answers = vehicleHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [{ type: 'choose', label: vehicleRowById(item, work.vehicle)!.name },
-        ...(item.mode === 'evidence_choice' ? [{ type: 'choose' as const, label: VEHICLE_METRIC_LABEL[work.evidence!] }] : []),
-        { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-vehicle-table]' } },
-  },
-  'construction-sequence-planner': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/engineering/ConstructionSequencePlanner.tsx',
-    instanceId: 'construction-sequence-planner',
-    defaults: { grade: 'Grade 3', mode: 'dependency_chain', di: false, topic: 'Planning how to build a house: which jobs come first' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // sequence and dependency_chain tap the job cards into the plan in order; parallel taps a card, then "Put in week k",
-    // for every job; critical_path taps a total. Then the check. The wrong plan swaps the last two jobs (sequence), puts
-    // the job that needs two right after its first need (dependency_chain), moves a job into its need's week (parallel)
-    // or taps the total of every job added (critical_path). The practice item (`~simpler`) is rebuilt from its parent.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = cspItems(ctx.data as never);
-      const parent = cspPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? cspSimplerItem(full) : full;
-      if (!item) throw new Error(`No current construction-sequence-planner item ${ctx.itemId}`);
-      const answers = cspHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [...cspTaps(item, work).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'transport-challenge': bossJourney(transportChallengeBoss),
+  'propulsion-lab': bossJourney(propulsionLabBoss),
+  'construction-sequence-planner': bossJourney(constructionSequencePlannerBoss),
   'airplane-diorama': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/engineering/AirplaneDiorama.tsx',
@@ -2974,49 +2165,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'di-deduction': bossJourney(diDeductionBoss),
   'di-worked-procedure': bossJourney(diWorkedProcedureBoss),
   'di-word-problem-setup': bossJourney(diWordProblemSetupBoss),
-  'spatial-scene': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/SpatialScene.tsx',
-    instanceId: 'scene',
-    defaults: { grade: 'Kindergarten', mode: 'identify', di: false,
-      topic: 'Position words: above, below, beside and next to' },
-    leakTokens: ['ACTIVITY_START', 'NEXT_ITEM', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'STEP_CORRECT', 'ALL_COMPLETE', 'SPATIAL_DESCRIPTION_ITEM'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through its real controls: a word and Check, a cell and Check, each direction step, or
-    // a spoken description. Derived from the mounted challenge, never from Python.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      // The easier practice scene (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = spatialPracticeParent(ctx.itemId, all);
-      const c = parent ? spatialPracticeItem(parent, ctx.data.gridSize ?? 3) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current spatial-scene challenge');
-      return spatialHarnessInputs(c, intent === 'wrong', ctx.data.gridSize ?? 3, ctx.demand?.step as string | undefined);
-    },
-    probes: { mounted: { selector: '[data-pip-object^="cell-"], [aria-label="Viewer position"]' } },
-  },
-  'spatial-path': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/SpatialPath.tsx',
-    instanceId: 'routes',
-    defaults: { grade: 'Kindergarten', mode: 'choose_route', di: false,
-      topic: 'Directional prepositions through around and across' },
-    leakTokens: ['ROUTE_ITEM', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // The real map: touch a route's numbered badge, then Animate this route; a wrong one takes the first other route.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      // The easier map (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = spatialPathPracticeParent(ctx.itemId ?? '', all);
-      const c = parent ? spatialPathThreeRoutes(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error(`spatial-path: no input for item ${ctx.itemId}`);
-      return spatialPathHarnessInputs(c, intent === 'wrong');
-    },
-    // The key is a route number on the map; the asked word is the task itself, so replies are read by hand.
-    replayKeys: () => [],
-    probes: { mounted: { selector: '[data-pip-object^="route-"]' } },
-  },
+  'spatial-scene': bossJourney(spatialSceneBoss),
+  'spatial-path': bossJourney(spatialPathBoss),
   'syllable-clapper': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/SyllableClapper.tsx',
@@ -3033,45 +2183,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-testid="lb-row"]' }, reward: { selector: '[data-testid="reveal"]', kind: 'count' } },
   },
-  'rhyme-studio': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/RhymeStudio.tsx',
-    instanceId: 'rhymes',
-    defaults: { grade: 'Kindergarten', mode: 'recognition', di: false,
-      topic: 'Hearing whether two short words rhyme' },
-    leakTokens: ['RS_ITEM', 'RS_MOVE', 'RS_COMPLETE', 'RS_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: yes or no, or the rhyming choice. Production and collection have no
-    // code-owned answer, so their rows throw with the mode name (undriven at W1).
-    inputsFor: spokenWorkspaceInputs(
-      (challenges: any[]) => challenges.flatMap(c => rhymeItems(c)), rhymeHarnessAnswers, 'rhyme-studio'),
-    probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"], [data-testid="rp-tray"]' } },
-  },
+  'rhyme-studio': bossJourney(rhymeStudioBoss),
   'phoneme-explorer': bossJourney(phonemeExplorerBoss),
-  'word-workout': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/WordWorkout.tsx',
-    instanceId: 'workout',
-    defaults: { grade: 'Grade 1', mode: 'real_vs_nonsense', di: false,
-      topic: 'Reading short-vowel CVC words and telling real words from silly ones' },
-    leakTokens: ['WW_ITEM', 'WW_MOVE', 'WW_COMPLETE', 'WW_HEAR', 'WW_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // A spoken read or answer per item; picture match taps the picture (a wrong tap is another picture).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // pair_build is driven by picture taps in RhymePair.workspace.test.tsx; the dry sweep has no picture input.
-      if (ctx.data.task === 'pair_build') throw new Error('rhyme-studio pair_build is driven in RhymePair.workspace.test.tsx, not at W1');
-      const item = workoutItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current word-workout item');
-      const answers = wordWorkoutJourneyAnswers(item);
-      if (answers.tapped) {
-        const word = intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct;
-        return [{ type: 'touch', target: `picture-${word}` }];
-      }
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[aria-label="Hear the question again"]' } },
-  },
+  'word-workout': bossJourney(wordWorkoutBoss),
   'word-builder': {
     execution: 'workspace',
     component: 'primitives/WordBuilder.tsx',
@@ -3095,86 +2209,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="workspace"]' } },
   },
   'word-sorter': bossJourney(wordSorterBoss),
-  'picture-vocabulary': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/PictureVocabulary.tsx',
-    instanceId: 'vocab',
-    defaults: { grade: 'Kindergarten', mode: 'naming', di: false, topic: 'Naming everyday things at home' },
-    leakTokens: ['PV_ITEM', 'PV_MOVE', 'PV_COMPLETE', 'PV_HEAR', 'PV_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // A spoken word per item; listen and find taps a card (a wrong tap is another card).
-    // pair_build (open build) through its real pictures: wrong is the board's misconception decoy (alike / same kind);
-    // correct is a right pair not made yet, two of them on a two-pair item. Try again keeps the tray, so it is cleared.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      if (ctx.data.task === 'pair_build') return picturePairInputs(ctx, intent === 'wrong');
-      const item = vocabItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current picture-vocabulary item');
-      const answers = pictureVocabJourneyAnswers(item);
-      if (answers.tapped) return [{ type: 'touch', target: `card-${intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct}` }];
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="cards"], [data-testid="rp-tray"]' } },
-  },
-  'letter-spotter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/LetterSpotter.tsx',
-    instanceId: 'spotter',
-    defaults: { grade: 'Kindergarten', mode: 'find_it', di: false, topic: 'Finding the letters s, a, t, i, p and n' },
-    leakTokens: ['LSP_ITEM', 'LSP_MOVE', 'LSP_COMPLETE', 'LSP_HEAR', 'LSP_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // Name it answers aloud; find it taps a grid cell and match it a little letter (a wrong tap is another letter).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = spotterItems(ctx.data.challenges ?? [], ctx.data.supportTier ?? 'medium').find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current letter-spotter item');
-      const answers = letterSpotterJourneyAnswers(item);
-      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-      const letter = intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct;
-      if (item.mode === 'match-it') return [{ type: 'touch', target: `option-${letter}` }];
-      const cell = (item.letterGrid ?? []).findIndex(l => l.toLowerCase() === letter.toLowerCase());
-      if (cell < 0) throw new Error(`letter-spotter find_it: no cell holds ${letter}`);
-      return [{ type: 'touch', target: `cell-${cell}` }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="letter"], [data-pip-object="marker"]' } },
-  },
+  'picture-vocabulary': bossJourney(pictureVocabularyBoss),
+  'letter-spotter': bossJourney(letterSpotterBoss),
   'decodable-reader': bossJourney(decodableReaderBoss),
-  'interactive-book': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/InteractiveBook.tsx',
-    instanceId: 'book',
-    defaults: { grade: 'Kindergarten', mode: 'find-feature', di: false, topic: 'A picture book about a day at the farm' },
-    leakTokens: ['IB_ITEM', 'IB_MOVE', 'IB_COMPLETE', 'IB_HEAR', 'IB_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // Read the glowing word aloud; find a book part taps a printed part (a wrong tap is another part on the page).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = bookItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current interactive-book item');
-      const answers = interactiveBookJourneyAnswers(item, ctx.data.books[0]);
-      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-      return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="page"]' } },
-  },
-  'story-bridge': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/StoryBridge.tsx',
-    instanceId: 'bridge',
-    defaults: { grade: 'Kindergarten', mode: 'match_character', di: false, topic: 'Two stories about friends who share' },
-    leakTokens: ['SB_ITEM', 'SB_MOVE', 'SB_COMPLETE', 'SB_HEAR', 'SB_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // Say alike / different / big ideas answer aloud; the other modes tap a choice (a wrong tap is another choice).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = bridgeItems(ctx.data.challenges ?? [], ctx.data.stories ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current story-bridge item');
-      const answers = storyBridgeJourneyAnswers(item);
-      if (!answers.tapped) return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-      return [{ type: 'touch', target: intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stories"]' } },
-  },
+  'interactive-book': bossJourney(interactiveBookBoss),
+  'story-bridge': bossJourney(storyBridgeBoss),
   'story-ribbon': bossJourney(storyRibbonBoss),
   'story-map': {
     execution: 'workspace',
@@ -3343,40 +2382,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="scene"]' } },
   },
   '3d-shape-explorer': bossJourney(threeDShapeExplorerBoss),
-  'calendar-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/calendar/CalendarExplorer.tsx',
-    instanceId: 'calendar',
-    defaults: { grade: 'Grade 1', mode: 'identify', di: false, topic: 'Finding dates on a monthly calendar' },
-    leakTokens: ['CE_SEQUENCE_ITEM', 'CE_SEQUENCE_MOVE', 'CE_SEQUENCE_COMPLETE', 'CE_SEQUENCE_HEAR', 'ANSWER_CORRECT', 'NEXT_ITEM'],
-    prompts: WORKSPACE_PROMPTS,
-    // The chain answers aloud; a grid question taps a date or an option, then Check (a wrong pick is another one).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const wrong = intent === 'wrong';
-      const turn = calendarSequenceItemsFromChallenges(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
-      if (turn) {
-        const answers = calendarSequenceJourneyAnswers(turn);
-        return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
-      }
-      // A simpler question (`<item>~simpler`) is not a generated challenge: rebuild it from its parent with the same builder.
-      const all = (ctx.data.challenges ?? []) as CalendarExplorerChallenge[];
-      const parent = calendarPracticeParent(ctx.itemId, all);
-      const c = parent ? calendarPracticeItem(parent, { challenges: all, supportTier: ctx.data.supportTier as never }) ?? undefined
-        : all.find(ch => ch.id === ctx.itemId);
-      if (!c) throw new Error('No current calendar-explorer question');
-      const check: DriverInput = { type: 'choose', label: 'Check Answer' };
-      if (isGridDateAnswer(c)) {
-        const right = Number(c.correctAnswer);
-        const day = wrong ? (right > 1 ? right - 1 : right + 1) : right;
-        return [{ type: 'touch', target: c.todayDate === day ? 'today' : `date-${day}` }, check];
-      }
-      const pick = wrong ? c.options.find(o => o.trim().toLowerCase() !== c.correctAnswer.trim().toLowerCase()) : c.correctAnswer;
-      if (!pick) throw new Error(`calendar-explorer ${c.type}: no wrong option to choose`);
-      return [{ type: 'choose', label: c.options.find(o => o.trim().toLowerCase() === pick.trim().toLowerCase()) ?? pick }, check];
-    },
-    probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="offset"], [data-pip-object="stimulus"]' } },
-  },
+  'calendar-explorer': bossJourney(calendarExplorerBoss),
   'timeline-builder': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/calendar/TimelineBuilder.tsx',
@@ -3424,78 +2430,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'fast-fact': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/core/FastFact.tsx',
-    instanceId: 'facts',
-    defaults: { grade: 'Grade 2', mode: 'recall', di: false, topic: 'Addition facts within 20' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode is one tap on a choice button (its text). A wrong tap is the most telling wrong choice by
-    // `fastFactMiss`: another operation's result, then a number one away, then the first other choice.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current fast-fact challenge');
-      const options: string[] = c.options ?? [];
-      const right = options.find(o => isFactCorrect(o, c));
-      if (!right) throw new Error(`fast-fact ${c.challengeType}: no choice is credited`);
-      if (intent !== 'wrong') return [{ type: 'choose', label: right }];
-      const others = options.filter(o => o !== right);
-      const rank = (o: string) => ['wrong_operation', 'one_less', 'one_more', 'other_number', 'other_choice']
-        .indexOf(fastFactMiss(c, { picked: o }) ?? 'other_choice');
-      const pick = [...others].sort((a, b) => rank(a) - rank(b))[0];
-      if (!pick) throw new Error(`fast-fact ${c.challengeType}: one choice has no wrong tap`);
-      return [{ type: 'choose', label: pick }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'fact-file': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/core/FactFile.tsx',
-    instanceId: 'fact-file',
-    defaults: { grade: 'Grade 3', mode: 'recall', di: false, topic: 'Volcanoes' },
-    leakTokens: ['ACTIVITY_START', 'TAB_OPENED', 'STAT_TAPPED', 'ALL_SECTIONS_EXPLORED', 'CHECK_CORRECT', 'CHECK_INCORRECT',
-      'ALL_COMPLETE', 'FACTCHECK_READ_ALOUD', 'FACTCHECK_RETRY'],
-    prompts: WORKSPACE_PROMPTS,
-    // Warmup: while the file is being read (recall, apply), open every tab and press Start questions. Then every item
-    // is one tap on a choice (its text). A wrong tap is a choice the file states elsewhere when there is one.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') {
-        if (!String(ctx.demand?.phase ?? '').startsWith('reading')) return [];
-        return [...factFileTabs(ctx.data as never).map(t => ({ type: 'choose' as const, label: FACT_FILE_SECTION[t] })),
-          { type: 'choose', label: 'Start questions' }];
-      }
-      const c = factChecks(ctx.data as never).find(x => x.id === ctx.itemId);
-      if (!c) throw new Error('No current fact-file check');
-      const answers = factFileHarnessAnswers(c, factFileText(ctx.data as never));
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.wrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'race-track-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/physics/RaceTrackLab.tsx',
-    instanceId: 'race-track-lab',
-    defaults: { grade: 'Grade 3', mode: 'measure', di: false, topic: 'Speed, distance and time on a race track' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer; observe and measure first press Run the race.
-    // A wrong answer is the mode's first-listed miss `raceMiss` can name on the item. The simpler practice race
-    // (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = raceItems(ctx.data as never);
-      const parent = racePracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? raceSimplerItem(full) : full;
-      if (!item) throw new Error(`No current race-track-lab item ${ctx.itemId}`);
-      const answers = raceHarnessAnswers(item);
-      const run: DriverInput[] = raceNeedsRun(item) && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Run the race' }] : [];
-      return [...run, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'fast-fact': bossJourney(fastFactBoss),
+  'fact-file': bossJourney(factFileBoss),
+  'race-track-lab': bossJourney(raceTrackLabBoss),
   'push-pull-arena': bossJourney(pushPullArenaBoss),
   'ecosystem-diorama': {
     execution: 'workspace',
@@ -3512,43 +2449,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-ecosystem-scene]' } },
   },
-  'habitat-diorama': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/biology/HabitatDiorama.tsx',
-    instanceId: 'habitat',
-    defaults: { grade: 'Grade 2', mode: 'connect', di: false, topic: 'Animals and plants in a pond habitat depend on each other' },
-    leakTokens: ['HABITAT_ITEM', 'HABITAT_GESTURE', 'HABITAT_MOVE', 'HABITAT_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Observe, predict and defend are one spoken choice; connect taps the living thing, restore the zone.
-    // build_habitat clears a kept habitat, puts in one piece per asked need that serves the animal, and presses I'm
-    // done; wrong leaves the last need out (`one_need_unmet`). The easier ask (simplify lever) is rebuilt from its parent.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = habitatItems(ctx.data.challenges ?? [], ctx.data as never).items;
-      const parent = ctx.itemId?.endsWith(HABITAT_FEWER) ? all.find(i => `${i.id}${HABITAT_FEWER}` === ctx.itemId) : undefined;
-      // observe/connect/predict/defend's easier item (`~simpler`) is rebuilt from its parent with the same builder.
-      const simplerOf = ctx.itemId?.endsWith(HABITAT_SIMPLER) ? all.find(i => `${i.id}${HABITAT_SIMPLER}` === ctx.itemId) : undefined;
-      const habitat = { organisms: ctx.data.organisms ?? [], relationships: ctx.data.relationships ?? [] };
-      const item = parent ? habitatFewerNeedsItem(parent)
-        : simplerOf ? habitatEasierItem(simplerOf, habitat)
-          : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current habitat-diorama item');
-      if (item.kind === 'build_habitat') {
-        const animal = habitatAnimalById(item.animalId);
-        if (!animal) throw new Error(`habitat-diorama build: unknown animal ${item.animalId}`);
-        const pieces = (item.needs ?? []).map(n => (item.tray ?? []).find(p => animal.meets[n].includes(p) && !animal.harmedBy.includes(p)));
-        if (pieces.some(p => !p)) throw new Error(`habitat-diorama build: the tray cannot meet every need of the ${animal.name}`);
-        const put = (ids: string[]): DriverInput[] => ids.map(id => ({ type: 'choose', label: `Put in ${habitatPieceById(id)!.name}` }));
-        const start: DriverInput[] = Number(ctx.demand?.piecesPlaced ?? 0) > 0 ? [{ type: 'choose', label: 'Clear the habitat' }] : [];
-        const made = intent === 'wrong' ? (pieces as string[]).slice(0, -1) : (pieces as string[]);
-        return [...start, ...put(made), { type: 'choose', label: "I'm done!" }];
-      }
-      const answers = habitatJourneyAnswers(item);
-      const pick = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'habitat-diorama': bossJourney(habitatDioramaBoss),
   'classification-sorter': bossJourney(classificationSorterBoss),
   'cell-builder': bossJourney(cellBuilderBoss),
   'food-web-builder': {
@@ -3663,364 +2564,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   },
   'states-of-matter': bossJourney(statesOfMatterBoss),
   'solar-system-explorer': bossJourney(solarSystemBoss),
-  'light-shadow-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/LightShadowLab.tsx',
-    instanceId: 'shadow',
-    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'How shadows change during the day' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'SUPPORT='],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode is one tapped choice and Check Answer. A wrong answer is the most telling error `shadowMiss` names on
-    // that item: the shadow on the sun's side, the time on the other side of noon, the length of a high sun for a low one.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier item (`~easier`) is rebuilt from its parent with the same builder.
-      const parent = shadowPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
-      const c: any = parent ? shadowPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current light-shadow-lab challenge');
-      const answers = shadowHarnessAnswers(c, ctx.data.sunPositions ?? []);
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'mixing-and-dissolving': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/MixingAndDissolving.tsx',
-    instanceId: 'dissolving',
-    defaults: { grade: 'Grade 4', mode: 'dissolve', di: false, topic: 'What dissolves in water' },
-    leakTokens: ['ACTIVITY_START', 'SUBSTANCE_ADDED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'PARTICLE_VIEW_ON'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every challenge is one tapped choice (its `aria-label` is the choice) and Submit Answer. A wrong answer is the
-    // choice that shows the most telling miss `dissolvingMiss` names.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const ch = (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === ctx.itemId);
-      if (!ch) throw new Error('No current mixing-and-dissolving challenge');
-      const answers = dissolvingHarnessAnswers(ch);
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'choose', label: 'Submit Answer' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'reaction-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/ReactionLab.tsx',
-    instanceId: 'reaction-lab',
-    defaults: { grade: 'Grade 4', mode: 'observe', di: false, topic: 'Signs of a chemical reaction' },
-    leakTokens: ['ACTIVITY_START', 'PREDICTION_MADE', 'REACTION_STARTED', 'REACTION_COMPLETE', 'ANSWER_CORRECT', 'ANSWER_INCORRECT',
-      'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer. A challenge asked after mixing first presses
-    // Mix Substances! (the response opens once the reaction has run). A wrong answer is the most telling miss
-    // `reactionMiss` names.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = reactionItems(ctx.data.challenges ?? [], { checkedOnly: true }).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error(`No current reaction-lab challenge ${ctx.itemId}`);
-      const answers = reactionHarnessAnswers(item);
-      const mix: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Mix Substances!' }] : [];
-      return [...mix, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'planetary-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/PlanetaryExplorer.tsx',
-    instanceId: 'planets',
-    defaults: { grade: 'Grade 3', mode: 'identify', di: false, topic: 'The planets of our solar system' },
-    leakTokens: ['QUESTION_SHOWN', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'QUIZ_HINT', 'PLANET_ARRIVE', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every question is one tapped choice (its `aria-label` is the choice) and Check Answer; a stop's first question
-    // first closes the stop's card (Ready for Questions). A wrong answer is the most telling miss `planetMiss` names.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const planets = ctx.data.planets ?? [];
-      const item = planetItems(planets, ctx.data.quizQuestions ?? []).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current planetary-explorer question');
-      const answers = planetHarnessAnswers(item, planets);
-      const card: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Ready for Questions →' }] : [];
-      return [...card, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'telescope-simulator': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/TelescopeSimulator.tsx',
-    instanceId: 'telescope-simulator',
-    defaults: { grade: 'Grade 4', mode: 'find_by_look', di: false, topic: 'Observing the night sky with a telescope' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // find_by_look and brightest touch one unnamed object in the view (`sky-<n>`) and Check Answer; object_type and
-    // pick_instrument tap one choice (its aria-label is the kind or the instrument) and Check Answer. A wrong answer
-    // shows the mode's first-listed miss the item can.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = telescopeItems(ctx.data as never).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error(`No current telescope-simulator item ${ctx.itemId}`);
-      const answers = telescopeHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (telescopeTapItem(item)) return [{ type: 'touch', target: skyTarget(work.pick!) }, { type: 'check' }];
-      return [{ type: 'choose', label: telescopeChoiceLabel(item, work.choice!) }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'orbit-mechanics-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/OrbitMechanicsLab.tsx',
-    instanceId: 'orbit-mechanics-lab',
-    defaults: { grade: 'Grade 4', mode: 'pick_speed', di: false, topic: 'How a rocket stays in orbit around Earth' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
-    prompts: WORKSPACE_PROMPTS,
-    // pick_speed taps one push and orbit_speed one rocket (each button's aria-label is its push size or rocket colour);
-    // predict_burn and circularize tap one choice by its words. Each then presses the check. A wrong answer shows the
-    // mode's first-listed miss the item can.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = orbitItems(ctx.data as never).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error(`No current orbit-mechanics-lab item ${ctx.itemId}`);
-      const answers = orbitHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (orbitTapItem(item)) return [{ type: 'choose', label: orbitTapLabel(item, work.pick!) }, { type: 'check' }];
-      return [{ type: 'choose', label: orbitChoiceLabel(item, work.choice!) }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'rocket-builder': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/RocketBuilder.tsx',
-    instanceId: 'rocket-builder',
-    defaults: { grade: 'Grade 4', mode: 'can_it_lift', di: false, topic: 'What a rocket needs to lift off' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode taps one option by its aria-label (the lift-off answer, the part, or the rocket's colour), then presses
-    // the check. A wrong answer shows the mode's first-listed miss the item can.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = rocketItems(ctx.data as never).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error(`No current rocket-builder item ${ctx.itemId}`);
-      const answers = rocketHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [{ type: 'choose', label: rocketOptionLabel(item, work.pick!) }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'mission-planner': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/MissionPlanner.tsx',
-    instanceId: 'mission-planner',
-    defaults: { grade: 'Grade 4', mode: 'farther_closer', di: false, topic: 'Planning a trip to the Moon, Mars and beyond' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode taps one option by its aria-label (the place, the month, the number of packs, or the route), then presses
-    // Check. A wrong answer shows the mode's first-listed miss the item can. K-1 is an ungraded story that never binds.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = missionItems(ctx.data as never).find(i => i.id === ctx.itemId);
-      if (!item) throw new Error(`No current mission-planner item ${ctx.itemId}`);
-      const answers = missionHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      return [{ type: 'choose', label: missionOptionLabel(item, work.pick!) }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'ph-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/PhExplorer.tsx',
-    instanceId: 'ph-explorer',
-    defaults: { grade: 'Grade 5', mode: 'test', di: false, topic: 'Acids, bases and the pH scale' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer (Mix and check); a test item first dips the
-    // litmus papers. A wrong answer is the most telling miss `phMiss` names. The simpler practice item
-    // (`~fewer`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = phItems(ctx.data as never);
-      const parent = phPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? phFewerChoices(full, ctx.data.substances ?? [], items) : full;
-      if (!item) throw new Error(`No current ph-explorer item ${ctx.itemId}`);
-      const answers = phHarnessAnswers(item);
-      const dip: DriverInput[] = item.mode === 'test' && /^Not dipped/.test(String(ctx.demand?.papers ?? 'Not dipped'))
-        ? [{ type: 'choose', label: 'Dip the litmus papers' }] : [];
-      return [...dip, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'energy-of-reactions': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/EnergyOfReactions.tsx',
-    instanceId: 'energy-of-reactions',
-    defaults: { grade: 'Grade 6', mode: 'classify', di: false, topic: 'Exothermic and endothermic reactions' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer; a classify item first runs the reaction. A wrong
-    // answer is the most telling miss `energyMiss` names. The simpler practice item (`~practice`) is rebuilt from its
-    // parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = energyItems(ctx.data as never);
-      const parent = energyPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? energySimplerItem(full) : full;
-      if (!item) throw new Error(`No current energy-of-reactions item ${ctx.itemId}`);
-      const answers = energyHarnessAnswers(item);
-      const run: DriverInput[] = item.mode === 'classify' && /Not run yet/.test(String(ctx.demand?.thermometer ?? 'Not run yet'))
-        ? [{ type: 'choose', label: 'Run the reaction' }] : [];
-      return [...run, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'equation-balancer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/EquationBalancer.tsx',
-    instanceId: 'equation-balancer',
-    defaults: { grade: 'Grade 7', mode: 'simple', di: false, topic: 'Balancing chemical equations' },
-    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // simple: one tapped number (its aria-label) and Check Answer. Balance: Start over when a number has moved, the
-    // "Add one <formula>" presses that take every number from 1 to the key, then Check Balance; a wrong set raises only
-    // the formula with the largest key.
-    // The smaller practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = balancerItems(ctx.data as never);
-      const parent = balancerPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? balancerSimplerItem(full, items) : full;
-      if (!item) throw new Error(`No current equation-balancer item ${ctx.itemId}`);
-      const answers = balancerHarnessAnswers(item);
-      const presses = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      // Try again keeps the learner's numbers: a balance answer starts over from all ones when any number moved.
-      const moved = item.mode !== 'simple' && !/^Every number is still 1/.test(String(ctx.demand?.learnerWork ?? 'Every number is still 1'));
-      return [...(moved ? [{ type: 'choose', label: 'Start over' } as DriverInput] : []),
-        ...presses.map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'gas-laws-simulator': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/GasLawsSimulator.tsx',
-    instanceId: 'gas-laws-simulator',
-    defaults: { grade: 'Grade 10', mode: 'observe', di: false, topic: 'Gas laws: pressure, volume and temperature' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer. A wrong answer is the mode's first-listed miss
-    // `gasMiss` can name on the item. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = gasItems(ctx.data as never);
-      const parent = gasPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? gasSimplerItem(full) : full;
-      if (!item) throw new Error(`No current gas-laws-simulator item ${ctx.itemId}`);
-      const answers = gasHarnessAnswers(item);
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'sound-wave-explorer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/physics/SoundWaveExplorer.tsx',
-    instanceId: 'sound-wave-explorer',
-    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'Sound: vibrations, loudness and pitch' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every item is one tapped choice (its aria-label) and Check Answer. A wrong answer is the mode's first-listed miss
-    // `soundMiss` can name on the item. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = soundItems(ctx.data as never);
-      const parent = soundPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? soundSimplerItem(full) : full;
-      if (!item) throw new Error(`No current sound-wave-explorer item ${ctx.itemId}`);
-      const answers = soundHarnessAnswers(item);
-      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'gravity-drop-tower': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/physics/GravityDropTower.tsx',
-    instanceId: 'gravity-drop-tower',
-    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'Gravity: do heavy things fall faster?' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // observe presses Drop first (the choices open after it); compare taps the three objects (their aria-labels) in
-    // order; every other item taps one choice. Then Check Answer. A wrong answer is the mode's first-listed miss the item
-    // can show. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = dropItems(ctx.data as never);
-      const parent = dropPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? dropSimplerItem(full) : full;
-      if (!item) throw new Error(`No current gravity-drop-tower item ${ctx.itemId}`);
-      const answers = dropHarnessAnswers(item);
-      const watched = !/^The learner has not dropped/.test(String(ctx.demand?.watched ?? 'The learner has not dropped'));
-      const drop: DriverInput[] = item.mode === 'observe' && !watched ? [{ type: 'choose', label: 'Drop' }] : [];
-      return [...drop, ...(intent === 'wrong' ? answers.plainWrong : answers.correct).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'stoichiometry-lab': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/chemistry/StoichiometryLab.tsx',
-    instanceId: 'stoichiometry-lab',
-    defaults: { grade: 'Grade 10', mode: 'limiting', di: false, topic: 'Stoichiometry: limiting reactants and yield' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // convert taps factor cards (their aria-labels) into the chain and presses Check chain; limiting taps one choice and
-    // Check Answer; yield types the grams and Check Answer. A wrong answer is the most telling miss of the item. The
-    // simpler practice item (`~easier`) is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const items = stoichItems(ctx.data as never);
-      const parent = stoichPracticeParent(ctx.itemId ?? '');
-      const full = items.find(i => i.id === (parent ?? ctx.itemId));
-      const item = parent && full ? stoichEasierItem(full, items) : full;
-      if (!item) throw new Error(`No current stoichiometry-lab item ${ctx.itemId}`);
-      const answers = stoichHarnessAnswers(item), said = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      if (item.mode === 'yield') return [{ type: 'write', label: `Grams of ${item.product}`, text: said[0] }, { type: 'check' }];
-      return [...said.map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
-    },
-    // The key as a reply would say it: the chain's result, the reactant that runs out, the grams that form. Not the
-    // digits of a formula ("H2"), which every reply about the reaction reads.
-    replayKeys: ctx => {
-      const item = stoichItems(ctx.data as never).find(i => i.id === ctx.itemId);
-      if (!item) return [];
-      if (item.mode === 'convert') return [`${stoichFmt(convertValue(item))} ${item.target.unit}`];
-      if (item.mode === 'yield') return [stoichFmt(stoichYieldOf(item))];
-      const key = limitingOf(item.rx, item.a, item.b), name = item.rx.subs.find(s => s.formula === key)?.name;
-      return key === STOICH_BOTH ? ['both run out together', 'run out at the same time']
-        : [`${key} runs out first`, `${name} runs out first`, `${key} is the limiting`, `${name} is the limiting`];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'constellation-builder': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/astronomy/ConstellationBuilder.tsx',
-    instanceId: 'constellation',
-    defaults: { grade: 'Grade 2', mode: 'free_connect', di: false, topic: 'Star patterns in the night sky' },
-    leakTokens: ['CONSTELLATION_ORIENT', 'CONSTELLATION_CHALLENGE_CHANGED', 'CONSTELLATION_COMPLETE', 'CONSTELLATION_WRONG_STAR',
-      'CONSTELLATION_READ_ALOUD'],
-    prompts: WORKSPACE_PROMPTS,
-    // Trace modes tap the real stars (`star-<id>`): every star in order, or both ends of every line; a wrong answer is
-    // the first tap on a later star (guided) or two pattern stars the pattern does not join (free). Identify taps one
-    // name; seasonal taps one name and Check Answer; a wrong one is another name on screen.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // An easier item (`~easier`) is rebuilt from its parent with the same builder.
-      const all = ctx.data.challenges ?? [], parent = constellationPracticeParent(ctx.itemId, all);
-      const c: any = parent ? constellationPracticeItem(parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current constellation-builder challenge');
-      const wrong = intent === 'wrong';
-      if (c.type === 'guided_trace' || c.type === 'free_connect') {
-        const taps = constellationTraceTaps(c);
-        return (wrong ? taps.plainWrong : taps.correct).map((id): DriverInput => ({ type: 'touch', target: `star-${id}` }));
-      }
-      const answers = constellationNameAnswers(c, all);
-      const choose: DriverInput = { type: 'choose', label: wrong ? answers.plainWrong : answers.correct };
-      return c.type === 'seasonal' ? [choose, { type: 'check' }] : [choose];
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'light-shadow-lab': bossJourney(lightShadowLabBoss),
+  'mixing-and-dissolving': bossJourney(mixingAndDissolvingBoss),
+  'reaction-lab': bossJourney(reactionLabBoss),
+  'planetary-explorer': bossJourney(planetaryExplorerBoss),
+  'telescope-simulator': bossJourney(telescopeSimulatorBoss),
+  'orbit-mechanics-lab': bossJourney(orbitMechanicsLabBoss),
+  'rocket-builder': bossJourney(rocketBuilderBoss),
+  'mission-planner': bossJourney(missionPlannerBoss),
+  'ph-explorer': bossJourney(phExplorerBoss),
+  'energy-of-reactions': bossJourney(energyOfReactionsBoss),
+  'equation-balancer': bossJourney(equationBalancerBoss),
+  'gas-laws-simulator': bossJourney(gasLawsSimulatorBoss),
+  'sound-wave-explorer': bossJourney(soundWaveExplorerBoss),
+  'vehicle-comparison-lab': bossJourney(vehicleComparisonLabBoss),
+  'gravity-drop-tower': bossJourney(gravityDropTowerBoss),
+  'stoichiometry-lab': bossJourney(stoichiometryLabBoss),
+  'constellation-builder': bossJourney(constellationBuilderBoss),
   'genre-explorer': bossJourney(genreExplorerBoss),
   'text-structure-analyzer': bossJourney(textStructureAnalyzerBoss),
   'sentence-analyzer': bossJourney(sentenceAnalyzerBoss),
@@ -4047,58 +2607,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
   'oral-sentence-studio': bossJourney(oralSentenceStudioBoss),
-  'cause-effect-chain': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/history/CauseEffectChain.tsx',
-    instanceId: 'cause-effect-chain',
-    defaults: { grade: 'Grade 3', mode: 'build_chain', di: false, topic: 'How the railroad changed a river town' },
-    leakTokens: ['CEC_ITEM', 'CEC_MOVE', 'CEC_COMPLETE', 'CEC_HEAR', 'CEC_CHAIN', 'CEC_CONTEXT'],
-    prompts: WORKSPACE_PROMPTS,
-    // identify_cause and root_vs_proximate are spoken; build_chain taps every card into the chain, in causal
-    // order or reversed, and the board commits once it sits still. A practice item (`~simpler`) is rebuilt from its
-    // parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const d = ctx.data as { gradeLevel?: string; supportTier?: 'easy' | 'medium' | 'hard' };
-      const all = causeEffectItems(d as never);
-      const parent = ctx.itemId ? causeEffectPracticeParent(ctx.itemId, all) : null;
-      const item = parent ? causeEffectPracticeItem(parent, { items: all, gradeLevel: d.gradeLevel, tier: d.supportTier })
-        : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current cause-effect-chain item');
-      const answers = causeEffectJourneyAnswers(item);
-      if (answers.order) {
-        const text = (id: string) => item.cards.find(c => c.id === id)?.text ?? id;
-        return (intent === 'wrong' ? answers.order.wrong : answers.order.correct)
-          .map(id => ({ type: 'choose' as const, label: `Place "${text(id)}"` }));
-      }
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'cause-effect-chain': bossJourney(causeEffectChainBoss),
   'era-explorer': bossJourney(eraExplorerBoss),
-  'periodic-table': {
-    execution: 'workspace',
-    component: 'primitives/PeriodicTable.tsx',
-    instanceId: 'periodic-table',
-    defaults: { grade: 'Grade 8', mode: 'explore', di: false, topic: 'Organization of the periodic table' },
-    leakTokens: ['PT_ITEM', 'PT_MOVE', 'PT_COMPLETE', 'PT_HEAR', 'PT_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // Element Hunt taps a box by element name (a wrong tap is a neighbouring box); the other asks are spoken.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // The easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const all = periodicItems(ctx.data as never);
-      const parent = periodicPracticeParent(ctx.itemId, all);
-      const item = parent ? periodicPracticeItem(parent, all) : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current periodic-table item');
-      const answers = periodicJourneyAnswers(item);
-      if (answers.tap) {
-        return [{ type: 'touch', target: `element-${(intent === 'wrong' ? answers.tap.wrong : answers.tap.correct).toLowerCase()}` }];
-      }
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'periodic-table': bossJourney(periodicTableBoss),
   'knowledge-check': {
     execution: 'workspace',
     component: 'primitives/KnowledgeCheck.tsx',
@@ -4117,93 +2628,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="question"]' } },
   },
-  'hundreds-chart': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/HundredsChart.tsx',
-    instanceId: 'chart',
-    defaults: { grade: 'Grade 1', mode: 'highlight_sequence', di: false, topic: 'Skip counting by 2s, 5s and 10s on the hundreds chart' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through its real controls: each needed cell, or a choice, then Check. Derived from the
-    // mounted challenge, never from Python.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      // The easier practice chart (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = hundredsChartPracticeParent(ctx.itemId, all);
-      const c = parent ? hundredsChartPracticeItem(parent, ctx.data as never) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current hundreds-chart challenge');
-      return hundredsChartHarnessInputs(c, intent === 'wrong', ctx.data.gridMax ?? 100);
-    },
-    probes: { mounted: { selector: '[data-pip-object="chart"]' } },
-  },
-  'skip-counting-runner': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/SkipCountingRunner.tsx',
-    instanceId: 'skip',
-    defaults: { grade: 'Grade 2', mode: 'count_along', di: false, topic: 'Skip counting by 5s on a number line' },
-    leakTokens: ['ACTIVITY_START', 'JUMP_LANDING', 'JUMP_WRONG_TARGET', 'PREDICT_', 'FILL_', 'SKIP_VALUE_', 'MULTIPLY_',
-      'COUNT_COMPLETE', 'PHASE_TRANSITION', 'CHALLENGE_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through its real controls: count_along taps each next tick (`tick-<n>`) then Check; the typed modes
-    // write the number into their box and Check (fill_missing one gap at a time). Try again keeps the landings and the
-    // gaps filled, so the row reads where the character stands (`at`) and what is filled from the scene facts.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      const line = { skipValue: ctx.data.skipValue, startFrom: ctx.data.startFrom ?? 0, endAt: ctx.data.endAt,
-        direction: ctx.data.direction ?? 'forward' };
-      // The easier practice count (a simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = skipPracticeParent(ctx.itemId, all);
-      const practice = parent ? skipPracticeItem(parent, { challenges: all, line: parent.line ?? line, showOptions: ctx.data.showOptions,
-        supportTier: ctx.data.supportTier }) : null;
-      const c = practice?.challenge ?? all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current skip-counting-runner challenge');
-      const at = Number(ctx.demand?.at);
-      const filled = String(ctx.demand?.filled ?? '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n) && String(ctx.demand?.filled ?? '').trim() !== '');
-      return skipHarnessInputs(c, practice?.line ?? c.line ?? line, intent === 'wrong', { at: Number.isFinite(at) ? at : undefined, filled });
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
-  'math-fact-fluency': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/MathFactFluency.tsx',
-    instanceId: 'facts',
-    defaults: { grade: 'Kindergarten', mode: 'visual_fact', di: false, topic: 'Addition facts within 5' },
-    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through its real controls: a number, equation or picture tapped, or the stepper
-    // pressed up to a number and Submit. Derived from the mounted challenge, never from Python.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      // A simplify lever's easier fact is not a generated challenge: rebuild it with the same builder.
-      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
-      const c = parent ? simplerMathFact(parent, ctx.data.maxNumber ?? 5) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current math-fact-fluency challenge');
-      return mathFactHarnessInputs(c, intent === 'wrong', ctx.data.maxNumber ?? 5);
-    },
-    probes: { mounted: { selector: '[data-pip-object="problem"], [data-pip-object="visual"]' } },
-  },
-  'addition-fact-strategies': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/AdditionFactStrategies.tsx',
-    instanceId: 'fact-strategies',
-    defaults: { grade: 'Grade 1', mode: 'doubles', di: false, topic: 'Doubles facts' },
-    leakTokens: ['STRATEGY_INTRO', 'NEXT_ITEM', 'COMEBACK', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every mode through the real pad: the sum, or one away from it. Derived from the mounted fact, never from Python.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = ctx.data.challenges ?? [];
-      // A simplify lever's smaller fact is not a generated challenge: rebuild it with the same builder.
-      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
-      const c = parent ? smallerAdditionFact(ctx.data.strategy, parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current addition-fact-strategies fact');
-      return additionFactHarnessInputs(c, intent === 'wrong');
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'hundreds-chart': bossJourney(hundredsChartBoss),
+  'skip-counting-runner': bossJourney(skipCountingBoss),
+  'math-fact-fluency': bossJourney(mathFactFluencyBoss),
+  'addition-fact-strategies': bossJourney(additionFactStrategiesBoss),
   'equation-builder': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/EquationBuilder.tsx',
@@ -4442,28 +2870,6 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
 };
-
-/** picture-vocabulary pair_build through its real picture buttons (rules in `picturePairBuild.ts`). */
-function picturePairInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
-  const item = picturePairItemsFrom(ctx.data.pairItems ?? [], ctx.data.supportTier).find(i => i.id === ctx.itemId);
-  if (!item) throw new Error('No current picture-vocabulary pair_build board');
-  const pick = (pair: string[]) => [...pair.map(w => ({ type: 'choose' as const, label: `picture ${w}` })),
-    { type: 'choose' as const, label: "I'm done!" }];
-  const clear = Number(ctx.demand?.picturesInTray ?? 0) > 0 ? [{ type: 'choose' as const, label: 'Clear' }] : [];
-  if (wrong) {
-    const want = item.relation === 'opposite' ? 'alike' : 'same_kind';
-    const decoy = item.board.flatMap((a, i) => item.board.slice(i + 1).map(b => [a, b]))
-      .find(p => picturePairMiss(p, [], item.relation) === want);
-    if (!decoy) throw new Error(`pair_build ${item.id}: no ${want} decoy on the board`);
-    return [...clear, ...pick(decoy)];
-  }
-  const made = String(ctx.demand?.madeBefore ?? '').split('; ').filter(m => m && m !== 'none')
-    .map(m => m.split(' and ').sort().join('+'));
-  const left = passingPairs(item.board, item.relation).filter(p => !made.includes(p)).map(p => p.split('+'));
-  const need = Math.max(1, item.ways - made.length);
-  if (left.length < need) throw new Error(`pair_build ${item.id}: ${left.length} right pairs left, ${need} needed`);
-  return [...clear, ...left.slice(0, need).flatMap(pick)];
-}
 
 /**
  * Polygon area builder through its real controls. A typed area goes in the Area box, then Check; wrong is the mode's

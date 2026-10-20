@@ -1,41 +1,22 @@
 'use client';
 
 /**
- * PictureVocabulary — word meaning with pictures. It runs only on the shared
- * tutor/JEV teaching workspace (workspace rollout C2; the scripted runner was
- * retired, LA-14, user ruling 09-23: one path). The observer judges each spoken
- * answer, the activity checks each picture tap, and the runtime owns progression.
- * An unbound mount shows the shared "needs the tutor" card. There is no advance
- * timer, no Next button and no answer chips anywhere in this file.
+ * PictureVocabulary, taught on the shared teaching workspace only (the boss: `pictureVocabulary.card.ts` +
+ * `pictureVocabulary.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
+ * The tutor teaches in its own words and judges each spoken answer against the key, the activity checks each picture
+ * tap, and the runtime owns progression. There is no advance timer, no Next button and no answer chips in this file.
+ * The domain is `pictureVocabularyDomain.ts`, the levers `pictureVocabularyLevers.ts`; nothing here writes a spoken
+ * line. pair_build is the shared pair board (`RhymePairSurface.tsx`), wired from the same boss.
  *
  * WHAT THE CHILD DOES, PER MODE.
- *  - naming / opposite / gradable_scale / sentence_frame / association: the
- *    answer is SPOKEN into an open mic and judged by the tutor from the audio
- *    in-band. The old 4-chip "support net" printed the answer for any Grade-1
- *    reader (word-flip's chips, a third time) and is deleted.
- *  - receptive_match: the answer is a TAP on emoji-only picture cards.
- *    Receptive identification is a real 1-in-4 selection skill — the tap IS
- *    the skill, not a costume over a spoken one — so it stays. The tap commits
- *    through `commitGesture` with the activity's own check.
+ *  - naming / opposite / gradable_scale / sentence_frame / association: the answer is SPOKEN and judged by the tutor.
+ *    No word chips: a printed option list is an answer leak.
+ *  - receptive_match: the answer is a TAP on emoji-only picture cards. Picking the referent out of four IS the
+ *    receptive skill, so the tap stays; it commits through `commitGesture` with the activity's own check.
+ *  - association is an OPEN set: nothing names the generated partner on reveal, only a mark that they go together.
  *
- * ⭐ ASSOCIATION WENT SPOKEN ON 2026-08-19 (item 25). It tapped four emoji
- * cards for exactly one reason: "what goes with sock" is an OPEN production
- * set (shoe, foot, drawer, laundry are all honest) and `open_set_word` was a
- * BLOCKED response class, so the cards closed the set while the relation
- * stayed the skill. The class was BENCHED — the block is gone and the cards
- * were the costume. THE ABSENCE OF FOUR CARDS ON AN ASSOCIATION ITEM IS THE
- * PROOF THIS SHIPPED, exactly as the deleted word bank was for rhyme-studio.
- *
- * DELETED from the click-driven version: the Start with Voice / Start
- * tap-only fork and the whole voiceMode axis, the 4-option word chips and
- * "Show me choices", MAX_WRONG_TAPS and the reveal-after-3 ladder, the
- * 1600ms auto-advance timer, Next/Finish buttons, the word-match voice-answer
- * beat, and every sendText choreography block — the pack's cues carry the
- * entire spoken surface (`pictureVocabularyScript.ts`).
- *
- * ANSWER-LEAK RULE: the target word appears on screen only after the tutor
- * has affirmed (or, spoken by the tutor, inside a scripted correction).
- * Tap-to-hear re-speaks the QUESTION, never the answer.
+ * ANSWER-LEAK RULE: the target word appears on screen only after credit. Tap-to-hear re-speaks the QUESTION, never
+ * the answer.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -54,21 +35,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
-import { itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
-import { describeCardTap, hearQuestionRequest, pictureVocabAssignment, pictureVocabScene } from './pictureVocabularyWorkspace';
-import { CLUE_LEVER, MODEL_LEVER, TWO_CARDS_LEVER, leversOnScreen, modelFor, pictureVocabLevers, pictureVocabMiss,
-  practiceItemFor } from './pictureVocabularyLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { describeCardTap, hearQuestionRequest, itemsFromChallenges, pictureVocabScene, asPictureBoard,
+  type PictureVocabItem } from './pictureVocabularyDomain';
+import { CLUE_LEVER, MODEL_LEVER, PICTURE_VOCAB_LEVERS, modelFor, pictureBoardLevers, pictureVocabMiss }
+  from './pictureVocabularyLevers';
+import { pictureVocabularyBoss } from './pictureVocabulary.boss';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
 import RhymePairSurface from './RhymePairSurface';
 import { PICTURE_PAIR_RULES, type PicturePairItem } from './picturePairBuild';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
@@ -101,10 +82,8 @@ export interface PictureVocabChallenge {
   word: string;
   /** Picture (emoji) of the target word. Never shown pre-solve in sentence_frame mode. */
   emoji: string;
-  /** TAP MODE ONLY (receptive_match): exactly 4 emoji-distinct cards including
-   *  the target once. Every spoken mode carries none — a printed option list is
-   *  an answer leak. Association stopped carrying them when it went spoken
-   *  (item 25); the field stays optional and simply goes unset there. */
+  /** TAP MODE ONLY (receptive_match): exactly 4 emoji-distinct cards including the target once. Every spoken mode
+   *  carries none: a printed option list is an answer leak. */
   options?: PictureVocabOption[];
   // -- receptive_match / naming --
   /** The target's kind of thing (animal, food, toy). */
@@ -139,6 +118,7 @@ export interface PictureVocabularyData {
   /** `pair_build` (open build): the shared pair surface runs the session from `pairItems` (`picturePairBuild.ts`). */
   task?: 'pair_build';
   pairItems?: PicturePairItem[];
+  /** The lesson's support tier: when a model lever comes (default medium). */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -187,30 +167,25 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `picture-vocabulary-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // ── Items ──────────────────────────────────────────────────────────────────
-  // `itemsFromChallenges` is the SAME builder the DI drive-plan endpoint calls,
-  // so the harness and the child drop the same unaskable items. It gates: a tap
-  // mode whose cards do not contain the target, a pair whose two sides are the
-  // same word, a scale whose blanked rung is not the answer, a frame with no
-  // blank or one that speaks its own target. Everything downstream binds to
-  // `items`, never to `challenges` — a dropped challenge is one the child is
-  // never shown, and scoring it would report a 0 against an item that never ran.
+  // The boss's builder: the component, the boss and the journey drop the same unaskable items. Everything downstream
+  // binds to `items`, never to `challenges`: a dropped challenge was never shown, and scoring it would report a 0.
   const items = useMemo<PictureVocabItem[]>(
-    () => itemsFromChallenges(challenges),
-    [challenges],
+    () => itemsFromChallenges(challenges, data.supportTier ?? 'medium'),
+    [challenges, data.supportTier],
   );
+  const leverCtx = useMemo(() => ({ items }), [items]);
 
   // ── Per-item stage state ───────────────────────────────────────────────────
-  /** The tapped card's word (gesture modes) — cleared on retry and item open. */
+  /** The tapped card's word (receptive_match): cleared on retry and item open. */
   const [tapped, setTapped] = useState<string | null>(null);
-  // In-item levers (`pictureVocabularyLevers.ts`), keyed by the session item they were pulled on, and the easier
-  // practice item a simplify lever put on screen in its place (ungraded; its success is local).
+  // In-item levers, keyed by the session item they were pulled on, and the easier practice item a simplify lever put
+  // on screen in its place (ungraded; its success is local).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPracticeState] = useState<PictureVocabItem | null>(null);
   const practiceRef = useRef<PictureVocabItem | null>(null);
@@ -257,7 +232,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
 
   const runner = useWorkspaceRunner<PictureVocabItem>({
     primitiveId: 'picture-vocabulary',
-    assignment: pictureVocabAssignment,
+    assignment: pictureVocabularyBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -266,11 +241,8 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     instanceId: resolvedInstanceId,
     onFinished: finish,
     onItemOpened: () => setTapped(null),
-    onCorrectionRetry: () => {
-      // Try again frees the cards.
-      setTapped(null);
-      pip.clear();
-    },
+    // Try again frees the cards.
+    onCorrectionRetry: () => setTapped(null),
   });
 
   const sessionItem = runner.currentItem;
@@ -284,50 +256,31 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved || practiceSolved;
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own picture tap; Pip
-  // never answers, taps, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = pictureVocabularyPipPose({
-      kind: currentItem.kind,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(),
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Picture vocabulary', dock: pip.dock.current, targets, pose };
-  });
-
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : pictureVocabLevers(sessionItem, pulledLevers, items);
-    const scene = pictureVocabScene(currentItem);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, items);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item with another word and two very different pictures, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : PICTURE_VOCAB_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = pictureVocabScene(currentItem);
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item with another word and two very different pictures, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : PICTURE_VOCAB_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : PICTURE_VOCAB_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === TWO_CARDS_LEVER) {
-          const simpler = practiceItemFor(sessionItem, items);
-          if (!simpler) return 'There is no easier item here.';
+        if (lever.kind === 'simplify') {
+          const simpler = PICTURE_VOCAB_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler || simpler.kind === 'pair_build') return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           setTapped(null);
-          return { practice: pictureVocabAssignment(simpler) };
+          return { practice: pictureVocabularyBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -336,7 +289,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     };
   });
 
-  // ── The tap — gesture modes only; the tap IS the commit, checked by the activity ──
+  // ── The tap — receptive_match only; the tap IS the commit, checked by the activity ──
   const handleOptionTap = useCallback((option: PictureVocabOption) => {
     const item = practiceRef.current ?? runner.currentItem;
     if (!runner.canAttempt || showSummary) return;
@@ -344,24 +297,22 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    pip.look(`card-${option.word}`);
     setTapped(option.word);
     const correct = option.word.toLowerCase() === item.word.toLowerCase();
     if (practiceRef.current && correct) setPracticeSolved(true);
     commitGesture(runner, { response: describeCardTap(option.word), correct, cue: () => describeCardTap(option.word),
       miss: pictureVocabMiss(item, option.word) });
-  }, [runner, showSummary, pip]);
+  }, [runner, showSummary]);
 
   /** Tapping the stimulus asks the tutor for the question again: a silent host request, never the answer. */
   const hearQuestion = useCallback(() => {
     if (!currentItem) return;
     SoundManager.tap();
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearQuestionRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
-  /** Say-it and tap-it runs are both legitimate here, so the copy names what
-   *  this one was — claiming "voice and hands" is wrong on either pure run. */
+  /** Say-it and tap-it runs are both legitimate here, so the copy names what this one was. */
   const celebrationMessage = useMemo(() => {
     const n = items.length;
     switch (judgedAnswerMix(items)) {
@@ -374,10 +325,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     }
   }, [items]);
 
-  // ITEMS, not challenges: a challenge the build gate dropped was never opened,
-  // so it has no outcome — and `phaseResultsFromSummary` scores a missing
-  // outcome 0 rather than dropping the row, which would report a failure
-  // against a word the child was never asked.
+  // ITEMS, not challenges: a challenge the build gate dropped was never opened, so it has no outcome.
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!runner.practiceSummary) return [];
     return phaseResultsFromSummary(items, runner.practiceSummary, (item) => {
@@ -395,7 +343,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     `rounded-2xl ${accentBg} border-2 ${accentBorder} text-center cursor-pointer select-none transition-all `;
 
   const renderTapCards = (item: PictureVocabItem) => (
-    <div ref={pip.ref('cards')} data-pip-object="cards" className="grid grid-cols-2 gap-3">
+    <div data-pip-object="cards" className="grid grid-cols-2 gap-3">
       {(item.options ?? []).map((option, idx) => {
         const isTarget = option.word.toLowerCase() === item.word.toLowerCase();
         const state = revealed && isTarget
@@ -406,7 +354,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
         return (
           <button
             key={`${item.id}-${idx}`}
-            ref={pip.ref(`card-${option.word}`)}
             data-pip-object={`card-${option.word}`}
             onClick={() => handleOptionTap(option)}
             disabled={!runner.canAttempt}
@@ -418,7 +365,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
             `}
           >
             <span className="text-4xl">{option.emoji}</span>
-            {/* The word appears only after the tutor has affirmed. */}
+            {/* The word appears only after credit. */}
             {revealed && isTarget && (
               <span className="text-sm font-bold">{option.word}</span>
             )}
@@ -453,7 +400,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
-                ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
@@ -474,7 +420,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
           <div className="space-y-5">
             <div className="flex justify-center items-center gap-4">
               <div
-                ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
@@ -499,30 +444,14 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
             <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
-      /**
-       * ⭐ ASSOCIATION RENDERS THE STIMULUS AND NOTHING ELSE (item 25).
-       *
-       * `renderTapCards` is gone from this branch and no answer slot replaces
-       * it. That is the whole difference between reading four pictures and
-       * picking one, and thinking of a thing that goes with a sock —
-       * rhyme-studio's production mode, same shape, same argument.
-       *
-       * ⚠️ AND NOTHING NAMES `item.word` ON REVEAL, which is where a careless
-       * port would put the generated partner back. The set is OPEN: a child who
-       * was just affirmed may well have said "foot" or "drawer", and printing
-       * "shoe" at them would teach that their correct answer was the wrong one.
-       * The reveal is therefore a MARK, not a word — the stimulus card confirms
-       * the pairing happened and stays silent about which pairing it was. The
-       * generated partner reaches the child in exactly one place: the move-on
-       * cue, spoken, after two failed attempts, phrased as "one thing that goes
-       * with sock is…".
-       */
+      // Association renders the stimulus and nothing else, and nothing names `item.word` on reveal: the set is open,
+      // the child may have said "foot" or "drawer", and printing "shoe" would teach that their answer was wrong. The
+      // reveal is a mark, not a word.
       case 'association':
         return (
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
-                ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
@@ -549,7 +478,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
           <div className="space-y-5">
             <div className="flex justify-center">
               <div
-                ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
@@ -589,7 +517,6 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
             {/* No emoji pre-solve — the picture IS the answer. */}
             <div className="flex justify-center">
               <div
-                ref={pip.ref('stimulus')}
                 data-pip-object="stimulus"
                 role="button"
                 tabIndex={0}
@@ -618,9 +545,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   // Main render
   // ============================================================================
 
-  // ITEMS: a payload can arrive with challenges that the build gate all rejects
-  // (no cards containing the target, frames with no blank). Gating on
-  // `challenges` there would mount a runner with nothing to run.
+  // ITEMS: a payload can arrive with challenges that the build gate all rejects.
   if (items.length === 0 || !currentItem) {
     return (
       <LuminaCard className={className}>
@@ -650,9 +575,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
         {!showSummary && (
           <>
             <div className="flex justify-center">
-              {/* The runner's index counts ITEMS, so the denominator must too —
-                  against `challenges.length` the dots would show "4 of 5" on
-                  the last word of a session one item was gated out of. */}
+              {/* The runner's index counts ITEMS, so the denominator must too. */}
               <LuminaChallengeCounter
                 current={Math.min(runner.currentIndex + 1, items.length)}
                 total={items.length}
@@ -660,43 +583,40 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
               />
             </div>
 
-            {/* Pip's dock sits above the stage: the stimulus tops every spoken
-                mode, and receptive match is outlined as a group, never pointed
-                through. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            {/* Pip's dock sits above the stage; Pip watches the stage as a whole, never one card. */}
+            <PipDock />
 
-            {renderChallenge(currentItem)}
-            {/* Help: a clue card the tutor says aloud. What the thing does or where it is found; never the word. */}
-            {clueShown && (
-              <div data-lever="clue-card" className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3 text-center text-sm text-slate-100">
-                <span aria-hidden>💡</span>{currentItem.clue}
-              </div>
-            )}
-            {/* Help on the relation modes: a worked model on words the session never uses. */}
-            {vocabModel && (
-              <div data-lever="vocab-model" aria-label="Model"
-                className="mx-auto flex max-w-md flex-col items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3">
-                <div className="flex items-end justify-center gap-3">
-                  {vocabModel.cards.map((card, i) => (
-                    <React.Fragment key={card.word}>
-                      {i > 0 && vocabModel.kind === 'opposite' && <span aria-hidden className="text-2xl text-cyan-300">↔</span>}
-                      {i > 0 && vocabModel.kind === 'association' && <span aria-hidden className="text-2xl text-cyan-300">+</span>}
-                      <div data-model-card={card.word} className="flex flex-col items-center gap-1">
-                        <span className="text-4xl" role="img" aria-label={card.word}>{card.emoji}</span>
-                        {vocabModel.kind === 'gradable_scale' && (
-                          <span aria-hidden className="w-8 rounded-t bg-cyan-400/40" style={{ height: `${(i + 1) * 12}px` }} />
-                        )}
-                        <span className="text-sm text-slate-200">{card.word}</span>
-                      </div>
-                    </React.Fragment>
-                  ))}
+            <PipWorkspace className="space-y-4">
+              {renderChallenge(currentItem)}
+              {/* Help: a clue card the tutor says aloud. What the thing does or where it is found; never the word. */}
+              {clueShown && (
+                <div data-lever="clue-card" className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3 text-center text-sm text-slate-100">
+                  <span aria-hidden>💡</span>{currentItem.clue}
                 </div>
-                {vocabModel.sentence && <p className="text-center text-sm text-slate-100">{vocabModel.sentence}</p>}
-              </div>
-            )}
+              )}
+              {/* Help on the relation modes: a worked model on words the session never uses. */}
+              {vocabModel && (
+                <div data-lever="vocab-model" aria-label="Model"
+                  className="mx-auto flex max-w-md flex-col items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3">
+                  <div className="flex items-end justify-center gap-3">
+                    {vocabModel.cards.map((card, i) => (
+                      <React.Fragment key={card.word}>
+                        {i > 0 && vocabModel.kind === 'opposite' && <span aria-hidden className="text-2xl text-cyan-300">↔</span>}
+                        {i > 0 && vocabModel.kind === 'association' && <span aria-hidden className="text-2xl text-cyan-300">+</span>}
+                        <div data-model-card={card.word} className="flex flex-col items-center gap-1">
+                          <span className="text-4xl" role="img" aria-label={card.word}>{card.emoji}</span>
+                          {vocabModel.kind === 'gradable_scale' && (
+                            <span aria-hidden className="w-8 rounded-t bg-cyan-400/40" style={{ height: `${(i + 1) * 12}px` }} />
+                          )}
+                          <span className="text-sm text-slate-200">{card.word}</span>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  {vocabModel.sentence && <p className="text-center text-sm text-slate-100">{vocabModel.sentence}</p>}
+                </div>
+              )}
+            </PipWorkspace>
           </>
         )}
 
@@ -715,15 +635,19 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   );
 }
 
-/** One mount, one shape: the open build (`pair_build`) runs on the shared pair surface with the picture-pair rules. */
+/** The open build (`pair_build`) on the shared pair board, wired from this boss. */
+function PicturePairBuild({ data, className, runtimePlanItemId }: PictureVocabularyProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    return { assignment: (item: PicturePairItem) => pictureVocabularyBoss.assignment(asPictureBoard(item, tier)), levers: pictureBoardLevers(tier) };
+  }, [data.supportTier]);
+  return <RhymePairSurface<PicturePairItem> className={className} runtimePlanItemId={runtimePlanItemId}
+    rules={PICTURE_PAIR_RULES} data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} boss={boss} />;
+}
+
+/** One mount, one shape: the open build (`pair_build`) has its own surface. */
 function PictureVocabularyHost(props: PictureVocabularyProps) {
-  const { data } = props;
-  if (data.task === 'pair_build') {
-    return <RhymePairSurface<PicturePairItem> className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      rules={PICTURE_PAIR_RULES}
-      data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} />;
-  }
-  return <PictureVocabularySurface {...props} />;
+  return props.data.task === 'pair_build' ? <PicturePairBuild {...props} /> : <PictureVocabularySurface {...props} />;
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.

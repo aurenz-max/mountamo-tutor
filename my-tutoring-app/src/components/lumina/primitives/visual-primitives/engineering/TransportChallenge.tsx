@@ -10,19 +10,17 @@
  *
  * Every item is built and keyed by code (`transportWorkspace.ts`). No card shows trips or totals before a pick is
  * checked; a checked pick runs that one vehicle (its trips play out, its totals fill bars against the limits), and the
- * table of every vehicle appears only once the item is credited. Two paths, chosen by `withWorkspaceController`: the
- * scripted path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain shape)
- * commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and
- * lets the runtime move on. The levers live in `transportLevers.ts`.
+ * table of every vehicle appears only once the item is credited. Taught only on the shared tutor/JEV workspace
+ * (`withWorkspaceOnly`; its wiring is `transportChallenge.card.ts` + `transportChallenge.boss.ts`): every check commits
+ * through `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor against the key, and the
+ * runtime moves on. The levers are one lever set in `transportLevers.ts`.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TransportChallengeMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -39,18 +37,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   amountText, askOf, carriesText, describeTransportWork, emptyWork, keyVehicle, limitLabel, loadText, perTripText,
-  runText, totalFor, transportCorrect, transportItems, transportMiss, tripsFor, workspaceAssignment, workspaceScene,
+  runText, totalFor, transportCorrect, transportItems, transportMiss, tripsFor, workspaceScene,
   type LimitType, type TransportFrame, type TransportItem, type TransportMode, type TransportTier, type TransportVehicle,
   type TransportWork,
 } from './transportWorkspace';
 import {
-  leverFact, simplerItem, SHOW_TRIPS_LEVER, TIMES_SETUP_LEVER, timesLines, transportLevers, tripLine,
+  NO_CONTEXT, SHOW_TRIPS_LEVER, TIMES_SETUP_LEVER, timesLines, TRANSPORT_LEVERS, tripLine,
 } from './transportLevers';
+import { transportChallengeBoss } from './transportChallenge.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -187,8 +186,9 @@ const CompareTable = ({ item }: { item: TransportItem }) => (
 // Component
 // ============================================================================
 
-const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TransportChallengeProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TransportItem>) => Progress }) => {
+const useTransportProgress = useWorkspaceProgressFor('transport-challenge');
+
+const TransportChallengeSurface = ({ data, className, runtimePlanItemId }: TransportChallengeProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -198,23 +198,25 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
   const stableInstanceId = useRef(instanceId || `transport-challenge-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice job. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
-  const progress = useController({
+  const progress = useTransportProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: transportChallengeBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked pick stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: TransportItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<TransportItem | null>(null);
@@ -223,10 +225,8 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
   const [work, setWork] = useState<TransportWork>(emptyWork);
   /** The vehicle whose run is on screen: the learner's checked pick (or, once answered, the key). */
   const [ran, setRan] = useState<string | null>(null);
-  /** Workspace path: the checked wrong pick, shown until Try again. */
+  /** The checked wrong pick, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
@@ -235,7 +235,7 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<TransportChallengeMetrics>({
     primitiveType: 'transport-challenge',
@@ -244,43 +244,33 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    mode: item?.mode ?? 'single_constraint', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'transport-challenge', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: 'Grade 3-5', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+  const clearItem = () => { setWork(emptyWork()); setRan(null); setWrongShown(false); setPracticeSolved(false); };
 
-  const clearItem = () => {
-    setWork(emptyWork()); setRan(null); setWrongShown(false);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  openItem.current = (_index, retry) => {
+    if (retry) { clearItem(); return; }
+    setPractice(null); clearItem();
   };
 
-  openItem.current = (index, retry) => {
-    if (retry) { setWork(emptyWork()); setRan(null); setWrongShown(false); setPracticeSolved(false); return; }
-    setPractice(null); clearItem();
-    void index;
+  /** A spoken credit shows as a checked pick would: the right card and its run. */
+  const showKey = (solved: TransportItem) => {
+    const key = keyVehicle(solved);
+    if (key) { setWork({ picked: key.id }); setRan(key.id); }
+    setWrongShown(false);
   };
 
   solvedAloud.current = (index) => {
     const solved = items[index];
     if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
-    const key = keyVehicle(solved);
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
-    if (key) { setWork({ picked: key.id }); setRan(key.id); }
-    setWrongShown(false);
+    showKey(solved);
   };
 
-  // A spoken credit on the smaller job shows it as a checked pick would: the right card and its run.
+  // A spoken answer credited on the practice job: shown there as on a session item, recorded nowhere. A tap shows its
+  // own credit in the check.
   practiceAloud.current = (source) => {
     if (source !== 'speech' || !practice) return;
-    const key = keyVehicle(practice);
-    if (key) { setWork({ picked: key.id }); setRan(key.id); }
-    setWrongShown(false); setPracticeSolved(true);
+    setPracticeSolved(true);
+    showKey(practice);
   };
 
   // ── Handlers ──
@@ -299,23 +289,10 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner picked the right vehicle for: ${askOf(item)} Its run is on screen. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      const key = keyVehicle(item);
-      setScriptedReveal(true);
-      if (key) { setWork({ picked: key.id }); setRan(key.id); }
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two picks missed on: ${askOf(item)} Every vehicle's totals are now on screen; explain them.`);
-      return;
-    }
-    say(`[ANSWER_INCORRECT] ${describeTransportWork(item, work)} for: ${askOf(item)} Its run is on screen and it does not answer. `
-      + 'You are not told the answer: ask how many trips a vehicle needs and what its totals come to, without naming a vehicle.');
+    setWrongShown(true);
   };
 
   const metrics = (): TransportChallengeMetrics => {
@@ -330,16 +307,6 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Job ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} jobs. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -349,16 +316,18 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { work, ran, solved: revealed });
-    const levers = practice ? [] : transportLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    // No lever on the practice job: the full job's levers come back with it.
+    const levers = practice || !sessionItem ? [] : TRANSPORT_LEVERS.declare(sessionItem, NO_CONTEXT, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A smaller job of the same kind, before the full job comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A smaller job of the same kind, before the full job comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : TRANSPORT_LEVERS.onScreen(sessionItem, NO_CONTEXT, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -366,10 +335,10 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = TRANSPORT_LEVERS.simpler(sessionItem, NO_CONTEXT, id);
           if (!simpler) return 'There is no smaller job here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: transportChallengeBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -378,14 +347,7 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The job, the vehicles and your pick',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -423,20 +385,14 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-start gap-2">
-              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>
-                <span className="block font-semibold">{item.title}</span>
-                {askOf(item)}
-              </LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Work out each vehicle's trips and totals, then pick one."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the job to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>
+              <span className="block font-semibold">{item.title}</span>
+              {askOf(item)}
+            </LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the job and cards as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               <LuminaPanel className="space-y-2">
                 <p className="text-sm text-slate-300">
                   Move <span className="font-bold text-blue-300">{loadText(item.load)}</span> from{' '}
@@ -471,7 +427,7 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
 
               {ranVehicle && <RunPanel item={item} v={ranVehicle} />}
               {revealed && <CompareTable item={item} />}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -480,20 +436,10 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
             )}
 
             {revealed && key && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {`${runText(item, key).replace(/^the /, 'The ')}.`}
-              </LuminaFeedbackCard>
+              <LuminaFeedbackCard status="correct">{`${runText(item, key).replace(/^the /, 'The ')}.`}</LuminaFeedbackCard>
             )}
             {!revealed && ranVehicle && (
-              <LuminaFeedbackCard status="incorrect">
-                {`Your pick's run: ${runText(item, ranVehicle)}. That does not answer the job${tutorOwned ? '.' : '; pick again.'}`}
-              </LuminaFeedbackCard>
-            )}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next job →' : 'Finish'}</LuminaActionButton>
-              </div>
+              <LuminaFeedbackCard status="incorrect">{`Your pick's run: ${runText(item, ranVehicle)}. That does not answer the job.`}</LuminaFeedbackCard>
             )}
           </>
         )}
@@ -502,8 +448,6 @@ const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOw
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TransportChallenge = withWorkspaceController<TransportChallengeProps, ProgressOptions<TransportItem>, Progress>(
-  'transport-challenge', TransportChallengeSurface, useScriptedProgress, useWorkspaceProgressFor('transport-challenge'));
+const TransportChallenge = withWorkspaceOnly<TransportChallengeProps>('transport-challenge', TransportChallengeSurface, props => props.data.title);
 
 export default TransportChallenge;

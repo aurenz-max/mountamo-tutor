@@ -1,7 +1,7 @@
 # Contract: cvc-speller
 
 - **Derived:** 2026-09-27 · evidence window: eval-reports 2026-03-15→2026-06-25 + misconception-test 2026-07-12 + reader-fit PRE 2026-07-14 + K census trace 2026-07-14 + workspace rollout B2 live 2026-09-24 + authored map (live backend, 2026-09-27) + git to 2026-03
-- **Component:** `primitives/visual-primitives/literacy/CvcSpeller.tsx` (+ `cvcSpellerWorkspace.ts`, `cvcSpellerScript.ts` helpers) · **Generator:** `service/literacy/gemini-cvc-speller.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:3130` · **Live adapter:** `components/live-activity/adapters/cvcSpellerLive.ts`
+- **Component:** `primitives/visual-primitives/literacy/CvcSpeller.tsx` (+ `cvcSpellerDomain.ts`, `cvcSpellerLevers.ts`) · **Boss:** `cvcSpeller.card.ts` + `cvcSpeller.boss.ts` (spokenBoss) · **Generator:** `service/literacy/gemini-cvc-speller.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`...bossEntry(cvcSpellerCard)`) · **Live adapter:** `bossAdapter(cvcSpellerBoss)`
 - **Status:** ACTIVE (no open conflicts; 2 catalog divergences flagged below)
 
 Derived as step 1 of handoff 22 (`qa/live-runtime-handoffs/22-literacy-levers.md`), before
@@ -20,7 +20,7 @@ census; channel [1] = the saved 2026-07-14 K census trace.
 | Misconception loop (vowel substitution, final omission) | misconception [2] | `qa/misconception/cvc-speller-letter-sound-link-2026-07-12.md` | 2026-07-12 |
 | Shared teaching workspace (tutor/JEV, W1 binding B2) + live journey harness | live [2] + code | `qa/tutor-reports/workspace-rollout-B2-2026-09-24.md:19,45-49`; `liveJourneySpec.ts:965-984` | 2026-09-24 |
 | Named misses for the trigger ladder (A5) | code [5] | `1a0cd42a`; catalog `teachingWorkspace.misses` (`literacy.ts:3337`) | 2026-09 |
-| Pip shared surface | code [5] | `e7beca56`; `pip/cvcSpellerPipPose.ts` | 2026-09-15 |
+| Pip shared surface | code [5] | `e7beca56`; since 2026-10-20 the runner publishes Pip (`<PipDock />`, `<PipWorkspace>`), `pip/WorkspacePip.surface.test.tsx` | 2026-10-20 |
 
 Real-usage channel [4]: unknown (auth), not zero.
 
@@ -33,7 +33,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `GET /api/lumina/eval-test?componentId=cvc-speller&evalMode=spell_word&grade=K&topic=short a words` → every letter ∈ group letters, all short-a, no shared rime; generic topic → vowels spread across the group.
 
 ### R2 — Mode identity and answer modality · OBSERVED
-- **Property:** `fill_vowel` and `word_sort` are answered ALOUD (the middle sound, judged as a sound, never a letter name); there are no vowel buttons and no sort buckets. `spell_word` is a build: a letter into each of three Elkonin boxes from a bank, and the third letter landing is the commit, checked in code (`spellingMatches`), never by the tutor. No Check / Next / Finish / Skip / Clear / Stretch button in any mode.
+- **Property:** `fill_vowel` and `word_sort` are answered ALOUD (the middle sound, judged as a sound, never a letter name); there are no vowel buttons and no sort buckets. `spell_word` is a build: a letter into each of three Elkonin boxes from a bank, and the third letter landing is the commit, checked in code (`spellingMatches`), never by the tutor. On the boss card: fill_vowel/word_sort `SPOKEN`, spell_word and make_word `build` judged by the activity (keyless, played through `speech.show`). No Check / Next / Finish / Skip / Clear / Stretch button in any mode.
 - **Demanded by:** DI port (qa/di/BACKLOG item 16), K PRE band, workspace B2.
 - **Evidence:** `CvcSpeller.reader-fit.test.tsx` §1 gate A; `CvcSpeller.workspace.test.tsx:38`; catalog `literacy.ts:3158-3173` comment.
 - **Probe:** `npm test -- CvcSpeller` → gate A passes in all three modes; the third tapped letter commits with no other control.
@@ -41,11 +41,11 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R3 — Nothing names the answer before credit · OBSERVED
 - **Property:** `fill_vowel`: the middle box shows `?` until credited, and the keyword line ("like apple") appears only after credit. `word_sort`: columns are built only from credited answers, labelled when their first word is credited. `spell_word`: the boxes start empty, the bank never marks which letters are the answer (vowels and consonants are coloured by category only, every letter alike), the assignment publishes no `expectedAnswer`, and the scene facts carry only the learner's own boxes. The vowel keyword is correction/credit-only on the spoken modes because there it IS the answer. No dev slug or IPA reaches the child's field.
 - **Demanded by:** every consumer (Pedagogy rule #1); K PRE band (RF-4).
-- **Evidence:** `CvcSpeller.reader-fit.test.tsx` §1 gate B (asserts no `apple`/`egg` text on fill-vowel at G1); `cvcSpellerWorkspace.ts:24-31,63-73`; `cvcSpellerScript.ts:118-125`.
+- **Evidence:** `CvcSpeller.reader-fit.test.tsx` §1 gate B (asserts no `apple`/`egg` text on fill-vowel at G1); `cvcSpellerDomain.ts` (`cvcKey` is null on a spelling; `cvcScene`); the boss's `askLeaks` gate over the saved payloads (`boss.test.ts`).
 - **Probe:** `npm test -- CvcSpeller.reader-fit` gate B; mount each mode at grade 1 and assert no vowel keyword and no filled box before a credit.
 
 ### R4 — Hear It says the whole word and stops · OBSERVED
-- **Property:** one audio affordance in every mode; each tap sends a silent host message asking the tutor to say the current word once, whole (`hearWordRequest`). It never stretches, isolates or spells a sound, and it is never withdrawn by band or tier.
+- **Property:** one audio affordance in every mode; each tap sends a silent host message asking the tutor to say the current word once, whole (`hearWordRequest` through `runner.requestHear`). It never stretches, isolates or spells a sound, and it is never withdrawn by band or tier.
 - **Demanded by:** K PRE band (STIMULUS recovery for pre-readers); workspace guidance.
 - **Evidence:** `CvcSpeller.reader-fit.test.tsx:177-196`; `CvcSpeller.workspace.test.tsx:68`.
 - **Probe:** `npm test -- CvcSpeller` → three taps send three `"<word>"` whole-word requests, no stretch tags.
@@ -66,10 +66,10 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Property:** a wrong build commits with a named miss (`cvcMiss`: `first_letter`, `middle_letter`, `last_letter`, `letters_out_of_order`, `two_or_more_letters`), matching the catalog `teachingWorkspace.misses`. Try again keeps the letters that were right and clears only the wrong ones; tapping a filled box empties it. Pip never places a letter or commits.
 - **Demanded by:** workspace B2; trigger ladder / named misses (A5); Pip surface.
 - **Evidence:** `CvcSpeller.workspace.test.tsx:38`; `cvcSpellerWorkspace.test.ts`; live `qa/tutor-reports/cvc-speller-w1-spell_word-text-2026-09-24-r4.json` (s-a-t → Try again keeps a,t → c).
-- **Probe:** `npm test -- CvcSpeller.workspace cvcSpellerWorkspace`.
+- **Probe:** `npm test -- CvcSpeller.workspace cvcSpellerLevers` (the `cvcMiss` table moved into `cvcSpellerLevers.test.ts`).
 
 ### R8 — Workspace-only path and evaluation · OBSERVED
-- **Property:** the component runs only when bound to the shared teaching workspace (`withWorkspaceOnly`; unbound → "needs the tutor" card). Bound sessions send `tutoring: null` (adapter `workspaceAdapter`, lesson `lessonPrimitiveContext`), so the catalog `tutoring` block does not reach the tutor; the tutor's instruction is `teachingWorkspace.guidance`. The session's mode comes from the mount pin. One evaluation per session, with `CvcSpellerMetrics` (vowel/consonant accuracy from checked builds only) and diagnosis evidence below 60%.
+- **Property:** the component runs only when bound to the shared teaching workspace (`withWorkspaceOnly`; unbound → "needs the tutor" card). Bound sessions send `tutoring: null` (adapter `bossAdapter`, lesson `lessonPrimitiveContext`); the catalog `tutoring` block is deleted (2026-10-20) and the tutor's instruction is the card's guidance (`ROTATION_DOCTRINE` from `cvcSpeller.card.ts`). The session's mode comes from the mount pin. One evaluation per session, with `CvcSpellerMetrics` (vowel/consonant accuracy from checked builds only) and diagnosis evidence below 60%.
 - **Demanded by:** workspace B2 (LA-14 ruling 09-23: one path); IRT/mastery.
 - **Evidence:** `656131ba`; `adapters/adapterContract.ts:157-158`; `lessonWorkspacePlan.ts:61-66`; B2 report.
 - **Probe:** `npm test -- CvcSpeller.workspace lessonWorkspacePlan`; live `run_live_runtime.py --primitive cvc-speller --mode spell_word --lesson-entry`.
@@ -77,7 +77,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R9 — Tutor never names, sounds out or spells a letter of the item word · OBSERVED
 - **Property:** on every mode the tutor may say the whole word (Hear It, after an attempt as modelling allows) but never the item's middle sound, a letter of it, or its sounds in sequence before credit. On `spell_word` the build is checked by the activity, not judged from the open mic.
 - **Demanded by:** K PRE band; workspace guidance (`literacy.ts:3331-3335`).
-- **Evidence:** B2 live: "cvc-speller never names a letter" (`workspace-rollout-B2-2026-09-24.md:48`); `leakTokens` in `liveJourneySpec.ts:971`.
+- **Evidence:** B2 live: "cvc-speller never names a letter" (`workspace-rollout-B2-2026-09-24.md:48`). Since 2026-10-20 the rule rides as the scene `constraints` of every word item (`cvcScene`), not in prose guidance; the old `DI_CVC_*`/`SAY_WORD` leak tokens are gone with the script that emitted them.
 - **Probe:** live journey transcript: no letter name or isolated sound of the current word before credit.
 
 ### R10 — Pre-reader band presentation · OBSERVED
@@ -93,7 +93,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `npm test -- gemini-cvc-speller`; eval-test with `remediationFocus` → move set, words in group.
 
 ### R12 — In-item levers on spell_word · OBSERVED
-- **Property:** `spell_word` declares four levers (`cvcSpellerLevers.ts`); the spoken modes declare one, `middle_model` (a model word outside the item, middle box lit, its middle sound none the session asks): `vowel_keywords` (every group vowel with its keyword picture, at least two, none marked), `consonant_keywords` (a keyword picture under every bank consonant; no keyword pictures a word or picture of the session), `sound_tokens` (three blank tokens moved only by the learner's taps, never feeding the check), and `small_word` (simplify: an in-group picturable CVC word sharing no session word or rime and at most one box with the item, bank = its 3 letters + 1 far consonant, ungraded, out of metrics). A pull is a synchronous commit that changes the screen and the scene (`levers_on_screen`, `tokens_pushed`); the next attempt records the lever. easy starts with `vowel_keywords` up, which is not a pull.
+- **Property:** `spell_word` declares four levers (`cvcSpellerLevers.ts`); the spoken modes declare one, `middle_model` (a model word outside the item, middle box lit, its middle sound none the session asks): `vowel_keywords` (every group vowel with its keyword picture, at least two, none marked), `consonant_keywords` (a keyword picture under every bank consonant; no keyword pictures a word or picture of the session), `sound_tokens` (three blank tokens moved only by the learner's taps, never feeding the check), and `small_word` (simplify: an in-group picturable CVC word sharing no session word or rime and at most one box with the item, bank = its 3 letters + 1 far consonant, ungraded, out of metrics). Since 2026-10-20 they are one lever set (`CVC_LEVERS`: vowel_keywords and consonant_keywords `legend`, sound_tokens `custom`, small_word `easier`, middle_model `model` with the tier's `support` fact; make_word's pattern_card `clue`, model_word `model`, small_bank `easier` through `LetterBuildSurface`'s `boss` prop). A pull is a synchronous commit that changes the screen and the scene (`onScreen`, `tokens_pushed`); the next attempt records the lever. easy starts with `vowel_keywords` up, which is not a pull.
 - **Demanded by:** handoff 22 L1; trigger ladder (handoff 21 S2).
 - **Evidence:** `qa/eval-reports/cvc-speller-levers-2026-09-28.md`.
 - **Probe:** `npm test -- cvcSpellerLevers CvcSpeller.levers.workspace`.
@@ -112,12 +112,13 @@ None open.
 
 ## Catalog projection
 
-- **description:** stale. It still describes the retired DI loop ("the tutor says a CVC word, waits, judges the answer, and its own affirmation moves the lesson on"). Proposed: keep the three-mode split and "encoding, the direction phonics-blender does not cover"; replace the DI clock sentence with "the tutor teaches in its own words; the boxes check the spelling". Not applied here (catalog edits re-route lessons).
+- **description:** corrected 2026-10-20 (the DI clock sentence and "the tutor judges the build" were false on the workspace): the tutor teaches in its own words, the spoken modes are judged by the tutor, the boxes are checked by the activity; the three-mode split and "encoding, the direction phonics-blender does not cover" kept.
 - **constraints:** faithful for CVC scope. **Divergence:** the only authored consumer, LA006-07-a, also demands CVCe words (cake, kite, bone), which "Only CVC (3-letter) words" cannot serve. A `/pm` routing question, not a contract requirement.
 - **evalModes:** faithful.
-- **tutoring.aiDirectives:** stale. All directives order `[DI_CVC_ITEM]` / `[DI_CVC_BUILD]` / `[DI_CVC_MOVE_ON]` / `[DI_CVC_COMPLETE]` / `[SAY_WORD]` turns from the retired runner; the only emitters left are unused exports in `cvcSpellerScript.ts` (exercised only by `CvcSpeller.di-script.test.ts`). Bound workspace sessions send `tutoring: null`, so they do not receive these directives (R8). Removal is an `/add-live-tutor-tools` cleanup, like rhyme-studio's in handoff 22 L2.
+- **tutoring:** deleted 2026-10-20 with `cvcSpellerScript.ts` and `CvcSpeller.di-script.test.ts` (boss migration).
 
 ## Changelog
+- 2026-10-20 — **boss migration** (`/add-live-tutor-tools`, wave 2 bucket D). Runner-era wiring re-based, no requirement dropped: R2 (card modes), R3 (`cvcKey` null on a spelling; askLeaks), R4 (`runner.requestHear`), R7 (probe), R8 (bossAdapter; tutoring block deleted), R9 (never-say rule now scene `constraints`; dead leak tokens dropped), R12 (one lever set; scene fact `onScreen` replaces `levers_on_screen`). Deleted: `cvcSpellerWorkspace.ts`, `cvcSpellerScript.ts`, `adapters/cvcSpellerLive.ts`, `pip/cvcSpellerPipPose.ts`, the per-primitive Pip surface test and the di-script test. Description corrected (see Catalog projection).
 - 2026-10-13 — **R13 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/cvc-speller/before.txt`): cat bed pig mop/dog bug/sun at every tier in every mode; rug pictured as yarn. After: fill-vowel easy rat/hug/log → hard hen/him/dig; word-sort easy a/i → medium e/u → hard e/i; spell-word hard draws c/k words (cat, cop, kid). R6 narrowed to the model path. `resolveCvcVowelFocus` now reads "Short 'o'" (the quote defeated the match on both paths).
 
 - 2026-10-08: `make_word` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.

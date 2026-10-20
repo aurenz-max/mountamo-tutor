@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * how-it-works on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
+ * how-it-works on its boss (`howItWorks.card.ts` + `.boss.ts`) and its lever set: what is its own. The generic W1
  * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * The learner reads the steps first (the scene says so and is not ready); then code-built questions keyed by the steps'
  * order. A step's name (identify, predict) is said aloud or tapped: the key is published only as the spoken
@@ -21,14 +21,16 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { HowItWorksData } from './HowItWorks';
 import {
-  askOf, blankTitle, buildHowItems, cardText, choiceText, clueOf, HOW_MISSES, HOW_MODES, howCorrect, howHarnessAnswers, howItems,
-  howMiss, isChoice, keyStep, processSteps, seededRng, titleWords, validHowItem, workspaceAssignment,
-  type HowItem, type HowMode, type HowTier, type ProcessStep,
+  asCheck, askOf, blankTitle, buildHowItems, cardText, choiceText, clueOf, HOW_MISSES, HOW_MODES, howChecks, howCorrect,
+  howHarnessAnswers, howItems, howKey, howMiss, isChoice, keyStep, processSteps, seededRng, titleWords, validHowItem,
+  workspaceScene, type HowItem, type HowMode, type HowTier, type ProcessStep,
 } from './howItWorksWorkspace';
 import {
-  crossedOut, EASIER_ITEM_LEVER, FEWER_CARDS_LEVER, howLevers, LAST_STEP_LEVER, leverFacts, leverLeaks, lastStepLine,
+  crossedOut, EASIER_ITEM_LEVER, FEWER_CARDS_LEVER, HOW_LEVERS, LAST_STEP_LEVER, leverLeaks, lastStepLine,
   possibleMisses, SHOW_STEP_LEVER, SHOW_WHY_LEVER, showStepLine, simplerItem, STEP_NUMBERS_LEVER, TWO_CHOICES_LEVER, whyLine,
 } from './howItWorksLevers';
+import { howItWorksBoss } from './howItWorks.boss';
+import { FACT_MAX_CHARS } from '../../../components/live-activity/runtime/sceneFacts';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -42,6 +44,9 @@ const STEPS: HowItWorksData['steps'] = [
 ];
 const BASE = { title: 'How a Bicycle Works', subtitle: '', overview: 'Pedals to pavement.', steps: STEPS, summary: { text: 'x', keyTakeaway: 'y' } };
 const steps = processSteps(BASE);
+/** An item as the boss carries it (the steps with it), and the lever set read on it. */
+const chk = (i: HowItem, s: ProcessStep[] = steps, pictures = false) => asCheck(i, s, pictures);
+const leversOn = (i: HowItem, s: ProcessStep[] = steps, pictures = false, pulled: string[] = []) => HOW_LEVERS.declare(chk(i, s, pictures), null, pulled);
 
 // Hand-built items over the five steps: identify with the step list (guided), an order of four cards and an identify
 // with no list (sequence), what comes after the first two steps and why the chainrings matter (predict).
@@ -89,7 +94,7 @@ it.each(HOW_MODES)('%s opens on the reading, then binds each question with its k
   const item = BY_MODE[mode][0];
   expect(demand(h).phase).toBe('question');
   expect(demand(h).step1).toBeUndefined();
-  expect(h.state().task!.task).toBe(workspaceAssignment(steps, item, false).task);
+  expect(h.state().task!.task).toBe(howItWorksBoss.assignment(chk(item)).task);
   expect(text(h)).not.toMatch(/Your legs press down|Next Question|See Results/);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(JSON.stringify(demand(h))).not.toMatch(/credited|\bcorrect\b/i);
@@ -265,7 +270,7 @@ describe('the pure rules', () => {
     expect(entry.teachingWorkspace!.levers).toBe(true);
     for (const mode of HOW_MODES) expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...HOW_MISSES[mode]].sort());
     for (const { s, mode, items, pictures } of all()) for (const i of items) {
-      const ls = howLevers(s, i, [], pictures);
+      const ls = leversOn(i, s, pictures);
       for (const m of possibleMisses(i)) {
         expect(HOW_MISSES[mode]).toContain(m);
         expect(nextLever(ls, m), `${i.id} ${m}`).toBeTruthy();
@@ -276,8 +281,16 @@ describe('the pure rules', () => {
 
   it('no clue, card, lever line or ask names the item\'s key', () => {
     for (const { s, items, pictures } of all()) for (const i of items) {
-      const pulled = howLevers(s, i, [], pictures).filter(l => l.kind === 'help').map(l => l.id);
-      for (const line of Object.values(leverFacts(s, i, pulled))) expect(leverLeaks(s, i, line), `${i.id}: ${line}`).toBe(false);
+      const pulled = leversOn(i, s, pictures).filter(l => l.kind === 'help').map(l => l.id);
+      const line = HOW_LEVERS.onScreen(chk(i, s, pictures), null, pulled);
+      expect(leverLeaks(s, i, line), `${i.id}: ${line}`).toBe(false);
+      // Every scene fact fits the observer's cap, with every help lever on screen.
+      const scene = workspaceScene(chk(i, s, pictures), { reading: false, work: { choice: null, placed: [] }, solved: false,
+        crossed: isChoice(i) ? crossedOut(i) : [], why: pulled.includes(SHOW_WHY_LEVER) }, { title: 'How a Bicycle Works' });
+      for (const [k, v] of Object.entries({ ...scene.facts, onScreen: line })) expect(String(v).length, `${i.id} ${k}`).toBeLessThanOrEqual(FACT_MAX_CHARS);
+      // A step's name is said or tapped (a key, unless the ask would say it); an order or a purpose is only tapped.
+      if (i.kind === 'sequence' || i.kind === 'explain') expect(howKey(chk(i, s, pictures))).toBeNull();
+      else if (!pictures) expect(howKey(chk(i, s, pictures))!.answer).toBe(s[keyStep(i)].title);
       if (i.kind === 'predict') expect(leverLeaks(s, i, lastStepLine(s, i))).toBe(false);
       if (!pictures && i.kind === 'identify') {
         const clue = clueOf(s, i.target, false).toLowerCase();
@@ -297,7 +310,7 @@ describe('the pure rules', () => {
       expect(e.kind).toBe(i.kind);
       expect(e.id).toBe(`${i.id}~simpler`);
       expect(simplerItem(s, e, pictures)).toBeNull();
-      expect(howLevers(s, e, [], pictures)).toEqual([]);
+      expect(leversOn(e, s, pictures)).toEqual([]);
       expect(validHowItem({ ...e, id: 'x' }, s)).toBe(true);
       if (isChoice(e) && isChoice(i)) { expect(keyStep(e)).not.toBe(keyStep(i)); expect(e.options).not.toContain(keyStep(i)); }
       if (e.kind === 'sequence' && i.kind === 'sequence') expect(e.cards.length).toBeLessThan(i.cards.length);
@@ -316,9 +329,63 @@ describe('the pure rules', () => {
     expect(howItems(BASE).map(i => i.kind)).toEqual(['identify', 'sequence', 'predict', 'explain']);
     expect(howItems({ preReader: { question: 'q', steps: [{ emoji: '🚗', label: 'a', spoken: 'a.' }, { emoji: '⛓️', label: 'b', spoken: 'b.' }, { emoji: '🚚', label: 'c', spoken: 'c.' }] } })
       .map(i => i.kind)).toEqual(['sequence']);
-    const spoken = workspaceAssignment(steps, BY_MODE.predict[0], false);
+    const spoken = howItWorksBoss.assignment(chk(BY_MODE.predict[0]));
     expect(spoken).toMatchObject({ response: 'speech', acceptsGesture: true });
     expect(spoken.misses!.map(m => m.id)).toEqual(['skipped_ahead']);
-    expect(spoken.expectedAnswer).toMatch(/"Pulling the Chain".*"Spinning the Cog", "Rolling the Tire" are wrong/);
+    expect(spoken.misses![0].examples).toEqual(['Spinning the Cog', 'Rolling the Tire']);
+    expect(spoken.expectedAnswer).toMatch(/^"Pulling the Chain" \(also accept "the second one"\)/);
+    expect(howItWorksBoss.assignment(chk(BY_MODE.guided[0])).expectedAnswer).toMatch(/also accept "step 3", "the second one"/);
+    expect(howItWorksBoss.assignment(chk(BY_MODE.predict[1]))).toMatchObject({ response: 'gesture' });
   });
+
+  it('a picture sentence that names its own picture is only tapped: the ask would say the key', () => {
+    const named = processSteps({ preReader: { question: 'q', steps: [
+      { id: 'p0', emoji: '🚗', label: 'Car stops', spoken: 'The car stops on the road.' },
+      { id: 'p1', emoji: '⛓️', label: 'Hook the car', spoken: 'Now we hook the car to the truck.' },
+      { id: 'p2', emoji: '🚚', label: 'Tow away', spoken: 'The truck pulls the car away.' },
+    ] } });
+    const ident: HowItem = { id: 'identify-1', mode: 'guided', kind: 'identify', target: 1, options: [0, 1, 2], strip: true };
+    expect(howKey(chk(ident, named, true))).toBeNull();
+    expect(howItWorksBoss.assignment(chk(ident, named, true))).toMatchObject({ response: 'gesture' });
+    const other: HowItem = { ...ident, target: 2 };
+    expect(howKey(chk(other, named, true))).toMatchObject({ answer: 'Tow away', acceptRule: expect.stringContaining('the 🚚 picture') });
+  });
+});
+
+// Moved from the scripted reader-fit suite (HowItWorks.reader-fit.test.tsx, 2026-07-21) onto a bound mount.
+it('pre-reader: the picture story (read aloud), then the picture order with no Check button; a full tray checks itself', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const pre: HowItWorksData = { ...BASE, steps: [], preReader: { question: 'Put the tow truck steps in order.', steps: [
+    { id: 'p0', emoji: '🚗', label: 'Car stops', spoken: 'The car stops.' },
+    { id: 'p1', emoji: '⛓️', label: 'Hook the car', spoken: 'The truck hooks the car.' },
+    { id: 'p2', emoji: '🚚', label: 'Tow away', spoken: 'The truck tows the car away.' },
+  ] } };
+  const h = mountWorkspace({ primitiveId: 'how-it-works', evalMode: 'sequence', instanceId: 'how-it-works', data: pre as never });
+  h.settle(1000);
+  expect(text(h)).toMatch(/Car stops/);
+  expect(text(h)).not.toMatch(/Steps explored|Glossary|Quick Facts/i);
+  expect(demand(h).phase).toBe('reading');
+  expect(String(demand(h).constraints)).toMatch(/read the picture steps aloud/);
+  expect(String(demand(h).step3)).toContain('The truck tows the car away.');
+  start(h);
+  const [item] = howChecks(pre);
+  expect(item.kind).toBe('sequence');
+  expect(h.state().task!.task).toBe('Put the tow truck steps in order.');
+  expect(text(h)).not.toMatch(/Check Answer|Check Order/);
+  // A wrong order is checked when the tray is full, named, and submits nothing; a placed card taps back out.
+  for (const c of [2, 1, 0]) h.press(cardText(item.steps, item as never, c));
+  h.settle();
+  expect(last(h)).toMatchObject({ correct: false, miss: 'reversed' });
+  expect(seam.submit).not.toHaveBeenCalled();
+  h.dispatch('retry'); h.confirmVisible();
+  h.press('Car stops'); h.settle();
+  h.press('Take back Car stops'); h.settle();
+  expect(h.view.container.querySelector('[data-step-id="p0"]')).not.toBeNull();
+  for (const c of [0, 1, 2]) h.press(cardText(item.steps, item as never, c));
+  h.settle(); await flush(); h.settle();
+  expect(last(h)).toMatchObject({ correct: true });
+  h.dispatch('advance'); h.confirmVisible(); h.settle(); await flush(); h.settle();
+  expect(h.state().status).toBe('completed');
+  expect(seam.submit).toHaveBeenCalledOnce();
+  h.close();
 });

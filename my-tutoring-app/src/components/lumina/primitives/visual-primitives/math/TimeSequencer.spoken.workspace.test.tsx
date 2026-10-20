@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
  * Time sequencer answered aloud (ROLLOUT.md VB-1): a one-choice challenge (time of day, before/after, which takes
- * longer, the activity at a schedule time) is a spoken item that still takes the tap. The observer credits a spoken
- * answer from the tutor's feedback; the tap stays checked by the activity. Putting cards in order stays tap-only.
+ * longer, the activity at a schedule time) is a SAY_OR_SHOW item on the boss (`timeSequencer.boss.ts`) that still
+ * takes the tap. The observer credits a spoken answer from the tutor's feedback; the tap stays checked by the
+ * activity. Putting cards in order stays tap-only.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -15,7 +16,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimeSequencerChallenge } from './TimeSequencer';
-import { timeSpokenMisses } from './timeSequencerWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { timeAsk, timeKey, timeSpokenMisses } from './timeSequencerWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -53,8 +55,6 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the answer/);
   expect(JSON.stringify(task)).not.toMatch(/correctPeriod|correctEvent|correctAnswer|correctActivity/);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
@@ -104,6 +104,19 @@ it('putting cards in order stays tap-only with no key', () => {
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
     cleanup();
   }
+});
+
+it('a picture choice is asked with its whole menu; a schedule is asked as printed, and its key never in the ask', () => {
+  expect(timeAsk(TIME)).toBe('When do you eat breakfast? Morning, afternoon, evening, or night?');
+  expect(timeAsk(BEFORE)).toBe('What happens before school? Eat breakfast, Eat dinner, or Go to bed?');
+  expect(timeAsk(LONGER)).toBe('Which takes longer? Brush teeth, A school day, or about the same?');
+  expect(timeAsk(SCHEDULE)).toBe(SCHEDULE.instruction);
+  expect(timeKey({ ...TIME, periodChoices: ['afternoon', 'night'], correctPeriod: 'night' })).toMatchObject({ menu: ['afternoon', 'night'],
+    alsoAccept: ['in the night', 'at night', 'nighttime'] });
+  expect(timeAsk({ ...TIME, periodChoices: ['afternoon', 'night'] })).toMatch(/Afternoon or night\?$/);
+  expect(spokenKeyText(timeKey(LONGER)!)).toContain('"school day"');
+  expect(spokenKeyText(timeKey(SCHEDULE)!)).toMatch(/"Explore the dinosaur fossils" \(also accept "fossils", "the fossils"\)/);
+  expect(timeKey({ ...LONGER, correctAnswer: 'same' })!.answer).toBe('about the same');
 });
 
 it('every spoken miss is one the catalog lists for its mode, and none is the answer', () => {

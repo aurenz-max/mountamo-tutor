@@ -3,20 +3,11 @@
  * attached: which letters may be asked in which direction, what is drawn, what the
  * child must produce, and what counts as having produced it.
  *
- * Sunset slice for the SEVENTH workspace adopter and the first literacy primitive
- * outside the DI packs, following `countingBoardDomain`, `shapeSorterDomain`,
- * `numberSequencerDomain` and the three `di*Domain` modules
- * (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md). The split is by
- * ownership:
- *
- *   - HERE: the assignment. The continuant gate, the keyword anchor map, the
- *     session build gate, the question the child hears and the success condition
- *     stated plainly enough for a tutor to judge against.
- *   - `letterSoundLinkScript`: the retiring control protocol — the DISTAR lead-in,
- *     the sentinel-opened affirm and correction lines, the in-band judging
- *     contracts and the bracketed cues. It re-exports this module, so the
- *     generator, the tester, the drive plan and the lesson-bench extractor keep
- *     one address.
+ * The continuant gate, the keyword anchor map, the session build gate, the ask the
+ * child hears, the spoken key, the known misses and the drawn scene. The boss
+ * (`letterSoundLink.card.ts` + `letterSoundLink.boss.ts`) wires these to the live
+ * tutor; the generator and the lesson-bench extractor read the same module. The
+ * runner-era DISTAR script (cue lines, sentinel verdicts) is deleted.
  *
  * THE THREE DIRECTIONS, AND WHY THEY ARE NOT ONE ASSIGNMENT:
  *
@@ -32,7 +23,10 @@
  * answer rather than a guidance sentence asking the tutor to keep a secret.
  */
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { LetterSoundMiss } from './letterSoundLink.card';
+export type { LetterSoundMiss, SpokenLetterMiss } from './letterSoundLink.card';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { speakablePhoneme } from './phonemeVoice';
 
@@ -78,7 +72,7 @@ export const isClippedSound = (letter: string): boolean => CLIPPED_SOUNDS.has(le
  * The letter NAME as a five-year-old says it. Producible letters only, because
  * only `see-hear` needs it — and it needs it because the name IS this
  * primitive's documented signature error, and the success condition has to name
- * the miss it is refusing (`assignmentFor`, and `letterSoundLinkHarnessAnswers`,
+ * the miss it is refusing (`letterSoundKey`, and `letterSoundLinkWorkspaceAnswers`,
  * which drives the same utterance at the judge).
  *
  * Written out rather than sent as the bare glyph: over the wire the child's turn
@@ -225,7 +219,7 @@ export interface LetterSoundOption {
 
 /** One letter-sound assignment. Extends the DOMAIN item base (what the answer
  *  is made of); the runtime's own `TeachingItem` (task/expectedAnswer/checker)
- *  is a different layer, and `LetterSoundLinkTeaching` maps onto it explicitly. */
+ *  is a different layer, and `LetterSoundLink` maps onto it explicitly. */
 export interface LetterSoundItem extends TeachingItem {
   mode: LetterSoundMode;
   /** The target grapheme, as printed. */
@@ -447,6 +441,9 @@ export const CHALLENGE_MODE_FOR_EVAL_MODE: Record<string, LetterSoundMode> = {
   see_hear: 'see-hear', hear_see: 'hear-see', keyword_match: 'keyword-match',
 };
 
+/** The item's catalog eval mode (the card's mode key). */
+export const evalModeOf = (item: Pick<LetterSoundItem, 'mode'>): string => item.mode.replace('-', '_');
+
 /**
  * The ask, in the child's own terms. No bracket tag, no "Say exactly", no model
  * line and no lead-in: the tutor decides how much to model before the child tries.
@@ -466,72 +463,49 @@ export function askFor(item: Pick<LetterSoundItem, 'mode' | 'letter' | 'spoken'>
 }
 
 /**
- * The accepted answer, short, because a tutor's affirmation is compared against
- * a token rather than a paragraph. `hear-see` has NONE on purpose: the activity
- * checks the tap, and a tutor told which letter is right would end the item by
- * naming it. The nuance lives in `assignmentFor`.
+ * The spoken key (`spokenKeyText` writes the sentence the tutor judges with). `hear-see` has NONE on purpose: the
+ * activity checks the tap, and a tutor told which letter is right would end the item by naming it. Each spoken key
+ * names the near miss it refuses, each one a miss this primitive drew on a live drive:
+ *
+ *  - see-hear: the letter NAME said in place of the sound ("ess" for s), the documented signature error. Named by its
+ *    value: a key that said only "the letter's name is not the answer" left the observer accepting "Yes, em is
+ *    right!" as a correct mmm on 2 of 3 replays (LA-13). A clipped stop counts its keyword and a schwa as right too.
+ *  - keyword-match: the other picture's word, and the letter's SOUND said back instead of a picture word. The
+ *    question names the sound on the way to the answer, so "tuh" was affirmed 2 for 2 on the drive that found this.
  */
-export function acceptedFor(item: LetterSoundItem): string | undefined {
-  if (item.mode === 'hear-see') return undefined;
-  if (item.mode === 'keyword-match') return item.answer;
-  return isClippedSound(item.letter) ? `${item.spoken} or ${item.keyword}` : item.spoken;
+export function letterSoundKey(item: LetterSoundItem): SpokenKey | null {
+  if (item.mode === 'hear-see') return null;
+  if (item.mode === 'keyword-match') {
+    return { answer: item.answer, alsoAccept: [], acceptRule: 'Another fair name for that same picture counts.',
+      signatureError: (item.distractor ? `The other picture's word, "${item.distractor}", is not the answer. ` : '')
+        + `The letter's sound said on its own, "${childVoicedSound(item)}", is a sound and not the name of a picture, `
+        + 'so it is not an answer however close it sounds.' };
+  }
+  const name = letterNameFor(item.letter);
+  const notName = `The letter's NAME${name ? `, "${name}",` : ''} is not the answer, however confidently it is said.`;
+  return isClippedSound(item.letter)
+    ? { answer: item.spoken, alsoAccept: [item.keyword],
+      acceptRule: 'It is a clipped sound: a small "uh" after it counts, and so does another word starting with that sound.',
+      signatureError: notName }
+    : { answer: item.spoken, alsoAccept: [],
+      acceptRule: 'It is a continuous sound: a short try counts, and so does a little "uh" on the end.',
+      signatureError: notName };
 }
 
-/**
- * The success condition, and what is NOT it — short, because this sentence is
- * what a tutor's feedback gets judged against. Each direction states its own
- * near miss, and each near miss is one this primitive actually drew on a live
- * drive:
- *
- *  - see-hear: the letter NAME said in place of the sound ("ess" for s). The
- *    primitive's documented signature error, and it arrives fluent.
- *  - hear-see: nothing spoken is an answer at all. The tap is the answer.
- *  - keyword-match: the letter's SOUND said back instead of a picture word.
- *    The question names the sound on the way to the answer, so "tuh" was
- *    affirmed 2 for 2 on the drive that found this.
- */
-export function assignmentFor(item: LetterSoundItem): string {
-  switch (item.mode) {
-    case 'see-hear': {
-      // The miss is NAMED, the way the other two directions name theirs. A
-      // success condition that says only "the letter's name is not the answer"
-      // left the observer accepting "Yes, em is right!" as a correct mmm on 2 of
-      // 3 replays; the two directions whose assignment names the near miss by
-      // its value refuse theirs 3 of 3. Measured, not tuned — see the adoption
-      // report's LA-13 section.
-      const name = letterNameFor(item.letter);
-      const nameBlock = ` The letter's NAME${name ? ` — "${name}" — ` : ' '}is not the answer, `
-        + 'however confidently it is said.';
-      return isClippedSound(item.letter)
-        ? `The learner must say the clipped sound ${item.spoken} that this letter makes. `
-          + `A small "uh" after it counts, and so does "${item.keyword}" or another word starting with that sound.`
-          + nameBlock
-        : `The learner must say the continuous sound ${item.spoken} that this letter makes. `
-          + 'A short try counts, and so does a little "uh" on the end.' + nameBlock;
-    }
-    case 'hear-see':
-      return `The learner must TAP the letter that makes the sound ${item.spoken}. `
-        + 'The activity checks the tap and reports it; nothing the learner says is an answer to this question. '
-        + 'Saying, spelling or pointing out either letter on the screen gives the answer away.';
-    case 'keyword-match':
-      return `The learner must say the word for the picture that starts with this letter's sound: "${item.answer}". `
-        + 'Another fair name for that same picture counts. '
-        + (item.distractor ? `The other picture's word, "${item.distractor}", is not the answer. ` : '')
-        + `The letter's sound said on its own — "${childVoicedSound(item)}" — is a sound and not the name of a picture, `
-        + 'so it is not an answer here however close it sounds.';
-  }
-}
+/** What the speaker button asks the tutor to say on a `hear-see` item: the sound, which is the question, again. */
+export const hearSoundRequest = (item: Pick<LetterSoundItem, 'spoken'>) =>
+  `The learner tapped to hear the sound again. Say only this sound, once: ${item.spoken}.`;
 
 /**
  * The sound as a CHILD voices it: held sounds stretched, every other one with
  * the schwa a five-year-old cannot help adding ("puh" for /p/). Used both in
- * the success condition, which must name that utterance as a miss, and as the
+ * the key, which must name that utterance as a miss, and as the
  * harness's signature wrong, which is the same utterance. Change one, change both.
  */
 export const childVoicedSound = (item: Pick<LetterSoundItem, 'letter' | 'sound' | 'spoken'>): string =>
   canProduceSound(item.letter) && !isClippedSound(item.letter)
     ? item.spoken
-    : `${item.sound.replace(/\//g, '').trim()}uh`;
+    : `${item.sound.split('/').join('').trim()}uh`;
 
 /** What the printed stimulus card shows, per direction. `hear-see` prints no
  *  single stimulus at all: its question is the sound, and its two letter cards
@@ -539,23 +513,12 @@ export const childVoicedSound = (item: Pick<LetterSoundItem, 'letter' | 'sound' 
 export const printedStimulus = (item: LetterSoundItem): string | null =>
   item.mode === 'hear-see' ? null : item.letter.toUpperCase();
 
-/** The item as the tutor and the outcome observer are told it. `hear-see` deliberately has
- *  no expected answer: the activity checks the tap, and the tutor is never told the letter. */
-export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => {
-  const misses = letterSoundSpokenMisses(item);
-  return { id: item.id, task: askFor(item),
-    ...(acceptedFor(item) !== undefined ? { expectedAnswer: acceptedFor(item) } : {}),
-    response: item.answerKind === 'gesture' ? 'gesture' : 'speech', ...(misses.length ? { misses } : {}) };
-};
-
-/** What a wrong spoken answer shows (handoff 20 Part B). */
-export type SpokenLetterMiss = 'letter_name' | 'keyword_word' | 'added_vowel' | 'other_sound' | 'other_picture' | 'said_the_sound';
 /** Held consonants: said on their own they are a sound, and with a vowel after them they are `added_vowel`. */
 const CONTINUOUS = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
 
 /**
  * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. see-hear is the pilot's
- * list and wording (qa/tutor-reports/spoken-miss/); a clipped sound accepts its picture word (`acceptedFor`), so
+ * list and wording (qa/tutor-reports/spoken-miss/); a clipped sound accepts its picture word (`letterSoundKey`), so
  * `keyword_word` is listed only for the held sounds.
  */
 export function letterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
@@ -576,8 +539,12 @@ export function letterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
   return [];
 }
 
-/** The drawn stage. `tapped` is the letter the learner last tapped on a `hear-see` item. */
-export function workspaceScene(item: LetterSoundItem, tapped: string | null = null): WorkspaceScene {
+/**
+ * The drawn stage. `tapped` is the letter the learner last tapped on a `hear-see` item. Each direction's "never say"
+ * rule is this item's fact, so it rides the scene as `constraints`: on hear-see either letter on the cards IS a
+ * choice, on keyword-match either picture name is, and on see-hear a word starting with the sound hands it over.
+ */
+export function workspaceScene(item: LetterSoundItem, tapped: string | null = null): SceneOf {
   const gesture = item.answerKind === 'gesture';
   return {
     objects: gesture
@@ -592,14 +559,17 @@ export function workspaceScene(item: LetterSoundItem, tapped: string | null = nu
         ...(item.mode === 'keyword-match' ? item.options.map(option => ({
           id: `picture-${option.value.toLowerCase()}`, label: `a picture of a ${option.value}`,
           selected: false, group: 'one of the two pictures' })) : [])],
-    facts: { kind: item.mode, assignment: assignmentFor(item), supportTier: item.tier,
+    facts: { kind: item.mode,
       // `hear-see` needs the sound published: the tutor has to say it, and it
-      // is the QUESTION rather than the answer. The other two directions carry
-      // their sound in `expectedAnswer` (see-hear) or not at all.
+      // is the QUESTION rather than the answer.
       ...(gesture ? { soundToSay: item.spoken } : { printedLetter: item.letter.toUpperCase() }),
-      ...(item.tier === 'hard' && !gesture
-        ? { coldAsk: 'This item is answered cold on purpose: the sound is not modelled before the learner answers.' }
-        : {}) },
+      constraints: gesture
+        ? 'Saying, spelling or pointing out either letter on the cards gives the answer away.'
+        : item.mode === 'keyword-match'
+          ? 'The answer is one of the two picture names: never name either picture before the learner answers, and '
+            + 'never mark the picture that starts with this sound.'
+          : 'The keyword picture is drawn only once the answer is credited: never say a word that starts with this '
+            + 'sound before the learner tries.' },
   };
 }
 
@@ -617,7 +587,6 @@ export function buildLetterSoundLinkItems(
  * differs only by the voice being on or off: t/d, p/b, s/z, f/v, k or c/g), `other_letter`.
  * see-hear and keyword-match are spoken (Part B).
  */
-export type LetterSoundMiss = 'other_short_vowel' | 'voicing_partner' | 'other_letter';
 
 const SHORT_VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 const VOICING_PAIRS = new Set(['t|d', 'p|b', 's|z', 'f|v', 'k|g', 'c|g']);

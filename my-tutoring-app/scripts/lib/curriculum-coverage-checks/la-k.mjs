@@ -1,7 +1,7 @@
 // K Language Arts content checks, moved verbatim from the original curriculum-coverage-check.mjs
 // pilot. Code-judged checks over production item conversion; no live microphone is driven.
 export const modules = {
-  pv: '/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript.ts',
+  pv: '/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyDomain.ts',
   ws: '/src/components/lumina/primitives/visual-primitives/literacy/wordSorterDomain.ts',
 };
 export const interactionNote = 'Production item converters and cue builders executed. No live microphone/session was driven.';

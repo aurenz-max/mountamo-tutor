@@ -241,7 +241,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
     const levers = STORY_RIBBON_LEVERS.declare(currentItem, undefined, pulledLevers);
     workspace.current = {
       ...leverScene(storyRibbonScene(currentItem), {
-        support: STORY_RIBBON_LEVERS.support(currentItem),
+        support: STORY_RIBBON_LEVERS.support(currentItem, undefined),
         onScreen: STORY_RIBBON_LEVERS.onScreen(currentItem, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

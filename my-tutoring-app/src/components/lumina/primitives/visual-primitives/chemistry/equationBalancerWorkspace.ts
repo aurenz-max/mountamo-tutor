@@ -1,5 +1,6 @@
 /**
- * equation-balancer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C27).
+ * equation-balancer's items, keys, misses and scene: the pure half of its boss (`equationBalancer.boss.ts`, a spoken
+ * preset with a SAY_OR_SHOW count mode and two balance boards).
  *
  * Every equation comes from a code bank (`EQUATION_BANK`); code parses each formula into atoms, solves the smallest
  * whole-number coefficients, and builds every item and key. The generator only picks bank equations for the topic and
@@ -13,10 +14,12 @@
  * A balance check is correct only at the smallest whole numbers (`balanceCorrect`); nothing on screen counts atoms or
  * marks a match until the learner checks or a lever draws it.
  *
- * Pure: the component, the adapter, the journey row and the tests read the same items, checks, misses and scene.
+ * Pure: the component, the boss, the levers and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { BALANCER_MISSES } from './equationBalancer.card';
 
 export type BalancerMode = 'simple' | 'guided' | 'complex';
 export const BALANCER_MODES: BalancerMode[] = ['simple', 'guided', 'complex'];
@@ -200,12 +203,6 @@ export type CountMiss = 'ignored_coefficient' | 'ignored_subscript' | 'ignored_p
 export type BalanceMiss = 'not_lowest' | 'shared_element_off' | 'one_element_off' | 'several_off';
 export type EquationBalancerMiss = CountMiss | BalanceMiss;
 
-export const BALANCER_MISSES: Record<BalancerMode, readonly EquationBalancerMiss[]> = {
-  simple: ['ignored_coefficient', 'ignored_subscript', 'ignored_parentheses', 'one_compound_only', 'added_not_multiplied', 'miscounted'],
-  guided: ['not_lowest', 'one_element_off', 'several_off'],
-  complex: ['not_lowest', 'shared_element_off', 'one_element_off', 'several_off'],
-};
-
 const sideOf = (eq: Equation, side: Side) => (side === 'left' ? eq.reactants : eq.products);
 const coefsOf = (eq: Equation, coefficients: number[], side: Side) => split(eq, coefficients)[side === 'left' ? 0 : 1];
 
@@ -344,7 +341,7 @@ export function balanceMiss(item: BalanceItem, coefficients: number[]): BalanceM
   return item.mode === 'complex' && sharedElements(item.equation).includes(off[0]) ? 'shared_element_off' : 'one_element_off';
 }
 
-// ── Words ────────────────────────────────────────────────────────────────────────────────
+// ── The ask and the spoken key ────────────────────────────────────────────────────────────────────────────────
 
 const ARROW = '→';
 /** The equation as text, with the numbers in front when given ("4 Fe + 3 O2 → 2 Fe2O3"). */
@@ -367,12 +364,23 @@ const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'sev
 const said = (n: string) => NUMBER_WORDS[Number(n)] ?? n;
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 
-/** The answer a spoken count is judged against, with the ways a learner says it. */
-export function countExpectedAnswer(item: CountItem): string {
+export const balancerMode = (item: BalancerItem): BalancerMode => item.mode;
+
+/** What the ask says by design: a count ask prints the equation with its numbers, one of which can be the count. */
+export const balancerGiven = (item: BalancerItem): string[] =>
+  (item.mode === 'simple' ? [equationText(item.equation, item.coefficients)] : []);
+
+/**
+ * The key a spoken count is judged against: the number said any way, with "atoms" or by its place in the list. A
+ * balance item has no key: the learner sets the numbers on screen and the activity checks them.
+ */
+export function balancerKey(item: BalancerItem): SpokenKey | null {
+  if (item.mode !== 'simple') return null;
   const key = countKey(item), at = item.choices.indexOf(key);
   const others = item.choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
-  return `"${key}" (${said(key)}), said any way, "${key} atoms", or its place in the list ("the ${ORDINAL[at]} one") counts. `
-    + `${others} are wrong, and so is naming two numbers or hedging between them.`;
+  return { answer: key, alsoAccept: [said(key), `${key} atoms`, `the ${ORDINAL[at] ?? 'last'} one`].filter(a => a !== key),
+    acceptRule: 'The number said any way counts.',
+    signatureError: `${others} are wrong, and so is naming two numbers or hedging between them.` };
 }
 
 const quoted = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(', ');
@@ -394,19 +402,6 @@ export function countSpokenMisses(item: CountItem): KnownMiss[] {
   });
 }
 
-const HOW: Record<BalancerMode, string> = {
-  simple: 'The learner answers by saying the number, or tapping it and pressing Check Answer.',
-  guided: 'The learner sets each number with its + and − buttons and presses Check Balance.',
-  complex: 'The learner sets each number with its + and − buttons and presses Check Balance.',
-};
-
-export function workspaceAssignment(item: BalancerItem): TeachingAssignment {
-  if (item.mode !== 'simple') return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'gesture' };
-  const misses = countSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW.simple}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: countExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface BalancerView {
@@ -423,11 +418,15 @@ export function describeBalancerWork(item: BalancerItem | undefined, view: Balan
     : `Set ${equationText(item.equation, view.coefficients)}`;
 }
 
+/** What the learner works out is the question: never said for them. How they answer is the card's `moves`. */
+const BALANCE_RULE = 'Never say a number to set, an atom total, or which formula to change, and never name the element '
+  + 'that is off or the element to start with: ask which element the learner will count first, then to count it on each '
+  + 'side and say what they find.';
 const CONSTRAINTS: Record<BalancerMode, string> = {
-  simple: 'The learner answers by saying the number, or by tapping one and checking it; the activity judges the tap. '
-    + 'You cannot tap or check for the learner.',
-  guided: 'The activity checks the numbers when the learner presses Check Balance. You cannot set a number or check for the learner.',
-  complex: 'The activity checks the numbers when the learner presses Check Balance. You cannot set a number or check for the learner.',
+  simple: 'Never say an atom total or multiply the numbers for the learner; ask what the number in front and the small '
+    + 'number after the symbol each mean.',
+  guided: BALANCE_RULE,
+  complex: BALANCE_RULE,
 };
 
 /** What is drawn and asked. Never a count the learner has not been shown, never the key. */
@@ -437,8 +436,8 @@ export function workspaceScene(item: BalancerItem, view: BalancerView): Workspac
     facts.choices = item.choices.map((c, i) => `${i + 1}) ${c}`).join('  ');
     facts.shown = `The equation ${equationText(item.equation, item.coefficients)}, printed with its numbers in front. No atoms are drawn and no totals are shown.`;
   } else {
-    facts.shown = 'Each formula with a number in front of it and + and − buttons; the numbers start at 1. No atoms are drawn, '
-      + 'no atom totals are shown and nothing marks which elements match.';
+    facts.shown = 'Each formula with a number in front of it; the numbers start at 1. No atoms are drawn, no atom totals '
+      + 'are shown and nothing marks which elements match.';
     facts.onScreenNow = equationText(item.equation, view.coefficients);
   }
   facts.learnerWork = describeBalancerWork(item, view);

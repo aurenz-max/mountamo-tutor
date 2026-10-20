@@ -82,24 +82,10 @@ describe('rocket-builder — reader-fit after the rebuild', () => {
     });
   });
 
-  describe('catalog tutoring scaffold (the scripted path)', () => {
+  // The catalog tutoring block went with the scripted path (boss migration 10-19): a bound session sends tutoring: null.
+  describe('catalog entry', () => {
     const entry = ASTRONOMY_CATALOG.find((c) => c.id === 'rocket-builder')!;
 
-    it('keeps a pre-reader read-aloud and a never-name-the-answer directive', () => {
-      const directives = entry.tutoring!.aiDirectives ?? [];
-      const pre = directives.find(d => /PRE-READER/i.test(d.title))!;
-      expect(pre.instruction).toMatch(/READ_CHALLENGE/);
-      expect(pre.instruction).toMatch(/never say thrust, mass, ratio or altitude/i);
-      const never = directives.find(d => /NEVER NAME THE ANSWER/i.test(d.title))!;
-      expect(never.instruction).toMatch(/never say a total/i);
-    });
-    it('every contextKey referenced in the task description is declared, with no handlebars conditionals', () => {
-      const keys = entry.tutoring!.contextKeys ?? [];
-      const referenced = (entry.tutoring!.taskDescription.match(/\{\{\w+\}\}/g) ?? []).map(m => m.slice(2, -2));
-      expect(referenced.length).toBeGreaterThan(0);
-      for (const k of referenced) expect(keys).toContain(k);
-      expect(JSON.stringify(entry.tutoring)).not.toMatch(/\{\{#/);
-    });
     it('does not carry a band floor; K-1 are told the task is a count and a tap', () => {
       expect(entry.constraints).not.toMatch(/BAND FLOOR|Grade 2\+ ONLY/i);
       expect(entry.constraints).toMatch(/K and Grade 1 MAY be routed here/);

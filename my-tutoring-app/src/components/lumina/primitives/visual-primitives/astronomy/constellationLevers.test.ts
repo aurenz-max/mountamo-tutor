@@ -7,7 +7,7 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { ConstellationBuilderData, ConstellationChallenge } from './ConstellationBuilder';
-import { constellationLevers, practiceItem, practiceLeaks } from './constellationLevers';
+import { CONSTELLATION_LEVERS, practiceItem, practiceLeaks } from './constellationLevers';
 import { freeMiss, guidedMiss, identifyOptions, nameMiss, shownInstruction } from './constellationWorkspace';
 
 const line = (a: string, b: string) => ({ fromStarId: a, toStarId: b });
@@ -36,11 +36,11 @@ describe('misses', () => {
     ['free_connect', 'wrong_pair', 'shape_card'], ['free_connect', 'background_star', 'shape_card'],
     ['identify', 'wrong_name', 'easier_pattern'], ['seasonal', 'several_names', 'easier_pattern'],
   ] as const)('%s: after %s the next lever is %s', (mode, miss, lever) =>
-    expect(nextLever(constellationLevers(item(mode), [], true), miss)).toBe(lever));
+    expect(nextLever(CONSTELLATION_LEVERS.declare(item(mode), { membersBright: true }, []), miss)).toBe(lever));
 
   it('bright stars is offered only where the tier drew every star by its own brightness', () => {
-    expect(constellationLevers(item('free_connect'), [], true).map(l => l.id)).not.toContain('bright_stars');
-    expect(constellationLevers(item('free_connect'), [], false).map(l => l.id)).toContain('bright_stars');
+    expect(CONSTELLATION_LEVERS.declare(item('free_connect'), { membersBright: true }, []).map(l => l.id)).not.toContain('bright_stars');
+    expect(CONSTELLATION_LEVERS.declare(item('free_connect'), { membersBright: false }, []).map(l => l.id)).toContain('bright_stars');
   });
 });
 

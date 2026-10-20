@@ -1,6 +1,9 @@
 /**
- * The in-item levers on letter-sound-link (`/add-support-tiers`). `hear-see` (handoff 22 L1): the tutor says a
- * sound and the learner taps one of two letters. The spoken modes (handoff 24) are at the end of this header.
+ * The in-item levers on letter-sound-link (`/add-support-tiers`), as one lever set (`bossLevers.ts`):
+ * keyword_under_both is a `legend` (a picture under both cards alike, none marked), pair_model, voice_feel_model and
+ * letter_model are `model` levers (another letter or pair, solved), far_letter_pair is `easier`.
+ * `hear-see` (handoff 22 L1): the tutor says a sound and the learner taps one of two letters. The spoken modes
+ * (handoff 24) are at the end of this header.
  *
  * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * - `keyword_under_both` (help): a keyword picture under BOTH letter cards, alike. Answers `other_short_vowel`
@@ -29,9 +32,10 @@
  *   learner said, and the anchor is never shown before credit (R3). No simplify on the spoken modes: another
  *   letter asks the same thing, not less.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { LETTER_GROUPS, normalizeLetterGroup } from '../../../service/literacy/letterGroups';
-import { canProduceSound, itemFromChallenge, isClippedSound, keywordFor, keywordNamesItsPicture, emojiForKeyword,
+import { letterSoundLinkCard } from './letterSoundLink.card';
+import { canProduceSound, evalModeOf, itemFromChallenge, isClippedSound, keywordFor, keywordNamesItsPicture, emojiForKeyword,
   spokenSoundFor, type LetterSoundItem } from './letterSoundLinkDomain';
 
 export const KEYWORDS_LEVER = 'keyword_under_both';
@@ -170,53 +174,66 @@ export function pairModelFor(item: LetterSoundItem, items: readonly LetterSoundI
   return null;
 }
 
-/** The levers this item declares, with their state. */
-export function letterSoundLevers(item: LetterSoundItem | null, pulled: readonly string[], items: readonly LetterSoundItem[],
-  index: number, letterGroup: number | undefined): WorkspaceLever[] {
-  if (!item) return [];
-  if (item.mode !== 'hear-see') {
-    const m = letterModelFor(item, items, letterGroup);
-    const match = item.mode === 'keyword-match';
-    return m ? [{ id: LETTER_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(LETTER_MODEL_LEVER),
-      answers: match ? ['other_picture', 'letter_name', 'said_the_sound'] : ['letter_name', 'keyword_word', 'added_vowel'],
-      when: match ? 'The learner says the other picture, the letter name, or the sound with no picture word.'
-        : 'The learner says the letter name, a whole word, or the sound with a vowel after it.',
-      // The model letter is named only in the scene fact once pulled (letter-spotter replay 09-29: named here, the
-      // tutor spoke of the model before any pull).
-      does: match ? 'Shows another letter beside its picture. Once it is on screen, say its sound, then the picture word that '
-        + 'starts with it. It is not this item\'s letter.'
-        : 'Shows another letter. Once it is on screen, say its sound once, on its own. It is not this item\'s letter.',
-    }] : [];
-  }
-  const levers: WorkspaceLever[] = [];
-  if (cardKeywords(item, laterStimuli(items, index)).length) levers.push({
-    id: KEYWORDS_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(KEYWORDS_LEVER),
-    answers: ['other_short_vowel', 'other_letter'],
-    when: 'The learner taps the wrong letter, not a voicing partner.',
-    does: 'Puts a keyword picture under each of the two letter cards, alike. Do not name either picture.',
-  });
-  if (pairModelFor(item, items, letterGroup)) levers.push({
-    id: PAIR_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(PAIR_MODEL_LEVER),
-    answers: ['other_short_vowel', 'other_letter'],
-    when: 'The learner taps the wrong letter, not a voicing partner.',
-    // The model letters are named only in the scene fact once pulled (the letter_model lesson).
-    does: 'Shows two other letter cards, each with its picture, beside the item. Once they are on screen, say each '
-      + "one's sound once. They are not this item's letters; do not say which card on the item matches.",
-  });
-  const model = voiceModelFor(item);
-  if (model) levers.push({
-    id: VOICE_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(VOICE_LEVER), answers: ['voicing_partner'],
-    when: 'The learner taps the letter whose sound differs only by the voice being on or off.',
-    does: `Shows a quiet sound and a buzzing sound on two pictures, a ${model.quiet.word} (${model.quiet.sound}) and a `
-      + `${model.buzz.word} (${model.buzz.sound}), with a hand on the throat. Say both sounds so the learner feels `
-      + 'the buzz; they are not this item\'s sounds.',
-  });
-  if (fartherPair(item, items, letterGroup)) levers.push({
-    id: FAR_PAIR_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(FAR_PAIR_LEVER),
-    answers: ['other_letter', 'other_short_vowel', 'voicing_partner'],
-    when: 'The learner cannot yet tell these two letters apart by sound.',
-    does: 'Opens an easier practice item first: a different sound, between two letters that sound nothing alike. '
-      + 'It is not graded; the full item comes back after it.',
-  });
-  return levers;
-}
+/** What the lever set reads beyond the item: the session's items (leak rules, R4) and the letter group. */
+export interface LetterSoundLeverContext { items: readonly LetterSoundItem[]; letterGroup?: number }
+
+const later = (item: LetterSoundItem, ctx: LetterSoundLeverContext) =>
+  laterStimuli(ctx.items, ctx.items.findIndex(i => i.id === item.id));
+const MODEL_SAY = (m: LetterModel, picture: boolean) => `${m.letter.toUpperCase()}${picture ? `, beside its picture (${m.word})` : ''}`;
+const HEAR_SEE_WHEN = 'The learner taps the wrong letter, not a voicing partner.';
+
+export const LETTER_SOUND_LEVERS = leverSet<LetterSoundItem, LetterSoundLeverContext>({
+  modeOf: evalModeOf,
+  missesOf: mode => letterSoundLinkCard.modes[mode].misses,
+  // The model levers show another letter, solved; the tier says when (items carry the lesson's tier).
+  support: { tier: item => item.tier,
+    different: item => (item.mode === 'hear-see' ? 'other letters the session never uses' : 'another letter the session never uses'),
+    own: item => (item.mode === 'hear-see' ? 'which letter makes this sound' : 'this letter\'s sound') },
+  specs: [
+    // hear_see
+    { id: KEYWORDS_LEVER, type: 'legend', modes: ['hear_see'], answers: ['other_short_vowel', 'other_letter'],
+      when: HEAR_SEE_WHEN,
+      does: 'Puts a keyword picture under each of the two letter cards, alike. Do not name either picture.',
+      content: (item, ctx) => (cardKeywords(item, later(item, ctx)).length ? true : null),
+      fact: 'A keyword picture sits under each of the two letter cards, alike.' },
+    { id: PAIR_MODEL_LEVER, type: 'model', modes: ['hear_see'], answers: ['other_short_vowel', 'other_letter'],
+      when: HEAR_SEE_WHEN,
+      // The model letters are named only in the scene fact once pulled (the letter_model lesson).
+      does: 'Shows two other letter cards, each with its picture, beside the item. Once they are on screen, say each '
+        + "one's sound once. They are not this item's letters; do not say which card on the item matches.",
+      content: (item, ctx) => pairModelFor(item, ctx.items, ctx.letterGroup),
+      fact: (pair: LetterModel[]) => `A model pair beside the cards, two other letters with their pictures: ${pair.map(m =>
+        `${m.letter.toUpperCase()} (${m.word}), sound ${m.sound}`).join(' and ')}. They are not this item's letters.` },
+    { id: VOICE_LEVER, type: 'model', modes: ['hear_see'], answers: ['voicing_partner'],
+      when: 'The learner taps the letter whose sound differs only by the voice being on or off.',
+      does: item => {
+        const model = voiceModelFor(item);
+        return `Shows a quiet sound and a buzzing sound on two pictures, a ${model?.quiet.word} (${model?.quiet.sound}) and a `
+          + `${model?.buzz.word} (${model?.buzz.sound}), with a hand on the throat. Say both sounds so the learner feels `
+          + 'the buzz; they are not this item\'s sounds.';
+      },
+      content: item => voiceModelFor(item),
+      fact: (model: VoiceModel) => `A quiet sound and a buzzing sound sit on two pictures: a ${model.quiet.word} `
+        + `(${model.quiet.sound}) and a ${model.buzz.word} (${model.buzz.sound}), with a hand on the throat.` },
+    { id: FAR_PAIR_LEVER, type: 'easier', modes: ['hear_see'], carrier: 'shown',
+      answers: ['other_letter', 'other_short_vowel', 'voicing_partner'],
+      when: 'The learner cannot yet tell these two letters apart by sound.',
+      does: 'Opens an easier practice item first: a different sound, between two letters that sound nothing alike. '
+        + 'It is not graded; the full item comes back after it.',
+      content: (item, ctx) => fartherPair(item, ctx.items, ctx.letterGroup) },
+    // see_hear and keyword_match: the model letter is named only in the scene fact once pulled (letter-spotter
+    // replay 09-29: named in `does`, the tutor spoke of the model before any pull).
+    { id: LETTER_MODEL_LEVER, type: 'model', modes: ['see_hear'], answers: ['letter_name', 'keyword_word', 'added_vowel'],
+      when: 'The learner says the letter name, a whole word, or the sound with a vowel after it.',
+      does: 'Shows another letter. Once it is on screen, say its sound once, on its own. It is not this item\'s letter.',
+      content: (item, ctx) => letterModelFor(item, ctx.items, ctx.letterGroup),
+      fact: (m: LetterModel) => `A model on another letter, ${MODEL_SAY(m, false)}: its sound is ${m.sound}. It is not this item's letter.` },
+    { id: LETTER_MODEL_LEVER, type: 'model', modes: ['keyword_match'], answers: ['other_picture', 'letter_name', 'said_the_sound'],
+      when: 'The learner says the other picture, the letter name, or the sound with no picture word.',
+      does: 'Shows another letter beside its picture. Once it is on screen, say its sound, then the picture word that '
+        + 'starts with it. It is not this item\'s letter.',
+      content: (item, ctx) => letterModelFor(item, ctx.items, ctx.letterGroup),
+      fact: (m: LetterModel) => `A model on another letter, ${MODEL_SAY(m, true)}: its sound is ${m.sound}, and ${m.word} `
+        + 'starts with it. It is not this item\'s letter.' },
+  ],
+});

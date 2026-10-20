@@ -17,13 +17,15 @@
  * Bases are code-owned (the generator's typed, code-validated pool); a base's kind is in its id (`noun-`, `verb-`).
  * Pure: the component, the generator, the live adapter, the oracle and the tests read the same rules.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import {
   affixBuildAssignment, buildItemsFrom, describeAffixBuild, joined, pieces, type AffixBuildItem, type AffixBuildRules,
   type AffixBuildView, type BuildPart,
 } from './affixBuild';
-import { MODEL_PAIRS } from './wordFlipScript';
+import { MODEL_PAIRS } from './wordFlipDomain';
+
+/** The build's misses live on word-flip's card (`wordFlip.card.ts`). */
+export { INFLECT_BUILD_MISSES } from './wordFlip.card';
 
 export type InflectAsk = 'plural' | 'past';
 
@@ -37,8 +39,6 @@ export interface InflectBuildItem extends AffixBuildItem {
 
 export type InflectBuildMiss = 'base_only' | 'ending_only' | 'parts_out_of_order' | 'double_ending' | 'wrong_ending_kind'
   | 'other_base' | 'wrong_ending' | 'missed_y_change' | 'same_word' | 'not_a_word' | 'wrong_meaning';
-export const INFLECT_BUILD_MISSES: readonly InflectBuildMiss[] = ['base_only', 'ending_only', 'parts_out_of_order',
-  'double_ending', 'wrong_ending_kind', 'other_base', 'wrong_ending', 'missed_y_change', 'same_word', 'not_a_word', 'wrong_meaning'];
 
 /** The four ending cards. No card prints a meaning: which ending does which job is the skill. */
 export const ENDING_CARDS: readonly BuildPart[] = [
@@ -178,7 +178,7 @@ export function inflectBuildScene(item: AffixBuildItem, board: readonly BuildPar
   } };
 }
 
-// ── Levers (start bare: choosing the ending IS the task) ─────────────────────
+// ── What the levers show (start bare: choosing the ending IS the task; the lever set is `wordFlipLevers.ts`) ──
 
 export const FRAME_LEVER = 'word_frame';
 export const CHART_LEVER = 'ending_chart';
@@ -210,37 +210,6 @@ export function fewerEndingsFor(item: AffixBuildItem, board: readonly BuildPart[
   return { ...it, id: `${it.id}~small`, ways: 1, examples: kept.map(parts => parts.map(p => p.id)), board: small };
 }
 
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly InflectBuildMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function inflectBuildLevers(item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const judged: InflectBuildMiss[] = ['wrong_ending', 'missed_y_change', 'wrong_ending_kind', 'not_a_word', 'wrong_meaning'];
-  return [
-    lever(FRAME_LEVER, 'help', ['base_only', 'ending_only', 'parts_out_of_order', 'double_ending', 'other_base'],
-      'The learner puts down a word with no ending, an ending alone, two endings, the ending first, or a word the ask did not name.',
-      'Shows two empty boxes above the row, labelled word + ending (naming the kind of word when the ask names one). No card is filled in.',
-      pulled),
-    ...(endingChartFor(board).length ? [lever(CHART_LEVER, 'help', judged,
-      'The learner picks an ending that does not fit the word or the ask, or misses that a word ending in y changes.',
-      'Shows a chart of solved words that are NOT on this board, one for each ending (s, es, ies, ed), so the learner sees '
-        + 'which ending each kind of word takes. It shares no word with this item.', pulled)] : []),
-    ...(fewerEndingsFor(item, board) ? [lever(FEWER_ENDINGS_LEVER, 'simplify', judged,
-      'The learner keeps picking endings that do not fit, or cannot start on the full board.',
-      'Opens the same ask first on a smaller board: a few words and only two endings, one word to make. It is not graded; '
-        + 'the full item comes back after it.', pulled)] : []),
-  ];
-}
-
-export function inflectLeverFacts(pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]): string | undefined {
-  const it = item as InflectBuildItem;
-  const notes = [
-    pulled.includes(FRAME_LEVER) && `Empty boxes above the row show a word shape: ${it.baseHint ?? 'word'} + ending.`,
-    pulled.includes(CHART_LEVER) && `A chart of other words with their endings is shown: ${endingChartFor(board).map(([p, w]) => `${p} = ${w}`).join('; ')}.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
-}
-
 export const inflectBuildRules: AffixBuildRules = {
   phase: { key: 'build_inflect', label: 'Make a word', icon: '🔁' },
   badge: '🔁 Make a word',
@@ -258,8 +227,6 @@ export const inflectBuildRules: AffixBuildRules = {
   }),
   describe: describeAffixBuild,
   scene: inflectBuildScene,
-  levers: inflectBuildLevers,
-  leverFacts: inflectLeverFacts,
   smallBoardFor: fewerEndingsFor,
   frame: (item, _board, pulled) => pulled.includes(FRAME_LEVER)
     ? [{ type: 'root', label: (item as InflectBuildItem).baseHint ?? 'word' }, { type: 'suffix', label: 'ending' }] : [],

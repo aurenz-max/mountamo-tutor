@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * Light & Shadow Lab: a sun on an arc, an object, and its shadow; every item is one tapped choice and Check.
+ * Light & Shadow Lab: a sun on an arc, an object, and its shadow; every item is one tapped choice and Check Answer.
  *
- * Shared teaching workspace (W1, plain shape): `lightShadowWorkspace.ts` holds the choices, the assignment,
- * the scene, the learner's work in words and the named miss. Under a live runtime the tutor owns the item;
- * the activity's own check commits through `progress.commitCheck`, and the runtime owns Try again and Next.
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `lightShadowLab.card.ts` +
+ * `lightShadowLab.boss.ts`): `lightShadowWorkspace.ts` holds the choices, the scene, the learner's work in words and the
+ * named miss; the activity's own check commits through `progress.commitCheck`, and the runtime owns Try again and Next.
+ * The levers are one lever set in `lightShadowLevers.ts`.
  *
  * What each mode hides while it is open, because it is the answer: predict draws no shadow, apply draws no
  * sun and no clock, and no mode prints the "Shadow: <length>, <direction>" readout before a right answer.
@@ -17,24 +18,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LightShadowLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  describeShadowWork, hidesShadow, hidesSun, keyOption, markAt, normalizeTime, openingSun, shadowCorrect, shadowHint,
-  shadowLengthOf, shadowMiss, shadowOptions, timeMarks, workspaceAssignment, workspaceScene,
+  describeShadowWork, hidesShadow, hidesSun, markAt, normalizeTime, openingSun, shadowCorrect, shadowHint,
+  shadowLengthOf, shadowMiss, shadowOptions, timeMarks, workspaceScene,
 } from './lightShadowWorkspace';
 import {
-  HEIGHT_MODEL, HEIGHT_MODEL_LEVER, PRACTICE_NOTE, SHADOW_ZONES_LEVER, SIDE_MODEL, SIDE_MODEL_LEVER, leverFacts,
-  lightShadowLevers, practiceItem,
+  HEIGHT_MODEL, HEIGHT_MODEL_LEVER, PRACTICE_NOTE, SHADOW_LEVERS, SHADOW_ZONES_LEVER, SIDE_MODEL, SIDE_MODEL_LEVER,
 } from './lightShadowLevers';
+import { lightShadowLabBoss } from './lightShadowLab.boss';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -88,6 +88,9 @@ export interface ShadowChallenge {
   choices?: string[];
   /** Help levers drawn from the start (the support tier's starting position). Not a pull: nothing is recorded. */
   startLevers?: string[];
+  /** The lesson's support tier on this item, which the lever set's `support` fact reads (the component fills it from
+   *  `LightShadowLabData.supportTier`). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface LightShadowLabData {
@@ -100,8 +103,8 @@ export interface LightShadowLabData {
   sunPositions: SunPosition[];
   challenges: ShadowChallenge[];
 
-  /** Within-mode support tier ('easy'|'medium'|'hard') — calibrates the AI
-   *  tutor's reveal level. Present only when the manifest emitted difficulty. */
+  /** Within-mode support tier ('easy'|'medium'|'hard'): when the model levers come (`SHADOW_LEVERS.support`).
+   *  Present only when the manifest emitted difficulty. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -278,14 +281,14 @@ const HeightModel = () => (
 // Main Component
 // =============================================================================
 
-const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }:
-  LightShadowLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ShadowChallenge>) => Progress }) => {
+const useShadowProgress = useWorkspaceProgressFor('light-shadow-lab');
+
+const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId }: LightShadowLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     theme,
-    gradeLevel,
     objects,
     sunPositions = [],
     challenges,
@@ -310,28 +313,25 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
   });
 
   // ── Challenge progress ───────────────────────────────────────────
-  // On the workspace path the runtime moves the index; a fresh item and Try again clear the work (bound below).
+  // The runtime moves the index; a fresh item and Try again clear the work (bound below).
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useShadowProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: lightShadowLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const {
     currentIndex: currentChallengeIndex,
-    currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
@@ -341,26 +341,6 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
     getChallengeType: (ch) => ch.type,
     phaseConfig: PHASE_TYPE_CONFIG,
   });
-
-  // ── AI tutoring (scripted path only) ─────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    theme,
-    gradeLevel,
-    challengeCount: challenges.length,
-    ...(supportTier ? { supportTier } : {}),
-  }), [theme, gradeLevel, challenges.length, supportTier]);
-
-  // The scripted tutor's context and cues: off on the workspace path, and its cues send nothing there.
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'light-shadow-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
 
   // ── Sun position and answer state ────────────────────────────────
   const sessionChallenge = challenges[currentChallengeIndex] ?? challenges[0];
@@ -381,10 +361,9 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
 
   const [selectedMcAnswer, setSelectedMcAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showingAnswer, setShowingAnswer] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
 
-  /** The work blank and the sun back at its opening place: a fresh challenge, or Try again on the workspace path. */
+  /** The work blank and the sun back at its opening place: a fresh challenge, or Try again. */
   const clearWork = useCallback((ch: ShadowChallenge | undefined) => {
     if (!ch) return;
     const sun = openingSun(ch);
@@ -392,7 +371,6 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
     setSunAzimuth(sun.azimuth);
     setSelectedMcAnswer(null);
     setFeedback(null);
-    setShowingAnswer(false);
   }, []);
   // A fresh item (or the full item back after a practice item) drops the practice; Try again keeps it.
   openItem.current = (index, retry) => {
@@ -469,91 +447,30 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
     () => currentChallenge ? shadowOptions(currentChallenge, sunPositions) : [],
     [currentChallenge, sunPositions],
   );
-  const correctMcAnswer = currentChallenge ? keyOption(currentChallenge) : '';
-
-  // ── Tutor reveal policy (scripted path; mode-aware tier clause) ──
-  const tutorRevealClause = useMemo(() => {
-    if (supportTier === 'easy') {
-      return 'SUPPORT=easy: you may name the shadow rule (low sun → long shadow; shadow points away from the sun) and walk the student through reading the scene. Never state the final answer.';
-    }
-    if (supportTier === 'hard') {
-      return 'SUPPORT=hard: do NOT name the shadow rule and do NOT mention east/west sides directly — ask what the student notices about how HIGH the sun is and which side it is on. Never reveal the shadow length, direction, or answer.';
-    }
-    if (supportTier === 'medium') {
-      return 'SUPPORT=medium: nudge the student\'s execution only — do not re-state the full rule; prompt them to apply what they see. Never reveal the answer.';
-    }
-    return '';
-  }, [supportTier]);
 
   const handleChoose = (option: string) => {
-    if (feedback?.correct || showingAnswer || learnerBlocked()) return;
+    if (feedback?.correct || learnerBlocked()) return;
     SoundManager.select();
     setSelectedMcAnswer(option);
   };
 
-  // ── Answer checking ──────────────────────────────────────────────
+  // ── Answer checking: the activity's own check, committed with its named miss ──
   const handleCheckAnswer = () => {
     if (!currentChallenge || !selectedMcAnswer || feedback?.correct || learnerBlocked()) return;
     const isCorrect = shadowCorrect(currentChallenge, selectedMcAnswer);
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
     progress.commitCheck(describeShadowWork(selectedMcAnswer), isCorrect,
       isCorrect ? undefined : shadowMiss(currentChallenge, selectedMcAnswer, sunPositions));
-
     if (isCorrect) {
       SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great observation!' });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified shadow as "${correctMcAnswer}" for challenge "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the science.`,
-        { silent: true },
-      );
       return;
     }
     SoundManager.playIncorrect();
     setFeedback({ correct: false, message: `Not quite. ${shadowHint(currentChallenge)}` });
-    // Scripted path only: after three tries the answer is shown and the item recorded as missed.
-    if (!tutorOwned && currentAttempts >= 2) {
-      recordResult({ challengeId: currentChallenge.id, correct: false, attempts: currentAttempts + 1 });
-      setShowingAnswer(true);
-    }
-    sendText(
-      `[ANSWER_INCORRECT] Student chose "${selectedMcAnswer}" but correct is "${correctMcAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint without revealing the answer. ${tutorRevealClause}`,
-      { silent: true },
-    );
   };
 
-  // ── Advance to next challenge (scripted path) ────────────────────
-  const handleNextChallenge = () => {
-    if (!advanceProgress()) {
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-      const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-      const metrics: LightShadowLabMetrics = {
-        type: 'light-shadow-lab',
-        evalMode: currentChallenge?.type,
-        challengesCompleted: challengeResults.length,
-        challengesCorrect: correctCount,
-        totalAttempts,
-        accuracy: overallScore,
-        averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-      };
-      // The workspace path submits the scored session from `onFinished` (below), not this tally.
-      if (!tutorOwned && progress.recordsEvaluation !== false) evaluation.submitResult(overallScore >= 70, overallScore, metrics);
-      setSubmittedResult({ score: overallScore });
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Student finished all shadow challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging phase-specific feedback about shadows and light.`,
-        { silent: true },
-      );
-      return;
-    }
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (evaluation.hasSubmitted || challenges.length === 0) return;
     const metrics: LightShadowLabMetrics = {
@@ -573,18 +490,22 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
       undefined, result.diagnosisEvidence);
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // No demonstration targets and no presentation. Every mode declares its levers.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets and no
+  // presentation. The lever set declares the levers and writes the support and onScreen facts (`leverScene`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge || allChallengesComplete) return;
+    if (!currentChallenge || !sessionChallenge || allChallengesComplete) return;
     const scene = workspaceScene(currentChallenge,
       { choice: selectedMcAnswer, sun: { altitude: sunAltitude, azimuth: sunAzimuth }, solved }, sunPositions);
+    const leverItem: ShadowChallenge = { ...sessionChallenge, supportTier: sessionChallenge.supportTier ?? supportTier };
     const shown = practice ? [] : [...pulledLevers, ...(sessionChallenge.startLevers ?? [])];
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, shown);
-    const levers = practice ? [] : lightShadowLevers(sessionChallenge, shown);
+    const levers = practice ? [] : SHADOW_LEVERS.declare(leverItem, null, shown);
+    const published = leverScene(scene, {
+      support: practice ? '' : SHADOW_LEVERS.support(leverItem, null),
+      onScreen: practice ? '' : SHADOW_LEVERS.onScreen(leverItem, null, shown),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -592,11 +513,11 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
         if (lever.pulled) return `${id} is already on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = SHADOW_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); clearWork(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: lightShadowLabBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -608,18 +529,6 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
   // ── Object rendering ─────────────────────────────────────────────
   const objVisual = getObjectVisual(primaryObject.type);
   const objectHeightPx = OBJECT_PX;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || submittedResult ? null : currentChallenge?.id ?? null,
-    label: 'The shadow scene and answer choices',
-    solved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
@@ -643,9 +552,9 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the scene and choices as its region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
         {/* ── SVG Scene ────────────────────────────────────────── */}
         <div className="relative rounded-xl overflow-hidden border border-white/10">
           <svg
@@ -789,12 +698,13 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </div>
 
-            {/* MC options */}
-            {!solved && !showingAnswer && (
+            {/* MC options; `option-<i>` is the choice's place on screen, which the journey taps */}
+            {!solved && (
               <div className="grid grid-cols-2 gap-2">
-                {mcOptions.map((option) => (
+                {mcOptions.map((option, i) => (
                   <Button
                     key={option}
+                    data-pip-object={`option-${i}`}
                     variant="ghost"
                     className={`bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-sm h-auto py-2 px-3 text-left justify-start ${
                       selectedMcAnswer === option ? 'ring-2 ring-blue-400 bg-blue-500/10' : ''
@@ -807,9 +717,9 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
               </div>
             )}
 
-            {/* Check / Next buttons */}
-            <div className="flex gap-2">
-              {!solved && !showingAnswer && (
+            {/* Check: the runtime owns Try again and Next */}
+            {!solved && (
+              <div className="flex gap-2">
                 <Button
                   variant="ghost"
                   className="bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-200"
@@ -818,17 +728,8 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
                 >
                   Check Answer
                 </Button>
-              )}
-              {(solved || showingAnswer) && !tutorOwned && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-200"
-                  onClick={handleNextChallenge}
-                >
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {feedback && (
               <div className={`rounded-lg p-3 text-sm ${
@@ -837,15 +738,12 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
                   : 'bg-amber-500/10 border border-amber-400/20 text-amber-200'
               }`}>
                 {feedback.message}
-                {showingAnswer && (
-                  <p className="mt-1 text-slate-300">The answer was: <strong>{correctMcAnswer}</strong></p>
-                )}
               </div>
             )}
           </div>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* ── Phase Summary ────────────────────────────────────── */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -863,8 +761,6 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const LightShadowLab = withWorkspaceController<LightShadowLabProps, ProgressOptions<ShadowChallenge>, Progress>(
-  'light-shadow-lab', LightShadowLabSurface, useScriptedProgress, useWorkspaceProgressFor('light-shadow-lab'));
+const LightShadowLab = withWorkspaceOnly<LightShadowLabProps>('light-shadow-lab', LightShadowLabSurface, props => props.data.title);
 
 export default LightShadowLab;

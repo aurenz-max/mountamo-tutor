@@ -17,7 +17,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { ClockChallenge } from './AnalogClock';
-import { clockExpectedAnswer, clockSpokenMisses, spokenDurationForms, spokenTimeForms } from './analogClockWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { clockKey, clockSpokenMisses, spokenDurationForms, spokenTimeForms } from './analogClockWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -56,8 +57,7 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the answer/);
+  // The scene never says the answer.
   expect(sceneText(h)).not.toMatch(key);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
@@ -117,7 +117,6 @@ it('setting the hands, counting the face and picking a face stay tap-only with n
     const h = mount(c.type, [c]);
     expect(h.state().task!.demand.response, c.type).toBe('gesture');
     expect(h.state().task!.workspace!.expectedAnswer, c.type).toBeUndefined();
-    expect(String(h.state().task!.demand.constraints), c.type).not.toMatch(/says/);
     cleanup();
   }
 });
@@ -129,7 +128,7 @@ it('the expected answer names every natural way to say the time', () => {
   expect(spokenTimeForms(12, 5)).toEqual(expect.arrayContaining(['twelve oh five', '12:05', 'five past twelve']));
   expect(spokenDurationForms(90)).toEqual(expect.arrayContaining(['one hour thirty minutes', '90 minutes', 'an hour and a half']));
   expect(spokenDurationForms(30)).toEqual(expect.arrayContaining(['thirty minutes', 'half an hour']));
-  expect(clockExpectedAnswer(MATCH)).toContain('"eight forty-five" does not');
+  expect(spokenKeyText(clockKey(MATCH)!)).toContain('"eight forty-five" is wrong');
 });
 
 it('every spoken miss is one the catalog lists for its mode, and no example is a way to say the key', () => {

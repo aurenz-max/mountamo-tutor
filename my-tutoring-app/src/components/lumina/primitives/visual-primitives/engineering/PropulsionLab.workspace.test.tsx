@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * propulsion-lab on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * predict and observe are code-keyed closed choices, tapped and checked or said aloud: the key is published only as
- * the spoken expectedAnswer, and the craft holds still until credit. experiment is two tests checked by code as a fair
+ * propulsion-lab on its boss (SAY_OR_SHOW choices and an experiment board on the spoken preset) and its lever set: what
+ * is its own. The generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet
+ * and the wiring. predict and observe are code-keyed closed choices, tapped and checked or said aloud: the key is
+ * published only as the spoken key (`propulsionKey`), and the craft holds still until credit. experiment is two tests checked by code as a fair
  * test. A wrong answer names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -21,15 +21,20 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { PropulsionLabData } from './PropulsionLab';
 import {
   askOf, buildPropulsionItems, emptyWork, fairTest, keyOf, MOTIONS, PROPULSION_MISSES, propulsionCorrect,
-  propulsionHarnessAnswers, propulsionItems, propulsionMiss, pressesTo, seededRng, validPropulsionItem, works,
-  workspaceAssignment, type ChoiceItem, type ExperimentItem, type ObserveItem, type PredictItem, type PropulsionItem,
+  propulsionHarnessAnswers, propulsionItems, propulsionKey, propulsionMiss, pressesTo, seededRng, validPropulsionItem, works,
+  type ChoiceItem, type ExperimentItem, type ObserveItem, type PredictItem, type PropulsionItem,
   type PropulsionMode, type PropulsionTier,
 } from './propulsionWorkspace';
 import {
   AIR_MARKS_LEVER, BLAST_ARROWS_LEVER, CAN_PUSH_LEVER, COMPARE_TESTS_LEVER, HOW_IT_WORKS_LEVER, howLines,
-  LABEL_STREAMS_LEVER, leverFact, motionLeak, ONE_STEP_LEVER, ONE_STREAM_LEVER, ONE_TEST_LEVER, possibleMisses,
-  propulsionLevers, simplerItem, STREAM_UNITS_LEVER, unitLines,
+  LABEL_STREAMS_LEVER, motionLeak, ONE_STEP_LEVER, ONE_STREAM_LEVER, ONE_TEST_LEVER, possibleMisses,
+  PROPULSION_LEVERS, simplerItem, STREAM_UNITS_LEVER, unitLines,
 } from './propulsionLevers';
+import { propulsionLabBoss } from './propulsionLab.boss';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
+
+const propulsionLevers = (i: PropulsionItem, pulled: string[] = []) => PROPULSION_LEVERS.declare(i, {}, pulled);
+const leverFact = (i: PropulsionItem, pulled: string[]) => PROPULSION_LEVERS.onScreen(i, {}, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -75,7 +80,7 @@ it.each(MODES)('%s binds with its key out of the scene and off the screen', mode
   expect(getComponentById('propulsion-lab')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(propulsionLabBoss.assignment(item).task);
   expect(JSON.stringify(demand(h))).not.toMatch(/have been run|has let go|ran the tests|\bcorrect\b/i);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(text(h)).not.toMatch(/Next →|Finish|NO THRUST|ACTION|REACTION|km\/h/);
@@ -86,7 +91,9 @@ it.each(MODES)('%s binds with its key out of the scene and off the screen', mode
   } else {
     expect(demand(h).response).toBe('speech');
     const key = keyOf(item as ChoiceItem);
-    expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${key}"`));
+    expect(propulsionLabBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
+    expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${propulsionKey(item)!.answer}"`));
+    expect(propulsionKey(item)!.answer).toBe(key.toLowerCase());
     expect(String(demand(h).question)).not.toContain(key);
   }
   h.close();
@@ -208,6 +215,31 @@ it('experiment: a run is the check; two changes, cannot_show; compare_tests, can
   h.close();
 });
 
+it('the harness says the key of each choice item and a wrong answer; an experiment presses the test buttons', () => {
+  for (const mode of MODES) for (const item of BY_MODE[mode]) {
+    const play = (right: boolean) => propulsionLabBoss.drive.play(right, item, {} as never);
+    if (item.mode === 'experiment') {
+      expect(propulsionKey(item)).toBeNull();
+      const fair = propulsionHarnessAnswers(item).correct;
+      expect(play(true)).toEqual([...pressesTo(item.start, { a: fair.a, b: fair.b }).map(label => ({ type: 'choose', label })), { type: 'check' }]);
+      continue;
+    }
+    const said = (right: boolean) => String((play(right).at(-1) as { text?: string }).text);
+    expect(said(true)).toBe(propulsionKey(item)!.answer);
+    expect([propulsionKey(item)!.answer, ...propulsionKey(item)!.alsoAccept]).not.toContain(said(false));
+  }
+});
+
+it('the scene keeps the never-say rules of each mode as facts', () => {
+  const h = mount('predict');
+  expect(String(demand(h).constraints)).toMatch(/never put two engines together/);
+  expect(String(demand(h).neverSay)).toMatch(/never say what the wrong choice came from/);
+  h.close();
+  const e = mount('experiment');
+  expect(String(demand(e).constraints)).toMatch(/that only one thing may differ/);
+  e.close();
+});
+
 describe('the pure rules', () => {
   const all = (mode: PropulsionMode) => TIERS.flatMap(tier => [1, 2, 3].flatMap(seed =>
     buildPropulsionItems({ modes: [mode], tier, rng: seededRng(`${mode}${tier}${seed}`) }).map(i => ({ i, tier }))));
@@ -274,6 +306,7 @@ describe('the pure rules', () => {
       for (const line of lines) expect(motionLeak(line), `${i.id}: ${line}`).toBe(false);
       expect(askOf(i), i.id).not.toContain(keyOf(i).toLowerCase());
       expect(askOf(i), i.id).not.toMatch(/\b(moves|stays still|goes)\b/i);
+      expect(askLeaks(askOf(i), propulsionKey(i)!), i.id).toEqual([]);
     }
   });
 
@@ -283,7 +316,6 @@ describe('the pure rules', () => {
       if (!s) continue;
       expect(s.mode).toBe(mode);
       expect(simplerItem(s)).toBeNull();
-      expect(propulsionLevers(s, [])).toEqual([]);
       if (s.mode !== 'experiment' && i.mode !== 'experiment') expect(keyOf(s)).not.toBe(keyOf(i));
       if (s.mode === 'experiment') { expect(s.lockA).toBe(true); expect(fairTest(s, s.start.a, s.start.b)).toBe(false); }
     }

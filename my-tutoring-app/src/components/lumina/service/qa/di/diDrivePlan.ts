@@ -75,15 +75,6 @@ import {
   type AddSubSceneItem,
 } from '@/components/lumina/primitives/visual-primitives/math/additionSubtractionSceneScript';
 import {
-  countingBoardHarnessAnswers,
-  countingBoardPackBase,
-  handVerdictCue as countingHandVerdictCue,
-  itemsFromChallenges as countingBoardItems,
-  objectWordFor,
-  type CountingChallengeLike,
-  type CountingItem,
-} from '@/components/lumina/primitives/visual-primitives/math/countingBoardScript';
-import {
   bondEquationVerdictCue,
   bondVerdictCueForPlaced,
   buildBondItems,
@@ -110,27 +101,6 @@ import {
   wholeCounters,
 } from '@/components/lumina/primitives/visual-primitives/math/numberBondSplit';
 import {
-  buildCompareItems,
-  compareObjectsHarnessAnswers,
-  compareObjectsPackBase,
-  orderCueForPlaced,
-  type CompareBand,
-  type CompareObjectsChallengeLike,
-  type CompareObjectsItem,
-} from '@/components/lumina/primitives/visual-primitives/math/compareObjectsScript';
-import {
-  gestureVerdictCue as habitatGestureVerdictCue,
-  habitatDioramaHarnessAnswers,
-  habitatDioramaPackBase,
-  itemsFromChallenges as habitatItems,
-  type HabitatItem,
-} from '@/components/lumina/primitives/visual-primitives/biology/habitatDioramaScript';
-import type {
-  HabitatChallenge,
-  HabitatDioramaData,
-  HabitatZone,
-} from '@/components/lumina/primitives/visual-primitives/biology/HabitatDiorama';
-import {
   buildVerdictCue as placeValueBuildVerdictCue,
   digitAtPlace as pvDigitAtPlace,
   itemsFromChallenges as placeValueItems,
@@ -140,51 +110,7 @@ import {
   type PlaceValueItem,
   type PlaceValueMode,
 } from '@/components/lumina/primitives/visual-primitives/math/placeValueScript';
-import {
-  itemsFromChallenges as ordinalLineItems,
-  ordinalLineHarnessAnswers,
-  ordinalLinePackBase,
-  placeCueForPlaced,
-  VALID_CONTEXTS as ORDINAL_CONTEXTS,
-  type OrdinalBand,
-  type OrdinalContext,
-  type OrdinalLineChallengeLike,
-  type OrdinalLineItem,
-} from '@/components/lumina/primitives/visual-primitives/math/ordinalLineScript';
-import {
-  interactiveBookHarnessAnswers,
-  interactiveBookPackBase,
-  itemsFromChallenges as interactiveBookItems,
-  tapVerdictCue as interactiveBookTapVerdictCue,
-  type InteractiveBookChallengeLike,
-  type InteractiveBookItem,
-} from '@/components/lumina/primitives/visual-primitives/literacy/interactiveBookScript';
-import {
-  itemsFromChallenges as storyBridgeItems,
-  storyBridgeHarnessAnswers,
-  storyBridgePack,
-  tapVerdictCue as storyBridgeTapVerdictCue,
-  type StoryBridgeItem,
-} from '@/components/lumina/primitives/visual-primitives/literacy/storyBridgeScript';
-import type {
-  StoryBridgeChallenge,
-  StoryBridgeStory,
-} from '@/components/lumina/primitives/visual-primitives/literacy/StoryBridge';
-import {
-  itemFromChallenge as rhymeItemFromChallenge,
-  itemsFromChallenge as rhymeItemsFromChallenge,
-  isOpenSet as isOpenRhymeSet,
-  rhymeStudioHarnessAnswers,
-  rhymeStudioPackBase,
-  type RhymeChallengeLike,
-  type RhymeItem,
-  type RhymeTier,
-} from '@/components/lumina/primitives/visual-primitives/literacy/rhymeStudioScript';
-import {
-  OPEN_SET_BENCH_STIMULI,
-  type OpenSetProbe,
-} from './openSetWordBench';
-import { ASSOCIATION_BENCH_STIMULI } from './associationBench';
+import type { OpenSetProbe } from './openSetWordBench';
 import { numberWordFor } from '@/components/lumina/primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 import {
   itemsFromChallenges as storyTalkItems,
@@ -193,42 +119,6 @@ import {
   type StoryTalkChallengeLike,
   type StoryTalkItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/storyTalkScript';
-import {
-  itemsFromChallenge as wordWorkoutItemsFromChallenge,
-  itemsFromChallenges as wordWorkoutItems,
-  pictureVerdictCue,
-  wordWorkoutHarnessAnswers,
-  wordWorkoutPackBase,
-  type WordWorkoutChallengeLike,
-  type WordWorkoutItem,
-} from '@/components/lumina/primitives/visual-primitives/literacy/wordWorkoutScript';
-import {
-  itemFromChallenge as pictureVocabularyItemFromChallenge,
-  itemsFromChallenges as pictureVocabularyItems,
-  pictureVocabularyHarnessAnswers,
-  pictureVocabularyPackBase,
-  tapVerdictCue as pictureVocabularyTapVerdictCue,
-  type PictureVocabChallengeLike,
-  type PictureVocabItem,
-} from '@/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyScript';
-import {
-  itemsFromChallenges as letterSpotterItems,
-  letterSpotterHarnessAnswers,
-  letterSpotterPackBase,
-  tapVerdictCue as letterSpotterTapVerdictCue,
-  type LetterSpotterChallengeLike,
-  type LetterSpotterItem,
-  type LetterSpotterTier,
-} from '@/components/lumina/primitives/visual-primitives/literacy/letterSpotterScript';
-import {
-  itemsFromChallenges as letterSoundLinkItems,
-  letterSoundLinkHarnessAnswers,
-  letterSoundLinkPackBase,
-  tapVerdictCue as letterSoundLinkTapVerdictCue,
-  type LetterSoundChallengeLike,
-  type LetterSoundItem,
-  type LetterSoundTier,
-} from '@/components/lumina/primitives/visual-primitives/literacy/letterSoundLinkScript';
 import {
   itemsFromTargets as wordBuilderItems,
   wordBuilderHarnessAnswers,
@@ -245,24 +135,6 @@ import {
   type SyllableChallengeLike,
   type SyllableClapperItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/syllableClapperScript';
-import {
-  cellVerdictCue as periodicTableCellVerdictCue,
-  itemsFromChallenges as periodicTableItems,
-  periodicTableHarnessAnswers,
-  periodicTablePackBase,
-  type PeriodicChallengeLike,
-  type PeriodicTableItem,
-  type PeriodicTier,
-} from '../../../primitives/chemistry-primitives/periodicTableScript';
-import {
-  causeEffectChainHarnessAnswers,
-  causeEffectChainPackBase,
-  chainVerdictCue,
-  itemsFromChallenges as causeEffectChainItems,
-  type CauseEffectChainItem,
-  type ChainChallengeLike,
-  type ChainTier,
-} from '../../../primitives/visual-primitives/history/causeEffectChainScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -477,48 +349,6 @@ const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
     frameVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
 };
 
-/**
- * interactive-book (fourteenth literacy port). Gesture commits carry the TAPPED
- * PRINT TEXT, not a count, and the wrong tap must be a real printed candidate
- * from the same page — the items deliberately do not carry the candidate list
- * (the stage renders real page hotspots, not a menu), so `build` records one
- * wrong candidate per challenge for `answersFor` to hand the harness.
- */
-const interactiveBookWrongTaps = new Map<string, string>();
-const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as InteractiveBookChallengeLike[];
-    interactiveBookWrongTaps.clear();
-    for (const ch of challenges) {
-      const wrong = (ch.optionTexts ?? []).find(
-        (option) => option.trim().toLowerCase() !== (ch.targetText ?? '').trim().toLowerCase(),
-      );
-      if (wrong) interactiveBookWrongTaps.set(ch.id, wrong);
-    }
-    const items = interactiveBookItems(challenges);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: interactiveBookPackBase(items),
-    };
-  },
-  answersFor: (item) =>
-    interactiveBookHarnessAnswers(item, interactiveBookWrongTaps.get(item.id)),
-  gestureVerdictCue: (item, gesture) => interactiveBookTapVerdictCue(item, String(gesture)),
-};
-
-/** Story Bridge: mixed gesture and spoken comparison over two read-alouds. */
-const storyBridgeAdapter: DiPortAdapter<StoryBridgeItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as StoryBridgeChallenge[];
-    const stories = (data.stories ?? []) as StoryBridgeStory[];
-    const items = storyBridgeItems(challenges, stories);
-    return { items, dropped: challenges.length - items.length, surface: storyBridgePack(items) };
-  },
-  answersFor: storyBridgeHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => storyBridgeTapVerdictCue(item, String(gesture)),
-};
-
 const numberBondHarnessCounters = (item: NumberBondItem) => {
   if (item.splitPhase) {
     if (item.kind === 'ten-and-ones') {
@@ -608,82 +438,6 @@ const numberBondAdapter: DiPortAdapter<NumberBondItem> = {
 };
 
 /**
- * compare-objects (fourth math port). Three spoken modes and one hands mode.
- * The gesture commit carries an ORDER, which `orderCueForPlaced` encodes as one
- * number — 1 = the correct order, 0 = the REVERSED order, which is the ordering
- * mode's own signature error rather than an arbitrary wrong shape.
- *
- * The spoken modes are where this adapter earns its keep: `compare_two`'s
- * `signatureWrong` is the direction reversal (the other object, named
- * confidently) and `non_standard`'s is the off-by-one — the two claims
- * `discriminationFor` makes, driven rather than asserted.
- */
-const compareObjectsAdapter: DiPortAdapter<CompareObjectsItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as CompareObjectsChallengeLike[];
-    const band: CompareBand = data.gradeBand === '1' ? '1' : 'K';
-    const { items, droppedChallenges } = buildCompareItems(challenges, { band });
-    return { items, dropped: droppedChallenges, surface: compareObjectsPackBase(items) };
-  },
-  answersFor: compareObjectsHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    orderCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
-/**
- * habitat-diorama — the ecosystem field-lab port. Observe, predict, and
- * defend are spoken closed choices; connect and restore commit the model move
- * itself. String gesture payloads are the selected destination ID or habitat
- * zone, matching the component's page-work exactly.
- */
-const habitatDioramaAdapter: DiPortAdapter<HabitatItem> = {
-  build: (data) => {
-    const habitatData = data as unknown as HabitatDioramaData;
-    const challenges = (habitatData.challenges ?? []) as HabitatChallenge[];
-    const { items, dropped } = habitatItems(challenges, habitatData);
-    return { items, dropped, surface: habitatDioramaPackBase(items) };
-  },
-  answersFor: habitatDioramaHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => item.kind === 'connect'
-    ? habitatGestureVerdictCue(item, { fromId: item.fromId, toId: String(gesture) })
-    : habitatGestureVerdictCue(item, { zone: String(gesture) as HabitatZone }),
-};
-
-/**
- * ordinal-line (sixth math port). Four spoken modes and one hands mode, and the
- * FIRST adapter whose answer material forks by BAND inside one eval mode:
- * `identify` at Kindergarten answers with a character NAME and at Grade 1 with a
- * PLACE WORD, so `build` has to read `gradeBand` off the payload or half the
- * drive tests the wrong contract.
- *
- * It is also the first math adapter where a challenge is not an item: a match
- * grid expands to one judged ask PER SYMBOL, so `dropped` counts CHALLENGES that
- * produced nothing rather than the items/challenges difference.
- *
- * The spoken modes are where it earns its keep. `discriminationFor` makes two
- * claims and both are driven rather than asserted: the WRONG-END count (the line
- * counted from the back — this primitive's #1 recorded misconception, computed
- * per item as `n + 1 - k`) and CARDINAL-FOR-ORDINAL ("three" for "third"), which
- * the contract refuses on purpose because it is the confusion the ordinal modes
- * exist to undo. `relative_position`'s signature wrong is neither: it is the
- * ANCHOR the question points at, named by a learner who found it and stopped.
- */
-const ordinalLineAdapter: DiPortAdapter<OrdinalLineItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as OrdinalLineChallengeLike[];
-    const band: OrdinalBand = data.gradeBand === '1' ? '1' : 'K';
-    const raw = String(data.context ?? 'race');
-    const context: OrdinalContext =
-      (ORDINAL_CONTEXTS as readonly string[]).includes(raw) ? (raw as OrdinalContext) : 'race';
-    const { items, droppedChallenges } = ordinalLineItems(challenges, { band, context });
-    return { items, dropped: droppedChallenges, surface: ordinalLinePackBase(items) };
-  },
-  answersFor: ordinalLineHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    placeCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
-/**
  * story-talk (fifteenth literacy port). ALL-VOICE — the picture menu is deleted,
  * so there is no `gestureVerdictCue` and every item is judged from the answer
  * text. Its signature wrong is the same-category near miss the deleted menu used
@@ -698,59 +452,6 @@ const storyTalkAdapter: DiPortAdapter<StoryTalkItem> = {
     return { items, dropped: challenges.length - items.length, surface: storyTalkPackBase(items) };
   },
   answersFor: storyTalkHarnessAnswers,
-};
-
-/**
- * word-workout (sixteenth literacy port). MIXED, and the first adapter where a
- * challenge is not an item: a chain expands to a judged read per word and a
- * sentence to a read plus a spoken question, so `dropped` counts CHALLENGES
- * that produced nothing rather than the items/challenges difference.
- *
- * Its gesture commit carries the TAPPED WORD (interactive-book's shape), and
- * its most interesting drive is `real_word`, whose signature wrong is the
- * PSEUDOWORD — the one answer material in the family that is not a word at all.
- */
-const wordWorkoutAdapter: DiPortAdapter<WordWorkoutItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as WordWorkoutChallengeLike[];
-    const items = wordWorkoutItems(challenges);
-    const dropped = challenges.filter(
-      (ch) => wordWorkoutItemsFromChallenge(ch).length === 0,
-    ).length;
-    return { items, dropped, surface: wordWorkoutPackBase(items) };
-  },
-  answersFor: wordWorkoutHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => pictureVerdictCue(item, String(gesture)),
-};
-
-/**
- * counting-board (fourth math port, first of the 19h-i-b adapter sweep). Its
- * gesture commit carries a FINGER COUNT — the child taps one of three hand
- * images — so it uses the `placed` shape, but the number means "fingers shown",
- * not "how many were placed on the board".
- *
- * The drive worth having here is `--di-wrong signature` on the counted modes:
- * this pack's contract accepts a count said ALOUD that ends on the target
- * ("the last number said tells the total"), so the signature wrong is a fluent
- * walk that ends one PAST it. That utterance contains the answer word without
- * landing on it, and it is the only wrong answer on this port a string-matching
- * judge affirms.
- */
-const countingBoardAdapter: DiPortAdapter<CountingItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as CountingChallengeLike[];
-    const objects = (data.objects ?? {}) as { type?: string };
-    const objectWord = objectWordFor(objects.type ?? 'custom');
-    const items = countingBoardItems(challenges, { objectWord });
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: countingBoardPackBase(items),
-    };
-  },
-  answersFor: countingBoardHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    countingHandVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
 };
 
 /**
@@ -783,186 +484,6 @@ const additionSubtractionSceneAdapter: DiPortAdapter<AddSubSceneItem> = {
     item.kind === 'build-equation'
       ? equationVerdictCue(item, String(gesture).trim().split(/\s+/).filter(Boolean))
       : sceneVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
-/**
- * picture-vocabulary (19h-i-b port 4, and the widest fork in the sweep at SIX
- * eval modes). MIXED, and unusually its fork is a RESPONSE-CLASS ruling rather
- * than a difficulty one: `receptive_match` and `association` tap emoji cards
- * because "what goes with sock" has many honest spoken answers and open-set
- * spoken production is a benched class — so the cards close the answer set while
- * the relation stays the skill. Its gesture commit carries the TAPPED WORD
- * (interactive-book's shape), but the card list rides on the item, so unlike
- * interactive-book no wrong-tap side table is needed here.
- *
- * What is different about its answer material: `receptive_match` is the only
- * item in the family whose ask SAYS THE TARGET ALOUD and is still not a leak —
- * the tutor speaks the word and the child taps its picture, so the word is the
- * question and the picture is the answer. That is the one mode carrying a
- * `leakExemptSpan`; the other five have answer-free asks and keep a flat oracle.
- *
- * Its sharpest drive is `--di-wrong signature` on `opposite`: the signature
- * wrong is the BASE WORD said straight back, which the ask itself spoke seconds
- * earlier, so a judge grading on "did I hear a real word from the prompt"
- * affirms it. `gradable_scale` is that trap one step further — its signature
- * wrong is a rung the tutor read aloud as part of the stimulus.
- */
-const pictureVocabularyAdapter: DiPortAdapter<PictureVocabItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as PictureVocabChallengeLike[];
-    const items = pictureVocabularyItems(challenges);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: pictureVocabularyPackBase(items),
-    };
-  },
-
-  /**
-   * THE ASSOCIATION BENCH (item 25). Two builds, one surface — rhyme-studio's
-   * shape, for rhyme-studio's reason: `build` answers a real generation
-   * because the LOOP is what a drive tests, `benchBuild` answers a
-   * hand-authored fixture because the JUDGE is what a bench tests, and that
-   * needs a key known-correct before the run starts.
-   *
-   * It goes STRAIGHT THROUGH `itemFromChallenge`, the shipped build gate, so
-   * the bench exercises the contract the primitive actually uses rather than a
-   * parallel construction of items. Note what that gate now does NOT ask of
-   * these challenges: no `options`. Association left `TAP_KINDS`, so the
-   * cards-must-contain-the-target check no longer applies to it — which is
-   * precisely why the fixture can be written as bare pairs.
-   */
-  benchBuild: () => {
-    const items = ASSOCIATION_BENCH_STIMULI
-      .map((s) => pictureVocabularyItemFromChallenge({
-        id: s.id,
-        type: 'association',
-        word: s.partnerWord,
-        emoji: s.partnerEmoji,
-        baseWord: s.baseWord,
-        baseEmoji: s.baseEmoji,
-      }))
-      .filter((item): item is PictureVocabItem => item !== null);
-    return { items, surface: pictureVocabularyPackBase(items) };
-  },
-
-  /**
-   * ⚠️ PROBES ARE ATTACHED BY ITEM ID ONLY — THERE IS NO FALLBACK MATCH, and
-   * that omission is the load-bearing decision here.
-   *
-   * The rhyme adapter can fall back to matching a GENERATED item against a
-   * fixture stimulus by RIME, because one thing genuinely transfers across
-   * that match: a hand-checked valid rhyme is a valid rhyme for any word in
-   * the family. Nothing transfers here. Whether "cloud" is a rationalised
-   * chain or an honest partner depends entirely on the stimulus — it is a
-   * chain for `sock` and very nearly a partner for `rain` — so borrowing a
-   * probe set across stimuli would manufacture exactly the confident,
-   * well-formatted, wrong finding that cost item 24 a verdict three times in
-   * one day.
-   *
-   * A generated association item is still fully DRIVABLE, because
-   * `pictureVocabularyHarnessAnswers` derives the only two wrong answers that
-   * are stimulus-independent (the echo and a nonword — see its docblock). It
-   * just is not SCORED. Scoring needs a human who read the stimulus first.
-   */
-  answersFor: (item) => {
-    const answers = pictureVocabularyHarnessAnswers(item);
-    if (item.kind !== 'association') return answers;
-    const stimulus = ASSOCIATION_BENCH_STIMULI.find((s) => s.id === item.id);
-    return stimulus ? { ...answers, probes: stimulus.probes } : answers;
-  },
-
-  /** `receptive_match` is the only gesture mode left in this pack. */
-  gestureVerdictCue: (item, gesture) => pictureVocabularyTapVerdictCue(item, String(gesture)),
-};
-
-/**
- * letter-spotter (19h-i-b port 6). MIXED, and the first port whose fork is
- * decided by whether the answer HAS a spoken form at all: `name-it` says a
- * letter, while `find-it` answers with a POSITION ("third box, second row" is
- * not an answer a child says) and `match-it` answers with a lowercase FORM
- * (saying "S" would not prove the child knows it). Its gesture commit carries
- * the TAPPED LETTER — interactive-book's `tapped` shape — and both tap modes
- * draw their wrong tap off the item itself, so no side table is needed.
- *
- * What is different about its answer material: the answer is ONE CHARACTER, and
- * that breaks the flat leak oracle every earlier port has used. The harness
- * scans `\b<token>\b` over a lowercased turn, so targets `a` and `i` collide
- * with the article and the pronoun. Two of our own lines were reworded rather
- * than exempted, which leaves the collision only in the GENERATED sentence a
- * name-it ask reads aloud — exempted for exactly those two letters and flat for
- * the other twenty-four. `find-it` carries NO leak tokens at all, and that is
- * not the oracle switched off: the tutor is told the letter (its stimulus) and
- * never told where it is, so the answer is absent from its context entirely.
- *
- * ⚠️ TWO OF THREE MODES CANNOT BE CAP-DRIVEN. `--di-cap` hangs the drill off the
- * first VOICE item, and a session pinned to `find_it` or `match_it` has none —
- * the harness now raises rather than silently running a plain drive. Their
- * `moveOnCue` (which carries no close line, because their corrections already
- * modelled everything they may say) is covered by pack gates, not live.
- */
-const letterSpotterAdapter: DiPortAdapter<LetterSpotterItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as LetterSpotterChallengeLike[];
-    const tier = (data.supportTier as LetterSpotterTier) ?? 'medium';
-    const items = letterSpotterItems(challenges, tier);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: letterSpotterPackBase(items),
-    };
-  },
-  answersFor: letterSpotterHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => letterSpotterTapVerdictCue(item, String(gesture)),
-};
-
-/**
- * letter-sound-link (19h-i-b port 7). MIXED across three DIRECTIONS of the same
- * mapping, and the only port in the sweep where each direction answers with a
- * different KIND of thing: `see-hear` produces the SOUND (`continuant_sound`),
- * `hear-see` taps the GRAPHEME (`manipulation` — a letter cannot be spoken,
- * `letter_name` is a blocked class), `keyword-match` says the anchor WORD
- * (`short_spoken_word`). Its gesture commit carries the TAPPED LETTER —
- * interactive-book's `tapped` shape — drawn off the item, so no side table.
- *
- * What is different about its answer material, twice over:
- *
- *  1. **The exemption is the DISTAR MODEL, and only where the tier ships one.**
- *     `see-hear`'s answer IS the sound the lead-in says out loud at `easy` and
- *     `medium` — that is standing gate 3, not a leak — so `leakExemptSpan` is
- *     the lead-in itself, issued from the builder the ask uses. At `hard` the
- *     lead-in is empty and the oracle goes FLAT, which is the rung's whole
- *     point and the one place the scan catches the sound arriving through the
- *     catalog or a struggle response.
- *  2. **`hear-see` carries the sweep's second one-character answer, and this
- *     time the collision is with our OWN NOTATION.** `_norm` strips
- *     punctuation, so the stimulus "/t/" becomes the bare token "t" — the
- *     answer letter. For the thirteen letters spoken stretched ("sss", "aaa")
- *     the scan is exact; for the other thirteen no scan can separate the
- *     notation from the answer, so the token is declared off rather than left
- *     to fire on every ask. Narrow, because the tutor is never TOLD the letter.
- *
- * Its sharpest drive is `--di-wrong signature` on `see_hear`: the signature
- * wrong is the LETTER NAME ("ess" for s), which is this primitive's own
- * documented signature error and the exact distinction the whole lesson exists
- * to teach. `keyword_match` is the same trap through the other door — its
- * signature wrong is the SOUND the tutor modelled seconds earlier, on-topic and
- * fluent and naming no picture at all.
- */
-const letterSoundLinkAdapter: DiPortAdapter<LetterSoundItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as LetterSoundChallengeLike[];
-    const tier = (data.supportTier as LetterSoundTier) ?? 'medium';
-    const maxAttempts = typeof data.maxAttempts === 'number' ? data.maxAttempts : undefined;
-    const items = letterSoundLinkItems(challenges, tier);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: letterSoundLinkPackBase(items, maxAttempts),
-    };
-  },
-  answersFor: letterSoundLinkHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => letterSoundLinkTapVerdictCue(item, String(gesture)),
 };
 
 /**
@@ -1138,232 +659,18 @@ const knowledgeCheckAdapter: DiPortAdapter<KnowledgeCheckItem> = {
     kcTapVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
 };
 
-/**
- * rhyme-studio (EIGHTH literacy port, adapter added 2026-08-18 for item 24).
- *
- * The port shipped its judged loop in August and never registered a drive
- * adapter, so `--di` could not reach it — which made the handoff's premise
- * ("the judge's semantics are machine-testable, so this is cheap now") true of
- * the family but not of this primitive. Registering it is step zero of the
- * `open_set_word` bench, and it is also what lets the three CLOSED modes be
- * driven headlessly for the first time.
- *
- * TWO BUILDS, ONE SURFACE. `build` answers a real generation the way every
- * other port does. `benchBuild` answers the hand-authored fixture, and its
- * items are `open_production` — a class `validateJudgedScriptPack` still
- * REFUSES. That refusal rides out in `packGateIssues` rather than throwing,
- * which is exactly right: it is the honest label on a bench run, and it is the
- * line that disappears when the class clears.
- */
-const rhymeStudioAdapter: DiPortAdapter<RhymeItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as RhymeChallengeLike[];
-    const tier = ((data.supportTier as RhymeTier) ?? 'medium') as RhymeTier;
-    const items = challenges.flatMap((ch) => rhymeItemsFromChallenge(ch, tier));
-    return {
-      items,
-      dropped: 0,
-      surface: rhymeStudioPackBase(items),
-    };
-  },
-
-  benchBuild: () => {
-    // Straight through the pack's own build gate: the bench must exercise the
-    // SHIPPED `itemFromChallenge`, not a parallel construction of items, or it
-    // would be benching a contract the primitive does not use.
-    const items = OPEN_SET_BENCH_STIMULI.map((s) =>
-      rhymeItemFromChallenge(
-        { id: s.id, mode: 'production', targetWord: s.targetWord, rhymeFamily: s.rhymeFamily },
-        'medium',
-      ),
-    );
-    return { items, surface: rhymeStudioPackBase(items) };
-  },
-
-  answersFor: (item) => {
-    if (!isOpenRhymeSet(item.mode)) return rhymeStudioHarnessAnswers(item);
-
-    /**
-     * Match the fixture by ITEM ID first (a bench run), then by RIME.
-     *
-     * The rime fallback is what keeps the ordinary `--di` drive working on this
-     * port now that production is open. A closed item carried its own answer;
-     * an open one does not have one to carry, and the only other candidate —
-     * the generator's `acceptableAnswers` — is the list that has contained the
-     * nonword "NAKE", so taking `correct` from there would make the harness
-     * expect an AFFIRM on a nonword. The bench fixture's valid rhymes are
-     * hand-checked, so a GENERATED item on one of its six rimes can borrow one.
-     * This is harness material only: it is never spoken to a child.
-     */
-    const stimulus = OPEN_SET_BENCH_STIMULI.find((s) => s.id === item.id)
-      ?? OPEN_SET_BENCH_STIMULI.find((s) => s.rhymeFamily.replace(/^-+/, '') === item.rime);
-    if (!stimulus) {
-      // No key and no covered rime: UNDRIVABLE by the plain drive, and saying so
-      // beats inventing an answer. Drive it with `--di-bench`, or extend the
-      // fixture with this rime.
-      return {
-        correct: '',
-        plainWrong: item.targetWord,
-        leakTokens: [],
-        probes: [],
-      };
-    }
-    /**
-     * ⚠️ EXCLUDE THE TARGET. The rime fallback matches a GENERATED item against
-     * a fixture stimulus, and the fixture's own valid rhymes can BE that item's
-     * target: a generated `cat` (-at) borrowed the -at fixture's first rhyme,
-     * which is "cat". The harness then said the target back, the tutor refused
-     * it correctly (that is the echo guard doing its job), and the run recorded
-     * a `di-false-refusal` against the tutor for our mistake. Caught in the
-     * first pilot drive, item c1.
-     */
-    const firstAffirm = stimulus.probes.find(
-      (p) => p.expect === 'affirm'
-        && p.text.toLowerCase() !== item.targetWord.toLowerCase(),
-    );
-    return {
-      // The ordinary --di drive still works on a bench item: it takes the
-      // first valid rhyme and the echo, which is this mode's signature miss.
-      correct: firstAffirm?.text ?? '',
-      plainWrong: stimulus.probes.find((p) => p.bucket === 'nonword')?.text ?? item.targetWord,
-      /**
-       * ⚠️ THE ECHO IS THE ITEM'S OWN TARGET, NEVER THE FIXTURE'S — the third
-       * miskey of this shape, and the last one.
-       *
-       * Taking it from the matched fixture's `echo` probe looks right and is
-       * silently wrong the moment the match was by RIME: a generated `cat`
-       * borrows the `-at` fixture, whose echo probe is "hat", and "hat" is a
-       * perfectly VALID RHYME for cat. The drive then said a right answer,
-       * the tutor affirmed it correctly, and the run filed `di-false-affirm`
-       * against the tutor for our mistake.
-       *
-       * Only ONE thing is transferable across a rime match — a hand-checked
-       * valid rhyme (and even that needs the target excluded, see above).
-       * Everything else in a probe set is about ITS stimulus. The echo needs no
-       * fixture at all: by definition it is the target said back.
-       */
-      signatureWrong: {
-        text: item.targetWord,
-        why:
-          'the stimulus said straight back. A word rhymes with itself only trivially and the ask is '
-          + 'for a DIFFERENT word; it is the documented signature error of this mode, and deleting the '
-          + 'word bank made it likelier because there is no menu to pick from',
-      },
-      // The ask names only the stimulus — it cannot leak an answer because it
-      // does not know one. That is the property the class is being benched for.
-      leakTokens: [],
-      probes: stimulus.probes,
-    };
-  },
-};
-
-/**
- * periodic-table (first CHEMISTRY port). MIXED: `find` commits a TAP carrying
- * the tapped element's NAME (interactive-book's text shape) with a
- * code-computed verdict; name/compare/valence are judged from the child's
- * voice. Content is code-drawn from the element table — no LLM in the answer
- * path — so the drive's packGateIssues re-run is near-deterministic and the
- * value here is the judge's SEMANTICS on the three spoken shapes,
- * especially the two signature wrongs chemistry hands over for free: the
- * symbol letters read straight back (name-by-symbol), and the group label
- * said instead of the outer-electron count (valence, group ≥ 13 — "seventeen"
- * for chlorine, printed on the very axis the child is reading).
- */
-const periodicTableAdapter: DiPortAdapter<PeriodicTableItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as PeriodicChallengeLike[];
-    const tier = (data.supportTier as PeriodicTier) ?? 'medium';
-    const items = periodicTableItems(challenges, tier);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: periodicTablePackBase(items),
-    };
-  },
-  answersFor: periodicTableHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => periodicTableCellVerdictCue(item, String(gesture)),
-};
-
-/**
- * cause-effect-chain (port 25, second history port). Two spoken modes and one
- * HANDS mode. `build_chain` commits the slot ORDER as card ids joined by
- * commas, and `chainVerdictCue` computes the match in code; `answersFor` hands
- * the harness the correct order and the REVERSED order (the ordering mode's
- * own signature error) through `tapped`.
- *
- * What the drive is really testing on the spoken modes: the yes/no contract's
- * refusal of a CONSEQUENCE affirmed "because it is about the same thing"
- * (identify_cause's signature), and the pick contract's refusal of the OTHER
- * END of the chain (root named when the last event was asked for, and the
- * reverse). Both are the misconceptions the click era's tutoring block
- * documented; the port made them judgeable.
- */
-const causeEffectChainAdapter: DiPortAdapter<CauseEffectChainItem> = {
-  build: (data) => {
-    type RawNode = { id?: string; text?: string; category?: string; icon?: string };
-    const raw = (data.challenges ?? []) as Array<{
-      id: string; type?: string; ask?: 'root' | 'proximate';
-      outcome?: RawNode; nodes?: RawNode[]; correctOrder?: string[]; explanation?: string;
-    }>;
-    const shaped: ChainChallengeLike[] = raw.map((ch) => ({
-      id: ch.id,
-      type: ch.type ?? '',
-      ask: ch.ask,
-      outcome: {
-        id: ch.outcome?.id ?? `${ch.id}-outcome`,
-        text: ch.outcome?.text ?? '',
-        category: ch.outcome?.category,
-        icon: ch.outcome?.icon,
-      },
-      nodes: (ch.nodes ?? []).map((n) => ({
-        id: n.id ?? '', text: n.text ?? '', category: n.category, icon: n.icon,
-      })),
-      correctOrder: ch.correctOrder ?? [],
-      explanation: ch.explanation,
-    }));
-    const session = {
-      periodLabel: String(data.periodLabel ?? ''),
-      gradeLevel: typeof data.gradeLevel === 'string' ? data.gradeLevel : undefined,
-    };
-    const tier = (data.supportTier as ChainTier) ?? undefined;
-    const items = causeEffectChainItems(shaped, session, { tier });
-    const producedFrom = new Set(items.map((i) => i.challengeId));
-    return {
-      items,
-      dropped: shaped.filter((ch) => !producedFrom.has(ch.id)).length,
-      surface: causeEffectChainPackBase(items),
-    };
-  },
-  answersFor: causeEffectChainHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    (item.kind === 'build_chain' ? chainVerdictCue(item, String(gesture)) : ''),
-};
-
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ramp-lab': rampLabAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'counting-board': countingBoardAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'addition-subtraction-scene':
     additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'picture-vocabulary': pictureVocabularyAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'letter-spotter': letterSpotterAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'letter-sound-link': letterSoundLinkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'syllable-clapper': syllableClapperAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'story-bridge': storyBridgeAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'compare-objects': compareObjectsAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-sequencer': numberSequencerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'ordinal-line': ordinalLineAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'word-workout': wordWorkoutAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'place-value-chart': placeValueChartAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'habitat-diorama': habitatDioramaAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'rhyme-studio': rhymeStudioAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'periodic-table': periodicTableAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'cause-effect-chain': causeEffectChainAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

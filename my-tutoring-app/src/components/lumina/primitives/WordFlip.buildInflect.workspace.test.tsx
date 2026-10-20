@@ -24,11 +24,12 @@ import WordFlip, { type WordFlipData } from './visual-primitives/literacy/WordFl
 import payload from '../components/live-activity/runtime/testing/w1-payloads/word-flip.build_inflect.json';
 import { joined, type BuildPart } from './visual-primitives/literacy/affixBuild';
 import {
-  INFLECT_BUILD_MISSES, endingChartFor, fewerEndingsFor, inflectBuildLevers, inflectItemsFrom, inflectMiss,
-  type InflectBuildItem,
+  INFLECT_BUILD_MISSES, endingChartFor, fewerEndingsFor, inflectItemsFrom, inflectMiss, type InflectBuildItem,
 } from './visual-primitives/literacy/inflectBuild';
+import { FLIP_LEVERS } from './visual-primitives/literacy/wordFlipLevers';
+import { asFlipBuild } from './visual-primitives/literacy/wordFlipDomain';
 import { getComponentById } from '../service/manifest/catalog';
-import { validateWordFlipData } from '../components/live-activity/adapters/wordFlipLive';
+import { validateWordFlipData } from './visual-primitives/literacy/wordFlipDomain';
 import { wordFlipOracle } from '../service/qa/oracles/word-flip';
 
 const data = (payload as unknown as { data: WordFlipData }).data;
@@ -121,12 +122,14 @@ describe('build_inflect rules (pure)', () => {
     const entry = getComponentById('word-flip')!;
     const tw = entry.teachingWorkspace!;
     expect(tw.misses!.build_inflect).toEqual([...INFLECT_BUILD_MISSES]);
-    const answered = new Set(inflectBuildLevers(item('f1'), board, []).flatMap(l => l.answers ?? []));
+    const declared = FLIP_LEVERS.declare(asFlipBuild(item('f1'), 'medium'), { challenges: [], board }, []);
+    const answered = new Set(declared.flatMap(l => l.answers ?? []));
     for (const m of INFLECT_BUILD_MISSES) if (m !== 'same_word') expect(answered.has(m), m).toBe(true);
     expect(tw.unanswered!.build_inflect).toEqual(['same_word']);
     const mode = entry.evalModes!.find(m => m.evalMode === 'build_inflect')!;
     expect(mode).toMatchObject({ beta: 3.6, challengeTypes: ['build_inflect'], affordances: { answers: ['build'] } });
-    expect(inflectBuildLevers(item('f1'), board, []).every(l => !l.pulled)).toBe(true);
+    expect(declared.map(l => [l.id, l.kind, l.carrier, l.pulled])).toEqual([['word_frame', 'help', 'shown', false],
+      ['ending_chart', 'help', 'shown', false], ['fewer_endings', 'simplify', 'shown', false]]);
   });
 
   it('the chart shares no word with the board; fewer endings keeps two fitting words and two endings', () => {

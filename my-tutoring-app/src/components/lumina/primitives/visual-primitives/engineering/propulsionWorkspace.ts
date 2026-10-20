@@ -1,5 +1,6 @@
 /**
- * propulsion-lab on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C29).
+ * propulsion-lab's domain: the items, their keys, checks and misses, and the scene. Its live wiring is
+ * `propulsionLab.card.ts` + `propulsionLab.boss.ts` (SAY_OR_SHOW choices and an experiment board on the spoken preset).
  *
  * Every item is built and keyed by code. A craft carries one or two engines (jet engine, rocket engine, propeller, or a
  * sail); each engine points one way and has a size. An engine pushes the craft the opposite way from its blast
@@ -19,11 +20,12 @@
  *   in a setup that cannot show the difference.
  * predict and observe are closed choices said aloud or tapped (J14); experiment is a gesture checked by code.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { PROPULSION_MISSES } from './propulsionLab.card';
 
 export type PropulsionMode = 'predict' | 'observe' | 'experiment';
 export const PROPULSION_MODES: PropulsionMode[] = ['predict', 'observe', 'experiment'];
@@ -126,11 +128,7 @@ export function propulsionCorrect(item: PropulsionItem | undefined, w: Propulsio
 export type ChoiceMiss = 'missed_cancel' | 'said_moves' | 'said_still' | 'wrong_way';
 export type ExperimentMiss = 'same_tests' | 'changed_more_than_one' | 'changed_other' | 'wrong_subject' | 'cannot_show';
 export type PropulsionMiss = ChoiceMiss | ExperimentMiss;
-export const PROPULSION_MISSES: Record<PropulsionMode, readonly PropulsionMiss[]> = {
-  predict: ['missed_cancel', 'said_moves', 'said_still', 'wrong_way'],
-  observe: ['missed_cancel', 'said_moves', 'said_still', 'wrong_way'],
-  experiment: ['same_tests', 'changed_more_than_one', 'changed_other', 'wrong_subject', 'cannot_show'],
-};
+export { PROPULSION_MISSES };
 
 /** Two or more working engines whose pushes cancel. */
 const cancels = (item: ChoiceItem) => keyOf(item) === 'Stays still' && item.thrusters.filter(t => works(t.engine, item.place)).length >= 2;
@@ -407,21 +405,37 @@ export function propulsionItems(d: PropulsionItemsSource): PropulsionItem[] {
   return buildPropulsionItems({ modes: resolvePropulsionModes(d), tier: resolveTier(d), rng: seededRng(`${d.title ?? 'propulsion'}:${resolveTier(d)}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third'];
-const SAY: Record<Motion, string> = {
-  'Moves left': '"moves left", "goes left" or "to the left"',
-  'Moves right': '"moves right", "goes right" or "to the right"',
-  'Stays still': '"stays still", "does not move", "stays put" or "nothing happens"',
+/** The ways a learner says each choice, beside the choice itself. */
+const SAY: Record<Motion, readonly string[]> = {
+  'Moves left': ['goes left'],
+  'Moves right': ['goes right'],
+  'Stays still': ['does not move', 'stays put', 'nothing happens'],
 };
+/** A way alone names a moving choice. Kept out of `alsoAccept`: the ask says "aimed to blast out to the left" by design. */
+const WAY_ALONE: Partial<Record<Motion, string>> = {
+  'Moves left': 'The way alone ("left", "to the left") names it too.',
+  'Moves right': 'The way alone ("right", "to the right") names it too.',
+};
+const said = (m: Motion) => m.toLowerCase();
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function propulsionExpectedAnswer(item: ChoiceItem): string {
-  const key = keyOf(item), at = MOTIONS.indexOf(key);
-  const others = MOTIONS.filter(c => c !== key).map(c => `"${c}"`).join(', ');
-  return `"${key}" (${SAY[key]}, or its place in the row, "the ${ORDINAL[at]} one") counts. ${others} are wrong, and so is naming two or hedging between them.`;
+/**
+ * The key a spoken reply is judged against: the motion, in any of its everyday wordings or by its place in the row.
+ * The other choices are the signature error. An experiment item has no key: the activity checks the two tests.
+ */
+export function propulsionKey(item: PropulsionItem): SpokenKey | null {
+  if (item.mode === 'experiment') return null;
+  const key = keyOf(item), place = `the ${ORDINAL[MOTIONS.indexOf(key)]} one`;
+  const others = MOTIONS.filter(c => c !== key).map(c => `"${said(c)}"`).join(', ');
+  return { answer: said(key), alsoAccept: [...SAY[key], place],
+    acceptRule: `${WAY_ALONE[key] ? `${WAY_ALONE[key]} ` : ''}Its place in the row ("${place}") names it too.`,
+    signatureError: `${others} are wrong, and so is naming two or hedging between them.` };
 }
+
+/** How a learner says a choice item's work aloud (the harness's spoken answers). */
+export const propulsionSaid = (w: PropulsionWork): string => (w.choice ? said(w.choice) : '');
 
 const WHAT: Record<ChoiceMiss, string> = {
   missed_cancel: 'says the craft moves, though its working engines push equally hard opposite ways',
@@ -441,16 +455,6 @@ export function propulsionSpokenMisses(item: ChoiceItem): KnownMiss[] {
     out.push({ id: m, pattern: `The right answer is "${key}". The learner's answer ${WHAT[m]}: ${groups.get(m)!.map(x => `"${x}"`).join(', ')}.`, examples: groups.get(m)! });
   }
   return out;
-}
-
-const HOW_CHOICE = 'The learner answers by saying it, or tapping a choice and pressing Check Answer.';
-const HOW_EXPERIMENT = 'The learner sets each test with its buttons and presses Run and check.';
-
-export function workspaceAssignment(item: PropulsionItem): TeachingAssignment {
-  if (item.mode === 'experiment') return { id: item.id, task: `${askOf(item)} ${HOW_EXPERIMENT}`, response: 'gesture' };
-  const misses = propulsionSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW_CHOICE}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: propulsionExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -487,17 +491,32 @@ export function describePropulsionWork(item: PropulsionItem | undefined, w: Prop
   return w.choice ? `Chose "${w.choice}"` : 'Nothing chosen yet';
 }
 
-const CONSTRAINTS_CHOICE = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. '
-  + 'Nothing on screen names what the craft does; it moves only after the answer is credited. You cannot tap, check or move the craft for the learner.';
-const CONSTRAINTS_EXPERIMENT = 'The learner sets both tests and presses Run and check; the activity judges whether the two tests can answer the question. '
-  + 'You cannot press the buttons or run the tests for the learner.';
+const LAYOUT_CHOICE = 'Nothing on screen names what the craft does; it holds still until the answer is credited.';
+
+/** What this item's task forbids saying, beyond the shared rules (kept from the catalog's guidance before the boss). */
+function neverSay(item: PropulsionItem): string {
+  if (item.mode === 'predict') {
+    return `Until it is credited, never say whether an engine can work where the craft is${item.named ? '' : ' or what it needs, whether there is air in space,'} `
+      + 'or which way an engine pushes the craft, and never put two engines together ("both pushing equally", "the stronger '
+      + 'one") or single out the bigger one. Ask about each engine in turn: which way it is aimed, and what it pushes out.';
+  }
+  if (item.mode === 'observe') {
+    return 'Until it is credited, never say which way a stream pushes the craft, the rule that a craft goes the opposite way '
+      + 'from its stream, or that two streams are equal or which is longer; ask what comes out of each engine and which way it leaves.';
+  }
+  return 'Never say which setting to change or keep, what should stay the same, that only one thing may differ ("just the '
+    + 'throttle", "the one thing", "test only what the question asks"), or which engine, place or throttle to choose; after '
+    + 'a run, ask what is different between the two tests and what the question asks about.';
+}
+const NEVER_EXPLAIN = 'After a miss, never say what the wrong choice came from. Describe a lever card only by what the scene '
+  + 'says it shows, never as the conclusion.';
 
 /** What is drawn and asked. Choices named, never which is right; the motion only once credited (or run). */
 export function workspaceScene(item: PropulsionItem, view: PropulsionView): WorkspaceScene {
   const facts: Record<string, string> = { kind: item.mode, question: askOf(item) };
   if (item.mode === 'experiment') {
     facts.controls = `Test A and Test B each have engine buttons (Jet engine, Rocket, Propeller), place buttons (Air, Space) and throttle buttons (Low, High).${item.lockA ? ' Test A is locked.' : ''}`;
-    facts.shown = 'Two tracks, one per test, each with a craft standing still. A test runs only when the learner presses Run and check.';
+    facts.shown = 'Two tracks, one per test, each with a craft standing still until the tests are run.';
     if (view.ran) facts.run = `The learner ran the tests. Test A (${setupText(view.ran.a)}): ${testResult(view.ran.a)}. Test B (${setupText(view.ran.b)}): ${testResult(view.ran.b)}.`;
   } else {
     facts.choices = MOTIONS.map((c, i) => `${i + 1}) ${c}`).join('  ');
@@ -510,11 +529,13 @@ export function workspaceScene(item: PropulsionItem, view: PropulsionView): Work
     }
   }
   facts.learnerWork = describePropulsionWork(item, view.work);
-  facts.constraints = item.mode === 'experiment' ? CONSTRAINTS_EXPERIMENT : CONSTRAINTS_CHOICE;
+  if (item.mode !== 'experiment') facts.layout = LAYOUT_CHOICE;
+  facts.constraints = neverSay(item);
+  facts.neverSay = NEVER_EXPLAIN;
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ───────────────────────────
 
 /** The journey's answers: the key, and a wrong answer showing the mode's first-listed miss it can. */
 export function propulsionHarnessAnswers(item: PropulsionItem): { correct: PropulsionWork; plainWrong: PropulsionWork } {

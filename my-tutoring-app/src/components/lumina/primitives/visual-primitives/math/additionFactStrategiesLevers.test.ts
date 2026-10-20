@@ -3,12 +3,16 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { AdditionFactChallenge, AdditionFactStrategy } from './AdditionFactStrategies';
 import { ADDITION_FACT_STRATEGIES, strategyPool } from './additionFactPools';
 import {
-  additionFactLevers, helpLevers, leverNumbers, smallerFact, startLevers,
+  ADDITION_FACT_LEVERS, helpLevers, leverNumbers, smallerFact, startLevers,
 } from './additionFactStrategiesLevers';
 import { additionFactMiss } from './additionFactStrategiesWorkspace';
 
-const fact = (a: number, b: number, id = 'f', turn = false): AdditionFactChallenge =>
-  ({ id, type: turn ? 'turnaround' : 'facts_mixed', a, b, sum: a + b, ...(turn ? { knownFact: { a: b, b: a } } : {}) });
+/** A fact of a family: its `type` is the strategy (contract R1). */
+const of = (type: AdditionFactStrategy, a: number, b: number, id = 'f'): AdditionFactChallenge =>
+  ({ id, type, a, b, sum: a + b, ...(type === 'turnaround' ? { knownFact: { a: b, b: a } } : {}) });
+const fact = (a: number, b: number, id = 'f', turn = false) => of(turn ? 'turnaround' : 'facts_mixed', a, b, id);
+const declared = (c: AdditionFactChallenge, session: AdditionFactChallenge[] = [c]) =>
+  ADDITION_FACT_LEVERS.declare(c, { session }, []);
 
 describe('which levers a fact offers', () => {
   it.each([
@@ -22,12 +26,12 @@ describe('which levers a fact offers', () => {
     ['facts_3_4', fact(3, 9), ['hop_strip', 'count_groups']],
     ['facts_mixed', fact(4, 9), ['count_groups']],
   ] as const)('%s %o', (strategy, c, ids) => {
-    expect(helpLevers(strategy, c)).toEqual(ids);
+    expect(helpLevers({ ...c, type: strategy })).toEqual(ids);
   });
 });
 
 describe('this wrong answer, then this lever (nextLever over the declared levers)', () => {
-  const levers = (strategy: AdditionFactStrategy, c: AdditionFactChallenge) => additionFactLevers(strategy, c, [], [c]);
+  const levers = (strategy: AdditionFactStrategy, c: AdditionFactChallenge) => declared({ ...c, type: strategy });
   it.each([
     ['plus_one', fact(1, 7), 9, 'hop_strip'],
     ['plus_one', fact(1, 7), 7, 'count_groups'],
@@ -50,8 +54,8 @@ describe('leak rules', () => {
   it('no help lever prints the total of the fact, except the flipped fact card, whose total IS the turn-around', () => {
     for (const strategy of ADDITION_FACT_STRATEGIES) {
       for (const [a, b] of strategyPool(strategy)) {
-        const c = fact(a, b, 'f', strategy === 'turnaround');
-        for (const id of helpLevers(strategy, c)) {
+        const c = of(strategy, a, b);
+        for (const id of helpLevers(c)) {
           const hops = Math.min(a, b);
           // A hop shows its number only once tapped: before the last hop, the total is not on screen.
           const printed = leverNumbers(id, c, Math.max(0, hops - 1));
@@ -94,6 +98,26 @@ describe('smaller_fact', () => {
 
   it('refuses when the fact is the smallest in its family', () => {
     expect(smallerFact('doubles', fact(1, 1), [fact(1, 1)])).toBeNull();
-    expect(additionFactLevers('doubles', fact(1, 1), [], [fact(1, 1)]).map(l => l.id)).toEqual(['count_groups']);
+    expect(declared(of('doubles', 1, 1)).map(l => l.id)).toEqual(['count_groups']);
+  });
+});
+
+describe('the lever set', () => {
+  it('declares every lever the old switch did, in order, with the same kinds, answers and carrier', () => {
+    const c = of('turnaround', 7, 8);
+    expect(declared(c).map(l => [l.id, l.kind, l.carrier, l.answers])).toEqual([
+      ['known_fact', 'help', 'shown', ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more']],
+      ['near_double', 'help', 'shown', ['one_short', 'one_over', 'short_by_more', 'over_by_more']],
+      ['count_groups', 'help', 'shown', ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more']],
+      ['smaller_fact', 'simplify', 'shown', ['short_by_more', 'over_by_more']],
+    ]);
+  });
+
+  it('a pulled lever fact names what is drawn and never the total; the simplify lever opens the smaller fact', () => {
+    const c = of('facts_7_8', 7, 8);
+    const facts = ADDITION_FACT_LEVERS.onScreen(c, { session: [c] }, ['near_double', 'count_groups']);
+    expect(facts).toContain('7 + 7');
+    expect(facts).not.toMatch(/14|15/);
+    expect(ADDITION_FACT_LEVERS.simpler(c, { session: [c] }, 'smaller_fact')).toEqual(smallerFact('facts_7_8', c, [c]));
   });
 });

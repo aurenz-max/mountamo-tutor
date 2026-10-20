@@ -7,35 +7,23 @@
 
 import { ComponentDefinition } from '../../../types';
 import { bossEntry } from '../../../components/live-activity/boss';
-import type { ChainMiss, SpokenChainMiss } from '../../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import { causeEffectChainCard } from '../../../primitives/visual-primitives/history/causeEffectChain.card';
 import { eraExplorerCard } from '../../../primitives/visual-primitives/history/eraExplorer.card';
-import type { MapMiss } from '../../../primitives/visual-primitives/history/mapExplorerWorkspace';
-import { missLists } from './missLists';
+import { mapExplorerCard } from '../../../primitives/visual-primitives/history/mapExplorer.card';
 
 export const HISTORY_CATALOG: ComponentDefinition[] = [
   {
     id: 'cause-effect-chain',
-    // -- PORT 25 -- the judged loop, second history / social-studies port -----
     // TWO MODES SPEAK, ONE IS HANDS. identify_cause is one spoken yes/no PER
-    // CARD (the click era's five-card set-pick expanded into the per-card
-    // verdict a child can actually say); root_vs_proximate is a spoken pick of
-    // one card; build_chain is the cards placed in order with the HANDS -- the
-    // arrangement IS the answer, committed on stillness and matched in code.
-    // The click era's pick chips, per-rung Check buttons, Next button, hint
-    // disclosure, two-strikes reveal ladder and every improvised tutor turn
-    // are gone.
-    // -- L1 -- the ladder is the PRD's own three phases. All three run off ONE
+    // CARD; root_vs_proximate is a spoken pick of one card; build_chain is the
+    // cards placed in order with the HANDS -- the arrangement IS the answer,
+    // committed on stillness and matched in code. All three run off ONE
     // emission (an ordered chain plus two named non-causes); THE TYPE IS
-    // CODE-ASSIGNED by eligibility, never enum-constrained -- identify_cause
-    // needs the non-cause cards, root_vs_proximate needs cards separable by ear.
-    // Cue lines and per-item judging contracts live in
-    // `causeEffectChainScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. SENTINEL DISCIPLINE re-checked on every line: no
-    // sentence begins with "Yes" or with "My turn".
-    description: 'Live-judged Direct Instruction on historical cause and effect, spoken and built. Students see an outcome and a bank of shuffled event cards and work out what had to happen before what: the tutor reads one event at a time and the child SAYS whether it helped cause the ending (rather than being a result of it, or just true at the time); the child BUILDS the chain with their hands by placing the causes in the order each one made the next possible; and the child SAYS which cause was the deep root versus the one that happened right before the end. Requires a microphone. Color-coded by category (political, economic, social, technological) so students SEE that big changes have causes from different corners of life. Ideal for "why did this happen" history, community-change and social-studies causation objectives, grades 1-6.',
+    // CODE-ASSIGNED by eligibility. The live wiring is the boss:
+    // `causeEffectChain.card.ts` + `causeEffectChain.boss.ts`.
+    description: 'Historical cause and effect with the live tutor, spoken and built. Students see an outcome and a bank of shuffled event cards and work out what had to happen before what: the tutor reads one event at a time and the child SAYS whether it helped cause the ending (rather than being a result of it, or just true at the time); the child BUILDS the chain with their hands by placing the causes in the order each one made the next possible; and the child SAYS which cause was the deep root versus the one that happened right before the end. Requires a microphone. Color-coded by category (political, economic, social, technological) so students SEE that big changes have causes from different corners of life. Ideal for "why did this happen" history, community-change and social-studies causation objectives, grades 1-6.',
     constraints: 'Explains ONE historical setting per session across 3-5 separate chains (causation depth, not chronology - use timeline-explorer for dating events, era-explorer for what one era was like). Requires a working microphone and the live tutor: two of the three moves are spoken exchanges and the third is a chain built by hand and checked by the activity. Chain length is set by grade (3 cards K-4, 4 cards at 5+), never by the manifest. The manifest must NOT supply events, causes or an order: the generator writes the chains, and CODE derives the answer key from the order Gemini emits and then shuffles the bank away from it.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'build'], role: 'apply', minutes: 8 },
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'identify_cause',
@@ -51,7 +39,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['identify_cause'],
         description:
-          "DI judged, spoken: the tutor states the ending, reads ONE event, and the child SAYS yes if it helped cause the ending or no if it did not - run over the real causes and the CONSEQUENCE and inert BACKGROUND cards the generator wrote. The PRD's Identify phase, and the confusion the whole primitive exists to fix: 'connected to the outcome' is not 'came before the outcome and made it possible'. The judging contract names affirming a consequence because it is about the same things as the signature miss.",
+          "Spoken: the tutor states the ending, reads ONE event, and the child SAYS yes if it helped cause the ending or no if it did not - run over the real causes and the CONSEQUENCE and inert BACKGROUND cards the generator wrote. The PRD's Identify phase, and the confusion the whole primitive exists to fix: 'connected to the outcome' is not 'came before the outcome and made it possible'. The key names affirming a consequence because it is about the same things as the signature miss.",
       },
       {
         evalMode: 'build_chain',
@@ -64,7 +52,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 3,
         challengeTypes: ['build_chain'],
         description:
-          "DI judged, HANDS: the tutor states the ending, and the child places every cause card into the chain in the order each one made the next possible - the arrangement IS the answer, so this is honest page work rather than a spoken item. The chain commits when every slot is filled and the board sits still; the match is computed in code and graded all-or-nothing, and a correction clears the whole board, because leaving the right cards in place would hand back which ones were already right. The PRD's Connect phase and the primitive's anchor.",
+          "Hands: the tutor states the ending, and the child places every cause card into the chain in the order each one made the next possible - the arrangement IS the answer, so this is honest page work rather than a spoken item. The chain commits when every slot is filled and the board sits still; the match is computed in code and graded all-or-nothing, and a correction clears the whole board, because leaving the right cards in place would hand back which ones were already right. The PRD's Connect phase and the primitive's anchor.",
       },
       {
         evalMode: 'root_vs_proximate',
@@ -76,99 +64,11 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 5,
         challengeTypes: ['root_vs_proximate'],
         description:
-          "DI judged, spoken: the tutor states the ending and the child SAYS which one card is the ROOT cause (the one without which none of the others could have happened) or, on other rounds, the PROXIMATE cause (the one right before the outcome) - by the card's own words or by its place on the screen. Asking both ends defeats 'always name the earliest-sounding card', and the judging contract names the other end of the chain as the signature miss. The PRD's Analyze phase and its grade-6 goal.",
+          "Spoken: the tutor states the ending and the child SAYS which one card is the ROOT cause (the one without which none of the others could have happened) or, on other rounds, the PROXIMATE cause (the one right before the outcome) - by the card's own words or by its place on the screen. Asking both ends defeats 'always name the earliest-sounding card', and the key names the other end of the chain as the signature miss. The PRD's Analyze phase and its grade-6 goal.",
       },
     ],
-    tutoring: {
-      // Defect 12: `{{stimulus}}` goes LAST, with the never-read-aloud clause
-      // IMMEDIATELY before it. Split that clause off into its own sentence
-      // higher up and the block stops identifying itself as not-content at the
-      // point it arrives.
-      taskDescription: 'Live-judged Direct Instruction on historical cause and effect with a young learner. The round type right now is "{{challengeType}}" (the special type free_explore means no rounds could be built - the child is only reading the background, and you react briefly and warmly as a guide without quizzing them). On an identify_cause round the learner answers OUT LOUD, yes or no; on a root_vs_proximate round the learner names ONE event out loud; on a build_chain round the learner answers with their HANDS by placing the cards, and you say nothing until a [CEC_CHAIN] message tells you what they built. You judge what you hear against the exact contract in each bracketed [CEC_ITEM] message and speak the scripted lines from those messages and nothing else. Working the events out is the entire skill being practised, so never read the cards or the background aloud unless a message asks you to, never say which event is a cause, which comes first, next or last, or which one the question is after, and never rule one out. The question side of what is on screen, described for you alone and never read aloud: {{stimulus}}.',
-      // Exactly what the pack pushes through contextFor. Every key the
-      // click-era block interpolated (the question, the outcome, the slot
-      // count) was either the answer's material or a channel to it (TU-6).
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d: every rung routes through the SCRIPTED correction. A re-spoken ask
-      // opens with neither "Yes" nor "My turn:", so the reducer records no
-      // verdict and the child waits on a lesson that cannot advance.
-      scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it inside the [CEC_ITEM] message (or, on a build_chain round, inside the [CEC_CHAIN] message). It already re-models the historian\'s test and hands the question back, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further - the activity moves the lesson on by itself and carries the next question to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses that produce a
-      // VERDICT (defect 7: a sentiment without the verdict line stalls a
-      // correct child). Every pattern here is a struggle this primitive had
-      // before the port - the misconceptions did not change because the answer
-      // became spoken.
-      commonStruggles: [
-        { pattern: 'Says yes to every event on a find-the-causes round, because each one is about the same story', response: 'Run the item\'s scripted correction line, which re-models that connected is not the same as caused, then wait in silence for their next try.' },
-        { pattern: 'Says no to a real cause because it is not the last thing that happened, or not the biggest', response: 'Run the item\'s scripted correction line - a cause only has to come before and make the ending possible - then wait in silence.' },
-        { pattern: 'Builds the chain by which story sounds best rather than by what had to exist first', response: 'Say the scripted correction line the [CEC_CHAIN] message gives you, which re-models the test and asks for the chain again, then stay silent while they rebuild it.' },
-        { pattern: 'On a root-or-right-before round always names the earliest-sounding event whichever end was asked for', response: 'Run the item\'s scripted correction line - it says the two ends of the chain apart - then wait in silence.' },
-        { pattern: 'Names the ending itself as an event, or as the root', response: 'Run the item\'s scripted correction line; the ending is the thing being explained and is fixed in place at the end. Then wait in silence.' },
-        { pattern: 'Goes quiet, or says they cannot read the events', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again. The activity reads the cards to a learner who cannot read them when they tap to hear it.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'After an affirmation or a correction, the turn is OVER - never run on into another question, '
-            + 'another event, another ending, or a next round of your own: the application sends every next '
-            + 'question itself. A continued turn asks about a card the screen is not showing.',
-        },
-        {
-          title: 'NEVER NAME A CARD OR A SLOT',
-          instruction:
-            'The events on screen ARE the answer, in pieces. Never say which of them is a cause, never say '
-            + 'which comes first, next or last, never say where a card belongs, never say how many are causes, '
-            + 'and never say "it is not that one". Singling one out counts even when you do not quote it: '
-            + '"think about the pioneers", "picture the farmers", "what about the one with the water wheels" '
-            + 'each point at a card, and pointing at a card is placing it. The scripted correction re-models '
-            + 'the historian\'s test and hands the question back - that is the whole of your help. Once the '
-            + 'activity affirms, the screen shows the teaching note, and you may build on it if a later '
-            + 'message asks you to.',
-        },
-        {
-          title: 'THE HANDS TURN IS SILENT',
-          instruction:
-            'On a build_chain round the learner answers by placing cards, and nothing they say while they '
-            + 'work is an answer. Say nothing at all until a [CEC_CHAIN] message tells you what they built '
-            + 'and hands you the line to say. Never narrate the board, never count the empty slots aloud, '
-            + 'and never fill the pause.',
-        },
-        {
-          title: 'READING ALOUD, ON REQUEST ONLY',
-          instruction:
-            'When a [CEC_HEAR] or [CEC_CONTEXT] message asks you to, read the text you were given word for '
-            + 'word, warmly and slowly, in exactly the order it was given to you, and then stop. The cards '
-            + 'are deliberately shuffled: reading them in any other order, grouping them, or leaning on one '
-            + 'over another hands over the answer just as surely as saying it. This is how an emerging '
-            + 'reader reaches the events at all, so never treat it as extra help and never make them earn it.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'An ending is printed with event cards in shuffled order; the cards never show their causal order. Find the '
-        + 'causes: one event at a time, the learner says yes if it helped cause the ending or no if it did not; an event '
-        + 'that came after the ending, or was only true at the time, is not a cause. Root or right before: the learner says '
-        + 'which one event is the root (none of the others could happen without it) or the one right before the ending, by '
-        + 'its words or its place on screen. Build the chain: the learner taps every card into the slots, earliest first; '
-        + 'the activity checks the order once every slot is filled and the board sits still, and a miss empties the board. '
-        + 'Before an attempt never say which event is a cause, which comes first, next or last, or which one is the answer, '
-        + 'and do not single out one card as a hint. When the ask carries the events (grades 1-2), read them in the order '
-        + 'given. You cannot move or highlight cards.',
-      // The board's own check (`chainMiss`), and identify_cause's spoken verdict by the event's role
-      // (`causeEffectSpokenMisses`, handoff 20 Part B); root_vs_proximate's named card by where it sits in the chain.
-      // Every miss has a lever on every item (`causeEffectChainLevers.ts`), so nothing is unanswered.
-      misses: missLists<ChainMiss | SpokenChainMiss>({ build_chain: ['reversed', 'two_swapped', 'other_order'],
-        identify_cause: ['cause_denied', 'consequence_as_cause', 'background_as_cause'],
-        root_vs_proximate: ['other_end', 'middle_event'] }),
-    },
+    ...bossEntry(causeEffectChainCard),
   },
   {
     id: 'era-explorer',
@@ -226,7 +126,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
     id: 'map-explorer',
     description: 'Real-world maps and the compass. A spinnable globe that unrolls into a flat map of the world, with the seven continents (North America, South America, Europe, Africa, Asia, Australia, Antarctica) and the five oceans; and picture maps of real neighborhoods (real places from Google Maps, such as a school, a park, a library and a museum, laid out on city blocks) or a pretend town, each with a compass rose. Students find places using north, south, east and west, say which way one place is from another by tapping the compass, plan a bus trip block by block with compass directions, and find continents and oceans on the globe. Harder maps are turned so north is not up, so students must read the compass rose. Perfect for lessons on maps and globes, cardinal directions, the compass rose, location and spatial thinking, continents and oceans, and neighborhoods and communities. ESSENTIAL for K-3 social studies geography.',
     constraints: 'Grades K-3. Each session is 4-5 asks on one map. Code lays out the map and writes every ask; the manifest must NOT name places, directions or answers. The intent may name a real city or neighborhood for the town map ("a map of downtown Chicago"); otherwise a well-known city is chosen.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 6 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'find_on_globe',
@@ -234,6 +134,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         beta: -1.0,
         scaffoldingMode: 1,
         challengeTypes: ['find_on_globe'],
+        affordances: { answers: ['tap'] },
         description: 'Spin a globe (or the flat world map) and tap a named continent or ocean; names appear only once found',
       },
       {
@@ -242,6 +143,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         beta: -0.5,
         scaffoldingMode: 1,
         challengeTypes: ['find_by_direction'],
+        affordances: { answers: ['tap'] },
         description: 'On a town map with a compass rose, find and tap the place that is north, south, east or west of a named place',
       },
       {
@@ -250,7 +152,8 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         beta: 0.0,
         scaffoldingMode: 2,
         challengeTypes: ['name_direction'],
-        description: 'On a town map, tap the compass arm that points from one named place to another (north, south, east or west)',
+        affordances: { answers: ['spoken', 'tap'] },
+        description: 'On a town map, say (or tap the compass arm for) the way from one named place to another (north, south, east or west)',
       },
       {
         evalMode: 'world_direction',
@@ -258,6 +161,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         beta: 0.5,
         scaffoldingMode: 2,
         challengeTypes: ['world_direction'],
+        affordances: { answers: ['tap'] },
         description: 'On the world map, tap the continent or ocean just north, south, east or west of a named continent',
       },
       {
@@ -266,28 +170,11 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         beta: 1.0,
         scaffoldingMode: 3,
         challengeTypes: ['build_route'],
+        affordances: { answers: ['tap'] },
         description: 'Plan a bus trip between two places on a town map with compass steps (two blocks north, then one block east), then press Go',
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The learner answers on the map, and the tap is the check: a place on the town map, an arm of the compass rose, '
-        + 'or land or water on the globe; on a trip, the arrows and Go. Directions come from the compass rose, never from up and '
-        + 'down on the screen: when the map is turned, north is not up, so ask the learner to find N on the compass first. Never '
-        + 'name the place, region or direction that answers the ask, and never say which places line up with each other; ask '
-        + 'which way the compass says, and what is on that side of the named place. A place counts as east, west, north or south '
-        + 'of another only when it is on the same street line. On the globe, continent and ocean names appear only once found, '
-        + 'so never name a continent by its colour or say where to spin. After a check the screen says what the learner tapped '
-        + 'and where it is; the tutor may talk about that.',
-      misses: missLists<MapMiss>({
-        find_on_globe: ['other_continent', 'water_not_land', 'land_not_water', 'other_ocean', 'sea_not_ocean'],
-        find_by_direction: ['screen_direction', 'opposite_way', 'turned_way', 'reference_place', 'other_place'],
-        name_direction: ['screen_direction', 'opposite_way', 'turned_way'],
-        world_direction: ['reference_place', 'opposite_way', 'turned_way', 'other_continent', 'water_not_land',
-          'land_not_water', 'other_ocean', 'sea_not_ocean'],
-        build_route: ['route_mirrored', 'route_wrong_end'],
-      }),
-    },
+    ...bossEntry(mapExplorerCard),
   },
 ];

@@ -1,85 +1,28 @@
 'use client';
 
 /**
- * OrdinalLine — DI modality. The Live tutor owns the clock in every mode
- * (qa/di/BACKLOG.md item 18 P4; the SIXTH math port).
+ * The ordinal line, taught on the shared teaching workspace only (the boss: `ordinalLine.card.ts` +
+ * `ordinalLine.boss.ts`). The tutor asks and helps; spoken names and place words are judged against the key, and the
+ * line checks a build itself. A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
  * WHAT THE CHILD DOES, PER MODE.
- *  - identify (K + 1): the tutor names the FRONT of the line and asks. At
- *    Kindergarten the child SAYS THE NAME of the one in that place; at Grade 1
- *    the tutor names a character and the child SAYS ITS PLACE. Same eval mode,
- *    band-split — see `ordinalLineScript`'s docblock for why. The tap-to-select
- *    on the character line is deleted: a mode whose own catalog label is
- *    *"Name ordinal position"* had a button for a surface.
- *  - match (K + 1): ONE symbol card at a time, and the child READS IT ALOUD.
- *    The two-column grid is deleted — the word column printed the answer beside
- *    the question, and the column CONSUMED its entries, so the last pair of
- *    every grid needed no reading at all.
- *  - relative_position (K + 1): the child SAYS THE NAME of the one before or
- *    after the marked place. The 3-4 name buttons are deleted.
- *  - sequence_story (K + 1): the tutor READS the story; the child SAYS the place
- *    of one character in it. The story no longer prints — a pre-reader could
- *    never use it and a reader who re-reads it is not listening — and the drag
- *    surface is deleted, because it was byte-for-byte `build_sequence`'s.
- *  - build_sequence (K + 1): the child ARRANGES the pictures from spoken clues.
- *    The arrangement IS the answer — the third unsayable shape — so this mode
- *    keeps its hands, and the screen is the page.
+ *  - identify: at Kindergarten the child SAYS THE NAME of the one in the place asked for; at Grade 1 the child SAYS
+ *    THE PLACE of the character named (one eval mode, band-split: `ordinalLineDomain`).
+ *  - match: ONE printed symbol card at a time, READ ALOUD. No word column: the word is the answer.
+ *  - relative_position: the child SAYS THE NAME of the one right before or after the marked place.
+ *  - sequence_story: the tutor says the story; the child SAYS the place of one character in it. It never prints.
+ *  - build_sequence: the child ARRANGES the pictures from spoken clues. The arrangement IS the answer, so this mode
+ *    keeps its hands, and the line checks it once the child stops touching.
  *
- * WHAT CHANGED. Deleted: `handleCheckAnswer` and all four checkers
- * (`checkIdentify`, `checkMatch`, `checkRelativeOrStory`, `checkBuildSequence`),
- * the Check control, the Next control, the multiple-choice option rows, the
- * match grid, the tap-to-select on the character line, the printed instruction,
- * the printed story, the printed clue list, the feedback strings that named the
- * position out loud (*"That's the ${ordinal} position"* — an answer print), the
- * after-two-attempts hint panel, the old tutor hook with all of its improvised
- * turns, and the per-tier reveal prose that governed them. There is no
- * progression timer and no progression control anywhere in this file —
- * progression has exactly one cause: a tutor verdict.
+ * ⭐ THE ORDINAL LABELS ARE AN ANSWER KEY IN PIXELS. A label under each character (`3rd`) is the answer on a spoken
+ * line, so every ordinal label on the line is held behind `runner.revealHeld` and paints only once the answer is
+ * credited. The SLOT labels on `build_sequence` are the exception: there the answer is WHICH PICTURE goes where, not
+ * what the place is called, so the numbered slots are the page rather than the key. They stay on the support tier that
+ * governs them (`showSlotLabels`, withdrawn at hard).
  *
- * (Named obliquely on purpose: the port census greps this file for the deleted
- * hooks, and a comment that spells them out reads as a live call site.)
- *
- * ⭐ THE ORDINAL LABELS ARE AN ANSWER KEY IN PIXELS. `showPositionLabels`
- * rendered `getOrdinalLabel(pos, labelFormat)` under EVERY character —
- * literally `3rd (third)` at `labelFormat: 'both'`. Harmless while a button
- * graded it; the moment the ask is *"who is third?"* the child reads the answer
- * off the screen, and on the Grade 1 direction the label IS the answer,
- * verbatim. THE THIRD PORT IN A ROW WITH THIS DEFECT (ten-frame's running
- * counter, compare-objects' numbered unit boxes, now this). Every ordinal label
- * on the line is held behind `runner.revealHeld` and paints only while the
- * tutor is affirming; the counting walk survives where it is earned, in the
- * correction, where she counts the line with the child.
- *
- * The SLOT labels on `build_sequence` are the exception and it is a real one:
- * there the answer is WHICH PICTURE goes where, not what the place is called,
- * so the numbered slots are the page rather than the key (the ten-frame R6
- * boundary — it was the ACTION that was the costume, never the paper). They
- * stay on the support tier that already governed them, withdrawn at `hard`.
- *
- * HOW A HANDS-ONLY TURN CLOSES. `build_sequence` has a STRUCTURAL close — every
- * place filled — which still waits a beat rather than committing on the tap,
- * because a mis-tap is normal and re-arranging is thinking. A part-filled line
- * closes on STILLNESS instead, and neither close is correctness-gated: a
- * reversed line and a two-of-four line both commit exactly as readily as the
- * right one, which is what gives the tutor something to teach. Windows are
- * armed through `runner.armStillness`, never a hand-rolled local timer — the
- * runner owns the five cancel sites. The two numbers are compare-objects'
- * calibration, and they are hand-tuned by ear there too.
- *
- * NO TIMED STIMULUS. Nothing on this stage is flashed or revealed on a beat:
- * the line is on screen for the whole item and the story is the tutor's own
- * voice, so there is no `onPresentStimulus` here and no clock to get wrong.
- *
- * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
- * tutor-busy; the tutor speaks only scripted lines; no visible timers;
- * tap-to-hear re-speaks the QUESTION (and on the story mode, that is what
- * replaces re-reading it); adult chrome hidden for pre-readers; interaction is
- * gated on `runner.canAttempt`, never on `runner.stage`.
- *
- * Inside a live runtime with a resolved pin, the shared teaching workspace
- * replaces the scripted runner (W1, `ordinalLineWorkspace.ts`): the tutor
- * teaches in its own words, the observer commits outcomes, and the line still
- * checks a built arrangement itself. Everything above describes the page both share.
+ * A BUILD CLOSES ON STILLNESS. A full line waits a beat (a mis-tap is normal); a part-filled line waits longer, and
+ * neither close is correctness-gated: a reversed line and a two-of-four line commit as readily as the right one,
+ * which is what gives the tutor something to teach. The windows are the runner's (`armStillness`).
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -99,38 +42,18 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { OrdinalLineMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-  type JudgedScriptRunnerOptions,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  itemsFromChallenges,
-  ordinalLinePackBase,
-  ordinalWordFor,
-  placementVerdictCue,
-  VALID_CONTEXTS,
-  type OrdinalContext,
-  type OrdinalLineItem,
-} from './ordinalLineScript';
+import { describeLine, lineMatches, lineMiss, ordinalWordFor, workspaceScene, type OrdinalLineItem } from './ordinalLineDomain';
+import { ordinalContextOf, ordinalLineBoss, ordinalLineItems } from './ordinalLine.boss';
+import { DOTS_LEVER, FLAG_LEVER, ORDINAL_LEVERS, PLACE_MODEL_LEVER, SIDE_MODEL_LEVER, TAP_LEVER, WORD_MODEL_LEVER,
+  castEmoji, placeModel, sideModel } from './ordinalLineLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { ordinalLinePipPose } from '../../../pip/ordinalLinePipPose';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
-import { useOrdinalLineRuntime } from './useOrdinalLineRuntime';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeLine, lineMatches, lineMiss, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
-import { DOTS_LEVER, FLAG_LEVER, THREE_LEVER, leverFacts, ordinalLevers, threePlaces } from './ordinalLineLevers';
-import { FRONT_LEVER, PLACE_MODEL_LEVER, SHORTER_LEVER, SIDE_MODEL_LEVER, STORY_LEVER, TAP_LEVER, WORD_MODEL_LEVER,
-  ordinalSpokenLevers, placeModel, shortStory, shorterLine, sideModel, spokenLeverFacts } from './ordinalLineSpokenLevers';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -153,14 +76,12 @@ export interface OrdinalLineChallenge {
 
   // --- Support tier (set only when the manifest pins a difficulty) ---
   supportTier?: 'easy' | 'medium' | 'hard';
-  /** ORDINAL LABELS UNDER THE LINE. Post-affirmation only now — the label is
-   *  the answer (see the module docblock); the flag no longer scaffolds. */
+  /** ORDINAL LABELS UNDER THE LINE. Post-credit only — the label is the answer (see the module docblock). */
   showPositionLabels?: boolean;
-  /** Ordinal labels above the build slots; the page, not the key. Default ON,
-   *  withdrawn at `hard`. */
+  /** Ordinal labels above the build slots; the page, not the key. Default ON, withdrawn at `hard`. */
   showSlotLabels?: boolean;
-  /** Mark the reference place on a relative-position ask. The tutor NAMES that
-   *  place aloud, so it is public; withdrawn at `hard`. */
+  /** Mark the reference place on a relative-position ask. The ask NAMES that place aloud, so it is public; withdrawn
+   *  at `hard`. */
   highlightTarget?: boolean;
   orderMatchSymbols?: boolean;     // legacy match-grid lever — the grid is gone
 }
@@ -204,18 +125,13 @@ const CONTEXT_THEME: Record<string, { bgEmoji: string; startLabel: string; endLa
   bookshelf:    { bgEmoji: '📚', startLabel: 'Left',      endLabel: 'Right' },
 };
 
-/**
- * HOW LONG THE LINE MAY STAY STILL BEFORE IT COMMITS. The window is the
- * runner's (`armStillness`, 19c); these are the per-shape numbers, carried from
- * compare-objects where they were tuned by ear. Both are STRUCTURAL, never
- * correctness-gated — a reversed line commits through the same window as the
- * right one.
- */
 /** Mid-build: a five-year-old pauses to think between placements. */
 const BUILD_SETTLE_MS = 4000;
-/** Every place filled — a terminal shape, but a mis-tap is normal, so it still
- *  waits a beat rather than committing on the tap. */
+/** Every place filled: a terminal shape, but a mis-tap is normal, so it still waits a beat. */
 const BUILD_COMPLETE_SETTLE_MS = 1500;
+
+/** The levers whose drawing stays on an easier practice item (the flag, the dots, the taps); the models do not. */
+const PRACTICE_DRAWN = [FLAG_LEVER, DOTS_LEVER, TAP_LEVER];
 
 // ============================================================================
 // Helpers
@@ -223,9 +139,8 @@ const BUILD_COMPLETE_SETTLE_MS = 1500;
 
 function getOrdinalLabel(position: number, format: 'word' | 'symbol' | 'both'): string {
   const SYMBOLS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
-  const idx = position - 1;
   const word = ordinalWordFor(position);
-  const symbol = SYMBOLS[idx] || `${position}th`;
+  const symbol = SYMBOLS[position - 1] || `${position}th`;
   if (format === 'word') return word;
   if (format === 'symbol') return symbol;
   return `${symbol} (${word})`;
@@ -261,40 +176,12 @@ interface OrdinalLineProps {
 // Component
 // ============================================================================
 
-/**
- * The scripted runner's options beside the workspace controller's (compare-objects' shape).
- * `placedOrder` feeds the runner-era runtime registration only.
- */
-type OrdinalLineControllerOptions = Omit<WorkspaceRunOptions<OrdinalLineItem>, 'primitiveId' | 'assignment' | 'onFinished'>
-  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
-    scriptedEvalMode: string }
-  & Omit<JudgedScriptRunnerOptions<OrdinalLineItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
-  & { pack?: JudgedScriptPack<OrdinalLineItem>; placedOrder: string[]; onFinished: (summary: OrdinalLineFinish) => void };
-
-/** What the metrics read, from either controller's finished record. */
-type OrdinalLineFinish = Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence'
-  | 'solvedCount' | 'learningResponses'> & { teachingAttempts?: unknown; assistanceProvenance?: string };
-
-function useScriptedController(options: OrdinalLineControllerOptions): LiveRun<OrdinalLineItem> {
-  const runner = useJudgedScriptRunner<OrdinalLineItem>({ ...options, pack: options.pack! });
-  // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
-  useOrdinalLineRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, placedOrder: options.placedOrder });
-  return runner;
-}
-
-const useWorkspaceController = (options: OrdinalLineControllerOptions): LiveRun<OrdinalLineItem> =>
-  useWorkspaceRunner<OrdinalLineItem>({ ...options, primitiveId: 'ordinal-line', assignment: workspaceAssignment });
-
-const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  OrdinalLineProps & { tutorOwned: boolean; useController: (options: OrdinalLineControllerOptions) => LiveRun<OrdinalLineItem> }) => {
-  const liveRuntime = useLiveRuntime();
+const OrdinalLineSurface = ({ data, className, runtimePlanItemId }: OrdinalLineProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     challenges = [],
-    context = 'race',
     labelFormat = 'symbol',
     gradeBand = 'K',
     instanceId,
@@ -306,24 +193,21 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   } = data;
 
   const isPreReader = gradeBand === 'K';
-  const resolvedContext: OrdinalContext =
-    (VALID_CONTEXTS as readonly string[]).includes(context) ? context : 'race';
+  const resolvedContext = ordinalContextOf(data);
   const contextTheme = CONTEXT_THEME[resolvedContext];
 
-  // ── Stage-payload state (the runner owns progression; this is the page) ───
+  // ── The page (the workspace owns progression) ─────────────────────────────
   const [placedOrder, setPlacedOrder] = useState<string[]>([]);
   const [heldPicture, setHeldPicture] = useState<string | null>(null);
-  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
-   *  that clear and the `onAffirmed` that set it land in one React batch, so the
-   *  reveal would paint on the last item and nowhere else (18b).
-   *  `runner.revealHeld` is the gate. */
+  /** Post-credit only (answer-leak rule); `runner.revealHeld` is the gate. */
   const [reward, setReward] = useState<string | null>(null);
   /** What the line held when it last stopped changing. */
   const pendingOrderRef = useRef<string[]>([]);
-  // In-item levers (`ordinalLineLevers.ts`), keyed by the session item they were pulled on, and the easier line a
-  // simplify lever put on screen in its place (with its own pictures). The ref is what event handlers read.
+  // In-item levers (`ordinalLineLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place. The ref is what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<{ item: OrdinalLineItem; emojis: Map<string, string> } | null>(null);
+  const [practice, setPractice] = useState<OrdinalLineItem | null>(null);
+  const practiceRef = useRef<OrdinalLineItem | null>(null);
   const displayItemRef = useRef<OrdinalLineItem | null>(null);
   /** tap_marks: the pictures on the line the learner has tapped, keyed by the item on screen. */
   const [tapped, setTapped] = useState<{ item: string; names: string[] }>({ item: '', names: [] });
@@ -341,33 +225,13 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── The pack: generated challenges → judged items + hand-authored script ──
-  // A match grid expands to one judged ask PER SYMBOL; everything else is one
-  // item. Unaskable items are DROPPED (a key that disagrees with its target
-  // position or with the line, a character name that states a place, a line the
-  // judge cannot separate by ear, a story that cannot be spoken verbatim, a clue
-  // set longer than a child can hold from speech). Nothing is backfilled.
-  const built = useMemo(
-    () => itemsFromChallenges(challenges, { band: gradeBand, context: resolvedContext }),
-    [challenges, gradeBand, resolvedContext],
-  );
-  const items = built.items;
+  // A match grid expands to one judged ask PER SYMBOL; everything else is one item. Unaskable items are DROPPED.
+  const items = useMemo(() => ordinalLineItems(data), [data]);
 
-  /** The generated challenge behind an item — the page's own data (emoji, tier
-   *  render levers), which the judged item deliberately does not carry. A match
-   *  item's id is `${challengeId}::p${position}`, so the lookup strips the
-   *  suffix rather than assuming one item per challenge. */
-  const challengeById = useMemo(() => {
-    const map = new Map<string, OrdinalLineChallenge>();
-    for (const ch of challenges) map.set(ch.id, ch);
-    return map;
-  }, [challenges]);
-
-  const challengeFor = useCallback(
-    (item: OrdinalLineItem | null) =>
-      item ? challengeById.get(item.id.split('::')[0]) ?? null : null,
-    [challengeById],
-  );
+  /** The generated challenge behind an item (emoji, tier render flags). A match item's id is `${challengeId}::p${n}`. */
+  const challengeById = useMemo(() => new Map(challenges.map(ch => [ch.id, ch])), [challenges]);
+  const challengeFor = useCallback((item: OrdinalLineItem | null) =>
+    (item ? challengeById.get(item.id.split('::')[0]) ?? null : null), [challengeById]);
 
   /** Emoji by character name — the picture a pre-reader actually reads. */
   const emojiByName = useMemo(() => {
@@ -380,78 +244,16 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     return map;
   }, [challenges]);
 
-  const pack = useMemo<JudgedScriptPack<OrdinalLineItem> | undefined>(() => tutorOwned ? undefined : ({
-    ...ordinalLinePackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen, then put them in their places.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Have another go — show me your line.'
-        : 'Have another go — say your answer.',
-      done: 'Great counting today!',
-    },
-    // One factual record per attempt: the line as shown (place 1 first), the ask, and what was heard or
-    // arranged. Stating the line is what lets a count from the wrong end be told from a slip; the distiller
-    // abstained on "who is in place 2 of 5" alone (judged-evidence census, 2026-09-14).
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
-      const line = `the line from the front is ${item.lineNames.join(', ')} (${item.lineNames.length} in line)`;
-      switch (item.kind) {
-        case 'identify':
-          return {
-            challenge: item.direction === 'name_character'
-              ? `identify: ${line}; who is in place ${item.askPosition}?`
-              : `identify: ${line}; what place is ${item.lineNames[item.askPosition - 1]} in?`,
-            expected: item.answerText,
-            observed: heard,
-          };
-        case 'match':
-          return {
-            challenge: `match: read the symbol ${item.symbol} aloud.`,
-            expected: item.answerText,
-            observed: heard,
-          };
-        case 'relative_position':
-          return {
-            challenge: `relative_position: ${line}; who is right ${item.relativeQuery} ${item.lineNames[item.askPosition - 1]} (place ${item.askPosition})?`,
-            expected: item.answerText,
-            observed: heard,
-          };
-        case 'sequence_story':
-          return {
-            challenge: `sequence_story: the story spoken was "${item.storyText}"; what place does ${item.storyName} have?`,
-            expected: item.answerText,
-            observed: heard,
-          };
-        default:
-          return {
-            challenge: `build_sequence: arrange ${item.answerOrder.length} pictures from spoken clues: ${
-              item.clues.map((clue) => `${clue.name} is in place ${clue.position}`).join('; ')}.`,
-            expected: item.answerOrder.join(', '),
-            observed: `Made this line: ${
-              pendingOrderRef.current.filter(Boolean).length
-                ? pendingOrderRef.current.map((n) => n || 'an empty place').join(', ')
-                : 'nothing'
-            }.`,
-          };
-      }
-    },
-  }), [items, tutorOwned]);
-
-  // ── Per-item reset — every item owns its starting state ───────────────────
-  const resetStageFor = useCallback(() => {
+  const resetStage = useCallback(() => {
     setPlacedOrder([]);
     setHeldPicture(null);
     pendingOrderRef.current = [];
   }, []);
 
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: OrdinalLineFinish) => {
+  // ── The submission, once, from the scored session ─────────────────────────
+  const handleFinished = useCallback((summary: TeachingEvaluationResult) => {
     const scoreById = new Map(summary.outcomes.map((o) => [o.id, o.score]));
-    // Per-mode accuracy off the runner's own per-item scores (100/67/33 by
-    // corrections) — nothing here re-grades what the tutor already judged.
+    // Per-mode accuracy off the per-item scores — nothing here re-grades what was already judged.
     const accuracyOf = (kind: OrdinalLineItem['kind']): number => {
       const scoped = items.filter((i) => i.kind === kind);
       if (scoped.length === 0) return 0;
@@ -485,38 +287,27 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     );
   }, [items, evaluation]);
 
-  const runner = useController({
-    items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
-    // identity must not change while the runner owns it.
-    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    placedOrder,
-    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
-    // its speech holds never settle, and the completion handoff has nothing to read.
-    runtime: liveRuntime,
-    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[OL_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
-    pack,
+  const runner = useWorkspaceRunner<OrdinalLineItem>({
+    primitiveId: 'ordinal-line',
+    assignment: ordinalLineBoss.assignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    exhibitId,
     onFinished: handleFinished,
     // A fresh item never carries an easier line over from the last one.
-    onItemOpened: () => { setPractice(null); resetStageFor(); },
+    onItemOpened: () => { practiceRef.current = null; setPractice(null); resetStage(); },
     onAffirmed: (item) => {
-      // The first moment an answer may appear on screen — and the reveal is the
-      // PAIRING (who, and which place), never the answer text on its own. Both
-      // identify directions therefore produce the same reward: at K the child
-      // said "Fox" and learns it was third; at Grade 1 they said "third" and see
-      // it attached to the Fox. Reading `answerText` here would print
-      // "third — third" on the Grade 1 direction, which teaches nothing.
+      // The first moment an answer may appear on screen, and the reveal is the PAIRING (who, and which place),
+      // never the answer text alone: at K the child said "Fox" and learns it was third; at Grade 1 they said "third"
+      // and see it attached to the Fox.
       switch (item.kind) {
         case 'identify':
           setReward(`${item.lineNames[item.askPosition - 1]} — ${ordinalWordFor(item.askPosition)}`);
           break;
         case 'relative_position': {
-          const place = item.relativeQuery === 'before'
-            ? item.askPosition - 1
-            : item.askPosition + 1;
+          const place = item.relativeQuery === 'before' ? item.askPosition - 1 : item.askPosition + 1;
           setReward(`${item.answerText} — ${ordinalWordFor(place)}`);
           break;
         }
@@ -528,25 +319,22 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
           setReward(item.answerOrder.join('  →  '));
       }
     },
-    onCorrectionRetry: (item) => {
-      // The tutor re-counted the line and re-asked in-band; clear the board for
-      // another go. The settle window is re-armed by the runner on this path.
-      if (item.kind === 'build_sequence') {
-        setPlacedOrder([]);
-        setHeldPicture(null);
-        pendingOrderRef.current = [];
-      }
+    onCorrectionRetry: (sessionItem) => {
+      // Try again on the easier line keeps it: clear ITS board, not the full item's.
+      const item = practiceRef.current ?? sessionItem;
+      if (item.kind === 'build_sequence') resetStage();
     },
   });
 
   const sessionItem = runner.currentItem;
-  /** What is on screen: the easier line while a simplify lever holds it, else the session item. */
-  const currentItem = practice?.item ?? sessionItem;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
-  const kind = currentItem?.kind;
   const currentChallenge = challengeFor(sessionItem);
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
-  const emojiOf = (name: string) => practice?.emojis.get(name) ?? emojiByName.get(name) ?? '⬤';
+  /** What is drawn: on a practice item only the flag, the dots and the taps stay. */
+  const drawnLevers = practice ? pulledLevers.filter(id => PRACTICE_DRAWN.includes(id)) : pulledLevers;
+  const emojiOf = (name: string) => (practice ? castEmoji(name) : undefined) ?? emojiByName.get(name) ?? castEmoji(name) ?? '⬤';
   const tappedNames = tapped.item === currentItem?.id ? tapped.names : [];
   const tapPicture = (name: string) => {
     const id = displayItemRef.current?.id ?? '';
@@ -556,33 +344,23 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
       return { item: id, names: names.includes(name) ? names.filter(n => n !== name) : [...names, name] };
     });
   };
-  // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
-  // ── Pip shared surface: element registry + the child's last touch ────────
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
-
-  // ── The gesture commit ────────────────────────────────────────────────────
-  // No Check control: nothing on screen may carry the child forward. The close
-  // describes the committed line; THE MATCH IS COMPUTED IN CODE.
+  // ── The build: the line checks its own arrangement ────────────────────────
   const commitLine = useCallback(() => {
     const item = displayItemRef.current;
     if (!item || item.kind !== 'build_sequence') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingOrderRef.current;
-    // The line checks its own arrangement, with the same code match the cue reports.
-    // A part-filled line commits too, exactly as on the runner.
-    commitGesture(runner, { response: describeLine(item, placed), correct: lineMatches(item, placed),
-      miss: lineMiss(item, placed), cue: () => placementVerdictCue(item, placed) });
+    // A part-filled line commits too: the miss names what it shows.
+    runner.commitGesture({ response: describeLine(item, placed), correct: lineMatches(item, placed),
+      miss: lineMiss(item, placed), cue: () => '' });
   }, [runner]);
 
-  /** A hands turn closes on stillness; a full line shortens the window but never
-   *  commits on the tap (a mis-tap is normal). Further touches re-arm it, and
-   *  the runner cancels it at item open, at a correction and at the commit. */
+  /** A hands turn closes on stillness; a full line shortens the window but never commits on the tap. */
   const armBuildSettle = useCallback((order: string[]) => {
     const item = displayItemRef.current;
-    // SPARSE, not compacted: an empty place between two filled ones is part of
-    // what the child made, and the verdict cue names it (see the script).
+    // SPARSE, not compacted: an empty place between two filled ones is part of what the child made.
     pendingOrderRef.current = order;
     const filled = order.filter(Boolean).length;
     if (filled === 0) {
@@ -594,8 +372,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     runner.armStillness(commitLine, complete ? BUILD_COMPLETE_SETTLE_MS : BUILD_SETTLE_MS);
   }, [runner, commitLine]);
 
-  /** Tap a picture to hold it, tap a place to put it there. The same two-tap
-   *  mechanic the click era had — it is the PAGE, and it survives the port. */
+  /** Tap a picture to hold it, tap a place to put it there. */
   const holdPicture = useCallback((name: string) => {
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     SoundManager.tap();
@@ -606,11 +383,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     const item = displayItemRef.current;
     if (!item || item.kind !== 'build_sequence') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-
-    // Computed OUTSIDE the state updater on purpose: `armBuildSettle` arms a
-    // real timer, and a side effect inside an updater runs twice under
-    // StrictMode's double-invoke — which on a hands turn means two live
-    // stillness windows racing to commit the same board.
+    // Computed OUTSIDE the state updater: `armBuildSettle` arms a real timer, and an updater runs twice under
+    // StrictMode.
     const next = [...placedOrder];
     while (next.length < item.answerOrder.length) next.push('');
     if (heldPicture) {
@@ -630,12 +404,12 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
 
   // ── The drawing ───────────────────────────────────────────────────────────
 
-  /** The line itself. NOT interactive in any mode — the answer is spoken. */
+  /** The line itself. The answer is spoken; only the tap_marks lever makes its pictures tappable. */
   const renderCharacterLine = (item: OrdinalLineItem, markPosition?: number) => (
     <div className="flex items-end justify-center gap-1 sm:gap-2 py-4 px-2">
-      <div ref={pip.ref('start')} data-pip-object="start" className="flex flex-col items-center mr-2">
+      <div data-pip-object="start" className="flex flex-col items-center mr-2">
         {/* front_flag lever: a flag at the front end, the end the ask names. Never a picture. */}
-        {pulledLevers.includes(FRONT_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
+        {drawnLevers.includes(FLAG_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
         <span className="text-lg">{contextTheme.bgEmoji}</span>
         <span className="text-[10px] text-slate-500 mt-1">{contextTheme.startLabel}</span>
       </div>
@@ -644,18 +418,16 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
         const pos = idx + 1;
         const isMarked = markPosition === pos;
         // tap_marks lever: a picture the learner taps gets a ring; no order, no number.
-        const tappable = item.kind === 'identify' && pulledLevers.includes(TAP_LEVER);
+        const tappable = item.kind === 'identify' && drawnLevers.includes(TAP_LEVER);
         const ringed = tappable && tappedNames.includes(name);
         return (
           <div
             key={name}
-            ref={isMarked ? pip.ref('marked') : undefined}
             data-pip-object={isMarked ? 'marked' : undefined}
             {...(tappable ? { 'data-tap-mark': name, 'data-ringed': ringed, role: 'button', onClick: () => tapPicture(name) } : {})}
             className={`flex flex-col items-center transition-all duration-200 ${isMarked ? 'scale-105' : ''} ${tappable ? 'cursor-pointer' : ''}`}
           >
-            {/* ⭐ THE ORDINAL LABEL IS THE ANSWER. Reveal only — never a
-                scaffold, whatever the tier flag says (module docblock). */}
+            {/* ⭐ THE ORDINAL LABEL IS THE ANSWER. Reveal only (module docblock). */}
             <span className="text-[10px] mb-1 text-emerald-300 font-medium h-3">
               {runner.revealHeld ? getOrdinalLabel(pos, labelFormat) : ''}
             </span>
@@ -686,7 +458,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   /** ONE symbol card. No word column: the word IS the answer. */
   const renderSymbolCard = (item: OrdinalLineItem) => (
     <div className="flex justify-center py-6">
-      <div ref={pip.ref('symbol')} data-pip-object="symbol" className="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-500/25 border-2 border-purple-400/40 shadow-xl flex items-center justify-center">
+      <div data-pip-object="symbol" className="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-500/25 border-2 border-purple-400/40 shadow-xl flex items-center justify-center">
         <span className="text-4xl font-black text-purple-100">{item.symbol}</span>
       </div>
     </div>
@@ -706,9 +478,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     </div>
   );
 
-  /** Empty places + a tray. The slot ordinals are the PAGE, not the key — the
-   *  answer is which picture goes where — so they stay on the tier that already
-   *  governed them (`showSlotLabels`, withdrawn at hard). */
+  /** Empty places + a tray. The slot ordinals are the PAGE, not the key, so they stay on the tier that governs them. */
   const renderBuildStage = (item: OrdinalLineItem) => {
     const slots = item.answerOrder.length;
     const filled = new Map<number, string>();
@@ -718,30 +488,27 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
 
     return (
       <div className="space-y-4">
-        <div ref={pip.ref('slots')} data-pip-object="slots" className="flex justify-center gap-2 flex-wrap">
+        <div data-pip-object="slots" className="flex justify-center gap-2 flex-wrap">
           {Array.from({ length: slots }, (_, idx) => {
             const pos = idx + 1;
             const placed = filled.get(pos);
             return (
               <div
                 key={pos}
-                ref={pip.ref(`slot-${pos}`)}
                 data-pip-object={`slot-${pos}`}
                 className="flex flex-col items-center cursor-pointer"
-                onClick={() => { pip.look(`slot-${pos}`); dropIntoPlace(pos); }}
+                onClick={() => dropIntoPlace(pos)}
               >
                 {/* front_flag lever: a flag over the first place, the front end the task names. Never a picture. */}
-                {pos === 1 && pulledLevers.includes(FLAG_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
+                {pos === 1 && drawnLevers.includes(FLAG_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
                 <span className="text-[10px] text-slate-500 mb-1">
-                  {currentChallenge?.showSlotLabels === false
-                    ? '·'
-                    : getOrdinalLabel(pos, labelFormat)}
+                  {currentChallenge?.showSlotLabels === false ? '·' : getOrdinalLabel(pos, labelFormat)}
                 </span>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${dropZoneStateClass((placed ? 'filled' : 'idle') as DropZoneState)}`}>
                   {placed ? emojiOf(placed) : ''}
                 </div>
                 {/* place_dots lever: one dot under first, two under second; places only, never a picture. */}
-                {pulledLevers.includes(DOTS_LEVER) && (
+                {drawnLevers.includes(DOTS_LEVER) && (
                   <span data-lever="place-dots" data-count={pos} className="mt-1 flex max-w-12 flex-wrap justify-center gap-0.5">
                     {Array.from({ length: pos }, (_, d) => <span key={d} className="block h-1.5 w-1.5 rounded-full bg-amber-300/80" />)}
                   </span>
@@ -761,9 +528,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
                     ? 'bg-amber-500/20 border-2 border-amber-400/50 scale-110'
                     : 'bg-white/5 border border-white/20 hover:bg-white/10'
                 }`}
-                ref={pip.ref(`picture-${name}`)}
                 data-pip-object={`picture-${name}`}
-                onClick={() => { pip.look(`picture-${name}`); holdPicture(name); }}
+                onClick={() => holdPicture(name)}
                 title={name}
               >
                 {emojiOf(name)}
@@ -794,14 +560,18 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     if (!currentItem || practice) return null;
     return (
       <>
-        {pulledLevers.includes(WORD_MODEL_LEVER) && renderModel('word-model', 3, { symbols: true })}
-        {pulledLevers.includes(SIDE_MODEL_LEVER) && currentItem.kind === 'relative_position'
+        {drawnLevers.includes(WORD_MODEL_LEVER) && renderModel('word-model', 3, { symbols: true })}
+        {drawnLevers.includes(SIDE_MODEL_LEVER) && currentItem.kind === 'relative_position'
           && renderModel('side-model', 3, sideModel(currentItem.relativeQuery))}
-        {pulledLevers.includes(PLACE_MODEL_LEVER) && currentItem.kind === 'match'
+        {drawnLevers.includes(PLACE_MODEL_LEVER) && currentItem.kind === 'match'
           && renderModel('place-model', placeModel(currentItem), { ringed: placeModel(currentItem) - 1 })}
       </>
     );
   };
+
+  /** The reference place on a relative-position ask: the ask names it aloud, so it is public; withdrawn at `hard`. */
+  const markedPlace = currentItem?.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
+    ? currentItem.askPosition : undefined;
 
   const renderStage = () => {
     if (!currentItem) return null;
@@ -812,27 +582,20 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
         return renderStoryCast(currentItem);
       case 'build_sequence':
         return renderBuildStage(currentItem);
-      case 'relative_position':
-        return renderCharacterLine(
-          currentItem,
-          // The ask NAMES this place aloud, so marking it is public. Withdrawn
-          // at `hard`, which is the lever that flag always meant.
-          currentChallenge?.highlightTarget !== false ? currentItem.askPosition : undefined,
-        );
       default:
-        return renderCharacterLine(currentItem);
+        return renderCharacterLine(currentItem, markedPlace);
     }
   };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!showSummary) return [];
-    const practice = runner.practiceSummary;
-    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+    const done = runner.practiceSummary;
+    return phaseResultsFromSummary(items, done ?? runner.summary, (item) => {
       const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' };
-      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+      return done?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
     }).map((phase, index) => {
-      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      const outcome = done?.outcomes.find(o => o.id === items[index].id);
       return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
     });
   }, [showSummary, runner.summary, runner.practiceSummary, items]);
@@ -845,58 +608,34 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     return 'You put every one in its own place!';
   }, [items]);
 
-  // A projection of the runner's phase and the child's own touches; Pip never
-  // places a picture, answers, or advances.
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id.startsWith('picture-') ? id.slice('picture-'.length) : id));
-    const pose = ordinalLinePipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      kind: currentItem.kind, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Ordinal line', dock: pip.dock.current, targets, pose };
-  });
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // ── The scene and the levers, republished after every render ──────────────
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem) return;
-    const markedPlace = currentItem.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
-      ? currentItem.askPosition : undefined;
+    if (!currentItem) return;
     const scene = workspaceScene(currentItem, { placedOrder, markedPlace });
-    const onScreen = practice ? leverFacts(currentItem, pulledLevers)
-      : [leverFacts(currentItem, pulledLevers), spokenLeverFacts(currentItem, pulledLevers)].filter(Boolean).join(' ');
-    const levers = practice ? [] : [...ordinalLevers(sessionItem, pulledLevers), ...ordinalSpokenLevers(sessionItem, pulledLevers)];
+    const levers = practice ? [] : ORDINAL_LEVERS.declare(sessionItem, null, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(practice ? { ...scene, facts: { ...scene.facts, practice: 'An easier one, ungraded. The full item comes back after it.' } } : scene, {
+        support: practice ? '' : ORDINAL_LEVERS.support(sessionItem, null),
+        onScreen: ORDINAL_LEVERS.onScreen(currentItem, null, drawnLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the line changes before this returns.
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (id === THREE_LEVER || id === SHORTER_LEVER || id === STORY_LEVER) {
-          const easier = id === THREE_LEVER ? threePlaces(sessionItem) : id === SHORTER_LEVER ? shorterLine(sessionItem) : shortStory(sessionItem);
-          if (!easier) return 'There is no easier line for this item.';
-          setLeverState(pulled);
-          setPractice(easier); resetStageFor(); runner.clearStillness();
-          return { practice: workspaceAssignment(easier.item) };
+        if (lever.kind === 'simplify') {
+          const easier = ORDINAL_LEVERS.simpler(sessionItem, null, id);
+          if (!easier) return 'There is no easier one for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          practiceRef.current = easier; setPractice(easier); resetStage(); runner.clearStillness();
+          return { practice: ordinalLineBoss.assignment(easier) };
         }
-        setLeverState(pulled);
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
       },
-      endPractice: () => { setPractice(null); resetStageFor(); runner.clearStillness(); },
+      endPractice: () => { practiceRef.current = null; setPractice(null); resetStage(); runner.clearStillness(); },
     };
   });
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   // ============================================================================
   // Render
@@ -913,14 +652,11 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   }
 
   const isGestureItem = currentItem?.answerKind === 'gesture';
-
-  const stageWord = runner.stage === 'judging'
-    ? 'let’s see…'
-    : runner.currentSolved
-      ? 'yes!'
-      : runner.running
-        ? (isGestureItem ? 'your turn' : 'say it out loud')
-        : 'get ready';
+  const stageWord = runner.stage === 'affirmed'
+    ? 'yes!'
+    : runner.stage === 'asking'
+      ? (isGestureItem ? 'your turn' : 'say it out loud')
+      : 'get ready';
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
@@ -952,41 +688,27 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
       <LuminaCardContent className="space-y-4">
         {!showSummary && currentItem && (
           <>
-            <div className="flex items-center justify-center gap-4">
-              {!isPreReader && (
+            {!isPreReader && (
+              <div className="flex items-center justify-center gap-4">
                 <LuminaChallengeCounter
                   current={Math.min(runner.currentIndex + 1, items.length)}
                   total={items.length}
                   variant="dots"
                 />
-              )}
-              {/* Tap-to-hear — the QUESTION again, never a hint ladder. On the
-                  story mode this is what replaces re-reading a printed story.
-                  With the tutor (no `hearStimulus`), the learner asks the tutor instead. */}
-              {runner.hearStimulus && <button
-                type="button"
-                onClick={runner.hearStimulus}
-                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
-                  (runner as { stimulusTapped?: boolean }).stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
-                }`}
-                aria-label="Hear the question again"
-              >
-                <span className="text-xl">🔁</span>
-              </button>}
-            </div>
+              </div>
+            )}
 
-            {/* The stage. The tutor speaks the ask — no printed instruction,
-                because a pre-reader cannot read one and a reader would not need
-                to listen. */}
-            <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
-              {renderStage()}
-              {renderModels()}
-            </div>
+            <PipDock />
+            {/* The stage. The tutor speaks the ask — no printed instruction, because a pre-reader cannot read one and
+                a reader would not need to listen. Pip outlines the stage as a whole. */}
+            <PipWorkspace>
+              <div data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
+                {renderStage()}
+                {renderModels()}
+              </div>
+            </PipWorkspace>
 
-            {/* The reward — the first moment an answer may appear. */}
-            {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens
-                the next item in the same dispatch, so by the time this renders
-                the current item is the NEXT one and is not solved (18b). */}
+            {/* The reward — the first moment an answer may appear, gated on `revealHeld` (18b). */}
             {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
@@ -995,22 +717,15 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
               </LuminaPanel>
             )}
 
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
                 {isGestureItem
-                  ? 'Touch a picture, then touch its place — the tutor checks when you stop.'
+                  ? 'Touch a picture, then touch its place — the line checks when you stop.'
                   : 'Listen to the question, then say your answer out loud.'}
               </p>
             )}
-
-            {/* The orb tells the truth about the turn: a hands item is not
-                "I'm listening". */}
-            <JudgedMicPanel run={runner} gestureLabel="Put them in their places" />
           </>
         )}
 
@@ -1029,8 +744,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   );
 };
 
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const OrdinalLine = withWorkspaceController<OrdinalLineProps, OrdinalLineControllerOptions, LiveRun<OrdinalLineItem>>(
-  'ordinal-line', OrdinalLineSurface, useScriptedController, useWorkspaceController);
+// One path: the tutor teaches on the workspace; a mount with no tutor shows the shared "needs the tutor" card.
+const OrdinalLine = withWorkspaceOnly<OrdinalLineProps>('ordinal-line', OrdinalLineSurface, props => props.data.title);
 
 export default OrdinalLine;

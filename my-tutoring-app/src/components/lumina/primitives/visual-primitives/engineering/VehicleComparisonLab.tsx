@@ -8,10 +8,10 @@
  *   the one that leads the priority among the rest.
  *
  * Every item is built and keyed by code from the roster's numbers (`vehicleComparisonWorkspace.ts`). The rows are
- * not sorted, and nothing marks a leader until the answer is credited. Two paths, chosen by `withWorkspaceController`:
- * the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain
- * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
- * tutor, and lets the runtime move on. The levers live in `vehicleComparisonLevers.ts`.
+ * not sorted, and nothing marks a leader until the answer is credited. Taught only on the shared tutor/JEV workspace
+ * (`withWorkspaceOnly`; its wiring is `vehicleComparisonLab.card.ts` + `vehicleComparisonLab.boss.ts`): every check
+ * commits through `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor against the key,
+ * and the runtime moves on. The levers are one lever set in `vehicleComparisonLevers.ts`.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
@@ -32,25 +32,24 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { VehicleComparisonLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { ReadMeButton } from '../../shared/ReadMeButton';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { resolveVehicleVisualKind, type VehicleVisualCategory } from './vehicleVisualKind';
 import {
   askOf, cellText, comparisonMiss, describeVehicleWork, emptyWork, explanation, keyOf, METRIC_LABEL, vehicleCorrect,
-  vehicleItems, workComplete, workspaceAssignment, workspaceScene,
+  vehicleItems, workComplete, workspaceScene,
   type ComparisonVehicle, type MetricKey, type VehicleItem, type VehicleMode, type VehicleTier, type VehicleWork,
 } from './vehicleComparisonWorkspace';
 import {
-  COLUMN_MEANINGS_LEVER, COUNT_DIGITS_LEVER, digitColumns, digitNote, FOCUS_COLUMN_LEVER, leverFact, MARK_MINIMUMS_LEVER,
-  meaningLines, minimumMarks, simplerItem, SMALLER_IS_BETTER_LEVER, smallerLine, vehicleLevers,
+  COLUMN_MEANINGS_LEVER, COUNT_DIGITS_LEVER, digitColumns, digitNote, FOCUS_COLUMN_LEVER, MARK_MINIMUMS_LEVER,
+  meaningLines, NO_CONTEXT, SMALLER_IS_BETTER_LEVER, smallerLine, VEHICLE_LEVERS,
 } from './vehicleComparisonLevers';
+import { vehicleComparisonLabBoss } from './vehicleComparisonLab.boss';
 
 // -----------------------------------------------------------------------------
 // Data contract (single source of truth; the generator imports it)
@@ -147,10 +146,11 @@ const VehicleDiagram: React.FC<{ vehicle: { name: string; category: VehicleCateg
 // Component
 // -----------------------------------------------------------------------------
 
-const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  VehicleComparisonLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<VehicleItem>) => Progress }) => {
+const useVehicleProgress = useWorkspaceProgressFor('vehicle-comparison-lab');
+
+const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId }: VehicleComparisonLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, instructions, gradeBand = '3-5', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, instructions, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const items = useMemo(() => vehicleItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,33 +158,34 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
   const stableInstanceId = useRef(instanceId || `vehicle-comparison-lab-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useVehicleProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: vehicleComparisonLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: VehicleItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<VehicleItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [work, setWork] = useState<VehicleWork>(emptyWork);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -192,7 +193,7 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<VehicleComparisonLabMetrics>({
     primitiveType: 'vehicle-comparison-lab',
@@ -201,33 +202,31 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    topicFocus: data.topicFocus, gradeBand, mode: item?.mode ?? 'metric_leader', itemIndex: currentIndex + 1,
-    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [data.topicFocus, gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'vehicle-comparison-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? 'kindergarten' : 'elementary', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
-  const clearItem = () => {
-    setWork(emptyWork()); setWrongShown(false); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
-  };
+  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); setPracticeSolved(false); };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { clearItem(); return; }
     setPractice(null); clearItem();
+  };
+
+  const showKey = (solved: VehicleItem) => {
+    const key = keyOf(solved);
+    setWork({ vehicle: key.vehicle, evidence: key.evidence ?? null }); setWrongShown(false);
   };
 
   solvedAloud.current = (index) => {
     const solved = items[index];
     if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
-    const key = keyOf(solved);
-    setWork({ vehicle: key.vehicle, evidence: key.evidence ?? null }); setWrongShown(false);
+    showKey(solved);
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    showKey(practice);
   };
 
   // ── Handlers ──
@@ -235,12 +234,12 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
   const chooseVehicle = (id: string) => {
     if (!item || closed) return;
     SoundManager.select();
-    setWork(w => ({ ...w, vehicle: id })); setFeedback(null);
+    setWork(w => ({ ...w, vehicle: id }));
   };
   const chooseEvidence = (m: MetricKey) => {
     if (!item || closed || item.mode !== 'evidence_choice') return;
     SoundManager.select();
-    setWork(w => ({ ...w, evidence: m })); setFeedback(null);
+    setWork(w => ({ ...w, evidence: m }));
   };
 
   const check = () => {
@@ -250,24 +249,10 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} Praise briefly and ask them to point to the number that proves it.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      const key = keyOf(item);
-      setWork({ vehicle: key.vehicle, evidence: key.evidence ?? null });
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer and its numbers are now on screen; explain them.`);
-      return;
-    }
-    setWork(w => ({ ...w, vehicle: null }));
-    setFeedback('Not quite. Read the numbers in the column again, and try once more.');
-    say(`[ANSWER_INCORRECT] ${describeVehicleWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask which column to read, without naming a vehicle.`);
+    setWrongShown(true);
   };
 
   const metrics = (): VehicleComparisonLabMetrics => {
@@ -289,16 +274,6 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { setPractice(null); clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -308,16 +283,18 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { work, solved: revealed });
-    const levers = practice ? [] : vehicleLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    // No lever on the practice item: the full item's levers come back with it.
+    const levers = practice || !sessionItem ? [] : VEHICLE_LEVERS.declare(sessionItem, NO_CONTEXT, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : VEHICLE_LEVERS.onScreen(sessionItem, NO_CONTEXT, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -325,10 +302,10 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = VEHICLE_LEVERS.simpler(sessionItem, NO_CONTEXT, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: vehicleComparisonLabBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -337,14 +314,7 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The vehicle table and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -422,17 +392,11 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-start gap-2">
-              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Read the numbers in the table, then choose."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the table and buttons as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {table}
 
               {leverOn(SMALLER_IS_BETTER_LEVER) && (
@@ -457,7 +421,7 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
                   </div>
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -465,19 +429,8 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
               </div>
             )}
 
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {explanation(item)}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{explanation(item)}</LuminaFeedbackCard>}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -485,8 +438,6 @@ const VehicleComparisonLabSurface = ({ data, className, runtimePlanItemId, tutor
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const VehicleComparisonLab = withWorkspaceController<VehicleComparisonLabProps, ProgressOptions<VehicleItem>, Progress>(
-  'vehicle-comparison-lab', VehicleComparisonLabSurface, useScriptedProgress, useWorkspaceProgressFor('vehicle-comparison-lab'));
+const VehicleComparisonLab = withWorkspaceOnly<VehicleComparisonLabProps>('vehicle-comparison-lab', VehicleComparisonLabSurface, props => props.data.title);
 
 export default VehicleComparisonLab;

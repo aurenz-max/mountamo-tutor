@@ -23,7 +23,7 @@ const ITEMS: Record<string, Record<string, unknown>> = {
   plural_s: { type: 'plural_s', sourceWord: 'dog', answer: 'dogs', emoji: '🐕', count: 3 },
   plural_es: { type: 'plural_es', sourceWord: 'box', answer: 'boxes', emoji: '📦', count: 2 },
   plural_y: { type: 'plural_y', sourceWord: 'puppy', answer: 'puppies', emoji: '🐶', count: 4 },
-  irregulars: { type: 'irregulars', sourceWord: 'sheep', answer: 'sheep', emoji: '🐑', count: 3 },
+  irregulars: { type: 'irregulars', sourceWord: 'mouse', answer: 'mice', emoji: '🐭', count: 3 },
   past_ed: { type: 'past_ed', sourceWord: 'jump', answer: 'jumped', emoji: '🦘' },
   past_irregular: { type: 'past_irregular', sourceWord: 'run', answer: 'ran', emoji: '🏃' },
 };
@@ -35,11 +35,9 @@ it.each(Object.keys(ITEMS))('%s binds: the new word is the spoken key, never in 
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'word-flip', pin: mode, objectiveIds: ['o'], data })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'word-flip', evalMode: mode, data });
   const answer = String(ITEMS[mode].answer);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe(answer);
-  if (answer !== ITEMS[mode].sourceWord) {
-    expect(h.state().task!.task).not.toContain(answer);
-    expect(screen.queryByText(answer)).toBeNull();
-  }
+  expect(h.state().task!.workspace!.expectedAnswer!.startsWith(`"${answer}" (also accept "`)).toBe(true);
+  expect(h.state().task!.task).not.toContain(answer);
+  expect(screen.queryByText(answer)).toBeNull();
 });
 
 it('the source word said back reopens the item; the plural shows once credited; the lesson completes once', async () => {
@@ -68,7 +66,9 @@ it('a tapped card asks for the source word silently, as the host, never the new 
   expect(options).toMatchObject({ silent: true, author: 'host' });
 });
 
-it('the adapter refuses a challenge with no answer', () => {
+it('the adapter refuses a challenge with no answer, or one whose answer is its source word (one sheep, two sheep)', () => {
   const broken = { ...flip('plural_s'), challenges: [{ id: 'a', type: 'plural_s', sourceWord: 'dog', answer: '', emoji: '🐕' }] };
   expect(() => LIVE_ADAPTERS['word-flip'].validate(broken)).toThrow();
+  const unchanged = { ...flip('irregulars'), challenges: [{ id: 'a', type: 'irregulars', sourceWord: 'sheep', answer: 'sheep', emoji: '🐑', count: 3 }] };
+  expect(() => LIVE_ADAPTERS['word-flip'].validate(unchanged)).toThrow();
 });

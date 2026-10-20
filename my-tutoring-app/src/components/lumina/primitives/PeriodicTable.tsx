@@ -1,41 +1,29 @@
 'use client';
 
 /**
- * PeriodicTable — TWO surfaces, forked on whether challenges arrived:
+ * PeriodicTable: two faces, forked on whether an askable challenge arrived.
  *
- *  - EXPLORATION (no challenges — every pre-DI lesson): the free table. Click
- *    a box for the element modal, search, filter by family; the tutor gets
- *    silent [ELEMENT_SELECTED]/[GROUP_TREND] nudges and reacts as a guide.
- *    This surface is the primitive's manifest identity and it survives the
- *    port untouched — the DI conversion must not ablate the reference use.
+ *  - EXPLORATION (no askable challenge): the free table, in `chemistry-primitives/PeriodicTableExplorer.tsx`, with
+ *    search, family filters and the element modal, and its own tutor voice. No workspace session binds it.
+ *  - JUDGED (challenges present): taught on the shared teaching workspace only (the boss: `periodicTable.card.ts` +
+ *    `periodicTable.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
+ *    An Element Hunt is one tap on a box, checked by the activity (`commitGesture`); Name It and Trends are spoken and
+ *    the tutor judges them against the key.
  *
- *  - JUDGED (challenges present): runs only on the shared tutor/JEV teaching
- *    workspace (workspace rollout C8; the scripted runner was retired, LA-14,
- *    user ruling 09-23: one path). A find is a tap the activity checks; the
- *    other asks are spoken and the observer judges them; the runtime owns
- *    progression. An unbound mount shows the shared "needs the tutor" card.
+ * What the judged face leaves out of the exploration chrome, and why: the search bar (type "gold", get Au: the find or
+ * name ask answered), the family filter chips (a free elimination), and the tap-to-open element modal (shells on screen
+ * during a valence item are the answer in pixels). The element card returns as the reveal, while the credit is held.
  *
- * What the judged surface DELETES from the exploration chrome, and why:
- *  - the SEARCH BAR (type "gold", get Au — the whole find/name ask answered);
- *  - the CATEGORY FILTER CHIPS (highlight a family = a free elimination);
- *  - the TAP-TO-OPEN ELEMENT MODAL (shells + valence on screen during a trend
- *    item is the answer in PIXELS — the leak no string scan sees);
- *  - tap-to-hear the question: with the tutor present, the learner asks it to repeat.
- *  The element card returns as the REVEAL, rendered behind `runner.revealHeld`
- *  (18b: set in onAffirmed, never cleared in onItemOpened).
- *
- * Asks, build gates and pools live in `chemistry-primitives/periodicTableScript.ts`;
- * the assignment and scene the tutor receives live in `periodicTableWorkspace.ts`.
+ * The domain (build gates, ask, key, misses, scene) is `chemistry-primitives/periodicTableDomain.ts`; the levers
+ * `chemistry-primitives/periodicTableLevers.ts`. Nothing in this file writes a spoken line.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Search, Atom } from 'lucide-react';
 import { PeriodicTableData } from '../types';
 import { ChemicalElement } from './chemistry-primitives/types';
 import { ELEMENTS, getCategoryStyle } from './chemistry-primitives/constants';
 import { PeriodicTableGrid } from './chemistry-primitives/PeriodicTableGrid';
-import { ElementModal } from './chemistry-primitives/ElementModal';
-import { useLuminaAI } from '../hooks/useLuminaAI';
+import { PeriodicTableExplorer } from './chemistry-primitives/PeriodicTableExplorer';
 import { SoundManager } from '../utils/SoundManager';
 import {
   LuminaCard,
@@ -46,7 +34,6 @@ import {
   LuminaChallengeCounter,
   type LuminaAccent,
 } from '../ui';
-import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../hooks/usePhaseResults';
 import {
@@ -54,20 +41,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import type { PeriodicTableMetrics } from '../evaluation/types';
-import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../pip/WorkspacePip';
 import {
-  numberWord,
-  type ElementFacts,
-  type PeriodicKind,
-  type PeriodicTableItem,
-} from './chemistry-primitives/periodicTableScript';
-import { cellMatches, periodicAssignment, periodicItems, periodicMiss, periodicScene } from './chemistry-primitives/periodicTableWorkspace';
+  cellMatches, describeCellTap, numberWord, periodicMiss, periodicScene,
+  type ElementFacts, type PeriodicKind, type PeriodicTableItem,
+} from './chemistry-primitives/periodicTableDomain';
+import { periodicItems, periodicTableBoss } from './periodicTable.boss';
 import {
-  AXIS_LEVER, COLUMN_LEVER, KEY_LEVER, LETTER_LEVER, PAIR_LEVER, PRACTICE_NOTE, RANGES_LEVER, ROW_RANGES, TALL_LEVER,
-  boxKey, columnModel, letterLit, leverFacts, periodicLevers, periodicPracticeItem,
+  AXIS_LEVER, COLUMN_LEVER, KEY_LEVER, LETTER_LEVER, PAIR_LEVER, PERIODIC_LEVERS, PRACTICE_NOTE, RANGES_LEVER, ROW_RANGES,
+  TALL_LEVER, boxKey, columnModel, helpShownFromStart, letterLit,
 } from './chemistry-primitives/periodicTableLevers';
 
 interface PeriodicTableProps {
@@ -79,7 +66,7 @@ interface PeriodicTableProps {
 }
 
 // ============================================================================
-// Judged surface (DI modality)
+// Judged face
 // ============================================================================
 
 const MODE_META: Record<PeriodicKind, { badge: string; icon: string; accent: LuminaAccent }> = {
@@ -106,7 +93,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const workspace = useRef<TeachingWorkspace | null>(null);
 
-  /** Build gates drop what cannot be asked. */
+  /** The boss's builder: the component, the boss and the journey drop the same unaskable items. */
   const items = useMemo<PeriodicTableItem[]>(
     () => periodicItems({ challenges, supportTier }),
     [challenges, supportTier],
@@ -116,8 +103,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   /** Wrong tap: the red-ringed box, cleared on retry and item open. */
   const [wrongTapNumber, setWrongTapNumber] = useState<number | null>(null);
   const [tappedName, setTappedName] = useState<string | null>(null);
-  /** The reveal payload (18b): set in onAffirmed, rendered behind
-   *  `runner.revealHeld`, deliberately NOT cleared in onItemOpened. */
+  /** The reveal: set when the credit lands, rendered while the runner holds it, not cleared on item open. */
   const [reveal, setReveal] = useState<{ facts: ElementFacts; line: string | null } | null>(null);
   // In-item levers (`periodicTableLevers.ts`), keyed by the session item they were pulled on, and the easier
   // practice item a simplify lever puts in place of the session item until the observer returns to it.
@@ -171,7 +157,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   const clearTap = () => { setWrongTapNumber(null); setTappedName(null); };
   const runner = useWorkspaceRunner<PeriodicTableItem>({
     primitiveId: 'periodic-table',
-    assignment: periodicAssignment,
+    assignment: periodicTableBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -201,39 +187,43 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   const sessionItem = runner.currentItem;
   /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
-  const pulledLevers = sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
-  // The session item's levers; a help lever is drawn only on the session item, while pulled (or shown from the
-  // start on easy), never on a practice item.
-  const itemLevers = periodicLevers(sessionItem, items, pulledLevers);
-  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const leverCtx = useMemo(() => ({ items }), [items]);
+  const runtimePulls = sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
+  /** What is on screen on the session item: the runtime's pulls, plus every help lever on easy (not a pull). */
+  const shownLevers = useMemo(
+    () => Array.from(new Set([...helpShownFromStart(sessionItem, leverCtx), ...runtimePulls])),
+    [sessionItem, leverCtx, runtimePulls],
+  );
+  // A help lever is drawn only on the session item, never on a practice item.
+  const helpOn = (id: string) => !practice && shownLevers.includes(id);
   const lit = sessionItem && helpOn(LETTER_LEVER) ? letterLit(sessionItem) : null;
   const axisOn = helpOn(AXIS_LEVER) && !!sessionItem?.element;
   const shownKey = sessionItem && helpOn(KEY_LEVER) ? boxKey(sessionItem, items) : null;
   const shownColumn = sessionItem && helpOn(COLUMN_LEVER) ? columnModel(sessionItem, items) : null;
   const ringed = helpOn(PAIR_LEVER) && sessionItem?.pair ? sessionItem.pair.map(e => e.number) : undefined;
 
-  // What the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation; every item is answerable once it opens.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const scene = periodicScene(currentItem, tappedName);
-    const levers = practice ? [] : itemLevers;
-    const onScreen = practice ? '' : leverFacts(sessionItem, items, helpOn);
+    const levers = practice ? [] : PERIODIC_LEVERS.declare(sessionItem, leverCtx, shownLevers);
+    const scene: WorkspaceScene = periodicScene(currentItem, tappedName);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...leverScene(practice ? { ...scene, facts: { ...scene.facts, practice: PRACTICE_NOTE } } : scene, {
+        support: practice ? '' : PERIODIC_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : PERIODIC_LEVERS.onScreen(sessionItem, leverCtx, shownLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
-        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already on screen.`;
-        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        const next = { item: sessionItem.id, pulled: [...runtimePulls, id] };
         if (lever.kind === 'simplify') {
-          const easier = periodicPracticeItem(sessionItem, items);
+          const easier = PERIODIC_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); clearTap();
-          return { practice: periodicAssignment(easier) };
+          return { practice: periodicTableBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -243,14 +233,6 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     };
   });
 
-  // Pip: the table is the question side and every cell is a possible answer, so
-  // Pip outlines the table as a region and watches it after a find tap; it never
-  // rings a cell.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The periodic table', finished: showSummary,
-    gesture: currentItem?.kind === 'find',
-  });
-
   // ── The tap IS the commit (find items only; one tap = one checked attempt) ──
   const handleCellTap = (element: ChemicalElement) => {
     const item = practiceRef.current ?? runner.currentItem;
@@ -258,12 +240,11 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     if (!runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    pip.look('stimulus');
     setTappedName(element.name);
     const correct = cellMatches(item, element.number);
     if (!correct) setWrongTapNumber(element.number);
     else if (practiceRef.current) setPracticeSolved(true);
-    commitGesture(runner, { response: `Tapped ${element.name}'s box.`, correct, cue: () => '',
+    commitGesture(runner, { response: describeCellTap(element.name), correct, cue: () => '',
       miss: correct ? undefined : periodicMiss(item, element.number) });
   };
 
@@ -319,10 +300,10 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
               />
             </div>
 
-            {/* The table IS the page. No search, no filter chips, no modal —
-                the exploration apparatus would answer the asks for the child. */}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.target('stimulus')} className="w-full overflow-x-auto pb-2">
+            {/* The table IS the page. No search, no filter chips, no modal: the exploration apparatus would answer
+                the asks for the learner. */}
+            <PipDock />
+            <PipWorkspace className="w-full overflow-x-auto pb-2">
               <PeriodicTableGrid
                 elements={ELEMENTS}
                 onSelectElement={handleCellTap}
@@ -338,11 +319,11 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
                 rowRanges={helpOn(RANGES_LEVER) ? ROW_RANGES : null}
                 dimMiddle={helpOn(TALL_LEVER)}
               />
-            </div>
+            </PipWorkspace>
 
             {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice item</div>}
 
-            {/* Help lever `box_key`: another element's box, its three parts labelled. Never this item's box. */}
+            {/* `box_key`: another element's box, its three parts labelled. Never this item's box. */}
             {shownKey && (
               <div className="flex justify-center" data-lever="box-key">
                 <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-2 text-slate-100">
@@ -360,7 +341,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
               </div>
             )}
 
-            {/* Help lever `column_model`: another group's column, each atom a circle of its size. */}
+            {/* `column_model`: another group's column, each atom a circle of its size. */}
             {shownColumn && (
               <div className="flex justify-center" data-lever="column-model">
                 <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-2">
@@ -376,8 +357,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
               </div>
             )}
 
-            {/* Reveal-on-credit: the element card, while the credit is held
-                (runner.revealHeld). */}
+            {/* Reveal on credit: the element card, while the credit is held (runner.revealHeld). */}
             {runner.revealHeld && reveal && (
               <div className="flex justify-center">
                 <div
@@ -414,233 +394,6 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
         )}
       </LuminaCardContent>
     </LuminaCard>
-  );
-};
-
-// ============================================================================
-// Exploration surface (pre-DI behavior, preserved)
-// ============================================================================
-
-const PeriodicTableExplorer: React.FC<PeriodicTableProps> = ({ data, className }) => {
-  const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(data.focusCategory || null);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Track exploration for AI context
-  const elementsExploredRef = useRef<Set<number>>(new Set());
-  const categoriesExploredRef = useRef<Set<string>>(new Set());
-  const groupsExploredRef = useRef<Map<number, string[]>>(new Map());
-
-  const { instanceId, gradeBand } = data;
-  const stableInstanceIdRef = useRef(instanceId || `periodic-table-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const filteredElements = useMemo(() => {
-    if (!searchTerm) return ELEMENTS;
-    const lower = searchTerm.toLowerCase();
-    return ELEMENTS.filter(e =>
-      e.name.toLowerCase().includes(lower) ||
-      e.symbol.toLowerCase().includes(lower) ||
-      e.number.toString() === lower
-    );
-  }, [searchTerm]);
-
-  const categories = Array.from(new Set(ELEMENTS.map(e => e.category)));
-
-  // AI primitive data — the SAME two context keys the judged pack pushes
-  // (the catalog tutoring block interpolates challengeType + stimulus only;
-  // the rich per-click detail rides the sendText nudges below).
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: 'free-exploration',
-    stimulus: selectedElement
-      ? `${selectedElement.name}'s card is open — element ${selectedElement.number}, a ${selectedElement.category}`
-      : 'the full periodic table, open for free exploration',
-  }), [selectedElement]);
-
-  const { sendText } = useLuminaAI({
-    primitiveType: 'periodic-table',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand,
-  });
-
-  // Handle element selection with AI triggers
-  const handleSelectElement = useCallback((element: ChemicalElement) => {
-    SoundManager.select();
-    setSelectedElement(element);
-
-    const isFirstExploration = elementsExploredRef.current.size === 0;
-    elementsExploredRef.current.add(element.number);
-    categoriesExploredRef.current.add(element.category);
-    const explored = elementsExploredRef.current.size;
-
-    // Track group exploration for trend detection
-    const group = element.group;
-    if (group) {
-      const groupElements = groupsExploredRef.current.get(group) || [];
-      if (!groupElements.includes(element.name)) {
-        groupElements.push(element.name);
-        groupsExploredRef.current.set(group, groupElements);
-      }
-    }
-
-    const valence = element.electron_shells[element.electron_shells.length - 1];
-
-    if (isFirstExploration) {
-      // First element click — introduce and encourage exploration
-      sendText(
-        `[ELEMENT_SELECTED] Student clicked their first element: ${element.name} (${element.symbol}), ` +
-        `atomic number ${element.number}, a ${element.category}. ` +
-        `It has ${valence} valence electrons and is a ${element.phase.toLowerCase()} at room temperature. ` +
-        `Briefly introduce this element and encourage the student to explore more elements, ` +
-        `especially others in the same group (column ${element.group}) to discover patterns.`,
-        { silent: true }
-      );
-    } else if (group && (groupsExploredRef.current.get(group)?.length || 0) >= 2) {
-      // Student explored 2+ elements in the same group — highlight periodic trend
-      const groupMembers = groupsExploredRef.current.get(group)!;
-      sendText(
-        `[GROUP_TREND] Student clicked ${element.name} (${element.symbol}) in group ${group}. ` +
-        `They've now explored ${groupMembers.length} elements in this group: ${groupMembers.join(', ')}. ` +
-        `Briefly point out what these elements have in common (similar valence electrons, ` +
-        `similar reactivity) and one key trend (e.g., atomic radius increases going down the group).`,
-        { silent: true }
-      );
-    } else if (explored === 10) {
-      // Milestone — explored 10 unique elements
-      sendText(
-        `[EXPLORATION_MILESTONE] Student has now explored 10 unique elements! ` +
-        `Just clicked ${element.name} (${element.symbol}). ` +
-        `Categories explored: ${Array.from(categoriesExploredRef.current).join(', ')}. ` +
-        `Celebrate their curiosity and summarize one interesting pattern they might have noticed.`,
-        { silent: true }
-      );
-    } else {
-      // Regular element selection — brief context
-      sendText(
-        `[ELEMENT_SELECTED] Student clicked ${element.name} (${element.symbol}), ` +
-        `atomic number ${element.number}, group ${element.group}, period ${element.period}. ` +
-        `Category: ${element.category}. Phase: ${element.phase}. Valence: ${valence}. ` +
-        `${explored} elements explored so far. ` +
-        `Give a brief, interesting fact about this element or its position in the table.`,
-        { silent: true }
-      );
-    }
-  }, [sendText]);
-
-  // Handle category filter click with AI trigger
-  const handleCategoryClick = useCallback((cat: string) => {
-    const newCategory = hoveredCategory === cat ? (data.focusCategory || null) : cat;
-    SoundManager.toggle(newCategory === cat);
-    setHoveredCategory(newCategory);
-
-    if (newCategory && newCategory !== hoveredCategory) {
-      sendText(
-        `[CATEGORY_EXPLORED] Student clicked the "${cat}" category filter, highlighting all ` +
-        `${cat} elements on the table. Briefly describe what makes this family of elements special ` +
-        `(shared properties, reactivity, common uses). Keep it to 1-2 sentences.`,
-        { silent: true }
-      );
-    }
-  }, [hoveredCategory, data.focusCategory, sendText]);
-
-  return (
-    <div className={`w-full ${className || ''}`}>
-      {/* Title Section */}
-      {data.title && (
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold text-slate-100 mb-2">{data.title}</h3>
-          {data.description && (
-            <p className="text-slate-400 text-sm leading-relaxed">{data.description}</p>
-          )}
-        </div>
-      )}
-
-      {/* Search Bar */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="relative flex-1 w-full max-w-md group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search by name, symbol, or atomic number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-900/50 border border-slate-700 text-slate-200 text-sm rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent block w-full pl-10 p-2 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
-          <Atom size={16} />
-          <span>{filteredElements.length} elements</span>
-        </div>
-      </div>
-
-      {/* Category Legend / Filter */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onMouseEnter={() => setHoveredCategory(cat)}
-            onMouseLeave={() => setHoveredCategory(data.focusCategory || null)}
-            onClick={() => handleCategoryClick(cat)}
-            className={`
-              text-[10px] uppercase font-bold px-3 py-1 rounded-full border transition-all
-              ${hoveredCategory === cat
-                ? 'bg-white text-slate-900 border-white scale-105 shadow-[0_0_10px_rgba(255,255,255,0.3)]'
-                : 'bg-slate-900/40 text-slate-500 border-slate-800 hover:border-slate-600'}
-            `}
-          >
-            {cat.replace('unknown, ', '')}
-          </button>
-        ))}
-      </div>
-
-      {/* Periodic Table - Horizontal scroll on mobile */}
-      <div className="w-full overflow-x-auto pb-6 custom-scrollbar">
-        <PeriodicTableGrid
-          elements={filteredElements}
-          onSelectElement={handleSelectElement}
-          hoveredCategory={hoveredCategory}
-          setHoveredCategory={setHoveredCategory}
-        />
-      </div>
-
-      {/* Element Detail Modal */}
-      {selectedElement && (
-        <ElementModal
-          element={selectedElement}
-          allElements={ELEMENTS}
-          onClose={() => setSelectedElement(null)}
-        />
-      )}
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(71, 85, 105, 0.5);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(71, 85, 105, 0.8);
-        }
-        .glass-panel {
-          background: rgba(15, 23, 42, 0.7);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
   );
 };
 

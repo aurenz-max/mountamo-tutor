@@ -222,7 +222,7 @@ function ExplorerWorkspace({ data, items, instanceId, className, runtimePlanItem
     const levers = practice ? [] : PHONEME_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     workspace.current = {
       ...leverScene(phonemeScene(currentItem, { namingCards: pulledLevers.includes(NAME_CARDS_LEVER) }), {
-        support: practice ? '' : PHONEME_LEVERS.support(sessionItem),
+        support: practice ? '' : PHONEME_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : PHONEME_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

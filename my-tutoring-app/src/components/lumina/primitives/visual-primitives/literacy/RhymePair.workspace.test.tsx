@@ -22,9 +22,11 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { ge
 import RhymeStudio, { type RhymeStudioData } from './RhymeStudio';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/rhyme-studio.pair_build.json';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { validateRhymeStudioData } from '../../../components/live-activity/adapters/rhymeStudioLive';
+import { validateRhymeStudioData } from './rhymeStudioDomain';
+import { rhymeStudioBoss } from './rhymeStudio.boss';
+import { rhymeBoardLevers } from './rhymeStudioLevers';
 import {
-  PICTURES, askablePairItem, makePairItems, pairItemsFrom, pairLevers, pairMiss, rhymingPairs, smallBoardFor,
+  PICTURES, askablePairItem, makePairItems, pairItemsFrom, pairMiss, rhymingPairs, smallBoardFor,
 } from './rhymePairBuild';
 
 const data = (payload as unknown as { data: RhymeStudioData }).data;
@@ -87,7 +89,7 @@ describe('pair_build rules (pure)', () => {
     const small = smallBoardFor(items[0])!;
     expect(rhymingPairs(small.board)).toHaveLength(1);
     const tw = getComponentById('rhyme-studio')!.teachingWorkspace!;
-    const answered = new Set(pairLevers(items[0], []).flatMap(l => l.answers ?? []));
+    const answered = new Set(rhymeBoardLevers('medium').declare(items[0], []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.pair_build) if (m !== 'same_pair') expect(answered.has(m), m).toBe(true);
     expect(tw.unanswered!.pair_build).toEqual(['same_pair']);
     expect(() => validateRhymeStudioData(data)).not.toThrow();
@@ -99,6 +101,10 @@ describe('pair_build on the workspace', () => {
     const h = mount();
     expect(h.state().task!.task).toMatch(/Find two pictures that rhyme/);
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+    // rhyme-studio is a boss: its gesture assignment, its lever set and its support fact reach the board.
+    expect(h.state().task!.task).toBe(rhymeStudioBoss.ask(rhymeStudioBoss.items(data)[0], data));
+    expect((h.state().task!.workspace!.levers ?? []).map(l => l.id)).toEqual(['say_names', 'model_pair', 'small_board']);
+    expect(String((h.state().task!.demand as Record<string, unknown>).support)).toMatch(/model_pair/);
     for (const w of items[0].board) expect(screen.queryByText(w)).toBeNull();
     const [a, c] = decoyOf(0);
     h.pick(a, c); h.done();

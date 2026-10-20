@@ -630,7 +630,11 @@ function buildChallenge(
   start?: number,
 ): HundredsChartChallenge {
   // Tidy multiples (by-1s starts at 1) unless an item-space count names its start.
-  const startNumber = start ?? skipValue;
+  const asked = start ?? skipValue;
+  // find_skip_value: a count shown from its own step puts the answer on the board as the first highlighted number
+  // (by 5s: 5, 10, 15), so picking the first number passes without finding the gap. Show it from its second step
+  // (10, 15, 20) when the board still holds three cells of it; picking the first number is then `twice_the_step`.
+  const startNumber = type === 'find_skip_value' && asked === skipValue && 4 * skipValue <= gridMax ? 2 * skipValue : asked;
   const fullSeq = buildSequence(skipValue, startNumber, gridMax);
   const shape = tier ? resolveProblemShape(type as ChallengeType, tier) : null;
 

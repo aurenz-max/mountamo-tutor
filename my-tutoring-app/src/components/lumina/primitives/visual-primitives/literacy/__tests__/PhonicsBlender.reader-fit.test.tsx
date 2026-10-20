@@ -8,7 +8,7 @@
  *     Grade/pattern badges, and the reader instruction line.
  *  2. The word's LETTERS are the stimulus and are shown at every grade — a
  *     pre-reader is learning to decode them, so they are never hidden.
- *  3. Tapping a letter speaks that SOUND via [PRONOUNCE_SOUND] (R2), and never
+ *  3. Tapping a letter asks the tutor for that SOUND, silently (R2), and never
  *     the whole word — the word is the answer.
  *  4. ANSWER-LEAK: nothing that names the word may appear before the child says
  *     it — no printed whole word, no picture. R8's emoji is a post-answer

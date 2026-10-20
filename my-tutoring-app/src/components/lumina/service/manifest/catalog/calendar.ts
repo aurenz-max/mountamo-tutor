@@ -6,7 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { CalendarMiss, SpokenCalendarMiss } from '../../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { calendarExplorerCard } from '../../../primitives/visual-primitives/calendar/calendarExplorer.card';
 import type { TimelineMiss } from '../../../primitives/visual-primitives/calendar/timelineBuilderWorkspace';
 import { missLists, sameMisses } from './missLists';
 
@@ -22,91 +23,8 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       'Visual calendar modes require valid month/year context and code-verified keys for date arithmetic. '
       + 'Spoken sequence modes require at least five code-built successor turns, a random start, no printed sequence strip, '
       + 'and live tutor judgment.',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Two kinds of session. The calendar: when the answer is a day of the week, a date or a count, the learner '
-        + 'may say it or tap it (a date on the calendar or a printed option, then Check); a spoken answer is a real answer, '
-        + 'so tell them plainly whether it is right. A tap is checked by the activity and you are told what was picked; '
-        + 'marking an event is tap only. Follow the reveal policy in the scene facts: at the hard tier the day headers and '
-        + 'the tinted days are gone on purpose, so do not recite the day order or name the column. The chain: say the day '
-        + 'or month you are given, then the learner says the one that comes next; it is judged against the successor you '
-        + 'are given, and the given day said back is not it. Before the learner has answered never say the answer. The '
-        + 'replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
-      // The calendar's own check (`calendarMiss`), by answer kind. identify and pattern ask for a weekday or a date. A
-      // spoken grid answer names the same ids (`calendarGridSpokenMisses`).
-      // day_sequence is spoken and reuses the weekday kinds (`calendarSpokenMisses`, handoff 20 Part B); month_sequence
-      // names the same four for months. Every mode has levers (`calendarExplorerLevers.ts`); no miss is unanswered.
-      levers: true,
-      misses: missLists<CalendarMiss | SpokenCalendarMiss>({
-        identify: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
-        mark_events: ['same_column_date', 'next_to_date', 'other_date'],
-        count: ['one_less', 'one_more', 'other_count'],
-        day_offset: ['start_day', 'day_before', 'day_after', 'other_day'],
-        interval_count: ['one_less', 'one_more', 'other_count'],
-        pattern: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
-        day_sequence: ['start_day', 'day_after', 'day_before_start', 'other_day'],
-        month_sequence: ['start_month', 'month_after', 'month_before_start', 'other_month'],
-      }),
-    },
+    ...bossEntry(calendarExplorerCard),
     affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Student is doing calendar practice ({{challengeType}}), question {{challengeNumber}} of {{totalChallenges}}. '
-        + 'Current prompt: {{currentChallenge}}. Calendar context when used: {{month}} {{year}}. '
-        + 'In day_sequence and month_sequence modes, speak only the exact scripted application cue and judge the child\'s spoken successor.',
-      contextKeys: [
-        'title', 'gradeBand', 'currentChallenge', 'challengeNumber', 'totalChallenges',
-        'challengeType', 'month', 'year', 'supportTier',
-      ],
-      scaffoldingLevels: {
-        level1: 'Can you look at the calendar and find what the question is asking about?',
-        level2:
-          "Let's break it down — first find {{month}} on the calendar, then look at the days row by row. What do you notice?",
-        level3:
-          'ONLY when supportTier is easy, medium, or null: look at the top row of the calendar. '
-          + 'The days of the week go Sun, Mon, Tue, Wed, Thu, Fri, Sat. Count along the row to find your answer. '
-          + 'When supportTier is hard that header row is NOT on screen — do not recite it, and do not name the column; '
-          + 'ask the student what they notice about where the dates sit instead.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student clicks random dates without reading the question',
-          response: 'Read the question again carefully. What exactly is it asking you to find?',
-        },
-        {
-          pattern: 'Student confuses day-of-week with date number',
-          response:
-            'Remember, the number in each box is the date, and the column tells you the day of the week.',
-        },
-        {
-          pattern: 'Student says the wrong successor during the spoken day chain',
-          response:
-            'Follow the scripted correction: say the full week together from Sunday, model the current successor, and ask the same turn again.',
-        },
-        {
-          pattern: 'Student says the wrong successor during the spoken month chain',
-          response:
-            'Follow the scripted correction: say all months together from January, model the current successor, and ask the same turn again.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'SUPPORT TIER — REVEAL POLICY',
-          instruction:
-            'The current support tier is {{supportTier}}. The tier controls how much of the calendar help is on '
-            + 'screen, so it also bounds what YOU may say — you are the second scaffold channel and must match the first. '
-            + 'easy: the day headers, the month caption and the highlighted target-day cells are all visible — you may '
-            + 'name the day-of-week order and point at the column to use. '
-            + 'medium: the month caption is withdrawn (the question names the month) — nudge the method, do not pre-solve it. '
-            + 'hard: the Sun-Sat header row, the month caption AND the target-day highlighting are ALL withdrawn on purpose. '
-            + 'Do NOT recite the Sun, Mon, Tue... order, do not say which column to look at, and do not hand over the '
-            + 'counting strategy — that would put back the exact scaffold this tier removed. Ask what the student notices '
-            + 'and guide by questioning; on a wrong attempt at hard you are not told the answer, so do not guess it aloud. '
-            + 'When supportTier is null no tier is set — behave as at easy. At EVERY tier, never state the answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {

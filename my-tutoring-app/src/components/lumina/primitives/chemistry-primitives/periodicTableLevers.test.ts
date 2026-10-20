@@ -1,5 +1,5 @@
 /**
- * periodic-table levers (`periodicTableLevers.ts`): each leak rule, the simpler-item builder over every askable
+ * periodic-table levers (`periodicTableLevers.ts`, one lever set): each leak rule, the simpler-item builder over every askable
  * item, which lever answers which miss, and per-item coverage (every catalog miss has a lever on every item the
  * draw can make, and on every item of the saved payloads).
  */
@@ -8,14 +8,18 @@ import { nextLever } from '../../components/live-activity/runtime/observerLever'
 import { getComponentById } from '../../service/manifest/catalog';
 import {
   FAMILIAR_ELEMENT_NUMBERS, REACTIVITY_COMPARE_GROUPS, SIZE_COMPARE_GROUPS, elementFactsOf, itemFromChallenge,
-  type PeriodicTableItem,
-} from './periodicTableScript';
-import { periodicItems, periodicSpokenMisses } from './periodicTableWorkspace';
+  periodicSpokenMisses, type PeriodicTableItem,
+} from './periodicTableDomain';
+import { periodicItems } from '../periodicTable.boss';
 import {
-  AXIS_LEVER, COLUMN_LEVER, KEY_LEVER, LETTER_LEVER, MIN_LIT, PAIR_LEVER, RANGES_LEVER, ROW_RANGES, SIMPLER_LEVER, TALL_LEVER,
-  boxKey, columnModel, columnModelLeaks, keyLeaks, leverFacts, letterLit, litLeaks, periodicLevers, periodicPracticeItem,
-  periodicPracticeParent, practiceLeaks,
+  AXIS_LEVER, COLUMN_LEVER, KEY_LEVER, LETTER_LEVER, MIN_LIT, PAIR_LEVER, PERIODIC_LEVERS, RANGES_LEVER, ROW_RANGES,
+  SIMPLER_LEVER, TALL_LEVER, boxKey, columnModel, columnModelLeaks, helpShownFromStart, keyLeaks, letterLit, litLeaks,
+  periodicPracticeItem, periodicPracticeParent, practiceLeaks,
 } from './periodicTableLevers';
+
+/** The levers declared on an item, in a session of `items`, with `pulled` on screen. */
+const periodicLevers = (i: PeriodicTableItem, items: readonly PeriodicTableItem[], pulled: readonly string[]) =>
+  PERIODIC_LEVERS.declare(i, { items }, pulled);
 import explorePayload from '../../components/live-activity/runtime/testing/w1-payloads/periodic-table.explore.json';
 import identifyPayload from '../../components/live-activity/runtime/testing/w1-payloads/periodic-table.identify.json';
 import trendPayload from '../../components/live-activity/runtime/testing/w1-payloads/periodic-table.trend.json';
@@ -145,8 +149,11 @@ describe('which lever comes next', () => {
   });
   it('easy starts each help shown and the simpler item released', () => {
     expect(periodicLevers(find('position', 56)!, [], []).map(l => l.pulled)).toEqual([false, false]);
+    expect(helpShownFromStart(find('position', 56)!, { items: [] })).toEqual([]);
     const easy = item({ findBy: 'position', targetNumber: 56 }, 'easy')!;
-    expect(periodicLevers(easy, [], []).map(l => [l.kind, l.pulled])).toEqual([['help', true], ['simplify', false]]);
+    const shown = helpShownFromStart(easy, { items: [] });
+    expect(shown).toEqual([AXIS_LEVER]);
+    expect(periodicLevers(easy, [], shown).map(l => [l.kind, l.pulled])).toEqual([['help', true], ['simplify', false]]);
   });
 });
 
@@ -170,7 +177,7 @@ describe('per item: every miss a check can name has a lever on that item', () =>
 describe('scene facts say what is drawn, never the key', () => {
   it.each(ALL.filter((_, k) => k % 3 === 0).map(i => [i.kind, i] as const))('%s', (_kind, i) => {
     const declared = periodicLevers(i, [i], []).map(l => l.id);
-    const facts = leverFacts(i, [i], id => declared.includes(id));
+    const facts = PERIODIC_LEVERS.onScreen(i, { items: [i] }, declared);
     const answer = i.kind === 'compare' ? null : i.kind === 'valence' ? null : i.element!.name;
     if (answer && i.kind === 'name') expect(facts).not.toMatch(new RegExp(`\\b${answer}\\b`));
     if (i.kind === 'find' && i.findBy === 'position') expect(facts).not.toMatch(new RegExp(`\\b${i.element!.name}\\b`));

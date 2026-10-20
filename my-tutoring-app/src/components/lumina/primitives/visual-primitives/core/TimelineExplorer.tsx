@@ -7,12 +7,12 @@
  * - date: when did this event happen? (said or tapped)
  * - order: move event cards into time order, earliest at the top
  * - cause_effect: match each cause to the event it led to
- * The timeline is hidden while the check is open, and no card shows a date. Two paths, chosen by
- * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
- * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a
- * spoken answer judged by the tutor, and lets the runtime move on. The levers live in `timelineExplorerLevers.ts`.
+ * The timeline is hidden while the check is open, and no card shows a date. Taught only on the shared tutor/JEV
+ * workspace (`withWorkspaceOnly`; its wiring is `timelineExplorer.card.ts` + `timelineExplorer.boss.ts`): every check
+ * commits through `progress.commitCheck` with a named miss, a choice said aloud is judged by the tutor, and the runtime
+ * moves on. The levers are one lever set in `timelineExplorerLevers.ts`.
  */
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -30,23 +30,23 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TimelineExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, dateOf, deckOf, describeTimelineWork, emptyWork, optionLabel, solvedText, timelineCorrect,
-  timelineItems, timelineMiss, titleOf, workComplete, workspaceAssignment, workspaceScene,
-  type TimelineEvent, type TimelineItem, type TimelineKind, type TimelineTier, type TimelineWork,
+  askOf, dateOf, deckOf, describeTimelineWork, emptyWork, optionLabel, solvedText, timelineChecks, timelineCorrect,
+  timelineMiss, titleOf, workComplete, workspaceScene,
+  type TimelineCheck, type TimelineEvent, type TimelineItem, type TimelineKind, type TimelineTier, type TimelineWork,
 } from './timelineExplorerWorkspace';
 import {
-  BEFORE_AFTER_LEVER, beforeAfterLines, cardLines, DATE_LINE_LEVER, dateLine, LED_TO_LEVER, ledToArrows, leverFact,
-  READ_CARDS_LEVER, SHOW_DATES_LEVER, SHOW_TIMELINE_LEVER, simplerItem, timelineLevers,
+  BEFORE_AFTER_LEVER, beforeAfterLines, cardLines, DATE_LINE_LEVER, dateLine, LED_TO_LEVER, ledToArrows,
+  READ_CARDS_LEVER, SHOW_DATES_LEVER, SHOW_TIMELINE_LEVER, TIMELINE_LEVERS,
 } from './timelineExplorerLevers';
+import { timelineExplorerBoss } from './timelineExplorer.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -94,15 +94,18 @@ const KIND_LABEL: Record<TimelineKind, string> = {
 // Component
 // ============================================================================
 
-const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TimelineExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TimelineItem>) => Progress }) => {
+const useTimelineProgress = useWorkspaceProgressFor('timeline-explorer');
+
+const TimelineExplorerSurface = ({ data, className, runtimePlanItemId }: TimelineExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, subtitle, overview, timeSpan, events = [], summary, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const deck = useMemo(() => deckOf(events), [events]);
-  const items = useMemo(() => timelineItems(data),
+  const items = useMemo(() => timelineChecks(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.items, data.events, data.challengeTypes, data.difficulty, data.title]);
+  /** The lever set's context: the whole session, so a practice item avoids what another item asks. */
+  const leverCtx = useMemo(() => ({ session: items }), [items]);
   const stableInstanceId = useRef(instanceId || `timeline-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
   const span = `${timeSpan?.start || '?'} to ${timeSpan?.end || '?'}`;
@@ -116,36 +119,32 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const opened = new Set(openedOrder);
   const allOpened = deck.events.every(e => opened.has(e.id));
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const practiceAloud = useRef<() => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useTimelineProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: item => workspaceAssignment(deck, item),
+    workspace, assignment: timelineExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: () => practiceAloud.current(),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const sessionItem: TimelineItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
-  const [practice, setPractice] = useState<TimelineItem | null>(null);
+  const sessionItem: TimelineCheck | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<TimelineCheck | null>(null);
   const item = practice ?? sessionItem;
 
   const [work, setWork] = useState<TimelineWork>(() => emptyWork(sessionItem));
   const [activeCause, setActiveCause] = useState<string | null>(null);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -153,37 +152,23 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
-  const { submitResult, hasSubmitted, submittedResult } = usePrimitiveEvaluation<TimelineExplorerMetrics>({
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<TimelineExplorerMetrics>({
     primitiveType: 'timeline-explorer',
     instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const openEvent = openIndex !== null ? deck.events[openIndex] : undefined;
-  const aiPrimitiveData = useMemo(() => ({
-    title, timeSpan: span, totalEvents: deck.events.length,
-    currentEventIndex: reading && openIndex !== null ? openIndex + 1 : 0,
-    currentEventTitle: reading ? openEvent?.title ?? '' : '', currentEventDate: reading ? openEvent?.date ?? '' : '',
-    eventsExplored: opened.size, challengesCompleted: results.length, totalChallenges: items.length,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [title, span, deck, reading, openIndex, openEvent, opened.size, results.length, items.length]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'timeline-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: 'Elementary', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
   const clearItem = (next?: TimelineItem) => {
-    setWork(emptyWork(next ?? item)); setActiveCause(null); setWrongShown(false); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setWork(emptyWork(next ?? item)); setActiveCause(null); setWrongShown(false); setPracticeSolved(false);
   };
 
   openItem.current = (index, retry) => {
-    if (retry) { setWork(emptyWork(item)); setActiveCause(null); setWrongShown(false); setFeedback(null); return; }
+    if (retry) { setWork(emptyWork(item)); setActiveCause(null); setWrongShown(false); return; }
     setPractice(null); clearItem(items[index]);
   };
 
@@ -207,21 +192,19 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     SoundManager.tap();
     setOpenIndex(index);
     setOpenedOrder(prev => (prev[prev.length - 1] === e.id ? prev : [...prev, e.id]));
-    say(`[EVENT_SELECTED] The learner opened event ${index + 1} of ${deck.events.length}: "${e.title}" (${e.date}). Talk about it in one or two sentences.`);
   };
   const begin = () => {
     if (!allOpened || !items.length) return;
     readMs.current = Date.now() - readStart.current;
     setReading(false); clearItem(items[0]);
-    say(`[QUESTIONS_START] The learner read all ${deck.events.length} events and begins ${items.length} questions. The timeline is now hidden.`);
   };
 
   // ── Check handlers ──
-  const closed = reading || revealed || wrongShown || learnerBlocked();
+  const closed = reading || revealed || wrongShown || progress.canAttempt === false;
   const choose = (id: string) => {
     if (!item || closed) return;
     SoundManager.select();
-    setWork(w => ({ ...w, choice: id })); setFeedback(null);
+    setWork(w => ({ ...w, choice: id }));
   };
   const move = (from: number, by: number) => {
     if (!item || item.kind !== 'order' || closed) return;
@@ -229,12 +212,11 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (to < 0 || to >= work.order.length) return;
     SoundManager.tick();
     setWork(w => { const order = [...w.order]; [order[from], order[to]] = [order[to], order[from]]; return { ...w, order }; });
-    setFeedback(null);
   };
   const tapCause = (id: string) => {
     if (closed) return;
     SoundManager.select();
-    setActiveCause(c => (c === id ? null : id)); setFeedback(null);
+    setActiveCause(c => (c === id ? null : id));
   };
   const tapEffect = (id: string) => {
     if (closed || !activeCause) return;
@@ -253,24 +235,10 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[CHALLENGE_CORRECT] ${askOf(deck, item)} The learner got it. ${solvedText(deck, item)} Reinforce the connection in time briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(deck, item)} The answer is now on screen: ${solvedText(deck, item)}`);
-      return;
-    }
-    if (item.kind === 'identify' || item.kind === 'date') setWork(w => ({ ...w, choice: null }));
-    setFeedback(item.kind === 'order' ? 'Not quite. Think about what had to happen first, and try once more.'
-      : item.kind === 'cause_effect' ? 'Not quite. A cause always comes before what it leads to. Try once more.'
-        : 'Not quite. Try once more.');
-    say(`[CHALLENGE_INCORRECT] ${describeTimelineWork(deck, item, work)} for: ${askOf(deck, item)} It is wrong. You are not told the answer: ask what the learner remembers, without naming a choice.`);
+    setWrongShown(true);
   };
 
   const accuracy = (kinds: TimelineKind[]) => {
@@ -294,16 +262,7 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(items[currentIndex + 1]); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 70, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} questions. Key theme: ${summary?.keyTheme ?? ''}. Celebrate briefly.`);
-  };
-
+  // Under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong answer's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -313,29 +272,29 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render. The levers are the lever set's
+  // (`TIMELINE_LEVERS`); none while the learner reads or on a practice item. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || !sessionItem || isComplete) return;
     const scene = workspaceScene(deck, item, { reading, opened: opened.size, openEvent: openEvent?.id ?? null, work, solved: revealed },
       { title, span });
     if (reading) { workspace.current = { ...scene, readyForResponse: false, levers: [] }; return; }
-    const levers = practice ? [] : timelineLevers(deck, sessionItem, pulled, items);
-    const onScreen = practice ? '' : leverFact(deck, sessionItem, pulled);
+    const levers = practice ? [] : TIMELINE_LEVERS.declare(sessionItem, leverCtx, pulled);
+    const onScreen = practice ? '' : TIMELINE_LEVERS.onScreen(sessionItem, leverCtx, pulled);
+    if (practice) scene.facts.practice = 'A simpler item of the same kind, before the full item comes back.';
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: TIMELINE_LEVERS.support(practice ? null : sessionItem, leverCtx), onScreen }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
-        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(deck, sessionItem, items);
+          const simpler = TIMELINE_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(simpler); setPractice(simpler);
-          return { practice: workspaceAssignment(deck, simpler) };
+          return { practice: timelineExplorerBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -344,21 +303,7 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   });
 
-  // A timeline with no check item (too few events) stays a display: reading it all is its whole task, as before.
-  useEffect(() => {
-    if (tutorOwned || items.length || !allOpened || hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    setSubmitted(true);
-    submitResult(true, 100, metrics(), {});
-  });
-
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || reading || !item ? null : item.id,
-    label: 'The question and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   // ── Render: the timeline (reading) ──
   const renderReading = () => (
@@ -574,7 +519,6 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
       <LuminaCardContent className="space-y-5">
         {done ? (
           <div className="space-y-4 py-2 text-center">
-            {!tutorOwned && <div className="text-3xl font-bold text-emerald-400">{submittedResult?.score ?? Math.round((correctCount / Math.max(items.length, 1)) * 100)}%</div>}
             <LuminaFeedbackCard status="insight" label="Timeline check complete">
               {`${correctCount} of ${items.length} questions answered.`}
             </LuminaFeedbackCard>
@@ -586,15 +530,22 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
               </LuminaPanel>
             )}
           </div>
-        ) : reading || !item ? renderReading() : (
+        ) : reading || !item ? (
+          <>
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the timeline as its region. */}
+            <PipDock />
+            <PipWorkspace>{renderReading()}</PipWorkspace>
+          </>
+        ) : (
           <div className="space-y-3 border-t border-white/10 pt-4">
             <LuminaSectionLabel accent="cyan" size="sm">
               {practice ? 'A simpler question first' : `${KIND_LABEL[item.kind]} · question ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
             </LuminaSectionLabel>
             <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(deck, item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace}>{renderItem(item)}</div>
+            {/* The dock above, the choices or cards as Pip's region. */}
+            <PipDock />
+            <PipWorkspace>{renderItem(item)}</PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center pt-1">
@@ -604,18 +555,11 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
               </div>
             )}
             {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? 'Correct!' : 'The answer'}>
+              <LuminaFeedbackCard status="correct" label="Correct!">
                 {solvedText(deck, item)}
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-center">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next Question' : 'See Results'}</LuminaActionButton>
-              </div>
-            )}
           </div>
         )}
       </LuminaCardContent>
@@ -623,8 +567,6 @@ const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TimelineExplorer = withWorkspaceController<TimelineExplorerProps, ProgressOptions<TimelineItem>, Progress>(
-  'timeline-explorer', TimelineExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('timeline-explorer'));
+const TimelineExplorer = withWorkspaceOnly<TimelineExplorerProps>('timeline-explorer', TimelineExplorerSurface, props => props.data.title);
 
 export default TimelineExplorer;

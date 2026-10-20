@@ -443,6 +443,9 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
   );
   if (resolved?.allowedTypes.length === 1 && resolved.allowedTypes[0] === 'build_inflect') return generateInflectBuild(ctx);
   const resolution = spokenOnly(resolved);
+  // The lesson's tier rides on the session: the lever set reads it for when the model lever comes (default medium).
+  const supportTier = ctx.supportTier === 'easy' || ctx.supportTier === 'medium' || ctx.supportTier === 'hard' ? ctx.supportTier : undefined;
+  const tier = supportTier ? { supportTier } : {};
   const activeTypes = (resolution?.allowedTypes ?? ALL_CHALLENGE_TYPES) as WordFlipChallengeType[];
   const sessionSize = Math.max(5, activeTypes.length);
   const baseSchema = buildNounPoolSchema();
@@ -478,7 +481,7 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
         wordSpace: { space: `flip-${type}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
       }));
       return {
-        title: plural ? 'One and Many' : 'Yesterday Words', challengeType: type, challenges, gradeLevel: ctx.gradeContext,
+        title: plural ? 'One and Many' : 'Yesterday Words', challengeType: type, challenges, gradeLevel: ctx.gradeContext, ...tier,
       };
     }
   }
@@ -532,6 +535,7 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
       challengeType: activeTypes.length === 1 ? activeTypes[0] : 'mixed',
       challenges,
       gradeLevel: ctx.gradeContext,
+      ...tier,
     };
 
     console.log('Word Flip Generated:', {

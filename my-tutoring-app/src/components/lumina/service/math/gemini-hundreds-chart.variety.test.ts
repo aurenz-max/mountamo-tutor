@@ -168,6 +168,9 @@ describe('generateHundredsChart — session variety', () => {
     for (const challenge of data.challenges) {
       expect(challenge.hint).not.toMatch(new RegExp(`\\b${challenge.skipValue}\\b`));
       expect(challenge.instruction).not.toMatch(new RegExp(`\\b${challenge.skipValue}\\b`));
+      // The first highlighted number is never the answer: picking it would pass without finding the gap.
+      expect(challenge.givenCells).not.toContain(challenge.skipValue);
+      expect(challenge.givenCells[0]).toBe(challenge.startNumber);
     }
   });
 });

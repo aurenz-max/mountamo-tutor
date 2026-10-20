@@ -6,19 +6,18 @@
  * - indicator: an unnamed sample in red cabbage juice; say which pH range its colour shows.
  * - neutralize: how many cups of a strong base, at a given pH, neutralize 1 cup of a strong acid at a given pH.
  *
- * Every item is built and keyed by code from the substances' pH values (`phExplorerWorkspace.ts`); nothing on screen
- * states the answer before credit (no pH, kind or real-world line on a test card, no scale beside the cabbage tube, no
- * meter before a mix). Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its
- * own Next and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
- * `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the runtime move on.
- * The levers live in `phExplorerLevers.ts`.
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `phExplorer.card.ts` +
+ * `phExplorer.boss.ts`, a SAY_OR_SHOW card on the spoken preset). Every item is built and keyed by code from the
+ * substances' pH values (`phExplorerWorkspace.ts`); nothing on screen states the answer before credit (no pH, kind or
+ * real-world line on a test card, no scale beside the cabbage tube, no meter before a mix). A tap commits through
+ * `progress.commitCheck` with its named miss, a spoken answer is judged by the tutor, and the levers are one lever set
+ * (`phExplorerLevers.ts`) published with the scene. No Next: the runtime moves the item.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { PhExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -35,16 +34,17 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   AMOUNTS, askOf, bandOf, CABBAGE_BANDS, cupsToNeutral, describePhWork, keyChoice, kindOf, litmusAfter, mixedPH, phCorrect,
-  phItems, phMiss, universalHex, workspaceAssignment, workspaceScene, PH_COLORS, type PhItem, type PhMode,
+  phMiss, universalHex, workspaceScene, PH_COLORS, type PhItem, type PhMode,
 } from './phExplorerWorkspace';
 import {
-  chartRows, CHART_LEVER, FEWER_LEVER, fewerChoices, leverFact, LITMUS_KEY, LITMUS_LEVER, METER_LEVER, phLevers, stepLines, STEPS_LEVER,
+  chartRows, CHART_LEVER, LITMUS_KEY, LITMUS_LEVER, METER_LEVER, PH_LEVERS, stepLines, STEPS_LEVER,
 } from './phExplorerLevers';
+import { phExplorerBoss } from './phExplorer.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -164,51 +164,48 @@ const Paper = ({ start, now, dipped }: { start: 'blue' | 'red'; now: string; dip
 // Component
 // ============================================================================
 
-const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PhExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PhItem>) => Progress }) => {
-  const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, substances = [], gradeBand = '4-6', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+const usePhProgress = useWorkspaceProgressFor('ph-explorer');
 
-  const items = useMemo(() => phItems(data), [data.substances, data.challengeTypes, data.gradeBand]);
+const PhExplorerSurface = ({ data, className, runtimePlanItemId }: PhExplorerProps) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, substances = [], instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => [...phExplorerBoss.items(data)], [data.substances, data.challengeTypes, data.gradeBand]);
   const stableInstanceId = useRef(instanceId || `ph-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePhProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: phExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: PhItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<PhItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [choice, setChoice] = useState<string | null>(null);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<string | null>(null);
   const [dipped, setDipped] = useState(false);
   const [mixedCups, setMixedCups] = useState<number | null>(null);
   /** The last mix on this item, kept across Try again for the pH meter lever. */
   const [lastMix, setLastMix] = useState<{ item: string; cups: number } | null>(null);
-  /** Scripted path: wrong tries on the current item, and whether its answer has been shown after two. */
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   /** The item a correct tap already recorded, so its `onSolved` records nothing twice. */
@@ -216,8 +213,7 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
-  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
   const meterPH = item?.mode === 'neutralize' && lastMix?.item === item.id ? mixedPH(item.acid.pH, item.base.pH, lastMix.cups) : null;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<PhExplorerMetrics>({
@@ -227,26 +223,14 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand, mode: item?.mode ?? 'test', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'ph-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '4-6' ? 'Grade 4-6' : 'Grade 7-8', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
   const clearItem = (keepDip: boolean) => {
-    setChoice(null); setWrongPick(null); setMixedCups(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setChoice(null); setWrongPick(null); setMixedCups(null); setPracticeSolved(false);
     if (!keepDip) setDipped(false);
   };
 
-  // Workspace path: a fresh item (or the full item back after practice) opens blank; Try again keeps the dipped papers.
+  // A fresh item (or the full item back after practice) opens blank; Try again keeps the dipped papers.
   openItem.current = (_index, retry) => {
-    if (retry) { setChoice(null); setWrongPick(null); setMixedCups(null); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { clearItem(true); return; }
     setPractice(null); clearItem(false);
   };
 
@@ -273,7 +257,7 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const pick = (c: string) => {
     if (!item || revealed || wrongPick !== null || learnerBlocked()) return;
     SoundManager.select();
-    setChoice(c); setFeedback(null);
+    setChoice(c);
   };
 
   const dip = () => {
@@ -294,23 +278,11 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
       if (item.mode === 'test') setDipped(true);
-      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongPick(choice); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is now on screen ("${keyChoice(item)}"); explain it plainly.`);
-      return;
-    }
-    setChoice(null);
-    setFeedback('Not quite. Look again and try once more.');
-    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: point them `
-      + 'at what the screen shows (the papers, the colour, the two pH values) without naming a choice.');
+    // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
+    setWrongPick(choice);
   };
 
   const metrics = (): PhExplorerMetrics => {
@@ -328,17 +300,7 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(false); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -348,29 +310,29 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render. A practice item offers no lever. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || !sessionItem || isComplete) return;
     const scene = workspaceScene(item, { choice: wrongPick ?? choice, dipped, mixedCups, solved: revealed });
-    const levers = practice ? [] : phLevers(sessionItem, pulled, substances, items);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled, meterPH);
+    const ctx = { substances, items, meterPH };
+    const levers = practice ? [] : PH_LEVERS.declare(sessionItem, ctx, pulled);
+    const published = leverScene(scene, { support: practice ? '' : PH_LEVERS.support(sessionItem, ctx),
+      onScreen: practice ? '' : PH_LEVERS.onScreen(sessionItem, ctx, pulled) });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item with three choices, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: 'A simpler item with three choices, before the full item comes back.' } : {}) },
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
-        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
-        if (id === METER_LEVER && meterPH === null) return 'No mix yet: the meter reads the last mix. Ask the learner to choose an amount and mix first.';
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = fewerChoices(sessionItem, substances, items);
+          const simpler = PH_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no other item to practise on here; try a help lever.';
           setLeverState(next); clearItem(false); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: phExplorerBoss.assignment(simpler) };
         }
         setLeverState(next);
         return true;
@@ -379,16 +341,7 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     };
   });
 
-  // ── Pip shared surface: the item's check state, the tutor's speech on it, and the child's touches ──
-  // The scripted path ends on Finish (its last credit still shows Next); the workspace path when the runtime completes.
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The pH lab and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -499,8 +452,9 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           <>
             <LuminaPrompt accent="purple" {...(practice ? { 'data-practice': 'fewer-choices' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the lab and the choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {item.mode !== 'indicator' && <PHScaleBar marks={marks} />}
               {renderStation()}
               {renderLevers()}
@@ -513,7 +467,7 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                   </LuminaAnswerChoice>
                 ))}
               </div>
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -524,18 +478,11 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
             )}
 
             {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+              <LuminaFeedbackCard status="correct">
                 {revealText()}
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -543,8 +490,6 @@ const PhExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const PhExplorer = withWorkspaceController<PhExplorerProps, ProgressOptions<PhItem>, Progress>(
-  'ph-explorer', PhExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('ph-explorer'));
+const PhExplorer = withWorkspaceOnly<PhExplorerProps>('ph-explorer', PhExplorerSurface, props => props.data.title);
 
 export default PhExplorer;

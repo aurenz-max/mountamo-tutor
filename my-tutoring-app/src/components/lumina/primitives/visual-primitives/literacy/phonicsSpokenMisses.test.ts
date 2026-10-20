@@ -4,17 +4,17 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { cvcSpokenMisses } from './cvcSpellerWorkspace';
-import { letterSpotterSpokenMisses } from './letterSpotterWorkspace';
-import { blendSpokenMisses } from './phonicsBlenderWorkspace';
+import { cvcSpokenMisses } from './cvcSpellerDomain';
+import { letterSpotterSpokenMisses } from './letterSpotterDomain';
+import { blendSpokenMisses } from './phonicsBlenderDomain';
 import { phonemeSpokenMisses } from './phonemeExplorerDomain';
-import { rhymeSpokenMisses } from './rhymeStudioWorkspace';
-import { swapSpokenMisses } from './soundSwapWorkspace';
+import { rhymeSpokenMisses } from './rhymeStudioDomain';
+import { swapSpokenMisses } from './soundSwapDomain';
 import { syllableSpokenMisses } from './syllableClapperWorkspace';
-import { flipSpokenMisses } from './wordFlipWorkspace';
-import { wordWorkoutSpokenMisses } from './wordWorkoutWorkspace';
+import { flipSpokenMisses } from './wordFlipDomain';
+import { wordWorkoutSpokenMisses } from './wordWorkoutDomain';
 import { decodableSpokenMisses } from './decodableReaderDomain';
-import { interactiveBookSpokenMisses } from './interactiveBookWorkspace';
+import { interactiveBookSpokenMisses } from './interactiveBookDomain';
 import { readAloudSpokenMisses } from './readAloudStudioWorkspace';
 
 const as = <T>(v: unknown) => v as T;

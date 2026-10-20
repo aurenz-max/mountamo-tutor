@@ -7,13 +7,13 @@
 import { ComponentDefinition } from '../../../types';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { solarSystemCard } from '../../../primitives/visual-primitives/astronomy/solarSystem.card';
-import type { ShadowMiss } from '../../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
-import type { PlanetMiss } from '../../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
-import type { ConstellationMiss } from '../../../primitives/visual-primitives/astronomy/constellationWorkspace';
-import type { TelescopeMiss } from '../../../primitives/visual-primitives/astronomy/telescopeWorkspace';
-import type { OrbitMiss } from '../../../primitives/visual-primitives/astronomy/orbitWorkspace';
-import type { RocketMiss } from '../../../primitives/visual-primitives/astronomy/rocketWorkspace';
-import type { MissionMiss } from '../../../primitives/visual-primitives/astronomy/missionWorkspace';
+import { lightShadowLabCard } from '../../../primitives/visual-primitives/astronomy/lightShadowLab.card';
+import { planetaryExplorerCard } from '../../../primitives/visual-primitives/astronomy/planetaryExplorer.card';
+import { constellationBuilderCard } from '../../../primitives/visual-primitives/astronomy/constellationBuilder.card';
+import { telescopeSimulatorCard } from '../../../primitives/visual-primitives/astronomy/telescopeSimulator.card';
+import { orbitMechanicsLabCard } from '../../../primitives/visual-primitives/astronomy/orbitMechanicsLab.card';
+import { rocketBuilderCard } from '../../../primitives/visual-primitives/astronomy/rocketBuilder.card';
+import { missionPlannerCard } from '../../../primitives/visual-primitives/astronomy/missionPlanner.card';
 import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
@@ -313,67 +313,14 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     description: 'Rockets made of parts: each part shows its weight as grey blocks, each engine its push as orange arrows, fuel tanks are heavy, and some rockets drop each tank once it is empty. Every rocket, part and answer is built by code from one flight model, and nothing launches until the learner has answered, so each answer is a prediction, never a trial. Four tasks: predict whether a rocket lifts off the pad (a rocket lifts off only when its push is more than its weight); choose the one part to add so a grounded rocket lifts off (an engine adds its own weight too); choose the rocket that lifts off and costs no more than a budget of coins; and predict which of several rockets, differing in fuel, engine, weight or dropped tanks, flies the highest. ESSENTIAL for forces and spaceflight in K-5 and engineering criteria and constraints: what a rocket needs to lift off, why fuel is heavy, why rockets drop empty stages.',
     constraints: 'Best for grades K-5. K and Grade 1 MAY be routed here: can_it_lift is a count of blocks and arrows on one rocket and a tap (or a spoken yes or no), and the tutor reads the question; no total, ratio, unit or altitude is on screen. Code builds every item and answer; the manifest picks the topic, never the rockets. Default modes when nothing pins them: K-1 can_it_lift; Grade 2 adds add_to_lift; Grade 3 adds on_budget; Grades 4-5 all four. Not for action and reaction or which engines need air (propulsion-lab), or orbits after launch (orbit-mechanics-lab).',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student predicts what a rocket made of parts will do: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}, grade {{gradeLevel}}).',
-      contextKeys: ['gradeLevel', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Look at the grey blocks and the orange arrows on each part. What do the blocks show? What do the arrows show?"',
-        level2: '"Count all the weight blocks on the rocket, then all the push arrows. What has to be true for the rocket to go up?"',
-        level3: '"A rocket lifts off only when its push is more than its weight. Use that on the rocket you see."',
-      },
-      commonStruggles: [
-        { pattern: 'Thinks a rocket lifts off when push and weight are the same', response: '"If the push and the weight are the same, which one wins? Does anything move?"' },
-        { pattern: 'Thinks the biggest engine or the most fuel is always the answer', response: '"What else does that part bring with it? Look at its grey blocks too."' },
-        { pattern: 'Picks a rocket on budget without checking that it lifts off', response: '"There are two things to check for each rocket. What are they?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
-          instruction:
-            'A pre-reader CANNOT read the question or the buttons. When you receive [READ_CHALLENGE], read the question aloud, word for word, then wait. '
-            + 'Never speak a unit to a pre-reader, and never say thrust, mass, ratio or altitude: say "push", "heavy", "weight blocks", "push arrows", "goes up".',
-        },
-        {
-          title: 'NEVER NAME THE ANSWER',
-          instruction:
-            'Code checks every answer. Never say which choice, part or rocket is right, never say a total of blocks, arrows or coins, never say whether the push is more or less than the weight, and never rule a choice out. '
-            + 'After a wrong answer, say what the screen shows, if a rocket launched, and ask what the learner noticed.',
-        },
-      ],
-    },
     evalModes: [
       { evalMode: 'can_it_lift', affordances: { answers: ['tap', 'spoken'] }, label: 'Will it lift off? (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['can_it_lift'], description: 'Say or tap whether one rocket lifts off, from its parts\' weight blocks and its engines\' push arrows (hard: two engines to add up, push one away from weight or equal to it)' },
       { evalMode: 'add_to_lift', affordances: { answers: ['tap', 'spoken'] }, label: 'Add one part (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['add_to_lift'], description: 'Say or tap the one part (an engine, a fuel tank or a cargo box) that makes a grounded rocket lift off (hard: the engine with the biggest push is too heavy to help)' },
       { evalMode: 'on_budget', affordances: { answers: ['tap', 'spoken'] }, label: 'On budget (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['on_budget'], description: 'Say or tap the rocket that lifts off and costs no more than a budget of coins (hard: four rockets, one a coin over, the cheapest stays down)' },
       { evalMode: 'reach_target', affordances: { answers: ['tap', 'spoken'] }, label: 'Which flies highest (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['reach_target'], description: 'Say or tap which rocket flies highest (or least high), when they differ in fuel, engine, weight or dropping empty tanks (hard: the rocket with the most fuel is too heavy to lift off)' },
     ],
-    // Shared teaching workspace (W1, plain shape): `rocketWorkspace.ts`, levers in `rocketLevers.ts`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item from its flight model; you are not told the key. Nothing launches until an '
-        + 'answer is checked. Each part shows its weight as grey blocks and each engine its push as orange arrows; no total is '
-        + 'drawn, and adding them up and comparing is the learner\'s work. Never say a total of blocks, arrows or coins, never '
-        + 'say whether a rocket\'s push is more, less or the same as its weight, and never say which choice, part or rocket is '
-        + 'right or rule one out. WILL IT LIFT OFF: the learner says yes or no, or taps. ADD ONE PART: never say that an '
-        + 'engine is strong or weak enough, that a part only adds weight, or that the biggest engine is too heavy. ON BUDGET: '
-        + 'never say which rocket is over budget or stays down. WHICH FLIES HIGHEST: never say that more fuel, a stronger '
-        + 'engine, less weight or dropping tanks makes a rocket go higher or lower, or which rocket cannot lift off, unless a '
-        + 'card the scene lists says it, and never send the learner to look for one feature (the rocket that drops its tanks, '
-        + 'has the most fuel or the strongest engine, or that the card describes). You may ask what the blocks and arrows show and what the learner counts. After a wrong '
-        + 'answer nothing launches, except the learner\'s own part in ADD ONE PART: never say a rocket stayed on the pad or flew, '
-        + 'never say why the learner\'s pick was wrong (it cannot lift off, costs too much, flies lower), and never suggest a '
-        + 'part, a rocket or a kind of part to try; ask the learner to check their pick. Never speak a unit to a K-1 learner. '
-        + 'Describe a lever card only by what the scene says it shows. You cannot tap, check or launch for the learner.',
-      levers: true,
-      // The activity's own check (`rocketMiss`) on a tap, and the same ids as each spoken item's known misses.
-      // Every miss is answered by a help lever (`rocketLevers.ts`): count_marks, lift_card, own_weight, fuel_card.
-      misses: missLists<RocketMiss>({
-        can_it_lift: ['said_equal_lifts', 'said_lifts', 'said_stays'],
-        add_to_lift: ['heavy_engine', 'added_no_push', 'too_weak'],
-        on_budget: ['fails_both', 'over_budget', 'no_lift'],
-        reach_target: ['picked_no_lift', 'picked_lower', 'picked_higher'],
-      }),
-    },
+    // Wired to the live tutor by its boss (rocketBuilder.card.ts + rocketBuilder.boss.ts).
+    ...bossEntry(rocketBuilderCard),
     supportsEvaluation: true,
   },
   {
@@ -381,69 +328,14 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     description: 'Newton\'s cannon with a rocket: the rocket is high above Earth\'s air and gets one sideways push, and gravity alone decides its path: it falls back, goes around in a circle, swings out in a stretched loop, or flies away. Every item, push, rocket and answer is built by code from real orbital physics, and nothing flies until the learner has answered, so the first answer is a prediction, never a trial. Four tasks: pick the push (drawn as an arrow) that makes the rocket fall back, circle or fly away; pick which of several rockets on round tracks moves fastest or slowest, or takes the shortest or longest trip around Earth; predict what a push forward or backward does to a circling rocket\'s path; and choose where and which way to fire once to turn a stretched loop into a circle. ESSENTIAL for orbits, gravity and spaceflight in K-5: why things in orbit do not fall down, why closer orbits are faster, and how a push changes an orbit.',
     constraints: 'Best for grades K-5. K and Grade 1 MAY be routed here: pick_speed is a tap (or a spoken word) on one of two to four push pictures (arrows), the asked outcome is shown as a picture too, and the tutor reads the question; there is no slider, number or unit on screen. Code builds every item and answer; the manifest picks the topic, never the questions. Default modes when nothing pins them: K-1 pick_speed; Grade 2 adds orbit_speed; Grade 3 adds predict_burn; Grades 4-5 all four. Not for the parts of a rocket or thrust and lift-off (rocket-builder), or planning a trip to another planet (mission-planner).',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student works out what gravity does with a rocket: {{ask}} (item {{itemIndex}} of {{totalItems}}, {{mode}}, grade {{gradeLevel}}).',
-      contextKeys: ['gradeLevel', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What does gravity do to the rocket all the time? Now think about how fast it is going sideways."',
-        level2: '"If it goes sideways only a little, where does gravity pull it? If it goes sideways really fast, can gravity still pull it back?"',
-        level3: '"A rocket in orbit is falling the whole time, but it moves sideways so fast that it keeps missing Earth. Use that idea on the pushes you see."',
-      },
-      commonStruggles: [
-        { pattern: 'Thinks there is no gravity in space', response: '"Gravity still pulls on the rocket up there. What would happen if it stopped moving sideways?"' },
-        { pattern: 'Thinks the biggest push or the biggest rocket is always the answer', response: '"What does the question ask for? Could too much speed be a problem too?"' },
-        { pattern: 'Thinks a rocket farther out must go faster', response: '"Where does Earth pull harder, close in or far out? What does a rocket close in need to keep from falling?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
-          instruction:
-            'A pre-reader CANNOT read the question or the button words. When you receive [READ_CHALLENGE], read the question aloud, word for word, then wait. '
-            + 'Never speak a number, a speed or a unit to a pre-reader, and never say orbit, altitude or eccentricity: say "going around and around", "falls back down", "flies away".',
-        },
-        {
-          title: 'NEVER NAME THE ANSWER',
-          instruction:
-            'Code checks every answer. Never say which push, rocket or choice is right, never say "the medium one" or point at a place in the row, and never rule a choice out. '
-            + 'Never say what a push size does ("a small push falls") or which rocket is faster. After a wrong answer, say what the flight on screen showed, if one flew, and ask what the learner noticed.',
-        },
-      ],
-    },
     evalModes: [
       { evalMode: 'pick_speed', affordances: { answers: ['tap', 'spoken'] }, label: 'Pick the push (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['pick_speed'], description: 'Say or tap the sideways push (an arrow) that makes the rocket fall back, go around in a circle or fly away; the asked outcome varies (hard: four pushes, a stretched loop beside the circle)' },
       { evalMode: 'orbit_speed', affordances: { answers: ['tap', 'spoken'] }, label: 'Which rocket (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['orbit_speed'], description: 'Say or tap the fastest or slowest rocket on its round track, or the one with the shortest or longest trip around Earth (hard: four tracks close together, rockets drawn at different sizes)' },
       { evalMode: 'predict_burn', affordances: { answers: ['tap', 'spoken'] }, label: 'Predict the burn (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['predict_burn'], description: 'Say or tap what a small or big push forward or backward does to a circling rocket\'s path (hard: all five outcomes offered)' },
       { evalMode: 'circularize', affordances: { answers: ['tap', 'spoken'] }, label: 'Make it a circle (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['circularize'], description: 'Say or tap where (near or far point) and which way to fire once to turn a stretched loop into a circle at a given height (hard: the height is a dashed circle, not named)' },
     ],
-    // Shared teaching workspace (W1, plain shape): `orbitWorkspace.ts`, levers in `orbitLevers.ts`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item from the physics; you are not told the key. Nothing flies until an answer '
-        + 'is checked. PICK THE PUSH: the pushes are arrows of different lengths; the learner says which, or taps one and presses '
-        + 'Launch and check. Never say which push, never say what a push size does ("a small push falls back", "the medium one goes '
-        + 'around"), never point at a place in the row, and never tell the learner to try a bigger, smaller, faster or slower '
-        + 'push or say that more or less speed is needed. Ask what gravity does and what the learner thinks each push does. WHICH '
-        + 'ROCKET: the rockets stand still on round tracks; the learner says or taps one. Never say which rocket is fastest or '
-        + 'slowest or takes longest, never say that closer or farther rockets, or rockets pulled harder, go faster or slower, and '
-        + 'never turn the question into which track is longest or shortest: ask where Earth pulls harder and stop there. PREDICT '
-        + 'THE BURN: the learner says or taps what the push does to the path. Never say what a push forward or backward does, '
-        + 'whether the loop grows, shrinks, falls or flies off, or what gravity does once the rocket is slower or faster. MAKE A '
-        + 'CIRCLE: the learner says or taps where and which way to fire. Never say which point or which way, which side of the '
-        + 'loop must move or in which direction, or which point a dashed circle touches, and never state what a push does to the '
-        + 'other side of a loop unless a card the scene lists says it. After a miss, describe only what the flight on screen '
-        + 'showed, if one flew, and ask what the learner makes of it. Never speak a number, speed or unit to a K-1 learner. '
-        + 'Describe a lever card only by what the scene says it shows. You cannot tap, check or fly for the learner.',
-      levers: true,
-      // The activity's own check (`orbitMiss`) on a tap, and the same ids as each spoken item's known misses.
-      // Every miss is answered by a help lever (`orbitLevers.ts`): throw_model, pull_card/same_size, speed_arrows,
-      // mark_points/burn_card.
-      misses: missLists<OrbitMiss>({
-        pick_speed: ['picked_slower', 'picked_faster'],
-        orbit_speed: ['picked_biggest', 'picked_farther', 'picked_closer'],
-        predict_burn: ['wrong_way', 'said_no_change', 'too_strong', 'too_weak'],
-        circularize: ['other_circle', 'wrong_way', 'wrong_place'],
-      }),
-    },
+    // Wired to the live tutor by its boss (orbitMechanicsLab.card.ts + orbitMechanicsLab.boss.ts).
+    ...bossEntry(orbitMechanicsLabCard),
     supportsEvaluation: true,
   },
   {
@@ -451,70 +343,15 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     description: 'Space-mission planning with every choice and answer built by code. Grades 2-5, four graded tasks, each answered by tapping or saying one choice: which place in space (the Moon, Mars, the asteroid belt, the giant planets) is farthest or closest from Earth, from same-size pictures with no map or distance drawn until the answer; which launch month needs the least or the most fuel, from small pictures of the Sun, Earth\'s orbit and the target planet\'s orbit with both planets where they really are that month; how many food packs a trip to the Moon needs, there, staying and home the same way, for each astronaut; and which route to Jupiter or Saturn uses the least fuel (each flyby past a planet gives a free push) and still arrives within a year limit. Kindergarten and Grade 1 get an ungraded planning story instead: pick the Moon or Mars, pack food, water and air, watch the ship fly, and hear how long the trip takes in words; nothing is scored. ESSENTIAL for space travel in K-5: near and far in the solar system, why launch timing matters (planets move), supplies for a round trip, and gravity-assist trade-offs.',
     constraints: 'Graded for Grades 2-5. Kindergarten and Grade 1 MAY be routed here only as an ungraded story (no score is submitted): use it there for exposure, never as an assessment. Code builds every place, month, trip, route and answer; the manifest picks the topic, never the content. Default modes when nothing pins them: Grade 2 farther_closer and pick_window; Grade 3 adds pack_days; Grades 4-5 all four. Not for the order of planets out from the Sun on a live model (solar-system-explorer), orbits and speeds (orbit-mechanics-lab), or what a rocket needs to lift off (rocket-builder).',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'emerging', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student is on a space-mission activity, "{{title}}" (grade {{gradeLevel}}, task {{mode}}). On screen now: {{ask}}',
-      contextKeys: ['title', 'gradeLevel', 'mode', 'ask'],
-      scaffoldingLevels: {
-        level1: '"What do you see in each picture? What is the question asking you to find?"',
-        level2: '"Think about what the question needs: how far, where the planets are, every day of the trip, or how long each route takes."',
-        level3: '"Look at one choice at a time and say what it shows. Then compare them."',
-      },
-      commonStruggles: [
-        { pattern: 'Answers the opposite of the question (closest for farthest, most fuel for least)', response: '"Read the question again with me. Is it asking for the most or the least?"' },
-        { pattern: 'Packs food only for the trip there', response: '"Where does the ship go after the Moon? What do the astronauts need on that part?"' },
-        { pattern: 'Picks the route with the most flybys without checking the time', response: '"There are two things to check for each route. What are they?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'K-1 STORY: NOTHING IS RIGHT OR WRONG',
-          instruction:
-            'At Kindergarten and Grade 1 the screen is a story, not a test. When you receive [MISSION_ORIENT], say what to do in one or two warm child-sized sentences. '
-            + 'When you receive [MISSION_DESTINATION_SELECTED], name the place and one thing about it they can picture; any place is a fine choice. '
-            + 'When you receive [MISSION_ARRIVED], say how long the trip takes in words, never a number. When you receive [MISSION_READ_ALOUD] or [READ_CHALLENGE], read the text aloud, word for word, then wait.',
-        },
-        {
-          title: 'NEVER NAME THE ANSWER (grades 2-5)',
-          instruction:
-            'Code checks every answer. Never say which place, month, number or route is right, never say a total of packs or days, never say which planets are closest together, and never rule a choice out. '
-            + 'After a wrong answer, ask what the learner noticed.',
-        },
-      ],
-    },
     evalModes: [
       { evalMode: 'farther_closer', affordances: { answers: ['tap', 'spoken'] }, label: 'Near or far? (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['farther_closer'], description: 'Say or tap which place (the Moon, Mars, the asteroid belt or a giant planet) is farthest or closest from Earth; no map is drawn until the answer (hard: four places, two of them next to each other in order)' },
       { evalMode: 'pick_window', affordances: { answers: ['tap', 'spoken'] }, label: 'When to launch (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['pick_window'], description: 'Say or tap the launch month that needs the least or the most fuel, from where Earth and the target planet are that month (hard: four months, one a near miss)' },
       { evalMode: 'pack_days', affordances: { answers: ['tap', 'spoken'] }, label: 'Pack the food (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['pack_days'], description: 'Say or tap how many food packs a Moon trip needs: days there, days staying and the same days home, one pack per astronaut per day (hard: a crew of 2-4)' },
       { evalMode: 'assist_tradeoff', affordances: { answers: ['tap', 'spoken'] }, label: 'Pick a route (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['assist_tradeoff'], description: 'Say or tap the route to Jupiter or Saturn that uses the least fuel (more flybys, less fuel) and still arrives within a year limit (hard: four routes; the one with the most flybys may be too slow)' },
     ],
-    // Shared teaching workspace (W1, plain shape): `missionWorkspace.ts`, levers in `missionLevers.ts`. Grades 2-5 only:
-    // the K-1 story is ungraded and renders outside the workspace (the adapter refuses it).
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item; you are not told the key. Never say which place, month, number of packs or '
-        + 'route is right, and never rule one out. NEAR OR FAR: no map or distance is on screen until the answer; never say '
-        + 'which place is nearer or farther, or put the places in order. WHEN TO LAUNCH: never say in which month the planets '
-        + 'are closest or farthest apart, which month is best, or that being close means less fuel unless a card the scene lists '
-        + 'says it; you may ask where Earth and the planet are in each picture. PACK THE FOOD: never say how many days the whole '
-        + 'trip takes, how many days the trip home takes, or any total, and never tell the learner to count every square or to '
-        + 'multiply by the crew; you may ask what happens after the stay. PICK A ROUTE: never say which route uses less fuel or '
-        + 'arrives in time, and never say that flybys save fuel unless a card the scene lists says it; you may ask what the '
-        + 'learner checks for each route. Even with a card on screen, never send the learner to look for the one choice that fits '
-        + 'it (the month with the planets closest, farthest apart or on the far side, the shortest or longest line, the route '
-        + 'with the most flybys, in time), and never ask which choice fits it ("Which picture shows them closest together?", '
-        + '"Which route has the most flybys?"): that is the answer; ask what they see in each picture. After a wrong answer, never say why the pick was '
-        + 'wrong and never suggest a choice or a kind of choice to try; ask the learner to look at their pick again. Describe a '
-        + 'lever card only by what the scene says it shows. You cannot tap or check for the learner.',
-      levers: true,
-      // The activity's own check (`missionMiss`) on a tap, and the same ids as each spoken item's known misses.
-      // Levers (`missionLevers.ts`): farther_closer is recall, so no help lever may put places in order (replay 10-16: an
-      // order card read aloud named the key); next_in_line and in_between are answered by drop_one only.
-      misses: missLists<MissionMiss>({
-        farther_closer: ['other_end', 'next_in_line', 'in_between'],
-        pick_window: ['far_apart', 'close_together', 'in_between_window'],
-        pack_days: ['forgot_home', 'stay_twice', 'forgot_stay', 'forgot_crew', 'added_crew'],
-        assist_tradeoff: ['too_slow', 'picked_direct', 'fewer_flybys'],
-      }),
-    },
+    // Wired to the live tutor by its boss (missionPlanner.card.ts + missionPlanner.boss.ts), grades 2-5 only: the K-1
+    // story is ungraded and renders outside the workspace (the boss refuses it).
+    ...bossEntry(missionPlannerCard),
     supportsEvaluation: true,
   },
   {
@@ -528,31 +365,7 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'object_type', affordances: { answers: ['tap', 'spoken'] }, label: 'Object type (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['object_type'], description: 'Say or tap what kind of object is in the view: moon, planet, star, star cluster, nebula or galaxy (hard: both look-alike kinds offered, seen through binoculars)' },
       { evalMode: 'pick_instrument', affordances: { answers: ['tap', 'spoken'] }, label: 'Pick the instrument (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['pick_instrument'], description: 'Say or tap the least powerful instrument that shows a named detail, from a code table (hard: four instruments to choose from)' },
     ],
-    // Shared teaching workspace (W1, plain shape): `telescopeWorkspace.ts`, levers in `telescopeLevers.ts`.
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Code builds and checks every item; you are not told the key. No object in the view is named until an '
-        + 'answer is credited. FIND BY LOOK: the ask describes one object\'s look; the learner taps it and presses Check '
-        + 'Answer. BRIGHTEST: the learner taps the brightest object; each is drawn as bright as it shines. Until credit, '
-        + 'never say which object matches or is brightest, where it is, or that the big one is not the brightest; ask '
-        + 'what the learner notices about each clue or each object. OBJECT TYPE: the learner says or taps what kind of '
-        + 'object is in the middle. Never say its kind or its name, never say what a look means or which kind has it '
-        + '("twinkling like a star", "a cloud like a nebula", "planets shine steadily"), and never rule a kind in or out; '
-        + 'describe only what is drawn and ask about its shape, its edges and its light. PICK THE INSTRUMENT: the learner '
-        + 'says or taps the least powerful instrument that still shows the named detail. Never say which instrument, what '
-        + 'any instrument shows of this object, or how much magnifying the detail needs, and never point at a choice by its '
-        + 'place in the order ("the least powerful one on your list", "one step up from your eyes"). After a miss, never say what the wrong pick was or why it was wrong. Describe a lever card only by '
-        + 'what the scene says it shows. You cannot tap, check or point for the learner.',
-      levers: true,
-      // The activity's own check (`telescopeMiss`) on a tap, and the same ids as each spoken item's known misses.
-      // Every miss is answered by a help lever (`telescopeLevers.ts`): clue_pictures, side_by_side, type_pictures, ladder.
-      misses: missLists<TelescopeMiss>({
-        find_by_look: ['near_match', 'shares_clue', 'other_object'],
-        brightest: ['picked_biggest', 'picked_dimmer'],
-        object_type: ['sharp_mixup', 'fuzzy_mixup', 'other_family'],
-        pick_instrument: ['too_weak', 'too_strong'],
-      }),
-    },
+    ...bossEntry(telescopeSimulatorCard),
     supportsEvaluation: true,
   },
   {
@@ -597,52 +410,20 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         description: 'Reverse reasoning — determine time of day from shadow direction and length',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is exploring shadows with a {{theme}} setup. Sun at {{sunPosition}} ({{timeOfDay}}). Shadow pointing {{shadowDirection}}, length {{shadowLength}}. Phase: {{phase}}.',
-      contextKeys: ['theme', 'sunPosition', 'timeOfDay', 'shadowDirection', 'shadowLength', 'phase', 'challengeActive'],
-      scaffoldingLevels: {
-        level1: '"Move the sun and watch what happens to the shadow. What do you notice?"',
-        level2: '"The shadow is pointing {{shadowDirection}}. The sun is in the {{sunPosition}}. See how they are on opposite sides?"',
-        level3: '"When the sun is low (morning/evening), shadows are long. When the sun is high (noon), shadows are short. The shadow always points AWAY from the sun."',
-      },
-      commonStruggles: [
-        { pattern: 'Student thinks shadow should point toward the sun', response: '"Try holding your hand up to a flashlight. Where does the shadow go? It goes the OTHER way! Shadows always point away from the light."' },
-        { pattern: 'Student does not connect shadow length to sun height', response: '"Drag the sun to the very top of the sky. Now drag it low. See how the shadow gets longer? Lower sun = longer shadow!"' },
-        { pattern: 'Student confuses direction labels', response: '"Remember: the sun rises in the East (the left side of the picture) and sets in the West (the right side). Morning shadows point West, evening shadows point East."' },
-      ],
-    },
-    // Shared teaching workspace (W1, plain shape): `lightShadowWorkspace.ts`. The scripted fallback still reads `tutoring`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Every item is answered by tapping one choice and checking it; the activity judges it against the '
-        + 'shadow worked out from the sun\'s position, and you are not told the answer. In this picture east is the left side '
-        + 'and west the right side, even when the ground labels are hidden. Observe: the learner drags the sun to the time '
-        + 'mark the question names. Predict: no shadow is drawn until the prediction is right. Measure: the shadow is drawn '
-        + 'and reading it is the task. Apply: the sun and the clock are hidden; only the shadow shows. Never say or hint '
-        + 'which way the shadow points, how long it is, or on apply the time or part of the day: not as a statement, not '
-        + 'as a choice to try, not as a yes-or-no question that names one ("does it point right?"). Ask questions that '
-        + 'name both sides or none: where is the sun, which side can the light not reach, left or right, long or short. '
-        + 'Read the question and the choices aloud for a young learner. You cannot move the sun, tap or check for the learner.',
-      // Every mode's misses are answered by a drawn lever (`lightShadowLevers.ts`).
-      levers: true,
-      // The activity's own check (`shadowMiss`), every mode.
-      misses: missLists<ShadowMiss>({
-        observe: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
-        predict: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
-        measure: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
-        apply: ['mirror_time', 'wrong_height', 'other_time'],
-      }),
-    },
+    ...bossEntry(lightShadowLabCard),
     supportsEvaluation: true,
   },
   {
     id: 'constellation-builder',
     description: 'Interactive connect-the-dots star field where students trace constellations by connecting stars. Builds spatial pattern recognition and star identification skills. Students connect numbered dots (guided), find pattern stars in a field (free), identify named constellations (reverse), and match constellations to seasons. Features real star positions for Big Dipper, Orion, Cassiopeia, Leo, and more. Progressive difficulty from K (numbered dots) to Grade 5 (seasonal sky knowledge). Perfect for K-5 astronomy, NGSS 1-ESS1-1. ESSENTIAL for teaching star patterns and constellation recognition.',
     constraints: 'Best for grades K-5. K: 3 constellations, numbered dots, large stars. Grade 1: 4-5 constellations, guided trace. Grade 2: unnumbered free connect, star brightness varies. Grade 3: identify mode, background distractors, seasonal grouping. Grade 4-5: seasonal sky rotation, no numbers, mythology connections.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: 'apply', minutes: 5 },
+    // Live-tutor wiring: `constellationBuilder.card.ts` + `constellationBuilder.boss.ts` (the spoken preset: trace modes
+    // drawn and checked tap by tap, identify and seasonal SAY_OR_SHOW); items, scene and checks in `constellationWorkspace.ts`.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['build', 'spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'guided_trace',
+        affordances: { answers: ['build'] },
         label: 'Guided Trace (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -651,6 +432,7 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'free_connect',
+        affordances: { answers: ['build'] },
         label: 'Free Connect (Tier 2)',
         beta: 3.0,
         scaffoldingMode: 3,
@@ -659,7 +441,7 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'identify',
-        affordances: { representation: 'symbolic' },
+        affordances: { representation: 'symbolic', answers: ['spoken', 'tap'] },
         label: 'Identify (Tier 3)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -668,7 +450,7 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'seasonal',
-        affordances: { representation: 'symbolic' },
+        affordances: { representation: 'symbolic', answers: ['spoken', 'tap'] },
         label: 'Seasonal (Tier 4)',
         beta: 6.0,
         scaffoldingMode: 6,
@@ -676,82 +458,17 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         description: 'Identify which constellations are visible in a given season',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is building the {{constellationName}} constellation. Stars connected: {{connectedCount}}/{{totalStars}}. Mode: {{evalMode}}. Season: {{season}}.',
-      contextKeys: ['constellationName', 'connectedCount', 'totalStars', 'evalMode', 'season', 'lastStarTapped', 'mythologyFact'],
-      scaffoldingLevels: {
-        level1: '"Look at all those stars! Can you find a group that looks like a pattern? Start with the brightest ones."',
-        level2: '"{{constellationName}} has {{totalStars}} main stars. You have found {{connectedCount}} so far. Look for a bright star near the ones you already connected."',
-        level3: '"Let me help — see that bright star nearby? That is the next one in {{constellationName}}. Tap it to connect the line!"',
-      },
-      commonStruggles: [
-        { pattern: 'Student taps random stars without looking for the pattern', response: '"Slow down! Constellations are like connect-the-dots in the sky. Look for a shape — does any group of bright stars look like a dipper or a person?"' },
-        { pattern: 'Student connects wrong stars', response: '"Good try! That star is close, but look for a slightly brighter one nearby. The stars in {{constellationName}} are some of the brightest in this part of the sky."' },
-        { pattern: 'Student completes constellation and does not explore mythology', response: '"You found {{constellationName}}! Did you know ancient people told stories about this star pattern? {{mythologyFact}}"' },
-        {
-          pattern: 'A pre-reader cannot read the instruction line, the star numbers or the Star Lore card',
-          response: '"Never ask them to read anything. Say the instruction aloud each time the picture changes, and read the star story to them when they finish. The words are yours to speak."',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
-          instruction:
-            'A pre-reader CANNOT read the instruction line, the constellation name, the Star Lore card or the buttons. Your voice is the only channel. '
-            + 'When you receive [CONSTELLATION_ORIENT], say what to do in one or two warm child-sized sentences — they are tapping stars to draw a picture in the sky. '
-            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
-            + 'When you receive [CONSTELLATION_CHALLENGE_CHANGED], SAY the new instruction aloud in child words: the sky just changed to a new pattern and they cannot read what it now says. '
-            + 'When you receive [CONSTELLATION_COMPLETE], celebrate warmly by name and then read the star story aloud — it is on screen as text they cannot read. '
-            + 'When you receive [CONSTELLATION_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
-        },
-        {
-          title: 'NEVER SAY WHICH STAR IS NEXT — THE SCREEN ALREADY POINTS',
-          instruction:
-            'In guided trace the answer IS the order, and the screen already pulses a ring around the one star to tap next. Naming it, or saying where it sits ("the one up on the left"), hands over the whole task. '
-            + 'On [CONSTELLATION_WRONG_STAR] say only that it was a different star and send them back to the twinkling ring — "look for the star with the sparkly circle around it". '
-            + 'Only at scaffolding level 3, after several misses, may you describe where the ringed star is. In free connect, never name the pair to join; say "look for a bright one close to the last one you tapped".',
-        },
-        {
-          title: 'NO STAR NUMBERS OR MAGNITUDES AT K-1 — SAY WHAT THEY CAN SEE',
-          instruction:
-            'At grade rung K and 1 do NOT say a star count, a step number ("star 3 of 5"), a magnitude, a compass direction, or a season name as if they knew it. The screen deliberately hides those at K, so saying them puts back what was taken out. '
-            + 'Say "the twinkling one", "the bright one right next to it", "you have a few more to go", "almost done". '
-            + 'From grade 2 up the counts and the brightness ARE part of the objective — say them, and help the student use brightness to tell constellation stars from the dim ones behind them.',
-        },
-      ],
-    },
+    ...bossEntry(constellationBuilderCard),
     supportsEvaluation: true,
-    // Shared teaching workspace (W1, plain shape): `constellationWorkspace.ts`. The scripted fallback still reads `tutoring`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Guided trace and free connect are star taps: the activity checks every tap against the pattern, and you '
-        + 'are not told the stars. Guided trace: a pulsing ring marks the next star, and a tap on another star is a miss. '
-        + 'Free connect: the learner taps one star, then the star it joins to, for each line. Identify: the lines of one '
-        + 'constellation are drawn and no name is shown; the learner says a name or taps it. Seasonal: only a season and a list of '
-        + 'names; the learner says the one best seen then, or taps it and checks it. Before an attempt never say which star '
-        + 'is next, where a star is or which stars join, and on identify and seasonal never say the answer, its '
-        + 'shape, its figure (a hunter, a bear) or its story: not as a statement, a choice to try, or a yes-or-no question. '
-        + 'On identify ask what the lines look like; on seasonal ask what they remember about the night sky in that season. '
-        + 'A Kindergarten or Grade 1 learner cannot read: say the instruction and the names aloud, and give no star counts '
-        + 'or step numbers. After a wrong name, do not say which season or shape that name has: it rules out choices for '
-        + 'them. Once an answer is credited you may read the star story on screen. You cannot tap a star, draw a line, '
-        + 'choose or check for the learner.',
-      // In-item levers (`constellationLevers.ts`): spotlight, shape card, bright stars, an easier pattern.
-      levers: true,
-      // The activity's own checks (`guidedMiss`, `freeMiss`, `nameMiss`); identify and seasonal also list them spoken.
-      misses: missLists<ConstellationMiss>({
-        guided_trace: ['later_star', 'traced_star', 'other_star'],
-        free_connect: ['background_star', 'wrong_pair'],
-        identify: ['wrong_name'],
-        seasonal: ['other_name', 'several_names'],
-      }),
-    },
   },
   {
     id: 'planetary-explorer',
     description: 'Guided Gemini-driven solar system deep-dive where students explore 3-5 planets sequentially with targeted questions at every stop. Students journey from planet to planet, tap stats to learn about each world, answer questions about planetary properties, compare planets they have visited, and apply reasoning about temperature, atmosphere, and habitability. Features pedagogical moments at every stage: journey start, planet arrival, stat exploration, answer feedback, planet completion, transitions, and journey completion. Gemini generates contextual questions per planet based on focus themes (size, temperature, atmosphere, moons, rings, distance). Progressive difficulty from K (basic recall) to Grade 8 (cross-planet reasoning and application). Supports multiple-choice, true-false, and comparison challenge types. ESSENTIAL for teaching planetary science, comparative planetology, and scientific reasoning across K-8.',
     constraints: 'Best for grades K-8. K-2: 3 planets, explore mode with true-false and simple MC, focus on one property per planet. Grades 3-5: 4 planets, identify and compare modes, multi-property focus themes, comparison challenges. Grades 6-8: 5 planets, apply mode, reasoning about habitability, atmosphere composition, and temperature patterns. Focus themes should be age-appropriate: size and color for K-1, temperature and moons for 2-3, atmosphere and habitability for 4-5, multi-factor reasoning for 6-8.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 8 },
+    // Live-tutor wiring: `planetaryExplorer.card.ts` + `planetaryExplorer.boss.ts` (the spoken preset, every mode
+    // SAY_OR_SHOW); items, keys and scene in `planetaryExplorerWorkspace.ts`, levers in `planetaryExplorerLevers.ts`.
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
+    ...bossEntry(planetaryExplorerCard),
     evalModes: [
       {
         evalMode: 'explore',
@@ -786,89 +503,6 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         description: 'Reasoning about why — apply knowledge of temperature, atmosphere, habitability',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is on a guided journey through the solar system, currently exploring {{currentPlanet}}. Focus theme: {{focusTheme}}. They are answering questions about planetary properties, comparisons, and reasoning.',
-      // `correctAnswer` was declared here but never resolved, and resolving it
-      // would have parked the answer key in the tutor's prompt for the WHOLE
-      // question — a standing leak. The component already hands over the correct
-      // option at the one moment it is pedagogically right (the final attempt),
-      // via [ANSWER_INCORRECT]. Removed rather than wired.
-      contextKeys: ['currentPlanet', 'focusTheme', 'questionText', 'studentAnswer', 'planetsVisited', 'planetsRemaining', 'currentScore', 'attemptNumber'],
-      scaffoldingLevels: {
-        // These ENACT the question rather than narrating the screen. The old set
-        // ("Look at the stats panel — one of those numbers will help you") only
-        // worked for a student who could already read the panel, which is the
-        // whole reader-fit failure at K-1.
-        level1: '"{{questionText}}" — what do you think? Everything you need to decide is right here on {{currentPlanet}}.',
-        level2: '"{{questionText}}" This one is about {{focusTheme}}. What do you already know about {{currentPlanet}} that could help?',
-        level3: 'Say the question again, then describe {{currentPlanet}}\'s {{focusTheme}} out loud in plain words and ask them which choice matches what they just heard. Do not say which choice is right.',
-      },
-      commonStruggles: [
-        { pattern: 'Student taps answer without reading planet stats', response: '"Hold on! Before you answer, tap the stats panel for {{currentPlanet}}. The answer is hiding in those numbers."' },
-        { pattern: 'Student confuses properties between planets already visited', response: '"You have visited {{planetsVisited}} so far. Each planet has different numbers. Go back and check {{currentPlanet}}\'s stats — do not mix them up with the last planet!"' },
-        { pattern: 'Student struggles with comparison questions across planets', response: '"For comparison questions, think about one property at a time. Look at {{focusTheme}} for each planet you visited. Which one had the biggest or smallest value?"' },
-        {
-          pattern: 'A pre-reader cannot read the planet description, the stat cards or the answer options',
-          response: '"Never ask them to read anything. Say the planet\'s name, tell them what it looks like, then speak the question aloud followed by every choice in order. Invite them to tap a glowing card and say what it means in child words."',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
-          instruction:
-            'A pre-reader CANNOT read the planet description, the stat cards, the fun fact, the question, or the answer options. Your voice is the only channel. '
-            + 'On [JOURNEY_START] and [PLANET_ARRIVE], say where they are and what the planet looks like in one or two warm child-sized sentences. '
-            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
-            + 'On [QUESTION_SHOWN] and [QUIZ_START], READ THE QUESTION ALOUD and then read EVERY option aloud in order, so a choice they cannot read is still a choice they can make. '
-            + 'On [PLANET_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
-            + 'On [STAT_TAPPED], say what that stat means in child words — they tapped a card they cannot read. '
-            + 'On [TRANSITION] and [PLANET_COMPLETE], say what is happening; the screen just changed and they cannot see why.',
-        },
-        {
-          title: 'NEVER SAY THE ANSWER BEFORE THEIR LAST TRY',
-          instruction:
-            'On the FIRST wrong attempt you are told what they picked but NOT what is right — steer them to the stat or the picture that decides it, and never eliminate options down to one. '
-            + 'Only [ANSWER_INCORRECT] messages that explicitly give you the correct option are final-attempt reveals: there, say it plainly and explain why. '
-            + 'On [QUIZ_HINT] describe the planet without naming it. Never read the correct option in a different tone, and never say "are you sure?" about a right answer.',
-        },
-        {
-          title: 'NO NUMBERS OR UNITS AT K-1 — SAY WHAT THEY CAN SEE',
-          instruction:
-            'At grade rung K and 1 do NOT say kilometres, miles, degrees, hours, days, years, gravity, mass, or any decimal. The screen deliberately keeps the numbers plain at K, so reciting them puts back what was taken out. '
-            + 'Say "really really big", "the red one", "so cold your nose would freeze", "it has rings around it", "it has two little moons". '
-            + 'Do NOT tell a K-1 child to "look at the stats panel" or "check the numbers" — they cannot read it. Say "tap one of the glowing circles and I will tell you what it says". '
-            + 'From grade 2 up the numbers and the Earth comparisons ARE the objective — say them, and help the student compare them.',
-        },
-      ],
-    },
-    // Shared teaching workspace (W1, plain shape): `planetaryExplorerWorkspace.ts`. The scripted fallback still reads `tutoring`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Every item is one question from a trip through the solar system: a few questions at each planet, and in '
-        + 'identify mode a quiz after the last planet. The learner answers by saying it, or by tapping one choice and '
-        + 'checking it; the activity checks the tap against the question\'s own key. Before a planet\'s first question its '
-        + 'card is on screen (a description, fact cards and a fun fact) until the learner presses Ready for Questions; then '
-        + 'the card is gone and the questions ask what the card said. Read the card aloud while it is on screen. During a '
-        + 'question, never say the fact that answers it, which fact card or number decides it, which choice is right, or '
-        + 'rule a choice out. A planet\'s nickname or best-known description ("the Red Planet", "the one with rings") '
-        + 'answers a question about it: never say one during a question, not even as a clue. On a why question, never '
-        + 'name the reason or the facts the right choice uses. Ask what the learner remembers instead. A quiz question describes a planet '
-        + 'without naming it, and the map shows no planet names during the quiz; never name or describe the planet it means. '
-        + 'For kindergarten and grade 1, read the question and every choice aloud, and say no units or decimals. You cannot '
-        + 'tap, check or point at a choice for the learner.',
-      levers: true,
-      // The activity's own check (`planetMiss`), a tap or a spoken choice, in every mode.
-      // The quiz's planet misses are identify's only; true-false statements are explore's only (the modes' schema enums).
-      misses: missLists<PlanetMiss>({
-        explore: ['true_false_flipped', 'other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
-        identify: ['neighbour_planet', 'same_family_planet', 'other_family_planet', 'other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
-        compare: ['other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
-        apply: ['other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
-      }),
-      // Unanswered by decision (`planetaryExplorerLevers.ts`): a true-false statement is already the smallest judgement
-      // and its truth is read off the cards, so no card may come back beside it.
-      unanswered: missLists<PlanetMiss>({ explore: ['true_false_flipped'] }),
-    },
     supportsEvaluation: true,
   },
 ];

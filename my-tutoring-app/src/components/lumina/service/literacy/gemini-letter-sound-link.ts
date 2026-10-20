@@ -22,7 +22,7 @@ import {
   keywordFor,
   keywordNamesItsPicture,
   PRODUCIBLE_LETTERS,
-} from '../../primitives/visual-primitives/literacy/letterSoundLinkScript';
+} from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 
 type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
 type LetterSoundRemediationMove = 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';

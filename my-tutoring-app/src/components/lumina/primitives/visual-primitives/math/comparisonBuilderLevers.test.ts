@@ -1,13 +1,22 @@
 /**
- * The comparison-builder levers (handoff 21 M2): which lever answers which miss, and each lever's leak rule.
+ * The comparison-builder levers (handoff 21 M2), as the lever set declares them: which lever answers which miss, when
+ * the model comes, and each lever's leak rule.
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { ComparisonBuilderChallenge } from './ComparisonBuilder';
 import { comparisonMiss } from './comparisonBuilderWorkspace';
-import { FAR_GROUPS_LEVER, FAR_NUMBERS_LEVER, HOPS_LEVER, MARKS_LEVER, MATCH_LEVER, SMALL_LEVER, STEPS_LEVER, TAP_LEVER,
-  THREE_FAR_LEVER, comparisonLevers, farGroups, farNumbers, hopLabels, leverFacts, modelPair, quantityParts, singleSmall,
-  slotSteps, startLevers, threeFar } from './comparisonBuilderLevers';
+import { COMPARISON_LEVERS, FAR_GROUPS_LEVER, FAR_NUMBERS_LEVER, HOPS_LEVER, MARKS_LEVER, MATCH_LEVER, SMALL_LEVER, STEPS_LEVER,
+  TAP_LEVER, THREE_FAR_LEVER, farGroups, farNumbers, hopLabels, modelPair, quantityParts, singleSmall, slotSteps,
+  threeFar } from './comparisonBuilderLevers';
+import type { ComparisonItem } from './comparisonBuilderWorkspace';
+
+/** The levers on an item at a band, with these pulled. */
+const comparisonLevers = (c: ComparisonItem, pulled: readonly string[], band: 'K' | '1') =>
+  COMPARISON_LEVERS.declare({ ...c, band }, { tapped: { left: 0, right: 0 } }, pulled);
+/** The scene fact for the pulled levers. */
+const leverFacts = (c: ComparisonItem, pulled: readonly string[], tapped: { left: number; right: number }) =>
+  COMPARISON_LEVERS.onScreen(c, { tapped }, pulled);
 
 const groups = (l: number, r: number): ComparisonBuilderChallenge => ({ id: `g${l}v${r}`, type: 'compare-groups', instruction: 'Compare.',
   leftGroup: { count: l, objectType: 'bears' }, rightGroup: { count: r, objectType: 'bears' },
@@ -56,10 +65,11 @@ describe('which lever comes next', () => {
     expect(nextLever(comparisonLevers(c, [], 'K'), miss)).toBe(MATCH_LEVER);
   });
 
-  it('easy starts with the model pulled on groups only, and a simplify is declared only when there is an easier item', () => {
-    expect(startLevers(groups(4, 5), 'easy')).toEqual([MATCH_LEVER]);
-    expect(startLevers(groups(4, 5), 'medium')).toEqual([]);
-    expect(startLevers(numbers(4, 5), 'easy')).toEqual([]);
+  it('the model comes by tier on groups only, and a simplify is declared only when there is an easier item', () => {
+    expect(COMPARISON_LEVERS.support({ ...groups(4, 5), tier: 'easy' })).toMatch(/^before the learner tries, pull the model lever \(model_match\)/);
+    expect(COMPARISON_LEVERS.support(groups(4, 5))).toMatch(/^the learner tries first; after a miss/);
+    expect(COMPARISON_LEVERS.support({ ...groups(4, 5), tier: 'hard' })).toMatch(/^answer it cold/);
+    expect(COMPARISON_LEVERS.support({ ...numbers(4, 5), tier: 'easy' })).toBe('');
     expect(comparisonLevers(groups(1, 5), [], 'K').map(l => l.id)).not.toContain(FAR_GROUPS_LEVER);
     expect(comparisonLevers(step(4, 'one-more'), [], 'K').map(l => l.id)).not.toContain(SMALL_LEVER);
     expect(comparisonLevers(order([1, 5, 9]), [], 'K').map(l => l.id)).not.toContain(THREE_FAR_LEVER);

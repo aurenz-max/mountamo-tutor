@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
- * telescope-simulator on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
+ * telescope-simulator on its boss (`telescopeSimulator.boss.ts`) and its lever set: what is its own. The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * find_by_look and brightest are taps on unnamed objects, checked by code; object_type and pick_instrument are
- * code-keyed closed choices, tapped and checked or said aloud: the key is published only as the spoken expectedAnswer.
+ * code-keyed closed choices, tapped and checked or said aloud: the key is published only as the spoken expectedAnswer
+ * (a `SpokenKey`).
  * No object is named on screen before credit. A wrong answer names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -22,13 +23,14 @@ import type { TelescopeSimulatorData } from './TelescopeSimulator';
 import {
   askOf, brightFootprint, brightness, BRIGHT_GAP, buildTelescopeItems, choiceKey, DETAILS, findMatches, isTapItem, KINDS,
   lookOf, objectDef, SCOPES, scopeRank, seededRng, skyTarget, tapKey, telescopeCorrect, telescopeHarnessAnswers,
-  telescopeItems, telescopeMiss, TELESCOPE_MISSES, validTelescopeItem, workspaceAssignment, workspaceScene,
+  telescopeItems, telescopeKey, telescopeMiss, TELESCOPE_MISSES, validTelescopeItem, workspaceScene,
   type BrightItem, type FindItem, type InstrumentItem, type TelescopeItem, type TelescopeMode, type TelescopeTier, type TypeItem,
 } from './telescopeWorkspace';
 import {
-  CLOSER_LEVER, CLUE_PICTURES_LEVER, clueLines, DROP_LEVER, LADDER_LEVER, leverFacts, MY_PICK_LEVER, NO_LEVERS,
-  possibleMisses, SAME_SIZE_LEVER, SIDE_BY_SIDE_LEVER, telescopeLevers, TYPE_PICTURES_LEVER,
+  CLOSER_LEVER, CLUE_PICTURES_LEVER, clueLines, DROP_LEVER, LADDER_LEVER, MY_PICK_LEVER, NO_LEVERS,
+  possibleMisses, SAME_SIZE_LEVER, SIDE_BY_SIDE_LEVER, TELESCOPE_LEVERS, TYPE_PICTURES_LEVER, type TelescopeLeverState,
 } from './telescopeLevers';
+import { telescopeSimulatorBoss } from './telescopeSimulator.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -69,7 +71,7 @@ it.each(MODES)('%s binds with its key out of the scene and no name on screen', m
   expect(getComponentById('telescope-simulator')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(telescopeSimulatorBoss.assignment(item).task);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(text(h)).not.toMatch(/Next →|Finish|Targets|Journal|Show hints|AZ \d/);
   expect(demand(h).credited).toBeUndefined();
@@ -247,7 +249,7 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...TELESCOPE_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
-        const ls = telescopeLevers(i, NO_LEVERS);
+        const ls = TELESCOPE_LEVERS.declare(i, { state: NO_LEVERS }, []);
         const misses = possibleMisses(i);
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
@@ -264,9 +266,9 @@ describe('the pure rules', () => {
 
   it('no ask, scene or lever line names an unnamed object, and object_type says no kind', () => {
     for (const mode of MODES) for (const { i } of all(mode)) {
-      const s = { ...NO_LEVERS, pulled: telescopeLevers(i, NO_LEVERS).filter(l => l.kind === 'help').map(l => l.id) };
+      const s: TelescopeLeverState = { ...NO_LEVERS, pulled: TELESCOPE_LEVERS.declare(i, { state: NO_LEVERS }, []).map(l => l.id) };
       const scene = workspaceScene(i, { work: { pick: null, choice: null }, solved: false, scope: isTapItem(i) || i.mode === 'object_type' ? i.scope : 'eyes' });
-      const lines = [askOf(i), String(scene.facts!.shown), leverFacts(i, s) ?? '', ...clueLines(i)];
+      const lines = [askOf(i), String(scene.facts!.shown), TELESCOPE_LEVERS.onScreen(i, { state: s }, s.pulled), ...clueLines(i)];
       if (mode !== 'pick_instrument') for (const l of lines) expect(l, `${i.id}: ${l}`).not.toMatch(NAMES);
       if (mode === 'object_type') for (const l of [askOf(i), String(scene.facts!.shown)]) expect(l, `${i.id}: ${l}`).not.toMatch(KIND_WORDS);
       if (mode === 'pick_instrument') expect(askOf(i)).not.toMatch(/binoculars|telescope|eyes/i);
@@ -283,4 +285,22 @@ describe('the pure rules', () => {
     expect(new Set(items.map(i => i.mode))).toEqual(new Set(['find_by_look', 'brightest']));
     expect(telescopeItems(legacy)).toEqual(items);
   });
+});
+
+it('object_type and pick_instrument carry a SpokenKey the ask never says; the taps carry none; each mode keeps its never-say rules', () => {
+  expect(telescopeKey(FIND)).toBeNull();
+  expect(telescopeKey(BRIGHT)).toBeNull();
+  expect(telescopeKey(TYPE)).toEqual({ answer: 'Nebula', alsoAccept: ['a nebula', 'the second one'],
+    signatureError: '"Star", "Galaxy" are wrong, and so is naming two choices or hedging between them.' });
+  expect(telescopeKey(PICK)).toMatchObject({ answer: 'Small telescope', alsoAccept: ['a small telescope', 'the small telescope', 'the second one'] });
+  for (const mode of MODES) {
+    expect(() => telescopeSimulatorBoss.validate(data(mode))).not.toThrow();
+    const rules = String(workspaceScene(BY_MODE[mode][0], { work: { pick: null, choice: null }, solved: false, scope: 'small' }).facts!.constraints);
+    expect(rules.length, mode).toBeLessThanOrEqual(500);
+    expect(rules).toMatch(/After a miss, never say what the wrong pick was/);
+  }
+  const ruleOf = (i: TelescopeItem) => String(workspaceScene(i, { work: { pick: null, choice: null }, solved: false, scope: 'small' }).facts!.constraints);
+  expect(ruleOf(BRIGHT)).toMatch(/that the big one is not the brightest/);
+  expect(ruleOf(TYPE)).toMatch(/never rule a kind in or out/);
+  expect(ruleOf(PICK)).toMatch(/never point at a choice by its place in the order/);
 });

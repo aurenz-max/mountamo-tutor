@@ -38,7 +38,7 @@ it('a wrong tap: the observer pulls keyword pictures, under both cards alike, an
   const receipt = h.dispatch('pull_lever', { lever: 'keyword_under_both' });
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-lever="card-keyword"]').map(k => k.getAttribute('aria-label')).sort()).toEqual(['fish', 'sun']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/under each of the two letter cards/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/under each of the two letter cards/);
   expect(JSON.stringify(receipt.state.task)).not.toMatch(/\bsun\b|\bfish\b/);
   h.dispatch('retry');
   tap('S');
@@ -60,7 +60,7 @@ it('a voicing-partner tap: the observer pulls the voice model, on pictures of an
   expect(model).toHaveLength(1);
   expect(q(h, '[data-voice-model] [role="img"]').map(p => p.getAttribute('aria-label'))).toEqual(['snake', 'bee']);
   expect(model[0].textContent).not.toMatch(/[a-z]/i);
-  expect(String(h.state().task!.demand.levers_on_screen)).toMatch(/snake \(sss\).*bee \(zzz\)/);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/snake \(sss\).*bee \(zzz\)/);
   h.close();
 });
 
@@ -107,7 +107,7 @@ it('group 1, every letter used (J12): the observer pulls the pair model; a refus
   const model = q(h, '[data-pair-model]').map(e => e.getAttribute('data-pair-model'));
   expect(model).toHaveLength(2);
   for (const l of model) expect(['s', 'a', 't', 'i', 'p', 'n']).not.toContain(l);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/model pair beside the cards.*not this item's letters/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/model pair beside the cards.*not this item's letters/);
   // The option cards are unchanged and carry no picture.
   expect(q(h, '[data-lever="card-keyword"]')).toHaveLength(0);
   expect(screen.getAllByRole('button', { name: /^Tap the letter/ }).map(b => b.textContent)).toEqual(['S', 'N']);

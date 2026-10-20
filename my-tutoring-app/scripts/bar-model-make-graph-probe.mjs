@@ -21,7 +21,7 @@ const server = await vite.createServer({
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateBarModel } = await loader.import('/src/components/lumina/service/math/gemini-bar-model.ts');
-  const { validateBarModelData } = await loader.import('/src/components/lumina/components/live-activity/adapters/barModelLive.ts');
+  const { validateBarModelData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/barModel.boss.ts');
   const { barModelOracle } = await loader.import('/src/components/lumina/service/qa/oracles/bar-model.ts');
   const { makeGraphMiss } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/barModelBuild.ts');
   const fits = (r, n) => Array.from({ length: n }, (_, i) => r.kind === 'most' ? (i === r.a ? 3 : 1) : r.kind === 'fewest' ? (i === r.a ? 1 : 3)

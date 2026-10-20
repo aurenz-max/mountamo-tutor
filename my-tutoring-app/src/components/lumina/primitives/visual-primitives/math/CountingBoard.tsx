@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * One counting workspace, two explicit owners.
- * The live activity host uses the shared TeachingSession: factual observations,
- * structured response checks, tutor-authored help, and explicit progression.
- * Standalone DI lessons retain their existing scripted controller and evaluation.
- * Both render this same board; tutor marks never become learner selections.
+ * The counting board, taught on the shared teaching workspace only (the boss: `countingBoard.card.ts` +
+ * `countingBoard.boss.ts`). The tutor asks and helps; spoken counts are judged against the key, and the board
+ * checks the hand match, the handover and the build itself. A mount with no tutor shows the shared "needs the tutor"
+ * card (`withWorkspaceOnly`). Tutor marks never become learner selections.
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -23,48 +22,27 @@ import {
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
-  useEvaluationContext,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CountingBoardMetrics } from '../../../evaluation/types';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-  type JudgedScriptRunnerOptions,
-} from '../../../hooks/useJudgedScriptRunner';
-import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  countingBoardPackBase,
-  evalModeForKind,
-  giveVerdictCue,
-  handVerdictCue,
-  itemsFromChallenges,
-  numberWordFor,
-  objectWordFor,
-  objectSingularFor,
+  boardGroups, buildPlaceFor, countMiss, evalModeForKind, makesASet, numberWordFor, objectSingularFor, workspaceScene,
   type CountingItem,
-} from './countingBoardScript';
-import { boardGroups, buildPlaceFor, countMiss, makesASet, workspaceAssignment, workspaceScene } from './countingBoardDomain';
+} from './countingBoardDomain';
 import { CountingBuildScene, type BuiltSpot } from './CountingBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
-import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, PAIR_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand,
-  leverFacts, pairedHand, smallerGive, startLevers } from './countingBoardLevers';
-import { FIVES_LEVER, GROUP_TAG_LEVER, ROWS_LEVER, SPOKEN_SIMPLIFY, countingBoardSpokenLevers, spokenLeverFacts,
-  spokenPractice } from './countingBoardSpokenLevers';
-import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { COUNTING_LEVERS, COUNT_LEVER, FIVES_LEVER, GROUP_TAG_LEVER, HANDS_LEVER, LINE_LEVER, PAIR_LEVER, ROWS_LEVER, TAGS_LEVER,
+  droppedHand, pairedHand, startLevers, type CountingLeverContext } from './countingBoardLevers';
+import { countingBoardBoss, countingBoardItems, countingObjectWord } from './countingBoard.boss';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { countingBoardPipPose } from '../../../pip/countingBoardPipPose';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -348,6 +326,7 @@ function generatePositions(count: number, arrangement: string, seed: number = 42
   }
 }
 
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -355,7 +334,7 @@ function generatePositions(count: number, arrangement: string, seed: number = 42
 interface CountingBoardProps {
   data: CountingBoardData;
   className?: string;
-  /** The live host mounts without a mic-panel click; the runner still waits for a listening session. */
+  /** Kept for hosts that still pass it; the workspace starts with the lesson. */
   autoStart?: boolean;
   /** Resolved plan metadata from the live lesson host, carried onto the runtime mount. */
   runtimePlanItemId?: string;
@@ -366,29 +345,7 @@ interface CountingBoardProps {
 // Component
 // ============================================================================
 
-/**
- * The two controllers this board still hosts take different options: the
- * teaching workspace needs the assignment, the retiring runner needs its pack,
- * its cues and its progression policy as well. The union is declared HERE, in
- * the last file that hosts both, rather than in the teaching controller — so
- * the runner's option types die with the legacy branch at S3 (sunset slice S1,
- * qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
- */
-type CountingBoardControllerOptions = Omit<WorkspaceRunOptions<CountingItem>, 'primitiveId' | 'assignment'>
-  & Omit<JudgedScriptRunnerOptions<CountingItem>, 'pack' | 'items' | 'instanceId'>
-  & { pack?: JudgedScriptPack<CountingItem> };
-
-function useScriptedController(options: CountingBoardControllerOptions): LiveRun<CountingItem> {
-  return useJudgedScriptRunner({ ...options, pack: options.pack! });
-}
-
-const useWorkspaceController = (options: CountingBoardControllerOptions): LiveRun<CountingItem> =>
-  useWorkspaceRunner<CountingItem>({ ...options, primitiveId: 'counting-board', assignment: workspaceAssignment });
-
-const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanItemId,
-  useController, tutorOwned }: CountingBoardProps & {
-    useController: (options: CountingBoardControllerOptions) => LiveRun<CountingItem>; tutorOwned: boolean;
-  }) => {
+const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBoardProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [demonstration, setDemonstration] = useState<string[]>([]);
   const {
@@ -417,11 +374,11 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   // work); everything else resolves from the enum exactly as before. `custom`
   // without a themed triple still lands on ⬤ / "objects".
   const emoji = objects.emoji || OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
-  const objectWord = objects.word || objectWordFor(objects.type);
+  const objectWord = countingObjectWord(data);
   const objectSingularWord = objectSingularFor(objectWord, objects.wordSingular);
   const isPreReader = gradeBand === 'K';
 
-  // ── Stage-payload state (the runner owns progression; this is the board) ──
+  // ── Board state (the workspace owns progression; this is the board) ──
   const [countedObjects, setCountedObjects] = useState<Set<number>>(new Set());
   const [countOrder, setCountOrder] = useState<Map<number, number>>(new Map());
   const [alreadyCountedNote, setAlreadyCountedNote] = useState(false);
@@ -460,13 +417,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const displayItemRef = useRef<CountingItem | null>(null);
 
   const handChoiceRef = useRef<number | null>(null);
-  /** How many the child handed over on the last give_me_n commit. A ref because
-   *  the pack is memoized and would otherwise read a stale count. */
-  const givenCountRef = useRef(0);
   /** Any double-tap on an already-counted object this run (one-to-one signal). */
   const doubleCountEverRef = useRef(false);
 
-  const evaluationContext = useEvaluationContext();
   const evaluation = usePrimitiveEvaluation<CountingBoardMetrics>({
     primitiveType: 'counting-board',
     instanceId: resolvedInstanceId,
@@ -477,14 +430,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── The pack: generator challenges → judged items + hand-authored script ──
-  // Built through the SCRIPT MODULE's gate, not inline: the DI drive plan
-  // rebuilds the same items from the same payload, so an item the harness can
-  // ask is an item the child gets and vice versa.
-  const items = useMemo<CountingItem[]>(
-    () => itemsFromChallenges(challenges, { objectWord, objectSingular: objects.wordSingular }),
-    [challenges, objectWord, objects.wordSingular],
-  );
+  // The boss's items: the family's build gate drops an unaskable challenge, so the harness asks what the child gets.
+  const items = useMemo<CountingItem[]>(() => countingBoardItems(data), [data]);
 
   /** Item id → the challenge it was built from. The runner's index counts
    *  ITEMS and the gate can drop a challenge, so every challenge lookup on this
@@ -494,35 +441,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     [challenges],
   );
 
-  const pack = useMemo<JudgedScriptPack<CountingItem> | undefined>(() => tutorOwned ? undefined : ({
-    ...countingBoardPackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.kind === 'subitize_perceptual'
-        ? 'Look, then tap the hand that matches.'
-        : item.kind === 'give_me_n'
-          ? 'Touch the ones you want to give, then hand them over.'
-          : 'Listen, then say how many out loud.',
-      retry: (item) => item.kind === 'subitize_perceptual'
-        ? 'Look again — then tap the hand that matches.'
-        : item.kind === 'give_me_n'
-          ? 'Have another go — touch the ones you want to give.'
-          : 'Have another go — say how many.',
-      noVerdict: () => 'One more time — say how many.',
-      affirmedNext: 'Yes! You counted it.',
-      done: 'Great counting today!',
-    },
-    // Facts from the board's own fields, per mode: a take_away board is described by its start and
-    // change, not as "count N". One record per attempt; right answers reach student work too.
-    observation: (item, { heard }) => countingObservation(item, gradeBand,
-      { heard, given: givenCountRef.current, hand: handChoiceRef.current }),
-    evidenceSummary: countingBoardEvidenceSummary,
-  }), [items, objectWord, gradeBand, tutorOwned]);
-
   // ── Per-item board reset ──────────────────────────────────────────────────
   const resetBoardFor = useCallback((item: CountingItem) => {
     setDemonstration([]);
-    pip.clear();
     setAlreadyCountedNote(false);
     setHandChoice(null);
     handChoiceRef.current = null;
@@ -551,13 +472,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     }
   }, []);
 
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  // The K subitize flash - WHAT is shown; the runner decides WHEN.
-  // Called from `onPresentStimulus` once the tutor has finished her line for
-  // this item. Takes the item rather than reading `currentItem`, so it holds no
-  // runner identity and cannot go stale — and looks the challenge up BY ID,
-  // because the pack's build gate can drop a challenge and the runner's index
-  // then counts items, not challenges.
+  // The K subitize flash - WHAT is shown; the workspace decides WHEN (`onPresentStimulus`, once the tutor has
+  // finished her line for this item). Takes the item, and looks the challenge up BY ID: the build gate can drop a
+  // challenge, so the runner's index counts items, not challenges.
   const presentFlash = useCallback((item: CountingItem) => {
     const challenge = challengeById.get(item.id);
     if (!challenge) return;
@@ -575,7 +492,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     }, duration);
   }, [challengeById]);
 
-  const handleFinished = useCallback((summary: Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence' | 'solvedCount' | 'learningResponses'> & { teachingAttempts?: unknown; assistanceProvenance?: string }) => {
+  // ── The submission, once, from the scored session ─────────────────────────
+  const handleFinished = useCallback((summary: TeachingEvaluationResult) => {
     const byId = new Map(challenges.map((ch) => [ch.id, ch]));
     const subitizeOutcomes = summary.outcomes.filter((o) => byId.get(o.id)?.type === 'subitize');
     const oneToOne = !doubleCountEverRef.current;
@@ -601,37 +519,32 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       attemptsCount: summary.attemptsCount,
     };
 
-    // A board right after one correction still scores 67, so wrong first answers rarely reach the
-    // session score; the runner's evidence carries the first-response share the shared gate reads.
+    // The workspace's evidence carries the first-response share the shared gate reads.
     const diagnosisEvidence = summary.diagnosisEvidence;
     evaluation.submitResult(
       summary.solvedCount === challenges.length,
       summary.accuracy,
       metrics,
       { challengeResults: summary.outcomes, learningResponses: summary.learningResponses, diagnosisEvidence,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}) },
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       diagnosisEvidence,
     );
-  }, [challenges, evaluation, items]);
+  }, [challenges, evaluation]);
 
-  const runner = useController({
+  const runner = useWorkspaceRunner<CountingItem>({
+    primitiveId: 'counting-board',
+    assignment: countingBoardBoss.assignment,
     items,
-    workspace, objectiveId, planItemId: runtimePlanItemId,
-    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[CB_COMPLETE] Say exactly: "You finished this activity. Great counting!" Then wait silently for the lesson host.' } : {}),
-    pack,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    exhibitId,
     onFinished: handleFinished,
     // A fresh item never carries an easier ask over from the last one.
     onItemOpened: (item) => { practiceRef.current = null; setPractice(null); resetBoardFor(item); },
-    // THE TUTOR OWNS THE STIMULUS CLOCK (19c). Before this the flash fired on a
-    // wall-clock beat from item-open and raced her sentence - ten-frame's drive-3
-    // defect, still live on this port because that fix had been written into one
-    // component instead of into the runner.
+    // THE TUTOR OWNS THE STIMULUS CLOCK (19c): the flash waits for her line, never a wall-clock beat from item-open.
     onPresentStimulus: presentFlash,
-    stimulus: { when: (item) => gradeBand === 'K' && item.kind === 'subitize' },
     onAffirmed: (item) => {
       // `revealHeld` keeps this on screen for the length of her affirmation (18b).
       setReward(item.kind === 'subitize_perceptual' ? 'match' : String(item.target));
@@ -639,30 +552,19 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     onCorrectionRetry: (sessionItem) => {
       // Try again on the easier ask keeps it: reset ITS board, not the full item's.
       const item = practiceRef.current ?? sessionItem;
-      // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go.
       if (item.kind === 'subitize_perceptual') {
         setHandChoice(null);
         handChoiceRef.current = null;
       } else if (item.kind === 'subitize') {
-        // Re-arm the flash - the runner re-arms its gate on this path, so the
-        // re-flash waits for her CORRECTION to finish, on the same gate as the
-        // first ask.
+        // The workspace does not re-flash after a miss, so a look the learner already saw stays answerable;
+        // re-showing stays available, as assisted (ten-frame W1 finding).
         if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
         setIsSubitizeFlashing(false);
-        // The workspace does not re-flash after a miss, so a look the learner already saw stays
-        // answerable there; re-showing stays available, as assisted (ten-frame W1 finding).
-        setSubitizeAnswerReady(ready => tutorOwned && ready);
       } else {
         resetBoardFor(item);
       }
     },
   });
-
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   const sessionItem = runner.currentItem;
   /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
@@ -725,10 +627,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const isKCountOnHidden = gradeBand === 'K' && currentItem?.kind === 'count_on';
   /**
    * How many sit under the basket. Read from the CHALLENGE, not from the
-   * runner-populated pre-count: `resetBoardFor` only fires when the tutor opens
-   * an item, so a preCountedCount-driven cover left the whole board countable
-   * from first paint — a child can count all eight before she has said a word,
-   * which is the very thing count-on replaces.
+   * pre-count the item reset populates, so the cover holds from first paint:
+   * a board countable before the tutor has said a word could be counted from
+   * one, which is the very thing count-on replaces.
    */
   const coveredCount = isKCountOnHidden ? (currentChallenge?.startFrom ?? 0) : 0;
 
@@ -780,32 +681,6 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     const dropped = pulledLevers.includes(HANDS_LEVER) && currentItem ? droppedHand(currentItem) : null;
     return dropped === null ? base : base.filter(h => h !== dropped);
   }, [currentItem, currentChallenge?.id, runner.currentIndex, pulledLevers]);
-
-  // The primitive owns Pip's presentation. This is a projection of the runner's
-  // phase and student events, never an action channel from the speech model.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipSurface = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || evaluation.hasSubmitted) return null;
-    // Hidden (subitize after the flash), covered (count-on) and removed objects
-    // are never published, even though their elements are known.
-    const hidden = isKSubitize && !isSubitizeFlashing;
-    const visibleIds = hidden ? [] : positions.flatMap((_pos, index) =>
-      index < coveredCount || removedObjects.has(index) ? [] : [`object-${index}`]);
-    const targets = pip.targets(visibleIds, () => objectWord);
-    const pose = countingBoardPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      perceptual: ['subitize', 'subitize_perceptual'].includes(currentItem.kind) || hasMoved,
-      giving: makesASet(currentItem.kind), visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentItem.id,
-      label: `Counting workspace: ${objectWord}`, dock: pip.dock.current, targets, pose,
-    };
-  });
 
   // Cancel timers on unmount.
   useEffect(() => () => {
@@ -908,9 +783,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     if (!item || item.kind !== 'give_me_n') return;
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    givenCountRef.current = countedObjects.size;
-    commitGesture(runner, { response: String(countedObjects.size), correct: countedObjects.size === item.target,
-      miss: countMiss(item, countedObjects.size), cue: () => giveVerdictCue(item, countedObjects.size) });
+    runner.commitGesture({ response: String(countedObjects.size), correct: countedObjects.size === item.target,
+      miss: countMiss(item, countedObjects.size), cue: () => '' });
   }, [runner, evaluation.hasSubmitted, countedObjects]);
 
   // ── Open build (build_n): tap to put one in, tap one to take it out; "I'm done!" commits ──
@@ -932,9 +806,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     if (!item || item.kind !== 'build_n') return;
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    givenCountRef.current = built.length;
-    commitGesture(runner, { response: String(built.length), correct: built.length === item.target,
-      miss: countMiss(item, built.length), cue: () => giveVerdictCue(item, built.length) });
+    runner.commitGesture({ response: String(built.length), correct: built.length === item.target,
+      miss: countMiss(item, built.length), cue: () => '' });
   }, [runner, evaluation.hasSubmitted, built]);
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
@@ -949,47 +822,35 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     setHandChoice(fingers);
     handChoiceRef.current = fingers;
     if (fingers !== item.target && !practiceRef.current) setMissedHand({ item: item.id, fingers });
-    commitGesture(runner, { response: String(fingers), correct: fingers === item.target,
-      miss: countMiss(item, fingers), cue: () => handVerdictCue(item, fingers) });
+    runner.commitGesture({ response: String(fingers), correct: fingers === item.target, miss: countMiss(item, fingers), cue: () => '' });
   }, [runner, evaluation.hasSubmitted]);
 
-  // ── Phase summary ─────────────────────────────────────────────────────────
-  /** `subitize_perceptual` is answered by picking a hand, so an all-perceptual
-   *  run was never counted "out loud". */
+  // ── The scene and the levers, republished after every render ──────────────
   useLayoutEffect(() => {
     const scene = currentItem ? workspaceScene(currentItem, { counted: currentItem.kind === 'build_n' ? new Set(built.map((_, i) => i)) : countedObjects, removed: removedObjects,
       added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
       : { objects: [], facts: {} };
-    const spoken = sessionItem?.answerKind === 'voice';
-    const onScreen = spoken ? spokenLeverFacts(currentItem, pulledLevers, { moved: hasMoved }) : leverFacts(currentItem, pulledLevers);
-    const levers = practice ? [] : spoken ? countingBoardSpokenLevers(sessionItem, pulledLevers, leverArrangement, items)
-      : countingBoardLevers(sessionItem, pulledLevers, leverArrangement, missedOnItem);
+    const ctx: CountingLeverContext = { arrangement: leverArrangement, session: items, missed: missedOnItem, pulled: pulledLevers, moved: hasMoved };
+    const levers = practice ? [] : COUNTING_LEVERS.declare(sessionItem, ctx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen || practice ? { facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier board, ungraded. The full item comes back after it.' } : {}) } } : {}),
+      ...leverScene(practice ? { ...scene, facts: { ...scene.facts, practice: 'An easier board, ungraded. The full item comes back after it.' } } : scene, {
+        support: practice ? '' : COUNTING_LEVERS.support(sessionItem, ctx),
+        onScreen: COUNTING_LEVERS.onScreen(currentItem, ctx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (SPOKEN_SIMPLIFY.has(id)) {
-          const easier = spokenPractice(sessionItem, id, items);
+        if (lever.kind === 'simplify') {
+          const easier = COUNTING_LEVERS.simpler(sessionItem, ctx, id);
           if (!easier) return 'There is no easier board for this item.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-          practiceRef.current = easier.item; setPractice(easier.item); resetBoardFor(easier.item);
-          return { practice: workspaceAssignment(easier.item) };
+          practiceRef.current = easier; setPractice(easier); resetBoardFor(easier);
+          return { practice: countingBoardBoss.assignment(easier) };
         }
         // A new look at the flash in rows of five: the objects are hidden after a K flash, so the pull shows them.
         if (id === FIVES_LEVER && isKSubitize) presentFlash(sessionItem);
-        if (id === SMALLER_LEVER) {
-          const easier = smallerGive(sessionItem);
-          if (!easier) return 'There is no easier ask for this item.';
-          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-          practiceRef.current = easier; setPractice(easier); resetBoardFor(easier);
-          return { practice: workspaceAssignment(easier) };
-        }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         // recount_moved: the row is for the count before the move. Pulled after the move, the board comes back
         // uncounted in a row for a fresh count, so the pull shows; the last tap moves it again.
@@ -1014,19 +875,14 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     };
   });
 
-  const completionSummary = runner.practiceSummary ?? runner.summary;
+  const completionSummary = runner.practiceSummary;
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
   const celebrationMessage = useMemo(() => {
     const n = completionSummary?.solvedCount ?? 0;
     const boards = `${n} board${n === 1 ? '' : 's'} of ${objectWord}`;
-    switch (judgedAnswerMix(items)) {
-      case 'gesture':
-        return `You matched ${boards} — you saw how many!`;
-      case 'mixed':
-        return `You counted ${boards}!`;
-      default:
-        return `You counted ${boards} out loud!`;
-    }
+    const handled = items.filter(i => i.answerKind === 'gesture').length;
+    if (items.length && handled === items.length) return `You matched ${boards} — you saw how many!`;
+    return handled ? `You counted ${boards}!` : `You counted ${boards} out loud!`;
   }, [items, objectWord, completionSummary]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -1064,11 +920,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     && !(kind === 'recount_moved' && hasMoved);
   const stageWord = runner.stage === 'affirmed'
     ? 'yes!'
-    : runner.stage === 'judging'
-      ? 'let’s see…'
-      : runner.stage === 'asking'
-        ? (kind === 'subitize_perceptual' ? 'which hand?' : 'how many?')
-        : 'get ready';
+    : runner.stage === 'asking'
+      ? (kind === 'subitize_perceptual' ? 'which hand?' : 'how many?')
+      : 'get ready';
 
   return (
     <LuminaCard className={className}>
@@ -1119,6 +973,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
               </LuminaPrompt>
             )}
 
+            <PipDock />
+            {/* Pip outlines the board and its answer controls as a whole, never one object or one hand. */}
+            <PipWorkspace className="space-y-4">
             {/* Open build: the empty scene the child fills (build_n) */}
             {kind === 'build_n' && (
               <div className="flex justify-center">
@@ -1210,23 +1067,19 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                   return (
                     <g
                       key={index}
-                      ref={pip.ref(`object-${index}`)}
                       data-pip-object={`object-${index}`}
                       data-tutor-demonstration={demonstration.includes(`object-${index}`) || undefined}
                       role={boardTappable ? 'button' : undefined}
                       tabIndex={boardTappable ? 0 : undefined}
                       aria-label={boardTappable ? `Touch ${objectWord}` : undefined}
-                      onFocus={() => pip.look(`object-${index}`)}
-                      onPointerDown={() => pip.look(`object-${index}`)}
                       onKeyDown={boardTappable ? (event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          pip.look(`object-${index}`);
                           handleObjectTap(index);
                         }
                       } : undefined}
                       className={boardTappable ? 'cursor-pointer' : undefined}
-                      onClick={boardTappable ? () => { pip.look(`object-${index}`); handleObjectTap(index); } : undefined}
+                      onClick={boardTappable ? () => handleObjectTap(index) : undefined}
                     >
                       {highlightOnTap && isCounted && (
                         <circle
@@ -1306,8 +1159,6 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             </div>
 
             {demonstration.length > 0 && <p className="text-center text-sm text-cyan-200" role="status">Watch my selection. Your selection stays yours.</p>}
-            {pipSurface && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-[480px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
 
             {/* Running count — the child's own trace ONLY. The "/ total" the
                 old tally printed was the answer, typeset next to the child's
@@ -1351,32 +1202,6 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                   Give them to me
                 </LuminaButton>
               </div>
-            )}
-
-            {/* The move happened — the number has to be held, not re-counted. */}
-            {kind === 'recount_moved' && hasMoved && (
-              <p className="text-center text-sm text-cyan-300">
-                They moved! How many now?
-              </p>
-            )}
-
-            {/* What is still to take off / put on. A count of the child's own
-                actions, never of the answer. */}
-            {kind === 'take_away' && removedObjects.size < (currentItem?.changeBy ?? 0) && (
-              <p className="text-center text-sm text-slate-300">
-                Take away {numberWordFor((currentItem?.changeBy ?? 0) - removedObjects.size)} more.
-              </p>
-            )}
-            {kind === 'add_more' && addedExtras.size < (currentItem?.changeBy ?? 0) && (
-              <p className="text-center text-sm text-slate-300">
-                Touch the faded ones to put them on.
-              </p>
-            )}
-
-            {alreadyCountedNote && (
-              <p className="text-center text-xs text-amber-300">
-                You already counted that one — try a different {objectSingularWord}!
-              </p>
             )}
 
             {/* Pre-K hand picker (no numerals anywhere; the tap is the commit) */}
@@ -1424,6 +1249,33 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                 </div>
               </div>
             )}
+            </PipWorkspace>
+
+            {/* The move happened — the number has to be held, not re-counted. */}
+            {kind === 'recount_moved' && hasMoved && (
+              <p className="text-center text-sm text-cyan-300">
+                They moved! How many now?
+              </p>
+            )}
+
+            {/* What is still to take off / put on. A count of the child's own
+                actions, never of the answer. */}
+            {kind === 'take_away' && removedObjects.size < (currentItem?.changeBy ?? 0) && (
+              <p className="text-center text-sm text-slate-300">
+                Take away {numberWordFor((currentItem?.changeBy ?? 0) - removedObjects.size)} more.
+              </p>
+            )}
+            {kind === 'add_more' && addedExtras.size < (currentItem?.changeBy ?? 0) && (
+              <p className="text-center text-sm text-slate-300">
+                Touch the faded ones to put them on.
+              </p>
+            )}
+
+            {alreadyCountedNote && (
+              <p className="text-center text-xs text-amber-300">
+                You already counted that one — try a different {objectSingularWord}!
+              </p>
+            )}
 
             {/* K subitize flash prompt + re-show (stimulus support — it re-shows
                 the objects, never the answer, and is never withdrawn) */}
@@ -1438,9 +1290,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                   <LuminaButton
                     tone="subtle"
                     className="text-xs"
-                    // Direct, not gated: the CHILD asked for this one, so it is
-                    // not waiting on anybody's voice.
-                    onClick={() => runner.presentStimulus ? runner.presentStimulus() : presentFlash(currentItem)}
+                    // The CHILD asked for this one: the workspace records the replay as assistance.
+                    onClick={() => runner.presentStimulus()}
                   >
                     Show again
                   </LuminaButton>
@@ -1487,10 +1338,6 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                       : 'Tap each object as you count, then say how many out loud.'}
               </p>
             )}
-
-            {/* The pre-K hand pick is answered with the hands — the orb names
-                that turn instead of claiming to listen for it. */}
-            <JudgedMicPanel run={runner} gestureLabel={kind === 'build_n' ? 'Your turn — build it' : kind === 'give_me_n' ? 'Your turn — choose and give' : 'Your turn — tap the hand'} />
           </>
         )}
 
@@ -1509,8 +1356,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   );
 };
 
-// The workspace path never starts a DI runner beside the tutor.
-const CountingBoard = withWorkspaceController<CountingBoardProps, CountingBoardControllerOptions, LiveRun<CountingItem>>(
-  'counting-board', CountingBoardSurface, useScriptedController, useWorkspaceController);
+// One path: the tutor teaches on the workspace; a mount with no tutor shows the shared "needs the tutor" card.
+const CountingBoard = withWorkspaceOnly<CountingBoardProps>('counting-board', CountingBoardSurface, props => props.data.title);
 
 export default CountingBoard;

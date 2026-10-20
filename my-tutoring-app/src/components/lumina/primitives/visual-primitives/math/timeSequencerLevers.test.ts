@@ -1,5 +1,5 @@
 /**
- * time-sequencer levers, every mode: the word-family leak rule, each simpler-item builder over every saved payload
+ * time-sequencer levers (`TIME_LEVERS`), every mode: the word-family leak rule, each simpler-item builder over every saved payload
  * item and a hand-built set (same mode, solvable, never the learner's activities), scene facts that name no key,
  * the miss → lever table, and every catalog miss answered by a lever on every saved payload item (J12 per item).
  */
@@ -9,10 +9,15 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimeSequencerChallenge } from './TimeSequencer';
 import {
   DAY_ANCHORS_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, FAR_APART_LEVER, FAR_PAIR_LEVER, OPTION_PICTURES_LEVER,
-  RELATION_MODEL_LEVER, SHORT_SCHEDULE_LEVER, SKY_STRIP_LEVER, TWO_CARDS_LEVER, TWO_CHOICES_LEVER, clashes, itemLabels,
-  leverFacts, practiceItem, practiceLeaks, practiceParent, timeSequencerLevers,
+  RELATION_MODEL_LEVER, SHORT_SCHEDULE_LEVER, SKY_STRIP_LEVER, TIME_LEVERS, TWO_CARDS_LEVER, TWO_CHOICES_LEVER, clashes,
+  itemLabels, practiceItem, practiceLeaks, practiceParent, tierPulled,
 } from './timeSequencerLevers';
-import { EMPTY_TIME_VIEW, PERIODS, timeSequencerMiss, workspaceScene } from './timeSequencerWorkspace';
+import { EMPTY_TIME_VIEW, PERIODS, timeScene, timeSequencerMiss } from './timeSequencerWorkspace';
+
+/** The levers a session item declares, as the component declares them (the tier's sky strip counts as pulled). */
+const timeSequencerLevers = (c: TimeSequencerChallenge, pulled: readonly string[]) =>
+  TIME_LEVERS.declare(c, null, [...pulled, ...tierPulled(c)]);
+const leverFacts = (c: TimeSequencerChallenge, pulled: readonly string[]) => TIME_LEVERS.onScreen(c, null, pulled);
 
 const MODES = ['sequence-3', 'time-of-day', 'sequence-5', 'before-after', 'duration-compare', 'clock-sequence', 'read-schedule'];
 const load = async (mode: string): Promise<{ data: { challenges: TimeSequencerChallenge[] } }> => {
@@ -100,7 +105,7 @@ describe('levers and their facts', () => {
       }
       if (c.type === 'match-time-of-day') for (const p of PERIODS) expect(facts.toLowerCase()).not.toContain(p);
       // The scene with every lever pulled still names no clock hour or order.
-      expect(JSON.stringify(workspaceScene(c, EMPTY_TIME_VIEW))).not.toMatch(/correct|clockHour/);
+      expect(JSON.stringify(timeScene(c, EMPTY_TIME_VIEW, true))).not.toMatch(/correct|clockHour/);
     }
   });
   it('declares a help and a simplify lever per mode; the sky strip never on clock-sequence, and pulled when the tier shows it', async () => {
@@ -115,7 +120,9 @@ describe('levers and their facts', () => {
         .toEqual(want[mode].map((id, i) => [id, i ? 'simplify' : 'help']));
       if (c.type === 'sequence-events') expect(timeSequencerLevers({ ...c, showSkyCue: true }, [])[0]).toMatchObject({ pulled: true });
     }
-    expect(timeSequencerLevers(practiceItem((await load('sequence-3')).data.challenges[0]), [])).toEqual([]);
+    // A practice item has no practice of its own: no simplify lever.
+    const practice = practiceItem((await load('sequence-3')).data.challenges[0])!;
+    expect(timeSequencerLevers(practice, []).filter(l => l.kind === 'simplify')).toEqual([]);
   });
 });
 

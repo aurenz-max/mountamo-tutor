@@ -8,7 +8,7 @@ import type {
  * THE JUDGED-LOOP CONTENT GATES, IMPORTED — never re-stated (skill step 4).
  * compare-objects is a DI port: every ask is SPOKEN, so a relation the click
  * era never had to justify can be false out loud. These are the same
- * predicates `compareObjectsScript` DROPS against; the generator repairs or
+ * predicates `compareObjectsDomain` DROPS against; the generator repairs or
  * rejects against them so the two sides of the wire cannot disagree the way
  * letter-spotter's hand-synced copies did live.
  */
@@ -24,7 +24,7 @@ import {
   VALID_ATTRIBUTES,
   type ComparisonWord,
   type MeasurableAttribute,
-} from "../../primitives/visual-primitives/math/compareObjectsScript";
+} from "../../primitives/visual-primitives/math/compareObjectsDomain";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";

@@ -9,18 +9,16 @@
  * - experiment: a question; set up Test A and Test B and run them. The check is a fair test.
  *
  * Every item is built and keyed by code (`propulsionWorkspace.ts`). No label, badge or readout names what the craft
- * does, and it moves only after a credited answer (predict, observe) or a run (experiment). Two paths, chosen by
- * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
- * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken
- * answer judged by the tutor, and lets the runtime move on. The levers live in `propulsionLevers.ts`.
+ * does, and it moves only after a credited answer (predict, observe) or a run (experiment). Taught only on the shared
+ * tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `propulsionLab.card.ts` + `propulsionLab.boss.ts`): every
+ * check commits through `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor against the
+ * key, and the runtime moves on. The levers are one lever set in `propulsionLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { PropulsionLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -37,21 +35,21 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, describePropulsionWork, emptyWork, ENGINES, fairSetups, keyOf, MOTIONS, PLACE_TEXT, propulsionCorrect,
-  propulsionItems, propulsionMiss, pushOf, TEST_ENGINES, testButton, testResult, THROTTLE_SIZE, THROTTLE_TEXT, varyOf, works,
-  workComplete, workspaceAssignment, workspaceScene,
+  askOf, describePropulsionWork, emptyWork, ENGINES, keyOf, MOTIONS, PLACE_TEXT, propulsionCorrect,
+  propulsionItems, propulsionMiss, pushOf, TEST_ENGINES, testButton, testResult, THROTTLE_SIZE, THROTTLE_TEXT, works,
+  workComplete, workspaceScene,
   type ChoiceItem, type Motion, type Place, type PropulsionItem, type PropulsionMode, type PropulsionTier,
   type PropulsionWork, type Setup, type Thruster,
 } from './propulsionWorkspace';
 import {
   AIR_MARKS_LEVER, airLine, BLAST_ARROWS_LEVER, CAN_PUSH_LEVER, canPushLine, COMPARE_TESTS_LEVER, compareLines,
-  HOW_IT_WORKS_LEVER, howLines, LABEL_STREAMS_LEVER, leverFact, propulsionLevers, simplerItem, STREAM_UNITS_LEVER,
-  streamLines, unitLines,
+  HOW_IT_WORKS_LEVER, howLines, LABEL_STREAMS_LEVER, PROPULSION_LEVERS, STREAM_UNITS_LEVER, streamLines, unitLines,
 } from './propulsionLevers';
+import { propulsionLabBoss } from './propulsionLab.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -265,10 +263,11 @@ function revealText(item: PropulsionItem, w: PropulsionWork, ran: { a: Setup; b:
 // Component
 // ============================================================================
 
-const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PropulsionLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PropulsionItem>) => Progress }) => {
+const usePropulsionProgress = useWorkspaceProgressFor('propulsion-lab');
+
+const PropulsionLabSurface = ({ data, className, runtimePlanItemId }: PropulsionLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, overview, gradeBand = '3-5', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, overview, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const items = useMemo(() => propulsionItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -276,35 +275,33 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const stableInstanceId = useRef(instanceId || `propulsion-lab-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePropulsionProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: propulsionLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: PropulsionItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<PropulsionItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [work, setWork] = useState<PropulsionWork>(() => emptyWork(sessionItem));
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
   /** Experiment: the two tests last run. */
   const [ran, setRan] = useState<{ a: Setup; b: Setup } | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -312,7 +309,7 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved || !!progress.practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<PropulsionLabMetrics>({
     primitiveType: 'propulsion-lab',
@@ -321,24 +318,12 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand, mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'propulsion-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
   const clearItem = (next?: PropulsionItem) => {
-    setWork(emptyWork(next ?? item)); setWrongShown(false); setRan(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setWork(emptyWork(next ?? item)); setWrongShown(false); setRan(null); setPracticeSolved(false);
   };
 
   openItem.current = (index, retry) => {
-    if (retry) { setWork(emptyWork(item)); setWrongShown(false); setRan(null); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { clearItem(item); return; }
     setPractice(null); clearItem(items[index]);
   };
 
@@ -354,13 +339,13 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const pick = (c: Motion) => {
     if (!item || closed) return;
     SoundManager.select();
-    setWork(w => ({ ...w, choice: c })); setFeedback(null);
+    setWork(w => ({ ...w, choice: c }));
   };
   const setTest = (test: 'a' | 'b', patch: Partial<Setup>) => {
     if (!item || item.mode !== 'experiment' || closed || (test === 'a' && item.lockA)) return;
     SoundManager.select();
     setWork(w => ({ ...w, [test]: { ...w[test], ...patch } }));
-    setRan(null); setFeedback(null);
+    setRan(null);
   };
 
   const check = () => {
@@ -371,27 +356,10 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The craft now runs on screen. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (item.mode === 'experiment') {
-        const fair = item.lockA ? { a: item.start.a, b: varyOf(item.question, item.start.a) } : fairSetups(item.question);
-        setWork(w => ({ ...w, ...fair })); setRan(fair);
-      }
-      else setWork(w => ({ ...w, choice: keyOf(item) }));
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is now on screen; explain it.`);
-      return;
-    }
-    if (item.mode === 'experiment') setFeedback('These two tests cannot answer the question yet. Look at what is different between them, and try again.');
-    else { setWork(emptyWork(item)); setFeedback('Not quite. Look at which way each engine is aimed, and what it has to push. Try once more.'); }
-    say(`[ANSWER_INCORRECT] ${describePropulsionWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+    setWrongShown(true);
   };
 
   const metrics = (): PropulsionLabMetrics => {
@@ -415,16 +383,6 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(items[currentIndex + 1]); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -434,16 +392,19 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { work, solved: revealed, ran });
-    const levers = practice ? [] : propulsionLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled, work);
+    const ctx = { work };
+    // No lever on the practice item: the full item's levers come back with it.
+    const levers = practice || !sessionItem ? [] : PROPULSION_LEVERS.declare(sessionItem, ctx, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : PROPULSION_LEVERS.onScreen(sessionItem, ctx, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -451,10 +412,10 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = PROPULSION_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(simpler); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: propulsionLabBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -463,14 +424,7 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The craft, its engines and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -541,17 +495,11 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-start gap-2">
-              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Look at the craft and its engines, then answer."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the craft and the answer as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {choiceItem && (
                 <PropulsionScene place={choiceItem.place} thrusters={choiceItem.thrusters}
                   streams={choiceItem.mode === 'observe' || revealed} motion={revealed ? keyOf(choiceItem) : null}
@@ -604,7 +552,7 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
                   )}
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -614,22 +562,11 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               </div>
             )}
 
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {revealText(item, work, ran)}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{revealText(item, work, ran)}</LuminaFeedbackCard>}
             {!revealed && wrongShown && (
               <LuminaFeedbackCard status="incorrect">
                 {item.mode === 'experiment' ? 'These two tests cannot answer the question.' : 'That is not it.'}
               </LuminaFeedbackCard>
-            )}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
             )}
           </>
         )}
@@ -638,8 +575,6 @@ const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const PropulsionLab = withWorkspaceController<PropulsionLabProps, ProgressOptions<PropulsionItem>, Progress>(
-  'propulsion-lab', PropulsionLabSurface, useScriptedProgress, useWorkspaceProgressFor('propulsion-lab'));
+const PropulsionLab = withWorkspaceOnly<PropulsionLabProps>('propulsion-lab', PropulsionLabSurface, props => props.data.title);
 
 export default PropulsionLab;

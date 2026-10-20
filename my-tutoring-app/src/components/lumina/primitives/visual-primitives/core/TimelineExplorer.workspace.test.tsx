@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * timeline-explorer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
+ * timeline-explorer on its boss (`timelineExplorer.card.ts` + `.boss.ts`) and its lever set: what is its own. The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * The learner reads every event first (not ready for a response), then code-keyed items: identify and date are
  * closed choices said or tapped (the key published only as the spoken expectedAnswer); order and cause_effect are
@@ -21,14 +21,15 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimelineExplorerData } from './TimelineExplorer';
 import {
   buildTimelineItems, clueLeaks, deckOf, emptyWork, KIND_MISSES, linksOf, MODE_KINDS, movesTo, orderKey, redactDates,
-  seededRng, timelineCorrect, timelineHarnessAnswers, timelineItems, timelineMiss, validTimelineItem, workspaceAssignment,
+  seededRng, timelineCorrect, timelineHarnessAnswers, timelineItems, timelineMiss, validTimelineItem, asCheck, modeOfKind,
   type ChoiceItem, type LinkItem, type OrderItem, type TimelineEvent, type TimelineItem, type TimelineMode, type TimelineTier,
 } from './timelineExplorerWorkspace';
 import {
   BEFORE_AFTER_LEVER, cardLines, choiceLineLeaks, DATE_LINE_LEVER, datesLeaveDoubt, FEWER_CARDS_LEVER, LED_TO_LEVER, ledToArrows,
-  leverFact, linksLeaveDoubt, possibleMisses, READ_CARDS_LEVER, SHOW_DATES_LEVER, SHOW_TIMELINE_LEVER, simplerItem, timelineLevers,
+  linksLeaveDoubt, possibleMisses, READ_CARDS_LEVER, SHOW_DATES_LEVER, SHOW_TIMELINE_LEVER, simplerItem, TIMELINE_LEVERS,
   TWO_CHOICES_LEVER, TWO_DATES_LEVER, TWO_LINKS_LEVER, beforeAfterLines,
 } from './timelineExplorerLevers';
+import { timelineExplorerBoss } from './timelineExplorer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -48,6 +49,9 @@ const EVENTS: TimelineEvent[] = [
   { id: 'e7', date: '1781', sortOrder: 7, title: 'Victory at Yorktown', description: 'The British army surrendered to Washington.', clue: 'A trapped British army gave up to Washington.' },
 ];
 const deck = deckOf(EVENTS);
+/** An item as the boss carries it (its mode and the events), and the lever set read on it with no pull. */
+const chk = (i: TimelineItem, mode: TimelineMode) => asCheck(i, modeOfKind(i.kind, MODE_KINDS[mode]), EVENTS);
+const leversOn = (i: TimelineItem, mode: TimelineMode, pulled: string[] = []) => TIMELINE_LEVERS.declare(chk(i, mode), { session: [] }, pulled);
 
 const IDENTIFY: ChoiceItem = { id: 'identify-1', kind: 'identify', eventId: 'e3', options: ['e1', 'e3', 'e4', 'e6'] };
 const IDENTIFY2: ChoiceItem = { id: 'identify-2', kind: 'identify', eventId: 'e5', options: ['e5', 'e2', 'e7'] };
@@ -89,7 +93,7 @@ it.each(MODES)('%s: reading first (not ready), then binds with its key out of th
   expect(text(h)).not.toMatch(/Begin the questions/);
   read(h);
   expect(demand(h).presentation).toBe('ready');
-  expect(h.state().task!.task).toBe(workspaceAssignment(deck, item).task);
+  expect(h.state().task!.task).toBe(timelineExplorerBoss.assignment(chk(item, mode)).task);
   // The timeline is gone, no card shows a date, and nothing is marked or credited.
   expect(h.view.container.querySelector('[aria-label="Event 1"]')).toBeNull();
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
@@ -261,7 +265,7 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual(MODE_KINDS[mode].flatMap(k => [...KIND_MISSES[k]]).sort());
       for (const { i } of all(mode)) {
-        const ls = timelineLevers(deck, i, []);
+        const ls = leversOn(i, mode);
         const misses = possibleMisses(deck, i, w => timelineMiss(deck, i, w));
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
@@ -289,9 +293,9 @@ describe('the pure rules', () => {
       }
       if (i.kind === 'cause_effect') {
         for (const l of Object.values(cardLines(deck, i))) expect(l).not.toMatch(/\b\d{3,4}\b/);
-        if (timelineLevers(deck, i, []).some(l => l.id === SHOW_DATES_LEVER)) expect(datesLeaveDoubt(deck, i)).toBe(true);
+        if (leversOn(i, mode).some(l => l.id === SHOW_DATES_LEVER)) expect(datesLeaveDoubt(deck, i)).toBe(true);
       }
-      expect(leverFact(deck, i, timelineLevers(deck, i, []).filter(l => l.kind === 'help').map(l => l.id))).not.toMatch(/answer|correct/i);
+      expect(TIMELINE_LEVERS.onScreen(chk(i, mode), { session: [] }, leversOn(i, mode).filter(l => l.kind === 'help').map(l => l.id))).not.toMatch(/answer|correct/i);
     }
   });
 
@@ -301,7 +305,7 @@ describe('the pure rules', () => {
       if (!s) continue;
       expect(s.kind).toBe(i.kind);
       expect(simplerItem(deck, s)).toBeNull();
-      expect(timelineLevers(deck, s, [])).toEqual([]);
+      expect(leversOn(s, mode)).toEqual([]);
       if ((s.kind === 'identify' || s.kind === 'date') && (i.kind === 'identify' || i.kind === 'date')) {
         expect(s.eventId).not.toBe(i.eventId);
         expect(s.options).toHaveLength(2);

@@ -193,7 +193,7 @@ function ShapesWorkspace({ data, items, className, runtimePlanItemId }: ShapeSor
     const levers = practice ? [] : SHAPE_SORTER_LEVERS.declare(sessionItem, leverCtx, shown);
     workspace.current = {
       ...leverScene(workspaceScene(item, shapes), {
-        support: practice ? '' : SHAPE_SORTER_LEVERS.support(sessionItem),
+        support: practice ? '' : SHAPE_SORTER_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : SHAPE_SORTER_LEVERS.onScreen(sessionItem, leverCtx, shown) }),
       demonstration: marks,
       canDemonstrate: true, mark, clearPresentation: () => mark([]),

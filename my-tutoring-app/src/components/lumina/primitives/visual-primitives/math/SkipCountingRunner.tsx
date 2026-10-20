@@ -17,22 +17,22 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SkipCountingRunnerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { skipCountingBoss } from './skipCounting.boss';
 import {
-  INPUT_LABEL, aidsFor, describeSkipWork, fillFits, gapsOf, linePositions, nextLanding, openingSpots, parseJumps,
-  skipMatches, skipMiss, spokenSkipKey, workspaceAssignment, workspaceScene, type SkipAids, type SkipLine, type SkipView,
+  INPUT_LABEL, aidsFor, describeSkipWork, fillFits, gapsOf, linePositions, nextLanding, openingSpots, parseJumps, skipItems,
+  skipMatches, skipMiss, skipScene, spokenSkipKey, type SkipAids, type SkipItem, type SkipLine, type SkipView,
 } from './skipCountingWorkspace';
 import {
-  ARRAY_ROWS, COUNT_TRAIL, DOTS_FACT, HOP_DOTS, JUMP_MARKS, JUMP_SIZES, MODEL_COUNT, PRACTICE_NOTE, RING_GAPS, STEP_ARCS,
-  TICK_NUMBERS, countModel, hopDots, leverFact, modelFact, practiceItem, skipLevers, type CountModel, type SkipPractice,
+  ARRAY_ROWS, COUNT_TRAIL, HOP_DOTS, JUMP_MARKS, JUMP_SIZES, MODEL_COUNT, PRACTICE_NOTE, RING_GAPS, SKIP_LEVERS, STEP_ARCS,
+  TICK_NUMBERS, countModel, hopDots, startsShown, type CountModel,
 } from './skipCountingLevers';
 
 // ============================================================================
@@ -50,6 +50,8 @@ export interface SkipCountingChallenge {
   /** The item's own line (step, start, end, direction) when it is not the session's: a find_skip_value session
    *  gives each item a different count, so five items are not one screen and one answer five times. */
   line?: Pick<SkipCountingRunnerData, 'skipValue' | 'startFrom' | 'endAt' | 'direction'>;
+  /** The lesson's support tier, stamped on each item by `skipItems` (the levers' `support` reads it). */
+  supportTier?: 'easy' | 'medium' | 'hard';
   hint: string;
   narration: string;
 }
@@ -91,8 +93,7 @@ export interface SkipCountingRunnerData {
     timeLimit?: number | null;
   };
   gradeBand?: '1-2' | '2-3';
-  /** Within-mode support tier persisted from the generator so the live tutor's
-   *  reveal policy matches what the on-screen scaffold withholds. */
+  /** Within-mode support tier persisted from the generator: the aids it starts with and when the model lever comes. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -162,8 +163,9 @@ interface SkipCountingRunnerProps {
 // Component
 // ============================================================================
 
-const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  SkipCountingRunnerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SkipCountingChallenge>) => Progress }) => {
+const useSkipCountingProgress = useWorkspaceProgressFor('skip-counting-runner');
+
+const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId }: SkipCountingRunnerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -173,7 +175,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     endAt,
     direction = 'forward',
     character = { type: 'frog' as const },
-    challenges = [],
     showOptions = {},
     gradeBand = '1-2',
     supportTier,
@@ -185,13 +186,10 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     onEvaluationSubmit,
   } = data;
 
-  const {
-    showArray = false,
-    showDigitPattern = false,
-    autoPlay: autoPlayOption = false,
-  } = showOptions;
-  // On the tutor's workspace nothing moves on its own: the learner makes every jump.
-  const autoPlay = autoPlayOption && !tutorOwned;
+  // Nothing moves on its own (the generator's autoPlay is not honoured): the learner makes every jump.
+  const { showDigitPattern = false } = showOptions;
+  /** The lesson's items, each on its line, with the lesson's tier (`skipItems`). */
+  const challenges = useMemo<SkipItem[]>(() => skipItems(data), [data]);
   const line = useMemo<SkipLine>(() => ({ skipValue, startFrom, endAt, direction }), [skipValue, startFrom, endAt, direction]);
   /** The line a session item is drawn on: its own when it has one, else the session's. */
   const lineFor = (c: SkipCountingChallenge | null | undefined): SkipLine => c?.line ?? line;
@@ -200,7 +198,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Progress. On the workspace path the runtime moves the index.
+  // Progress: the runtime moves the index.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters exist; the progress hook calls it only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
@@ -210,11 +208,11 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct check already recorded, so its `onSolved` records nothing twice. */
   const checkedCorrect = useRef<string | null>(null);
-  const progress = useController({
+  const progress = useSkipCountingProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: ch => workspaceAssignment(ch, lineFor(ch)),
+    workspace, assignment: skipCountingBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -224,20 +222,19 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
 
-  // In-item levers (`skipCountingLevers.ts`), keyed by the session item they were pulled on, and the easier practice
-  // count a simplify lever puts in place of the session item until the observer returns to it.
+  // In-item levers (`SKIP_LEVERS`), keyed by the session item they were pulled on, and the easier practice count a
+  // simplify lever puts in place of the session item until the observer returns to it.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<SkipPractice | null>(null);
+  const [practice, setPractice] = useState<SkipItem | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
-  const currentChallenge = practice?.challenge ?? sessionChallenge;
+  const currentChallenge = practice ?? sessionChallenge;
   const itemLine = lineFor(sessionChallenge);
   const activeLine = practice?.line ?? itemLine;
   const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
@@ -270,7 +267,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const [multiplicationConnectionMade, setMultiplicationConnectionMade] = useState(false);
   const [patternIdentified, setPatternIdentified] = useState(false);
 
-  const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The jump's 400ms animation flag and the predict auto-jump (800ms after a correct prediction). Both are cleared
   // whenever an item opens, so a stale timer never moves the next item's character (SCR-1).
   const jumpAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -310,7 +306,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     setCurrentStreak(0);
   };
 
-  // Workspace path: a fresh item (or the item back after practice) opens blank; Try again keeps the work and any
+  // A fresh item (or the item back after practice) opens blank; Try again keeps the work and any
   // practice item, and clears what was typed.
   openItem.current = (index, retry) => {
     if (retry) { showChallenge(currentChallenge, activeLine, true); return; }
@@ -357,95 +353,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration (scripted path only: its cues carry the answers)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    skipValue,
-    startFrom,
-    endAt,
-    direction,
-    currentPosition,
-    jumpCount,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? 'Free exploration',
-    challengeType: currentChallenge?.type ?? 'count_along',
-    attemptNumber: currentAttempts + 1,
-    currentPhase,
-    currentStreak,
-    landingSpots: landingSpots.join(', '),
-    gradeBand,
-    supportTier,
-  }), [
-    skipValue, startFrom, endAt, direction, currentPosition, jumpCount,
-    challenges.length, currentChallengeIndex, currentChallenge,
-    currentAttempts, currentPhase, currentStreak, landingSpots, gradeBand,
-    supportTier,
-  ]);
-
-  // Mode-aware tutor reveal policy — keeps the scripted tutor's spoken help consistent with what the on-screen
-  // support tier withholds. For find_skip_value / predict the skip value must not be named at hard.
-  const tutorRevealClause = useCallback(
-    (challengeType: string): string => {
-      if (!supportTier) return '';
-      const answerIsSkipValue =
-        challengeType === 'find_skip_value' || challengeType === 'predict';
-      if (supportTier === 'easy') {
-        return answerIsSkipValue
-          ? ` SUPPORT TIER: easy — you may name the count-by-${skipValue} strategy and walk the next step with the student.`
-          : ` SUPPORT TIER: easy — you may name the count-by-${skipValue} strategy and model the setup step by step.`;
-      }
-      if (supportTier === 'medium') {
-        return ` SUPPORT TIER: medium — the strategy is partly on screen; nudge the student's execution, do not solve it for them.`;
-      }
-      return answerIsSkipValue
-        ? ` SUPPORT TIER: hard — the skip value is the ANSWER and is hidden on screen. Do NOT name it or say "count by ${skipValue}". Ask the student how much the number GROWS from one jump to the next, and what they notice. Never reveal the answer.`
-        : ` SUPPORT TIER: hard — scaffolds are withdrawn. Do NOT name the strategy; ask the student what they see in the sequence. Never reveal the answer.`;
-    },
-    [supportTier, skipValue],
-  );
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'skip-counting-runner',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 2-3',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   const aids: SkipAids = aidsFor(currentChallenge, showOptions);
   const charName = character.type === 'custom' ? 'the character' : `the ${character.type}`;
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const first = challenges[0];
-    const named = aidsFor(first, showOptions).jumpSize;
-    const skipPhrase = named
-      ? `Skip value: ${skipValue}. Count ${direction} from ${startFrom} to ${endAt}. `
-      : first?.line
-        ? 'Each challenge is a different count on its own number line (its jump size is the answer the student must discover — do not state it). '
-        : `Count ${direction} from ${startFrom} to ${endAt} (the skip value is the answer the student must discover — do not state it). `;
-    const introExcitement = named
-      ? `Introduce the activity with excitement: "${charName} is going to jump by ${skipValue}s! Let's count together!" `
-      : `Introduce the activity with excitement: "${charName} is going to jump! Watch the pattern and figure out how far each jump goes!" `;
-    sendText(
-      `[ACTIVITY_START] This is a skip counting activity for ${gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 2-3'}. `
-      + skipPhrase
-      + `Character: ${charName}. There are ${challenges.length} challenges. `
-      + `First challenge: "${first?.instruction}". `
-      + introExcitement
-      + `Then read the first instruction.`
-      + tutorRevealClause(first?.type ?? 'count_along'),
-      { silent: true }
-    );
-  }, [tutorOwned, isConnected, challenges, skipValue, direction, startFrom, endAt, charName, gradeBand, sendText, tutorRevealClause, showOptions]);
 
   // -------------------------------------------------------------------------
   // Jump Logic
@@ -469,31 +378,9 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
       setLongestStreak(longest => Math.max(longest, newStreak));
       return newStreak;
     });
-    if (isConnected) {
-      const jumpNum = jumpCount + 1;
-      if (jumpNum % 3 === 0 || to === activeLine.endAt) {
-        sendText(
-          `[JUMP_LANDING] The character landed on ${to}! `
-          + `That's ${jumpNum} jumps of ${activeLine.skipValue}. `
-          + `${to === activeLine.endAt ? 'They reached the end!' : `Count along: "${landingSpots.slice(-2).join('... ')}... ${to}!"`} `
-          + `${jumpNum >= 3 ? `Connect to multiplication: "${jumpNum} × ${activeLine.skipValue} = ${to}!"` : 'Keep counting along rhythmically.'}`
-          + tutorRevealClause(currentChallenge?.type ?? 'count_along'),
-          { silent: true }
-        );
-      }
-    }
   };
   const jumpRef = useRef(performJump);
   jumpRef.current = performJump;
-
-  // Auto-play (scripted path, easy count_along): the character demonstrates the rhythm.
-  useEffect(() => {
-    if (!autoPlay || currentChallenge?.type !== 'count_along' || isAnimating || nextExpectedPosition === null) return;
-    autoPlayTimerRef.current = setTimeout(() => jumpRef.current(), 1200);
-    return () => {
-      if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
-    };
-  }, [autoPlay, currentChallenge?.type, isAnimating, nextExpectedPosition]);
 
   // -------------------------------------------------------------------------
   // Checking: the activity's own check, committed as the workspace's checked gesture
@@ -520,7 +407,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
         if (commit(view())) {
           setFeedback('You counted all the way! Great job!');
           setFeedbackType('success');
-          sendText(`[COUNT_COMPLETE] Student completed counting by ${sv}s from ${activeLine.startFrom} to ${activeLine.endAt}. Celebrate the full count!`, { silent: true });
         }
         return;
       }
@@ -537,12 +423,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
             setLongestStreak(longest => Math.max(longest, newStreak));
             return newStreak;
           });
-          sendText(
-            `[PREDICT_CORRECT] Student correctly predicted ${next}! Skip counting by ${sv}s from ${currentPosition}. `
-            + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} Streak: ${currentStreak + 1}. `
-            + `Celebrate: "You knew it was ${next}! ${sv} more than ${currentPosition}!"`,
-            { silent: true }
-          );
           // The character makes the predicted jump.
           if (predictAdvanceTimerRef.current) clearTimeout(predictAdvanceTimerRef.current);
           predictAdvanceTimerRef.current = setTimeout(() => {
@@ -557,13 +437,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
             : `Not quite. You said ${answer}. How far is each jump?`);
           setFeedbackType('error');
           setCurrentStreak(0);
-          sendText(
-            `[PREDICT_INCORRECT] Student predicted ${answer} but the next landing is ${next}. `
-            + `Current position: ${currentPosition}, skip value: ${sv}. `
-            + `Hint: "We're counting by ${sv}s. What is ${currentPosition} plus ${sv}?"`
-            + tutorRevealClause('predict'),
-            { silent: true }
-          );
         }
         return;
       }
@@ -579,18 +452,11 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           // A gap filled with others still open is progress, not a check: the item is checked on its last gap.
           if (!skipMatches(ch, activeLine, work)) { SoundManager.snap(); return; }
           commit(work);
-          sendText(`[FILL_CORRECT] Student found missing number ${answer} and filled every gap.`, { silent: true });
           return;
         }
         commit(work);
         setFeedback(`${answer} doesn't fit. We're counting by ${sv}s.`);
         setFeedbackType('error');
-        sendText(
-          `[FILL_INCORRECT] Student guessed ${answer} but it's not a missing multiple of ${sv} from ${activeLine.startFrom}. `
-          + `Hint: "Start from ${activeLine.startFrom} and add ${sv} each time."`
-          + tutorRevealClause('fill_missing'),
-          { silent: true }
-        );
         return;
       }
       case 'find_skip_value': {
@@ -600,18 +466,9 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           if (!isPractice) setPatternIdentified(true);
           setFeedback(`You got it! We're counting by ${sv}s!`);
           setFeedbackType('success');
-          sendText(`[SKIP_VALUE_CORRECT] Student identified the skip value as ${sv}. Celebrate: "You found the pattern! Every jump is ${sv} more!"`, { silent: true });
         } else {
           setFeedback('Not quite. Look at the difference between each number.');
           setFeedbackType('error');
-          const shown = linePositions(activeLine).slice(0, 4).join(', ');
-          sendText(
-            (supportTier === 'hard'
-              ? `[SKIP_VALUE_INCORRECT] Student guessed ${answer}, which is not the skip value. Do NOT reveal the correct skip value. Point them to the sequence: "${shown}". `
-              : `[SKIP_VALUE_INCORRECT] Student guessed ${answer} but the skip value is ${sv}. Hint: "Look at the numbers: ${shown}. What do you add each time?"`)
-            + tutorRevealClause('find_skip_value'),
-            { silent: true }
-          );
         }
         return;
       }
@@ -623,16 +480,9 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           if (!isPractice) setMultiplicationConnectionMade(true);
           setFeedback(`Correct! ${jumpCount} × ${sv} = ${product}`);
           setFeedbackType('success');
-          sendText(`[MULTIPLY_CORRECT] Student connected skip counting to multiplication: ${jumpCount} × ${sv} = ${product}. Celebrate!`, { silent: true });
         } else {
           setFeedback(`Think about how many jumps of ${sv} you see.`);
           setFeedbackType('error');
-          sendText(
-            `[MULTIPLY_INCORRECT] Student answered "${multiplicationInput}" but the fact is: ${jumpCount} × ${sv} = ${product}. `
-            + `Hint: "Count the jumps. Each jump is ${sv}."`
-            + tutorRevealClause('connect_multiplication'),
-            { silent: true }
-          );
         }
         return;
       }
@@ -667,8 +517,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
   // comes back blank when the practice closes. A tap shows its own credit in the check.
   practiceAloud.current = (source) => {
-    const solved = practice?.challenge;
-    const key = solved ? spokenSkipKey(solved, practice.line) : null;
+    const solved = practice;
+    const key = solved ? spokenSkipKey(solved, solved.line) : null;
     if (source !== 'speech' || !solved || key === null) return;
     setSolvedId(solved.id);
     if (solved.type === 'predict') {
@@ -682,14 +532,14 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
       setFeedback(`You got it! We're counting by ${key}s!`);
     } else {
       setMultiplicationInput(String(key)); setMultiplicationConnectionMade(true);
-      setFeedback(`Correct! ${key} × ${practice.line.skipValue} = ${key * practice.line.skipValue}`);
+      setFeedback(`Correct! ${key} × ${solved.line.skipValue} = ${key * solved.line.skipValue}`);
     }
     setFeedbackType('success');
   };
 
   // count_along: the learner taps the tick where the character lands next. The right tick makes the jump; a tick
   // further on is a checked miss, without naming the next number.
-  const isTapJumpMode = currentChallenge?.type === 'count_along' && !autoPlay && !isCurrentChallengeComplete
+  const isTapJumpMode = currentChallenge?.type === 'count_along' && !isCurrentChallengeComplete
     && !allChallengesComplete && nextExpectedPosition !== null;
   const handleTickTap = (pos: number) => {
     if (learnerBlocked() || hasSubmittedEvaluation || !isTapJumpMode) return;
@@ -698,16 +548,10 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     commit(view({ answer: pos }));
     setFeedback(`One jump at a time! Where does ${charName} land right after ${currentPosition}?`);
     setFeedbackType('error');
-    sendText(
-      `[JUMP_WRONG_TARGET] Student tapped ${pos} but the next landing after ${currentPosition} is ${nextExpectedPosition} (skip value ${activeLine.skipValue}). `
-      + `Nudge WITHOUT stating the answer: ask how far ${charName} hops each time and where it would land from ${currentPosition}.`
-      + tutorRevealClause('count_along'),
-      { silent: true },
-    );
   };
 
   // -------------------------------------------------------------------------
-  // Completion: submitted once every challenge is correct (both paths; under an evaluation provider only)
+  // Completion: submitted once every challenge is correct (under an evaluation provider only)
   // -------------------------------------------------------------------------
   const submittedRef = useRef(false);
   useEffect(() => {
@@ -734,30 +578,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
       attemptsCount: challengeResults.reduce((s, r) => s + (r.attempts ?? 0), 0),
     };
     submitEvaluation(totalCorrect === challenges.length, overallPct, metrics, { challengeResults });
-    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-    sendText(
-      `[CHALLENGE_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Skip value: ${skipValue}. Longest streak: ${longestStreak}. Give encouraging phase-specific feedback about counting by ${skipValue}s.`,
-      { silent: true }
-    );
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges, skipValuesExplored,
-    backwardCountingAttempted, multiplicationConnectionMade, patternIdentified, longestStreak, submitEvaluation, phaseResults,
-    sendText, skipValue]);
-
-  // Next (scripted path only: on the workspace the runtime advances).
-  const advanceToNextChallenge = () => {
-    if (!advanceProgress()) return;
-    const nextIndex = currentChallengeIndex + 1;
-    const nextChallenge = challenges[nextIndex];
-    if (!nextChallenge) return;
-    showChallenge(nextChallenge, lineFor(nextChallenge), false);
-    sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read the instruction and encourage them.`
-      + tutorRevealClause(nextChallenge.type),
-      { silent: true }
-    );
-  };
+    backwardCountingAttempted, multiplicationConnectionMade, patternIdentified, longestStreak, submitEvaluation]);
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
@@ -770,8 +592,12 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   // Levers: what the session item shows. A practice count shows its aids plainly and carries no levers.
   // -------------------------------------------------------------------------
-  const leverSession = { challenges, line: itemLine, showOptions, supportTier };
-  const itemLevers = sessionChallenge ? skipLevers(sessionChallenge, leverSession, pulledLevers, currentPosition) : [];
+  const leverSession = { challenges, showOptions, supportTier };
+  const leverCtx = { session: leverSession, position: currentPosition, character: character.type };
+  // The tier's starting aids are shown from the start, which is not a pull.
+  const shownLevers = sessionChallenge
+    ? [...startsShown(sessionChallenge, leverSession).filter(id => !pulledLevers.includes(id)), ...pulledLevers] : pulledLevers;
+  const itemLevers = sessionChallenge ? SKIP_LEVERS.declare(sessionChallenge, leverCtx, shownLevers) : [];
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const type = currentChallenge?.type;
   const labelsOn = isPractice || (type === 'count_along' ? helpOn(TICK_NUMBERS) : aids.labels);
@@ -782,7 +608,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const stepArcsOn = helpOn(STEP_ARCS);
   const ringsOn = helpOn(RING_GAPS);
   const dots = helpOn(HOP_DOTS) ? hopDots(itemLine) : null;
-  const model: CountModel | null = helpOn(MODEL_COUNT) && sessionChallenge ? countModel(sessionChallenge, itemLine) : null;
+  const model: CountModel | null = helpOn(MODEL_COUNT) && sessionChallenge ? countModel(sessionChallenge) : null;
   const solvedOrNot = (hidden: boolean) => !hidden || isCurrentChallengeComplete;
   const arrayOn = type === 'connect_multiplication' ? (!isPractice && (aids.array || helpOn(ARRAY_ROWS))) : aids.array;
   const arrayCaptionOn = solvedOrNot(type === 'connect_multiplication' || type === 'find_skip_value');
@@ -790,18 +616,18 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const digitPatternOn = showDigitPattern && solvedOrNot(type === 'find_skip_value');
   const jumpSizeOn = aids.jumpSize && !(isPractice && type === 'find_skip_value');
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const shown: SkipAids = { labels: labelsOn, arcs: arcsOn, sequence: chipsOn, jumpSize: jumpSizeOn, equation: equationOn, array: arrayOn };
-    const scene = workspaceScene(currentChallenge, { line: activeLine, character: character.type,
+    const scene = skipScene(currentChallenge, { line: activeLine, character: character.type,
       supportTier: practice ? undefined : supportTier, aids: shown }, view());
     const levers = practice ? [] : itemLevers;
-    const onScreen = practice ? '' : levers.filter(l => l.pulled).map(l => l.id === HOP_DOTS ? DOTS_FACT
-      : l.id === MODEL_COUNT ? (model ? modelFact(model) : '') : leverFact(l.id, itemLine, character.type)).filter(Boolean).join('. ');
+    const onScreen = practice ? '' : SKIP_LEVERS.onScreen(sessionChallenge, leverCtx, levers.filter(l => l.pulled).map(l => l.id));
+    const published = leverScene(scene, { support: practice ? '' : SKIP_LEVERS.support(sessionChallenge, leverCtx), onScreen });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -809,10 +635,10 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, leverSession);
+          const easier = SKIP_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item is already the plainest of its kind.';
-          setLeverState(next); setPractice(easier); showChallenge(easier.challenge, easier.line, false);
-          return { practice: workspaceAssignment(easier.challenge, easier.line) };
+          setLeverState(next); setPractice(easier); showChallenge(easier, easier.line, false);
+          return { practice: skipCountingBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -851,18 +677,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   const charEmoji = CHARACTER_EMOJI[character.type] || '⭐';
   const inputClosed = allChallengesComplete || blocked || hasSubmittedEvaluation;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The number line',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   const arc = (from: number, to: number, i: number, key: string, stroke: string, label?: string) => {
     const x1 = posToX(from), x2 = posToX(to), midX = (x1 + x2) / 2;
@@ -938,9 +752,10 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           </LuminaPanel>
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, and the line with its inputs as
+            one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Number Line SVG */}
         <div className="flex justify-center">
           <svg
@@ -1174,7 +989,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           </div>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (
@@ -1217,11 +1032,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
                 )}
               </>
             )}
-            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                Next Challenge
-              </LuminaActionButton>
-            )}
             {allChallengesComplete && (
               <div className="text-center">
                 <p className="text-emerald-400 text-sm font-medium mb-2">
@@ -1230,13 +1040,6 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
               </div>
             )}
           </div>
-        )}
-
-        {/* Hint (scripted path: generated hints can name the answer; on the workspace the tutor helps) */}
-        {!tutorOwned && currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPanel className="p-2 text-center">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </LuminaPanel>
         )}
 
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1281,8 +1084,7 @@ function CountModelLine({ model }: { model: CountModel }) {
   );
 }
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const SkipCountingRunner = withWorkspaceController<SkipCountingRunnerProps, ProgressOptions<SkipCountingChallenge>, Progress>(
-  'skip-counting-runner', SkipCountingRunnerSurface, useScriptedProgress, useWorkspaceProgressFor('skip-counting-runner'));
+const SkipCountingRunner = withWorkspaceOnly<SkipCountingRunnerProps>('skip-counting-runner', SkipCountingRunnerSurface,
+  props => props.data.title);
 
 export default SkipCountingRunner;

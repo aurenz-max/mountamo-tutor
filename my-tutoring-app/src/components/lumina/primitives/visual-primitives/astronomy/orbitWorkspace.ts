@@ -21,15 +21,18 @@
  *   at a named height. easy: it is at the named point, speed up or slow down; medium: 4 choices; hard: 4 choices and the
  *   target circle is drawn dashed, not named.
  *
- * Every item is a sayable closed choice (J14, user 10-13): spoken and judged against `expectedAnswer`, or tapped and
- * checked by code.
+ * Every item is a sayable closed choice (J14, user 10-13): said and judged by the tutor against its key (`orbitKey`), or
+ * tapped and checked by code. The boss (`orbitMechanicsLab.boss.ts`) builds the assignment from them.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { calculateOrbitalElements, gravitationalParameter, type OrbitBodyConfig } from '../../../service/astronomy/orbitPhysics';
+import { ORBIT_MISSES } from './orbitMechanicsLab.card';
+
+export { ORBIT_MISSES };
 
 export type OrbitMode = 'pick_speed' | 'orbit_speed' | 'predict_burn' | 'circularize';
 export const ORBIT_MODES: OrbitMode[] = ['pick_speed', 'orbit_speed', 'predict_burn', 'circularize'];
@@ -168,12 +171,12 @@ export const BURN_TEXT: Record<BurnOutcome, string> = {
   falls: 'It falls down to Earth', closer: 'Its loop dips closer to Earth on the other side', same: 'It stays on the same circle',
   farther: 'Its loop reaches farther out on the other side', away: 'It flies away into space',
 };
-const BURN_SAY: Record<BurnOutcome, string> = {
-  falls: '"it falls", "it crashes", "it falls down to Earth"',
-  closer: '"it dips closer", "the other side comes closer to Earth", "it goes lower on the other side"',
-  same: '"it stays the same", "the same circle"',
-  farther: '"it goes farther out", "the other side goes higher", "a bigger loop"',
-  away: '"it flies away", "it escapes", "it goes off into space"',
+const BURN_SAY: Record<BurnOutcome, readonly string[]> = {
+  falls: ['it falls', 'it crashes', 'it falls down to Earth'],
+  closer: ['it dips closer', 'the other side comes closer to Earth', 'it goes lower on the other side'],
+  same: ['it stays the same', 'the same circle'],
+  farther: ['it goes farther out', 'the other side goes higher', 'a bigger loop'],
+  away: ['it flies away', 'it escapes', 'it goes off into space'],
 };
 
 // ── circularize ──────────────────────────────────────────────────────────────────────────
@@ -208,11 +211,15 @@ export const CIRCLE_TEXT: Record<CircleChoice, string> = {
   far_up: 'Speed up at the far point', far_down: 'Slow down at the far point',
   near_up: 'Speed up at the near point', near_down: 'Slow down at the near point',
 };
-const CIRCLE_SAY: Record<CircleChoice, string> = {
-  far_up: '"speed up at the far point", "go faster when it is farthest from Earth"',
-  far_down: '"slow down at the far point"',
-  near_up: '"speed up at the near point", "go faster when it is closest to Earth"',
-  near_down: '"slow down at the near point", "slow down when it is closest to Earth"',
+const CIRCLE_SAY: Record<CircleChoice, readonly string[]> = {
+  far_up: ['speed up at the far point', 'go faster when it is farthest from Earth'],
+  far_down: ['slow down at the far point'],
+  near_up: ['speed up at the near point', 'go faster when it is closest to Earth'],
+  near_down: ['slow down at the near point', 'slow down when it is closest to Earth'],
+};
+/** At a named point (easy) the ask offers "speed up or slow down": the way alone answers. */
+const CIRCLE_WAY_SAY: Record<'up' | 'down', readonly string[]> = {
+  up: ['speed up', 'go faster', 'faster'], down: ['slow down', 'go slower', 'slower'],
 };
 const RESULT_TEXT: Record<CircleResult, string> = {
   circle_far: 'goes around in a circle as far out as the far point', circle_near: 'goes around in a circle as close in as the near point',
@@ -253,12 +260,6 @@ export type RaceMiss = 'picked_biggest' | 'picked_farther' | 'picked_closer';
 export type BurnMiss = 'wrong_way' | 'said_no_change' | 'too_strong' | 'too_weak';
 export type CircleMiss = 'other_circle' | 'wrong_way' | 'wrong_place';
 export type OrbitMiss = SpeedMiss | RaceMiss | BurnMiss | CircleMiss;
-export const ORBIT_MISSES: Record<OrbitMode, readonly OrbitMiss[]> = {
-  pick_speed: ['picked_slower', 'picked_faster'],
-  orbit_speed: ['picked_biggest', 'picked_farther', 'picked_closer'],
-  predict_burn: ['wrong_way', 'said_no_change', 'too_strong', 'too_weak'],
-  circularize: ['other_circle', 'wrong_way', 'wrong_place'],
-};
 
 export function tapMiss(item: TapItem, pick: number): SpeedMiss | RaceMiss | undefined {
   const key = tapKey(item);
@@ -550,36 +551,51 @@ export function flightText(item: OrbitItem, w: OrbitWork): string | null {
   return null;
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 
 /** Every option of an item, as its label, in screen order. */
 const optionLabels = (item: OrbitItem): string[] => (isTapItem(item)
   ? Array.from({ length: tapCount(item) }, (_, i) => tapLabel(item, i)) : (item.choices as string[]).map(c => choiceLabel(item, c)));
+export const optionLabel = (item: OrbitItem, i: number): string => optionLabels(item)[i] ?? '';
 const keyIndex = (item: OrbitItem) => (isTapItem(item) ? tapKey(item) : (item.choices as string[]).indexOf(choiceKey(item)));
 const optionMiss = (item: OrbitItem, i: number): OrbitMiss | undefined =>
   (isTapItem(item) ? tapMiss(item, i) : choiceMiss(item, (item.choices as string[])[i]));
+/** The option a piece of work names, in screen order (-1 when none). */
+export const workOption = (item: OrbitItem, w: OrbitWork): number =>
+  (isTapItem(item) ? w.pick ?? -1 : (item.choices as string[]).indexOf(w.choice ?? ''));
 
 /** How a learner says one push: its size word, and where its arrow ranks by length among the item's pushes. */
-function pushSays(item: SpeedItem, i: number): string {
+function pushSays(item: SpeedItem, i: number): string[] {
   const word = pushLabel(item, i).toLowerCase(), n = item.pushes.length;
   const rank = [...item.pushes].sort((a, b) => a.f - b.f).indexOf(item.pushes[i]);
   const byLength = n === 2 ? ['the shorter arrow', 'the longer arrow'] : n === 3 ? ['the shortest arrow', 'the middle-sized arrow', 'the longest arrow']
     : ['the shortest arrow', 'the second shortest arrow', 'the second longest arrow', 'the longest arrow'];
-  return `"the ${word}", "${byLength[rank]}"`;
+  return [`the ${word}`, byLength[rank]];
 }
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function orbitExpectedAnswer(item: OrbitItem): string {
-  const labels = optionLabels(item), at = keyIndex(item);
-  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`).join(', ');
-  const says = item.mode === 'pick_speed' ? pushSays(item, at)
-    : item.mode === 'orbit_speed' ? `"the ${item.crafts[at].color} rocket", "the ${item.crafts[at].color} one", "${item.crafts[at].color}"`
-      : item.mode === 'predict_burn' ? BURN_SAY[choiceKey(item) as BurnOutcome] : CIRCLE_SAY[choiceKey(item) as CircleChoice];
-  return `"${labels[at]}" (choice ${at + 1} of ${labels.length}): ${says}, or its place in the row ("the ${ORDINAL[at]} one") count. `
-    + `${others} ${labels.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+/** The ways a learner says the key, beside its label: its own words, or its place in the row. */
+function waysToSay(item: OrbitItem, at: number): string[] {
+  const place = `the ${ORDINAL[at]} one`;
+  if (item.mode === 'pick_speed') return [...pushSays(item, at), place];
+  if (item.mode === 'orbit_speed') { const c = item.crafts[at].color; return [`the ${c} rocket`, `the ${c} one`, c, place]; }
+  if (item.mode === 'predict_burn') return [...BURN_SAY[choiceKey(item) as BurnOutcome], place];
+  const key = choiceKey(item) as CircleChoice;
+  return [...CIRCLE_SAY[key], ...(item.at !== 'side' ? CIRCLE_WAY_SAY[key.endsWith('up') ? 'up' : 'down'] : []), place];
 }
+
+/** The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. */
+export function orbitKey(item: OrbitItem): SpokenKey {
+  const labels = optionLabels(item), at = keyIndex(item);
+  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`);
+  return { answer: labels[at], alsoAccept: waysToSay(item, at),
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.` };
+}
+
+/** What the ask says by design: at a named point (circularize, easy) it offers both ways, "speed up or slow down". */
+export const askGiven = (item: OrbitItem): string[] =>
+  (item.mode === 'circularize' && item.at !== 'side' ? ['speed up or slow down'] : []);
 
 const MISS_WORDS: Record<OrbitMiss, string> = {
   picked_slower: 'names a smaller push, whose rocket does something slower than asked',
@@ -609,20 +625,6 @@ export function orbitSpokenMisses(item: OrbitItem): KnownMiss[] {
   return out;
 }
 
-const HOW: Record<OrbitMode, string> = {
-  pick_speed: 'The learner answers by saying which push, or tapping one and pressing Launch and check; the rocket flies only after that.',
-  orbit_speed: 'The learner answers by saying which rocket, or tapping one and checking it.',
-  predict_burn: 'The learner answers by saying it, or tapping a choice and checking it.',
-  circularize: 'The learner answers by saying it, or tapping a choice and checking it.',
-};
-
-/** Every item is a sayable closed choice: spoken (judged against `expectedAnswer`) or tapped and checked by code. */
-export function workspaceAssignment(item: OrbitItem): TeachingAssignment {
-  const misses = orbitSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: orbitExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface OrbitView {
@@ -631,6 +633,8 @@ export interface OrbitView {
   solved: boolean;
   /** A checked answer's flight is on screen (the learner's own pick). */
   flown: boolean;
+  /** The lesson's grade rung ('K'..'5'), for the pre-reader rule. */
+  grade?: string;
 }
 
 const SIZE_ORDER: Path[] = ['falls', 'circle', 'stretched', 'away'];
@@ -642,10 +646,27 @@ export function describeOrbitWork(item: OrbitItem | undefined, w: OrbitWork): st
   return w.choice ? `Chose "${choiceLabel(item, w.choice)}"` : 'Nothing chosen yet';
 }
 
-const CONSTRAINTS_TAP = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. Nothing flies or '
-  + 'moves until the answer. You cannot tap or check for the learner.';
-const CONSTRAINTS_CHOICE = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. '
-  + 'The new path is drawn only after the answer. You cannot tap or check a choice for the learner.';
+/** What flies when (the answer is a prediction: nothing flies before a check). */
+const FLIES: Record<OrbitMode, string> = {
+  pick_speed: 'Nothing flies before a check. After any check the chosen push flies, and the screen says what that rocket did.',
+  orbit_speed: 'The rockets stand still until the answer is credited; then all of them move around their tracks.',
+  predict_burn: 'The new path is drawn only once the answer is credited; a wrong answer draws nothing.',
+  circularize: 'Nothing flies before a check. After any check the chosen burn flies, and the screen says what that rocket did.',
+};
+/** What this item asks the learner to work out, which the tutor never says (how to answer is the card's `moves`). */
+const NEVER_SAY: Record<OrbitMode, string> = {
+  pick_speed: 'What each push does is the prediction: never say what a push of some size does, and never say that a '
+    + 'bigger or smaller push, or more or less speed, is needed.',
+  orbit_speed: 'How a rocket moves at its distance from Earth is the question: never say that closer or farther rockets, '
+    + 'or rockets Earth pulls harder, go faster or slower or take longer, and never ask which track is longest or shortest.',
+  predict_burn: 'What the push does to the path is the prediction: never say what a push forward or backward does to a '
+    + 'path, or what gravity does once the rocket is faster or slower.',
+  circularize: 'Where and which way to fire is the question: never say which point or which way, which side of the loop '
+    + 'must move, or which point a dashed circle touches. What a push does to the other side of a loop is said only by a '
+    + 'card the scene lists.',
+};
+const PRE_READER = /^(k|kindergarten|1|grade 1)$/i;
+const PRE_READER_RULE = 'Say no number, speed or unit, and not the words orbit, altitude or eccentricity: plain words only.';
 
 /** What is drawn and asked. Never the key; results only for what has flown. */
 export function workspaceScene(item: OrbitItem, view: OrbitView): WorkspaceScene {
@@ -673,7 +694,8 @@ export function workspaceScene(item: OrbitItem, view: OrbitView): WorkspaceScene
     if (ft) facts.flight = `The learner's answer has flown: ${ft}`;
   }
   facts.learnerWork = describeOrbitWork(item, view.work);
-  facts.constraints = isTapItem(item) ? CONSTRAINTS_TAP : CONSTRAINTS_CHOICE;
+  facts.flies = FLIES[item.mode];
+  facts.constraints = [NEVER_SAY[item.mode], ...(view.grade && PRE_READER.test(view.grade.trim()) ? [PRE_READER_RULE] : [])].join(' ');
   return { objects: [], facts };
 }
 

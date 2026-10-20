@@ -1,12 +1,13 @@
 /**
- * The in-item levers on timeline-explorer (`/add-support-tiers`; report
+ * The in-item levers on timeline-explorer, as one lever set (`TIMELINE_LEVERS`, `bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/timeline-explorer-levers-2026-10-16.md). No real-learner evidence: the misses are what
  * `timelineMiss` observes; the failures behind them are documented (the old catalog's commonStruggles: confuses similar
  * events, struggles with chronological ordering, skips the middle events, does not read the Impact lines) or inferred.
  * The time order IS the answer, so no lever places, numbers or dates the item's own key. Every lever starts released;
  * `config.difficulty` changes the items, not the levers.
  *
- * Help (the screen does more; the item is unchanged):
+ * Help (the screen does more; the item is unchanged). Types: show_timeline is `custom` (a reference naming every choice),
+ * before_after and show_dates `clue`, date_line `layout`, read_cards `meaning`, led_to `marks`; the simplify levers `easier`.
  * - `show_timeline` (identify): the timeline strip comes back, every event's title in time order with its date. The
  *   clue names neither its event's title words nor its date (`clueLeaks`), so the strip does not point at the answer.
  * - `before_after` (date): a card naming the events just before and just after this one in time, by title, no dates.
@@ -23,10 +24,13 @@
  * - `fewer_cards` (order): three cards spread out in time, sharing at most one card with the item.
  * - `two_links` (cause_effect): two links whose events are not on the item.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { KIND_MISSES, type TimelineMiss } from './timelineExplorer.card';
 import {
-  clueLeaks, dateOf, deckOf, identifiable, KIND_MISSES, linksOf, mentions, orderKey, redactDates, titleOf, uniqueTitleStems,
-  type ChoiceItem, type Deck, type LinkItem, type OrderItem, type TimelineItem, type TimelineMiss, linkKey,
+  asCheck, clueLeaks, datable, dateOf, deckFor, deckOf, identifiable, linksOf, mentions, MODE_KINDS, optionLabel, orderKey,
+  redactDates, titleOf, uniqueTitleStems, yearsIn, linkKey,
+  type ChoiceItem, type Deck, type LinkItem, type OrderItem, type TimelineCheck, type TimelineEvent, type TimelineItem,
+  type TimelineKind, type TimelineMode,
 } from './timelineExplorerWorkspace';
 
 export const SHOW_TIMELINE_LEVER = 'show_timeline';
@@ -130,7 +134,7 @@ export function simplerItem(deck: Deck, item: TimelineItem, session: readonly Ti
   const id = `${item.id}${PRACTICE}`;
   if (item.kind === 'identify' || item.kind === 'date') {
     const asked = new Set(session.flatMap(i => (i.kind === 'identify' || i.kind === 'date' ? [i.eventId] : [])));
-    const pool = (item.kind === 'identify' ? identifiable(deck) : deck.events).map(e => e.id).filter(x => x !== item.eventId);
+    const pool = (item.kind === 'identify' ? identifiable(deck) : datable(deck)).map(e => e.id).filter(x => x !== item.eventId);
     const target = pool.find(x => !asked.has(x)) ?? pool[0];
     if (!target) return null;
     const far = deck.events.map(e => e.id).filter(x => x !== target && x !== item.eventId)
@@ -156,84 +160,98 @@ export function simplerItem(deck: Deck, item: TimelineItem, session: readonly Ti
   return { id, kind: 'cause_effect', causes: free.map(([c]) => c), effects: [free[1][1], free[0][1]] };
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly TimelineMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+/** The lesson's whole session, so a practice item avoids what another item asks. */
+export interface TimelineLeverContext { session: readonly TimelineItem[] }
+
 const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
+const deckOfCheck = (c: TimelineCheck) => deckFor(c.events);
+const missesOfKinds = (kinds: readonly TimelineKind[]): TimelineMiss[] => kinds.flatMap(k => [...KIND_MISSES[k]]);
+/** The practice item of the same kind, as a check of the same mode, or null. */
+const practice = (kind: TimelineKind) => (c: TimelineCheck, { session }: TimelineLeverContext): TimelineCheck | null => {
+  if (c.kind !== kind) return null;
+  const s = simplerItem(deckOfCheck(c), c, session);
+  return s ? asCheck(s, c.mode, c.events) : null;
+};
 
-/** The levers on the current session item. A practice item has none. */
-export function timelineLevers(deck: Deck, item: TimelineItem | undefined, pulled: readonly string[], session: readonly TimelineItem[] = []): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(deck, item, session);
-  if (item.kind === 'identify') {
-    if (!clueLeaks(deck, item.eventId)) {
-      out.push(lever(SHOW_TIMELINE_LEVER, 'help', pulled, KIND_MISSES.identify, 'The learner does not remember the events, or mixes up two of them.',
-        'Brings back the timeline strip: every event title in time order with its date. It does not mark which event the clue describes.'));
-    }
-    if (simpler) out.push(lever(TWO_CHOICES_LEVER, 'simplify', pulled, KIND_MISSES.identify, 'The learner cannot pick among the choices.',
-      `Opens another event's clue with only two choices, far apart in time. ${PRACTICE_NOTE}`));
-    return out;
-  }
-  if (item.kind === 'date') {
-    out.push(lever(BEFORE_AFTER_LEVER, 'help', pulled, KIND_MISSES.date, 'The learner does not know where this event falls in time.',
-      'Shows a card naming the events just before and just after this one on the timeline, by title only, with no dates.'));
-    out.push(lever(DATE_LINE_LEVER, 'help', pulled, ['distant_date'], 'The learner guesses a date far from the right time.',
-      'Lays the date choices out in time order on a line. It does not say which date belongs to this event.'));
-    if (simpler) out.push(lever(TWO_DATES_LEVER, 'simplify', pulled, KIND_MISSES.date, 'The learner cannot pick among the dates.',
-      `Opens another event with only two dates, far apart in time. ${PRACTICE_NOTE}`));
-    return out;
-  }
-  if (item.kind === 'order') {
-    if (Object.keys(cardLines(deck, item)).length) {
-      out.push(lever(READ_CARDS_LEVER, 'help', pulled, KIND_MISSES.order, 'The learner does not remember what the events were.',
-        'Writes under each card what the learner read about that event, with every date taken out.'));
-    }
-    if (ledToArrows(deck, item).length) {
-      out.push(lever(LED_TO_LEVER, 'help', pulled, ['adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order', 'reversed'],
-        'The learner does not use what caused what to put events in order.',
-        'Draws a "led to" arrow between cards where one event led to the other. It does not order the other cards.'));
-    }
-    if (simpler) out.push(lever(FEWER_CARDS_LEVER, 'simplify', pulled, KIND_MISSES.order, 'The learner cannot order this many cards.',
-      `Opens three other events, spread out in time, to put in order. ${PRACTICE_NOTE}`));
-    return out;
-  }
-  if (Object.keys(cardLines(deck, item)).length) {
-    out.push(lever(READ_CARDS_LEVER, 'help', pulled, KIND_MISSES.cause_effect, 'The learner does not remember what the events were.',
-      'Writes under each card what the learner read about that event, with every date taken out; a card that would name its partner gets no line.'));
-  }
-  if (datesLeaveDoubt(deck, item)) {
-    out.push(lever(SHOW_DATES_LEVER, 'help', pulled, ['used_extra', 'effect_before_cause'], 'The learner matches an effect that happened before its cause.',
-      "Writes each card's date beside it. The dates alone do not decide the pairs."));
-  }
-  if (simpler) out.push(lever(TWO_LINKS_LEVER, 'simplify', pulled, KIND_MISSES.cause_effect, 'The learner cannot match this many pairs.',
-    `Opens two other causes and their effects to match. ${PRACTICE_NOTE}`));
-  return out;
-}
-
-/** What the pulled levers put on screen, as a scene fact. Never the key. */
-export function leverFact(deck: Deck, item: TimelineItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (item.kind === 'identify' && pulled.includes(SHOW_TIMELINE_LEVER)) {
-    parts.push(`The timeline strip is on screen: ${deck.events.map(e => `${e.title} (${e.date})`).join(', then ')}. Nothing marks the clue's event.`);
-  }
-  if (item.kind === 'date') {
-    if (pulled.includes(BEFORE_AFTER_LEVER)) parts.push(`A card: ${beforeAfterLines(deck, item).join(' ')}`);
-    if (pulled.includes(DATE_LINE_LEVER)) parts.push(`The date choices on a line in time order: ${dateLine(deck, item).join(', ')}.`);
-  }
-  if ((item.kind === 'order' || item.kind === 'cause_effect') && pulled.includes(READ_CARDS_LEVER)) {
-    parts.push('Under each card, what the learner read about it, with the dates taken out.');
-  }
-  if (item.kind === 'order' && pulled.includes(LED_TO_LEVER)) {
-    parts.push(`"Led to" arrows: ${ledToArrows(deck, item).map(([a, b]) => `${titleOf(deck, a)} led to ${titleOf(deck, b)}`).join('; ')}.`);
-  }
-  if (item.kind === 'cause_effect' && pulled.includes(SHOW_DATES_LEVER)) {
-    parts.push(`Each card shows its date: ${[...item.causes, ...item.effects].map(id => `${titleOf(deck, id)} (${dateOf(deck, id)})`).join(', ')}.`);
-  }
-  return parts.join(' ');
-}
+/**
+ * Every lever of every kind of item, as one set. A mode holds the kinds it asks (`MODE_KINDS`), so each spec names its
+ * modes and offers itself only on its own kind of item (`content` null otherwise). A practice item has no levers.
+ */
+export const TIMELINE_LEVERS = leverSet<TimelineCheck, TimelineLeverContext>({
+  modeOf: c => c.mode,
+  missesOf: mode => missesOfKinds(MODE_KINDS[mode as TimelineMode] ?? []),
+  // A clue may never name the item's spoken key: its title (identify) or its date and year (date).
+  answersOf: c => (c.kind === 'identify' || c.kind === 'date'
+    ? [optionLabel(deckOfCheck(c), c, c.eventId), ...yearsIn(dateOf(deckOfCheck(c), c.eventId))] : []),
+  specs: [
+    { id: SHOW_TIMELINE_LEVER, type: 'legend', modes: ['explore', 'order'], answers: KIND_MISSES.identify,
+      when: 'The learner does not remember the events, or mixes up two of them.',
+      does: 'Brings back the timeline strip: every event title in time order with its date. It does not mark which event the clue describes.',
+      // The clue names no word only its event's title has (`clueLeaks`), so the strip does not point at the answer.
+      content: c => (c.kind === 'identify' && !isPractice(c) && !clueLeaks(deckOfCheck(c), c.eventId) ? deckOfCheck(c).events : null),
+      fact: (events: TimelineEvent[]) => `The timeline strip is on screen: ${events.map(e => `${e.title} (${e.date})`).join(', then ')}. Nothing marks the clue's event.` },
+    { id: TWO_CHOICES_LEVER, type: 'easier', modes: ['explore', 'order'], answers: KIND_MISSES.identify,
+      when: 'The learner cannot pick among the choices.',
+      does: `Opens another event's clue with only two choices, far apart in time. ${PRACTICE_NOTE}`,
+      content: practice('identify') },
+    { id: BEFORE_AFTER_LEVER, type: 'clue', modes: ['connect'], answers: KIND_MISSES.date,
+      when: 'The learner does not know where this event falls in time.',
+      does: 'Shows a card naming the events just before and just after this one on the timeline, by title only, with no dates.',
+      content: c => {
+        if (c.kind !== 'date' || isPractice(c)) return null;
+        const lines = beforeAfterLines(deckOfCheck(c), c);
+        return lines.length ? lines : null;
+      },
+      fact: (lines: string[]) => `A card: ${lines.join(' ')}` },
+    { id: DATE_LINE_LEVER, type: 'layout', modes: ['connect'], answers: ['distant_date'],
+      when: 'The learner guesses a date far from the right time.',
+      does: 'Lays the date choices out in time order on a line. It does not say which date belongs to this event.',
+      content: c => (c.kind === 'date' && !isPractice(c) ? dateLine(deckOfCheck(c), c) : null),
+      fact: (dates: string[]) => `The date choices on a line in time order: ${dates.join(', ')}.` },
+    { id: TWO_DATES_LEVER, type: 'easier', modes: ['connect'], answers: KIND_MISSES.date,
+      when: 'The learner cannot pick among the dates.',
+      does: `Opens another event with only two dates, far apart in time. ${PRACTICE_NOTE}`,
+      content: practice('date') },
+    { id: READ_CARDS_LEVER, type: 'meaning', modes: ['order', 'connect'], answers: missesOfKinds(['order', 'cause_effect']),
+      answersOn: c => KIND_MISSES[c.kind],
+      when: 'The learner does not remember what the events were.',
+      does: c => (c.kind === 'cause_effect'
+        ? 'Writes under each card what the learner read about that event, with every date taken out; a card that would name its partner gets no line.'
+        : 'Writes under each card what the learner read about that event, with every date taken out.'),
+      content: c => {
+        if ((c.kind !== 'order' && c.kind !== 'cause_effect') || isPractice(c)) return null;
+        const lines = cardLines(deckOfCheck(c), c);
+        return Object.keys(lines).length ? lines : null;
+      },
+      fact: 'Under each card, what the learner read about it, with the dates taken out.' },
+    { id: LED_TO_LEVER, type: 'marks', modes: ['order'], answers: ['adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order', 'reversed'],
+      when: 'The learner does not use what caused what to put events in order.',
+      does: 'Draws a "led to" arrow between cards where one event led to the other. It does not order the other cards.',
+      content: c => {
+        if (c.kind !== 'order' || isPractice(c)) return null;
+        const arrows = ledToArrows(deckOfCheck(c), c);
+        return arrows.length ? arrows : null;
+      },
+      fact: (arrows: Array<[string, string]>, c) =>
+        `"Led to" arrows: ${arrows.map(([a, b]) => `${titleOf(deckOfCheck(c), a)} led to ${titleOf(deckOfCheck(c), b)}`).join('; ')}.` },
+    { id: SHOW_DATES_LEVER, type: 'clue', modes: ['connect'], answers: ['used_extra', 'effect_before_cause'],
+      when: 'The learner matches an effect that happened before its cause.',
+      does: "Writes each card's date beside it. The dates alone do not decide the pairs.",
+      // Only when "an effect comes after its cause" leaves more than one matching (`datesLeaveDoubt`).
+      content: c => (c.kind === 'cause_effect' && !isPractice(c) && datesLeaveDoubt(deckOfCheck(c), c) ? [...c.causes, ...c.effects] : null),
+      fact: (ids: string[], c) => `Each card shows its date: ${ids.map(id => `${titleOf(deckOfCheck(c), id)} (${dateOf(deckOfCheck(c), id)})`).join(', ')}.` },
+    { id: FEWER_CARDS_LEVER, type: 'easier', modes: ['order'], answers: KIND_MISSES.order,
+      when: 'The learner cannot order this many cards.',
+      does: `Opens three other events, spread out in time, to put in order. ${PRACTICE_NOTE}`,
+      content: practice('order') },
+    { id: TWO_LINKS_LEVER, type: 'easier', modes: ['connect'], answers: KIND_MISSES.cause_effect,
+      when: 'The learner cannot match this many pairs.',
+      does: `Opens two other causes and their effects to match. ${PRACTICE_NOTE}`,
+      content: practice('cause_effect') },
+  ],
+});
 
 /** For tests: every miss this item's work can show. */
 export function possibleMisses(deck: Deck, item: TimelineItem, miss: (w: { choice: string | null; order: string[]; pairs: Record<string, string> }) => TimelineMiss | undefined): TimelineMiss[] {

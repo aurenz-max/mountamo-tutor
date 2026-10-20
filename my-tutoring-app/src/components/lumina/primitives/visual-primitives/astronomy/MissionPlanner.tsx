@@ -10,21 +10,17 @@
  * - pick_window: say or tap the launch month that needs the least (or most) fuel, from where the planets are.
  * - pack_days: say or tap how many food packs a Moon trip needs, there, staying and home the same way.
  * - assist_tradeoff: say or tap the route that uses the least fuel and arrives within the year limit.
- * Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and up to two
- * tries before a reveal (one on two-choice items), and only a first-try answer scores; the workspace path (W1, plain
- * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
- * tutor, and lets the runtime move on. The levers live in `missionLevers.ts`.
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `missionPlanner.card.ts` +
+ * `missionPlanner.boss.ts`): every check commits through `progress.commitCheck` with a named miss, a spoken answer is
+ * judged by the tutor, and the runtime moves on. The levers are one lever set in `missionLevers.ts`.
  *
- * K and Grade 1: an ungraded planning story (`MissionStory`): pick a place, pack, fly, hear how long the trip takes in
- * words. No score, no evaluation submitted, and it never mounts the graded workspace (the adapter refuses a story).
+ * K and Grade 1: the ungraded planning story (`MissionStory.tsx`), which never mounts the graded workspace.
  */
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MissionPlannerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -40,21 +36,23 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   askOf, describeMissionWork, emptyWork, FAR_NAME, FLYBY_NAME, isStoryGrade, keyOf, missionCorrect, missionItems,
-  missionMiss, optionCount, optionLabel, PLACE_AU, PLACE_COLOR, PLACE_NAME, PLACES, revealText, routeLabel, STORY_TRIP,
-  storyPlaces, TARGET_NAME, workComplete, workspaceAssignment, workspaceScene,
+  missionMiss, PLACE_AU, PLACE_COLOR, PLACE_NAME, PLACES, revealText, routeLabel, TARGET_NAME, workComplete,
+  workspaceScene,
   type AssistItem, type LaunchWindow, type MissionItem, type MissionMode, type MissionTier, type MissionWork, type PackItem,
-  type Place, type Route, type StoryPlace, type Target, type WindowItem,
+  type Place, type Route, type StoryPlace, type Target,
 } from './missionWorkspace';
 import {
-  ASSIST_CARD_LEVER, ASSIST_CARD_LINES, CREW_LINE, CREW_ROWS_LEVER, DISTANCE_LINES_LEVER, DROP_LEVER, dropTarget,
-  FUEL_CARD_LEVER, FUEL_CARD_LINES, HOME_LEG_LEVER, leverFacts, LIMIT_LINE_LEVER, missionLevers, NO_LEVERS,
-  ASK_ARROW_LEVER, type MissionLeverState,
+  ASK_ARROW_LEVER, ASSIST_CARD_LEVER, ASSIST_CARD_LINES, CREW_LINE, CREW_ROWS_LEVER, DISTANCE_LINES_LEVER, DROP_LEVER,
+  dropTarget, FUEL_CARD_LEVER, FUEL_CARD_LINES, HOME_LEG_LEVER, LIMIT_LINE_LEVER, MISSION_LEVERS, NO_LEVERS,
+  type MissionLeverState,
 } from './missionLevers';
+import { missionPlannerBoss } from './missionPlanner.boss';
+import MissionStory, { PlacePicture } from './MissionStory';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -101,27 +99,6 @@ const MODE_LABEL: Record<MissionMode, string> = {
 // ============================================================================
 // Pictures
 // ============================================================================
-
-/** A place, always the same size (a bigger picture must not hint at a farther place). */
-function PlacePicture({ place, size = 56 }: { place: Place | StoryPlace; size?: number }) {
-  const c = size / 2, r = size * 0.36, fill = PLACE_COLOR[place];
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" data-place={place}>
-      {place === 'asteroids' ? (
-        [[-10, -6, 5], [6, -9, 4], [9, 5, 6], [-6, 8, 4], [0, 0, 3], [-13, 4, 3]].map(([dx, dy, rr], i) => (
-          <circle key={i} cx={c + dx} cy={c + dy} r={rr} fill={fill} stroke="#57534e" strokeWidth={0.8} />
-        ))
-      ) : (
-        <>
-          <circle cx={c} cy={c} r={r} fill={fill} stroke="#0f172a" strokeWidth={0.8} />
-          {place === 'saturn' && <ellipse cx={c} cy={c} rx={r * 1.45} ry={r * 0.38} fill="none" stroke="#fde68a" strokeWidth={2} />}
-          {place === 'jupiter' && <path d={`M${c - r} ${c - 3} H${c + r} M${c - r + 2} ${c + 5} H${c + r - 2}`} stroke="#92400e" strokeWidth={2} opacity={0.6} />}
-          {place === 'moon' && <><circle cx={c - 5} cy={c - 4} r={3} fill="#94a3b8" /><circle cx={c + 6} cy={c + 5} r={2.4} fill="#94a3b8" /></>}
-        </>
-      )}
-    </svg>
-  );
-}
 
 /** After the answer (farther_closer): Earth on the left, every place at its distance (log scale), the asked ones named. */
 function DistanceStrip({ places }: { places: Place[] }) {
@@ -268,16 +245,18 @@ function CardLines({ lines, lever }: { lines: string[]; lever: string }) {
   );
 }
 
+
 // ============================================================================
 // Graded surface (grades 2-5)
 // ============================================================================
 
 type LeverMemo = { item: string } & MissionLeverState;
 
-const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MissionPlannerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MissionItem>) => Progress }) => {
+const useMissionProgress = useWorkspaceProgressFor('mission-planner');
+
+const MissionPlannerSurface = ({ data, className, runtimePlanItemId }: MissionPlannerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, overview, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const items = useMemo(() => missionItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,29 +264,26 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const stableInstanceId = useRef(instanceId || `mission-planner-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useMissionProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: missionPlannerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const item: MissionItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [work, setWork] = useState<MissionWork>(emptyWork);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -320,7 +296,7 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const leverOn = (id: string) => lever.pulled.includes(id);
 
   const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<MissionPlannerMetrics>({
     primitiveType: 'mission-planner',
@@ -329,22 +305,11 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    title, gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'farther_closer', itemIndex: currentIndex + 1,
-    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'mission-planner', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeLevel ? `Grade ${gradeLevel}` : undefined, enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
-  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
+  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
     clearItem();
+    if (retry) editLevers(s => ({ wrongs: s.wrongs + 1 }));
   };
 
   /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
@@ -360,39 +325,17 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const tap = (i: number) => {
     if (!item || closed || lever.dropped.includes(i)) return;
     SoundManager.select();
-    setWork({ pick: i }); setFeedback(null);
+    setWork({ pick: i });
   };
-
-  /** Two choices reveal after one wrong try; more choices after two. */
-  const triesBeforeReveal = (it: MissionItem) => (optionCount(it) <= 2 ? 1 : 2);
 
   const check = () => {
     if (!item || closed || !workComplete(item, work)) return;
     const correct = missionCorrect(item, work);
     progress.commitCheck(describeMissionWork(item, work), correct, correct ? undefined : missionMiss(item, work));
-    if (correct) {
-      SoundManager.playCorrect(); tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The answer is now explained on screen. Praise briefly.`);
-      return;
-    }
+    if (correct) { SoundManager.playCorrect(); tappedCorrect.current = item.id; return; }
     SoundManager.playIncorrect();
-    if (tutorOwned) {
-      editLevers(s => ({ picked: [...s.picked, work.pick!] }));
-      setWrongShown(true);
-      return;
-    }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= triesBeforeReveal(item)) {
-      setScriptedReveal(true);
-      setWork({ pick: keyOf(item) });
-      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] The learner missed: ${askOf(item)} The answer is now on screen; explain it.`);
-      return;
-    }
-    setWork(emptyWork());
-    setFeedback('Not quite. Look again, and try once more.');
-    say(`[ANSWER_INCORRECT] ${describeMissionWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+    editLevers(s => ({ picked: [...s.picked, work.pick!] }));
+    setWrongShown(true);
   };
 
   const metrics = (): MissionPlannerMetrics => {
@@ -407,16 +350,6 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -426,15 +359,14 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    if (!item || (isComplete && !solvedNow)) return;
     const scene = workspaceScene(item, { work, solved: revealed });
-    const levers = revealed ? [] : missionLevers(item, lever);
-    const onScreen = leverFacts(item, lever);
+    const leverCtx = { state: lever };
+    const levers = revealed ? [] : MISSION_LEVERS.declare(item, leverCtx, lever.pulled);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: '', onScreen: MISSION_LEVERS.onScreen(item, leverCtx, lever.pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -454,15 +386,8 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     };
   });
 
-  // The workspace path keeps the last credited item on screen until the session is submitted.
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The mission choices and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  // The last credited item stays on screen until the session is submitted.
+  const done = hasSubmitted || submitted || (isComplete && !solvedNow);
 
   if (!items.length) {
     return (
@@ -556,17 +481,11 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-center gap-3">
-              <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Look at the choices, then answer."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan">{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the pictures and choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {item.mode === 'pack_days' && <TripLine item={item} homeLeg={leverOn(HOME_LEG_LEVER)} crewRows={leverOn(CREW_ROWS_LEVER)} />}
               {item.mode === 'pick_window' && <p className="text-center text-xs text-slate-400">{`The Sun, Earth (blue) and ${TARGET_NAME[item.target]}, in each month. Not to scale.`}</p>}
               {item.mode === 'assist_tradeoff' && <p className="text-center text-xs text-slate-400">{`From Earth (left) to ${FAR_NAME[item.target]} (right). Each blue square is one year.`}</p>}
@@ -577,7 +496,7 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
               {renderChoices(item)}
               {item.mode === 'farther_closer' && leverOn(ASK_ARROW_LEVER) && !revealed && <AskArrow ask={item.ask} />}
               {revealed && item.mode === 'farther_closer' && <DistanceStrip places={item.places} />}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -586,19 +505,8 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
                 </LuminaActionButton>
               </div>
             )}
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {revealText(item)}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{revealText(item)}</LuminaFeedbackCard>}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -606,153 +514,10 @@ const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const MissionPlannerBound = withWorkspaceController<MissionPlannerProps, ProgressOptions<MissionItem>, Progress>(
-  'mission-planner', MissionPlannerSurface, useScriptedProgress, useWorkspaceProgressFor('mission-planner'));
+const MissionPlannerBound = withWorkspaceOnly<MissionPlannerProps>('mission-planner', MissionPlannerSurface, props => props.data.title);
 
-// ============================================================================
-// K-1: the ungraded planning story (user ruling 10-16). Nothing is scored or submitted.
-// ============================================================================
-
-type StoryStep = 'choose' | 'pack' | 'fly' | 'arrived';
-const STORY_PACK = [
-  { id: 'food', icon: '🍎', name: 'Food' },
-  { id: 'water', icon: '💧', name: 'Water' },
-  { id: 'air', icon: '🫧', name: 'Air' },
-] as const;
-const STORY_SAY: Record<StoryStep, string> = {
-  choose: 'Where shall our spaceship fly? Pick a place.',
-  pack: 'Astronauts need food, water and air. Tap them to put them in the ship, then press Fly.',
-  fly: 'Off we go!',
-  arrived: 'We made it! Want to fly somewhere else?',
-};
-const STORY_NAME: Record<StoryPlace, string> = { moon: 'The Moon', mars: 'Mars', jupiter: 'Jupiter' };
-
-function MissionStory({ data, className }: MissionPlannerProps) {
-  const { title, gradeLevel, instanceId } = data;
-  const places = useMemo<StoryPlace[]>(() => {
-    const asked = (data.story?.places ?? []).filter((p): p is StoryPlace => p in STORY_TRIP);
-    return asked.length >= 2 ? asked : storyPlaces(gradeLevel);
-  }, [data.story?.places, gradeLevel]);
-  const stableId = useRef(instanceId || `mission-planner-story-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableId.current;
-  const [step, setStep] = useState<StoryStep>('choose');
-  const [place, setPlace] = useState<StoryPlace | null>(null);
-  const [packed, setPacked] = useState<string[]>([]);
-  const [flown, setFlown] = useState(false);
-
-  const aiPrimitiveData = useMemo(() => ({
-    title, gradeLevel: gradeLevel ?? 'K', mode: 'story (ungraded: nothing is right or wrong)',
-    ask: `${STORY_SAY[step]} Places: ${places.map(p => STORY_NAME[p]).join(', ')}. Chosen: ${place ? STORY_NAME[place] : 'nothing yet'}.`,
-  }), [title, gradeLevel, step, places, place]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'mission-planner', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData, gradeLevel: 'kindergarten',
-  });
-  const tell = (text: string) => sendText(text, { silent: true });
-
-  const oriented = useRef(false);
-  useEffect(() => {
-    if (oriented.current) return;
-    oriented.current = true;
-    tell(`[MISSION_ORIENT] A pre-reader who cannot read any text opened a space-trip story: "${title}". They pick a place to `
-      + `fly to (${places.map(p => STORY_NAME[p]).join(' or ')}). Nothing here is right or wrong and nothing is scored. Say what to do in child words.`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // The flight takes a moment on screen, then the arrival.
-  useEffect(() => {
-    if (step !== 'fly') return;
-    const raf = requestAnimationFrame(() => setFlown(true));
-    const t = setTimeout(() => {
-      setStep('arrived');
-      if (place) tell(`[MISSION_ARRIVED] The ship reached ${STORY_NAME[place]}. Say, without numbers: "${STORY_TRIP[place]}"`);
-    }, 2600);
-    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
-
-  const choose = (p: StoryPlace) => {
-    SoundManager.select();
-    setPlace(p); setStep('pack');
-    tell(`[MISSION_DESTINATION_SELECTED] The child picked ${STORY_NAME[p]}. Say its name and one thing about it they can picture. Any place is a fine choice.`);
-  };
-  const togglePack = (id: string) => { SoundManager.select(); setPacked(s => (s.includes(id) ? s.filter(x => x !== id) : [...s, id])); };
-  const fly = () => { SoundManager.playCorrect(); setFlown(false); setStep('fly'); };
-  const again = () => { setPlace(null); setPacked([]); setFlown(false); setStep('choose'); };
-
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: 'story',
-    label: 'The space trip story',
-    solved: step === 'arrived',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
-  const farX = place === 'moon' ? 120 : place === 'mars' ? 220 : 290;
-  return (
-    <LuminaCard className={className}>
-      <LuminaCardHeader>
-        <LuminaCardTitle>{`🛸 ${title || 'Space Trip'}`}</LuminaCardTitle>
-      </LuminaCardHeader>
-      <LuminaCardContent className="space-y-4">
-        <div className="flex items-center gap-3">
-          <LuminaPrompt accent="cyan" className="flex-1">{STORY_SAY[step]}</LuminaPrompt>
-          <ReadMeButton instruction={STORY_SAY[step]} ask="Then wait." speaking={isAudioPlaying}
-            onAskTutor={m => sendText?.(m)} tag="[MISSION_READ_ALOUD]" className="flex-shrink-0" aria-label="Read it to me" />
-        </div>
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-3" data-story-step={step}>
-          {step === 'choose' && (
-            <div className={`grid gap-2 ${places.length > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-              {places.map(p => (
-                <LuminaAnswerChoice key={p} aria-label={STORY_NAME[p]} state="idle" className="flex flex-col items-center gap-1 p-3" onClick={() => choose(p)}>
-                  <PlacePicture place={p} size={64} />
-                  <span className="text-sm font-semibold">{STORY_NAME[p]}</span>
-                </LuminaAnswerChoice>
-              ))}
-            </div>
-          )}
-          {step === 'pack' && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                {STORY_PACK.map(s => (
-                  <LuminaAnswerChoice key={s.id} aria-label={s.name} state={packed.includes(s.id) ? 'selected' : 'idle'}
-                    className="flex flex-col items-center gap-1 p-3" onClick={() => togglePack(s.id)}>
-                    <span aria-hidden="true" className="text-3xl">{s.icon}</span>
-                    <span className="text-sm">{s.name}</span>
-                  </LuminaAnswerChoice>
-                ))}
-              </div>
-              <div className="flex justify-center">
-                <LuminaActionButton action="next" onClick={fly}>🚀 Fly!</LuminaActionButton>
-              </div>
-            </div>
-          )}
-          {(step === 'fly' || step === 'arrived') && place && (
-            <svg viewBox="0 0 320 120" className="block w-full rounded-xl bg-[#0b1026]" role="img" aria-label={`The ship flying to ${STORY_NAME[place]}`} data-story-flight>
-              <circle cx={30} cy={70} r={16} fill="#4a90d9" />
-              <g transform={`translate(${farX - 28} 42)`}><PlacePicture place={place} size={56} /></g>
-              <path d={`M46 66 Q${(46 + farX) / 2} 18 ${farX - 22} 64`} fill="none" stroke="#94a3b8" strokeDasharray="4 4" />
-              <text fontSize={20} style={{ transition: 'transform 2.4s ease-in-out', transform: `translate(${flown ? farX - 40 : 40}px, ${flown ? 60 : 64}px)` }} data-ship>🚀</text>
-              <text x={8} y={112} fontSize={10} fill="#cbd5e1">{packed.map(id => STORY_PACK.find(s => s.id === id)?.icon).join(' ')}</text>
-            </svg>
-          )}
-          {step === 'arrived' && place && (
-            <div className="space-y-3">
-              <LuminaFeedbackCard status="insight" label={`${STORY_NAME[place]}!`}>{STORY_TRIP[place]}</LuminaFeedbackCard>
-              <div className="flex justify-center">
-                <LuminaActionButton action="next" onClick={again}>Fly somewhere else</LuminaActionButton>
-              </div>
-            </div>
-          )}
-        </div>
-      </LuminaCardContent>
-    </LuminaCard>
-  );
-}
-
-/** Grades 2-5: the graded planner on the workspace. K-1: the ungraded story, which never mounts the workspace. */
+/** Grades 2-5: the graded planner, taught only on the workspace. K-1: the ungraded story, which never mounts it. */
 const MissionPlanner: React.FC<MissionPlannerProps> = (props) =>
-  (isStoryGrade(props.data.gradeLevel) ? <MissionStory {...props} /> : <MissionPlannerBound {...props} />);
+  (isStoryGrade(props.data.gradeLevel) ? <MissionStory data={props.data} className={props.className} /> : <MissionPlannerBound {...props} />);
 
 export default MissionPlanner;

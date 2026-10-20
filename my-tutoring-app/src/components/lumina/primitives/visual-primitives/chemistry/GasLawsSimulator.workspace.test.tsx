@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 /**
- * gas-laws-simulator on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer, nothing on screen states it before credit (the container shows the gas before the change, the
- * table shows "?"), a wrong tap names its miss, and every miss has a help lever first.
+ * gas-laws-simulator on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set, mounted the way a lesson
+ * mounts it. Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as
+ * the spoken key (`gasKey`), nothing on screen states it before credit (the container shows the gas before the change,
+ * the table shows "?"), a wrong tap names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -19,15 +18,20 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { GasLawsSimulatorData } from './GasLawsSimulator';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import {
-  askOf, buildGasItems, choicesOf, directionOf, GAS_MISSES, gasHarnessAnswers, gasItems, gasMiss, heldVars, keyChoice,
-  numericChoices, seededRng, showValue, stateAfter, validGasItem, workspaceAssignment,
+  askOf, buildGasItems, choicesOf, directionOf, gasHarnessAnswers, gasItems, gasKey, gasMiss, heldVars, keyChoice,
+  numericChoices, seededRng, showValue, stateAfter, validGasItem,
   type GasItem, type GasLawFocus, type GasMode, type GasTier,
 } from './gasLawsWorkspace';
 import {
-  directionLeak, factorLines, FACTOR_LEVER, gasLevers, heldLines, HELD_LEVER, KELVIN_LEVER, ONE_CHANGE_LEVER, particleLines,
-  PARTICLE_LEVER, possibleMisses, relationLines, RELATION_LEVER, simplerItem, SIMPLER_LEVER, valueLeak,
+  directionLeak, factorLines, FACTOR_LEVER, GAS_LEVER_CONTEXT, GAS_LEVERS, heldLines, HELD_LEVER, KELVIN_LEVER, ONE_CHANGE_LEVER,
+  particleLines, PARTICLE_LEVER, possibleMisses, relationLines, RELATION_LEVER, simplerItem, SIMPLER_LEVER, valueLeak,
 } from './gasLawsLevers';
+import { GAS_MISSES } from './gasLawsSimulator.card';
+import { gasLawsSimulatorBoss } from './gasLawsSimulator.boss';
+
+const gasLevers = (item: GasItem) => GAS_LEVERS.declare(item, GAS_LEVER_CONTEXT, []);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -71,8 +75,11 @@ it.each(MODES)('%s binds as a spoken-or-tapped choice whose key stays out of the
   expect(getComponentById('gas-laws-simulator')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(gasLawsSimulatorBoss.assignment(item).task);
+  expect(gasLawsSimulatorBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe('speech');
+  // The scene's rule is this item's fact, never how the learner answers (the card's moves).
+  expect(String(demand(h).constraints)).not.toMatch(/tap|Check Answer/i);
   expect(h.state().task!.workspace!.expectedAnswer).toContain(mode === 'observe' ? keyChoice(item).toLowerCase() : keyChoice(item));
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/\bnow\b|has been run|\bcorrect\b/i);
@@ -105,6 +112,8 @@ it('observe: a wrong tap names its miss and closes the choices; Try again reopen
   expect(h.state().task!.itemId).toBe('observe-2');
   // The held quantities are not named on this item: the learner infers them from the free piston.
   expect(String(demand(h).held)).toMatch(/^Not stated/);
+  // The tutor is told not to settle what the container holds for the learner.
+  expect(String(demand(h).constraints)).toMatch(/^What the container keeps the same is part of the question/);
   expect(askOf(STAYS)).not.toMatch(/stays? the same/);
   h.say('it stays the same'); await flush(); h.feedback('correct', 'advance'); h.confirmVisible(); h.settle(); await flush(); h.settle();
   expect(h.state().status).toBe('completed');
@@ -129,9 +138,9 @@ it('observe: particle_card changes the screen and the scene fact in one commit a
   answer(h, keyChoice(TANK));
   expect(last(h)).toMatchObject({ correct: true, assisted: true, levers: [PARTICLE_LEVER] });
   // The stays-the-same item asks about a held quantity: no held_label (it would state the answer).
-  expect(gasLevers(STAYS, []).map(l => l.id)).toEqual([PARTICLE_LEVER]);
+  expect(gasLevers(STAYS).map(l => l.id)).toEqual([PARTICLE_LEVER]);
   const unnamed: GasItem = { ...TANK, heldNamed: false };
-  expect(gasLevers(unnamed, []).map(l => l.id)).toEqual([PARTICLE_LEVER, HELD_LEVER]);
+  expect(gasLevers(unnamed).map(l => l.id)).toEqual([PARTICLE_LEVER, HELD_LEVER]);
   expect(heldLines(unnamed).join(' ')).toMatch(/cannot stretch/);
   h.close();
 });
@@ -166,7 +175,9 @@ it('predict (Celsius): the Celsius ratio is a named miss answered by kelvin_scal
   answer(h, '24.22 atm');
   expect(last(h)!.miss).toBe('celsius_ratio');
   expect(nextLever(h.state().task!.workspace!.levers!, 'celsius_ratio')).toBe(KELVIN_LEVER);
+  expect(String(demand(h).constraints)).toMatch(/degrees Celsius; a gas-law ratio needs kelvin/);
   expect(h.dispatch('pull_lever', { lever: KELVIN_LEVER }).status).toBe('committed');
+  expect(String(demand(h).onScreen)).toMatch(/^Beside the table: 27 °C = 300 K/);
   expect(h.view.container.querySelector('[data-lever="kelvin-scale"]')!.textContent).toMatch(/27 °C = 300 K/);
   h.close();
 });
@@ -234,7 +245,7 @@ describe('the pure rules', () => {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...GAS_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
         for (const c of choicesOf(i)) expect(!!gasMiss(i, c), `${i.id} ${c}`).toBe(c !== keyChoice(i));
-        const ls = gasLevers(i, []);
+        const ls = gasLevers(i);
         for (const miss of possibleMisses(i)) expect(ls.find(l => l.id === nextLever(ls, miss))!.kind, `${i.id} ${miss}`).toBe('help');
         for (const l of ls) expect(`${l.when} ${l.does}`).not.toContain(keyChoice(i));
       }
@@ -263,10 +274,20 @@ describe('the pure rules', () => {
       expect(numericChoices(s)).not.toBeNull();
       expect(keyChoice(s)).not.toBe(keyChoice(i));
       expect(simplerItem(s)).toBeNull();
-      expect(gasLevers(s, [])).toEqual([]);
+      expect(GAS_LEVERS.simpler(s, GAS_LEVER_CONTEXT, mode === 'predict' ? SIMPLER_LEVER : ONE_CHANGE_LEVER)).toBeNull();
       if (mode === 'calculate') expect(s.changes).toHaveLength(1);
     }
     expect(simplerItem(TANK)).toBeNull();
+  });
+
+  it('no ask says its spoken key, and the key takes the ways a learner says the choice', () => {
+    for (const mode of MODES) for (const { i } of all(mode)) expect(askLeaks(askOf(i), gasKey(i)), i.id).toEqual([]);
+    expect(gasKey(TANK)).toMatchObject({ answer: 'goes up' });
+    expect(gasKey(TANK).alsoAccept).toContain('increases');
+    expect(gasKey(STAYS).alsoAccept).toContain('unchanged');
+    // The bare number is a rule, so a number the ask states for another quantity is not read as the answer.
+    expect(gasKey(CYLINDER)).toMatchObject({ answer: '6 L', acceptRule: 'The number 6 said any way, with or without "L", counts.' });
+    expect(gasKey(CYLINDER).alsoAccept).toEqual(['the third one']);
   });
 
   it('a legacy lesson (scenario + challenges) still builds code items in its modes', () => {

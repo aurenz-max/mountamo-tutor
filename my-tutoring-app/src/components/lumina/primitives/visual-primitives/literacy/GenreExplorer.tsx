@@ -296,7 +296,7 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
       : genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], { readsAloud });
     workspace.current = {
       ...leverScene(scene, {
-        support: practice ? '' : GENRE_LEVERS.support(sessionItem),
+        support: practice ? '' : GENRE_LEVERS.support(sessionItem, session),
         onScreen: practice ? '' : GENRE_LEVERS.onScreen(sessionItem, session, [...starting, ...pulledLevers]) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

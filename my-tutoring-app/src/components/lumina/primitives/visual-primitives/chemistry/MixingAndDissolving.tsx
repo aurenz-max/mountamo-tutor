@@ -2,17 +2,18 @@
 
 /**
  * Mixing and dissolving: a beaker, a shelf of substances to test, a particle view and separation tools, and a few
- * multiple-choice or true-false challenges about what the learner sees. Two paths, chosen by `withWorkspaceController`:
- * - scripted (no tutor runtime): the learner answers, retries freely, presses Next Challenge; the scripted tutor cues;
- * - workspace (W1, `mixingAndDissolvingWorkspace.ts`): the runtime owns the item and Try again / Next; every check
- *   commits through `progress.commitCheck`, a spoken answer is judged by JEV, and the in-item levers
- *   (`mixingAndDissolvingLevers.ts`) are published with the scene.
+ * multiple-choice or true-false challenges about what the learner sees.
  *
- * On both paths, while a challenge is open nothing on screen states its answer: the shelf does not label what a
- * substance did, the "What is dissolving?" notes and the particle view's caption say no rule, and the separation tools
- * are put away during a separation question (trying each tool would answer it).
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `mixingAndDissolving.card.ts` +
+ * `mixingAndDissolving.boss.ts`): the runtime owns the item and Try again / Next; every check commits through
+ * `progress.commitCheck` with a named miss, a spoken answer is judged by the tutor, and the levers are one lever set in
+ * `mixingAndDissolvingLevers.ts`, published with the scene.
+ *
+ * While a challenge is open nothing on screen states its answer: the shelf does not label what a substance did, the
+ * "What is dissolving?" notes and the particle view's caption say no rule, and the separation tools are put away during
+ * a separation question (trying each tool would answer it).
  */
-import React, { useState, useCallback, useLayoutEffect, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,21 +28,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { MixingAndDissolvingMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  describeDissolvingWork, descriptionLeaks, dissolvingCorrect, dissolvingMiss, workspaceAssignment, workspaceScene,
+  describeDissolvingWork, descriptionLeaks, dissolvingCorrect, dissolvingMiss, workspaceScene,
 } from './mixingAndDissolvingWorkspace';
 import {
-  DROP_LEVER, METHOD_CARDS, METHODS_LEVER, MODELS_LEVER, NO_LEVERS, PARTICLE_LEVER, dissolvingLevers, farChoice, leverFacts,
+  DISSOLVING_LEVERS, DROP_LEVER, METHOD_CARDS, METHODS_LEVER, MODELS_LEVER, NO_LEVERS, PARTICLE_LEVER, farChoice,
   methodsOnChoices, modelsFor, type DissolvingLeverState, type ModelBeaker,
 } from './mixingAndDissolvingLevers';
+import { mixingAndDissolvingBoss } from './mixingAndDissolving.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -365,8 +366,9 @@ type LeverMemo = { item: string } & DissolvingLeverState;
 // Component
 // ============================================================================
 
-const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MixingAndDissolvingProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DissolvingChallenge>) => Progress }) => {
+const useDissolvingProgress = useWorkspaceProgressFor('mixing-and-dissolving');
+
+const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId }: MixingAndDissolvingProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -397,23 +399,23 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
   const stableInstanceIdRef = useRef(instanceId || `mixing-and-dissolving-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useDissolvingProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: mixingAndDissolvingBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: (index) => solvedAloud.current(index),
     onFinished: (result) => finish.current(result),
   });
   const { currentIndex: currentChallengeIndex, currentAttempts, results: challengeResults } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
 
   // -------------------------------------------------------------------------
@@ -431,7 +433,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
   const [separationResult, setSeparationResult] = useState<string | null>(null);
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -495,60 +497,6 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration (scripted path only)
-  // -------------------------------------------------------------------------
-
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    solventName: solvent.name,
-    temperature,
-    addedSubstanceNames: addedSubstances.map(s => s.substance.name),
-    addedSubstanceTypes: addedSubstances.map(s => s.substance.type),
-    isSaturated,
-    isStirring,
-    particleViewActive,
-    selectedSeparation,
-    currentChallengeIndex,
-    totalChallenges: challenges.length,
-    challengeType: currentChallenge?.type ?? 'dissolve_sort',
-    instruction: currentChallenge?.instruction ?? title,
-    attemptNumber: currentAttempts + 1,
-    selectedOption,
-    selectedOptionText: selectedOption !== null && currentChallenge ? currentChallenge.options[selectedOption] : null,
-  }), [
-    gradeBand, solvent.name, temperature, addedSubstances, isSaturated, isStirring,
-    particleViewActive, selectedSeparation, currentChallengeIndex, challenges.length,
-    currentChallenge, currentAttempts, selectedOption, title,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'mixing-and-dissolving',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '3-5' ? 'Grade 3-5' : 'Grade 6-7',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || tutorOwned) return;
-    hasIntroducedRef.current = true;
-
-    const substanceNames = substances.map(s => s.name).join(', ');
-    sendText(
-      `[ACTIVITY_START] This is a Mixing and Dissolving activity: "${title}" for ${gradeBand}. `
-      + `Solvent: ${solvent.name} (${solvent.volume} mL at ${solvent.temperature}°C). `
-      + `Substances available: ${substanceNames}. `
-      + `Introduce the activity: "Today we're exploring what happens when different substances meet water!"`,
-      { silent: true }
-    );
-  }, [isConnected, title, gradeBand, solvent, substances, sendText, tutorOwned]);
-
-  // -------------------------------------------------------------------------
   // Handlers
   // -------------------------------------------------------------------------
 
@@ -567,34 +515,15 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
       }
       return [...prev, { substance, amountG: increment }];
     });
-
-    sendText(
-      `[SUBSTANCE_ADDED] Student added ${substance.name} to ${solvent.name}. `
-      + `Type: ${substance.type}. `
-      + (substance.type === 'soluble'
-        ? `It dissolves! Ask: "What happened to the ${substance.name}? Where did it go?"`
-        : substance.type === 'insoluble'
-          ? `It doesn't dissolve! Ask: "Look — it's still sitting there. Why won't it dissolve?"`
-          : substance.type === 'immiscible_liquid'
-            ? `It doesn't mix! Ask: "See how it floats on top? Oil and water don't mix — why?"`
-            : `It partially dissolves. Ask: "Some dissolved but some didn't. What do you think is happening?"`),
-      { silent: true }
-    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solvent.name, sendText]);
+  }, []);
 
   const handleStir = useCallback(() => {
     if (learnerBlocked()) return;
     setIsStirring(true);
     setTimeout(() => setIsStirring(false), 2000);
-
-    sendText(
-      `[STIRRING] Student is stirring the mixture. `
-      + `Ask: "Does stirring help things dissolve faster? Why might that be?"`,
-      { silent: true }
-    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sendText]);
+  }, []);
 
   const handleSeparation = useCallback((method: string) => {
     if (learnerBlocked()) return;
@@ -610,19 +539,9 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
       } else {
         setSeparationResult(`${sep.method} didn't recover anything from this mixture. Try a different method!`);
       }
-
-      sendText(
-        `[SEPARATION_ATTEMPTED] Student tried ${method}. `
-        + `Works for: ${sep.worksFor.join(', ')}. `
-        + `Recovered: ${recoveredNames.join(', ') || 'nothing'}. `
-        + (recoveredNames.length > 0
-          ? `Celebrate: "You got it back! The ${recoveredNames[0]} was there all along — just hidden in the solution."`
-          : `Guide: "That method works for different types of mixtures. Think about what kind of mixture you have."`),
-        { silent: true }
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [separationMethods, addedSubstances, sendText]);
+  }, [separationMethods, addedSubstances]);
 
   /** The per-kind tallies a right answer adds, on a tap or a credited spoken answer. */
   const trackCorrect = (type: DissolvingChallenge['type']) => {
@@ -654,9 +573,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
     setTotalAttempts(prev => prev + 1);
 
     const isCorrect = dissolvingCorrect(currentChallenge, selectedOption);
-    const selectedText = currentChallenge.options[selectedOption] ?? '';
-    const correctText = currentChallenge.options[currentChallenge.correctOptionIndex] ?? '';
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records a correct result.
     progress.commitCheck(describeDissolvingWork(currentChallenge, selectedOption), isCorrect,
       isCorrect ? undefined : dissolvingMiss(currentChallenge, selectedOption));
 
@@ -665,12 +582,6 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
       setFeedback('Correct! Great observation!');
       setFeedbackType('success');
       trackCorrect(currentChallenge.type);
-
-      sendText(
-        `[ANSWER_CORRECT] Student selected "${selectedText}" for ${currentChallenge.type}. `
-        + `Attempt ${currentAttempts + 1}. Congratulate!`,
-        { silent: true }
-      );
       setSelectedOption(null);
       return;
     }
@@ -680,25 +591,13 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
     else if (currentChallenge.type === 'factor_test') setFactorsTotal(prev => prev + 1);
     else if (currentChallenge.type === 'separate') setSeparationTotal(prev => prev + 1);
 
-    if (tutorOwned) {
-      // The tutor and the runtime take it from here: the wrong choice stays marked until Try again, with no hint
-      // (a generated hint may state the answer).
-      const picked = selectedOption;
-      setWrongPick(picked);
-      editLevers((s) => ({ picked: [...s.picked, picked] }));
-      setFeedback('Not quite.');
-      setFeedbackType('error');
-      return;
-    }
-
-    setFeedback(`Not quite. ${currentChallenge.hint}`);
+    // The tutor and the runtime take it from here: the wrong choice stays marked until Try again, with no hint
+    // (a generated hint may state the answer).
+    const picked = selectedOption;
+    setWrongPick(picked);
+    editLevers((s) => ({ picked: [...s.picked, picked] }));
+    setFeedback('Not quite.');
     setFeedbackType('error');
-    sendText(
-      `[ANSWER_INCORRECT] Student selected "${selectedText}" but correct is "${correctText}". `
-      + `Type: ${currentChallenge.type}. Attempt ${currentAttempts + 1}. Hint: "${currentChallenge.hint}"`,
-      { silent: true }
-    );
-    setSelectedOption(null);
   };
 
   const metrics = (): MixingAndDissolvingMetrics => ({
@@ -715,32 +614,6 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
     concentrationEstimateAccuracy: 0,
     attemptsCount: totalAttempts,
   });
-
-  /** Scripted path: Next Challenge, then Finish submits. */
-  const handleNextChallenge = () => {
-    const nextType = challenges[currentChallengeIndex + 1]?.type;
-    if (progress.advance()) {
-      setFeedback('');
-      setFeedbackType('');
-      setSelectedOption(null);
-      sendText(
-        `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-        + `Type: ${nextType}. Introduce it briefly.`,
-        { silent: true }
-      );
-      return;
-    }
-    sendText(
-      `[ALL_COMPLETE] Student finished all ${challenges.length} challenges! Celebrate!`,
-      { silent: true }
-    );
-    if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) {
-      const score = challenges.length > 0
-        ? challengeResults.filter(r => r.correct).length / challenges.length
-        : 0;
-      submitEvaluation(score >= 0.5, score, metrics(), { challengeResults });
-    }
-  };
 
   // ── Workspace callbacks ──
   /** A fresh item, or Try again: the choice and its feedback are cleared; a retry counts one more wrong answer. */
@@ -762,7 +635,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
     setFeedback('Correct! Great observation!');
     setFeedbackType('success');
   };
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0) return;
     submitEvaluation(result.passed, result.accuracy, metrics(),
@@ -771,29 +644,32 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Levers (workspace path) ──
-  const lab = { solvent, substances };
-  const leverView = { beakerEmpty: addedSubstances.length === 0, particleViewOn: particleViewActive, particleViewAvailable: showParticleView };
-  const leverOn = (id: string) => tutorOwned && lever.pulled.includes(id);
+  // ── Levers ──
+  const leverCtx = {
+    lab: { solvent, substances },
+    view: { beakerEmpty: addedSubstances.length === 0, particleViewOn: particleViewActive, particleViewAvailable: showParticleView },
+    state: lever,
+  };
+  const leverOn = (id: string) => lever.pulled.includes(id);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || allChallengesComplete) return;
+    if (!currentChallenge || allChallengesComplete) return;
     const scene = workspaceScene(currentChallenge, {
       added: addedSubstances.map(a => ({ name: a.substance.name, amountG: a.amountG })),
       temperature, particleViewOn: particleViewActive, choice: wrongPick ?? selectedOption,
-    }, lab);
-    const levers = dissolvingLevers(currentChallenge, lever, lab, leverView);
-    const onScreen = leverFacts(currentChallenge, lever, lab);
+    }, leverCtx.lab);
+    const levers = DISSOLVING_LEVERS.declare(currentChallenge, leverCtx, lever.pulled);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(scene, { support: DISSOLVING_LEVERS.support(currentChallenge, leverCtx),
+        onScreen: DISSOLVING_LEVERS.onScreen(currentChallenge, leverCtx, lever.pulled) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
         const l = levers.find((x) => x.id === id);
         if (!l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
+        // Drawing a pulled lever: the far choice greyed out, or the particle view opened.
         if (id === DROP_LEVER) {
           const far = farChoice(currentChallenge, lever);
           if (far === null) return 'No more choices can be greyed out here; too few would be left.';
@@ -815,19 +691,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
   // Render
   // -------------------------------------------------------------------------
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The beaker and the answer choices',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
-  const models = currentChallenge && leverOn(MODELS_LEVER) ? modelsFor(currentChallenge, lab) : null;
+  const models = currentChallenge && leverOn(MODELS_LEVER) ? modelsFor(currentChallenge, leverCtx.lab) : null;
   const methodCards = currentChallenge && leverOn(METHODS_LEVER) ? methodsOnChoices(currentChallenge) : [];
   const showSeparation = showSeparationTools && addedSubstances.length > 0 && !(itemOpen && currentChallenge?.type === 'separate');
 
@@ -884,8 +748,9 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
           </div>
         )}
 
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the beaker and choices as its region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1 flex flex-col items-center gap-3">
             <BeakerView
@@ -981,14 +846,6 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
               onClick={() => {
                 if (learnerBlocked()) return;
                 setParticleViewActive(prev => !prev);
-                if (!particleViewActive) {
-                  sendText(
-                    `[PARTICLE_VIEW_ON] Student toggled particle view ON. `
-                    + `Explain what they see: "Those blue dots are water molecules. `
-                    + `See how they surround the solute particles? That's dissolving at the molecular level!"`,
-                    { silent: true }
-                  );
-                }
               }}
             >
               {particleViewActive ? 'Hide Particle View' : 'Show Particle View'}
@@ -1046,7 +903,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
           </Accordion>
         )}
 
-        {/* Help levers drawn beside the question (workspace path). */}
+        {/* Help levers drawn beside the question. */}
         {models && (
           <div data-lever="model-beakers" className="flex flex-wrap justify-center gap-6 p-3 rounded-lg bg-white/5 border border-white/10">
             {models.map(m => <ModelBeakerCard key={m.name} model={m} />)}
@@ -1066,7 +923,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
           <div className="space-y-3">
             <div className={`grid ${currentChallenge.answerType === 'true_false' ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'} gap-2`}>
               {currentChallenge.options.map((option, i) => {
-                const dropped = tutorOwned && lever.dropped.includes(i);
+                const dropped = lever.dropped.includes(i);
                 const style = wrongPick === i
                   ? 'bg-red-500/15 border border-red-400/40 text-red-200'
                   : selectedOption === i
@@ -1078,7 +935,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
                     variant="ghost"
                     aria-label={option}
                     data-dropped={dropped ? 'true' : undefined}
-                    disabled={dropped || wrongPick !== null || (tutorOwned && progress.canAttempt === false)}
+                    disabled={dropped || wrongPick !== null || progress.canAttempt === false}
                     className={`text-left justify-start px-4 py-3 h-auto whitespace-normal ${style} ${dropped ? 'opacity-30 line-through' : ''}`}
                     onClick={() => handleSelectOption(i)}
                   >
@@ -1099,7 +956,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
                 variant="ghost"
                 className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-300"
                 onClick={handleSubmitAnswer}
-                disabled={selectedOption === null || wrongPick !== null || (tutorOwned && progress.canAttempt === false)}
+                disabled={selectedOption === null || wrongPick !== null || progress.canAttempt === false}
               >
                 Submit Answer
               </Button>
@@ -1107,7 +964,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
           </div>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {feedback && (
           <div className={`rounded-lg p-3 border text-sm ${
@@ -1118,19 +975,6 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
                 : 'bg-slate-800/30 border-white/5 text-slate-400'
           }`}>
             {feedback}
-          </div>
-        )}
-
-        {/* Next / Finish: the scripted path only; on the workspace path the runtime moves on. */}
-        {!tutorOwned && isCurrentChallengeComplete && !hasSubmittedEvaluation && (
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-300"
-              onClick={handleNextChallenge}
-            >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
           </div>
         )}
 
@@ -1192,8 +1036,7 @@ const MixingAndDissolvingSurface = ({ data, className, runtimePlanItemId, tutorO
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const MixingAndDissolving = withWorkspaceController<MixingAndDissolvingProps, ProgressOptions<DissolvingChallenge>, Progress>(
-  'mixing-and-dissolving', MixingAndDissolvingSurface, useScriptedProgress, useWorkspaceProgressFor('mixing-and-dissolving'));
+const MixingAndDissolving = withWorkspaceOnly<MixingAndDissolvingProps>(
+  'mixing-and-dissolving', MixingAndDissolvingSurface, props => props.data.title);
 
 export default MixingAndDissolving;

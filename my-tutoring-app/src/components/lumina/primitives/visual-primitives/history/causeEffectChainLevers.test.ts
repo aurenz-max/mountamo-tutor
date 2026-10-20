@@ -1,5 +1,5 @@
 /**
- * cause-effect-chain's levers (`causeEffectChainLevers.ts`): the model pool's own gates, each leak rule, the two
+ * cause-effect-chain's lever set (`causeEffectChainLevers.ts`): the model pool's own gates, each leak rule, the two
  * simplify builders, per-item lever coverage on the saved payloads, the root_vs_proximate misses, and
  * "this miss, then this lever" through the shared `nextLever`.
  */
@@ -8,10 +8,11 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
-import { cardSpeakable, chainEarSeparable, type CauseEffectChainItem } from './causeEffectChainScript';
-import { causeEffectItems, causeEffectSpokenMisses, chainMiss } from './causeEffectChainWorkspace';
 import {
-  causeEffectLevers, chainModelFor, freeModels, leversOnScreen, modelLeaks, practiceItem, practiceLeaks, practiceParent,
+  cardSpeakable, causeEffectItems, causeEffectSpokenMisses, chainEarSeparable, chainMiss, type CauseEffectChainItem,
+} from './causeEffectChainDomain';
+import {
+  CHAIN_LEVERS, chainModelFor, freeModels, modelLeaks, practiceItem, practiceLeaks, practiceParent,
   roleModelFor, startingLevers, type ChainSession,
 } from './causeEffectChainLevers';
 import { MODEL_CHAINS } from './causeEffectModels';
@@ -22,6 +23,7 @@ const FIXTURE = (fixtures as Record<string, any>)['cause-effect-chain'];
 const LESSONS: Array<[string, any]> = [['build_chain payload', saved('build_chain')], ['identify_cause payload', saved('identify_cause')],
   ['generated fixture', FIXTURE]];
 const sessionOf = (data: any): ChainSession => ({ items: causeEffectItems(data), gradeLevel: data.gradeLevel });
+const causeEffectLevers = (item: CauseEffectChainItem, s: ChainSession, pulled: string[]) => CHAIN_LEVERS.declare(item, s, pulled);
 const ids = (item: CauseEffectChainItem, s: ChainSession, pulled: string[] = []) => causeEffectLevers(item, s, pulled).map(l => l.id);
 type Of<K> = Extract<CauseEffectChainItem, { kind: K }>;
 
@@ -59,7 +61,7 @@ describe('leak rules', () => {
   it.each(LESSONS)('%s: what a pulled help lever puts in the facts never quotes a learner card', (_name, data) => {
     const ls = sessionOf(data);
     for (const item of ls.items) {
-      const fact = leversOnScreen(item, causeEffectLevers(item, ls, []).filter(l => l.kind === 'help').map(l => l.id), ls)!;
+      const fact = CHAIN_LEVERS.onScreen(item, ls, causeEffectLevers(item, ls, []).filter(l => l.kind === 'help').map(l => l.id));
       expect(fact).toBeTruthy();
       for (const c of item.cards) expect(fact).not.toContain(c.text.replace(/[.!?]+$/, ''));
       expect(fact).not.toMatch(/is a cause|belongs/);
@@ -153,7 +155,7 @@ describe('misses, then levers', () => {
     expect(nextLever(causeEffectLevers(item, identify, []), miss)).toBe('two_tests');
     expect(nextLever(causeEffectLevers(item, identify, ['two_tests']), miss)).toBe('role_model');
     // easy starts with the checks on screen: they are not offered, and the model comes first.
-    expect(nextLever(causeEffectLevers(item, identify, [], startingLevers('easy', item)), miss)).toBe('role_model');
+    expect(nextLever(causeEffectLevers({ ...item, tier: 'easy' }, identify, []), miss)).toBe('role_model');
   });
 
   it('root_vs_proximate names the other end first, then the middle events, by the card', () => {

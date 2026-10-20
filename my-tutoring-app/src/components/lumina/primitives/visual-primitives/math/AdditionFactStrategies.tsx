@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaBadge,
   LuminaCard,
@@ -22,15 +21,14 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { additionFactMatches, additionFactMiss, additionFactScene, describeAdditionFactCheck } from './additionFactStrategiesWorkspace';
 import {
-  additionFactAssignment, additionFactMatches, additionFactMiss, additionFactScene, describeAdditionFactCheck,
-} from './additionFactStrategiesWorkspace';
-import {
-  COUNT_LEVER, HOP_LEVER, KNOWN_LEVER, NEAR_LEVER, additionFactLevers, helpLevers, hopShape, leverFacts, nearDouble,
-  smallerFact, startLevers,
+  ADDITION_FACT_LEVERS, COUNT_LEVER, HOP_LEVER, KNOWN_LEVER, NEAR_LEVER, helpLevers, hopShape, nearDouble, startLevers,
 } from './additionFactStrategiesLevers';
+import { additionFactStrategiesBoss } from './additionFactStrategies.boss';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data types (single source of truth)
@@ -325,7 +323,6 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   const strategy = data.strategy;
   const copy = STRATEGY_COPY[strategy] ?? STRATEGY_COPY.facts_mixed;
   const instanceId = useRef(data.instanceId ?? `addition-fact-strategies-${Math.random().toString(36).slice(2)}`).current;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
@@ -338,7 +335,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   const progress = useAdditionFactProgress({
     challenges, getChallengeId: (challenge) => challenge.id,
     instanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: additionFactAssignment,
+    workspace, assignment: additionFactStrategiesBoss.assignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: (index) => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -391,7 +388,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   });
 
   // The levers act on the item on screen; on the smaller fact they keep the session item's pulls.
-  const leverOn = (id: string) => pulledLevers.includes(id) && !!item && helpLevers(strategy, item).includes(id);
+  const leverOn = (id: string) => pulledLevers.includes(id) && !!item && helpLevers(item).includes(id);
   const countObject = (index: number) => {
     if (learnerBlocked()) return;
     setCounted((c) => (c.includes(index) ? c : [...c, index]));
@@ -482,10 +479,12 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
     if (!item) return;
-    const onScreen = leverFacts(strategy, item, pulledLevers) || undefined;
-    const levers = practice ? [] : additionFactLevers(strategy, sessionItem, pulledLevers, challenges);
+    const leverCtx = { session: challenges };
+    const levers = practice || !sessionItem ? [] : ADDITION_FACT_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    // On the smaller fact the session item's pulls stay drawn, so the scene names what is drawn on it.
+    const onScreen = ADDITION_FACT_LEVERS.onScreen(item, leverCtx, pulledLevers);
     workspace.current = {
-      ...additionFactScene(item, { strategy, onScreen, example }),
+      ...leverScene(additionFactScene(item, { strategy, example }), { support: '', onScreen }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
@@ -494,11 +493,11 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const smaller = smallerFact(strategy, sessionItem, challenges);
+          const smaller = ADDITION_FACT_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!smaller) return 'There is no smaller fact for this one.';
           setLeverState(pulled);
           reopen.current(true); setCounted([]); setTappedHops(0); setPractice(smaller);
-          return { practice: additionFactAssignment(smaller) };
+          return { practice: additionFactStrategiesBoss.assignment(smaller) };
         }
         setLeverState(pulled);
         return true;
@@ -509,17 +508,6 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
 
   const overallScore = evaluation.submittedResult?.score ?? (results.length
     ? Math.round(results.reduce((sum, r) => sum + (r.score ?? 0), 0) / Math.max(challenges.length, 1)) : 0);
-
-  // ── Pip shared surface ─────────────────────────────────────────
-  // Every pad number is an answer choice, so Pip outlines only the pad as a
-  // region; it never points at a number, a counted object, or a lever's drawing.
-  const pip = useWorkspacePipSurface({
-    instanceId,
-    scopeId: isComplete || evaluation.hasSubmitted ? null : item?.id ?? null,
-    label: 'The answer numbers',
-    solved,
-    tutorSpeaking: ctx.isAudioPlaying && !!item && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === instanceId),
-  });
 
   const tileState = (value: number): AnswerChoiceState => {
     if (solved && item && value === item.sum) return 'correct';
@@ -609,10 +597,11 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
               </LuminaPanel>
             )}
 
-            {/* Pip's dock sits between the fact and the pad, so an outline of the pad never crosses the fact. */}
-            {pip.store && <div {...pip.dock} />}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock between the fact and the pad, so an
+                outline of the pad never crosses the fact; the pad as one region, never a single number. */}
+            <PipDock />
 
-            <div {...pip.workspace} className="mx-auto grid max-w-xl grid-cols-5 gap-2 sm:grid-cols-10">
+            <PipWorkspace className="mx-auto grid max-w-xl grid-cols-5 gap-2 sm:grid-cols-10">
               {ANSWER_PAD.map((value) => (
                 <button
                   key={value}
@@ -625,7 +614,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
                   {value}
                 </button>
               ))}
-            </div>
+            </PipWorkspace>
 
             {missShown && (
               <LuminaFeedbackCard status="incorrect" label="Not yet">{copy.nudge}</LuminaFeedbackCard>

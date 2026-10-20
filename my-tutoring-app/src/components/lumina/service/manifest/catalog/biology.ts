@@ -6,8 +6,6 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { HabitatMiss, SpokenHabitatMiss } from '../../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
-import type { HabitatBuildMiss } from '../../../primitives/visual-primitives/biology/habitatBuild';
 import { missLists } from './missLists';
 import type { EcosystemMiss } from '../../../primitives/visual-primitives/biology/ecosystemModel';
 import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
@@ -15,6 +13,7 @@ import type { CycleMiss } from '../../../primitives/visual-primitives/biology/li
 import { classificationSorterCard } from '../../../primitives/visual-primitives/biology/classificationSorter.card';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { cellBuilderCard } from '../../../primitives/visual-primitives/biology/cellBuilder.card';
+import { habitatDioramaCard } from '../../../primitives/visual-primitives/biology/habitatDiorama.card';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -319,8 +318,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'habitat-diorama',
-    description: 'A living ecosystem field lab for grades K-8. Students observe organisms from ecological clues, connect living things through relationships, predict population changes, restore a disrupted habitat, and defend a claim with visible evidence. Observe, Predict, and Defend use short spoken responses; Connect and Restore use direct scene-building gestures. Broad objectives may blend these five missions over one coherent habitat, while payloads without challenges remain a free-exploration diorama.',
-    constraints: 'Use for K-8 ecology, habitats, food chains and webs, interdependence, or environmental change. K-2: 4-5 familiar organisms, everyday language, simple eating relationships, and observable evidence; do not require trophic-level vocabulary or multi-step cascades. Grades 3-5: 6-8 organisms, producer-consumer-decomposer roles, simple symbiosis, and one-step population effects. Grades 6-8: 8-10 organisms, complete food webs, competition and symbiosis, and evidence-based cascade reasoning. Every challenge must be answerable from the visible habitat. Spoken prompts must not contain the answer. The tutor owns pacing and judgment: do not add Check, Next, submit, push-to-talk, countdown, or timer controls.',
+    description: 'A living ecosystem field lab for grades K-8. Students observe organisms from ecological clues, connect living things through relationships, predict population changes, restore a disrupted habitat, and defend a claim with visible evidence. Observe, Predict, and Defend use short spoken responses; Connect and Restore use direct scene-building gestures. Broad objectives may blend these missions over one coherent habitat, while payloads without challenges remain a free-exploration diorama.',
+    constraints: 'Use for K-8 ecology, habitats, food chains and webs, interdependence, or environmental change. K-2: 4-5 familiar organisms, everyday language, simple eating relationships, and observable evidence; do not require trophic-level vocabulary or multi-step cascades. Grades 3-5: 6-8 organisms, producer-consumer-decomposer roles, simple symbiosis, and one-step population effects. Grades 6-8: 8-10 organisms, complete food webs, competition and symbiosis, and evidence-based cascade reasoning. Every challenge must be answerable from the visible habitat. Spoken prompts must not contain the answer. The tutor owns pacing and judges the spoken answers; the activity checks taps and builds: do not add Check, Next, submit, push-to-talk, countdown, or timer controls.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap', 'build'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       { evalMode: 'observe', affordances: { answers: ['spoken'] }, label: 'Observe', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['observe'], description: 'Identify a living thing from an observable ecological clue.' },
@@ -332,19 +331,20 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
       // that meets every need of a named animal, on an empty scene, and many habitats pass. Beta near restore.
       { evalMode: 'build_habitat', affordances: { answers: ['build'] }, label: 'Build a habitat', beta: 6.6, scaffoldingMode: 5, challengeTypes: ['build_habitat'], description: 'Build a habitat on an empty scene with everything a named animal needs to live: food, water, shelter and the right weather. Many habitats pass.' },
     ],
-    audioInput: { manual_activity: true },
+    // The ungraded exploration diorama only: a payload with no askable challenge, which no workspace session binds,
+    // so this block still reaches its tutor. Challenges are wired by the card (`habitatDiorama.card.ts`).
     tutoring: {
       taskDescription:
-        'Student is working in Habitat Diorama mode {{challengeType}}. '
-        + 'The current script stimulus is {{stimulus}}. The tutor judges the response and owns all pacing.',
+        'Student is exploring a Habitat Diorama ({{challengeType}}). {{stimulus}} '
+        + 'Exploration is not scored: invite tapping and talk about what was tapped.',
       contextKeys: [
         'challengeType',
         'stimulus',
       ],
       scaffoldingLevels: {
-        level1: 'Follow the script exactly. Read the prompt, wait for the student response, then judge it.',
-        level2: 'If the first attempt is wrong, use the script retry line and wait. Do not reveal the answer early.',
-        level3: 'After the retry, use the configured reveal and explanation, then move on without asking permission.',
+        level1: 'Invite the learner to tap a living thing or a feature, then say its name and one short thing about it.',
+        level2: 'If they tap without looking, ask where the living thing lives or what it eats.',
+        level3: 'Point out one relationship on screen: who eats what, or who helps whom.',
       },
       commonStruggles: [
         {
@@ -369,16 +369,6 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         },
       ],
       aiDirectives: [
-        {
-          title: 'DIRECT-INSTRUCTION SCRIPT CONTRACT',
-          instruction:
-            'When challengeType is observe, connect, predict, restore, or defend, follow stimulus as a closed script. '
-            + 'Deliver the opening and item prompt, then WAIT. Judge only after the student speaks or completes the visible gesture. '
-            + 'A verdict ends the current turn: after the configured affirmative sentinel, stop; after the configured retry sentinel, stop. '
-            + 'When the runner advances, speak the next prompt immediately. Do not ask whether the student is ready. '
-            + 'For spoken items, the microphone is already managed by the activity; never instruct the learner to press, hold, or tap a microphone. '
-            + 'For gesture items, describe only the visible relationship or zone task. Never invent a Check, Next, or submit step.',
-        },
         {
           title: 'FREE EXPLORATION MODE',
           instruction:
@@ -405,33 +395,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'One habitat scene of named living things. Observe, predict and defend are answered out loud with one of the '
-        + 'choices on screen (a living thing, or an evidence card); tapping does not answer them. Connect: one living thing is lit '
-        + 'as the start and the learner taps the one the relationship leads to (energy or benefit flows from the start: the '
-        + 'eaten to the eater, the host to the one that lives on it). Restore: the learner taps the zone where the missing '
-        + 'living thing can meet its needs. The activity checks both taps. A K-2 learner does not read: read the question, the '
-        + 'change and the choices aloud, and say names, never producer, consumer or decomposer. No living thing is mean; each '
-        + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them. '
-        + 'Build a habitat: the learner taps pieces (a pond, flies, a log, snow...) into an empty habitat around a named animal '
-        + 'and presses I’m done!; the activity checks that every need is met and nothing would hurt it. Many habitats pass. '
-        + 'Knowing what the animal needs IS the task: never say which need is missing, which piece to add or take out, or '
-        + 'what a piece gives the animal; if they stop, invite them to think about what the animal needs every day.',
-      // build_habitat (`habitatBuildLevers`) and every other mode (`habitatDioramaLevers`) publish levers; restore has
-      // help levers only (no other living thing carries a zone to build a simpler item from).
-      levers: true,
-      // The activity's own checks (`habitatMiss`, `readHabitatBuild`), and the spoken choices' known wrong answer
-      // (`habitatSpokenMisses`, handoff 20 Part B).
-      misses:missLists<HabitatMiss | SpokenHabitatMiss | HabitatBuildMiss>({
-        connect: ['other_kind_link', 'leads_to_start', 'unconnected'],
-        restore: ['water_for_land', 'land_for_water', 'other_land_zone'],
-        observe: ['other_choice'], predict: ['other_choice'], defend: ['other_choice'],
-        build_habitat: ['harmful_piece', 'several_needs_unmet', 'other_animals_piece', 'one_need_unmet'],
-      }),
-      // Every miss of every mode is answered by a lever (`habitatBuildLevers`, `habitatDioramaLevers`).
-      unanswered: { build_habitat: [], observe: [], connect: [], predict: [], restore: [], defend: [] },
-    },
+    // How it is wired to the live tutor: `habitatDiorama.card.ts` (behavior: `habitatDiorama.boss.ts`).
+    ...bossEntry(habitatDioramaCard),
   },
   {
     id: 'bio-compare-contrast',

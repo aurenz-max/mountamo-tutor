@@ -159,7 +159,7 @@ it('count: line_up puts the board in one row in the same commit; the smaller boa
   const full = h.state().task!.itemId;
   h.dispatch('pull_lever', { lever: 'smaller_set' });
   expect(h.state().task).toMatchObject({ itemId: `${full}~simpler` });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four"./);
   expect(drawn(h)).toBe(4);
   h.say('four'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe(full);
@@ -258,7 +258,7 @@ it('recount_moved: smaller_set opens an easier board that moves too, ungraded; t
   const full = h.state().task!.itemId;
   h.dispatch('pull_lever', { lever: 'smaller_set' });
   expect(h.state().task).toMatchObject({ itemId: `${full}~simpler` });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four"./);
   expect([drawn(h), h.state().task!.demand.moved]).toEqual([4, 'no']);
   for (let i = 0; i < 4; i++) h.touch(`object-${i}`);
   expect(h.state().task!.demand.moved).toBe('yes');

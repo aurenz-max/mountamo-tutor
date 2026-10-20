@@ -7,8 +7,8 @@
  *   2. K and Grade 1 get pick_speed only: a tap on a push picture, the asked outcome shown as a picture.
  *   3. The K-1 answer is no longer the middle picture every time (the triage leak): the asked outcome varies, so the
  *      key moves between pushes, and the push order on screen is shuffled.
- *   4. The catalog keeps a tutoring block for the scripted path, with the pre-reader read-aloud and a never-name-the-
- *      answer directive.
+ *   4. The lab is taught on its boss (`orbitMechanicsLab.card.ts`): no catalog tutoring block, K among its grades. The
+ *      pre-reader rule (no number, speed or unit) is a scene constraint, checked in OrbitMechanicsLab.workspace.test.tsx.
  */
 import { describe, it, expect } from 'vitest';
 import { orbitMechanicsGradeFromGrade } from './gemini-orbit-mechanics-lab';
@@ -60,23 +60,11 @@ describe('orbit-mechanics-lab — reader-fit after the rebuild', () => {
     });
   });
 
-  describe('catalog tutoring scaffold (the scripted path)', () => {
+  describe('catalog entry (the boss path)', () => {
     const entry = ASTRONOMY_CATALOG.find((c) => c.id === 'orbit-mechanics-lab')!;
 
-    it('keeps a pre-reader read-aloud and a never-name-the-answer directive', () => {
-      const directives = entry.tutoring!.aiDirectives ?? [];
-      const pre = directives.find(d => /PRE-READER/i.test(d.title))!;
-      expect(pre.instruction).toMatch(/READ_CHALLENGE/);
-      expect(pre.instruction).toMatch(/going around and around/i);
-      const never = directives.find(d => /NEVER NAME THE ANSWER/i.test(d.title))!;
-      expect(never.instruction).toMatch(/medium one/i);
-    });
-    it('every contextKey referenced in the task description is declared, with no handlebars conditionals', () => {
-      const keys = entry.tutoring!.contextKeys ?? [];
-      const referenced = (entry.tutoring!.taskDescription.match(/\{\{\w+\}\}/g) ?? []).map(m => m.slice(2, -2));
-      expect(referenced.length).toBeGreaterThan(0);
-      for (const k of referenced) expect(keys).toContain(k);
-      expect(JSON.stringify(entry.tutoring)).not.toMatch(/\{\{#/);
+    it('carries no scripted tutoring block', () => {
+      expect(entry.tutoring).toBeUndefined();
     });
     it('does not carry a band floor; K-1 are told the task is a tap on pictures', () => {
       expect(entry.constraints).not.toMatch(/BAND FLOOR|Grade 2\+ ONLY/i);

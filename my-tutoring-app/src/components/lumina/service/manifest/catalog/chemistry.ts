@@ -6,19 +6,19 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { PeriodicMiss, SpokenPeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
+import { periodicTableCard } from '../../../primitives/periodicTable.card';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { matterExplorerCard } from '../../../primitives/visual-primitives/chemistry/matterExplorer.card';
 import { statesOfMatterCard } from '../../../primitives/visual-primitives/chemistry/statesOfMatter.card';
+import { mixingAndDissolvingCard } from '../../../primitives/visual-primitives/chemistry/mixingAndDissolving.card';
+import { reactionLabCard } from '../../../primitives/visual-primitives/chemistry/reactionLab.card';
+import { phExplorerCard } from '../../../primitives/visual-primitives/chemistry/phExplorer.card';
 import type { MoleculeMiss } from '../../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import type { AtomMiss } from '../../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
-import type { DissolvingMiss } from '../../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace';
-import type { PhExplorerMiss } from '../../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
-import type { GasLawsMiss } from '../../../primitives/visual-primitives/chemistry/gasLawsWorkspace';
-import type { EquationBalancerMiss } from '../../../primitives/visual-primitives/chemistry/equationBalancerWorkspace';
-import type { ReactionMiss } from '../../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
-import type { EnergyMiss } from '../../../primitives/visual-primitives/chemistry/energyOfReactionsWorkspace';
-import type { StoichiometryMiss } from '../../../primitives/visual-primitives/chemistry/stoichiometryLabWorkspace';
+import { gasLawsSimulatorCard } from '../../../primitives/visual-primitives/chemistry/gasLawsSimulator.card';
+import { equationBalancerCard } from '../../../primitives/visual-primitives/chemistry/equationBalancer.card';
+import { energyOfReactionsCard } from '../../../primitives/visual-primitives/chemistry/energyOfReactions.card';
+import { stoichiometryLabCard } from '../../../primitives/visual-primitives/chemistry/stoichiometryLab.card';
 import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
@@ -65,66 +65,30 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive periodic table of all 118 elements with group/period axes, element modal views (electron shells, stability, phase), and category filtering. Two surfaces: free EXPLORATION (clickable elements, search, family filters — ideal for introducing the table), and a live-judged DIRECT INSTRUCTION session when an eval mode is pinned — the spoken tutor asks, the child taps a box (Element Hunt) or answers OUT LOUD (element names, trend comparisons, outer-electron counts), and a credited answer advances the lesson. Perfect for element properties, periodic trends, atomic structure, chemical families, and the organization of the table.',
     constraints: 'Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Judged sessions require the live tutor and a microphone; the manifest must NOT supply element lists or answer keys — every challenge is drawn and keyed in code from the element table.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 5 },
-    // ── DI MODALITY (2026-08-19) — FIRST chemistry port. The tutor owns the
-    // clock in all four task shapes: it asks once, waits, judges the spoken
-    // answer in-band (or is handed the CODE-COMPUTED verdict for a tap), and
-    // its own line is the advance. No advance timer, no Next button, no
-    // push-to-talk mic anywhere in the path.
-    // THE PORT CLOSED A FICTION: these three eval modes were declared with
-    // supportsEvaluation: true while the generator emitted no challenges and
-    // the component rendered none — every lesson slot that pinned a mode got
-    // free exploration and no measurement.
-    // THE SPLIT (standing gate 1): find answers with a TAP because its answer
-    // is a POSITION on the page (the one honest tap shape here); name/compare/
-    // valence answer with the VOICE (short_spoken_word / closed_set_choice /
-    // number_word_to_20 — all benched or accepted-build-ahead).
-    // WHAT THE JUDGED SURFACE HIDES: the search bar (types "gold", gets Au),
-    // the category filter chips, and the tap-to-open element modal (shells on
-    // screen during a valence item is the answer in pixels). The element card
-    // returns as the reveal, after the affirmation.
-    // Cue lines and the per-item judging contracts live in
-    // `periodicTableScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. SENTINEL DISCIPLINE re-checked on every line below:
-    // no sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    // Judged sessions are wired by the card (`periodicTable.card.ts`, boss `periodicTable.boss.ts`).
+    ...bossEntry(periodicTableCard),
+    // The ungraded exploration table only: a payload with no askable challenge, which no workspace session binds,
+    // so this block still reaches its tutor (`chemistry-primitives/PeriodicTableExplorer.tsx`).
     tutoring: {
-      taskDescription: 'Live-judged Direct Instruction on the periodic table. Right now the round type is "{{challengeType}}" and the question side is "{{stimulus}}". In explore rounds the learner answers by TAPPING a box on a table you cannot see — you stay silent until the application tells you what they tapped. In identify and trend rounds they answer OUT LOUD and you judge what you hear against the exact contract in each bracketed [PT_ITEM] message. You speak the exact scripted lines from those messages and nothing else. Reading the table themselves is the entire skill being practiced, so never volunteer an element\'s location, name, or count first. When the round type says free-exploration, this is instead the free table: react briefly and warmly to the [ELEMENT_SELECTED] and [GROUP_TREND] updates as an exploration guide.',
-      // Exactly what the pack pushes through contextFor — every key the
-      // click-era block interpolated (selectedElementName, valence, …) was
-      // the answer or the material that gives it away.
+      taskDescription: 'Student is exploring the periodic table ({{challengeType}}). {{stimulus}} '
+        + 'Exploration is not scored: react briefly and warmly to the [ELEMENT_SELECTED], [GROUP_TREND], '
+        + '[CATEGORY_EXPLORED] and [EXPLORATION_MILESTONE] updates as an exploration guide.',
       contextKeys: ['challengeType', 'stimulus'],
-      // 18d: every rung routes through the SCRIPTED correction. A re-spoken
-      // ask opens with neither "Yes" nor "My turn:", so the reducer records no
-      // verdict and the child waits on a lesson that cannot advance.
       scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message for spoken rounds, inside the tap message for explore rounds. It already re-models the table-reading route and hands the question back, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
+        level1: 'Invite the learner to tap an element, then say one short thing about it.',
+        level2: 'Suggest tapping another element in the same column to compare the two.',
+        level3: 'Point out one pattern across the elements tapped so far: the same column, the same family.',
       },
-      // Observable behaviours only, with PERFORMABLE responses that produce a
-      // VERDICT (defect 7: a sentiment without the verdict line stalls a
-      // correct child).
       commonStruggles: [
-        { pattern: 'Says the element\'s symbol letters instead of its name', response: 'Run the item\'s scripted correction line — the letters are the question, not the name — then wait in silence for their next try.' },
-        { pattern: 'Answers a trend question with the group number instead of the electron count', response: 'Run the item\'s scripted correction line, which re-models counting the tall columns, then wait in silence.' },
-        { pattern: 'Taps a box next to the right one', response: 'The tap message hands you the exact line for what they tapped — speak that line and nothing else.' },
-        { pattern: 'Goes quiet and neither speaks nor taps for a long time', response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.' },
+        { pattern: 'Student taps elements at random without looking at where they sit', response: 'Ask them to tap the element just below the last one and say what is the same about the two.' },
       ],
       aiDirectives: [
         {
-          title: 'THE VERDICT ENDS THE TURN',
+          title: 'PERIODIC TRENDS',
           instruction:
-            'After an affirmation or a correction, the turn is OVER — never run on into another question, '
-            + 'another element, or a next round of your own: the application sends every next question itself. '
-            + 'A continued turn asks about an item the screen is not showing.',
-        },
-        {
-          title: 'PERIODIC TRENDS (free exploration only)',
-          instruction:
-            'When the session is free exploration and the student clicks several elements in one group or period, '
-            + 'briefly highlight the trend: atomic radius increases down a group and decreases across a period; '
-            + 'reactivity patterns differ for metals vs nonmetals. Keep it visual and age-appropriate. '
-            + 'During judged rounds this directive is dormant — scripted lines only.',
+            'When the student clicks several elements in one group or period, briefly highlight the trend: atomic '
+            + 'radius increases down a group and decreases across a period; reactivity patterns differ for metals vs '
+            + 'nonmetals. Keep it visual and age-appropriate.',
         },
       ],
     },
@@ -134,24 +98,6 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'trend', affordances: { answers: ['spoken'] }, label: 'Periodic Trends (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['trend'], description: 'DI judged, spoken: same-group size and reactivity comparisons plus main-group outer-electron counts, all keys computed from the table.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The full periodic table is on screen with group numbers across the top and period numbers down the side; '
-        + 'every box shows its atomic number, symbol and name, and there is no search or filter. Element Hunt: the learner '
-        + 'taps the box for an element named by name, spelled symbol, atomic number or group and period; the activity '
-        + 'checks the tap. Before a tap never say where the box is, and on a group-and-period ask never say which element '
-        + 'is there. Name It: the learner reads the table and says the element\'s name; letters of the symbol read back '
-        + 'are not a name. Trends: the learner says which of two named elements is bigger or more reactive, or how many '
-        + 'electrons are in an element\'s outer shell; the group number is not the outer-electron count. Before an '
-        + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at boxes; a lever is '
-        + 'the only mark you can put on the table.',
-      // The table's own check of an Element Hunt tap (`periodicMiss`), and the spoken answers of Trends and Name It
-      // (`periodicSpokenMisses`). Every mode has levers (`periodicTableLevers.ts`); no miss is unanswered.
-      levers: true,
-      misses: missLists<PeriodicMiss | SpokenPeriodicMiss>({ explore: ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'],
-        identify: ['said_symbol', 'next_box'],
-        trend: ['other_of_pair', 'group_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] }),
-    },
   },
   {
     id: 'matter-explorer',
@@ -195,101 +141,30 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'reaction-lab',
-    description: 'Interactive chemistry experiment station where students combine real substances and observe reactions — fizzing, color changes, temperature changes, gas production, precipitates. Features split Real View / Particle View, observation notebook, and multi-phase workflow (predict → experiment → observe → explain). K-2 uses kitchen chemistry, 3-5 adds classification and particle view, 6-8 adds equation balancing and conservation of mass. Perfect for teaching chemical vs physical change, signs of chemical reactions, and the scientific method. ESSENTIAL for K-8 chemistry and science.',
+    description: 'Interactive chemistry experiment station where students combine real substances and observe reactions — fizzing, color changes, temperature changes, gas production, precipitates. Features split Real View / Particle View and a predict → mix → observe → explain flow; every challenge is one choice the student taps or says. K-2 uses kitchen chemistry, 3-5 adds classification and particle view, 6-8 adds equation balancing and conservation of mass. Perfect for teaching chemical vs physical change, signs of chemical reactions, and the scientific method. ESSENTIAL for K-8 chemistry and science.',
     constraints: 'Best for K-8. Use for chemistry lessons on chemical reactions, physical vs chemical change, states of matter changes, kitchen chemistry, acid-base reactions, oxidation, dissolution, and the scientific method. Grade-appropriate complexity adjusts automatically.',
-    affordances: { representation: 'pictorial', answers: ['type'], role: ['visualize', 'apply'], minutes: 8 },
-    tutoring: {
-      taskDescription: 'Student is conducting the "{{experimentName}}" experiment ({{experimentCategory}}). Currently in {{currentPhase}} phase. Reaction type: {{reactionType}}. They have recorded {{observationsRecorded}}/{{observationPromptsTotal}} observations and identified {{signsIdentified}}/{{signsTotal}} signs of change. On challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'experimentName', 'experimentCategory', 'reactionType', 'signs', 'currentPhase', 'isReacting', 'reactionComplete', 'predictionSubmitted', 'prediction', 'observationsRecorded', 'observationPromptsTotal', 'signsIdentified', 'signsTotal', 'particleViewActive', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'equation'],
-      scaffoldingLevels: {
-        level1: '"What do you notice happening? Look carefully at the substances — is anything changing?"',
-        level2: '"Think about the signs of a chemical change: fizzing, color change, temperature change, new smell, or a new substance forming. Which signs can you see in this {{experimentName}} experiment?"',
-        // Never names the reaction type: it is the classify answer.
-        level3: '"Let\'s look at this step by step. Did something new form, with different properties, or did the substance only change form? Look at the {{currentPhase === \'observe\' ? \'observation prompts\' : \'question\'}} and describe exactly what you see."',
-      },
-      commonStruggles: [
-        { pattern: 'Student confuses chemical and physical change', response: 'Ask: "Is the substance still the same thing, just in a different form? Or has something completely NEW been created? If it\'s new, that\'s a chemical change!"' },
-        { pattern: 'Student skips prediction phase or writes minimal prediction', response: 'Encourage: "Scientists always predict before experimenting! What do you THINK will happen? There\'s no wrong prediction — it\'s about thinking like a scientist."' },
-        { pattern: 'Student cannot identify signs of chemical change', response: 'Guide: "Look for these clues: Did it fizz or bubble? Did the color change? Did it get hot or cold? Does it smell different? Any of these could be a sign of a chemical change!"' },
-        { pattern: 'Student struggles with particle view', response: 'Simplify: "Think of the colored circles as tiny atoms. In a chemical change, the atoms rearrange — they break apart and join together in new ways to make new substances."' },
-        { pattern: 'Student struggles to balance equation (grades 6-8)', response: 'Guide: "Count the atoms on each side. The number of each type of atom must be the same before and after — nothing is created or destroyed, just rearranged!"' },
-      ],
-    },
+    affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       { evalMode: 'predict', label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'Predict reaction outcomes before mixing' },
       { evalMode: 'observe', label: 'Observe (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['observe', 'identify_signs', 'classify'], description: 'Identify signs of chemical vs physical change' },
       { evalMode: 'explain', label: 'Explain (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['explain', 'balance', 'conservation'], description: 'Explain reactions using particle model and conservation of mass' },
     ],
-    // W1 (ROLLOUT C26): `reactionLabWorkspace.ts` owns the items, checks and scene; `reactionLabLevers.ts` the levers.
-    // The scripted path (`withWorkspaceController`) still sends the `tutoring` block above.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Every item is one challenge about the experiment on screen. A predict challenge is asked beside the '
-        + 'unmixed substances, before the reaction runs: never say what will happen or what the substances do together. '
-        + 'Every other challenge opens once the learner presses Mix Substances!; then the beaker, its badges and the '
-        + 'temperature badge show what happened, and reading them is the skill. During an observe, signs or classify '
-        + 'question never say what the beaker showed, which sign it shows, or whether the change is chemical or physical. '
-        + 'On an explain question never give the reason or the particle story, and never say whether mass or atoms stay '
-        + 'the same. Never use the experiment\'s real-world example as a clue. Ask the learner what they noticed or to '
-        + 'watch again instead. The learner answers by saying it, or by tapping one choice and checking it; the activity '
-        + 'checks the tap against the challenge\'s own key. For kindergarten to grade 2, read the question and every '
-        + 'choice aloud. You cannot mix, tap, check or point at a choice for the learner.',
-      levers: true,
-      // The activity's own check (`reactionMiss`), a tap or a spoken choice, in every mode.
-      misses: missLists<ReactionMiss>({
-        predict: ['no_change', 'chemical_physical_swap', 'true_false_flipped', 'other_choice'],
-        observe: ['chemical_physical_swap', 'no_change', 'true_false_flipped', 'other_choice'],
-        explain: ['unbalanced_equation', 'chemical_physical_swap', 'true_false_flipped', 'no_change', 'other_choice'],
-      }),
-    },
+    // Live-tutor wiring: `reactionLab.card.ts` + `reactionLab.boss.ts` (the spoken preset, SAY_OR_SHOW).
+    ...bossEntry(reactionLabCard),
     supportsEvaluation: true,
   },
   {
     id: 'equation-balancer',
     description: 'Conservation of atoms in real chemical reactions, three tasks. Count: the equation is printed with its numbers in front, and the student says or taps how many atoms of one element are on one side (the number in front times the small number after the symbol, summed over the formulas). Balance: the student sets the number in front of each formula with + and − so every element has the same count on both sides, with the smallest whole numbers; first on equations where each element sits in one formula per side, then where an element is shared between two formulas (combustion, respiration). Every equation comes from a code bank of real reactions and every answer is solved by code. No live atom counter, tipping scale or match marks give the answer away; molecule drawings and an atom tally appear only as help. Perfect for teaching conservation of mass, reading formulas, and systematic balancing. ESSENTIAL for grade 6-8 chemistry.',
     constraints: 'Best for grade 6-8. The manifest must not supply equations, coefficients or answers: the generator picks bank reactions for the topic and code builds every item. Numbers in front go from 1 to 10.',
-    affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
-    // Scripted fallback only (the tester, no tutor): `withWorkspaceController` keeps it until that path is retired.
-    // Its context carries the item's ask and no key.
-    tutoring: {
-      taskDescription: 'The student is working on item {{itemIndex}} of {{totalItems}}: {{ask}}',
-      contextKeys: ['mode', 'ask', 'itemIndex', 'totalItems', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Pick one element. How many of its atoms are on the left side, and how many on the right?"',
-        level2: '"The number in front tells how many molecules there are; the small number tells how many atoms of that element are in one molecule. Multiply them."',
-        level3: '"Go element by element: start with one that sits in only one formula on each side, make it match, then check the others again."',
-      },
-      commonStruggles: [
-        { pattern: 'Student counts one molecule and leaves out the number in front', response: 'Ask what the big number in front means: how many copies of that molecule are there?' },
-        { pattern: 'Student balances one element but unbalances another', response: 'Acknowledge the progress, then ask them to count every element again after each change.' },
-        { pattern: 'Student finds a balanced set that is not the smallest', response: 'Ask whether every number can be divided by the same number.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Code builds and checks every item from real reactions, and you are not told the key. Count: the equation is printed '
-        + 'with its numbers in front; the learner says or taps how many atoms of one element are on one side. Balance: the learner '
-        + 'sets the number in front of each formula with + and − and presses Check Balance; it is right only when every element has '
-        + 'the same count on both sides with the smallest whole numbers. No atoms are drawn and no totals are shown unless a lever '
-        + 'draws them. Never say a number to set, an atom total, or which formula to change, and never name the element that is '
-        + 'off or the element to start with: ask the learner which element they will count first, then to count it on each '
-        + 'side and say what they find. With the molecules or the atom tally on screen, never say which rows or sides match; '
-        + 'ask the learner to compare them. You '
-        + 'cannot set a number, tap or check for the learner.',
-      // simple: molecule_view and simpler_equation; guided and complex: molecule_view, atom_tally and simpler_equation
-      // (`equationBalancerLevers.ts`). Every miss of every mode is answered by a help lever.
-      levers: true,
-      // The activity's own check (`countMiss`, `balanceMiss`), and the same ids as a spoken count's known misses.
-      misses: missLists<EquationBalancerMiss>({
-        simple: ['ignored_coefficient', 'ignored_subscript', 'ignored_parentheses', 'one_compound_only', 'added_not_multiplied', 'miscounted'],
-        guided: ['not_lowest', 'one_element_off', 'several_off'],
-        complex: ['not_lowest', 'shared_element_off', 'one_element_off', 'several_off'],
-      }),
-    },
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap', 'spoken'], role: 'apply', minutes: 5 },
+    // Live-tutor wiring: `equationBalancer.card.ts` + `equationBalancer.boss.ts` (the spoken preset: SAY_OR_SHOW count,
+    // two balance boards).
+    ...bossEntry(equationBalancerCard),
     evalModes: [
       { evalMode: 'simple', affordances: { answers: ['tap', 'spoken'] }, label: 'Count atoms (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['simple'], description: 'Count the atoms of one element on one side of an equation printed with its numbers in front' },
-      { evalMode: 'guided', label: 'Balance (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['guided'], description: 'Balance an equation where each element sits in one formula on each side, using the smallest whole numbers' },
-      { evalMode: 'complex', label: 'Balance, shared element (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['complex'], description: 'Balance an equation where an element is shared between two formulas on one side, such as a combustion' },
+      { evalMode: 'guided', affordances: { answers: ['manipulate'] }, label: 'Balance (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['guided'], description: 'Balance an equation where each element sits in one formula on each side, using the smallest whole numbers' },
+      { evalMode: 'complex', affordances: { answers: ['manipulate'] }, label: 'Balance, shared element (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['complex'], description: 'Balance an equation where an element is shared between two formulas on one side, such as a combustion' },
     ],
     supportsEvaluation: true,
   },
@@ -298,50 +173,8 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Energy-of-reactions lab with three task identities, each built and keyed in code: thermometer evidence (run a named classroom reaction, such as baking soda and vinegar or magnesium and acid, in a beaker of water, read the thermometer, and decide whether it releases or absorbs energy), energy diagrams (read an unlabelled energy diagram on a kJ grid: the direction, the energy change, the activation energy, or how much a catalyst lowers it), and bond energies (from a table of the bonds broken and formed, with counts and energy per bond, choose the energy change). Answers are tapped or said aloud. Perfect for teaching exothermic and endothermic reactions, energy diagrams, activation energy, catalysts and bond energies. ESSENTIAL for grade 5-8 chemistry.',
     constraints: 'Best for grades 5-8. Use for chemistry lessons on energy in reactions: exothermic and endothermic, temperature change as evidence, energy diagrams, activation energy, catalysts, and bond energies (grades 7-8). The manifest must NOT supply reactions, energy values or answer keys: the reactions come from a code library, and every reading, diagram, bond table and key is built in code.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
-    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
-    tutoring: {
-      taskDescription: 'Student is in an energy-of-reactions lab, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner read the thermometer, the levels on the energy diagram, or the bond table, and never name the right choice.',
-      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What do you see on the screen? What did the thermometer read before, and what does it read now?"',
-        level2: '"Where did the energy go: into the water around the reaction, or out of it? How can you tell?"',
-        level3: '"Let us read it together: find the reactants\' line first. What do you measure from there?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student thinks a reaction that cools the water gives out cold', response: 'Ask what the thermometer is measuring: the water around the reaction. Did the water gain energy or lose it?' },
-        { pattern: 'Student reads a level from zero instead of from the reactants', response: 'Ask where the reaction starts on the diagram, and what it climbs or drops from there.' },
-        { pattern: 'Student confuses activation energy with the energy change', response: 'Ask which part of the drawing is the hill, and which part is the difference between start and end. Do not give either value.' },
-        { pattern: 'Student struggles with bond energy arithmetic', response: 'Ask which bonds are broken and which are formed, how many of each, and which side costs energy. Do not do the subtraction.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Code builds and checks every item, and you are not told the key; the learner taps a choice and presses Check '
-        + 'Answer, or says the answer. Classify: a named reaction and a beaker of water with a thermometer; the learner presses Run '
-        + 'the reaction and the reading changes; the question is whether the reaction releases or absorbs energy. Diagram: an energy '
-        + 'diagram on a kJ grid with lines labelled Reactants and Products and a hill between them (a dashed catalyst path on some '
-        + 'items); no arrows and no values are drawn until a lever writes them. Bond energy: the equation and a table of the bonds '
-        + 'broken and formed, each with its count and energy per bond, and no totals. The scene gives you the readings, levels and '
-        + 'rows as they are drawn. Never make a comparison the learner is asked to make: never say the reading went up or down, the water '
-        + 'warmed or cooled, the products are higher or lower than the reactants, or one total is larger; ask the learner. '
-        + 'Never say what a reading means (that the water got colder so the reaction took energy in, that '
-        + 'lower products mean energy came out), whether the reaction releases or absorbs energy, which choice is right or how '
-        + 'close a choice is, and never do any subtraction or sum for the learner (the climb, the drop, the change, the totals, '
-        + 'energy in minus energy out); ask what the learner reads and what it tells them. With the heat-flow card on screen, never '
-        + 'say which line of it matches this beaker; ask the learner to find it. Never say which side is energy in or energy out '
-        + 'unless that card is on screen. With the bond totals or the rule on screen, never say which total is larger, which sign the '
-        + 'answer has, or which number to take from which; ask the learner to use what the card says. After a wrong answer, never say '
-        + 'that its number or its sign was right. Never call a reaction hot, cold, warming or cooling as a clue, and never mention what it '
-        + 'is used for (a cold pack, a hand warmer). You cannot run the reaction, tap or check for the learner.',
-      // classify publishes start_mark and heat_flow_card; diagram level_values, start_line and fewer_choices (not on a
-      // direction item); bond_energy row_totals, in_out_totals and simpler_reaction (`energyOfReactionsLevers.ts`).
-      levers: true,
-      // The activity's own check (`energyMiss`) on a tap, and the same ids as each spoken item's known misses (`energySpokenMisses`).
-      misses: missLists<EnergyMiss>({ classify: ['cooling_called_release', 'warming_called_absorb'],
-        diagram: ['direction_reversed', 'sign_flipped', 'read_level', 'read_activation', 'read_peak_height', 'read_delta_h',
-          'from_products', 'catalysed_ea', 'full_ea'],
-        bond_energy: ['subtracted_backwards', 'ignored_counts', 'added_totals'] }),
-    },
+    // Live-tutor wiring: `energyOfReactions.card.ts` + `energyOfReactions.boss.ts` (the spoken preset, SAY_OR_SHOW).
+    ...bossEntry(energyOfReactionsCard),
     evalModes: [
       { evalMode: 'classify', affordances: { answers: ['tap', 'spoken'] }, label: 'Classify (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['classify'], description: 'Run a reaction in a beaker of water, read the thermometer, and decide whether the reaction releases or absorbs energy' },
       { evalMode: 'diagram', affordances: { answers: ['tap', 'spoken'] }, label: 'Read Diagram (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['diagram'], description: 'Read an unlabelled energy diagram on a kJ grid: the direction, the energy change, the activation energy, or how much a catalyst lowers it' },
@@ -371,48 +204,14 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'mixing-and-dissolving',
     description: 'Interactive solutions and mixtures explorer with beaker workspace, substance shelf, particle view, temperature control, saturation indicator, concentration meter, and separation tools. Students add substances to water and discover what dissolves and what does not, then use separation techniques to recover solutes. Perfect for teaching dissolving, solutions vs mixtures, and saturation. ESSENTIAL for grade 3-7 chemistry.',
     constraints: 'Requires substance data with solubility values. Best for grade 3-7. Solubility curve only for grade 6-7.',
-    affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'The student is exploring mixing and dissolving in {{solventName}} at {{temperature}}\u00B0C. They have added: {{addedSubstanceNames}}. Current challenge: {{challengeType}} \u2014 "{{instruction}}".',
-      contextKeys: ['solventName', 'temperature', 'addedSubstanceNames', 'addedSubstanceTypes', 'isSaturated', 'isStirring', 'particleViewActive', 'selectedSeparation', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
-      scaffoldingLevels: {
-        level1: '"Look closely at what happened when you added that substance. Can you still see it? What does that tell you?"',
-        level2: '"Try toggling the particle view \u2014 you can see what\u2019s happening at the molecule level. The blue dots are water molecules. What are they doing to the solute particles?"',
-        level3: '"When something dissolves, the water molecules surround each solute particle and pull it apart. That\u2019s why it looks like it disappeared \u2014 but it\u2019s still there! You could prove it by evaporating the water."',
-      },
-      commonStruggles: [
-        { pattern: 'Student thinks dissolved substance has disappeared or been destroyed', response: 'Connect to conservation: "It looks gone, but it\u2019s still there! The particles just spread out so small you can\u2019t see them. Try the particle view \u2014 or better yet, how could you PROVE the sugar is still in the water?"' },
-        { pattern: 'Student confuses solutions with mixtures', response: 'Clarify the difference: "In a solution, everything looks the same \u2014 you can\u2019t see the parts. In a mixture like sand and water, you CAN still see the different parts. Can you sort these into solutions and mixtures?"' },
-        { pattern: 'Student does not understand saturation', response: 'Make it concrete: "Imagine your backpack is FULL \u2014 you can\u2019t fit any more books. The water is like that \u2014 it can only hold so much dissolved stuff. The extra just sits at the bottom!"' },
-        { pattern: 'Student picks wrong separation method', response: 'Guide method selection: "Think about what kind of mixture you have. Is the substance dissolved (invisible) or undissolved (you can see it)? Filtration catches big pieces, evaporation recovers dissolved things."' },
-      ],
-    },
+    affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
-      { evalMode: 'dissolve', affordances: { answers: ['manipulate'] }, label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve_sort', 'particle_explain'], description: 'Test which substances dissolve and which do not' },
-      { evalMode: 'classify', affordances: { answers: ['tap'] }, label: 'Classify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['classify'], description: 'Classify as solution, suspension, or mixture' },
-      { evalMode: 'separate', affordances: { answers: ['tap', 'type'] }, label: 'Separate (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['separate'], description: 'Choose correct separation technique and explain why' },
+      { evalMode: 'dissolve', affordances: { answers: ['manipulate', 'tap', 'spoken'] }, label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve_sort', 'particle_explain'], description: 'Test which substances dissolve and which do not' },
+      { evalMode: 'classify', affordances: { answers: ['tap', 'spoken'] }, label: 'Classify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['classify'], description: 'Classify as solution, suspension, or mixture' },
+      { evalMode: 'separate', affordances: { answers: ['tap', 'spoken'] }, label: 'Separate (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['separate'], description: 'Choose correct separation technique and explain why' },
     ],
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
-      guidance: 'Every item is one question about a beaker of water and a shelf of substances. The learner may add '
-        + 'substances, stir and open the particle view to test them, then answers by saying it, or by tapping one choice '
-        + 'and pressing Submit Answer; the activity checks the tap against the question\'s own key. You are told what is '
-        + 'in the beaker, never what it looks like: whether a substance dissolved, sank or floats is what the learner '
-        + 'looks for. Never say it, never say which choice is right, and never rule a choice out. Ask the learner to add '
-        + 'the substance and tell you what they see, then ask what that means for the question. Never state the rule a '
-        + 'question asks about (dissolved particles spread out, a suspension has bits you can see, filtering catches '
-        + 'solids) during it. Never say a dissolved substance disappeared or is gone, not even when reading a model: it '
-        + 'spread out and is still there. With method cards on screen, never point at a card by what it does ("the one '
-        + 'that leaves dissolved things behind") or by the mixture it fits, and never name two cards to read: ask what the '
-        + 'learner saw in the beaker, then let them read every card. You cannot add, stir, tap or check for the learner.',
-      levers: true,
-      // The activity's own check (`dissolvingMiss`), a tap or a spoken choice; dissolve also carries the particle question.
-      misses: missLists<DissolvingMiss>({
-        dissolve: ['chose_dissolves', 'chose_does_not_dissolve', 'chose_disappeared', 'chose_sank', 'other_choice'],
-        classify: ['called_solution', 'called_suspension', 'called_layers'],
-        separate: ['filter_for_dissolved', 'evaporate_for_undissolved', 'other_method', 'other_choice'],
-      }),
-    },
+    // Live-tutor wiring: `mixingAndDissolving.card.ts` + `mixingAndDissolving.boss.ts` (the spoken preset, SAY_OR_SHOW).
+    ...bossEntry(mixingAndDissolvingCard),
     supportsEvaluation: true,
   },
   {
@@ -531,45 +330,8 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive pH lab on a rainbow pH scale (0-14), with three task identities, each keyed in code from the substances\' pH values: litmus test (dip a blue and a red litmus paper into a named everyday or lab substance and say acid, base or neutral), indicator colours (read an unnamed sample\'s red cabbage juice colour and choose its pH range), and neutralize (choose how many cups of a strong base make 1 cup of a strong acid neutral, from their two pH values, where each pH step is ten times as strong; a universal-indicator beaker changes colour when they mix). Answers are tapped or said aloud. Perfect for teaching the pH scale, acids and bases, indicators, and neutralization. ESSENTIAL for grade 4-8 chemistry.',
     constraints: 'Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically. The manifest must NOT supply answer keys: every key is computed from the generated substances\' pH values.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
-    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
-    tutoring: {
-      taskDescription: 'Student is in a pH lab, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner read the litmus papers, the cabbage juice colour or the two pH values, and never name the right choice.',
-      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What do you see on the screen? What colour is it now?"',
-        level2: '"Think about what that colour tells you about the pH. Which part of the scale is it?"',
-        level3: '"Let\'s look again together: what was the colour before, and what is it now? What does that change mean?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student confuses acids and bases', response: 'Ask what each paper did: which one changed colour, and from what to what. Do not say which result means which.' },
-        { pattern: 'Student does not understand the pH scale direction', response: 'Point at the scale: 7 is the middle. Ask whether the liquid sits below or above it.' },
-        { pattern: 'Student struggles with neutralization concept', response: 'Ask how far each liquid is from 7 on the scale, and remind them each step is ten times as strong.' },
-        { pattern: 'Student cannot interpret indicator colours', response: 'Ask them to name the colour they see, then think where on the scale that colour sits. Do not name the range.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Code builds and checks every item from the substances\' pH values, and you are not told the key; the learner '
-        + 'taps a choice and presses Check Answer (Mix and check on neutralize), or says the answer. Test: a named substance '
-        + 'beside a blue and a red litmus paper; the learner presses Dip the litmus papers, then says acid, base or neutral. '
-        + 'Indicator: an unnamed sample in red cabbage juice; the learner names the pH range its colour shows; no scale is on '
-        + 'screen, and no colour chart until its lever is pulled. Neutralize: 1 cup of a strong acid and a bottle of a strong base, each with its pH; the '
-        + 'learner chooses how many cups of the base make the beaker neutral, and no pH meter reads a mix until its lever is pulled. The scene names the '
-        + 'paper colours, the juice colour and the mixed colour as they are drawn: never say what a colour means (that red '
-        + 'paper means an acid, that green juice means a base), which range or amount is right, or whether the two liquids are '
-        + 'equally strong; ask what the learner sees and what it tells them. With the litmus key card or the colour chart on '
-        + 'screen, never say which row or swatch matches the papers or the tube; ask the learner to find it. With the step '
-        + 'counts on screen, never say the two liquids are the same number of steps from 7, equally far, or which is farther; '
-        + 'ask the learner to compare the two counts. Never say the substance is sour, slippery, a '
-        + 'cleaner or a food as a clue to its kind. A test substance\'s pH and its real-world line show only after credit. You '
-        + 'cannot dip, tap, mix or check for the learner.',
-      // test publishes litmus_key; indicator color_chart and fewer_choices; neutralize step_count, ph_meter and
-      // fewer_choices (`phExplorerLevers.ts`). Every miss of every mode is answered by the mode's help lever.
-      levers: true,
-      // The activity's own check (`phMiss`) on a tap, and the same ids as each spoken item's known misses (`phSpokenMisses`).
-      misses: missLists<PhExplorerMiss>({ test: ['acid_base_swapped', 'said_neutral', 'missed_neutral'],
-        indicator: ['other_side', 'next_band', 'far_band'], neutralize: ['equal_amounts', 'too_little', 'too_much'] }),
-    },
+    // Live-tutor wiring: `phExplorer.card.ts` + `phExplorer.boss.ts` (the spoken preset, SAY_OR_SHOW).
+    ...bossEntry(phExplorerCard),
     evalModes: [
       { evalMode: 'test', affordances: { answers: ['tap', 'spoken'] }, label: 'Test (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['test'], description: 'Dip blue and red litmus papers into a named substance and say whether it is an acid, a base or neutral' },
       { evalMode: 'indicator', affordances: { answers: ['tap', 'spoken'] }, label: 'Indicator (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['indicator'], description: 'Read an unnamed sample\'s red cabbage juice colour and choose the pH range it shows' },
@@ -609,50 +371,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Stoichiometry lab on one balanced reaction, with molar masses printed under the equation and three task identities, each built and keyed in code from the reaction: conversion chain (tap conversion-factor cards, each drawn as a fraction, into the chain that turns a given mass into moles or grams of a substance: molar mass, mole ratio, molar mass), which runs out first (two reactant jars given by mass; say or tap which reactant runs out first, the limiting reactant, or that both run out together), and how much forms (the same two jars; say or type the grams of a product that can form, the theoretical yield). Nothing on screen computes the answer before credit: no mole counts, running units or reaction output. Difficulty is structural: more cards in the chain; a limiting reactant with the larger mass, then with more moles. ESSENTIAL for HS chemistry — closes the largest K-8 → HS gap (the mole concept).',
     constraints: 'Best for grades 8-12. The reaction comes from a built-in library of balanced reactions (hydrogen, methane, propane, ethane and glucose burning; the Haber process; metals with oxygen, chlorine or acid; iron smelting; decompositions); the manifest must NOT supply masses or answer keys. Percent yield is not asked. Not a particle simulation.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type', 'spoken'], role: 'apply', minutes: 9 },
-    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
-    tutoring: {
-      taskDescription: 'Student is in a stoichiometry lab on the reaction {{equation}}, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner use the molar masses, the coefficients and the units, and never name the right card, reactant or amount.',
-      contextKeys: ['gradeBand', 'mode', 'equation', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What do you have, and what unit is it in? What unit does the question want?"',
-        level2: '"Coefficients count moles, not grams. What would you need to turn these grams into moles?"',
-        level3: '"Let\'s go one step at a time: grams to moles first, then what the equation says about moles. What is the first step here?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student multiplies grams by coefficients directly without converting to moles first', response: 'Ask what unit the coefficients count. Do not do the conversion for them.' },
-        { pattern: 'Student picks the reactant with the smaller mass as the one that runs out first', response: 'Ask whether a gram of each holds the same number of particles. Do not say which runs out.' },
-        { pattern: 'Student skips the mole ratio and goes straight from one substance to another', response: 'Ask what the equation says about how many moles of one go with how many of the other. Do not give the ratio.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'Code builds and checks every item from one balanced reaction, and you are not told the key. The molar masses '
-        + 'are printed under the equation. Convert: a start card (grams of one substance), a goal card (moles or grams of a '
-        + 'substance) and a tray of six conversion-factor cards, each a fraction; the learner taps cards into the chain in '
-        + 'order and presses Check chain. Never say or ask which unit belongs on the top or the bottom of a card (that is the '
-        + 'step the item checks), which card goes next, that a card should be flipped or swapped, how many cards the chain '
-        + 'needs, or what the chain has reached; ask what unit the start card is in and what unit the goal needs, and, with '
-        + 'the unit tracker on screen, what it says under each card. The start card is one amount, with no top or bottom. '
-        + 'Limiting: two '
-        + 'jars of reactants given by mass; the learner says or taps which runs out first, or that both run out together. '
-        + 'Yield: the same two jars; the learner says or types the grams of a product that can form. The jars are drawn the '
-        + 'same size, and no mole counts are on screen until their lever is pulled. Never name the reactant that runs out '
-        + 'first, say that one is in excess or left over, give a number of moles, runs or grams the screen does not show, or '
-        + 'say that the lighter '
-        + 'reactant runs out first; ask the learner to turn each mass into moles and compare them using the coefficients. '
-        + 'With the mole counts or the recipe card on screen, never compare the two jars for the learner (which has more, '
-        + 'which lasts longer); ask the learner to compare. You cannot place cards, tap, type or check for the learner.',
-      // convert publishes unit_track and mole_map; limiting and yield mole_counts and recipe_card; a medium or hard item
-      // also easier_item (`stoichiometryLabLevers.ts`). Every miss of every mode is answered by a help lever.
-      levers: true,
-      // The activity's own check (`convertMiss`, `limitingMiss`, `yieldMiss`) on a tap or a typed number, and the same
-      // ids as each spoken item's known misses (`stoichSpokenMisses`).
-      misses: missLists<StoichiometryMiss>({
-        convert: ['stopped_short', 'extra_step', 'upside_down_molar_mass', 'upside_down_ratio', 'skipped_ratio', 'out_of_order', 'other_substance', 'wrong_card'],
-        limiting: ['fewer_moles', 'smaller_mass', 'missed_both', 'said_both', 'other_reactant'],
-        yield: ['from_excess', 'skipped_ratio', 'upside_down_ratio', 'mass_sum', 'other_amount'],
-      }),
-    },
+    // Live-tutor wiring: `stoichiometryLab.card.ts` + `stoichiometryLab.boss.ts` (the spoken preset: a conversion-chain
+    // board, two SAY_OR_SHOW modes).
+    ...bossEntry(stoichiometryLabCard),
     evalModes: [
       { evalMode: 'convert', affordances: { answers: ['tap'] }, label: 'Conversion Chain (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Tap conversion-factor cards into the chain that turns a given mass into moles of the same substance, moles of another, or grams of another (one, two or three cards)' },
       { evalMode: 'limiting', affordances: { answers: ['tap', 'spoken'] }, label: 'Which Runs Out First (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'From two reactant masses, say or tap which reactant runs out first (the limiting reactant), or that both run out together' },
@@ -665,57 +386,8 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Gas laws lab built on a particle model: a container of gas (a rigid steel tank, a cylinder with a free piston, a sealed syringe in a water bath, or a cylinder that is pressed and heated at once) shown with its particles moving, a before/after table of pressure, volume and temperature, and a change. The learner predicts what happens to the quantity that moves, then the change runs on screen. Three eval modes: observe (predict the direction: up, down or stays the same, from the particle model), predict (one change: choose the new value by proportion), calculate (two changes at once: combined gas law). Every item, choice and key is built by code; wrong choices are the classic errors (inverted ratio, old value kept, degrees Celsius in a ratio, only one change applied). ESSENTIAL for HS chemistry: closes the Gas Behavior unit missing from the K-8 catalog.',
     constraints: 'Best for grades 8-12. Grade 8 defaults to observe (qualitative, particle model). Grades 9-10 observe and predict (Boyle, Charles, Gay-Lussac). Grades 11-12 predict and calculate (combined gas law). Ideal gases only; amounts are relative, never in moles, so it does not teach PV=nRT with R or real-gas deviations.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
-    tutoring: {
-      taskDescription: 'Student is in a gas laws lab ({{mode}}), item {{itemIndex}} of {{totalItems}}: {{ask}} Choices: {{choices}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'choices', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Look at the container. What does it keep the same while the change happens?"',
-        level2: '"Think about the particles. What does this change do to how fast they move, how many there are, or how much room they have? What does that do to how often they hit the walls?"',
-        level3: '"Write what stays constant for this container, then put the before values and the change into it. Which quantity is left to work out?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student confuses what holds constant when reading a gas law', response: 'Ask what the container does: a free piston slides until the push inside matches the weight, a steel tank cannot stretch, a water bath keeps the temperature.' },
-        { pattern: 'Student predicts the wrong direction for pressure when compressing volume', response: 'Anchor in collisions: less room means the particles reach the walls more often. Ask what that does to the pressure, without saying it.' },
-        { pattern: 'Student uses Celsius instead of Kelvin in gas-law calculations', response: 'Every gas-law ratio uses kelvin. Ask the learner to add 273 to each temperature before dividing.' },
-        { pattern: 'Student says more moles = higher temperature', response: 'Temperature is how fast each particle moves. Adding particles adds hits on the walls but does not make any particle faster.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'KMT NARRATION',
-          instruction:
-            'Ground every explanation in particle behavior: pressure is how hard and how often particles hit the walls, temperature is how fast they move, volume is the room they have. '
-            + 'Never state which choice is right or which way the asked quantity moves.',
-        },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'Code builds and checks every item, and you are not told the key; the learner taps a choice and presses Check '
-        + 'Answer, or says the answer. The screen shows the container with its gas BEFORE the change and a before/after '
-        + 'table with "?" for the asked quantity; the change runs on screen only after the answer is credited, so nothing on '
-        + 'screen shows the result first. Observe: say whether the asked quantity goes up, goes down or stays the same. On '
-        + 'some items the ask does not say what is held; the learner works it out from the container, and that is the task: '
-        + 'never say which quantity the container holds, or ask a yes-or-no question that settles it ("can the steel '
-        + 'stretch?", "does the space inside change?", "can the piston move?", "does the bath keep the temperature?"); '
-        + 'ask what the container keeps the same and let the learner name it. Predict: one change; choose the new '
-        + 'value. Calculate: two changes at once; choose the new value. Temperatures may be in degrees Celsius; the ratios '
-        + 'need kelvin. Never say which way the asked quantity moves, which value is right, that it "doubles", "halves" or '
-        + '"stays the same", or which factor to multiply or divide by; ask what the container keeps the same, what the '
-        + 'change does to the particles, and how big the change is. After a miss, never say what the wrong value came from '
-        + 'or which change the learner left out or turned round ("you only used the pressure", "remember the '
-        + 'cooling"); ask how each change on the table affects the asked quantity. With a lever card on screen, describe it only by what '
-        + 'the scene says it shows, never read it back as the conclusion (never "so the pressure goes up"), and ask the '
-        + 'learner what it tells them. No gauge or meter reading is drawn: after the run, the new value is in the table. '
-        + 'You cannot tap, check or run the change for the learner.',
-      // observe publishes particle_card (and held_label where the ask does not name what is held); predict and
-      // calculate relation_card, factor_line, kelvin_scale on Celsius items, and simpler_numbers / one_change
-      // (`gasLawsLevers.ts`). Every miss of every mode is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`gasMiss`) on a tap, and the same ids as each spoken item's known misses (`gasSpokenMisses`).
-      misses: missLists<GasLawsMiss>({ observe: ['opposite_direction', 'said_unchanged', 'missed_unchanged'],
-        predict: ['inverse_factor', 'kept_value', 'celsius_ratio'],
-        calculate: ['first_change_only', 'second_change_only', 'ratio_inverted', 'celsius_ratio'] }),
-    },
+    // Live-tutor wiring: `gasLawsSimulator.card.ts` + `gasLawsSimulator.boss.ts` (the spoken preset, SAY_OR_SHOW).
+    ...bossEntry(gasLawsSimulatorCard),
     evalModes: [
       { evalMode: 'observe', affordances: { answers: ['tap', 'spoken'] }, label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Predict whether a quantity goes up, goes down or stays the same when a container of gas is heated, squeezed or given more gas (particle model; some items leave what is held to infer from the container)' },
       { evalMode: 'predict', affordances: { answers: ['tap', 'spoken'] }, label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'One change to a container of gas: choose the new pressure or volume by proportion (Boyle, Charles, Gay-Lussac; hard items give temperatures in degrees Celsius)' },

@@ -1,28 +1,31 @@
 /**
- * The in-item levers on propulsion-lab (`/add-support-tiers`; report qa/eval-reports/propulsion-lab-levers-2026-10-16.md).
+ * The in-item levers on propulsion-lab, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/propulsion-lab-levers-2026-10-16.md).
  * No real-learner evidence: the misses are what `propulsionMiss` observes; the failures behind them are documented (the
  * old catalog's commonStruggles: a propeller thought to work in space, exhaust not linked to motion, action and
  * reaction confused) or inferred (two equal pushes not seen to cancel, an engine turned around, a test that changes two
  * things). Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `how_it_works` (help; predict): a card saying how each engine on the craft works. It names no motion and no place.
- * - `air_marks` (help; predict): labels the scene "air all around" or "no air here".
- * - `blast_arrows` (help; predict, engines only): an arrow at each engine's blast end, the way it is aimed to blast.
+ * - `how_it_works` (clue; predict): a card saying how each engine on the craft works. It names no motion and no place.
+ * - `air_marks` (marks; predict): labels the scene "air all around" or "no air here".
+ * - `blast_arrows` (marks; predict, engines only): an arrow at each engine's blast end, the way it is aimed to blast.
  *   Never an arrow on the craft or the way it goes.
- * - `label_streams` (help; observe): labels each engine's stream with the way it leaves, or "nothing comes out".
- * - `stream_units` (help; observe, two streams): writes each stream's length in units. No comparison.
- * - `compare_tests` (help; experiment): a row per setting saying whether Test A and Test B are the same or different,
+ * - `label_streams` (marks; observe): labels each engine's stream with the way it leaves, or "nothing comes out".
+ * - `stream_units` (marks; observe, two streams): writes each stream's length in units. No comparison.
+ * - `compare_tests` (layout; experiment): a row per setting saying whether Test A and Test B are the same or different,
  *   with what each test uses. It never says which setting should differ.
- * - `can_push` (help; experiment, throttle questions): under each test, whether its engine has anything to push there.
- * - `one_step` (simplify; predict, two engines or one turned around): one engine, or the engine the right way round.
- * - `one_stream` (simplify; observe, two streams): the same craft with only one stream.
- * - `one_test` (simplify; experiment with both tests free): the same question with Test A set and locked.
+ * - `can_push` (clue; experiment, throttle questions): under each test, whether its engine has anything to push there.
+ * - `one_step` (easier; predict, two engines or one turned around): one engine, or the engine the right way round.
+ * - `one_stream` (easier; observe, two streams): the same craft with only one stream.
+ * - `one_test` (easier; experiment with both tests free): the same question with Test A set and locked.
  * A simpler item is ungraded and its key differs from the full item's; the full item comes back after it.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
+import { PROPULSION_MISSES } from './propulsionLab.card';
 import {
-  emptyWork, ENGINES, fairSetups, keyOf, MOTIONS, PROPULSION_MISSES, propulsionMiss, works,
-  type ChoiceItem, type ExperimentItem, type ObserveItem, type PredictItem, type PropulsionItem, type PropulsionMiss,
+  emptyWork, ENGINES, fairSetups, keyOf, MOTIONS, propulsionKey, propulsionMiss, works,
+  type ChoiceItem, type ObserveItem, type PredictItem, type PropulsionItem, type PropulsionMiss, type PropulsionMode,
   type PropulsionWork, type Setup,
 } from './propulsionWorkspace';
 
@@ -103,84 +106,74 @@ export function simplerItem(item: PropulsionItem): PropulsionItem | null {
   return keyOf(s) !== key ? s : null;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly PropulsionMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
 const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
 
-/** The levers on the current session item. A practice item has none. */
-export function propulsionLevers(item: PropulsionItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(item);
-  if (item.mode === 'predict') {
-    const sail = item.thrusters[0].engine === 'sail';
-    out.push(lever(HOW_IT_WORKS_LEVER, 'help', pulled, ['said_moves', 'said_still', 'wrong_way'],
-      'The learner does not know what the engine needs or what it pushes.',
-      `Shows a card saying how ${item.thrusters.length > 1 ? 'each engine' : sail ? 'a sail' : 'the engine'} works (for example "a propeller spins its blades to push air"). It names no motion.`));
-    out.push(lever(AIR_MARKS_LEVER, 'help', pulled, ['said_moves', 'said_still'],
-      'The learner has not noticed whether there is air around the craft.',
-      'Labels the scene with whether there is air around the craft, and rings the specks of air if there are any.'));
-    if (!sail) {
-      out.push(lever(BLAST_ARROWS_LEVER, 'help', pulled, PROPULSION_MISSES.predict,
-        'The learner mixes up which way an engine blasts, or does not compare two engines.',
-        'Draws an arrow at each engine showing which way it is aimed to blast. Nothing is switched on and the craft does not move.'));
-    }
-    if (simpler) {
-      out.push(lever(ONE_STEP_LEVER, 'simplify', pulled, PROPULSION_MISSES.predict, 'The learner cannot follow two engines, or an engine turned around.',
-        `${item.thrusters.length > 1 ? 'Opens the same craft with one of its engines only' : 'Opens the same craft with its engine at the back, aimed to blast out to the left'}. ${PRACTICE_NOTE}`));
-    }
-    return out;
-  }
-  if (item.mode === 'observe') {
-    out.push(lever(LABEL_STREAMS_LEVER, 'help', pulled, PROPULSION_MISSES.observe,
-      'The learner does not see which way each stream leaves, or that an engine sends nothing out.',
-      'Labels each engine with the way its stream leaves, or that nothing comes out of it.'));
-    if (item.thrusters.filter(t => works(t.engine, item.place)).length > 1) {
-      out.push(lever(STREAM_UNITS_LEVER, 'help', pulled, ['missed_cancel', 'wrong_way', 'said_still'],
-        'The learner cannot judge which stream is longer.',
-        "Writes each stream's length in units beside it. It writes no comparison."));
-    }
-    if (simpler) {
-      out.push(lever(ONE_STREAM_LEVER, 'simplify', pulled, PROPULSION_MISSES.observe, 'The learner cannot weigh two streams at once.',
-        `Opens the same craft with only one of its streams. ${PRACTICE_NOTE}`));
-    }
-    return out;
-  }
-  out.push(lever(COMPARE_TESTS_LEVER, 'help', pulled, ['same_tests', 'changed_more_than_one', 'changed_other', 'wrong_subject'],
-    'The learner does not see what differs between the two tests, or tests a different engine or place than the question names.',
-    'Shows a row for each setting (engine, place, throttle) saying whether Test A and Test B are the same or different, and what each uses. It does not say which should differ.'));
-  if (item.question.vary === 'throttle') {
-    out.push(lever(CAN_PUSH_LEVER, 'help', pulled, ['cannot_show'],
-      'The learner tests the throttle where the engine cannot push anything.',
-      'Writes under each test whether its engine has anything to push where that test is.'));
-  }
-  if (simpler) {
-    out.push(lever(ONE_TEST_LEVER, 'simplify', pulled, PROPULSION_MISSES.experiment, 'The learner cannot set up both tests at once.',
-      `Opens the same question with Test A already set and locked, so only Test B is set. ${PRACTICE_NOTE}`));
-  }
-  return out;
-}
+/** What the levers read beside the item: the learner's two tests as set now (compare_tests and can_push follow them). */
+export interface PropulsionLeverContext { work?: PropulsionWork }
+const testsOf = (item: PropulsionItem, ctx: PropulsionLeverContext) => ctx.work ?? emptyWork(item);
+const engineWord = (item: PropulsionItem) => (item.mode === 'experiment' ? 'the engine'
+  : item.thrusters.length > 1 ? 'each engine' : item.thrusters[0].engine === 'sail' ? 'a sail' : 'the engine');
 
-/** What the pulled levers put on screen, as a scene fact. Never a key or a motion. */
-export function leverFact(item: PropulsionItem | undefined, pulled: readonly string[], work?: PropulsionWork): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (item.mode === 'predict') {
-    if (pulled.includes(HOW_IT_WORKS_LEVER)) parts.push(`A card: ${howLines(item).join(' ')}`);
-    if (pulled.includes(AIR_MARKS_LEVER)) parts.push(`The scene is labelled "${airLine(item)}".`);
-    if (pulled.includes(BLAST_ARROWS_LEVER)) parts.push('An arrow is drawn at each engine, the way it is aimed to blast. Nothing is switched on.');
-  } else if (item.mode === 'observe') {
-    if (pulled.includes(LABEL_STREAMS_LEVER)) parts.push(`Labels on the engines: ${streamLines(item).join(' ')}`);
-    if (pulled.includes(STREAM_UNITS_LEVER)) parts.push(`Lengths written beside the streams: ${unitLines(item).join(', ')}.`);
-  } else {
-    const w = work ?? emptyWork(item);
-    if (pulled.includes(COMPARE_TESTS_LEVER)) parts.push(`A row per setting: ${compareLines(w.a, w.b).join('; ')}.`);
-    if (pulled.includes(CAN_PUSH_LEVER)) parts.push(`Under Test A: ${canPushLine(w.a)} Under Test B: ${canPushLine(w.b)}`);
-  }
-  return parts.join(' ');
-}
+/** In the order the observer offers them: on every miss a help lever comes before the item's easier one. */
+export const PROPULSION_LEVERS = leverSet<PropulsionItem, PropulsionLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => PROPULSION_MISSES[mode as PropulsionMode] ?? [],
+  // The how-it-works card and the can-push lines never name what the craft does.
+  answersOf: item => { const key = propulsionKey(item); return key ? keyAnswers(key) : []; },
+  specs: [
+    { id: HOW_IT_WORKS_LEVER, type: 'clue', carrier: 'shown', modes: ['predict'], answers: ['said_moves', 'said_still', 'wrong_way'],
+      when: 'The learner does not know what the engine needs or what it pushes.',
+      does: item => `Shows a card saying how ${engineWord(item)} works (for example "a propeller spins its blades to push air"). It names no motion.`,
+      content: item => (item.mode === 'predict' ? howLines(item) : null),
+      fact: (lines: string[]) => `A card: ${lines.join(' ')}` },
+    { id: AIR_MARKS_LEVER, type: 'marks', modes: ['predict'], answers: ['said_moves', 'said_still'],
+      when: 'The learner has not noticed whether there is air around the craft.',
+      does: 'Labels the scene with whether there is air around the craft, and rings the specks of air if there are any.',
+      content: item => (item.mode === 'predict' ? airLine(item) : null),
+      fact: (line: string) => `The scene is labelled "${line}".` },
+    { id: BLAST_ARROWS_LEVER, type: 'marks', modes: ['predict'], answers: 'all',
+      when: 'The learner mixes up which way an engine blasts, or does not compare two engines.',
+      does: 'Draws an arrow at each engine showing which way it is aimed to blast. Nothing is switched on and the craft does not move.',
+      content: item => item.mode === 'predict' && item.thrusters[0].engine !== 'sail',
+      fact: 'An arrow is drawn at each engine, the way it is aimed to blast. Nothing is switched on.' },
+    { id: ONE_STEP_LEVER, type: 'easier', modes: ['predict'], answers: 'all',
+      when: 'The learner cannot follow two engines, or an engine turned around.',
+      does: item => `${item.mode === 'predict' && item.thrusters.length > 1 ? 'Opens the same craft with one of its engines only'
+        : 'Opens the same craft with its engine at the back, aimed to blast out to the left'}. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+    { id: LABEL_STREAMS_LEVER, type: 'marks', modes: ['observe'], answers: 'all',
+      when: 'The learner does not see which way each stream leaves, or that an engine sends nothing out.',
+      does: 'Labels each engine with the way its stream leaves, or that nothing comes out of it.',
+      content: item => (item.mode === 'observe' ? streamLines(item) : null),
+      fact: (lines: string[]) => `Labels on the engines: ${lines.join(' ')}` },
+    { id: STREAM_UNITS_LEVER, type: 'marks', modes: ['observe'], answers: ['missed_cancel', 'wrong_way', 'said_still'],
+      when: 'The learner cannot judge which stream is longer.',
+      does: "Writes each stream's length in units beside it. It writes no comparison.",
+      content: item => (item.mode === 'observe' && item.thrusters.filter(t => works(t.engine, item.place)).length > 1 ? unitLines(item) : null),
+      fact: (lines: string[]) => `Lengths written beside the streams: ${lines.join(', ')}.` },
+    { id: ONE_STREAM_LEVER, type: 'easier', modes: ['observe'], answers: 'all',
+      when: 'The learner cannot weigh two streams at once.',
+      does: `Opens the same craft with only one of its streams. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+    { id: COMPARE_TESTS_LEVER, type: 'layout', modes: ['experiment'], answers: ['same_tests', 'changed_more_than_one', 'changed_other', 'wrong_subject'],
+      when: 'The learner does not see what differs between the two tests, or tests a different engine or place than the question names.',
+      does: 'Shows a row for each setting (engine, place, throttle) saying whether Test A and Test B are the same or different, and what each uses. It does not say which should differ.',
+      content: (item, ctx) => (item.mode === 'experiment' ? compareLines(testsOf(item, ctx).a, testsOf(item, ctx).b) : null),
+      fact: (lines: string[]) => `A row per setting: ${lines.join('; ')}.` },
+    { id: CAN_PUSH_LEVER, type: 'clue', carrier: 'shown', modes: ['experiment'], answers: ['cannot_show'],
+      when: 'The learner tests the throttle where the engine cannot push anything.',
+      does: 'Writes under each test whether its engine has anything to push where that test is.',
+      content: (item, ctx) => (item.mode === 'experiment' && item.question.vary === 'throttle'
+        ? { a: canPushLine(testsOf(item, ctx).a), b: canPushLine(testsOf(item, ctx).b) } : null),
+      fact: (lines: { a: string; b: string }) => `Under Test A: ${lines.a} Under Test B: ${lines.b}` },
+    { id: ONE_TEST_LEVER, type: 'easier', modes: ['experiment'], answers: 'all',
+      when: 'The learner cannot set up both tests at once.',
+      does: `Opens the same question with Test A already set and locked, so only Test B is set. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's work can show. */
 export function possibleMisses(item: PropulsionItem): PropulsionMiss[] {

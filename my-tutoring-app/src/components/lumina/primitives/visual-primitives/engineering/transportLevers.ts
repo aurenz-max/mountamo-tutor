@@ -1,21 +1,22 @@
 /**
- * The in-item levers on transport-challenge (`/add-support-tiers`; report
+ * The in-item levers on transport-challenge, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/transport-challenge-levers-2026-10-16.md). No real-learner evidence: the misses are what
- * `vehicleMiss` observes; the failures behind them are documented (the catalog's commonStruggles: the fastest vehicle
- * picked without checking the budget, the cheapest per trip picked without counting trips, the CO2 limit ignored) or
- * inferred (the part-full trip not counted, one limit checked and the other not). Every lever starts released;
- * `config.difficulty` changes the items, not the levers.
+ * `vehicleMiss` observes; the failures behind them are documented (the old catalog's commonStruggles: the fastest
+ * vehicle picked without checking the budget, the cheapest per trip picked without counting trips, the CO2 limit
+ * ignored) or inferred (the part-full trip not counted, one limit checked and the other not). Every lever starts
+ * released; `config.difficulty` changes the items, not the levers.
  *
- * - `show_trips` (help): each card draws the load split into that vehicle's trips, one block a trip, the last one
+ * - `show_trips` (marks): each card draws the load split into that vehicle's trips, one block a trip, the last one
  *   part full when the load does not fill it, with the number of trips. No total, no limit.
- * - `times_setup` (help): each card writes, for each limit, the multiplication that gives the total ("12 trips x $25
+ * - `times_setup` (marks): each card writes, for each limit, the multiplication that gives the total ("12 trips x $25
  *   a trip"), never its product.
- * - `smaller_job` (simplify): a smaller job of the same kind with the first two cards, a load both fill evenly, and
+ * - `smaller_job` (easier): a smaller job of the same kind with the first two cards, a load both fill evenly, and
  *   the same kinds of limits. Ungraded; this item comes back after it. Its answer is never this item's answer.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { TRANSPORT_MISSES } from './transportChallenge.card';
 import {
-  amountText, fillsEvenly, keyVehicle, perTripText, totalFor, TRANSPORT_MISSES, tripsFor,
+  amountText, fillsEvenly, keyVehicle, perTripText, totalFor, tripsFor,
   type LimitType, type TransportItem, type TransportMiss, type TransportVehicle,
 } from './transportWorkspace';
 
@@ -86,38 +87,35 @@ function roundBetween(lo: number, hi: number): number {
   return lo;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly TransportMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+/** The levers read nothing beside the item. */
+export type TransportLeverContext = Record<string, never>;
+export const NO_CONTEXT: TransportLeverContext = {};
 
-/** The levers on the current session item. A practice item has none. */
-export function transportLevers(item: TransportItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [
-    lever(SHOW_TRIPS_LEVER, 'help', pulled, ['forgot_round_up', 'cheapest_per_trip', 'over_limit'],
-      'The learner does not know how many trips a vehicle needs, or does not count a part-full last trip.',
-      'Draws on each card the load split into that vehicle\'s trips, one block a trip, the last one part full when the load does not fill it, and writes the number of trips. It writes no total.'),
-    lever(TIMES_SETUP_LEVER, 'help', pulled, ['fewest_trips', 'cheapest_per_trip', 'one_limit_only', 'breaks_more', 'over_limit'],
-      'The learner compares per-trip figures instead of totals, or checks only one limit.',
-      'Writes on each card, for each limit, the multiplication that gives the total (for example "12 trips × $25 a trip"). It writes no product.'),
-  ];
-  if (simplerItem(item)) {
-    out.push(lever(SMALLER_JOB_LEVER, 'simplify', pulled, TRANSPORT_MISSES[item.mode],
-      'The learner cannot hold the whole job at once.',
-      'Opens a smaller job with two of these vehicles and a load that fills every trip. It is not graded; this item comes back after it.'));
-  }
-  return out;
-}
+/** The misses a lever answers on this item: the ones its mode names. */
+const inMode = (item: TransportItem) => TRANSPORT_MISSES[item.mode];
 
-/** What the pulled levers put on screen, as a scene fact. Never a total or a verdict. */
-export function leverFact(item: TransportItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(SHOW_TRIPS_LEVER)) parts.push(`Each card now draws its trips: ${item.vehicles.map(v => `${v.name}, ${tripLine(item, v)}`).join('; ')}.`);
-  if (pulled.includes(TIMES_SETUP_LEVER)) parts.push(`Each card now writes its multiplications, without the products: ${item.vehicles.map(v => `${v.name}, ${timesLines(item, v).join(' and ')}`).join('; ')}.`);
-  return parts.join(' ');
-}
+/** In the order the observer offers them: on every miss a help lever comes before the smaller job. */
+export const TRANSPORT_LEVERS = leverSet<TransportItem, TransportLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => TRANSPORT_MISSES[mode as TransportItem['mode']] ?? [],
+  specs: [
+    { id: SHOW_TRIPS_LEVER, type: 'marks', answers: ['forgot_round_up', 'cheapest_per_trip', 'over_limit'], answersOn: inMode,
+      when: 'The learner does not know how many trips a vehicle needs, or does not count a part-full last trip.',
+      does: 'Draws on each card the load split into that vehicle\'s trips, one block a trip, the last one part full when the load does not fill it, and writes the number of trips. It writes no total.',
+      fact: (_on: unknown, item) => `Each card now draws its trips: ${item.vehicles.map(v => `${v.name}, ${tripLine(item, v)}`).join('; ')}.` },
+    { id: TIMES_SETUP_LEVER, type: 'marks', answers: ['fewest_trips', 'cheapest_per_trip', 'one_limit_only', 'breaks_more', 'over_limit'],
+      answersOn: inMode,
+      when: 'The learner compares per-trip figures instead of totals, or checks only one limit.',
+      does: 'Writes on each card, for each limit, the multiplication that gives the total (for example "12 trips × $25 a trip"). It writes no product.',
+      fact: (_on: unknown, item) => `Each card now writes its multiplications, without the products: ${item.vehicles.map(v => `${v.name}, ${timesLines(item, v).join(' and ')}`).join('; ')}.` },
+    { id: SMALLER_JOB_LEVER, type: 'easier', answers: 'all',
+      when: 'The learner cannot hold the whole job at once.',
+      does: 'Opens a smaller job with two of these vehicles and a load that fills every trip. It is not graded; this item comes back after it.',
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's wrong picks show. */
 export function possibleMisses(item: TransportItem, miss: (v: TransportVehicle) => TransportMiss): TransportMiss[] {

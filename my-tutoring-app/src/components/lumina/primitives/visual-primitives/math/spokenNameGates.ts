@@ -15,9 +15,8 @@
  * be reconciled by reading either one. The counter-argument in the brief is
  * real (a premature shared module is how `numberWordFor` ended up in two
  * copies) and it is answered by the shape here rather than by the decision:
- * `compareObjectsScript` RE-EXPORTS what it used to define, so its public API,
- * its generator's imports and its test file are untouched. One definition, two
- * import paths, no drift.
+ * `compareObjectsDomain` RE-EXPORTS what it used to define, so its generator's
+ * imports are untouched. One definition, two import paths, no drift.
  *
  * ⭐ THE REFUSE-LIST IS PARAMETERISED, WHICH IS THE ACTUAL GENERALISATION.
  * Defect class 11 (a generated label that answers the ask out loud) has now bitten

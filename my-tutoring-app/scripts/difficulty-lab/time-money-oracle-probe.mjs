@@ -29,8 +29,8 @@ const server = await vite.createServer({
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateComponentContent } = await loader.import('/src/components/lumina/service/geminiService.ts');
-  const { validateAnalogClockData } = await loader.import('/src/components/lumina/components/live-activity/adapters/analogClockLive.ts');
-  const { validateCoinCounterData } = await loader.import('/src/components/lumina/components/live-activity/adapters/coinCounterLive.ts');
+  const { validateAnalogClockData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/analogClock.boss.ts');
+  const { validateCoinCounterData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/coinCounter.boss.ts');
   const { analogClockOracle } = await loader.import('/src/components/lumina/service/qa/oracles/analog-clock.ts');
   const { coinCounterOracle } = await loader.import('/src/components/lumina/service/qa/oracles/coin-counter.ts');
   let bad = 0;

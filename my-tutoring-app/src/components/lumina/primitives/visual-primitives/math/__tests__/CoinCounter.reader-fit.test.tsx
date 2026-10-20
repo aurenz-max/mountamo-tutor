@@ -32,33 +32,20 @@
  *     taps stamp the climbing skip-count + readout or a plain ✓ tag.
  *  9. Double-count is rejected at G1 exactly as at K; count-mixed and unstamped
  *     cards at G1 never enact.
+ *
+ * Mounted on the bound workspace, the only path since the boss (2026-10-19): the scripted Next
+ * button went with the scripted path, so "judged" reads the check the runtime recorded.
  */
-import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isConnected: true }),
-}));
-vi.mock('../../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    submittedResult: null,
-    elapsedMs: 0,
-  }),
-  // Completing the single challenge renders PhaseSummaryPanel → DemonstratedSkillDetails,
-  // which reads this context. Unmocked it throws and masks the auto-judge assertion.
-  useEvaluationContext: () => null,
-}));
-vi.mock('../../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import CoinCounter, {
-  type CoinCounterChallenge,
-  type CoinCounterData,
-} from '../CoinCounter';
+import { installRuntimeTimers, resetSeams, restoreRuntimeTimers } from '../../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace, type WorkspaceHarness } from '../../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { CoinCounterChallenge, CoinCounterData } from '../CoinCounter';
 
 /** 3 nickels = 15¢ — the canonical count-like card (single denomination, skip-count by 5). */
 const likeCard = (extra: Partial<CoinCounterChallenge> = {}): CoinCounterChallenge => ({
@@ -95,16 +82,17 @@ const mixedCard = (extra: Partial<CoinCounterChallenge> = {}): CoinCounterChalle
   ...extra,
 });
 
-const data = (
+let h: WorkspaceHarness;
+/** The lesson mounted the way a lesson mounts it, on the bound workspace (the only path since the boss). */
+const mount = (
   gradeBand: CoinCounterData['gradeBand'],
   challenges: CoinCounterChallenge[],
   extra: Partial<CoinCounterData> = {},
-): CoinCounterData => ({
-  title: 'coin-counter reader-fit test',
-  challenges,
-  gradeBand,
-  ...extra,
-});
+) => mountWorkspace({ primitiveId: 'coin-counter', instanceId: 'coins',
+  evalMode: challenges[0].countMode === 'like' ? 'count-like' : 'count-mixed',
+  data: { title: 'coin-counter reader-fit test', challenges, gradeBand, ...extra } });
+/** The runtime's verdict on the current item: the activity's own check, recorded. */
+const verdict = () => h.state().task!.evidence.correctness;
 
 /** Every coin renders as a <button>; in the inert path they carry `disabled`. */
 const coinButtons = () =>
@@ -118,12 +106,12 @@ const runningTotalG1 = () => screen.queryByTestId('enacted-running-total-g1');
 const countBadges = () =>
   document.querySelectorAll('[data-testid^="coin-count-badge-"]');
 
-beforeEach(() => cleanup());
-afterEach(() => cleanup());
+beforeEach(() => { resetSeams(); installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 describe('coin-counter — K count-like enacts the count (Task 3)', () => {
   it('renders tappable coins and NO number input / Check button', () => {
-    render(<CoinCounter data={data('K', [likeCard()])} />);
+    h = mount('K', [likeCard()]);
 
     const coins = coinButtons();
     expect(coins).toHaveLength(3);
@@ -137,7 +125,7 @@ describe('coin-counter — K count-like enacts the count (Task 3)', () => {
   });
 
   it('stamps the running skip-count total on each coin as it is tapped', () => {
-    render(<CoinCounter data={data('K', [likeCard()])} />);
+    h = mount('K', [likeCard()]);
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -155,20 +143,20 @@ describe('coin-counter — K count-like enacts the count (Task 3)', () => {
   it('auto-judges on the enacted total once every coin is counted', () => {
     // Two cards: finishing card 1 must NOT end the deck, or the challenge block
     // unmounts into the summary panel and there is nothing left to assert on.
-    render(<CoinCounter data={data('K', [likeCard(), secondLikeCard()])} />);
+    h = mount('K', [likeCard(), secondLikeCard()]);
     const coins = coinButtons();
 
     coins.forEach((c) => fireEvent.click(c));
 
     expect(runningTotal()?.textContent).toBe('15¢');
     expect(screen.getByText(/you counted 15¢/i)).toBeTruthy();
-    // Judged with no Check anywhere in the flow — advancing is the only control left.
+    // Judged with no Check anywhere in the flow: the activity recorded the count as right.
     expect(checkButton()).toBeNull();
-    expect(screen.getByRole('button', { name: /next challenge/i })).toBeTruthy();
+    expect(verdict()).toBe('correct');
   });
 
   it('does NOT judge while coins remain uncounted', () => {
-    render(<CoinCounter data={data('K', [likeCard()])} />);
+    h = mount('K', [likeCard()]);
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -178,7 +166,7 @@ describe('coin-counter — K count-like enacts the count (Task 3)', () => {
   });
 
   it('treats a double-count as an error and does not advance the total', () => {
-    render(<CoinCounter data={data('K', [likeCard()])} />);
+    h = mount('K', [likeCard()]);
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -194,7 +182,7 @@ describe('coin-counter — K count-like enacts the count (Task 3)', () => {
 
 describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (14b)', () => {
   it('renders tappable coins with NO input/Check until every coin is tagged', () => {
-    render(<CoinCounter data={data('1', [likeCard()])} />);
+    h = mount('1', [likeCard()]);
 
     const coins = coinButtons();
     expect(coins).toHaveLength(3);
@@ -211,7 +199,7 @@ describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (
   });
 
   it('stamps the climbing skip-count on taps when showRunningTotal is on', () => {
-    render(<CoinCounter data={data('1', [likeCard()], { showRunningTotal: true })} />);
+    h = mount('1', [likeCard()], { showRunningTotal: true });
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -223,7 +211,7 @@ describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (
   });
 
   it('stamps plain ✓ tags and hides the readout when showRunningTotal is off (medium/hard)', () => {
-    render(<CoinCounter data={data('1', [likeCard()], { showRunningTotal: false })} />);
+    h = mount('1', [likeCard()], { showRunningTotal: false });
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -236,9 +224,7 @@ describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (
   });
 
   it('reveals input + Check after the last tag and grades the TYPED total', () => {
-    render(
-      <CoinCounter data={data('1', [likeCard(), secondLikeCard()], { showRunningTotal: false })} />,
-    );
+    h = mount('1', [likeCard(), secondLikeCard()], { showRunningTotal: false });
     const coins = coinButtons();
     // The reveal is the fork: no answer surface exists until the tagging is done.
     expect(numberInput()).toBeNull();
@@ -254,24 +240,22 @@ describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (
     fireEvent.click(checkButton()!);
 
     expect(screen.getByText(/yes! the total is 15¢/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /next challenge/i })).toBeTruthy();
+    expect(verdict()).toBe('correct');
   });
 
   it('marks a wrong typed total as an error — the variant stays failable', () => {
-    render(
-      <CoinCounter data={data('1', [likeCard()], { showRunningTotal: false })} />,
-    );
+    h = mount('1', [likeCard()], { showRunningTotal: false });
     coinButtons().forEach((c) => fireEvent.click(c));
 
     fireEvent.change(numberInput()!, { target: { value: '25' } });
     fireEvent.click(checkButton()!);
 
     expect(screen.getByText(/the total is different/i)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();
+    expect(verdict()).toBe('incorrect');
   });
 
   it('rejects a double-count exactly as at K (shake, no advance, no input reveal)', () => {
-    render(<CoinCounter data={data('1', [likeCard()])} />);
+    h = mount('1', [likeCard()]);
     const coins = coinButtons();
 
     fireEvent.click(coins[0]);
@@ -286,7 +270,7 @@ describe('coin-counter — G1 count-like enacts the tag, keeps the typed total (
 
 describe('coin-counter — the fork does not leak (contract guard)', () => {
   it('Grade-2 control: the SAME count-like card keeps input + Check, coins inert', () => {
-    render(<CoinCounter data={data('2', [likeCard()])} />);
+    h = mount('2', [likeCard()]);
 
     expect(numberInput()).toBeTruthy();
     expect(checkButton()).toBeTruthy();
@@ -296,7 +280,7 @@ describe('coin-counter — the fork does not leak (contract guard)', () => {
   });
 
   it('count-mixed is unchanged AT G1 (the enacted variant is mode-gated)', () => {
-    render(<CoinCounter data={data('1', [mixedCard()])} />);
+    h = mount('1', [mixedCard()]);
 
     expect(numberInput()).toBeTruthy();
     expect(checkButton()).toBeTruthy();
@@ -307,7 +291,7 @@ describe('coin-counter — the fork does not leak (contract guard)', () => {
   it('an unstamped count card at G1 falls back to the typed path, never enacts', () => {
     const unstamped = likeCard();
     delete unstamped.countMode;
-    render(<CoinCounter data={data('1', [unstamped])} />);
+    h = mount('1', [unstamped]);
 
     expect(numberInput()).toBeTruthy();
     expect(checkButton()).toBeTruthy();
@@ -315,7 +299,7 @@ describe('coin-counter — the fork does not leak (contract guard)', () => {
   });
 
   it('count-mixed is unchanged EVEN AT K (Grade-2 consumer not ablated)', () => {
-    render(<CoinCounter data={data('K', [mixedCard()])} />);
+    h = mount('K', [mixedCard()]);
 
     expect(numberInput()).toBeTruthy();
     expect(checkButton()).toBeTruthy();
@@ -326,7 +310,7 @@ describe('coin-counter — the fork does not leak (contract guard)', () => {
   it('an unstamped count card falls back to the typed path, never enacts', () => {
     const unstamped = likeCard();
     delete unstamped.countMode;
-    render(<CoinCounter data={data('K', [unstamped])} />);
+    h = mount('K', [unstamped]);
 
     expect(numberInput()).toBeTruthy();
     expect(checkButton()).toBeTruthy();
@@ -334,7 +318,7 @@ describe('coin-counter — the fork does not leak (contract guard)', () => {
   });
 
   it('grades the typed count-mixed answer exactly as before', () => {
-    render(<CoinCounter data={data('2', [mixedCard(), secondLikeCard()])} />);
+    h = mount('2', [mixedCard(), secondLikeCard()]);
 
     fireEvent.change(numberInput()!, { target: { value: '23' } });
     fireEvent.click(checkButton()!);

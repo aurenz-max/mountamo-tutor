@@ -87,7 +87,7 @@ export interface DiStageLevers<Item> {
   /** What the levers on screen show, as a scene fact. Never the item's answer. */
   onScreen: (item: Item, pulled: readonly string[]) => string;
   /** When the model lever comes, by the item's tier (`leverSet` support). The scene never writes it. */
-  support: (item: Item) => string;
+  support: (item: Item, lastMiss?: string) => string;
   /** Levers the item's tier starts with on screen. Not a pull, so never recorded. */
   starting?: (item: Item) => readonly string[];
   /** The easier item a simplify lever opens, with an id of its own, or null to refuse. */
@@ -199,7 +199,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled, lastMiss) : [];
     const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
     workspace.current = {
-      ...leverScene(drawn, { support: levers?.support(item) ?? '', onScreen }),
+      ...leverScene(drawn, { support: levers?.support(item, practiceItem ? undefined : lastMiss) ?? '', onScreen }),
       demonstration: marks,
       readyForResponse: ready, canDemonstrate: true, mark, clearPresentation: () => mark([]),
       ...(levers ? {

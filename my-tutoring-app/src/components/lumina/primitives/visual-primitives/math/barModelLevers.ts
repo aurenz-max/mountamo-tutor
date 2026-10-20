@@ -1,6 +1,6 @@
 /**
- * The in-item levers on bar-model's twelve answer-on-the-graph and spoken modes (`/add-support-tiers`, report
- * qa/eval-reports/bar-model-levers-2026-10-08.md). make_graph keeps its own levers (`barModelBuild.ts`). No real-learner
+ * The in-item levers on every bar-model mode, as one lever set (`BAR_LEVERS`, `bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/bar-model-levers-2026-10-08.md); make_graph's open-build levers are drawn by `GraphBuildScene`. No real-learner
  * evidence: the misses are what `barModelMiss` and `barModelSpokenMisses` observe. Pure: the component draws from
  * these, the workspace publishes them, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`,
  * the same mode, and is built by `simplerGraph`.
@@ -22,8 +22,11 @@
  * Simplify `simpler_graph`: fewer rows, a wider gap, a finer axis or key, or a one-step question, of the same mode,
  * never the item's answer.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { OFF_BY } from '../../../components/live-activity/boss';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { BarModelChallenge, BarModelEvalMode, BarValue } from './BarModel';
+import { BAR_MODEL_MISSES } from './barModel.card';
+import { COUNTS_LEVER, LINE_LEVER, TWO_BARS_LEVER, twoBarPractice } from './barModelBuild';
 
 export const MARK_ROW = 'mark_row';
 export const GROUP_FIVES = 'group_fives';
@@ -41,8 +44,6 @@ export const STEP_MARKS = 'step_marks';
 export const SIMPLER = 'simpler_graph';
 export const PRACTICE_SUFFIX = '~simpler';
 export const PRACTICE_NOTE = 'An easier graph, ungraded. The full graph comes back after it.';
-
-const OFF = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
 /** Modes whose answer is a row's own number: marking the row names no answer. */
 const READ_ROW: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph']);
@@ -280,141 +281,147 @@ export function simplerGraph(c: BarModelChallenge): BarModelChallenge | null {
   return p && !simplerLeaks(p, c) ? p : null;
 }
 
-// ── the levers on an item ────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────────
 
-/** A starting position from the generator's tier fields (absent = on, as the component draws them). Not a pull. */
-export function startsOn(c: BarModelChallenge, id: string): boolean {
-  if (id === MARK_ROW) return c.showTargetHighlight !== false;
-  if (id === BAR_VALUES) return c.showBarValues !== false;
-  return false;
+/** What the levers read beyond the item: the bars as the learner has set them (build modes) or as drawn. */
+export interface BarLeverView { built: readonly { value: number }[] }
+
+/** The help a generator tier already draws (absent = on, as the component draws them): offered as pulled, not a pull. */
+export function tierPulled(c: BarModelChallenge | null): string[] {
+  if (!c) return [];
+  return [...(c.showTargetHighlight !== false ? [MARK_ROW] : []), ...(c.showBarValues !== false ? [BAR_VALUES] : [])];
 }
 
-/** The levers on a session item (every mode but make_graph). `pulled` holds this item's runtime pulls. */
-export function barModelLevers(c: BarModelChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || c.evalMode === 'make_graph' || isSimplerGraph(c)) return [];
-  const levers: WorkspaceLever[] = [];
-  const on = (id: string) => startsOn(c, id) || pulled.includes(id);
-  const help = (id: string, carrier: WorkspaceLever['carrier'], answers: string[], when: string, does: string) =>
-    levers.push({ id, kind: 'help', carrier, pulled: on(id), answers, when, does });
-  const back = 'It is not graded; this graph comes back after it, unanswered.';
-  const simplify = (answers: string[], does: string) => {
-    if (simplerGraph(c)) levers.push({ id: SIMPLER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER), answers,
-      when: 'The learner cannot do this graph even with the help on screen: an easier one first.', does: `${does} ${back}` });
-  };
-  const mode = c.evalMode;
-  const markRow = () => { if (!markRowLeaks(c)) help(MARK_ROW, 'shown', ['another_row'],
-    'The learner answers with the number of a row the question does not ask about.',
-    'Puts the amber mark around the row the question asks about. No number is written; you may point to the row, never say its number.'); };
-  const fives = (answers: string[], when: string) => { if (fivesRows(c).length) help(GROUP_FIVES, 'shown', answers, when,
-    'Draws a small gap after every fifth picture in each long row, so a row reads as five and some more. No number is written.'); };
-  const words = (answers: string[], when: string) => {
-    const m = wordModel(c);
-    if (m) help(WORD_MODEL, 'both', answers, when,
-      `Draws a model beside the graph in other pictures: rows labelled ${m.rows.filter(r => r.word).map(r => `"${r.word}"`).join(' and ')}. `
-        + 'You may point to the model and say its words; never point to a row of the graph as the answer.');
-  };
-  switch (mode) {
-    case 'read_one_to_one':
-      markRow();
-      fives([...OFF], 'The learner miscounts the pictures in the row.');
-      simplify(['another_row', ...OFF], 'Opens an easier graph with two rows, the asked row shorter.');
-      break;
-    case 'most_least':
-      words(['reversed'], 'The learner picks the row with the fewest where the question asks for the most, or the other way round.');
-      fives(['other_row'], 'The learner picks a row that is not the longest (or shortest) one.');
-      simplify(['reversed', 'other_row'], 'Opens an easier graph with three rows, one far ahead of the others.');
-      break;
-    case 'compare_bars':
-      words(['reversed'], 'The learner picks the shorter bar where the question asks for more, or the other way round.');
-      simplify(['reversed', 'other_row'], 'Opens an easier graph with the two bars far apart.');
-      break;
-    case 'match_to_bar':
-      help(PILE_ROW, 'shown', [...OFF], 'The learner picks a row with one too many or too few, or a row far off the group.',
-        'Draws the group to count again as a row of its own above the graph, one picture per column like the rows. '
-          + 'It is not a row to tap; no number is written and no row is marked.');
-      simplify([...OFF], 'Opens an easier graph with three rows far apart and a smaller group, lined up.');
-      break;
-    case 'build_one_to_one':
-      help(SORT_PILE, 'shown', ['rows_swapped', 'several_rows_off', ...OFF],
-        'The learner puts stickers in the wrong rows or loses count of a kind in the mixed pile.',
-        'Redraws the pile sorted: one line for each kind, in the same order as the rows. No number is written.');
-      fives([...OFF], 'The learner puts one too many or too few stickers in a long row.');
-      simplify(['rows_swapped', 'several_rows_off', ...OFF], 'Opens an easier chart with two kinds and a sorted pile.');
-      break;
-    case 'say_what_it_shows':
-      words(['reversed_comparison', 'no_comparison'], 'The learner turns a comparison around, or says a number or a row name with no comparison word.');
-      fives(['same_for_different'], 'The learner says two rows are the same where their lengths differ.');
-      break;
-    case 'compare_two_graphs':
-      help(PAIR_ROWS, 'shown', ['rows_not_graphs', 'same_for_different'],
-        'The learner compares two rows inside one survey, or calls two different rows the same.',
-        `Draws each kind's two rows next to each other, the ${c.graphLabel ?? 'first'} row above the ${c.secondGraphLabel ?? 'second'} row. No number is written.`);
-      words(['reversed_comparison', 'no_comparison'], 'The learner turns a comparison around, or says a number or a row name with no comparison word.');
-      break;
-    case 'read_scale': case 'scaled_bar_graph':
-      markRow();
-      if (typeof c.targetBarIndex === 'number') help(GUIDE_LINE, 'shown', ['another_row', 'one_step_off', ...OFF],
-        'The learner reads the asked bar against the wrong mark on the axis, or follows a neighbouring bar to the axis.',
-        'Draws a dashed line from the end of the asked bar straight down to the axis. No number is written on it.');
-      if (minorStep(c)) help(MINOR_TICKS, 'shown', ['one_step_off', 'one_short', 'one_over'],
-        'The learner cannot tell what a bar between two numbered marks stands for.',
-        'Adds a small unlabelled mark on the axis for every one between the numbered marks.');
-      simplify(['one_step_off', ...OFF], 'Opens an easier graph of the same rows on an axis that counts by a smaller step.');
-      break;
-    case 'picture_graph':
-      markRow();
-      if ((c.scale?.iconValue ?? 1) > 1) help(ICON_VALUES, 'shown', ['picked_icon_count', 'one_step_off', ...OFF],
-        'The learner counts the pictures but answers with the count, or skip-counts by the wrong amount.',
-        `Writes the key's number (${c.scale?.iconValue}) small under every picture. Never a running total; you may skip-count with the learner, never say the row's total.`);
-      simplify(['picked_icon_count', 'one_step_off', ...OFF], 'Opens an easier graph where one picture stands for 2.');
-      break;
-    case 'graph_word_problem': {
-      if (namedRows(c).length) help(MARK_BARS, 'shown', ['another_row'],
-        'The learner answers with one bar\'s number instead of working the question.',
-        'Puts the amber mark around the bars the question names. No number is written; never say which operation to use.');
-      if (!barValuesLeak(c)) help(BAR_VALUES, 'shown', ['one_step_off', ...OFF],
-        'The learner misreads a bar against the axis.', 'Writes each bar\'s number at its end. The answer is none of them.');
-      if (minorStep(c)) help(MINOR_TICKS, 'shown', ['one_step_off', 'one_short', 'one_over'],
-        'The learner cannot tell what a bar between two numbered marks stands for.',
-        'Adds a small unlabelled mark on the axis for every one between the numbered marks.');
-      simplify(['another_row', 'one_step_off', ...OFF], 'Opens an easier question: how many more, between two bars, on an axis counting by one.');
-      break;
-    }
-    case 'build_graph':
-      if (!dataBesideLeaks(c)) help(DATA_BESIDE, 'shown', ['rows_swapped', 'several_rows_off', ...OFF],
-        'The learner sets a bar to another row\'s number or loses track of the numbers in the question.',
-        'Writes the number the question gives for each row beside that row\'s buttons. Only numbers the question already says.');
-      help(STEP_MARKS, 'shown', ['wrong_step'], 'The learner picks a scale step that does not suit their bars.',
-        'Writes on each step button how many numbered marks that step needs to reach the learner\'s own tallest bar. No step is marked as best: '
-        + 'never say which step or how many marks to pick; let the learner compare the counts and choose.');
-      break;
-    default: break;
-  }
-  return levers;
-}
+const READ: BarModelEvalMode[] = ['read_one_to_one', 'read_scale', 'picture_graph', 'scaled_bar_graph'];
+const SCALED: BarModelEvalMode[] = ['read_scale', 'scaled_bar_graph'];
+const SPOKEN: BarModelEvalMode[] = ['say_what_it_shows', 'compare_two_graphs'];
+const OFF = [...OFF_BY];
+const ROWS = ['rows_swapped', 'several_rows_off', ...OFF];
+const BACK = 'It is not graded; this graph comes back after it, unanswered.';
+const NO_COMPARISON = 'The learner turns a comparison around, or says a number or a row name with no comparison word.';
+const fives = (c: BarModelChallenge) => (fivesRows(c).length ? fivesRows(c) : null);
+const FIVES_DOES = 'Draws a small gap after every fifth picture in each long row, so a row reads as five and some more. No number is written.';
+const FIVES_FACT = 'A small gap after every fifth picture in each long row; no number written.';
+const modelDoes = (c: BarModelChallenge) => {
+  const m = wordModel(c);
+  return `Draws a model beside the graph in other pictures: rows labelled ${m?.rows.filter(r => r.word).map(r => `"${r.word}"`).join(' and ')}. `
+    + 'You may point to the model and say its words; never point to a row of the graph as the answer.';
+};
+const modelFact = (m: WordModel) => `A model beside the graph in ${m.glyph} pictures, not rows of the graph: `
+  + `${m.rows.map(r => `a row of ${r.count}${r.word ? ` labelled "${r.word}"` : ''}`).join(', ')}.`;
+const easier = (modes: BarModelEvalMode[], answers: readonly string[], does: string) => ({
+  id: SIMPLER, type: 'easier' as const, carrier: 'shown' as const, modes, answers, content: simplerGraph,
+  when: 'The learner cannot do this graph even with the help on screen: an easier one first.', does: `${does} ${BACK}` });
+/** make_graph's rule and its row names, for the words that differ by ask. */
+const ruleOf = (c: BarModelChallenge) => c.graphRule!;
+const nameOf = (c: BarModelChallenge, i: number | undefined, or: string) => c.values[i ?? -1]?.label ?? or;
 
-/** Why a pull would change nothing yet, or undefined. */
-export function leverRefusal(c: BarModelChallenge, id: string, built: readonly { value: number }[]): string | undefined {
-  if (id === STEP_MARKS && !stepMarks(c.availableScaleSteps ?? [1, 2, 5, 10], built))
-    return 'No bar is set yet, so there is nothing to count marks to. Set a bar first.';
-  return undefined;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV: what is drawn, never the answer. */
-export function leverFacts(c: BarModelChallenge, on: (id: string) => boolean, built: readonly { value: number }[]): string | undefined {
-  const parts: string[] = [];
-  if (on(GROUP_FIVES) && fivesRows(c).length) parts.push('A small gap after every fifth picture in each long row; no number written');
-  if (on(PILE_ROW)) parts.push('The group to count is drawn again as a row above the graph, one picture per column; not tappable, no number, no row marked');
-  if (on(SORT_PILE)) parts.push('The pile is sorted, one line per kind in the order of the rows; no number written');
-  const m = on(WORD_MODEL) ? wordModel(c) : null;
-  if (m) parts.push(`A model beside the graph in ${m.glyph} pictures, not rows of the graph: ${m.rows.map(r => `a row of ${r.count}${r.word ? ` labelled "${r.word}"` : ''}`).join(', ')}`);
-  if (on(PAIR_ROWS)) parts.push(`Each kind's two rows are drawn next to each other (${c.graphLabel} above ${c.secondGraphLabel}); no number written`);
-  if (on(GUIDE_LINE)) parts.push('A dashed line from the end of the asked bar down to the axis; no number written on it');
-  if (on(MINOR_TICKS)) parts.push('Small unlabelled marks on the axis for every one between the numbered marks');
-  if (on(ICON_VALUES)) parts.push(`The number ${c.scale?.iconValue} written under every picture; no totals`);
-  if (on(MARK_BARS) && !startsOn(c, MARK_BARS)) parts.push(`The bars the question names are marked: ${namedRows(c).map(i => c.values[i].label).join(', ')}`);
-  if (on(DATA_BESIDE)) parts.push('Beside each row\'s buttons, the number the question gives for that row');
-  const marks = on(STEP_MARKS) ? stepMarks(c.availableScaleSteps ?? [1, 2, 5, 10], built) : null;
-  if (marks) parts.push(`Each step button shows the marks it needs to reach the learner's tallest bar: ${Object.entries(marks).map(([s, n]) => `step ${s}, ${n} marks`).join('; ')}`);
-  return parts.length ? parts.join('. ') : undefined;
-}
+/** Every in-item lever of every mode; make_graph's open-build levers draw on `GraphBuildScene` (`barModelBuild.ts`). */
+export const BAR_LEVERS = leverSet<BarModelChallenge, BarLeverView>({
+  modeOf: c => c.evalMode,
+  missesOf: mode => BAR_MODEL_MISSES[mode as keyof typeof BAR_MODEL_MISSES] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a model graph in other pictures, its rows labelled with the comparison words',
+    own: 'which row of this graph has more or fewer' },
+  specs: [
+    { id: MARK_ROW, type: 'marks', modes: READ, answers: ['another_row'], offer: c => !markRowLeaks(c),
+      when: 'The learner answers with the number of a row the question does not ask about.',
+      does: 'Puts the amber mark around the row the question asks about. No number is written; you may point to the row, never say its number.' },
+    { id: PAIR_ROWS, type: 'layout', modes: ['compare_two_graphs'], answers: ['rows_not_graphs', 'same_for_different'],
+      when: 'The learner compares two rows inside one survey, or calls two different rows the same.',
+      does: c => `Draws each kind's two rows next to each other, the ${c.graphLabel ?? 'first'} row above the ${c.secondGraphLabel ?? 'second'} row. No number is written.`,
+      fact: (_on: unknown, c) => `Each kind's two rows are drawn next to each other (${c.graphLabel} above ${c.secondGraphLabel}); no number written.` },
+    { id: WORD_MODEL, type: 'model', modes: ['most_least', 'compare_bars'], answers: ['reversed'], content: wordModel,
+      when: c => (c.evalMode === 'most_least' ? 'The learner picks the row with the fewest where the question asks for the most, or the other way round.'
+        : 'The learner picks the shorter bar where the question asks for more, or the other way round.'),
+      does: modelDoes, fact: modelFact },
+    { id: WORD_MODEL, type: 'model', modes: SPOKEN, answers: ['reversed_comparison', 'no_comparison'], content: wordModel,
+      when: NO_COMPARISON, does: modelDoes, fact: modelFact },
+    { id: SORT_PILE, type: 'layout', modes: ['build_one_to_one'], answers: ROWS,
+      when: 'The learner puts stickers in the wrong rows or loses count of a kind in the mixed pile.',
+      does: 'Redraws the pile sorted: one line for each kind, in the same order as the rows. No number is written.',
+      fact: 'The pile is sorted, one line per kind in the order of the rows; no number written.' },
+    { id: PILE_ROW, type: 'layout', modes: ['match_to_bar'], answers: OFF,
+      when: 'The learner picks a row with one too many or too few, or a row far off the group.',
+      does: 'Draws the group to count again as a row of its own above the graph, one picture per column like the rows. '
+        + 'It is not a row to tap; no number is written and no row is marked.',
+      fact: 'The group to count is drawn again as a row above the graph, one picture per column; not tappable, no number, no row marked.' },
+    { id: GROUP_FIVES, type: 'layout', modes: ['read_one_to_one', 'build_one_to_one'], answers: OFF, content: fives,
+      when: c => (c.evalMode === 'build_one_to_one' ? 'The learner puts one too many or too few stickers in a long row.'
+        : 'The learner miscounts the pictures in the row.'), does: FIVES_DOES, fact: FIVES_FACT },
+    { id: GROUP_FIVES, type: 'layout', modes: ['most_least'], answers: ['other_row'], content: fives,
+      when: 'The learner picks a row that is not the longest (or shortest) one.', does: FIVES_DOES, fact: FIVES_FACT },
+    { id: GROUP_FIVES, type: 'layout', modes: ['say_what_it_shows'], answers: ['same_for_different'], content: fives,
+      when: 'The learner says two rows are the same where their lengths differ.', does: FIVES_DOES, fact: FIVES_FACT },
+    { id: GUIDE_LINE, type: 'marks', modes: SCALED, answers: ['another_row', 'one_step_off', ...OFF],
+      offer: c => typeof c.targetBarIndex === 'number',
+      when: 'The learner reads the asked bar against the wrong mark on the axis, or follows a neighbouring bar to the axis.',
+      does: 'Draws a dashed line from the end of the asked bar straight down to the axis. No number is written on it.',
+      fact: 'A dashed line from the end of the asked bar down to the axis; no number written on it.' },
+    { id: MARK_BARS, type: 'marks', modes: ['graph_word_problem'], answers: ['another_row'], offer: c => namedRows(c).length > 0,
+      when: 'The learner answers with one bar\'s number instead of working the question.',
+      does: 'Puts the amber mark around the bars the question names. No number is written; never say which operation to use.',
+      fact: (_on: unknown, c) => `The bars the question names are marked: ${namedRows(c).map(i => c.values[i].label).join(', ')}.` },
+    { id: BAR_VALUES, type: 'marks', modes: ['graph_word_problem'], answers: ['one_step_off', ...OFF], offer: c => !barValuesLeak(c),
+      when: 'The learner misreads a bar against the axis.', does: 'Writes each bar\'s number at its end. The answer is none of them.' },
+    { id: MINOR_TICKS, type: 'marks', modes: [...SCALED, 'graph_word_problem'], answers: ['one_step_off', 'one_short', 'one_over'],
+      content: minorStep, when: 'The learner cannot tell what a bar between two numbered marks stands for.',
+      does: 'Adds a small unlabelled mark on the axis for every one between the numbered marks.',
+      fact: 'Small unlabelled marks on the axis for every one between the numbered marks.' },
+    { id: ICON_VALUES, type: 'marks', modes: ['picture_graph'], answers: ['picked_icon_count', 'one_step_off', ...OFF],
+      offer: c => (c.scale?.iconValue ?? 1) > 1,
+      when: 'The learner counts the pictures but answers with the count, or skip-counts by the wrong amount.',
+      does: c => `Writes the key's number (${c.scale?.iconValue}) small under every picture. Never a running total; you may skip-count with the learner, never say the row's total.`,
+      fact: (_on: unknown, c) => `The number ${c.scale?.iconValue} written under every picture; no totals.` },
+    { id: DATA_BESIDE, type: 'legend', modes: ['build_graph'], answers: ROWS, offer: c => !dataBesideLeaks(c),
+      when: 'The learner sets a bar to another row\'s number or loses track of the numbers in the question.',
+      does: 'Writes the number the question gives for each row beside that row\'s buttons. Only numbers the question already says.',
+      fact: 'Beside each row\'s buttons, the number the question gives for that row.' },
+    { id: STEP_MARKS, type: 'legend', modes: ['build_graph'], answers: ['wrong_step'],
+      content: (c, v) => stepMarks(c.availableScaleSteps ?? [1, 2, 5, 10], v.built),
+      when: 'The learner picks a scale step that does not suit their bars.',
+      does: 'Writes on each step button how many numbered marks that step needs to reach the learner\'s own tallest bar. No step is marked as best: '
+        + 'never say which step or how many marks to pick; let the learner compare the counts and choose.',
+      fact: (marks: Record<number, number>) => 'Each step button shows the marks it needs to reach the learner\'s tallest bar: '
+        + `${Object.entries(marks).map(([s, n]) => `step ${s}, ${n} marks`).join('; ')}.` },
+    easier(['read_one_to_one'], ['another_row', ...OFF], 'Opens an easier graph with two rows, the asked row shorter.'),
+    easier(['most_least'], ['reversed', 'other_row'], 'Opens an easier graph with three rows, one far ahead of the others.'),
+    easier(['compare_bars'], ['reversed'], 'Opens an easier graph with the two bars far apart.'),
+    easier(['match_to_bar'], OFF, 'Opens an easier graph with three rows far apart and a smaller group, lined up.'),
+    easier(['build_one_to_one'], ROWS, 'Opens an easier chart with two kinds and a sorted pile.'),
+    easier(SCALED, ['one_step_off', ...OFF], 'Opens an easier graph of the same rows on an axis that counts by a smaller step.'),
+    easier(['picture_graph'], ['picked_icon_count', 'one_step_off', ...OFF], 'Opens an easier graph where one picture stands for 2.'),
+    easier(['graph_word_problem'], ['another_row', 'one_step_off', ...OFF],
+      'Opens an easier question: how many more, between two bars, on an axis counting by one.'),
+    // make_graph: the levers start bare (keeping the bars straight IS the task) and come on a miss.
+    { id: LINE_LEVER, type: 'marks', modes: ['make_graph'], answers: ['reversed', 'tied', 'other_row', 'not_same', 'short_by_more', 'over_by_more'],
+      answersOn: c => (ruleOf(c).kind === 'more_than' ? ['reversed', 'short_by_more', 'over_by_more']
+        : ruleOf(c).kind === 'same' ? ['not_same'] : ['reversed', 'tied', 'other_row']),
+      when: c => {
+        const r = ruleOf(c), a = nameOf(c, r.a, 'the named'), b = nameOf(c, r.b, 'the other');
+        return r.kind === 'more_than' ? `The learner puts in far too many or too few extra ${a}, or makes ${b} the taller bar.`
+          : r.kind === 'same' ? `The learner makes the ${a} and ${b} bars different heights.`
+            : `The learner cannot see which bar is ${r.kind === 'fewest' ? 'shortest' : 'tallest'}, or makes another bar as `
+              + `${r.kind === 'most' ? 'tall' : 'short'} as the ${a} bar.`;
+      },
+      does: c => {
+        const r = ruleOf(c), a = nameOf(c, r.a, 'the named'), b = nameOf(c, r.b, 'the other');
+        const moves = 'It moves as the learner puts pictures in or takes them out.';
+        return r.kind === 'more_than' ? `Draws a dashed line across the graph at the top of the ${b} bar; the ${a} pictures above the line are the extra ones. ${moves}`
+          : r.kind === 'same' ? `Draws a dashed line across the graph at the top of the ${a} bar, so the learner can see where the ${b} bar reaches against it. ${moves}`
+            : `Draws a dashed line across the graph at the top of the ${a} bar, so each bar shows whether it reaches past it. ${moves}`;
+      } },
+    { id: COUNTS_LEVER, type: 'marks', carrier: 'both', modes: ['make_graph'], answers: ['one_short', 'one_over', 'not_same', 'left_empty', 'tied'],
+      answersOn: c => (ruleOf(c).kind === 'more_than' ? ['one_short', 'one_over'] : ruleOf(c).kind === 'same' ? ['not_same', 'left_empty'] : ['tied']),
+      when: c => {
+        const r = ruleOf(c), a = nameOf(c, r.a, 'the named'), b = nameOf(c, r.b, 'the other');
+        return r.kind === 'more_than' ? `The learner puts in one too many or one too few extra ${a}.`
+          : r.kind === 'same' ? `The learner cannot tell whether the ${a} and ${b} bars hold the same number of pictures.`
+            : 'The learner makes two bars the same height without seeing it.';
+      },
+      does: 'Shows above each bar how many pictures the learner has put in it so far. Never a number the ask needs.' },
+    { id: TWO_BARS_LEVER, type: 'easier', carrier: 'shown', modes: ['make_graph'], answers: 'all', content: twoBarPractice,
+      when: 'The learner cannot keep every bar straight while they put pictures in.',
+      does: c => `Opens an easier graph to make first with only the ${twoBarPractice(c)?.values.map(v => v.label).join(' and ') ?? 'two'} `
+        + 'bars and the same ask, all empty. It is not graded; the full graph comes back after it.' },
+  ],
+});

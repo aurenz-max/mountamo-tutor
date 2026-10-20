@@ -1,24 +1,25 @@
 /**
- * The in-item levers on a coin-counter item (`/add-support-tiers`; reports qa/open-build/coin-counter-2026-10-07 and
- * qa/eval-reports/coin-counter-levers-2026-10-08.md). No real-learner evidence: the misses are what `coinMiss` observes
- * and the catalog's commonStruggles. Pure: the component draws from these, the workspace publishes them, the tests
- * hold each leak rule. Every easier item has the id `<item>~smaller`, the same mode, and is built by `practiceItem`.
+ * The in-item levers on a coin-counter item, every mode, as one lever set (`bossLevers.ts`; `/add-support-tiers`,
+ * reports qa/open-build/coin-counter-2026-10-07 and qa/eval-reports/coin-counter-levers-2026-10-08.md). No real-learner
+ * evidence: the misses are what `coinMiss` observes and the documented struggles. Pure: the component draws from
+ * these, the workspace publishes them, the tests hold each leak rule. Every easier item has the id `<item>~smaller`,
+ * the same mode, and is built by `practiceItem`.
  *
- * - every mode whose coins print values: `coin_values` (help) puts each coin's value back when the tier hid it.
- * - identify: the coin IS the answer, so the help never marks one: `size_row` (help) lines every option up by size on
- *   one shelf, whatever the asked coin; `two_coins` (simplify) asks for ANOTHER coin between two far-apart coins,
+ * - every mode whose coins print values: `coin_values` (marks) puts each coin's value back when the tier hid it.
+ * - identify: the coin IS the answer, so the help never marks one: `size_row` (layout) lines every option up by size on
+ *   one shelf, whatever the asked coin; `two_coins` (easier) asks for ANOTHER coin between two far-apart coins,
  *   neither of them the asked one.
- * - count, one kind of coin: `skip_strip` (help) a counting strip by that coin's value that runs past the total with
- *   nothing marked. More kinds: `sort_coins` (help) one row per kind. `fewer_coins` (simplify) fewer coins, same kinds.
- * - compare: `sort_coins` (help) in each group; `plainer_groups` (simplify) one coin against a few smaller ones.
- * - make-amount (and fewest-coins, which renders as make-amount), show-amount: `running_total`, `value_tags` (help),
- *   `smaller_amount` (simplify) about half the amount.
- * - make-change: `change_bar` (help) a bar for what was paid with the cost shaded and the rest marked "?", unlabelled
- *   ticks every 5¢; `round_change` (simplify) the same payment, a cost whose change is whole tens.
+ * - count, one kind of coin: `skip_strip` (custom) a counting strip by that coin's value that runs past the total with
+ *   nothing marked. More kinds: `sort_coins` (layout) one row per kind. `fewer_coins` (easier) fewer coins, same kinds.
+ * - compare: `sort_coins` (layout) in each group; `plainer_groups` (easier) one coin against a few smaller ones.
+ * - make-amount (and fewest-coins, which renders as make-amount), show-amount: `running_total` (custom), `value_tags`
+ *   (marks), `smaller_amount` (easier) about half the amount.
+ * - make-change: `change_bar` (custom) a bar for what was paid with the cost shaded and the rest marked "?", unlabelled
+ *   ticks every 5¢; `round_change` (easier) the same payment, a cost whose change is whole tens.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { CoinCounterChallenge, CoinDef, CoinType } from './CoinCounter';
-import { COIN_CENTS, fewestCoins, type CoinMiss } from './coinCounterWorkspace';
+import { COIN_CENTS, COIN_MISSES, coinModeOf, fewestCoins, type CoinItem } from './coinCounterWorkspace';
 
 export const COIN_VALUES_LEVER = 'coin_values';
 export const SIZE_ROW_LEVER = 'size_row';
@@ -39,14 +40,15 @@ export const PRACTICE_NOTE = 'An easier practice item, ungraded; the full item c
 
 /** What the screen shows beyond the item: the tier's aids and the Kindergarten tap count. */
 export interface CoinLeverView {
-  /** Coin values printed on the coins (the tier's `showCoinValues`; never on identify). */
+  /** Coin values printed on the coins by the tier (`showCoinValues`; never on identify). */
   valuesShown: boolean;
+  /** Coin values on the coins now: the tier's, or the coin_values lever. */
+  valuesOn: boolean;
   /** The make-amount running total from the tier (`showRunningTotal`). */
   runningTotalShown: boolean;
   /** A Kindergarten count of like coins: the taps already build the skip count on screen. */
   enactedTap: boolean;
 }
-const PLAIN_VIEW: CoinLeverView = { valuesShown: true, runningTotalShown: false, enactedTap: false };
 
 const cents = (n: number) => n >= 100 ? `$${Math.floor(n / 100)}.${String(n % 100).padStart(2, '0')}` : `${n}¢`;
 const coinCount = (coins: readonly CoinDef[] = []) => coins.reduce((n, c) => n + c.count, 0);
@@ -56,7 +58,7 @@ const sameSet = (a: readonly CoinDef[] = [], b: readonly CoinDef[] = []) => {
   const key = (g: readonly CoinDef[]) => kindsOf(g).sort().map(t => `${t}:${g.filter(c => c.type === t).reduce((n, c) => n + c.count, 0)}`).join(',');
   return key(a) === key(b);
 };
-const practiceOf = (c: CoinCounterChallenge, fields: Partial<CoinCounterChallenge>): CoinCounterChallenge =>
+const practiceOf = <C extends CoinCounterChallenge>(c: C, fields: Partial<CoinCounterChallenge>): C =>
   ({ ...c, id: `${c.id}${PRACTICE_SUFFIX}`, hint: undefined, ...fields });
 
 // ── identify: the size row and the two-coin ask ────────────────────────────
@@ -81,16 +83,15 @@ export function twoCoinsLeaks(p: CoinCounterChallenge, c: CoinCounterChallenge):
 }
 
 /** Two coins far apart in look, asking for the one that looks most like the item's coin; null with under 3 options. */
-export function twoCoins(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function twoCoins<C extends CoinCounterChallenge>(c: C): C | null {
   if (c.type !== 'identify' || !c.targetCoin || isPractice(c)) return null;
   const target = c.targetCoin, others = optionsOf(c).filter(o => o !== target);
   if (others.length < 2) return null;
   const asked = [...others].sort((a, b) => apart(a, target) - apart(b, target))[0];
   const foil = others.filter(o => o !== asked).sort((a, b) => apart(b, asked) - apart(a, asked))[0];
   const options = [asked, foil].sort((a, b) => LOOK[a].size - LOOK[b].size);
-  const name = asked === 'half-dollar' ? 'half-dollar' : asked;
   const p = practiceOf(c, { targetCoin: asked, options, coins: options.map(type => ({ type, count: 1 })),
-    instruction: `Which coin is the ${name}?` });
+    instruction: `Which coin is the ${asked}?` });
   return twoCoinsLeaks(p, c) ? null : p;
 }
 
@@ -127,7 +128,7 @@ export function fewerLeaks(p: CoinCounterChallenge, c: CoinCounterChallenge): bo
 }
 
 /** Fewer coins of the same kinds (the most and least valuable when there are more than two); null on two coins. */
-export function fewerCoins(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function fewerCoins<C extends CoinCounterChallenge>(c: C): C | null {
   if (c.type !== 'count' || isPractice(c)) return null;
   const coins = c.displayedCoins ?? [], n = coinCount(coins), kinds = kindsOf(coins);
   if (n <= 2 || !kinds.length) return null;
@@ -165,7 +166,7 @@ export function plainerLeaks(p: CoinCounterChallenge, c: CoinCounterChallenge): 
 
 /** From the item's coin kinds: one big coin against two or three small ones worth less; else one coin against one
  *  (a smaller coin worth more first). Null on an item of two coins. */
-export function plainerGroups(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function plainerGroups<C extends CoinCounterChallenge>(c: C): C | null {
   if (c.type !== 'compare' || isPractice(c)) return null;
   const all = [...(c.groupA ?? []), ...(c.groupB ?? [])], n = coinCount(all);
   if (n <= 2) return null;
@@ -194,7 +195,7 @@ export const showAmountAsk = (n: number, thing?: string) =>
   thing ? `Show ${n}¢ for ${thing}, any way you like.` : `Show ${n}¢ any way you like.`;
 
 /** The easier ask for a show-amount or make-amount item, or null: about half the amount, one the coins can make. */
-export function smallerAmount(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function smallerAmount<C extends CoinCounterChallenge>(c: C): C | null {
   if ((c.type !== 'show-amount' && c.type !== 'make-amount') || isPractice(c)) return null;
   const full = c.targetAmount ?? 0;
   for (let target = Math.ceil(full / 2); target >= 2 && target < full; target--) {
@@ -233,7 +234,7 @@ export function roundLeaks(p: CoinCounterChallenge, c: CoinCounterChallenge): bo
 
 /** The same payment and a cost whose change is whole tens (nearest first); when the change already is whole tens, ten
  *  less. Null when the change is 10¢ or no cost fits. */
-export function roundChange(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function roundChange<C extends CoinCounterChallenge>(c: C): C | null {
   if (c.type !== 'make-change' || isPractice(c)) return null;
   const paid = c.paidAmount ?? 0, change = c.correctChange ?? paid - (c.itemCost ?? 0);
   const tens = Array.from({ length: Math.floor((paid - 1) / 10) }, (_, i) => (i + 1) * 10);
@@ -248,10 +249,10 @@ export function roundChange(c: CoinCounterChallenge): CoinCounterChallenge | nul
   return null;
 }
 
-// ── the levers ─────────────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
 /** The easier item for a session item, same mode, or null on an item already the plainest shape. */
-export function practiceItem(c: CoinCounterChallenge): CoinCounterChallenge | null {
+export function practiceItem<C extends CoinCounterChallenge>(c: C): C | null {
   switch (c.type) {
     case 'identify': return twoCoins(c);
     case 'count': return fewerCoins(c);
@@ -263,106 +264,93 @@ export function practiceItem(c: CoinCounterChallenge): CoinCounterChallenge | nu
 }
 
 /** The session item a practice id stands in for. */
-export const practiceParent = (id: string | null | undefined, challenges: readonly CoinCounterChallenge[]) =>
+export const practiceParent = <C extends CoinCounterChallenge>(id: string | null | undefined, challenges: readonly C[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-const COUNT_MISSES: CoinMiss[] = ['counted_coins', 'all_one_kind', 'one_coin_short', 'one_coin_over', 'short', 'over'];
-const COMPARE_MISSES: CoinMiss[] = ['more_coins', 'said_equal', 'missed_equal', 'reversed'];
-const BUILD_MISSES: CoinMiss[] = ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'];
+/** The levers a tier aid already on screen counts as pulled: make-amount's running total. */
+export const tierPulled = (c: CoinCounterChallenge | null, view: CoinLeverView): string[] =>
+  c?.type === 'make-amount' && view.runningTotalShown ? [RUNNING_TOTAL_LEVER] : [];
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls; a tier aid already on screen is `pulled`. */
-export function coinCounterLevers(c: CoinCounterChallenge | null, pulled: readonly string[], view: CoinLeverView = PLAIN_VIEW):
-  WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly CoinMiss[], when: string, does: string, shown = false) =>
-    levers.push({ id, kind, carrier: 'shown', pulled: shown || pulled.includes(id), answers, when, does });
-  const simplify = (id: string, answers: readonly CoinMiss[], when: string, does: string) => {
-    if (practiceItem(c)) add(id, 'simplify', answers, when, `${does} It is not graded; the full item comes back after it, blank.`);
-  };
-  const values = (answers: readonly CoinMiss[]) => {
-    if (!view.valuesShown) add(COIN_VALUES_LEVER, 'help', answers,
-      'The learner does not know or forgets what the coins are worth (the values are hidden on screen).',
-      'Prints each coin\'s value on the coin. Never a total.');
-  };
-  switch (c.type) {
-    case 'identify':
-      if (optionsOf(c).length >= 2) add(SIZE_ROW_LEVER, 'help', ['dime_nickel', 'dime_penny', 'silver_coins', 'other_coin'],
-        'The learner mixes up coins that look alike, or picks by size the wrong way.',
-        'Lines every coin up on one shelf from smallest to biggest, bottoms even, so sizes and colors can be compared. '
-          + 'No name or value is drawn; never say which coin to tap.');
-      simplify(TWO_COINS_LEVER, ['dime_nickel', 'dime_penny', 'silver_coins', 'other_coin'],
-        'The learner cannot pick the coin among this many.',
-        'Opens an easier ask first: another coin, between two coins that look very different.');
-      return levers;
-    case 'count': {
-      const coins = c.displayedCoins ?? [];
-      if (coinCount(coins) >= 2) values(COUNT_MISSES);
-      if (skipStrip(c) && !view.enactedTap) add(SKIP_STRIP_LEVER, 'help', COUNT_MISSES,
-        'The learner counts the coins one by one, or loses the skip count.',
-        'Draws a counting strip under the coins that counts by one coin\'s value and runs past the total, nothing marked. '
-          + 'You may count along it with the learner, one coin per step; never say where the count ends.');
-      if (kindsOf(coins).length > 1) add(SORT_LEVER, 'help', COUNT_MISSES,
-        'The learner counts mixed coins as if they were all one kind, or loses track among them.',
-        'Sorts the coins into one row per kind (the kind worth most first when values are shown). No number is added.');
-      simplify(FEWER_COINS_LEVER, ['counted_coins', 'all_one_kind', 'short', 'over'],
-        'The learner cannot count this many coins yet.', 'Opens an easier ask first: fewer coins of the same kinds.');
-      return levers;
-    }
-    case 'compare': {
-      const groups = [c.groupA ?? [], c.groupB ?? []];
-      values(COMPARE_MISSES);
-      if (groups.some(g => kindsOf(g).length > 1)) add(SORT_LEVER, 'help', COMPARE_MISSES,
-        'The learner judges by how many coins a group has, or loses track inside a group.',
-        'Sorts each group into one row per kind (the kind worth most first when values are shown). No total is added; '
-          + 'never say which group has more.');
-      simplify(PLAINER_GROUPS_LEVER, COMPARE_MISSES, 'The learner cannot compare groups this big yet.',
-        'Opens an easier ask first: one coin against one to three smaller coins.');
-      return levers;
-    }
-    case 'make-amount':
-    case 'show-amount': {
-      values(BUILD_MISSES);
-      const build = c.type === 'show-amount';
-      add(RUNNING_TOTAL_LEVER, 'help', ['one_coin_short', 'one_coin_over'],
-        'The learner puts in one coin too many or one too few.',
-        build ? 'Shows under the tray how much the coins the learner put in make so far. Never the amount asked for.'
-          : 'Shows beside the learner\'s coins how much the coins put in make so far. Never which coin to add.',
-        !build && view.runningTotalShown);
-      add(VALUE_TAGS_LEVER, 'help', build ? ['counted_coins', 'short', 'over'] : BUILD_MISSES,
-        'The learner loses track of what the coins add up to, or counts coins instead of what they are worth.',
-        `Puts a small number on each coin ${build ? 'in the tray' : 'put in'}: what the coins add up to at that coin, in the order put in.`);
-      if (smallerAmount(c)) add(SMALLER_LEVER, 'simplify', ['counted_coins', 'short', 'over'],
-        'The learner cannot make an amount this big yet.',
-        build ? 'Opens an easier ask first, about half the amount, on an empty tray. It is not graded; the full item comes back after it.'
-          : 'Opens an easier ask first, about half the amount. It is not graded; the full item comes back after it, blank.');
-      return levers;
-    }
-    case 'make-change':
-      if (changeBar(c)) add(CHANGE_BAR_LEVER, 'help', ['gave_cost', 'gave_paid', 'added', 'short', 'over'],
-        'The learner gives the price or the amount paid, adds them, or is off counting up.',
-        'Draws a bar for what was paid: the part up to the cost shaded, the rest marked "?" with an unlabelled tick at '
-          + 'every 5¢. You may count up along the ticks with the learner; never say the change.');
-      simplify(ROUND_CHANGE_LEVER, ['gave_cost', 'gave_paid', 'added', 'short', 'over'],
-        'The learner cannot find this change yet.', 'Opens an easier ask first: the same payment, and change in whole tens.');
-      return levers;
-  }
-}
+const COUNT = ['count-like', 'count-mixed'];
+const MAKE = ['make-amount', 'fewest-coins'];
+const BUILDS = [...MAKE, 'show-amount'];
+const SIMPLER = 'It is not graded; the full item comes back after it, blank.';
+const DRAWN_AID = 'It draws a new aid beside the work, not marks on what is already drawn.';
 
-/** What the pulled help levers put on screen, for the tutor and JEV. What is drawn, never the key. */
-export function leverFacts(c: CoinCounterChallenge | null, pulled: readonly string[], view: CoinLeverView = PLAIN_VIEW): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id);
-  const strip = skipStrip(c), bar = changeBar(c);
-  const build = c.type === 'show-amount';
-  return [
-    on(COIN_VALUES_LEVER) && 'Each coin now shows its value.',
-    on(SIZE_ROW_LEVER) && c.type === 'identify' && 'The coins stand on one shelf from smallest to biggest, bottoms even, with no name or value.',
-    on(SKIP_STRIP_LEVER) && strip && `Under the coins is a counting strip in steps of ${cents(strip[0])}, from ${cents(strip[0])} to ${cents(strip.at(-1)!)}, with nothing marked on it.`,
-    on(SORT_LEVER) && (c.type === 'compare' ? 'Each group is sorted into one row per kind of coin' : 'The coins are sorted into one row per kind')
-      + (view.valuesShown || on(COIN_VALUES_LEVER) ? ', the kind worth most first.' : ', in the order first drawn.'),
-    on(RUNNING_TOTAL_LEVER) && (build ? 'Under the tray is how much the coins put in make so far.' : 'Beside the learner\'s coins is how much they make so far.'),
-    on(VALUE_TAGS_LEVER) && `Each coin ${build ? 'in the tray' : 'put in'} carries a small number: what the coins add up to at that coin.`,
-    on(CHANGE_BAR_LEVER) && bar && `Under the sum is a bar for the ${cents(bar.paid)} paid: shaded up to ${cents(bar.cost)} (the cost), the rest marked "?" with an unlabelled tick at every 5¢.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const COIN_LEVERS = leverSet<CoinItem, CoinLeverView>({
+  modeOf: coinModeOf,
+  missesOf: mode => COIN_MISSES[mode as keyof typeof COIN_MISSES] ?? [],
+  specs: [
+    { id: COIN_VALUES_LEVER, type: 'marks', modes: [...COUNT, 'compare', ...BUILDS], answers: 'all',
+      offer: (c, v) => !v.valuesShown && (c.type !== 'count' || coinCount(c.displayedCoins) >= 2),
+      when: 'The learner does not know or forgets what the coins are worth (the values are hidden on screen).',
+      does: 'Prints each coin\'s value on the coin. Never a total.',
+      fact: 'Each coin now shows its value.' },
+    { id: SIZE_ROW_LEVER, type: 'layout', modes: ['identify'], answers: 'all', offer: c => optionsOf(c).length >= 2,
+      when: 'The learner mixes up coins that look alike, or picks by size the wrong way.',
+      does: 'Lines every coin up on one shelf from smallest to biggest, bottoms even, so sizes and colors can be compared. '
+        + 'No name or value is drawn; never say which coin to tap.',
+      fact: 'The coins stand on one shelf from smallest to biggest, bottoms even, with no name or value.' },
+    { id: TWO_COINS_LEVER, type: 'easier', carrier: 'shown', modes: ['identify'], answers: 'all', content: twoCoins,
+      when: 'The learner cannot pick the coin among this many.',
+      does: `Opens an easier ask first: another coin, between two coins that look very different. ${SIMPLER}` },
+    { id: SKIP_STRIP_LEVER, type: 'custom', carrier: 'shown', why: DRAWN_AID, modes: COUNT, answers: 'all',
+      content: skipStrip, offer: (_c, v) => !v.enactedTap,
+      when: 'The learner counts the coins one by one, or loses the skip count.',
+      does: 'Draws a counting strip under the coins that counts by one coin\'s value and runs past the total, nothing marked. '
+        + 'You may count along it with the learner, one coin per step; never say where the count ends.',
+      fact: (strip: number[]) => `Under the coins is a counting strip in steps of ${cents(strip[0])}, from ${cents(strip[0])} to `
+        + `${cents(strip.at(-1)!)}, with nothing marked on it.` },
+    { id: SORT_LEVER, type: 'layout', modes: COUNT, answers: 'all', offer: c => kindsOf(c.displayedCoins).length > 1,
+      when: 'The learner counts mixed coins as if they were all one kind, or loses track among them.',
+      does: 'Sorts the coins into one row per kind (the kind worth most first when values are shown). No number is added.',
+      fact: (_on: unknown, _c, v) => `The coins are sorted into one row per kind, ${v.valuesOn ? 'the kind worth most first' : 'in the order first drawn'}.` },
+    { id: FEWER_COINS_LEVER, type: 'easier', carrier: 'shown', modes: COUNT, content: fewerCoins,
+      answers: ['counted_coins', 'all_one_kind', 'short', 'over'],
+      when: 'The learner cannot count this many coins yet.',
+      does: `Opens an easier ask first: fewer coins of the same kinds. ${SIMPLER}` },
+    { id: SORT_LEVER, type: 'layout', modes: ['compare'], answers: 'all',
+      offer: c => [c.groupA, c.groupB].some(g => kindsOf(g).length > 1),
+      when: 'The learner judges by how many coins a group has, or loses track inside a group.',
+      does: 'Sorts each group into one row per kind (the kind worth most first when values are shown). No total is added; '
+        + 'never say which group has more.',
+      fact: (_on: unknown, _c, v) => `Each group is sorted into one row per kind of coin, ${v.valuesOn ? 'the kind worth most first' : 'in the order first drawn'}.` },
+    { id: PLAINER_GROUPS_LEVER, type: 'easier', carrier: 'shown', modes: ['compare'], answers: 'all', content: plainerGroups,
+      when: 'The learner cannot compare groups this big yet.',
+      does: `Opens an easier ask first: one coin against one to three smaller coins. ${SIMPLER}` },
+    { id: RUNNING_TOTAL_LEVER, type: 'custom', carrier: 'shown', why: DRAWN_AID, modes: MAKE,
+      answers: ['one_coin_short', 'one_coin_over'],
+      when: 'The learner puts in one coin too many or one too few.',
+      does: 'Shows beside the learner\'s coins how much the coins put in make so far. Never which coin to add.',
+      fact: 'Beside the learner\'s coins is how much they make so far.' },
+    { id: RUNNING_TOTAL_LEVER, type: 'custom', carrier: 'shown', why: DRAWN_AID, modes: ['show-amount'],
+      answers: ['one_coin_short', 'one_coin_over'],
+      when: 'The learner puts in one coin too many or one too few.',
+      does: 'Shows under the tray how much the coins the learner put in make so far. Never the amount asked for.',
+      fact: 'Under the tray is how much the coins put in make so far.' },
+    { id: VALUE_TAGS_LEVER, type: 'marks', modes: MAKE, answers: 'all',
+      when: 'The learner loses track of what the coins add up to, or counts coins instead of what they are worth.',
+      does: 'Puts a small number on each coin put in: what the coins add up to at that coin, in the order put in.',
+      fact: 'Each coin put in carries a small number: what the coins add up to at that coin.' },
+    { id: VALUE_TAGS_LEVER, type: 'marks', modes: ['show-amount'], answers: ['counted_coins', 'short', 'over'],
+      when: 'The learner loses track of what the coins add up to, or counts coins instead of what they are worth.',
+      does: 'Puts a small number on each coin in the tray: what the coins add up to at that coin, in the order put in.',
+      fact: 'Each coin in the tray carries a small number: what the coins add up to at that coin.' },
+    { id: SMALLER_LEVER, type: 'easier', carrier: 'shown', modes: BUILDS, answers: ['counted_coins', 'short', 'over'],
+      content: smallerAmount,
+      when: 'The learner cannot make an amount this big yet.',
+      does: c => (c.type === 'show-amount'
+        ? 'Opens an easier ask first, about half the amount, on an empty tray. It is not graded; the full item comes back after it.'
+        : `Opens an easier ask first, about half the amount. ${SIMPLER}`) },
+    { id: CHANGE_BAR_LEVER, type: 'custom', carrier: 'shown', why: DRAWN_AID, modes: ['make-change'], answers: 'all',
+      content: changeBar,
+      when: 'The learner gives the price or the amount paid, adds them, or is off counting up.',
+      does: 'Draws a bar for what was paid: the part up to the cost shaded, the rest marked "?" with an unlabelled tick at '
+        + 'every 5¢. You may count up along the ticks with the learner; never say the change.',
+      fact: (bar: { paid: number; cost: number }) => `Under the sum is a bar for the ${cents(bar.paid)} paid: shaded up to `
+        + `${cents(bar.cost)} (the cost), the rest marked "?" with an unlabelled tick at every 5¢.` },
+    { id: ROUND_CHANGE_LEVER, type: 'easier', carrier: 'shown', modes: ['make-change'], answers: 'all', content: roundChange,
+      when: 'The learner cannot find this change yet.',
+      does: `Opens an easier ask first: the same payment, and change in whole tens. ${SIMPLER}` },
+  ],
+});

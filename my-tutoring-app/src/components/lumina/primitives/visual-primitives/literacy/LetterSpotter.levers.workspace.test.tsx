@@ -42,7 +42,7 @@ it('find it, a look-alike tap: the observer pulls the lowercase reference, in th
   const receipt = h.dispatch('pull_lever', { lever: 'other_case_reference' });
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-lever="other-case-reference"]').map(r => r.textContent)).toEqual(['b']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/small letter/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/small letter/);
   h.dispatch('retry');
   cell(h, 'B');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['other_case_reference'] });
@@ -123,7 +123,7 @@ it('name_it: first_letter_model shows another word with its first letter lit, ne
   const lit = q(h, '[data-lever="first-letter-model"] [data-lit]').map(e => e.textContent);
   expect(lit).toHaveLength(1);
   expect(['s', 'm']).not.toContain(lit[0]);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/another word/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/another word/);
   h.say('s'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'n1', correct: true, assisted: true, levers: ['first_letter_model'] });
   h.close();

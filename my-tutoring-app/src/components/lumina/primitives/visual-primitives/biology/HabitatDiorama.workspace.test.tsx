@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Habitat diorama on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Habitat diorama on the teaching workspace (its boss, `habitatDiorama.boss.ts`): what is its own. The generic W1
+ * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; the shared Pip contract
+ * (pip/WorkspacePip.surface.test.tsx) covers Pip.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -14,7 +15,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -53,7 +53,7 @@ it.each(Object.keys(CHALLENGES))('%s binds: the spoken key is published, the tap
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'habitat-diorama', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'habitat-diorama', evalMode: mode, data: d, instanceId: 'habitat' });
   const workspace = h.state().task!.workspace!;
-  if (SPOKEN[mode]) expect(workspace.expectedAnswer).toMatch(new RegExp(`^${SPOKEN[mode]}`));
+  if (SPOKEN[mode]) expect(workspace.expectedAnswer).toMatch(new RegExp(`^"${SPOKEN[mode]}`));
   else {
     expect(workspace.expectedAnswer).toBeUndefined();
     // The key is not in the scene: every organism and every zone is listed, none singled out.
@@ -88,15 +88,6 @@ it('a spoken item keeps the explanation hidden until credit', () => {
   expect(screen.queryByText('Trees make food from sunlight.')).toBeNull();
   h.say('the oak tree'); h.feedback('correct');
   expect(screen.getByText('Trees make food from sunlight.')).toBeTruthy();
-});
-
-it('Pip outlines the habitat and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('habitat');
-  const h = mountWorkspace({ primitiveId: 'habitat-diorama', evalMode: 'observe', data: data(CHALLENGES.observe), instanceId: 'habitat', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('Oak Tree'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a habitat with nothing askable; no challenges stays the exploration diorama', () => {

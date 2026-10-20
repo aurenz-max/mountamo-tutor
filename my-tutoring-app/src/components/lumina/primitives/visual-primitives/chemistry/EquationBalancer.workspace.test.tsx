@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 /**
- * equation-balancer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every equation is a bank reaction keyed by code: the count key is published only as the spoken expectedAnswer, the
- * balance key never; nothing on screen counts atoms or marks a match before a check; a wrong check names its miss; and
- * every miss has a help lever.
+ * equation-balancer on its boss (the spoken preset: a SAY_OR_SHOW count mode and two balance boards) and its lever set,
+ * mounted the way a lesson mounts it. Every equation is a bank reaction keyed by code: the count key is published only
+ * as the spoken key (`balancerKey`), the balance key never; nothing on screen counts atoms or marks a match before a
+ * check; a wrong check names its miss; and every miss has a help lever.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -18,13 +17,16 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import type { EquationBalancerData } from './EquationBalancer';
 import {
-  addLabel, BALANCER_MISSES, balanceCorrect, balanceMiss, balanceModeOf, balanceRank, balancerHarnessAnswers, balancerItems, compounds,
-  countKey, countMiss, countRank, EQUATION_BANK, equationText, parseFormula, solveKey, toEquation, unbalancedElements, workspaceAssignment,
-  type BalanceItem, type BalancerItem, type BalancerMode, type CountItem, type LessonEquation,
+  addLabel, askOf, balanceCorrect, balanceMiss, balanceModeOf, balanceRank, balancerGiven, balancerHarnessAnswers, balancerItems,
+  balancerKey, compounds, countKey, countMiss, countRank, EQUATION_BANK, equationText, parseFormula, solveKey, toEquation,
+  unbalancedElements, type BalanceItem, type BalancerItem, type BalancerMode, type CountItem, type LessonEquation,
 } from './equationBalancerWorkspace';
-import { balancerLevers, MOLECULES_LEVER, simplerItem, SIMPLER_LEVER, tallyLeak, tallyLine, TALLY_LEVER } from './equationBalancerLevers';
+import { BALANCER_LEVERS, MOLECULES_LEVER, simplerItem, SIMPLER_LEVER, tallyLeak, tallyLine, TALLY_LEVER } from './equationBalancerLevers';
+import { BALANCER_MISSES } from './equationBalancer.card';
+import { equationBalancerBoss } from './equationBalancer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -50,6 +52,8 @@ const text = (h: WorkspaceHarness) => h.view.container.textContent ?? '';
 const current = (h: WorkspaceHarness, mode: BalancerMode) => balancerItems(data(mode)).find(i => i.id === h.state().task!.itemId)!;
 const press = (h: WorkspaceHarness, labels: string[], check: RegExp) => { for (const l of labels) h.press(l); h.press(check); h.settle(); };
 const flush = () => act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
+const leversOn = (item: BalancerItem, items: readonly BalancerItem[]) =>
+  BALANCER_LEVERS.declare(item, { items, coefficients: compounds(item.equation).map(() => 1) }, []);
 
 it.each(MODES)('%s binds with its key out of the scene and nothing on screen that counts or marks a match', mode => {
   const h = mount(mode);
@@ -57,8 +61,12 @@ it.each(MODES)('%s binds with its key out of the scene and nothing on screen tha
   expect(getComponentById('equation-balancer')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(equationBalancerBoss.assignment(item).task);
+  expect(equationBalancerBoss.assignment(item)).toMatchObject(item.mode === 'simple'
+    ? { response: 'speech', acceptsGesture: true } : { response: 'gesture' });
   const ws = h.state().task!.workspace!;
+  // The scene's rule is this item's fact, never how the learner answers (the card's moves).
+  expect(String(demand(h).constraints)).not.toMatch(/tap|Check (Answer|Balance)|\+ and/i);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/fact line|answer is|correct/i);
   // No description, no real-world line, no Next, no match marks, no lever drawn.
@@ -206,11 +214,25 @@ describe('the pure rules', () => {
           expect(balanceMiss(item, item.key.map(k => k * 2))).toBe('not_lowest');
           expect(BALANCER_MISSES[mode]).toContain(balanceMiss(item, compounds(item.equation).map(() => 1)));
         }
-        const ls = balancerLevers(item, [], items);
+        const ls = leversOn(item, items);
         for (const miss of BALANCER_MISSES[mode]) expect(ls.find(l => l.id === nextLever(ls, miss))!.kind, `${item.id} ${miss}`).toBe('help');
       }
     }
     expect(entry.teachingWorkspace!.levers).toBe(true);
+  });
+
+  it('no count ask says its spoken key, the equation it prints is given by design, and a balance item has no key', () => {
+    for (const mode of MODES) {
+      for (const item of balancerItems(data(mode))) {
+        const key = balancerKey(item);
+        if (item.mode !== 'simple') { expect(key).toBeNull(); continue; }
+        expect(askLeaks(askOf(item), key!, balancerGiven(item)), item.id).toEqual([]);
+      }
+    }
+    const salt = balancerItems(data('simple', [{ id: 'table_salt' }]))[0] as CountItem;
+    const key = balancerKey(salt)!;
+    expect(key).toMatchObject({ answer: countKey(salt) });
+    expect(key.alsoAccept).toContain(`${countKey(salt)} atoms`);
   });
 
   it('count misses: the number in front left out, the small number left out, one formula only, added', () => {
@@ -256,7 +278,7 @@ describe('the pure rules', () => {
         if (simpler.mode === 'simple') expect(countRank(simpler) <= countRank(item as CountItem)).toBe(true);
         else expect(balanceRank(simpler.equation)).toBeLessThan(balanceRank(item.equation));
         expect(simplerItem(simpler, items)).toBeNull();
-        expect(balancerLevers(simpler, [], items)).toEqual([]);
+        expect(BALANCER_LEVERS.simpler(simpler, { items, coefficients: [] }, SIMPLER_LEVER)).toBeNull();
       }
     }
   });

@@ -28,7 +28,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generatePictureVocabulary } = await loader.import('/src/components/lumina/service/literacy/gemini-picture-vocabulary.ts');
-  const { validatePictureVocabularyData } = await loader.import('/src/components/lumina/components/live-activity/adapters/pictureVocabularyLive.ts');
+  const { validatePictureVocabularyData } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/pictureVocabularyDomain.ts');
   const { pictureVocabularyOracle } = await loader.import('/src/components/lumina/service/qa/oracles/picture-vocabulary.ts');
   const cases = [
     ['neutral-K', 'Kindergarten', 'Word meanings with pictures', 'Make pairs of pictures', undefined],

@@ -308,7 +308,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
     const levers = practice ? [] : TSA_LEVERS.declare(sessionItem, session, pulledLevers);
     workspace.current = {
       ...leverScene(textStructureScene(currentItem, passage), {
-        support: practice ? '' : TSA_LEVERS.support(sessionItem),
+        support: practice ? '' : TSA_LEVERS.support(sessionItem, session),
         onScreen: practice ? '' : TSA_LEVERS.onScreen(sessionItem, session, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

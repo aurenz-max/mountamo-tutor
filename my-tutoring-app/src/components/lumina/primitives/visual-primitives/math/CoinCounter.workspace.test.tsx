@@ -3,7 +3,7 @@
  * W1 minimal binding, plain shape: the real CoinCounter on the shared teaching workspace, with the real
  * TeachingSession, LiveLessonRuntime, transport and rendering shell. The activity's own check commits a checked
  * gesture with its named miss; the runtime owns progression; the scored session is what gets submitted.
- * Only microphone hardware, evaluation writes, sound and the legacy AI-context hook are substituted.
+ * Only microphone hardware, evaluation writes and sound are substituted.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -14,16 +14,12 @@ import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/Li
 import { RuntimeTransport } from '../../../components/live-activity/runtime/runtimeTransport';
 import { coinMiss } from './coinCounterWorkspace';
 
-const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), legacy: vi.fn(), evaluationContext: null as unknown }));
+const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'coins',
   conversation: [], sendText: seam.send,
   sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
-  if (o.enabled !== false) seam.legacy('enabled');
-  return { sendText: seam.legacy, isConnected: true, isAudioPlaying: false, activePrimitiveId: 'coins' };
-} }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
@@ -82,7 +78,6 @@ it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no script
   const demand = JSON.stringify(h.state().task!.demand);
   // The scene never reaches the tutor with the key: no total, winner, change or target coin position.
   expect(demand).not.toMatch(/correct|\b32¢|"20|\b15¢|coin 2/i);
-  expect(seam.legacy).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();
 });
 
@@ -128,7 +123,6 @@ it('a wrong total commits its named miss, stays closed until Try again clears it
   expect(work.teachingAttempts).toHaveLength(3);
   expect(evidence.phases).toEqual([expect.objectContaining({ itemId: 'm', phase: 'count-mixed', miss: 'counted_coins' })]);
   expect(evidence.firstResponseScore).toBe(50);
-  expect(seam.legacy).not.toHaveBeenCalled();
 });
 
 it('make-amount: Try again takes the placed coins out', () => {

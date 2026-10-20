@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * RhymeStudio — every mode is answered out loud. It runs only on the shared
- * tutor/JEV teaching workspace (workspace rollout C1; the scripted runner was
- * retired, LA-14, user ruling 09-23: one path). The tutor teaches in its own words,
- * the observer judges each spoken answer and the runtime owns progression. An
- * unbound mount shows the shared "needs the tutor" card. There is no advance timer,
- * no Next button and no Start-Activity gate in this file.
+ * RhymeStudio, taught on the shared teaching workspace only (the boss: `rhymeStudio.card.ts` + `rhymeStudio.boss.ts`).
+ * A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`). The tutor teaches in its own
+ * words, judges each spoken answer against the key, and the runtime owns progression. There is no advance timer, no
+ * Next button and no Start-Activity gate in this file. The domain is `rhymeStudioDomain.ts`, the levers
+ * `rhymeStudioLevers.ts`; nothing in this file writes a spoken line. pair_build is the shared pair board
+ * (`RhymePairSurface.tsx`), wired from the same boss.
  *
  * WHAT THE CHILD DOES: every mode is answered ALOUD. Nothing here is tappable
  * except the cards, which repeat the question.
@@ -37,7 +37,7 @@
  * answer.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -53,33 +53,35 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { RhymeStudioMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import RhymePairSurface from './RhymePairSurface';
 import type { RhymePairItem } from './rhymePairBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
+  asRhymeBoard,
+  hearRhymeRequest,
   itemsFromChallenge,
   recordCollectedRhyme,
+  rhymeScene,
   type RhymeItem,
   type RhymeMode,
   type RhymeTier,
-} from './rhymeStudioScript';
-import { hearRhymeRequest, rhymeAssignment, rhymeScene } from './rhymeStudioWorkspace';
+} from './rhymeStudioDomain';
 import {
-  CONTRAST_LEVER, DENSE_LEVER, FAR_FOIL_LEVER, FAR_PAIR_LEVER, NAME_CHOICES_LEVER, STRIP_LEVER, SWAP_LEVER,
-  contrastModelFor, leversOnScreen, onsetCardsFor, practiceItemFor, rhymeStudioLevers, swapModelFor, usedOnsets,
+  CONTRAST_LEVER, NAME_CHOICES_LEVER, RHYME_LEVERS, STRIP_LEVER, SWAP_LEVER,
+  contrastModelFor, onsetCardsFor, rhymeBoardLevers, swapModelFor, usedOnsets,
 } from './rhymeStudioLevers';
+import { rhymeStudioBoss } from './rhymeStudio.boss';
 import { onsetOf, rimeOfWord } from './rhymeModels';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { stableShuffle } from '../../../utils/choiceOrder';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { rhymeStudioPipPose } from '../../../pip/rhymeStudioPipPose';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
@@ -108,8 +110,7 @@ interface RhymeChallenge {
   comparisonWordEmoji?: string;
   doesRhyme?: boolean;
   options?: RhymeOption[];
-  /** Identification only. Production is OPEN and enumerates nothing — see the
-   *  bank-deletion note in rhymeStudioScript.ts. */
+  /** Identification only. Production is OPEN and enumerates nothing (contract R3). */
   acceptableAnswers?: string[];
   remediationMove?: 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
   /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
@@ -211,7 +212,6 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   const stableInstanceIdRef = useRef(instanceId || `rhyme-studio-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Items ─────────────────────────────────────────────────────────────────
@@ -235,6 +235,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   }, [items]);
   const collectedFor = (item: RhymeItem) =>
     collectedFamilies[item.collectionId ?? item.challengeId] ?? item.priorAcceptedWords;
+  const leverCtx = useMemo(() => ({ items }), [items]);
   // In-item levers (`rhymeStudioLevers.ts`), keyed by the session item they were pulled on, and the easier
   // practice item a simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
@@ -302,8 +303,8 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
 
   const runner = useWorkspaceRunner<RhymeItem>({
     primitiveId: 'rhyme-studio',
-    // A collection slot must not repeat a rhyme the family already holds.
-    assignment: item => rhymeAssignment(item, collectedFor(item)),
+    // A collection slot's key names the rhymes the family already holds (`recordCollectedRhyme` keeps them on the items).
+    assignment: rhymeStudioBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -326,54 +327,36 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   // A practice item has no challenge: no caption, no tier highlight.
   const currentChallenge = practice ? undefined : challenges.find((challenge) => challenge.id === currentItem?.challengeId);
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state onto the card the ask names; Pip never
-  // answers, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id === 'pair' ? 'The two words' : 'The word card'));
-    const pose = rhymeStudioPipPose({
-      mode: currentItem.mode,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Rhyme studio', dock: pip.dock.current, targets, pose };
-  });
-
   // ── Support-tier display levers (read with `!== false` so an ABSENT field is
   //    the full-help render). The band support always WINS at PRE. ──
   const showRhymeFamilyHighlight = !practice && currentChallenge?.showRhymeFamilyHighlight !== false;
   const showWordImage = isPreReader || currentChallenge?.showWordImage !== false;
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : rhymeStudioLevers(sessionItem, pulledLevers, items);
-    const scene = rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader });
-    const onScreen = leversOnScreen(currentItem, pulledLevers, items);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(pulledLevers.includes(NAME_CHOICES_LEVER) ? { namingChoices: 'Read every choice aloud, in screen order, evenly; stress none.' } : {}),
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : RHYME_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = rhymeScene(currentItem, { collected: collectedFor(currentItem), familyShown: showRhymeFamilyHighlight && !isPreReader,
+      choicesNamed: pulledLevers.includes(NAME_CHOICES_LEVER) });
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item on other words, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : RHYME_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : RHYME_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === FAR_PAIR_LEVER || id === FAR_FOIL_LEVER || id === DENSE_LEVER) {
-          const simpler = practiceItemFor(sessionItem, items);
-          if (!simpler) return 'There is no easier item here.';
+        if (lever.kind === 'simplify') {
+          const simpler = RHYME_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler || simpler.mode === 'pair_build') return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          return { practice: rhymeAssignment(simpler) };
+          return { practice: rhymeStudioBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -383,11 +366,11 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   });
 
   /** Tapping a card asks the tutor for the question again: a silent host request, never the answer. */
-  const hearQuestion = useCallback(() => {
+  const hearQuestion = () => {
     if (!currentItem) return;
     SoundManager.tap();
-    ctx.sendText(hearRhymeRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearRhymeRequest(currentItem));
+  };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -452,8 +435,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   const renderTargetCard = (item: RhymeItem) => (
     <div className="flex justify-center">
       <div
-        ref={pip.ref('target')}
-        data-pip-object="target"
+        data-rhyme-target
         role="button"
         tabIndex={0}
         onClick={hearQuestion}
@@ -544,8 +526,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
               comparison shows it only when the pair really rhymes — that is the
               teaching moment. */}
           <div
-            ref={pip.ref('pair')}
-            data-pip-object="pair"
+            data-rhyme-pair
             role="button"
             tabIndex={0}
             onClick={hearQuestion}
@@ -707,15 +688,13 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
               </div>
             )}
 
-            {/* Pip's dock sits above the stage: a pointer to the word card
-                never crosses a choice card or a rhyme slot below it. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            {/* Pip's dock sits above the stage: a pointer to the stage never crosses a choice card or a rhyme slot. */}
+            <PipDock />
 
-            {renderChallenge(currentItem)}
-            {contrastModel && renderContrastModel(contrastModel)}
+            <PipWorkspace className="space-y-4">
+              <div data-rhyme-stage={currentItem.mode}>{renderChallenge(currentItem)}</div>
+              {contrastModel && renderContrastModel(contrastModel)}
+            </PipWorkspace>
           </>
         )}
 
@@ -734,16 +713,22 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
   );
 }
 
-// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+/** The open build (`pair_build`) on the shared pair board, wired from this boss. */
+function RhymePairBuild({ data, className, runtimePlanItemId }: RhymeStudioProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    return { assignment: (item: RhymePairItem) => rhymeStudioBoss.assignment(asRhymeBoard(item, tier)), levers: rhymeBoardLevers(tier) };
+  }, [data.supportTier]);
+  return <RhymePairSurface className={className} runtimePlanItemId={runtimePlanItemId}
+    data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} boss={boss} />;
+}
+
 /** One mount, one shape: the open build (`pair_build`) has its own surface. */
 function RhymeStudioHost(props: RhymeStudioProps) {
-  const { data } = props;
-  if (data.task === 'pair_build') {
-    return <RhymePairSurface className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} />;
-  }
-  return <RhymeStudioSurface {...props} />;
+  return props.data.task === 'pair_build' ? <RhymePairBuild {...props} /> : <RhymeStudioSurface {...props} />;
 }
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 
 const RhymeStudio = withWorkspaceOnly<RhymeStudioProps>('rhyme-studio', RhymeStudioHost, props => props.data.title);
 

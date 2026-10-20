@@ -1,7 +1,7 @@
 # Contract: word-workout
 
 - **Derived:** 2026-09-28 · evidence window: eval-reports 2026-03-15→2026-04-04 + K census trace 2026-07-14 + reader-fit PRE 2026-07-15 + live DI 2026-08-14 + workspace rollout C1 live 2026-09-24 + authored map (live backend, 2026-09-28) + git to 2026-03
-- **Component:** `primitives/visual-primitives/literacy/WordWorkout.tsx` (+ `wordWorkoutWorkspace.ts`, `wordWorkoutScript.ts`, `wordWorkoutEarlyDecoding.ts`) · **Generator:** `service/literacy/gemini-word-workout.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:3341` · **Live journey:** `components/live-activity/liveJourneySpec.ts:1259`
+- **Component:** `primitives/visual-primitives/literacy/WordWorkout.tsx` (+ boss `wordWorkout.card.ts` / `wordWorkout.boss.ts`, `wordWorkoutDomain.ts`, `wordWorkoutLevers.ts`, `wordWorkoutEarlyDecoding.ts`) · **Generator:** `service/literacy/gemini-word-workout.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`...bossEntry(wordWorkoutCard)`) · **Live journey:** `bossJourney(wordWorkoutBoss)`
 - **Status:** ACTIVE (1 open conflict, C1, against the planned `two_far_pictures` lever; 2 catalog divergences flagged below)
 
 Derived as step 1 of handoff 22 L1 (`qa/live-runtime-handoffs/22-literacy-levers.md`), before
@@ -34,44 +34,44 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R2 — Mode identity and answer modality · OBSERVED
 - **Property:** `picture_match` is the only tap mode: the printed word is decoded silently and a picture tap is the commit, checked in code (`option.word === item.targetWord`), never by the tutor; a second tap while the verdict stands is not an attempt. Every other mode is answered aloud and judged. The printed words are not buttons. No Check / Next / Finish / Skip button in any mode, no on-screen instruction line.
 - **Demanded by:** DI port 16; workspace C1; K PRE band.
-- **Evidence:** `WordWorkout.tsx:394-405`; `WordWorkout.reader-fit.test.tsx:124-176`; `WordWorkout.support-tiers.test.tsx:124-168`; C1 report.
+- **Evidence:** `WordWorkout.tsx` `handlePictureTap`; card `picture_match: TAP_ONE`, every other mode `SPOKEN` (`wordWorkout.card.ts`); `WordWorkout.reader-fit.test.tsx`; `WordWorkout.support-tiers.test.tsx`; C1 report.
 - **Probe:** `npm test -- WordWorkout` → reader-fit and support-tiers regression pins pass.
 
 ### R3 — Nothing marks the answer before credit · OBSERVED
-- **Property:** picture options render the emoji only, no word label; the target picture is ringed only after the checked right tap; a wrong tap marks only the tapped picture. The `picture_tap` assignment carries no `expectedAnswer`, and the tap reads to the tutor as "Tapped the picture of <word>", never the key. Real word, comprehension answer and context answer are marked only after credit; the phonics tint rides the read, not the question.
+- **Property:** picture options render the emoji only, no word label; the target picture is ringed only after the checked right tap; a wrong tap marks only the tapped picture. The `picture_tap` item has a null key (`wordWorkoutKey`), so its assignment carries no `expectedAnswer`, and the tap reads to the tutor as "Tapped the picture of <word>", never the key. Real word, comprehension answer and context answer are marked only after credit; the phonics tint rides the read, not the question.
 - **Demanded by:** every consumer (Pedagogy rule #1).
-- **Evidence:** `wordWorkoutWorkspace.ts:37-41,84`; `WordWorkout.support-tiers.test.tsx:171-194`.
+- **Evidence:** `wordWorkoutDomain.ts` `wordWorkoutKey`, `describePictureTap`; `WordWorkout.support-tiers.test.tsx`.
 - **Probe:** `npm test -- WordWorkout.support-tiers` "never marked before it is credited".
 
 ### R4 — No audio of unread print · OBSERVED
-- **Property:** the tutor never says a printed word, a part of one or a sound in it before the learner reads it. The only audio affordance is hear-again, a silent host request for the instruction or question only (`hearQuestionRequest`). The deleted speaker buttons, whole-sentence model read and per-word tap-to-hear cannot return at any tier.
+- **Property:** the tutor never says a printed word, a part of one or a sound in it before the learner reads it: the ask never names the print (`askLeaks` on `validate`), the shared doctrine says to let the learner read print first, and each item's scene `constraints` states its own never-say rule. The only audio affordance is hear-again, a silent host request (`runner.requestHear(hearQuestionRequest(item))`) for the instruction or question only. The deleted speaker buttons, whole-sentence model read and per-word tap-to-hear cannot return at any tier.
 - **Demanded by:** DI port 16; workspace guidance; handoff 22 leak rule "no audio of unread print".
-- **Evidence:** catalog `teachingWorkspace.guidance`; `WordWorkout.workspace.test.tsx:53,86`; `WordWorkout.support-tiers.test.tsx:125-145`.
-- **Probe:** `npm test -- WordWorkout.workspace` (ask never names the word; hear-again silent, never print); live journey `leakTokens`.
+- **Evidence:** `wordWorkoutDomain.ts` `PRINTED` (scene constraints), `askFor`; `wordWorkoutDomain.test.ts`; `WordWorkout.workspace.test.tsx`; `WordWorkout.support-tiers.test.tsx`.
+- **Probe:** `npm test -- WordWorkout.workspace wordWorkoutDomain` (ask never names the word; hear-again silent, never print); `boss.test.ts` askLeaks over the saved payloads.
 
 ### R5 — Picture options shape · OBSERVED
 - **Property:** options = the target picture + the item's distractor pictures (each with a sayable word, an emoji, not the target), in an id-seeded deterministic shuffle. The generator asks for 2-3 distractors (3-4 pictures); the scoped fallbacks carry 2 (3 pictures); the build gate accepts 1 ("a fair 1-of-2 choice") and drops 0. No code rule relates a foil's sounds to the target: the prompt asks for pictures "distinguishable by MEANING, not by sound", and the fallbacks share sounds (cat/bat/rat share the rime; pig/pin/bin share onset or vowel). Each option is a button with `data-pip-object="picture-<word>"`, which tests, Pip and the journey select by. At most 6 picture-match challenges per session.
 - **Demanded by:** workspace C1 journey; Pip surface; PRE band (emoji-primary).
-- **Evidence:** `wordWorkoutScript.ts:454-482`; `gemini-word-workout.ts:208-214,499-508,916`.
+- **Evidence:** `wordWorkoutDomain.ts` (`itemsFromChallenge`, picture-match); `gemini-word-workout.ts:208-214,499-508,916`.
 - **Probe:** `npm test -- WordWorkout.reader-fit` "picture-match is picture-primary and its pictures ARE tappable"; eval-test picture_match → 2-4 options, target present once.
 
 ### R6 — Support tier · OBSERVED
-- **Property:** on the model path the only tier lever is `chainCueLevel` on word-chains (on the word-space path, R13, the tier also picks the items) (full / highlight-only / none, screen and spoken correction). Absent → full. The stimulus (chain, target word, picture options, sentence) renders at every tier; fallbacks stay unstamped. Picture-match has no tier behaviour today.
+- **Property:** on the model path the only tier lever is `chainCueLevel` on word-chains (on the word-space path, R13, the tier also picks the items) (full / highlight-only / none, on screen; at none the `changed_letter` lever can light the change back). Absent → full. The stimulus (chain, target word, picture options, sentence) renders at every tier; fallbacks stay unstamped. Picture-match has no tier behaviour today.
 - **Demanded by:** support-tiers batch 2; DI port.
 - **Evidence:** `gemini-word-workout.ts:730-780`; `WordWorkout.support-tiers.test.tsx:94-122`.
 - **Probe:** `npm test -- WordWorkout.support-tiers`.
 
 ### R7 — Named picture-tap miss · OBSERVED
-- **Property:** a wrong tap commits with `wordWorkoutMiss`: `same_start` (first letter), else `same_end` (last two letters), else `same_vowel` (3-letter, middle letter), else `other_word`, matching catalog `teachingWorkspace.misses.picture_match`. Try again frees the pictures. Pip never taps.
+- **Property:** a wrong tap commits with `wordWorkoutMiss`: `same_start` (first letter), else `same_end` (last two letters), else `same_vowel` (3-letter, middle letter), else `other_word`, matching the card's `PICTURE_MISSES`. Try again frees the pictures. Pip never taps.
 - **Demanded by:** trigger ladder (A5); workspace C1.
-- **Evidence:** `wordWorkoutWorkspace.ts:73-81`; `wordWorkoutWorkspace.test.ts:6`; `WordWorkout.workspace.test.tsx:58`.
-- **Probe:** `npm test -- wordWorkoutWorkspace WordWorkout.workspace`.
+- **Evidence:** `wordWorkoutDomain.ts` `wordWorkoutMiss`; `wordWorkoutDomain.test.ts`; `WordWorkout.workspace.test.tsx`.
+- **Probe:** `npm test -- wordWorkoutDomain WordWorkout.workspace`.
 
 ### R8 — Workspace-only path and evaluation · OBSERVED
-- **Property:** runs only when bound (`withWorkspaceOnly`); bound sessions send `tutoring: null`, so the tutor's instruction is `teachingWorkspace.guidance`. One evaluation per session: `pictureMatchAccuracy` and `wordMeaningAccuracy` include `picture_tap`; decoding and meaning never share a score; chain fluency is timed silently (no visible timer).
+- **Property:** runs only when bound (`withWorkspaceOnly`); bound sessions send `tutoring: null` (the catalog carries no tutoring block), so the tutor's instruction is the boss guidance built from the card (`node scripts/boss-card.mjs word-workout`). One evaluation per session: `pictureMatchAccuracy` and `wordMeaningAccuracy` include `picture_tap`; decoding and meaning never share a score; chain fluency is timed silently (no visible timer).
 - **Demanded by:** workspace C1 (LA-14 one path); IRT/mastery.
 - **Evidence:** `700cbd33`; `WordWorkout.tsx:240-332`.
-- **Probe:** `npm test -- WordWorkout.workspace`; live `run_live_runtime.py --primitive word-workout --mode picture_match --lesson-entry`.
+- **Probe:** `npm test -- WordWorkout.workspace`; `npm run test:primitive -- word-workout` (the boss journey).
 
 ### R9 — Pre-reader band · OBSERVED
 - **Property:** picture_match is READY at K PRE: the word is the only print, the answer surface is emoji, the tutor voices the ask. The stage renders the same at K and Grade 1 (no band-gated chrome, no vowel-scope label).
@@ -82,7 +82,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 ### R10 — Spoken-mode content gates · OBSERVED
 - **Property:** chains change exactly one letter per step, no duplicates (`validateWordChain`); sentences have ≥3 `cvcWords`, 3-8 words, answer in the sentence and not in the question; real/nonsense pairs start with different consonants and the nonsense word is not a real word; inflected/compound/context items come only from the code-owned pool. No item word opens with a sentinel ("yes").
 - **Demanded by:** WW-1, WW-2; live DI 2026-08-14; early-decoding expansion.
-- **Evidence:** EVAL_TRACKER `:1040-1041`; `wordWorkoutScript.ts:425-500`; `WordWorkout.extended-decoding.test.ts`.
+- **Evidence:** EVAL_TRACKER `:1040-1041`; `wordWorkoutDomain.ts` build gates; `wordWorkoutDomain.test.ts`; `WordWorkout.extended-decoding.test.ts`.
 - **Probe:** `npm test -- WordWorkout gemini-word-workout`.
 
 ### R11 — In-item levers on picture_match · OBSERVED
@@ -92,7 +92,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `npm test -- wordWorkoutLevers WordWorkout.levers.workspace`.
 
 ### R12 — In-item levers on the spoken read modes · OBSERVED
-- **Property:** every help lever is a visual mark from the shared kit overlay (`LuminaPrintSupport`), carrier `shown`, nothing sent to the tutor's voice (R4): `sound_dots` (real-or-silly both words, the lit chain word, the lit near word), `changed_letter` (chains only where `chainCueLevel` is `none`; releasing it is a lever pull, not a tier change, R6), `chunk_divider` (inflected/compound, refused until a first wrong try, because the word's chunks show only after a cold attempt), `tracking_underline` (sentence read), `question_word_icon` (sentence question: the kind of answer, never the word, R3). Simplify builds a practice item in code that prints no session word (R3 of handoff 22) and keeps the mode's act: `short_chain` (two new CVC words, first letter changes, no session rime), `easier_ending` (-ing/-ed → a pool -s word in the lesson vowels), `three_word_sentence` (a pool line). Meaning and fit answers get none; `wrong_fit` is unanswered by decision. Spoken misses are declared and listed unanswered until handoff 20 Part B.
+- **Property:** every help lever is a visual mark from the shared kit overlay (`LuminaPrintSupport`), carrier `shown`, nothing sent to the tutor's voice (R4): `sound_dots` (real-or-silly both words, the lit chain word, the lit near word), `changed_letter` (chains only where `chainCueLevel` is `none`; releasing it is a lever pull, not a tier change, R6), `chunk_divider` (inflected/compound, offered only once the item has had a wrong try, because the word's chunks show only after a cold attempt), `tracking_underline` (sentence read), `question_word_icon` (sentence question: the kind of answer, never the word, R3). Simplify builds a practice item in code that prints no session word (R3 of handoff 22) and keeps the mode's act: `short_chain` (two new CVC words, first letter changes, no session rime), `easier_ending` (-ing/-ed → a pool -s word in the lesson vowels), `three_word_sentence` (a pool line). Meaning and fit answers get none. All are declared once in `WORD_WORKOUT_LEVERS` (marks, easier, and `question_word_icon` as a shown clue). Unanswered by decision: `wrong_fit` (choose_in_context) and `other_word` (read_compound: a compound has no easier word, and the divider answers the first part alone).
 - **Demanded by:** handoff 22 L3.
 - **Evidence:** `qa/eval-reports/levers-literacy-L3-2026-09-28.md`.
 - **Probe:** `npm test -- wordWorkoutLevers WordWorkout.levers.workspace`.
@@ -115,12 +115,13 @@ foil from scope instead needs a ruling.
 
 ## Catalog projection
 
-- **description:** stale. Still describes the retired DI clock ("The tutor asks, waits and responds to the child's answer, and a credited answer moves the lesson on"). Proposed: "the tutor teaches in its own words; the activity checks each picture tap". Not applied (catalog edits re-route lessons).
+- **description:** corrected 2026-10-20 (boss migration): "the tutor teaches in its own words; the activity checks each picture tap" replaces the retired DI clock sentence; the read_inflected / read_compound descriptions and the constraints no longer say the tutor models word parts (the divider lever and the post-credit reveal show them).
 - **constraints:** faithful.
 - **evalModes:** faithful. `picture_match` β comment is correct.
-- **tutoring.taskDescription / aiDirectives:** stale (DI "bracketed application message" frame). Bound sessions send `tutoring: null` (R8), so they do not receive it. Removal is an `/add-live-tutor-tools` cleanup.
+- **tutoring block:** deleted 2026-10-20 with the hand-written `teachingWorkspace` and `audioInput`; the card owns both (`...bossEntry(wordWorkoutCard)`).
 
 ## Changelog
+- 2026-10-20 — **boss migration** (wave 2, bucket D). One `spokenBoss`: six `SPOKEN` modes keyed by `wordWorkoutKey` (`SpokenKey`; signature errors: the made-up word, the chain word before, the base alone, the near neighbour, a lifted word, a swapped small word), picture_match `TAP_ONE` with a null key played through `show`. Script + workspace merged into `wordWorkoutDomain.ts` (cue lines, judging contracts and pack base deleted); levers moved onto one lever set. Re-based: R2/R3/R4/R7/R8 evidence moved from `wordWorkoutWorkspace.ts` and the catalog guidance to the domain, card and boss; R4's per-item never-say rule is now the scene `constraints`; R6's spoken-correction channel went with the scripted correction; R12's spoken misses are now answered by levers except `wrong_fit` and read_compound `other_word`, and `chunk_divider` is offered only after a first try instead of declared and refused. Content fix: the bedbug meaning ask said its answer ("A bedbug is an insect." before "What kind of thing is a bedbug?"); the sentence is now "A bedbug can bite.". Deleted: adapter, DI_PORTS row, Pip pose + hand Pip + Pip surface test, tutoring block, scripted di-script suite (build-gate assertions moved to `wordWorkoutDomain.test.ts`).
 - 2026-10-13 — **R13 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-workout/before.txt`): real_vs_nonsense cat/zat, pig, dog, sun, bed at every tier with "zed" (a real word) as nonsense; picture_match cat, sun, pen; word_chains cat-cot-pot-pit with "pag" inside a chain of real words; code-table modes identical across tiers. After: real_vs_nonsense easy hit/yez → hard fun/vun, sob/pob; picture_match hard fin vs fan, bug vs bun; chains easy van>tan>ten>men → hard men>met>pet>pat; inflected easy cats → hard rested. New build artifact `service/wordSpace/nonsense.json` (342 strings).
 
 - 2026-09-28 — R12 added (handoff 22 L3). R11's "the spoken modes declare none" is superseded by R12. The chunk divider waits for a first try so it does not undo the cold-read-before-chunks rule of the extended modes.

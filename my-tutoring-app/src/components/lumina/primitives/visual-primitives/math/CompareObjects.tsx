@@ -1,61 +1,25 @@
 'use client';
 
 /**
- * CompareObjects — DI modality. The Live tutor owns the clock in every mode
- * (qa/di/BACKLOG.md item 18 P4; the FOURTH math port).
- *
- * Inside a live runtime with a resolved pin, the shared teaching workspace
- * replaces the scripted runner (W1, `compareObjectsWorkspace.ts`): the tutor
- * teaches in its own words, the observer commits outcomes, and the board still
- * checks an ordering itself. Everything below describes the page both share.
+ * Compare objects, taught on the shared teaching workspace only (the boss: `compareObjects.card.ts` +
+ * `compareObjects.boss.ts`). The tutor asks and helps; spoken answers are judged against the key, and the board checks
+ * an ordering itself. A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
  * WHAT THE CHILD DOES, PER MODE.
- *  - identify_attribute (K + 1): the tutor names the objects and the closed
- *    menu aloud; the child SAYS what the picture lets us measure. The four
- *    attribute chips are deleted — a child who cannot read a drawing can still
- *    tap one of three, and the vocabulary K.MD.1 is ABOUT never left their
- *    mouth.
- *  - compare_two (K + 1): the child SAYS the name of the object that is
- *    longer / heavier / holds more. The two object buttons are deleted (a
- *    two-button ask is a coin flip, and it is the shape the user has struck
- *    down three times).
- *  - order_three (1): the child ARRANGES the three objects by touching them in
- *    order. The arrangement IS the answer — the third unsayable shape — so
- *    this mode keeps its hands, and the screen is the page.
- *  - non_standard (1): the child COUNTS the units along the object and SAYS
- *    the number. The numeric keypad is deleted.
+ *  - identify_attribute (K + 1): the tutor names the objects and the closed menu aloud; the child SAYS what the
+ *    picture lets us measure. No attribute chips: the vocabulary K.MD.1 is about has to leave the child's mouth.
+ *  - compare_two (K + 1): the child SAYS the name of the object that is longer / heavier / holds more. No object
+ *    buttons: a two-button ask is a coin flip.
+ *  - order_three (1): the child ARRANGES the three objects by touching them in order. The arrangement IS the answer,
+ *    so this mode keeps its hands, and the board checks it once the child stops touching.
+ *  - non_standard (1): the child COUNTS the units along the object and SAYS the number. No keypad.
  *
- * WHAT CHANGED. Deleted: every Check control and the answer-checking handler
- * with its four per-mode checkers, the Next control, the numeric keypad, the attribute
- * chips, the object buttons, the feedback card that printed the answer, the
- * 3-attempt reveal ladder, the old tutor hook and all of its improvised turns,
- * and `tutorRevealClause` (the per-tier prose that governed them). Render-side
- * tier levers survive: `showScaleReadout` still hides the weight read-out at
- * the hard tier. There is no progression timer and no progression control
- * anywhere in this file — progression has exactly one cause: a tutor verdict.
+ * ⭐ THE UNIT NUMBERS ARE AN ANSWER KEY IN PIXELS. Numbering the measuring boxes 1..n puts the spoken answer on the
+ * last box, so the numbering is held behind `runner.revealHeld` and paints only once the answer is credited.
  *
- * ⭐ THE UNIT NUMBERS ARE AN ANSWER LEAK IN PIXELS. `showUnitNumbers` numbers
- * the measuring boxes 1..n as a count-along aid, so the last box shows exactly
- * the number the child is about to say aloud — harmless for as long as a Check
- * button graded it, an answer key the moment the answer is spoken (ten-frame's
- * running counter, one primitive later). The numbering is held behind
- * `runner.revealHeld` and paints only while the tutor is affirming; the
- * count-along survives where it is earned, in the correction, where the tutor
- * counts them with the child.
- *
- * HOW A HANDS-ONLY TURN CLOSES. `order_three` has a STRUCTURAL close — all
- * three touched — which still waits a beat rather than committing on the tap,
- * because a mis-tap is normal and re-ordering is thinking. An incomplete order
- * closes on STILLNESS instead, and neither close is correctness-gated: a
- * reversed order and a two-of-three order both commit exactly as readily as
- * the right one, which is what gives the tutor something to teach. Windows are
- * armed through `runner.armStillness`, never a hand-rolled local timer —
- * the runner owns the five cancel sites.
- *
- * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
- * tutor-busy; the tutor speaks only scripted lines; no visible timers;
- * tap-to-hear re-speaks the QUESTION; adult chrome hidden for pre-readers;
- * interaction is gated on `runner.canAttempt`, never on `runner.stage`.
+ * AN ORDERING CLOSES ON STILLNESS. All three touched waits a beat (a mis-tap is normal); a part-built order waits
+ * longer, and neither close is correctness-gated: a reversed order and a two-of-three order commit as readily as the
+ * right one, which is what gives the tutor something to teach. The windows are the runner's (`armStillness`).
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -75,41 +39,22 @@ import {
 } from '../../../evaluation';
 import type { CompareObjectsMetrics } from '../../../evaluation/types';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-  type JudgedScriptRunnerOptions,
-} from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+  ATTRIBUTE_CHILD_FORM, compareOrderMiss, describeOrder, orderMatches, workspaceScene,
+  type CompareObjectsItem, type ComparisonWord, type MeasurableAttribute,
+} from './compareObjectsDomain';
+import { compareObjectsBoss, compareObjectsItems } from './compareObjects.boss';
 import {
-  askFor,
-  buildCompareItems,
-  orderVerdictCue,
-  compareObjectsPackBase,
-  ATTRIBUTE_CHILD_FORM,
-  type CompareObjectsItem,
-  type ComparisonWord,
-  type MeasurableAttribute,
-} from './compareObjectsScript';
-import { numberWordFor } from './countingBoardScript';
+  COMPARE_LEVERS, FEWER_CHOICES_LEVER, FIVE_MARKS_LEVER, GRID_LEVER, MENU_LEVER, MENU_PICTURE, SLOTS_LEVER, STEPS_LEVER,
+  TAP_BOXES_LEVER, WORD_MODEL_LEVER, droppedChoice, orderSteps, wordModel,
+} from './compareObjectsLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { compareObjectsPipPose } from '../../../pip/compareObjectsPipPose';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
-import { useCompareObjectsRuntime } from './useCompareObjectsRuntime';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { compareOrderMiss, describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
-import { FAR_LEVER, GRID_LEVER, SLOTS_LEVER, STEPS_LEVER, compareObjectsLevers, farThree, leverFacts, orderSteps }
-  from './compareObjectsLevers';
-import { FAR_PAIR_LEVER, FEWER_CHOICES_LEVER, FIVE_MARKS_LEVER, MENU_LEVER, MENU_PICTURE, SHORTER_LEVER, TAP_BOXES_LEVER,
-  WORD_MODEL_LEVER, compareObjectsSpokenLevers, droppedChoice, farPair, shorterMeasure, spokenLeverFacts, wordModel }
-  from './compareObjectsSpokenLevers';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -140,8 +85,8 @@ export interface CompareObjectsChallenge {
   weightUnit?: string;
   // ── Support-tier scaffolding (set by generator when config.difficulty present) ──
   supportTier?: 'easy' | 'medium' | 'hard';
-  /** non_standard: number the unit boxes 1..n. POST-AFFIRMATION ONLY now — the
-   *  last box equals the spoken answer (see the module docblock). */
+  /** non_standard: number the unit boxes 1..n. POST-AFFIRMATION ONLY — the last box equals the spoken answer (see
+   *  the module docblock). */
   showUnitNumbers?: boolean;
   showScaleReadout?: boolean; // order_three weight: show digital readout (hard → hidden)
 }
@@ -179,16 +124,9 @@ const ATTRIBUTE_COLORS: Record<string, string> = {
   capacity: 'from-purple-500/30 to-pink-500/30',
 };
 
-/**
- * HOW LONG THE ORDERING BOARD MAY STAY STILL BEFORE IT COMMITS. The window is
- * the runner's (`armStillness`, 19c); these are the per-shape numbers.
- * Both are STRUCTURAL, never correctness-gated — a reversed order commits
- * through the same window as the right one.
- */
-/** Mid-order: a five-year-old pauses to think between objects. */
+/** Mid-order: a five-year-old pauses to think between objects. Structural, never correctness-gated. */
 const ORDER_SETTLE_MS = 4000;
-/** All three touched — a terminal shape, but a mis-tap is normal, so it still
- *  waits a beat rather than committing on the tap. */
+/** All three touched: a terminal shape, but a mis-tap is normal, so it still waits a beat. */
 const ORDER_COMPLETE_SETTLE_MS = 1500;
 
 // ============================================================================
@@ -424,29 +362,7 @@ interface CompareObjectsProps {
   runtimeEvalMode?: string;
 }
 
-/**
- * The scripted runner's options beside the workspace controller's (ten-frame's shape).
- * `placedOrder` feeds the runner-era runtime registration only.
- */
-type CompareObjectsControllerOptions = Omit<WorkspaceRunOptions<CompareObjectsItem>, 'primitiveId' | 'assignment'>
-  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
-    scriptedEvalMode: string }
-  & Omit<JudgedScriptRunnerOptions<CompareObjectsItem>, 'pack' | 'instanceId' | 'onItemOpened'>
-  & { pack?: JudgedScriptPack<CompareObjectsItem>; placedOrder: string[] };
-
-function useScriptedController(options: CompareObjectsControllerOptions): LiveRun<CompareObjectsItem> {
-  const runner = useJudgedScriptRunner<CompareObjectsItem>({ ...options, pack: options.pack! });
-  useCompareObjectsRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, placedOrder: options.placedOrder });
-  return runner;
-}
-
-const useWorkspaceController = (options: CompareObjectsControllerOptions): LiveRun<CompareObjectsItem> =>
-  useWorkspaceRunner<CompareObjectsItem>({ ...options, primitiveId: 'compare-objects', assignment: workspaceAssignment });
-
-const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  CompareObjectsProps & { tutorOwned: boolean; useController: (options: CompareObjectsControllerOptions) => LiveRun<CompareObjectsItem> }) => {
-  const liveRuntime = useLiveRuntime();
+const CompareObjectsSurface = ({ data, className, runtimePlanItemId }: CompareObjectsProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -463,19 +379,16 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
 
   const isPreReader = gradeBand === 'K';
 
-  // ── Stage-payload state (the runner owns progression; this is the page) ───
+  // ── The page (the workspace owns progression) ─────────────────────────────
   const [placedOrder, setPlacedOrder] = useState<string[]>([]);
-  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
-   *  that clear and the `onAffirmed` that set it land in one React batch, so the
-   *  reveal would paint on the last item and nowhere else (18b).
-   *  `runner.revealHeld` is the gate. */
+  /** Post-answer only (answer-leak rule); `runner.revealHeld` is the gate. */
   const [reward, setReward] = useState<string | null>(null);
   /** What the board held when it last stopped changing. */
   const pendingOrderRef = useRef<string[]>([]);
-  // In-item levers (`compareObjectsLevers.ts`), keyed by the session item they were pulled on, and the easier order a
-  // simplify lever put on screen in its place (with the drawing it needs). The ref is what event handlers read.
+  // In-item levers (`compareObjectsLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place. The ref is what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<{ item: CompareObjectsItem; challenge: CompareObjectsChallenge } | null>(null);
+  const [practice, setPractice] = useState<CompareObjectsItem | null>(null);
   /** tap_boxes: the unit boxes the learner has tapped, keyed by the item on screen. */
   const [tappedBoxes, setTappedBoxes] = useState<{ item: string; boxes: number[] }>({ item: '', boxes: [] });
   const displayItemRef = useRef<CompareObjectsItem | null>(null);
@@ -493,73 +406,21 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── The pack: generated challenges → judged items + hand-authored script ──
-  // Unaskable items are DROPPED (a key that disagrees with the measurements, a
-  // drawing that disagrees with the key, an ambiguous attribute menu, names the
-  // judge cannot separate by ear, a G1 mode at K). Nothing is backfilled.
-  const built = useMemo(
-    () => buildCompareItems(challenges, { band: gradeBand }),
-    [challenges, gradeBand],
-  );
-  const items = built.items;
+  // Unaskable items are DROPPED (`compareObjectsDomain`); nothing is backfilled.
+  const items = useMemo(() => compareObjectsItems({ challenges, gradeBand }), [challenges, gradeBand]);
 
-  /** The generated challenge behind an item — the page's own data (drawings,
-   *  read-out tiers), which the judged item deliberately does not carry. */
-  const challengeById = useMemo(() => {
-    const map = new Map<string, CompareObjectsChallenge>();
-    for (const ch of challenges) map.set(ch.id, ch);
-    return map;
-  }, [challenges]);
+  /** The generated challenge behind an item (render tiers: the weight unit, the scale read-out). An easier item
+   *  (`<id>~simpler`) reads its parent's. */
+  const challengeById = useMemo(() => new Map(challenges.map(ch => [ch.id, ch])), [challenges]);
+  const challengeFor = (item: CompareObjectsItem | null) => (item ? challengeById.get(item.id.split('~')[0]) ?? null : null);
 
-  const pack = useMemo<JudgedScriptPack<CompareObjectsItem> | undefined>(() => tutorOwned ? undefined : ({
-    ...compareObjectsPackBase(items),
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen, then put them in order.'
-        : 'Listen, then say your answer out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Have another go — show me your order.'
-        : 'Have another go — say your answer.',
-      done: 'Great measuring today!',
-    },
-    // One factual record per attempt, right or corrected: the objects as drawn, the ask as spoken, and what was
-    // heard or touched. Never the verdict, because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
-      const shown = `${item.objectNames.join(', ')} pictured left to right; asked "${askFor(item)}"`;
-      switch (item.kind) {
-        case 'identify_attribute':
-          return { challenge: `identify_attribute: ${shown}`, expected: item.attribute, observed: heard };
-        case 'compare_two':
-          return { challenge: `compare_two (${item.attribute}): ${shown}`, expected: item.answerNames[0], observed: heard };
-        case 'order_three':
-          return {
-            challenge: `order_three (${item.attribute}): ${shown}`,
-            expected: item.answerNames.join(', '),
-            observed: pendingOrderRef.current.length
-              ? `Touched them in this order: ${pendingOrderRef.current.join(', ')}.`
-              : 'Touched none of the objects.',
-          };
-        default:
-          return {
-            challenge: `non_standard: ${shown}`,
-            expected: `${numberWordFor(item.unitCount)} (${item.unitCount})`,
-            observed: heard,
-          };
-      }
-    },
-  }), [items, tutorOwned]);
-
-  // ── Per-item reset — every item owns its starting state ───────────────────
-  const resetStageFor = useCallback(() => {
+  const resetStage = useCallback(() => {
     setPlacedOrder([]);
     pendingOrderRef.current = [];
   }, []);
 
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((summary: Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'diagnosisEvidence' | 'solvedCount' | 'learningResponses'>
-    & { teachingAttempts?: unknown; assistanceProvenance?: string }) => {
+  // ── The submission, once, from the scored session ─────────────────────────
+  const handleFinished = useCallback((summary: TeachingEvaluationResult) => {
     const metrics: CompareObjectsMetrics = {
       type: 'compare-objects',
       accuracy: summary.accuracy,
@@ -580,23 +441,17 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     );
   }, [items, evaluation]);
 
-  const runner = useController({
-    items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
-    // identity must not change while the runner owns it.
-    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    placedOrder,
-    pack,
-    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
-    // its speech holds never settle, and the completion handoff has nothing to read.
-    runtime: liveRuntime,
-    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[CO_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+  const runner = useWorkspaceRunner<CompareObjectsItem>({
+    primitiveId: 'compare-objects',
+    assignment: compareObjectsBoss.assignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    exhibitId,
     onFinished: handleFinished,
-    // A fresh item never carries an easier order over from the last one.
-    onItemOpened: () => { setPractice(null); resetStageFor(); },
+    // A fresh item never carries an easier one over from the last one.
+    onItemOpened: () => { setPractice(null); resetStage(); },
     onAffirmed: (item) => {
       // The first moment an answer may appear on screen.
       switch (item.kind) {
@@ -613,24 +468,16 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
           setReward(`${item.unitCount} ${item.unitName}s`);
       }
     },
-    onCorrectionRetry: (item) => {
-      // The tutor re-modeled the strategy and re-asked in-band; clear the board
-      // for another go. The settle window is re-armed by the runner on this path.
-      if (item.kind === 'order_three') {
-        setPlacedOrder([]);
-        pendingOrderRef.current = [];
-      }
-    },
+    // Try again clears the board for another go.
+    onCorrectionRetry: (item) => { if ((displayItemRef.current ?? item).kind === 'order_three') resetStage(); },
   });
 
   const sessionItem = runner.currentItem;
-  const sessionChallenge = sessionItem ? challengeById.get(sessionItem.id) ?? null : null;
-  /** What is on screen: the easier order while a simplify lever holds it, else the session item. */
-  const currentItem = practice?.item ?? sessionItem;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
-  const currentSolved = runner.currentSolved;
   const kind = currentItem?.kind;
-  const currentChallenge = practice?.challenge ?? sessionChallenge;
+  const currentChallenge = challengeFor(currentItem);
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const gridOn = pulledLevers.includes(GRID_LEVER) && currentItem?.kind === 'order_three';
   const tapped = tappedBoxes.item === currentItem?.id ? tappedBoxes.boxes : [];
@@ -642,23 +489,20 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
       return { item: id, boxes: boxes.includes(i) ? boxes.filter(b => b !== i) : [...boxes, i] };
     });
   }, []);
+  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
-  // ── The gesture commit ────────────────────────────────────────────────────
-  // No Check control: nothing on screen may carry the child forward. The close
-  // describes the committed order; THE MATCH IS COMPUTED IN CODE.
+  // ── The ordering: the board checks its own arrangement ────────────────────
   const commitOrder = useCallback(() => {
     const item = displayItemRef.current;
     if (!item || item.kind !== 'order_three') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingOrderRef.current;
-    // The board checks its own arrangement, with the same code match the cue reports.
-    commitGesture(runner, { response: describeOrder(item, placed), correct: orderMatches(item, placed),
-      miss: compareOrderMiss(item, placed), cue: () => orderVerdictCue(item, placed) });
+    // A part-built order commits too: the miss names what it shows.
+    runner.commitGesture({ response: describeOrder(item, placed), correct: orderMatches(item, placed),
+      miss: compareOrderMiss(item, placed), cue: () => '' });
   }, [runner]);
 
-  /** A hands turn closes on stillness; a complete order shortens the window but
-   *  never commits on the tap (a mis-tap is normal). Further touches re-arm it,
-   *  and the runner cancels it at item open, at a correction and at the commit. */
+  /** A hands turn closes on stillness; all three touched shortens the window but never commits on the tap. */
   const armOrderSettle = useCallback((order: string[]) => {
     const item = displayItemRef.current;
     pendingOrderRef.current = order;
@@ -675,18 +519,15 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     if (!currentItem || currentItem.kind !== 'order_three') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    const next = placedOrder.includes(name)
-      ? placedOrder.filter((n) => n !== name)
-      : [...placedOrder, name];
+    const next = placedOrder.includes(name) ? placedOrder.filter((n) => n !== name) : [...placedOrder, name];
     setPlacedOrder(next);
     armOrderSettle(next);
   }, [currentItem, runner, placedOrder, armOrderSettle]);
 
   // ── The drawing ───────────────────────────────────────────────────────────
-  const renderObjectVisuals = useCallback(() => {
-    if (!currentItem || !currentChallenge) return null;
-    const { attribute } = currentItem;
-    const objects = currentChallenge.objects ?? [];
+  const renderObjectVisuals = () => {
+    if (!currentItem) return null;
+    const { attribute, objects } = currentItem;
 
     if (currentItem.kind === 'non_standard' && objects[0]) {
       return renderNonStandardMeasure(
@@ -699,87 +540,30 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
           fives: pulledLevers.includes(FIVE_MARKS_LEVER) },
       );
     }
-
-    if (attribute === 'weight' && objects.length === 2) {
-      return renderWeightObject(objects);
-    }
+    if (attribute === 'weight' && objects.length === 2) return renderWeightObject(objects);
     if (attribute === 'weight' && objects.length >= 3) {
-      return renderThreeScaleWeights(
-        objects,
-        currentChallenge.weightUnit ?? 'lbs',
-        currentChallenge.showScaleReadout ?? true,
-      );
+      return renderThreeScaleWeights(objects, currentChallenge?.weightUnit ?? 'lbs', currentChallenge?.showScaleReadout ?? true);
     }
-
     switch (attribute) {
       case 'height':
-        return (
-          <div className="flex items-end justify-center gap-8">
-            {objects.map((obj, i) => renderHeightObject(obj, i, 160))}
-          </div>
-        );
+        return <div className="flex items-end justify-center gap-8">{objects.map((obj, i) => renderHeightObject(obj, i, 160))}</div>;
       case 'capacity':
-        return (
-          <div className="flex items-end justify-center gap-8">
-            {objects.map((obj, i) => renderCapacityObject(obj, i))}
-          </div>
-        );
+        return <div className="flex items-end justify-center gap-8">{objects.map((obj, i) => renderCapacityObject(obj, i))}</div>;
       case 'length':
       default:
-        return (
-          <div className="flex flex-col gap-4 w-full">
-            {objects.map((obj, i) => renderLengthObject(obj, i, 280))}
-          </div>
-        );
+        return <div className="flex flex-col gap-4 w-full">{objects.map((obj, i) => renderLengthObject(obj, i, 280))}</div>;
     }
-  }, [currentItem, currentChallenge, runner.revealHeld, pulledLevers, tapped, tapBox]);
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
-  useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem) return;
-    const scene = workspaceScene(currentItem, { placedOrder });
-    const onScreen = [leverFacts(currentItem, pulledLevers, placedOrder.length), spokenLeverFacts(currentItem, pulledLevers)]
-      .filter(Boolean).join(' ');
-    const levers = practice ? [] : [...compareObjectsLevers(sessionItem, sessionChallenge, pulledLevers),
-      ...compareObjectsSpokenLevers(sessionItem, sessionChallenge, pulledLevers, items)];
-    workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      levers,
-      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
-      pullLever: (id) => {
-        const lever = levers.find(l => l.id === id);
-        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
-        if (lever.pulled) return `${id} is already pulled.`;
-        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (id === FAR_LEVER || id === FAR_PAIR_LEVER || id === SHORTER_LEVER) {
-          const easier = id === FAR_LEVER ? farThree(sessionItem, sessionChallenge)
-            : id === FAR_PAIR_LEVER ? farPair(sessionItem, sessionChallenge) : shorterMeasure(sessionItem, sessionChallenge, items);
-          if (!easier) return 'There is no easier one for this item.';
-          setLeverState(pulled);
-          setPractice(easier); resetStageFor(); runner.clearStillness();
-          return { practice: workspaceAssignment(easier.item) };
-        }
-        setLeverState(pulled);
-        return true;
-      },
-      endPractice: () => { setPractice(null); resetStageFor(); runner.clearStillness(); },
-    };
-  });
-
-  // The workspace path shows its summary without an evaluation provider (the live host has none).
-  const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
+  };
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!showSummary) return [];
-    const practice = runner.practiceSummary;
-    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+    const done = runner.practiceSummary;
+    return phaseResultsFromSummary(items, done ?? runner.summary, (item) => {
       const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '📐' };
-      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+      return done?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
     }).map((phase, index) => {
-      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      const outcome = done?.outcomes.find(o => o.id === items[index].id);
       return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
     });
   }, [showSummary, runner.summary, runner.practiceSummary, items]);
@@ -792,31 +576,38 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     return 'You put every one in order with your own hands!';
   }, [items]);
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and the child's own taps; Pip never
-  // orders, answers, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt && !runner.isAwaitingGesture());
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id.startsWith('pick-') ? id.slice('pick-'.length) : id));
-    const pose = compareObjectsPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      kind: currentItem.kind, visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Compare objects', dock: pip.dock.current, targets, pose };
+  // ── The scene and the levers, republished after every render ──────────────
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    const scene = workspaceScene(currentItem, { placedOrder });
+    const levers = practice ? [] : COMPARE_LEVERS.declare(sessionItem, items, pulledLevers);
+    workspace.current = {
+      ...leverScene(practice ? { ...scene, facts: { ...scene.facts, practice: 'An easier one, ungraded. The full item comes back after it.' } } : scene, {
+        support: practice ? '' : COMPARE_LEVERS.support(sessionItem, items),
+        onScreen: COMPARE_LEVERS.onScreen(currentItem, items, pulledLevers) }),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (lever.kind === 'simplify') {
+          const easier = COMPARE_LEVERS.simpler(sessionItem, items, id);
+          if (!easier) return 'There is no easier one for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(easier); resetStage(); runner.clearStillness();
+          return { practice: compareObjectsBoss.assignment(easier) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetStage(); runner.clearStillness(); },
+    };
   });
 
   // ============================================================================
   // Render
   // ============================================================================
-
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
 
   if (items.length === 0) {
     return (
@@ -829,14 +620,11 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   }
 
   const isGestureItem = currentItem?.answerKind === 'gesture';
-
-  const stageWord = runner.stage === 'judging'
-    ? 'let’s see…'
-    : currentSolved
-      ? 'yes!'
-      : runner.running
-        ? (isGestureItem ? 'your turn' : 'say it out loud')
-        : 'get ready';
+  const stageWord = runner.stage === 'affirmed'
+    ? 'yes!'
+    : runner.stage === 'asking'
+      ? (isGestureItem ? 'your turn' : 'say it out loud')
+      : 'get ready';
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
@@ -881,86 +669,76 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
               </div>
             )}
 
-            {/* The drawing. The tutor speaks the ask — no printed instruction,
-                because a pre-reader cannot read one and a reader would not need
-                to listen. */}
-            <div className="flex justify-center py-2">
-              <LuminaPanel ref={pip.ref('drawing')} data-pip-object="drawing" className="w-full max-w-md flex justify-center p-6">
-                {/* measure_grid lever: even lines behind the drawing, the same for every object. */}
-                <div className="w-full flex justify-center" {...(gridOn ? { 'data-lever': 'measure-grid', style: {
-                  backgroundImage: 'repeating-linear-gradient(90deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px),'
-                    + ' repeating-linear-gradient(0deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px)' } } : {})}>
-                  {renderObjectVisuals()}
-                </div>
-              </LuminaPanel>
-            </div>
-
-            {kind === 'compare_two' && pulledLevers.includes(WORD_MODEL_LEVER)
-              && renderWordModel(currentItem.attribute, currentItem.comparisonWord)}
-            {kind === 'identify_attribute' && (pulledLevers.includes(MENU_LEVER) || pulledLevers.includes(FEWER_CHOICES_LEVER))
-              && renderMenuPictures(currentItem.attributeOptions,
-                pulledLevers.includes(FEWER_CHOICES_LEVER) ? droppedChoice(currentItem) : null)}
-
-            {/* Pip's dock sits between the drawing and the name buttons, so a
-                pointer to the drawing never crosses a name on its way. */}
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
-            {/* === Ordering workspace — the ONLY interactive surface left === */}
-            {kind === 'order_three' && (
-              <div className="flex flex-col items-center gap-3">
-                {/* order_steps lever: wordless bars that grow the way the order goes; they name no object. */}
-                {pulledLevers.includes(STEPS_LEVER) && (
-                  <div data-lever="order-steps" className="flex items-end gap-2" aria-label="the way the order goes">
-                    {orderSteps(currentItem).map((h, i) => <span key={i} className="block w-5 rounded-sm bg-purple-400/60" style={{ height: h }} />)}
+            <PipDock />
+            {/* The drawing and the ordering board. The tutor speaks the ask — no printed instruction, because a
+                pre-reader cannot read one and a reader would not need to listen. Pip outlines the whole surface. */}
+            <PipWorkspace className="space-y-4">
+              <div className="flex justify-center py-2">
+                <LuminaPanel data-pip-object="drawing" className="w-full max-w-md flex justify-center p-6">
+                  {/* measure_grid lever: even lines behind the drawing, the same for every object. */}
+                  <div className="w-full flex justify-center" {...(gridOn ? { 'data-lever': 'measure-grid', style: {
+                    backgroundImage: 'repeating-linear-gradient(90deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px),'
+                      + ' repeating-linear-gradient(0deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px)' } } : {})}>
+                    {renderObjectVisuals()}
                   </div>
-                )}
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {currentItem.objectNames.map((name) => {
-                    const orderIndex = placedOrder.indexOf(name);
-                    const isPicked = orderIndex !== -1;
-                    return (
-                      <LuminaButton
-                        key={name}
-                        ref={pip.ref(`pick-${name}`)}
-                        data-pip-object={`pick-${name}`}
-                        className={`px-5 py-3 border transition-all relative ${
-                          isPicked
-                            ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
-                            : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                        }`}
-                        onClick={() => { pip.look(`pick-${name}`); toggleOrderPick(name); }}
-                        disabled={!runner.canAttempt}
-                      >
-                        {isPicked && (
-                          <LuminaBadge
-                            accent="emerald"
-                            className="absolute -top-2 -right-2 text-[10px] px-1.5"
-                          >
-                            {orderIndex + 1}
-                          </LuminaBadge>
-                        )}
-                        {name}
-                      </LuminaButton>
-                    );
-                  })}
-                </div>
-                {/* touch_slots lever: three dots that fill one per object touched. */}
-                {pulledLevers.includes(SLOTS_LEVER) && (
-                  <div data-lever="touch-slots" className="flex gap-2">
-                    {currentItem.objectNames.map((_, i) => (
-                      <span key={i} data-filled={i < placedOrder.length}
-                        className={`block w-4 h-4 rounded-full border-2 border-emerald-300/70 ${i < placedOrder.length ? 'bg-emerald-300/80' : ''}`} />
-                    ))}
-                  </div>
-                )}
+                </LuminaPanel>
               </div>
-            )}
 
-            {/* The reward — the first moment an answer may appear. */}
-            {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens
-                the next item in the same dispatch, so by the time this renders
-                the current item is the NEXT one and is not solved (18b). */}
+              {kind === 'compare_two' && pulledLevers.includes(WORD_MODEL_LEVER)
+                && renderWordModel(currentItem.attribute, currentItem.comparisonWord)}
+              {kind === 'identify_attribute' && (pulledLevers.includes(MENU_LEVER) || pulledLevers.includes(FEWER_CHOICES_LEVER))
+                && renderMenuPictures(currentItem.attributeOptions,
+                  pulledLevers.includes(FEWER_CHOICES_LEVER) ? droppedChoice(currentItem) : null)}
+
+              {/* The ordering board — the only interactive surface. */}
+              {kind === 'order_three' && (
+                <div className="flex flex-col items-center gap-3">
+                  {/* order_steps lever: wordless bars that grow the way the order goes; they name no object. */}
+                  {pulledLevers.includes(STEPS_LEVER) && (
+                    <div data-lever="order-steps" className="flex items-end gap-2" aria-label="the way the order goes">
+                      {orderSteps(currentItem).map((h, i) => <span key={i} className="block w-5 rounded-sm bg-purple-400/60" style={{ height: h }} />)}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {currentItem.objectNames.map((name) => {
+                      const orderIndex = placedOrder.indexOf(name);
+                      const isPicked = orderIndex !== -1;
+                      return (
+                        <LuminaButton
+                          key={name}
+                          data-pip-object={`pick-${name}`}
+                          className={`px-5 py-3 border transition-all relative ${
+                            isPicked
+                              ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
+                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                          }`}
+                          onClick={() => toggleOrderPick(name)}
+                          disabled={!runner.canAttempt}
+                        >
+                          {isPicked && (
+                            <LuminaBadge accent="emerald" className="absolute -top-2 -right-2 text-[10px] px-1.5">
+                              {orderIndex + 1}
+                            </LuminaBadge>
+                          )}
+                          {name}
+                        </LuminaButton>
+                      );
+                    })}
+                  </div>
+                  {/* touch_slots lever: three dots that fill one per object touched. */}
+                  {pulledLevers.includes(SLOTS_LEVER) && (
+                    <div data-lever="touch-slots" className="flex gap-2">
+                      {currentItem.objectNames.map((_, i) => (
+                        <span key={i} data-filled={i < placedOrder.length}
+                          className={`block w-4 h-4 rounded-full border-2 border-emerald-300/70 ${i < placedOrder.length ? 'bg-emerald-300/80' : ''}`} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </PipWorkspace>
+
+            {/* The reward — the first moment an answer may appear, gated on `revealHeld` (18b). */}
             {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
@@ -974,14 +752,10 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
                 {isGestureItem
-                  ? 'Touch them in order — the tutor checks when you stop.'
+                  ? 'Touch them in order — the board checks when you stop.'
                   : 'Look at the picture, then say your answer out loud.'}
               </p>
             )}
-
-            {/* The orb tells the truth about the turn: a hands item is not
-                "I'm listening". */}
-            <JudgedMicPanel run={runner} gestureLabel="Touch them in order" />
           </>
         )}
 
@@ -1000,8 +774,7 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   );
 };
 
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const CompareObjects = withWorkspaceController<CompareObjectsProps, CompareObjectsControllerOptions, LiveRun<CompareObjectsItem>>(
-  'compare-objects', CompareObjectsSurface, useScriptedController, useWorkspaceController);
+// One path: the tutor teaches on the workspace; a mount with no tutor shows the shared "needs the tutor" card.
+const CompareObjects = withWorkspaceOnly<CompareObjectsProps>('compare-objects', CompareObjectsSurface, props => props.data.title);
 
 export default CompareObjects;

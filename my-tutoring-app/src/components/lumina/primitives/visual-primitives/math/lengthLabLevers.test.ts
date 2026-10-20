@@ -1,5 +1,5 @@
 /**
- * length-lab levers: leak rules per mode, the simplify builders over every item shape the generator draws, and
+ * length-lab levers (one lever set, `LENGTH_LEVERS`): leak rules per mode, the simplify builders over every item shape the generator draws, and
  * "this wrong answer, then this lever" as code.
  */
 import { describe, expect, it } from 'vitest';
@@ -7,11 +7,17 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { LengthLabChallenge } from './LengthLab';
 import {
-  CHAIN_MODEL_LEVER, END_LINES_LEVER, FAR_PAIR_LEVER, FAR_THREE_LEVER, ORDER_STEPS_LEVER, OUTLINE_LEVER, SHORTER_LEVER,
-  UNIT_MARKS_LEVER, UNIT_MODEL_LEVER, WORD_MODEL_LEVER, farPair, farThree, lengthLabLevers, leverFacts, leverTextLeaks,
-  shorterObject, simplerLength, simplerLeaks,
+  CHAIN_MODEL_LEVER, END_LINES_LEVER, FAR_PAIR_LEVER, FAR_THREE_LEVER, LENGTH_LEVERS, ORDER_STEPS_LEVER, OUTLINE_LEVER,
+  SHORTER_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER, WORD_MODEL_LEVER, farPair, farThree, leverTextLeaks, shorterObject,
+  simplerLength, simplerLeaks, type LengthLeverContext,
 } from './lengthLabLevers';
 import { lengthLabMatches, lengthMiss, type LengthView } from './lengthLabWorkspace';
+
+/** The levers offered on an item once its guess (if any) is made, and the facts the pulled ones write. */
+const lengthLabLevers = (c: LengthLabChallenge, pulled: readonly string[], ctx: LengthLeverContext) =>
+  LENGTH_LEVERS.declare(c, { guessed: true, ...ctx }, pulled);
+const leverFacts = (c: LengthLabChallenge, pulled: readonly string[]) =>
+  LENGTH_LEVERS.onScreen(c, { ticksShown: false, guessed: true }, pulled);
 
 type Mode = LengthLabChallenge['type'];
 const MODES: Mode[] = ['compare', 'estimate_then_tile', 'two_unit_compare', 'tile_and_count', 'order', 'indirect'];

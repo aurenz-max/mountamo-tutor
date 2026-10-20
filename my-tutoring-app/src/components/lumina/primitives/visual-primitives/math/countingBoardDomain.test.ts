@@ -1,5 +1,7 @@
 import { expect, it } from 'vitest';
-import { countingBoardSpokenMisses, countMiss, itemFromChallenge, workspaceAssignment, type CountingItem } from './countingBoardDomain';
+import { askLeaks, spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { askFor, countingBoardSpokenMisses, countingKey, countMiss, itemFromChallenge, numberWordFor, type CountingItem } from './countingBoardDomain';
+import { countingBoardBoss } from './countingBoard.boss';
 
 const item = (type: CountingItem['kind'], count: number, targetAnswer: number) =>
   itemFromChallenge({ id: `${type}${targetAnswer}`, type, count, targetAnswer }, { objectWord: 'bears' })!;
@@ -30,5 +32,27 @@ it.each([
   expect(misses.map(m => m.id)).toEqual(ids);
   // No listed miss is the key, in any form.
   for (const m of misses) expect(m.examples ?? []).not.toContain(String(it_.target));
-  expect(workspaceAssignment(it_).misses?.map(m => m.id) ?? []).toEqual(ids);
+  expect(countingBoardBoss.assignment(it_).misses?.map(m => m.id) ?? []).toEqual(ids);
 });
+
+// The spoken key (`spokenKeyText` writes it) and the assignment the boss builds from it.
+it.each([
+  [spoken('count_all', 5, 5), /^"five"\./],
+  [spoken('count_on', 8, 8, { startFrom: 5 }), /Five, the number already in the group/],
+  [spoken('compare', 9, 6, { compareGroups: [3, 6] }), /smaller group/],
+  [spoken('take_away', 7, 4, { changeBy: 3 }), /how many are left/],
+  [spoken('recount_moved', 6, 6), /Moving them did not change how many/],
+] as const)('%#: a spoken key accepts the count walk and names its fluent miss', (item, pattern) => {
+  const key = countingKey(item)!;
+  expect([key.answer, key.alsoAccept]).toEqual([numberWordFor(item.target), []]);
+  expect(spokenKeyText(key)).toMatch(pattern);
+  expect(key.acceptRule).toMatch(/ending on/);
+  expect(askLeaks(askFor(item), key)).toEqual([]);
+  expect(countingBoardBoss.assignment(item)).toMatchObject({ id: item.id, task: askFor(item), response: 'speech', expectedAnswer: spokenKeyText(key) });
+});
+
+it.each([item('give_me_n', 9, 5), hands2, itemFromChallenge({ id: 'b', type: 'build_n', count: 4, targetAnswer: 4 }, { objectWord: 'bears' })!])(
+  '%#: an item the board checks has no key, and its assignment carries none to the tutor', it_ => {
+    expect(countingKey(it_)).toBeNull();
+    expect(countingBoardBoss.assignment(it_)).toEqual({ id: it_.id, task: askFor(it_), response: 'gesture' });
+  });

@@ -305,7 +305,7 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
     const levers = practice ? [] : THREE_D_SHAPE_LEVERS.declare(sessionItem, leverCtx, shown);
     workspace.current = {
       ...leverScene(threeDShapeScene(practice ?? sessionItem), {
-        support: practice ? '' : THREE_D_SHAPE_LEVERS.support(sessionItem),
+        support: practice ? '' : THREE_D_SHAPE_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : THREE_D_SHAPE_LEVERS.onScreen(sessionItem, leverCtx, shown) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

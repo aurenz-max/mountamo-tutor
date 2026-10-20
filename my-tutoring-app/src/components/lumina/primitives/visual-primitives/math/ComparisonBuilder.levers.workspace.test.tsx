@@ -96,12 +96,18 @@ it('compare_groups at K: tap_count makes each object a counting target that neve
   expect(h.state().task!.demand.onScreen).toMatch(/Tapped so far: 2 on the left, 0 on the right/);
 });
 
-it('easy starts with the model shown: a starting position, not a recorded pull', () => {
+it('easy: the support fact has the tutor model a different pair first; nothing is drawn until the pull', () => {
   const h = mount('compare_groups', [groups('c1', 4, 7)], '1', 'easy');
-  expect(h.levers().find(l => l.id === 'model_match')!.pulled).toBe(true);
+  expect(h.state().task!.demand.support).toMatch(/^before the learner tries, pull the model lever \(model_match\)/);
+  expect(h.levers().find(l => l.id === 'model_match')!.pulled).toBe(false);
+  expect(h.lever('model-match')).toHaveLength(0);
+  expect(h.dispatch('pull_lever', { lever: 'model_match' }).status).toBe('committed');
   expect(h.lever('model-match')).toHaveLength(1);
-  h.choose(/^fewer$/i); h.check();
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toBeUndefined();
+});
+
+it('medium (no tier): the model comes after a miss', () => {
+  const h = mount('compare_groups', [groups('c1', 4, 7)]);
+  expect(h.state().task!.demand.support).toMatch(/^the learner tries first; after a miss/);
 });
 
 it('compare_numbers: quantity marks appear under both numbers, drawn alike', () => {

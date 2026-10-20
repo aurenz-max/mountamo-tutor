@@ -54,9 +54,9 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the/);
-  expect(String(task.demand.constraints)).not.toContain(c.correctAnswer);
+  // The ask is the question; the key reaches the judge only.
+  expect(task.task).toBe(c.question);
+  expect(String(task.demand.constraints ?? '')).not.toContain(c.correctAnswer);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
   h.say(right); h.feedback('correct', 'advance');

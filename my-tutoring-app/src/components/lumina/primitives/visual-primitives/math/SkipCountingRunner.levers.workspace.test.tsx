@@ -15,7 +15,7 @@ import { act, cleanup, fireEvent } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import type { SkipCountingChallenge, SkipCountingRunnerData } from './SkipCountingRunner';
-import { skipHarnessInputs, type SkipLine } from './skipCountingWorkspace';
+import { skipHarnessInputs, skipItems, type SkipLine } from './skipCountingWorkspace';
 import {
   ARRAY_ROWS, COUNT_TRAIL, HOP_DOTS, JUMP_MARKS, JUMP_SIZES, MODEL_COUNT, RING_GAPS, SIMPLER_LEVER, STEP_ARCS, practiceItem,
   practiceParent,
@@ -45,12 +45,12 @@ const last = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts.at(-1)
 /** The journey's inputs for the item on screen (a practice count is rebuilt from its parent, as the journey does). */
 function perform(h: WorkspaceHarness, data: SkipCountingRunnerData, wrong: boolean) {
   const t = h.state().task!;
-  const parent = practiceParent(t.itemId, data.challenges);
-  const practice = parent ? practiceItem(parent, { challenges: data.challenges, line: LINE, showOptions: data.showOptions,
-    supportTier: data.supportTier })! : null;
-  const c = practice?.challenge ?? data.challenges.find(x => x.id === t.itemId)!;
+  const items = skipItems(data);
+  const parent = practiceParent(t.itemId, items);
+  const practice = parent ? practiceItem(parent, { challenges: items, showOptions: data.showOptions, supportTier: data.supportTier })! : null;
+  const c = practice ?? items.find(x => x.id === t.itemId)!;
   const filled = String(t.demand.filled ?? '').split(',').filter(s => s.trim()).map(Number);
-  for (const input of skipHarnessInputs(c, practice?.line ?? LINE, wrong, { at: Number(t.demand.at), filled })) {
+  for (const input of skipHarnessInputs(c, c.line, wrong, { at: Number(t.demand.at), filled })) {
     if (input.type === 'touch') h.touch(input.target);
     else if (input.type === 'check') h.press('Check Answer');
     else act(() => { fireEvent.change(h.view.container.querySelector(`input[aria-label="${input.label}"]`)!, { target: { value: input.text } }); });

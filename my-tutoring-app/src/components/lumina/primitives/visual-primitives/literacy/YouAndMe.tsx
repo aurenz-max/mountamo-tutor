@@ -131,7 +131,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
     const levers = YOU_AND_ME_LEVERS.declare(item, undefined, pulledLevers);
     workspace.current = {
       ...leverScene(youAndMeScene(item), {
-        support: YOU_AND_ME_LEVERS.support(item),
+        support: YOU_AND_ME_LEVERS.support(item, undefined),
         onScreen: YOU_AND_ME_LEVERS.onScreen(item, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

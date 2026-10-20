@@ -1,27 +1,28 @@
 /**
- * The in-item levers on a planetary-explorer question (`/add-support-tiers`, report
- * qa/eval-reports/planetary-explorer-levers-2026-10-15.md). No real-learner evidence: the misses are what
- * `planetMiss` names. Pure: the component draws from these, the workspace publishes them, the tests hold each leak rule.
+ * The in-item levers on a planetary-explorer question, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/planetary-explorer-levers-2026-10-15.md). No real-learner evidence: the misses are what `planetMiss`
+ * names. Pure: the component draws from these, the tests hold each leak rule.
  *
- * - `planet_card` (help, shown): this stop's fact cards back beside the question (the learner read them before it
+ * - `planet_card` (custom, shown): this stop's fact cards back beside the question (the learner read them before it
  *   opened). Withheld when any choice is printed on a card (`cardLeak`), and on a true-false statement, whose truth is
  *   read off the cards: there the card IS the answer.
- * - `visited_cards` (help, shown): every planet visited so far, its fact cards side by side in journey order, none
- *   marked. Same leak rule over every card; on a menu of planet names, offered only when every named planet has a card.
- * - `family_model` (help, shown): two model worlds beside the question, not planets of this trip: a small grey rocky
- *   one and a big striped gas giant. On a menu of planet names that spans both kinds. Names no planet.
- * - `drop_far_choice` (simplify, shown): greys out one wrong choice that is easy to rule out, on the item itself (user
+ * - `visited_cards` (layout): every planet visited so far, its fact cards side by side in journey order, none marked.
+ *   Same leak rule over every card; on a menu of planet names, offered only when every named planet has a card.
+ * - `family_model` (clue, shown): two model worlds beside the question, not planets of this trip: a small grey rocky
+ *   one and a big striped gas giant. On a quiz menu of planet names that spans both kinds. Names no planet.
+ * - `drop_far_choice` (custom, shown): greys out one wrong choice that is easy to rule out, on the item itself (user
  *   ruling 09-27: removing a choice is assisted work). Planet names: the one farthest from the answer in order from
  *   the Sun; numbers: the farthest number; words: the choice sharing the fewest words with the answer. Guard: at least
  *   two untried choices remain, so a 4-choice question has it after one wrong answer and a 2- or 3-choice one not.
  *
- * No lever on a true-false statement (already the smallest judgement, and its truth is on the cards): unanswered in
- * the catalog.
+ * No lever on a true-false statement (already the smallest judgement, and its truth is on the cards): unanswered on
+ * the card. Every lever starts released, except that the easy tier starts the help levers pulled (`startLevers`).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
 import type { PlanetStop } from './PlanetaryExplorer';
 import {
-  PLANET_ORDER, asNumber, capitalize, isNumberMenu, isPlanetMenu, keyText, planetNamed, type PlanetItem, type PlanetMiss,
+  PLANET_ORDER, asNumber, capitalize, isNumberMenu, isPlanetMenu, keyText, planetKey, planetNamed, type PlanetItem, type PlanetMiss,
 } from './planetaryExplorerWorkspace';
 
 export const CARD_LEVER = 'planet_card';
@@ -104,46 +105,54 @@ export function farChoice(item: PlanetItem, s: PlanetLeverState): number | null 
 const QUIZ_MISSES: PlanetMiss[] = ['neighbour_planet', 'same_family_planet', 'other_family_planet', 'other_number', 'other_choice'];
 const STOP_MISSES: PlanetMiss[] = ['other_planet', 'other_planet_fact', 'other_number', 'other_choice'];
 
-/** The levers this item declares, with their state. A lever that cannot be pulled now and was not pulled is left out. */
-export function planetLevers(item: PlanetItem | null | undefined, s: PlanetLeverState, planets: readonly PlanetStop[]): WorkspaceLever[] {
-  if (!item) return [];
-  const on = (id: string) => s.pulled.includes(id);
-  const levers: WorkspaceLever[] = [];
-  const stop = item.kind === 'planet' ? planets[item.planetIndex] : undefined;
-  if (stop && (on(CARD_LEVER) || !cardLeak(item, [stop]))) levers.push({ id: CARD_LEVER, kind: 'help', carrier: 'shown', pulled: on(CARD_LEVER),
-    answers: STOP_MISSES,
-    when: 'The learner picks a wrong choice or is stuck, and does not remember what this planet\'s card said.',
-    does: `Shows ${capitalize(stop.planetId)}'s fact cards again beside the question. Read a card aloud if asked; never say which card or which number decides the question.` });
-  if (on(VISITED_LEVER) || (stop && !visitedLeak(item, planets))) levers.push({ id: VISITED_LEVER, kind: 'help', carrier: 'shown', pulled: on(VISITED_LEVER),
-    answers: STOP_MISSES,
-    when: 'The learner mixes up planets already visited, or has to compare them.',
-    does: 'Lays the fact cards of every planet visited so far side by side, in the order they were visited, none marked. Never say which planet\'s card wins the comparison.' });
-  if (on(FAMILY_LEVER) || spansFamilies(item)) levers.push({ id: FAMILY_LEVER, kind: 'help', carrier: 'shown', pulled: on(FAMILY_LEVER),
-    answers: ['other_family_planet'] satisfies PlanetMiss[],
-    when: 'The learner names a planet of the wrong kind: a giant for a small rocky world, or the other way round.',
-    does: 'Shows two model worlds beside the question, not planets of this trip: a small grey rocky one and a big striped gas giant. It names no planet; never say which kind the answer is.' });
-  if (on(DROP_LEVER) || farChoice(item, s) !== null) levers.push({ id: DROP_LEVER, kind: 'simplify', carrier: 'shown', pulled: on(DROP_LEVER),
-    answers: item.kind === 'quiz' ? QUIZ_MISSES : STOP_MISSES,
-    when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
-    does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.' });
-  return levers;
-}
+/** What the levers read beside the item: the trip's planets, and this item's lever state. */
+export interface PlanetLeverContext { planets: readonly PlanetStop[]; state: PlanetLeverState }
 
-/** The levers a support tier starts pulled (`config.difficulty` easy): drawn and declared, never recorded as help. */
+const on = (ctx: PlanetLeverContext, id: string) => ctx.state.pulled.includes(id);
+const stopOf = (item: PlanetItem, ctx: PlanetLeverContext) => (item.kind === 'planet' ? ctx.planets[item.planetIndex] : undefined);
+const statLine = (stop: PlanetStop) => stop.keyStats.map(s => `${s.label} ${s.value}${s.unit ? ` ${s.unit}` : ''}`).join('; ');
+
+export const PLANET_LEVERS = leverSet<PlanetItem, PlanetLeverContext>({
+  missesOf: () => [],
+  // The model worlds' words never name the key or a way of saying it.
+  answersOf: item => keyAnswers(planetKey(item)),
+  specs: [
+    { id: CARD_LEVER, type: 'custom', carrier: 'shown', answers: STOP_MISSES,
+      why: 'It brings back this stop\'s own fact cards, which the learner read before the question opened; no stock type re-shows earlier content.',
+      when: 'The learner picks a wrong choice or is stuck, and does not remember what this planet\'s card said.',
+      does: (item, ctx) => `Shows ${capitalize(stopOf(item, ctx)?.planetId ?? '')}'s fact cards again beside the question. Read a card `
+        + 'aloud if asked; never say which card or which number decides the question.',
+      content: (item, ctx) => { const stop = stopOf(item, ctx); return stop && (on(ctx, CARD_LEVER) || !cardLeak(item, [stop])) ? stop : null; },
+      fact: (stop: PlanetStop) => `${capitalize(stop.planetId)}'s fact cards are back beside the question: ${statLine(stop)}.` },
+    { id: VISITED_LEVER, type: 'layout', answers: STOP_MISSES,
+      when: 'The learner mixes up planets already visited, or has to compare them.',
+      does: 'Lays the fact cards of every planet visited so far side by side, in the order they were visited, none marked. '
+        + 'Never say which planet\'s card wins the comparison.',
+      content: (item, ctx) => (on(ctx, VISITED_LEVER) || (stopOf(item, ctx) && !visitedLeak(item, ctx.planets)) ? visitedStops(item, ctx.planets) : null),
+      fact: (stops: readonly PlanetStop[]) => `The fact cards of ${stops.map(p => capitalize(p.planetId)).join(', ')} are laid side by side `
+        + 'below the question, none marked.' },
+    { id: FAMILY_LEVER, type: 'clue', carrier: 'shown', answers: ['other_family_planet'],
+      when: 'The learner names a planet of the wrong kind: a giant for a small rocky world, or the other way round.',
+      does: 'Shows two model worlds beside the question, not planets of this trip: a small grey rocky one and a big striped gas '
+        + 'giant. It names no planet; never say which kind the answer is.',
+      content: (item, ctx) => on(ctx, FAMILY_LEVER) || spansFamilies(item),
+      fact: 'Beside the question, two model worlds that are not planets of this trip: a small grey rocky one and a big striped gas giant.' },
+    { id: DROP_LEVER, type: 'custom', carrier: 'shown', answers: Array.from(new Set([...QUIZ_MISSES, ...STOP_MISSES])),
+      answersOn: item => (item.kind === 'quiz' ? QUIZ_MISSES : STOP_MISSES),
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
+      does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.',
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (item, ctx) => (on(ctx, DROP_LEVER) || farChoice(item, ctx.state) !== null ? ctx.state.dropped : null),
+      fact: (dropped: readonly number[], item) => dropped.filter(i => item.question.options[i] !== undefined)
+        .map(i => `choice ${i + 1}, "${item.question.options[i]}", is greyed out and is not the answer.`).join(' ') },
+  ],
+});
+
+/** The levers the easy tier (`config.difficulty`) starts pulled: the cards and the model worlds where they may be
+ *  shown, drawn and declared, never recorded as help. Not the side-by-side cards, and never a greyed-out choice. */
 export function startLevers(item: PlanetItem | null | undefined, tier: string | undefined, planets: readonly PlanetStop[]): string[] {
   if (!item || tier !== 'easy') return [];
-  return planetLevers(item, NO_LEVERS, planets).filter(l => l.kind === 'help' && l.id !== VISITED_LEVER).map(l => l.id);
-}
-
-/** What the pulled levers put on screen, for the tutor and JEV. Names the greyed-out choice, never the key. */
-export function leverFacts(item: PlanetItem, shown: readonly string[], dropped: readonly number[], planets: readonly PlanetStop[]): string | null {
-  const parts: string[] = [];
-  const stop = item.kind === 'planet' ? planets[item.planetIndex] : undefined;
-  if (stop && shown.includes(CARD_LEVER)) parts.push(`${capitalize(stop.planetId)}'s fact cards are back beside the question: `
-    + stop.keyStats.map(s => `${s.label} ${s.value}${s.unit ? ` ${s.unit}` : ''}`).join('; '));
-  if (shown.includes(VISITED_LEVER)) parts.push(`the fact cards of ${visitedStops(item, planets).map(p => capitalize(p.planetId)).join(', ')} `
-    + 'are laid side by side below the question, none marked');
-  if (shown.includes(FAMILY_LEVER)) parts.push('beside the question, two model worlds that are not planets of this trip: a small grey rocky one and a big striped gas giant');
-  for (const i of dropped) if (item.question.options[i] !== undefined) parts.push(`choice ${i + 1}, "${item.question.options[i]}", is greyed out and is not the answer`);
-  return parts.length ? parts.join('; ') : null;
+  return PLANET_LEVERS.declare(item, { planets, state: NO_LEVERS }, [])
+    .filter(l => l.id === CARD_LEVER || l.id === FAMILY_LEVER).map(l => l.id);
 }

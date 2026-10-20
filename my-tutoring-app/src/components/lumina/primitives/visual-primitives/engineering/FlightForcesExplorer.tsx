@@ -8,18 +8,17 @@
  * - adjust: a goal; set the thrust and the nose angle, then fly it.
  *
  * Every item is built and keyed by code (`flightForcesWorkspace.ts`). No label, badge or readout names what the plane
- * is doing, and the plane moves only after a credited answer (predict, observe) or a flight (adjust). Two paths,
- * chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a
- * reveal; the workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss,
- * takes a spoken answer judged by the tutor, and lets the runtime move on. The levers live in `flightForcesLevers.ts`.
+ * is doing, and the plane moves only after a credited answer (predict, observe) or a flight (adjust). Taught only on
+ * the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `flightForcesExplorer.card.ts` +
+ * `flightForcesExplorer.boss.ts`): every check commits through `progress.commitCheck` with a named miss, a spoken
+ * answer is judged by the tutor against the key, and the runtime moves on. The levers are one lever set in
+ * `flightForcesLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { FlightForcesExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -36,19 +35,20 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   angleOf, askedAxes, askOf, choicesFor, describeFlightWork, emptyWork, flightCorrect, flightItems, flightMiss,
   forcesAt, forcesRun, isStalled, keyOf, LEVEL, MAX_THRUST, maxNose, motionText, solution, speedOf, workComplete,
-  workspaceAssignment, workspaceScene, type AircraftId, type Axis, type FlightItem, type FlightMode, type FlightTier,
+  workspaceScene, type AircraftId, type Axis, type FlightItem, type FlightMode, type FlightTier,
   type FlightWork, type Forces, type Setting,
 } from './flightForcesWorkspace';
 import {
-  COUNT_UNITS_LEVER, countLines, FORCE_LINK_LEVER, forceLinkLines, flightLevers, leverFact, PAIR_UP_LEVER,
-  SHOW_ARROWS_LEVER, shownArrows, simplerItem, STALL_MARK_LEVER, stallLine, TARGET_MARKS_LEVER,
+  COUNT_UNITS_LEVER, countLines, FLIGHT_LEVERS, FORCE_LINK_LEVER, forceLinkLines, PAIR_UP_LEVER,
+  SHOW_ARROWS_LEVER, shownArrows, STALL_MARK_LEVER, stallLine, TARGET_MARKS_LEVER,
 } from './flightForcesLevers';
+import { flightForcesExplorerBoss } from './flightForcesExplorer.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -224,10 +224,11 @@ const pairSentence = (f: Forces, axis: Axis): string => axis === 'height'
   ? (f.lift === f.weight ? `Lift (${f.lift}) is as big as weight (${f.weight}).` : f.lift > f.weight ? `Lift (${f.lift}) is bigger than weight (${f.weight}).` : `Weight (${f.weight}) is bigger than lift (${f.lift}).`)
   : (f.thrust === f.drag ? `Thrust (${f.thrust}) is as big as drag (${f.drag}).` : f.thrust > f.drag ? `Thrust (${f.thrust}) is bigger than drag (${f.drag}).` : `Drag (${f.drag}) is bigger than thrust (${f.thrust}).`);
 
-const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  FlightForcesExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FlightItem>) => Progress }) => {
+const useFlightProgress = useWorkspaceProgressFor('flight-forces-explorer');
+
+const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId }: FlightForcesExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, overview, gradeBand = '3-5', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, overview, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const items = useMemo(() => flightItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -235,38 +236,36 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   const stableInstanceId = useRef(instanceId || `flight-forces-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useFlightProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: flightForcesExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: FlightItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<FlightItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [work, setWork] = useState<FlightWork>(() => emptyWork(sessionItem));
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
   /** Adjust: the setting last flown. */
   const [flown, setFlown] = useState<Setting | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -274,7 +273,7 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<FlightForcesExplorerMetrics>({
     primitiveType: 'flight-forces-explorer',
@@ -283,25 +282,12 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand, mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'flight-forces-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
   const clearItem = (next?: FlightItem) => {
-    setWork(emptyWork(next ?? item)); setWrongShown(false); setFlown(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setWork(emptyWork(next ?? item)); setWrongShown(false); setFlown(null); setPracticeSolved(false);
   };
 
   openItem.current = (index, retry) => {
-    const target = retry ? item : items[index];
-    if (retry) { setWork(emptyWork(target)); setWrongShown(false); setFlown(null); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { clearItem(item); return; }
     setPractice(null); clearItem(items[index]);
   };
 
@@ -325,7 +311,7 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   const pick = (axis: Axis, c: string) => {
     if (!item || closed) return;
     SoundManager.select();
-    setWork(w => ({ ...w, [axis]: c })); setFeedback(null);
+    setWork(w => ({ ...w, [axis]: c }));
   };
   const nudge = (control: 'thrust' | 'nose', by: number) => {
     if (!item || item.mode !== 'adjust' || closed || !item.controls.includes(control)) return;
@@ -334,7 +320,7 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
       const max = control === 'thrust' ? MAX_THRUST : maxNose(item);
       return { ...w, setting: { ...w.setting, [control]: Math.max(0, Math.min(max, w.setting[control] + by)) } };
     });
-    setFlown(null); setFeedback(null);
+    setFlown(null);
   };
 
   const check = () => {
@@ -345,28 +331,10 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The plane now flies on screen. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (item.mode === 'adjust') { const s = solution(item); if (s) { setWork(w => ({ ...w, setting: s })); setFlown(s); } }
-      else setWork(w => ({ ...w, ...keyOf(item) }));
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is now on screen; explain it with the arrows.`);
-      return;
-    }
-    if (item.mode === 'adjust') {
-      setFeedback(`${`The plane ${motionText(forcesAt(item, work.setting))}`}. That is not the goal yet: compare each pair of arrows and fly again.`);
-    } else {
-      setWork(emptyWork(item));
-      setFeedback('Not quite. Compare each pair of arrows, and try once more.');
-    }
-    say(`[ANSWER_INCORRECT] ${describeFlightWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask which arrows to compare, without naming a choice.`);
+    setWrongShown(true);
   };
 
   const metrics = (): FlightForcesExplorerMetrics => {
@@ -385,16 +353,6 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(items[currentIndex + 1]); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -404,16 +362,19 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { work, solved: revealed, flown });
-    const levers = practice ? [] : flightLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled, work.setting);
+    const ctx = { setting: work.setting };
+    // No lever on the practice item: the full item's levers come back with it.
+    const levers = practice || !sessionItem ? [] : FLIGHT_LEVERS.declare(sessionItem, ctx, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : FLIGHT_LEVERS.onScreen(sessionItem, ctx, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -421,10 +382,10 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = FLIGHT_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(simpler); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: flightForcesExplorerBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -433,14 +394,7 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The plane, its force arrows and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -513,17 +467,11 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-start gap-2">
-              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={askOf(item)} ask="Look at the plane and its arrows, then answer."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the plane and the answer as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               <FlightScene aircraft={item.aircraft} forces={drawn} pitch={pitch} motion={motion} stalled={stalled} marks={marks} />
 
               {item.mode === 'predict' && leverOn(FORCE_LINK_LEVER) && (
@@ -587,7 +535,7 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
                   )}
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -597,22 +545,11 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
               </div>
             )}
 
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {revealText()}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{revealText()}</LuminaFeedbackCard>}
             {!revealed && wrongShown && (
               <LuminaFeedbackCard status="incorrect">
                 {item.mode === 'adjust' && flown ? `The plane ${motionText(forcesAt(item, flown))}. That is not the goal.` : 'That is not it.'}
               </LuminaFeedbackCard>
-            )}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
             )}
           </>
         )}
@@ -621,8 +558,6 @@ const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const FlightForcesExplorer = withWorkspaceController<FlightForcesExplorerProps, ProgressOptions<FlightItem>, Progress>(
-  'flight-forces-explorer', FlightForcesExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('flight-forces-explorer'));
+const FlightForcesExplorer = withWorkspaceOnly<FlightForcesExplorerProps>('flight-forces-explorer', FlightForcesExplorerSurface, props => props.data.title);
 
 export default FlightForcesExplorer;

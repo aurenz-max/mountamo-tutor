@@ -519,7 +519,7 @@ function render() {
 {
   const f = $('foot');
   f.append(el('p', null, `Source: ${D.meta.runFile} with its packages (${D.lessons.map((l) => l.packageId).join('; ')}). Curriculum: ${D.meta.curriculum}.`));
-  f.append(el('p', null, `Producible-sound gate used for "no surface": ${D.meta.producible.join(' ')} — the shared continuant + short-vowel list in diLetterSoundsScript and letterSoundLinkScript. ${D.meta.productionScope || ''}`));
+  f.append(el('p', null, `Producible-sound gate used for "no surface": ${D.meta.producible.join(' ')} — the shared continuant + short-vowel list in diLetterSoundsScript and letterSoundLinkDomain. ${D.meta.productionScope || ''}`));
 }
 syncSelects(); render();
 </script>

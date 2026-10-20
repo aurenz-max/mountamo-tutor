@@ -1,5 +1,6 @@
 /**
- * transport-challenge on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT R1 batch 4).
+ * transport-challenge's domain: the items, their keys, checks and misses, and the scene. Its live wiring is
+ * `transportChallenge.card.ts` + `transportChallenge.boss.ts` (a SAY_OR_SHOW card on the spoken preset).
  *
  * Every item is a job (move a load of people or tons of cargo) and a set of vehicles, each card showing what ONE trip
  * carries and costs (dollars, hours, kg of CO2). A vehicle does every trip itself, one after another, so its totals
@@ -14,11 +15,12 @@
  * not the answer; hard adds a vehicle that would pass only if its part-full trip were not counted.
  * The answer is one vehicle: said aloud or tapped and checked (J14).
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { TRANSPORT_MISSES } from './transportChallenge.card';
 
 export type TransportMode = 'single_constraint' | 'multi_constraint' | 'full_optimization';
 export const TRANSPORT_MODES: TransportMode[] = ['single_constraint', 'multi_constraint', 'full_optimization'];
@@ -110,11 +112,7 @@ export function transportCorrect(item: TransportItem | undefined, w: TransportWo
 }
 
 export type TransportMiss = 'forgot_round_up' | 'cheapest_per_trip' | 'fewest_trips' | 'one_limit_only' | 'over_limit' | 'breaks_more';
-export const TRANSPORT_MISSES: Record<TransportMode, readonly TransportMiss[]> = {
-  single_constraint: ['forgot_round_up', 'cheapest_per_trip', 'fewest_trips', 'over_limit'],
-  multi_constraint: ['forgot_round_up', 'cheapest_per_trip', 'fewest_trips', 'one_limit_only', 'over_limit'],
-  full_optimization: ['forgot_round_up', 'cheapest_per_trip', 'fewest_trips', 'breaks_more'],
-};
+export { TRANSPORT_MISSES };
 
 /** The pattern of one wrong pick, most specific first. Names what the pick is, never why the learner chose it. */
 export function vehicleMiss(item: TransportItem, v: TransportVehicle): TransportMiss {
@@ -363,18 +361,25 @@ export function transportItems(d: TransportItemsSource): TransportItem[] {
   return buildTransportItems({ modes: resolveTransportModes(d), tier: resolveTier(d), frames, rng: seededRng(`${d.title ?? 'transport'}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── Spoken answers ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function transportExpectedAnswer(item: TransportItem): string {
+/**
+ * The key a spoken reply is judged against: the vehicle, by name or by its card's place in the row. The other
+ * vehicles, two vehicles at once and a hedge are the signature error.
+ */
+export function transportKey(item: TransportItem): SpokenKey {
   const key = keyVehicle(item)!;
   const at = item.vehicles.findIndex(v => v.id === key.id);
-  const others = item.vehicles.filter(v => v.id !== key.id).map(v => `"${v.name}"`).join(', ');
-  return `"${key.name}" (the ${key.name.toLowerCase()}, or its card's place in the row, "the ${ORDINAL[at]} one") counts. `
-    + `${others} are wrong, and so is naming two vehicles or hedging between them.`;
+  const others = item.vehicles.filter(v => v.id !== key.id).map(v => `"${v.name}"`);
+  return { answer: key.name, alsoAccept: [`the ${ORDINAL[at]} one`],
+    acceptRule: `Any clear way of naming the ${key.name.toLowerCase()}, or its card's place in the row, counts.`,
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two vehicles or hedging between them.` };
 }
+
+/** What the ask says by design: the job's places and load are names, so a vehicle word inside one ("Ferry Landing") is not the answer said. */
+export const transportGiven = (item: TransportItem): string[] => [item.origin, item.destination, item.load.name];
 
 const WHAT: Record<TransportMiss, string> = {
   forgot_round_up: 'a vehicle that would do it only if its last, part-full trip were not counted',
@@ -395,14 +400,6 @@ export function transportSpokenMisses(item: TransportItem): KnownMiss[] {
     pattern: `The right vehicle is the ${key.name.toLowerCase()}. The learner names ${groups.get(m)!.map(v => `the ${v.name.toLowerCase()}`).join(' or ')}: ${WHAT[m]}.`,
     examples: groups.get(m)!.flatMap(v => [v.name, `the ${v.name.toLowerCase()}`]).slice(0, 6),
   }));
-}
-
-const HOW = 'The learner answers by saying the vehicle, or tapping its card and pressing Check my pick.';
-
-export function workspaceAssignment(item: TransportItem): TeachingAssignment {
-  const misses = transportSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: transportExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -430,9 +427,19 @@ export function describeTransportWork(item: TransportItem | undefined, w: Transp
   return v ? `Picked the ${v.name.toLowerCase()}` : 'Nothing picked yet';
 }
 
-const CONSTRAINTS = 'The learner answers by saying a vehicle, or by tapping its card and pressing Check my pick; the activity judges the tap. '
-  + 'No card shows trips or totals: they are the learner\'s to work out. A checked pick runs that one vehicle on screen. '
-  + 'You cannot tap or check for the learner.';
+const LAYOUT = 'No card shows trips or totals: the learner works them out (trips = the load divided by what one trip carries, '
+  + 'rounded up, since a part-full trip is still a trip; each total = trips times the per-trip figure). A checked pick runs '
+  + 'that one vehicle on screen; the table of every vehicle appears only once the job is credited.';
+
+/** What this task forbids saying, beyond the shared rules (kept from the catalog's guidance before the boss). */
+const NEVER_SAY = 'Never say how many trips a vehicle needs, a total, or whether a vehicle keeps or breaks a limit, unless '
+  + 'that vehicle\'s number is already on screen (a lever card, the learner\'s own checked run); never compare two vehicles '
+  + 'for the learner.';
+const NAMING = 'Name only a vehicle the learner has already picked or named: to choose the next card, ask which one the '
+  + 'learner wants to work, and never suggest a vehicle or list the ones left to check, even right after a lever puts '
+  + 'numbers on every card.';
+const ONE_AT_A_TIME = 'Ask the learner to take one vehicle at a time: its trips, then its totals, then each limit. After a '
+  + 'checked pick, its run is on screen: ask which limit it broke.';
 
 /** What is drawn and asked. Vehicles and limits named, never which vehicle answers; a run only for a checked pick. */
 export function workspaceScene(item: TransportItem, view: TransportView): WorkspaceScene {
@@ -447,11 +454,14 @@ export function workspaceScene(item: TransportItem, view: TransportView): Worksp
   if (view.solved) facts.run = `Credited. A table now shows every vehicle's trips and totals: ${item.vehicles.map(v => runText(item, v)).join('. ')}.`;
   else if (ran) facts.run = `The learner's checked pick was run on screen: ${runText(item, ran)}.`;
   facts.learnerWork = describeTransportWork(item, view.work);
-  facts.constraints = CONSTRAINTS;
+  facts.layout = LAYOUT;
+  facts.constraints = NEVER_SAY;
+  facts.naming = NAMING;
+  facts.approach = ONE_AT_A_TIME;
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ──────────────────────────────
 
 /** The journey's answers: the key, and the wrong pick showing the mode's first-listed miss it can. */
 export function transportHarnessAnswers(item: TransportItem): { correct: string; plainWrong: string } {

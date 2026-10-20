@@ -1,5 +1,6 @@
 /**
- * how-it-works on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C33).
+ * how-it-works's domain: the items, checks, keys, misses and scene (the wiring is `howItWorks.card.ts` +
+ * `howItWorks.boss.ts`).
  *
  * The learner reads a process (4-6 steps a model wrote, or 3-4 picture steps for a pre-reader), then answers questions
  * that code builds from those steps and keys from their order. The model writes the words; it never writes a question
@@ -14,11 +15,15 @@
  *   step's purpose): why does this step matter? The choices are what each step makes possible.
  * Choice items whose answer is a step's name are said aloud or tapped (J14); orders and purposes are tapped.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import { askLeaks, containsPhrase, type SpokenKey } from '../../../components/live-activity/spokenKey';
+import { CHOICE_MISSES, NEXT_MISSES, ORDER_MISSES, type ChoiceMiss, type HowMiss, type NextMiss, type OrderMiss } from './howItWorks.card';
+
+export { CHOICE_MISSES, NEXT_MISSES, ORDER_MISSES };
+export type { ChoiceMiss, HowMiss, NextMiss, OrderMiss } from './howItWorks.card';
 
 export type HowMode = 'guided' | 'sequence' | 'predict';
 export const HOW_MODES: HowMode[] = ['guided', 'sequence', 'predict'];
@@ -137,7 +142,8 @@ export const choiceText = (steps: ProcessStep[], item: ChoiceItem, i: number): s
   (item.kind === 'explain' ? blankTitle(purposeOf(steps, i), steps[item.target].title) : steps[i].title);
 
 const usableClue = (steps: ProcessStep[], i: number, pictures: boolean) =>
-  pictures ? !!steps[i].clue : steps[i].clue.length >= 20 && blankedShare(firstSentences(steps[i].clue, 2), steps[i].title) <= 0.4;
+  // A picture's sentence that names the picture's own title would answer itself (and fall back to tap-only).
+  pictures ? !!steps[i].clue && !containsPhrase(steps[i].clue, steps[i].title) : steps[i].clue.length >= 20 && blankedShare(firstSentences(steps[i].clue, 2), steps[i].title) <= 0.4;
 const usablePurpose = (steps: ProcessStep[], i: number) => (steps[i].purpose ?? '').length >= 12;
 
 // ── Item space ───────────────────────────────────────────────────────────────────────────
@@ -327,13 +333,6 @@ export function howCorrect(item: HowItem | undefined, w: HowWork): boolean {
   return w.choice === keyStep(item);
 }
 
-export type ChoiceMiss = 'neighbour_step' | 'far_step';
-export type NextMiss = 'skipped_ahead' | 'went_back';
-export type OrderMiss = 'adjacent_swap' | 'reversed' | 'one_moved' | 'two_swapped' | 'mixed_order';
-export type HowMiss = ChoiceMiss | NextMiss | OrderMiss;
-export const CHOICE_MISSES: readonly ChoiceMiss[] = ['neighbour_step', 'far_step'];
-export const NEXT_MISSES: readonly NextMiss[] = ['skipped_ahead', 'went_back'];
-export const ORDER_MISSES: readonly OrderMiss[] = ['adjacent_swap', 'reversed', 'one_moved', 'two_swapped', 'mixed_order'];
 export const HOW_MISSES: Record<HowMode, readonly HowMiss[]> = {
   guided: CHOICE_MISSES,
   sequence: [...ORDER_MISSES, ...CHOICE_MISSES],
@@ -385,25 +384,7 @@ export function askOf(steps: ProcessStep[], item: HowItem, pictures: boolean, qu
   return `Why does step ${item.target + 1}, "${steps[item.target].title}", matter? Choose what it makes possible.`;
 }
 
-const HOW_ANSWER: Record<HowKind, (pictures: boolean) => string> = {
-  identify: p => (p ? 'The learner answers by saying it or tapping a picture.' : 'The learner answers by saying it, or tapping a choice and pressing Check Answer.'),
-  predict: p => (p ? 'The learner answers by saying it or tapping a picture.' : 'The learner answers by saying it, or tapping a choice and pressing Check Answer.'),
-  explain: () => 'The learner taps a choice and presses Check Answer.',
-  sequence: p => (p ? 'The learner taps the pictures into the numbered slots, first to last; it checks itself when every slot is full.'
-    : 'The learner taps the cards into the numbered slots, first to last, and presses Check Answer.'),
-};
-
 const ORDINAL = ['first', 'second', 'third', 'fourth'];
-
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function howExpectedAnswer(steps: ProcessStep[], item: IdentifyItem | PredictItem, pictures: boolean): string {
-  const key = keyStep(item), at = item.options.indexOf(key);
-  const others = item.options.filter(o => o !== key).map(o => `"${steps[o].title}"`).join(', ');
-  const strip = item.kind === 'identify' && item.strip ? `, or its number on the step list ("step ${key + 1}")` : '';
-  const pic = pictures && steps[key].emoji ? ` (the ${steps[key].emoji} picture)` : '';
-  return `"${steps[key].title}"${pic}: its name or words that clearly mean that step${strip}, or its place among the choices `
-    + `("the ${ORDINAL[at]} one"), counts. ${others} ${item.options.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
-}
 
 const MISS_SAYS: Record<ChoiceMiss | NextMiss, string> = {
   neighbour_step: 'names a step right before or after it',
@@ -423,13 +404,44 @@ export function howSpokenMisses(steps: ProcessStep[], item: IdentifyItem | Predi
   });
 }
 
-export function workspaceAssignment(steps: ProcessStep[], item: HowItem, pictures: boolean, question?: string): TeachingAssignment {
-  const task = `${askOf(steps, item, pictures, question)} ${HOW_ANSWER[item.kind](pictures)}`;
-  if (!isSpoken(item)) return { id: item.id, task, response: 'gesture' };
-  const choice = item as IdentifyItem | PredictItem;
-  const misses = howSpokenMisses(steps, choice);
-  return { id: item.id, task, response: 'speech', acceptsGesture: true, expectedAnswer: howExpectedAnswer(steps, choice, pictures),
-    ...(misses.length ? { misses } : {}) };
+// ── The session's check items, spoken keys ──────────────────────────────────────────────
+
+/**
+ * An item as the boss and the component carry it: the item, the lesson's steps, whether they are pictures, and a
+ * pre-reader's own order question (so the ask, the key and the levers read the process without the lesson).
+ */
+export type HowCheck = HowItem & { steps: ProcessStep[]; pictures: boolean; question?: string };
+
+/** An item as a check of this lesson. */
+export const asCheck = (item: HowItem, steps: ProcessStep[], pictures: boolean, question?: string): HowCheck =>
+  ({ ...item, steps, pictures, ...(question ? { question } : {}) });
+
+/** Every check item of the session (`howItems`), carrying the steps. */
+export function howChecks(d: HowSource): HowCheck[] {
+  const steps = processSteps(d), pictures = isPictures(d), question = d.preReader?.question;
+  return howItems(d).map(i => asCheck(i, steps, pictures, question));
+}
+
+/** The check's ask. */
+export const askOfCheck = (c: HowCheck): string => askOf(c.steps, c, c.pictures, c.question);
+
+/**
+ * The key of an item whose answer is a step's name (identify, predict): the step's name, its place among the choices,
+ * and on an identify with the step list on screen its step number. Null on an order or a purpose (the activity checks
+ * it), and on an item whose ask would say the name (a picture sentence that names its own picture): that one is only
+ * tapped.
+ */
+export function howKey(c: HowCheck): SpokenKey | null {
+  if (c.kind !== 'identify' && c.kind !== 'predict') return null;
+  const at = keyStep(c), step = c.steps[at], answer = step?.title.trim();
+  if (!answer) return null;
+  const key: SpokenKey = {
+    answer,
+    alsoAccept: [...(c.kind === 'identify' && c.strip ? [`step ${at + 1}`] : []), `the ${ORDINAL[c.options.indexOf(at)]} one`],
+    acceptRule: `Words that clearly mean that step${c.pictures && step.emoji ? ` (the ${step.emoji} picture)` : ''} and no other choice also count.`,
+    signatureError: 'Naming two choices, or hedging between them, is not an answer.',
+  };
+  return askLeaks(askOfCheck(c), key).length ? null : key;
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -442,6 +454,8 @@ export interface HowView {
   solved: boolean;
   /** Choices crossed out by a lever. */
   crossed: readonly number[];
+  /** show_why is on screen: under each card, what its step makes possible. */
+  why?: boolean;
 }
 
 const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s);
@@ -457,10 +471,25 @@ export function describeHowWork(steps: ProcessStep[], item: HowItem | undefined,
   return w.choice === null ? 'Nothing chosen yet' : `Chose "${clip(choiceText(steps, item, w.choice), 120)}"`;
 }
 
-const CONSTRAINTS = 'The activity checks the answer; you are not told it. You cannot tap, place or check for the learner.';
+/**
+ * This process's own rules for each kind of question (the shared doctrine already forbids saying the answer and doing
+ * the learner's step): what would answer the question, said or hinted.
+ */
+const NO_RETELL = 'Never retell the steps in order.';
+const ASK_AROUND = 'You may ask what has to happen before or after a step the learner names.';
+const KIND_RULES: Record<HowKind, string> = {
+  identify: `Never say which step the description tells of, its number, or the blanked words. ${ASK_AROUND}`,
+  sequence: 'Never say or imply which card comes first, next or last, what comes before or after any card, or that two '
+    + 'cards are swapped, even as a question ("what happens after your foot pushes down?").',
+  predict: `Never say or describe what the next step does, or hint with a word from the name of a choice. ${ASK_AROUND}`,
+  explain: 'Never say in your own words what the asked step makes possible, carries or connects (that is the answer), or '
+    + `which choice fits. ${ASK_AROUND}`,
+};
+const AFTER = 'After a miss, never say why the wrong choice was chosen. Describe a lever only by what the scene says it shows.';
 
 /** What is drawn and asked. The steps' order is listed only where the screen shows it in order. */
-export function workspaceScene(steps: ProcessStep[], item: HowItem, view: HowView, pictures: boolean, meta: { title: string; question?: string }): WorkspaceScene {
+export function workspaceScene(c: HowCheck, view: HowView, meta: { title: string }): SceneOf {
+  const { steps, pictures } = c;
   const facts: Record<string, string> = { process: meta.title };
   if (view.reading) {
     facts.phase = 'reading';
@@ -468,28 +497,32 @@ export function workspaceScene(steps: ProcessStep[], item: HowItem, view: HowVie
       ? 'The picture steps are on screen in order, each with a short caption. The questions open when the learner presses Start; nothing is asked until then.'
       : 'The steps are on screen in order with their descriptions. The questions open when the learner presses "Start the questions"; nothing is asked until then.';
     steps.forEach((s, i) => { facts[`step${i + 1}`] = clip(`${s.emoji ? `${s.emoji} ` : ''}${s.title}: ${firstSentences(s.clue, 2, 300)}`, 360); });
-    facts.constraints = 'You cannot press Start for the learner.';
-    return { objects: [], facts };
+    facts.constraints = pictures
+      ? 'The learner cannot read yet: read the picture steps aloud, in order, word for word, then invite them to press Start.'
+      : 'Nothing is asked yet: talk about the steps freely while the learner reads.';
+    return { objects: [], facts } as SceneOf;
   }
   facts.phase = 'question';
-  facts.kind = item.kind;
-  facts.question = askOf(steps, item, pictures, meta.question);
-  if (item.kind === 'sequence') {
-    facts.cards = `${item.cards.length} cards shown mixed up, not in order: ${item.bank.map(s => `"${clip(cardText(steps, item, s), 90)}"`).join('; ')}`;
-    facts.slots = `${item.cards.length} numbered slots, first to last`;
+  facts.kind = c.kind;
+  facts.question = askOfCheck(c);
+  if (c.kind === 'sequence') {
+    facts.cards = `${c.cards.length} cards shown mixed up, not in order: ${c.bank.map(s => `"${clip(cardText(steps, c, s), 90)}"`).join('; ')}`;
+    facts.slots = `${c.cards.length} numbered slots, first to last`;
     facts.shown = 'No step list is on screen.';
+    if (view.why) c.bank.forEach((s, k) => { facts[`why${k + 1}`] = `Under "${clip(cardText(steps, c, s), 80)}": ${purposeOf(steps, s)}`; });
   } else {
-    const choices = item.options.map((o, k) => `${k + 1}) ${choiceText(steps, item, o)}${view.crossed.includes(o) ? ' (crossed out)' : ''}`);
-    if (item.kind === 'explain') choices.forEach((c, k) => { facts[`choice${k + 1}`] = clip(c, 220); });
+    const choices = c.options.map((o, k) => `${k + 1}) ${choiceText(steps, c, o)}${view.crossed.includes(o) ? ' (crossed out)' : ''}`);
+    if (c.kind === 'explain') choices.forEach((ch, k) => { facts[`choice${k + 1}`] = clip(ch, 220); });
     else facts.choices = choices.join('  ');
-    facts.shown = item.kind === 'predict' ? `Steps 1 to ${item.shown} are on screen in order: ${titleList(steps, range(0, item.shown - 1))}. The later steps are hidden.`
-      : item.kind === 'explain' || item.strip ? `The step list is on screen, in order: ${titleList(steps, range(0, steps.length - 1))}.`
+    facts.shown = c.kind === 'predict' ? `Steps 1 to ${c.shown} are on screen in order: ${titleList(steps, range(0, c.shown - 1))}. The later steps are hidden.`
+      : c.kind === 'explain' || c.strip ? `The step list is on screen, in order: ${titleList(steps, range(0, steps.length - 1))}.`
         : 'No step list is on screen: the learner answers from what they read.';
   }
-  facts.learnerWork = describeHowWork(steps, item, view.work, pictures);
+  facts.learnerWork = describeHowWork(steps, c, view.work, pictures);
   if (view.solved) facts.answered = 'The answer is credited and marked on screen.';
-  facts.constraints = CONSTRAINTS;
-  return { objects: [], facts };
+  facts.constraints = `${howKey(c) ? '' : 'This item is answered only on screen, and you are not told its answer. '}${NO_RETELL} `
+    + `${KIND_RULES[c.kind]} ${AFTER}`;
+  return { objects: [], facts } as SceneOf;
 }
 
 // ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────

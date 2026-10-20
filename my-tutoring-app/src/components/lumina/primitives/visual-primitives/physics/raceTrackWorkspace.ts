@@ -1,9 +1,11 @@
 /**
- * race-track-lab on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C28).
+ * race-track-lab's domain: items, keys, misses and the scene the tutor/JEV workspace reads (ROLLOUT C28). Its wiring to
+ * the live tutor is `raceTrackLab.card.ts` + `raceTrackLab.boss.ts`.
  *
  * Every item is built and keyed by code: two or three toy cars named by colour (no animal or vehicle whose usual speed
  * hints the answer), each with a whole-number speed in squares per second and a starting square. The key is computed
- * from those numbers. Each mode is one closed choice the learner taps and checks, or says (J14):
+ * from those numbers. Each mode is one closed choice the learner taps and checks, or says (J14): said and judged by the
+ * tutor against its key (`raceKey`), or tapped and checked by code:
  * - observe: the learner runs a timed race that a bell stops before any car finishes; which car is the fastest? Same
  *   time, so the car that moved the most squares. Hard items give one slower car a head start.
  * - predict: a card per car gives its speed; which car will cross the finish line first? The race runs only after
@@ -17,11 +19,14 @@
  *   its line ends highest; hard asks a car's speed from a line that does not start at 0.
  * Difficulty (`config.difficulty`) is structural (head starts, more cars, two steps), never bigger numbers.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { RACE_MISSES } from './raceTrackLab.card';
+
+export { RACE_MISSES };
 
 export type RaceMode = 'observe' | 'predict' | 'measure' | 'calculate' | 'graph';
 export const RACE_MODES: RaceMode[] = ['observe', 'predict', 'measure', 'calculate', 'graph'];
@@ -83,14 +88,6 @@ export type MeasureMiss = 'read_position' | 'farther_total' | 'other_racer' | 'o
 export type CalculateMiss = 'ignored_start' | 'farther_racer' | 'distance_as_speed' | 'multiplied';
 export type GraphMiss = 'highest_line' | 'ignored_start' | 'read_position' | 'distance_as_speed' | 'slower_racer';
 export type RaceTrackMiss = ObserveMiss | PredictMiss | MeasureMiss | CalculateMiss | GraphMiss;
-/** Most telling first: the journey's wrong answer is the first one an item can show. */
-export const RACE_MISSES: Record<RaceMode, readonly RaceTrackMiss[]> = {
-  observe: ['ahead_not_fastest', 'slower_racer'],
-  predict: ['fastest_not_winner', 'head_start_not_winner', 'slower_racer'],
-  measure: ['read_position', 'farther_total', 'other_racer', 'off_by_one', 'shorter_total', 'added', 'time_as_distance'],
-  calculate: ['ignored_start', 'farther_racer', 'distance_as_speed', 'multiplied'],
-  graph: ['highest_line', 'ignored_start', 'read_position', 'distance_as_speed', 'slower_racer'],
-};
 
 export interface RaceChoice { label: string; value: number; kind: 'key' | RaceTrackMiss }
 
@@ -184,6 +181,9 @@ export function cardText(item: RaceItem, r: RaceCar): string {
 export const logText = (item: RaceItem, r: RaceCar) =>
   `${r.name} started at square ${r.start} and stopped at square ${fmtNum(endOf(item, r))} after ${seconds(runTime(item, r))}`;
 
+/** faster_speed: one car's run, as the ask states it. */
+const runText = (item: RaceItem, r: RaceCar) => `${r.name} ran for ${seconds(runTime(item, r))} and moved ${squares(movedOf(item, r))}`;
+
 export function askOf(item: RaceItem): string {
   const target = item.racers[item.target ?? 0];
   const timed = `The cars race for ${seconds(item.time)}, then a bell stops them.`;
@@ -205,7 +205,7 @@ export function askOf(item: RaceItem): string {
         ? `The graph shows where each car was at every second of the race. What is ${target.name}'s speed?`
         : `${logText(item, target)}. What is ${target.name}'s speed?`;
     case 'faster_speed':
-      return `${listOf(item.racers.map(r => `${r.name} ran for ${seconds(runTime(item, r))} and moved ${squares(movedOf(item, r))}`))}. `
+      return `${listOf(item.racers.map(r => runText(item, r)))}. `
         + 'What is the faster car\'s speed?';
   }
 }
@@ -445,22 +445,40 @@ export function raceItems(d: RaceItemsSource): RaceItem[] {
   return buildRaceItems({ modes, tier, rng: seededRng(`${d.title ?? 'race'}:${modes.join(',')}:${tier}`) });
 }
 
-// ── Assignment, spoken answers ────────────────────────────────────────────────────────────
+// ── The spoken key ────────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function raceExpectedAnswer(item: RaceItem): string {
+/** The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. */
+export function raceKey(item: RaceItem): SpokenKey {
   const key = keyChoice(item), choices = choicesOf(item), at = choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
-  const others = choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
+  const place = `the ${ORDINAL[at]} one`;
+  const others = choices.filter(c => c !== key).map(c => `"${c}"`);
+  const wrong = `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong`;
   if (isNameAsk(item.ask)) {
     const colour = key.split(' ')[0].toLowerCase();
-    return `"${key}": the car's name or its colour said any way ("${colour}", "the ${colour} one"), or ${place}, counts. `
-      + `${others} are wrong, and so is naming two cars or hedging between them.`;
+    return { answer: key, alsoAccept: [colour, `the ${colour} one`, place],
+      signatureError: `${wrong}, and so is naming two cars or hedging between them.` };
   }
   const num = fmtNum(numericChoices(item)!.find(c => c.kind === 'key')!.value);
-  return `"${key}": the number ${num} said any way, with or without the unit, or ${place}, counts. ${others} are wrong.`;
+  return { answer: key, alsoAccept: [num, place], acceptRule: `The number ${num} said any way, with or without the unit, counts.`,
+    signatureError: `${wrong}.` };
+}
+
+/**
+ * What the ask says by design (`askLeaks`'s `given`): the cars' names, and the numbers the learner works from (the
+ * seconds of a timed race, the speed cards, the log row, each car's run). A key that matches one of these is the
+ * learner's work on the stated numbers, never a stated answer.
+ */
+export function raceAskGiven(item: RaceItem): string[] {
+  const names = item.racers.map(r => r.name);
+  switch (item.ask) {
+    case 'fastest': return names;
+    case 'winner': return [...names, `square ${item.trackLength}`, ...item.racers.map(r => cardText(item, r))];
+    case 'distance': case 'farther_by': return [...names, seconds(item.time)];
+    case 'speed': return item.mode === 'graph' ? names : [...names, logText(item, item.racers[item.target ?? 0])];
+    case 'faster_speed': return [...names, ...item.racers.map(r => runText(item, r))];
+  }
 }
 
 const WHAT: Record<RaceTrackMiss, string> = {
@@ -494,30 +512,27 @@ export function raceSpokenMisses(item: RaceItem): KnownMiss[] {
     pattern: `${fact} The learner's answer ${WHAT[m]}: ${groups.get(m)!.map(x => `"${x}"`).join(', ')}.`, examples: groups.get(m)! }));
 }
 
-const HOW = 'The learner answers by saying it, or by tapping one choice and pressing Check Answer.';
-const HOW_RUN = 'The learner first presses Run the race, then answers by saying it, or by tapping one choice and pressing Check Answer.';
-
-export function workspaceAssignment(item: RaceItem): TeachingAssignment {
-  const misses = raceSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${needsRun(item) ? HOW_RUN : HOW}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: raceExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ─────────────────────────────────────────────────────────────────────────────────
 
 export interface RaceView {
   choice: string | null;
   /** observe, measure: the learner pressed Run the race. */
   ran: boolean;
-  /** The item is credited (or, on the scripted path, revealed): the race has played out on screen. */
+  /** The item is credited: the race has played out on screen. */
   solved: boolean;
 }
 
 export const describeRaceWork = (item: RaceItem | undefined, view: Pick<RaceView, 'choice'>) =>
   item && view.choice ? `Chose "${view.choice}"` : 'Nothing chosen yet';
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-  + 'You cannot run the race, tap or check for the learner.';
+/** What this item's own shape forbids saying, beyond the shared rules. */
+function constraintsOf(item: RaceItem): string {
+  if (item.mode === 'predict') return 'The race runs only after the answer is credited.';
+  // Which car is faster is half the answer: a question about one named car gives it away.
+  if (item.ask === 'faster_speed') return 'Which car is faster is half the answer: ask how many squares each car moves in one '
+    + 'second, never about one car by name.';
+  return '';
+}
 
 const lanes = (item: RaceItem) => item.racers.map(r => `${r.name} on square ${r.start}`).join(', ');
 
@@ -549,7 +564,8 @@ export function workspaceScene(item: RaceItem, view: RaceView): WorkspaceScene {
           : facts.run;
   }
   facts.learnerWork = describeRaceWork(item, view);
-  facts.constraints = `${CONSTRAINTS}${item.mode === 'predict' ? ' The race runs only after the answer is credited.' : ''}`;
+  const constraints = constraintsOf(item);
+  if (constraints) facts.constraints = constraints;
   return { objects: [], facts };
 }
 

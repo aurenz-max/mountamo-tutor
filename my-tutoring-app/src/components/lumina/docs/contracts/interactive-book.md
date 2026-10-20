@@ -1,8 +1,8 @@
 # Contract: interactive-book
 
 - **Derived:** 2026-09-28 · evidence window: birth + eval-modes 2026-07-14 + curriculum-fit 2026-07-14 + DI port live 2026-08-14/16 + Pip batch la-1-3 2026-09-14 + workspace rollout C3 live 2026-09-25 + named misses A5 + authored map (live backend, 2026-09-28) + git to f216cc3d
-- **Component:** `primitives/visual-primitives/literacy/InteractiveBook.tsx` (+ `interactiveBookWorkspace.ts`, `interactiveBookScript.ts`) · **Generator:** `service/literacy/gemini-interactive-book.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:1299` · **Live adapter:** `components/live-activity/adapters/interactiveBookLive.ts`
-- **Status:** ACTIVE (no open conflicts; catalog description/tutoring flagged stale below)
+- **Component:** `primitives/visual-primitives/literacy/InteractiveBook.tsx` (+ `interactiveBookDomain.ts`, `interactiveBookLevers.ts`) · **Generator:** `service/literacy/gemini-interactive-book.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`...bossEntry(interactiveBookCard)`) · **Live wiring:** boss `interactiveBook.card.ts` + `interactiveBook.boss.ts` (`bossAdapter`, `bossJourney`; 2026-10-20)
+- **Status:** ACTIVE (no open conflicts)
 
 Derived as step 1 of handoff 22 L1 (`qa/live-runtime-handoffs/22-literacy-levers.md`), before
 in-item levers are added to `find-feature`. Channel [4] (calibration) not read (auth, as for
@@ -38,44 +38,44 @@ cvc-speller 2026-09-27). No census trace names this primitive; channel [1] is em
 ### R3 — Mode identity and answer modality · OBSERVED
 - **Property:** `find-feature` is a gesture: the tap on a printed part IS the commit (`commitGesture`), checked in code by `tapMatches` (text compare), never by the tutor. `read-focus-word` is spoken: the glowing word is read aloud and judged (`short_spoken_word`); nothing in a paragraph is a button. No Next / Check / Skip button, no advance timer, no free page navigation: the screen shows the current item's view only. Hotspot buttons are disabled outside `find-feature` and when `canAttempt` is false.
 - **Demanded by:** DI port 14 (costume test killed tap-the-glowing-word); workspace C3.
-- **Evidence:** `InteractiveBook.tsx` header + `handleHotspotTap`, `renderHotspot`, `renderParagraph`; `interactiveBookScript.ts:1-60`.
+- **Evidence:** `InteractiveBook.tsx` header + `handleHotspotTap`, `renderHotspot`, `renderParagraph`; card modes `TAP_ONE` / `SPOKEN` (`interactiveBook.card.ts`).
 - **Probe:** `npm test -- InteractiveBook interactiveBookWorkspace` (48 tests green 2026-09-28).
 
 ### R4 — Nothing names the tap target before credit · OBSERVED
-- **Property:** every hotspot has the same aria-label ("A printed part of the book") and the same idle style; the target turns `correct` only after credit, and a wrong tap alone turns `incorrect`, cleared on Try again. The find-feature assignment publishes no `expectedAnswer`; the packet never contains the target text; scene facts name the kind asked for (`lookingFor`) and the set of parts shown, never which printed words they are. The tutor never reads a printed part aloud or hints at position before the tap; the affirm reads the found text (reveal-on-affirm). Prompt and hint strings never contain the target text.
+- **Property:** every hotspot has the same aria-label ("A printed part of the book") and the same idle style; the target turns `correct` only after credit, and a wrong tap alone turns `incorrect`, cleared on Try again. The find-feature assignment publishes no `expectedAnswer`; the packet never contains the target text; scene facts name the kind asked for (`lookingFor`) and the set of parts shown, never which printed words they are. The scene's `constraints` forbid reading any printed words aloud, naming which words are the part, or saying where it sits before the tap; after a tap the tutor may say what the kind of part is for (re-based 2026-10-20: the scripted affirm and job-correction lines are gone; the tutor speaks in its own words). The ask (`askFor`) names the part, never its text. Prompt and hint strings never contain the target text.
 - **Demanded by:** every consumer (Pedagogy rule #1); workspace C3.
-- **Evidence:** `interactiveBookWorkspace.ts:62-85`; `InteractiveBook.workspace.test.tsx` "a tap key is not" published (`not.toMatch(/Nest Above/)`); `validateDerivedChallenges` prompt/hint checks.
+- **Evidence:** `interactiveBookDomain.ts` (`askFor`, `interactiveBookScene`; find-feature key null, so `bossAssignment` is a gesture); `InteractiveBook.workspace.test.tsx` "a tap key is not" published (`not.toMatch(/Nest Above/)`); `validateDerivedChallenges` prompt/hint checks.
 - **Probe:** `npm test -- InteractiveBook.workspace`; C3 journey `interactive-book-w1-find-feature-text-2026-09-25.json` (PASS).
 
 ### R5 — Named miss for a wrong tap · OBSERVED
-- **Property:** a wrong tap commits with `interactiveBookMiss` = the tapped part's kind: `tapped_title`, `tapped_author` (cover), `tapped_heading`, `tapped_caption`, `tapped_page_number` (page); undefined on a right tap or on read-focus-word. The list matches the catalog `teachingWorkspace.misses['find-feature']`. The miss names what was tapped, not what was asked. Try again clears the tap and Pip.
+- **Property:** a wrong tap commits with `interactiveBookMiss` = the tapped part's kind: `tapped_title`, `tapped_author` (cover), `tapped_heading`, `tapped_caption`, `tapped_page_number` (page); undefined on a right tap or on read-focus-word. The list is the card's `INTERACTIVE_BOOK_MISSES['find-feature']`. The miss names what was tapped, not what was asked. Try again clears the tap and Pip.
 - **Demanded by:** trigger ladder / named misses (A5, handoff 20); workspace C3.
-- **Evidence:** `interactiveBookWorkspace.ts:40-55`; `interactiveBookWorkspace.test.ts:15`; `InteractiveBook.workspace.test.tsx:58-75`.
-- **Probe:** `npm test -- interactiveBookWorkspace InteractiveBook.workspace`.
+- **Evidence:** `interactiveBookDomain.ts` (`interactiveBookMiss`); `interactiveBookDomain.test.ts`; `InteractiveBook.workspace.test.tsx:58-75`.
+- **Probe:** `npm test -- interactiveBookDomain InteractiveBook.workspace`.
 
 ### R6 — Hear the question, never the answer · OBSERVED
-- **Property:** one 🔊 button, never withdrawn by band or tier; each tap sends a silent host message asking the tutor to say only the ask (`hearQuestionRequest`), which carries the part name (find) or the lead-in (read), never the target text.
+- **Property:** one 🔊 button, never withdrawn by band or tier; each tap sends a silent host message (`runner.requestHear`) asking the tutor to say only the ask (`hearQuestionRequest`), which carries the part name (find) or the lead-in (read), never the target text.
 - **Demanded by:** K pre-readers (the ask is the only way to know what to find); workspace guidance.
 - **Evidence:** `InteractiveBook.workspace.test.tsx:77`.
 - **Probe:** same test file.
 
 ### R7 — Oral cloze contract (read-focus-word) · OBSERVED
-- **Property:** each focus word is one sayable token (≤12 letters, not yes/no), occurs exactly once in its page's paragraphs, has a lead of ≥2 words and ≤90 chars that does not contain it, glows in place (amber, emerald on credit). The tutor reads the lead and stops; the assignment's `expectedAnswer` is the word.
+- **Property:** each focus word is one sayable token (≤12 letters, not yes/no), occurs exactly once in its page's paragraphs, has a lead of ≥2 words and ≤90 chars that does not contain it, glows in place (amber, emerald on credit). The ask reads the lead and stops ("Listen: <lead> — hmm. Read the glowing word."); the key (`interactiveBookKey`, written by `spokenKeyText`) is the word, with the phrase form and sounding-out accepted and the lead said back or a context guess as the signature error (re-based 2026-10-20 from the scripted judging contract).
 - **Demanded by:** eval mode `read-focus-word`; DI port; C3 live (`--audio` PASS, "The tall red..." then stopped).
-- **Evidence:** `interactiveBookScript.ts:206-231`; C3 report :45.
+- **Evidence:** `interactiveBookDomain.ts` (`itemFromChallenge`, `askFor`, `interactiveBookKey`); C3 report :45; `askLeaks` over the saved payload (`boss.test.ts`).
 - **Probe:** eval-test `evalMode=read-focus-word`; `npm test -- InteractiveBook.workspace` spoken-key test.
 
 ### R8 — Workspace-only path and evaluation · OBSERVED
-- **Property:** the component runs only when bound (`withWorkspaceOnly`; unbound → "needs the tutor" card); the tutor's instruction is `teachingWorkspace.guidance`. One evaluation per session with `InteractiveBookMetrics` in its pre-port shape (hints/exploration fields stated as 0), plus diagnosis evidence. An item the build gates cannot ask makes the adapter refuse the book.
+- **Property:** the component runs only when bound (`withWorkspaceOnly`; unbound → "needs the tutor" card); the tutor's instruction is the boss guidance built from the card (`bossEntry`; re-based 2026-10-20 from hand-written `teachingWorkspace.guidance`). One evaluation per session with `InteractiveBookMetrics` in its pre-port shape (hints/exploration fields stated as 0), plus diagnosis evidence. An item the build gates cannot ask makes the boss's `validate` refuse the book.
 - **Demanded by:** workspace C3 (LA-14 ruling 09-23); IRT/mastery.
 - **Evidence:** `2e6c6ce5`; `InteractiveBook.workspace.test.tsx:96`.
 - **Probe:** `npm test -- InteractiveBook.workspace`; `run_live_runtime.py --primitive interactive-book --mode find-feature`.
 
 ### R9 — Pip and harness targets · OBSERVED
-- **Property:** printed parts carry `data-pip-object="part-<hotspotId>"` (`cover-title`, `cover-author`, `<pageId>-heading|caption|number`), the view carries `page`, the glowing word `glow`; the journey harness and tests touch these ids. Pip looks at the child's tapped part, never taps, answers or advances; its dock sits above the book.
+- **Property:** printed parts carry `data-pip-object="part-<hotspotId>"` (`cover-title`, `cover-author`, `<pageId>-heading|caption|number`), the view carries `page`, the glowing word `glow`; the journey harness and tests touch these ids. Pip is published by the runner (`<PipDock />` above the book, `<PipWorkspace>` around the model and the view) and points at the workspace as a whole, never at a part (re-based 2026-10-20: the hand-wired pose and per-part Pip targets are gone; the `data-pip-object` ids stay as harness tap keys).
 - **Demanded by:** Pip surface; live journey (`liveJourneySpec.ts:1381-1391`, `interactiveBookJourneyAnswers`).
-- **Evidence:** `InteractiveBook.tsx` `renderHotspot`; `pip/interactiveBookPipPose.ts`.
-- **Probe:** `npm test -- InteractiveBook.workspace` (touch `part-p2-caption`).
+- **Evidence:** `InteractiveBook.tsx` `renderHotspot`; `pip/WorkspacePip.surface.test.tsx`.
+- **Probe:** `npm test -- InteractiveBook.workspace WorkspacePip.surface` (touch `part-p2-caption`).
 
 ### R10 — Pictures carry no print · OBSERVED
 - **Property:** every generated picture prompt appends "no printed words, no letters, no labels"; a failed picture shows its alt text and a retry button. Printed parts exist only as the hotspot buttons.
@@ -84,13 +84,13 @@ cvc-speller 2026-09-27). No census trace names this primitive; channel [1] is em
 - **Probe:** code read + visual check on a generated book.
 
 ### R11 — In-item levers on find-feature · OBSERVED
-- **Property:** `interactiveBookLevers.ts`; read-focus-word declares none (L3). `model_page` (help, both) shows a code-owned model cover or page beside the book with the asked kind of part outlined; no model text is the book's (it falls back to a second model), its parts carry no `part-`/`page` Pip ids and are not tappable, and the book's own parts are never marked (R4, R9). `two_part_page` (simplify, inner pages only) opens an ungraded practice page, not the book's, with the asked part and the far one (the caption against the top row), tap keys `part-practice-<feature>`, and its own scene `shown` line. A pull is a synchronous commit; the next attempt records the lever.
+- **Property:** `interactiveBookLevers.ts`, one lever set (`INTERACTIVE_BOOK_LEVERS`). `model_page` (type `model`: a different book, solved; when it comes is the set's `support` by the lesson's `supportTier`, default medium) shows a code-owned model cover or page beside the book with the asked kind of part outlined; no model text is the book's (it falls back to a second model), its parts carry no `part-`/`page` Pip ids and are not tappable, and the book's own parts are never marked (R4, R9). `two_part_page` (type `easier`, inner pages only) opens an ungraded practice page, not the book's, with the asked part and the far one (the caption against the top row), tap keys `part-practice-<feature>`, and its own scene `shown` line. A pull is a synchronous commit; the next attempt records the lever.
 - **Demanded by:** handoff 22 L1; trigger ladder (handoff 21 S2).
 - **Evidence:** `qa/eval-reports/levers-literacy-L1-2026-09-28.md`.
 - **Probe:** `npm test -- InteractiveBook.levers.workspace`.
 
 ### R12 — In-item levers on read-focus-word · OBSERVED
-- **Property:** `sound_dots` (help, shown) puts one dot per grapheme under the glowing word only, through the shared kit overlay; nothing is voiced and the word's letters are unchanged (R7: never say the glowing word before a try). `cvc_focus` (simplify, only when the glowing word is not CVC) opens an ungraded practice sentence from the code pool (`decodablePracticeLines.ts`) whose CVC word glows after a lead of two words or more; no word of it is printed anywhere in the book (R3 of handoff 22), and its scene `shown` line says it is not the book. The miss `context_guess` is spoken and listed unanswered until handoff 20 Part B.
+- **Property:** `sound_dots` (type `marks`) puts one dot per grapheme under the glowing word only, through the shared kit overlay; nothing is voiced and the word's letters are unchanged (R7: never say the glowing word before a try). `cvc_focus` (type `easier`, only when the glowing word is not CVC) opens an ungraded practice sentence from the code pool (`decodablePracticeLines.ts`) whose CVC word glows after a lead of two words or more; no word of it is printed anywhere in the book (R3 of handoff 22), and its scene `shown` line says it is not the book. Both answer `context_guess`; `said_lead_in` is the card's one `unanswered` miss.
 - **Demanded by:** handoff 22 L3.
 - **Evidence:** `qa/eval-reports/levers-literacy-L3-2026-09-28.md`.
 - **Probe:** `npm test -- InteractiveBook.levers.workspace`.
@@ -101,12 +101,13 @@ None open.
 
 ## Catalog projection
 
-- **description:** stale. It still describes the DI clock ("a credited answer moves the lesson on", "Requires a microphone" for both directions). Proposed: keep the two directions and the "tap because the answer is a position" sentence; replace the DI sentence with "the tutor teaches in its own words; the page checks the tap". Not applied here.
-- **constraints:** faithful (no manifest book content; lead-in rule). "Requires a microphone" is true only for read-focus-word.
+- **description / constraints:** corrected 2026-10-20: the DI-clock sentence is gone (the tutor teaches in its own words; the page checks the tap) and "requires a microphone" is said of Read Together only.
 - **evalModes:** faithful.
-- **tutoring.aiDirectives / scaffoldingLevels:** stale (`[IB_ITEM]`/`[IB_TAP]` scripted runner, retired LA-14); bound sessions receive `teachingWorkspace.guidance` instead (R8). Removal is an `/add-live-tutor-tools` cleanup.
+- **tutoring / teachingWorkspace prose / audioInput:** deleted 2026-10-20; `...bossEntry(interactiveBookCard)` is the wiring.
 
 ## Changelog
+
+- 2026-10-20 — boss migration (`/add-live-tutor-tools`, wave 2): script + workspace module merged into `interactiveBookDomain.ts` (cue builders, judging and tap contracts deleted); R3-R9, R11, R12 re-based onto the boss (key via `spokenKeyText`, never-say rules as scene `constraints`, Pip from the runner, levers as a lever set; `model_page` now type `model` with tier support, the generator stamps `supportTier` and changes no content). DI_PORTS row and live adapter deleted. No requirement dropped.
 
 - 2026-09-28 — R12 added (handoff 22 L3); R11's "read-focus-word declares none" is superseded.
 

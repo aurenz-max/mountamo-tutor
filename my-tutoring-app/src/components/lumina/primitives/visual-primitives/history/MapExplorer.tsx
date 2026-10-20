@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaActionButton, LuminaChallengeCounter, LuminaFeedbackCard, LuminaPrompt, LuminaCallout,
@@ -14,7 +13,8 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { LiveMap } from './map/LiveMap';
 import { CompassRose } from './map/CompassRose';
 import {
@@ -24,7 +24,9 @@ import {
   checkFeedback, collapseSteps, flyRoute, isTownTask, mapMatches, mapMiss, placeById,
   type MapAnswer, type MapChallenge, type MapTask, type TownMap,
 } from './map/mapModel';
-import { describeMapAnswer, mapAssignment, mapScene } from './mapExplorerWorkspace';
+import { describeMapAnswer, mapScene } from './mapExplorerWorkspace';
+import { mapExplorerBoss } from './mapExplorer.boss';
+import { COMPASS_LEVER, MAP_LEVERS } from './mapExplorerLevers';
 
 export type { MapChallenge, MapTask, TownMap } from './map/mapModel';
 
@@ -82,7 +84,6 @@ type FactCard = { title: string; text: string; mapsUri?: string; icon: string };
 const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, townMap, instanceId, skillId, subskillId, objectiveId,
     exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceId = useRef(instanceId || `map-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
@@ -99,6 +100,8 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
   const [solved, setSolved] = useState(false);
   const [viewBearing, setViewBearing] = useState<number>(challenges[0]?.rotation ?? 0);
   const [openKey, setOpenKey] = useState('open-0');
+  // In-item levers (`MAP_LEVERS`), keyed by the ask they were pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const flyTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopFlight = () => { if (flyTimer.current) { clearInterval(flyTimer.current); flyTimer.current = null; } };
   useEffect(() => stopFlight, []);
@@ -107,7 +110,7 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
   const progress = useMapProgress<MapChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: mapAssignment,
+    workspace, assignment: mapExplorerBoss.assignment,
     // A fresh ask reframes the map at its bearing; Try again clears the attempt (a trip plans again from the start).
     onItemOpened: (index, retry) => {
       stopFlight(); setHeliAt(null); setFlash(null); setFeedback(null); setArmChosen(null); setSolved(false); setSteps([]);
@@ -227,14 +230,10 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
     submitResult(correctCount === total, accuracy, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmitted, challenges, challengeType, challengeResults, submitResult, progress.recordsEvaluation]);
 
-  // ── Pip: the map as a whole; never a place, region or arm (any could be the answer) ──
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: town ? 'The map' : 'The world',
-    solved,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
+  // ── Levers: the set declares them; the component only draws a pulled one (the compass glow) ──
+  const pulledLevers = current && leverState.item === current.id ? leverState.pulled : [];
+  const itemLevers = current ? MAP_LEVERS.declare(current, null, pulledLevers) : [];
+  const compassGlow = !!current?.compassGlow || itemLevers.some(l => l.id === COMPASS_LEVER && l.pulled);
 
   // World names: find_on_globe shows only what has been found; world_direction names everything.
   const currentType = current?.type;
@@ -249,13 +248,25 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
     return { points: f.points, at: heliAt ?? f.points.length - 1 };
   }, [current, townMap, steps, heliAt]);
 
-  // What the tutor and the observer see, republished every render.
+  // What the tutor and the observer see, republished every render: the scene, and the lever set's levers and facts.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...mapScene(current, townMap, {
+    const scene = mapScene(current, townMap, {
       labelsShown: Array.from(labels), steps, bearing: viewBearing, checks,
       lastFeedback: feedback && feedback.status !== 'insight' ? feedback.text : null,
-    }) };
+    });
+    const levers = itemLevers;
+    workspace.current = {
+      ...leverScene(scene, { support: MAP_LEVERS.support(current, null), onScreen: MAP_LEVERS.onScreen(current, null, pulledLevers) }),
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this ask.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        setLeverState({ item: current.id, pulled: [...pulledLevers, id] });
+        return true as const;
+      },
+    };
   });
 
   const localScore = useMemo(() => phaseResults.length
@@ -293,8 +304,9 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
           </LuminaPrompt>
         )}
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-3">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock, and the map as one region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-3">
           {town && townMap && (
             <div className="text-sm text-slate-300">
               <span className="font-semibold text-slate-100">{townMap.name}</span>
@@ -318,7 +330,7 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
             {!interactiveCompass && (
               <svg viewBox="-100 -100 200 200" className="pointer-events-none absolute bottom-8 left-2 w-20 opacity-90 sm:w-24" role="img"
                 aria-label="Compass rose">
-                <CompassRose cx={0} cy={0} r={70} rotation={-viewBearing} glow={current?.compassGlow} />
+                <CompassRose cx={0} cy={0} r={70} rotation={-viewBearing} glow={compassGlow} />
               </svg>
             )}
           </div>
@@ -326,7 +338,7 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
             <div className="mx-auto flex w-56 flex-col items-center">
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-300">Tap the compass</div>
               <svg viewBox="-100 -100 200 200" className="block w-full" role="group" aria-label="Compass rose">
-                <CompassRose cx={0} cy={0} r={72} rotation={-viewBearing} glow={current?.compassGlow} onArm={onArm}
+                <CompassRose cx={0} cy={0} r={72} rotation={-viewBearing} glow={compassGlow} onArm={onArm}
                   disabled={blocked} chosen={armChosen} />
               </svg>
             </div>
@@ -369,7 +381,7 @@ const MapExplorerSurface: React.FC<MapExplorerProps> = ({ data, className, runti
               )}
             </LuminaCallout>
           )}
-        </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );

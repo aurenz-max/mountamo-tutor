@@ -1,24 +1,27 @@
 /**
- * The in-item levers on stoichiometry-lab (`/add-support-tiers`; report qa/eval-reports/stoichiometry-lab-levers-2026-10-15.md).
+ * The in-item levers on stoichiometry-lab, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/stoichiometry-lab-levers-2026-10-15.md).
  * No real-learner evidence: the misses are what the domain checks observe; the failures behind them come from the old
  * catalog commonStruggles (grams used as if they were moles, the smaller mass picked as limiting, the ratio step
- * skipped, the excess reactant used). Every lever starts released; the tier sets the item's structure, not the levers.
+ * skipped, the excess reactant used). Every lever starts released; the tier sets the item's structure, not the levers,
+ * and no lever shows a different item solved, so there is no model lever and no `support`.
  *
- * - `unit_track` (help; convert): under each chain card, the unit the chain has reached, or "does not cancel" at the
+ * - `unit_track` (custom, shown; convert): under each chain card, the unit the chain has reached, or "does not cancel" at the
  *   first card whose bottom does not match. It never names a card to place next.
- * - `mole_map` (help; convert): the road grams -> moles -> moles -> grams with the start and goal stations marked.
+ * - `mole_map` (clue, shown; convert): the road grams -> moles -> moles -> grams with the start and goal stations marked.
  *   Stations only: no card, no factor, no number.
- * - `mole_counts` (help; limiting, yield): each jar's moles under it. Never the moles over the coefficient, never
+ * - `mole_counts` (clue, shown; limiting, yield): each jar's moles under it. Never the moles over the coefficient, never
  *   which runs out.
- * - `recipe_card` (help; limiting, yield): one run of the equation drawn as particle dots (the coefficients). Never
+ * - `recipe_card` (clue, shown; limiting, yield): one run of the equation drawn as particle dots (the coefficients). Never
  *   how many runs the jars allow.
- * - `easier_item` (simplify; every mode, medium and hard items): a different item of the same mode one tier simpler
+ * - `easier_item` (easier; every mode, medium and hard items): a different item of the same mode one tier simpler
  *   (one card fewer; one trap fewer), ungraded, then the full item back.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { STOICH_MISSES } from './stoichiometryLab.card';
 import {
-  buildConvert, buildPair, extentOf, fmt, hashOf, itemOf, molesOf, seeded, STOICH_MISSES, STOICH_TIERS, subOf,
-  yieldOf, limitingOf, type Amount, type Rx, type StoichItem,
+  BOTH, buildConvert, buildPair, cardLabel, convertKey, extentOf, fmt, hashOf, itemOf, molesOf, seeded, STOICH_TIERS, subOf,
+  yieldOf, limitingOf, type Amount, type Rx, type StoichItem, type StoichMode,
 } from './stoichiometryLabWorkspace';
 
 export const UNITS_LEVER = 'unit_track';
@@ -77,55 +80,58 @@ export function easierItem(item: StoichItem, items: readonly StoichItem[] = []):
   return built;
 }
 
-/** The levers on the current session item. A practice item has none. */
-export function stoichLevers(item: StoichItem | undefined, pulled: readonly string[], items: readonly StoichItem[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const all = STOICH_MISSES[item.mode];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  if (item.mode === 'convert') {
-    out.push(lever(UNITS_LEVER, 'help', all,
-      'The learner places a card upside down, uses the wrong substance\'s card, or cannot tell whether the chain is finished.',
-      'Shows, under each card in the chain, the unit the chain has reached after it, or "does not cancel" at the first card whose bottom does not match. It names no card to place next.'));
-    out.push(lever(MAP_LEVER, 'help', ['skipped_ratio', 'stopped_short', 'extra_step', 'out_of_order', 'wrong_card'],
-      'The learner does not know the route: skips the mole ratio, stops early, or goes past the goal.',
-      'Draws the mole map above the chain (grams, moles, moles, grams) with the start and the goal stations marked. It shows no card and no number.'));
-  } else {
-    const moleMisses = item.mode === 'limiting' ? ['smaller_mass', 'other_reactant', 'said_both', 'missed_both'] : ['from_excess', 'mass_sum', 'other_amount'];
-    const recipeMisses = item.mode === 'limiting' ? ['fewer_moles', 'said_both', 'missed_both', 'other_reactant'] : ['skipped_ratio', 'upside_down_ratio', 'from_excess', 'other_amount'];
-    out.push(lever(MOLES_LEVER, 'help', moleMisses,
-      'The learner compares the masses instead of the amounts of particles.',
-      'Shows under each jar how many moles it holds. It does not divide by the coefficients or say which runs out.'));
-    out.push(lever(RECIPE_LEVER, 'help', recipeMisses,
-      'The learner compares the moles without the equation\'s coefficients, or skips the mole ratio to the product.',
-      'Draws one run of the reaction as particle dots, one dot per mole of each coefficient. It does not say how many runs the jars allow.'));
-  }
-  if (easierItem(item, items)) {
-    out.push(lever(EASIER_LEVER, 'simplify', all, 'The learner is stuck on the whole item even with the help on screen.',
-      item.mode === 'convert'
-        ? 'Opens a different chain first, one card shorter. It is not graded; this item comes back after it.'
-        : 'Opens a different mix first, with one trap fewer. It is not graded; this item comes back after it.'));
-  }
-  return out;
+/** What the levers read beside the item: the session's items (the easier item avoids them). */
+export interface StoichLeverContext { items: readonly StoichItem[] }
+
+/** The answer as a reply would say it, which a clue's words must never name. Not a formula alone: every jar names both. */
+function answersOf(item: StoichItem): string[] {
+  if (item.mode === 'convert') return convertKey(item).map(id => cardLabel(item, id));
+  if (item.mode === 'yield') return [fmt(yieldOf(item))];
+  const key = limitingOf(item.rx, item.a, item.b);
+  if (key === BOTH) return ['both run out together', 'run out at the same time'];
+  const name = subOf(item.rx, key)?.name ?? key;
+  return [`${key} runs out`, `${name} runs out`, `${key} is the limiting`, `${name} is the limiting`];
 }
 
-/** What the pulled levers put on screen, as a scene fact. Never a key. */
-export function leverFact(item: StoichItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (item.mode === 'convert') {
-    if (pulled.includes(UNITS_LEVER)) parts.push('Under each card in the chain, the unit the chain has reached after it, or "does not cancel".');
-    if (pulled.includes(MAP_LEVER)) {
-      const st = mapStations(item);
-      parts.push(`Above the chain, the mole map: ${st.map(s => s.label + (s.mark ? ` (${s.mark})` : '')).join(' → ')}.`);
-    }
-  } else {
-    if (pulled.includes(MOLES_LEVER)) parts.push(`Under the jars: ${moleLine(item.rx, item.a)}; ${moleLine(item.rx, item.b)}.`);
-    if (pulled.includes(RECIPE_LEVER)) parts.push(`A recipe card: ${recipeLine(item.rx)}`);
-  }
-  return parts.join(' ');
-}
+const MOLES = { id: MOLES_LEVER, type: 'clue' as const, carrier: 'shown' as const,
+  when: 'The learner compares the masses instead of the amounts of particles.',
+  does: 'Shows under each jar how many moles it holds. It does not divide by the coefficients or say which runs out.',
+  fact: (_c: unknown, item: StoichItem) => (item.mode === 'convert' ? ''
+    : `Under the jars: ${moleLine(item.rx, item.a)}; ${moleLine(item.rx, item.b)}.`) };
+const RECIPE = { id: RECIPE_LEVER, type: 'clue' as const, carrier: 'shown' as const,
+  when: "The learner compares the moles without the equation's coefficients, or skips the mole ratio to the product.",
+  does: 'Draws one run of the reaction as particle dots, one dot per mole of each coefficient. It does not say how many runs the jars allow.',
+  fact: (_c: unknown, item: StoichItem) => `A recipe card: ${recipeLine(item.rx)}` };
+
+export const STOICH_LEVERS = leverSet<StoichItem, StoichLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => STOICH_MISSES[mode as StoichMode] ?? [],
+  answersOf: item => answersOf(item),
+  specs: [
+    { id: UNITS_LEVER, type: 'custom', carrier: 'shown', modes: ['convert'], answers: 'all',
+      why: "It reads back the unit the learner's own chain has reached, card by card, and changes as the chain changes; no "
+        + "stock type reads back the learner's own work.",
+      when: "The learner places a card upside down, uses the wrong substance's card, or cannot tell whether the chain is finished.",
+      does: 'Shows, under each card in the chain, the unit the chain has reached after it, or "does not cancel" at the first '
+        + 'card whose bottom does not match. It names no card to place next.',
+      fact: 'Under each card in the chain, the unit the chain has reached after it, or "does not cancel".' },
+    { id: MAP_LEVER, type: 'clue', carrier: 'shown', modes: ['convert'],
+      answers: ['skipped_ratio', 'stopped_short', 'extra_step', 'out_of_order', 'wrong_card'],
+      when: 'The learner does not know the route: skips the mole ratio, stops early, or goes past the goal.',
+      does: 'Draws the mole map above the chain (grams, moles, moles, grams) with the start and the goal stations marked. It shows no card and no number.',
+      fact: (_c, item) => `Above the chain, the mole map: ${mapStations(item).map(st => st.label + (st.mark ? ` (${st.mark})` : '')).join(' → ')}.` },
+    { ...MOLES, modes: ['limiting'], answers: ['smaller_mass', 'other_reactant', 'said_both', 'missed_both'] },
+    { ...MOLES, modes: ['yield'], answers: ['from_excess', 'mass_sum', 'other_amount'] },
+    { ...RECIPE, modes: ['limiting'], answers: ['fewer_moles', 'said_both', 'missed_both', 'other_reactant'] },
+    { ...RECIPE, modes: ['yield'], answers: ['skipped_ratio', 'upside_down_ratio', 'from_excess', 'other_amount'] },
+    { id: EASIER_LEVER, type: 'easier', answers: 'all',
+      when: 'The learner is stuck on the whole item even with the help on screen.',
+      does: item => (item.mode === 'convert'
+        ? 'Opens a different chain first, one card shorter. It is not graded; this item comes back after it.'
+        : 'Opens a different mix first, with one trap fewer. It is not graded; this item comes back after it.'),
+      content: (item, ctx) => easierItem(item, ctx.items) },
+  ],
+});
 
 /** The answer line shown after credit (or the scripted reveal): the worked result. */
 export function revealLine(item: StoichItem): string {
@@ -134,7 +140,7 @@ export function revealLine(item: StoichItem): string {
   const lim = limitingOf(rx, item.a, item.b);
   const per = (a: Amount) => `${fmt(a.grams)} g ${a.formula} is ${fmt(molesOf(rx, a))} mol, enough for ${fmt(extentOf(rx, a))} run${extentOf(rx, a) === 1 ? '' : 's'} of the recipe`;
   const head = `${per(item.a)}; ${per(item.b)}. `;
-  const which = lim === 'Both together' ? 'Both run out together.' : `${lim} runs out first.`;
+  const which = lim === BOTH ? 'Both run out together.' : `${lim} runs out first.`;
   if (item.mode === 'limiting') return head + which;
   const p = subOf(rx, item.product)!;
   return `${head}${which} ${fmt(Math.min(extentOf(rx, item.a), extentOf(rx, item.b)) * p.c)} mol ${p.formula} forms, which is ${fmt(yieldOf(item))} g.`;

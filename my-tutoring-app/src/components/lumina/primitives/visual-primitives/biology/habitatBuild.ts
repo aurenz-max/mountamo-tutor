@@ -9,8 +9,8 @@
  *
  * Pure: the component, the generator, the journey row and the oracle read the same tables and check.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { HabitatBuildMiss } from './habitatDiorama.card';
 
 export type HabitatNeed = 'food' | 'water' | 'shelter' | 'weather';
 export const ALL_NEEDS: readonly HabitatNeed[] = ['food', 'water', 'shelter', 'weather'];
@@ -126,8 +126,7 @@ export function buildAsk(animal: HabitatAnimal, needs: readonly HabitatNeed[], n
  *   (the salty sea for a frog, carrots for an owl);
  * - `one_need_unmet`: one need is not met and nothing of its kind is there.
  */
-export type HabitatBuildMiss = 'harmful_piece' | 'several_needs_unmet' | 'other_animals_piece' | 'one_need_unmet';
-export const HABITAT_BUILD_MISSES: readonly HabitatBuildMiss[] = ['harmful_piece', 'several_needs_unmet', 'other_animals_piece', 'one_need_unmet'];
+export type { HabitatBuildMiss };
 
 export interface HabitatBuildRead {
   /** Per asked need, whether some placed piece meets it for this animal. */
@@ -227,7 +226,7 @@ export function describeHabitatBuild(animal: HabitatAnimal, placed: readonly str
 }
 
 export function habitatBuildScene(animal: HabitatAnimal, needs: readonly HabitatNeed[], tray: readonly string[],
-  placed: readonly string[], opts: { preReader: boolean; practice?: boolean }): WorkspaceScene {
+  placed: readonly string[]): WorkspaceScene {
   const read = readHabitatBuild(animal, needs, placed);
   return { objects: [], facts: {
     kind: 'build_habitat',
@@ -236,9 +235,8 @@ export function habitatBuildScene(animal: HabitatAnimal, needs: readonly Habitat
     // The made habitat as numbers, so the shared work history records a revision (`needsMet 1 → 3 → 2`).
     piecesPlaced: placed.length, needsMet: read.needsMet, harmfulPieces: read.harmful.length,
     learnerWork: describeHabitatBuild(animal, placed),
-    constraints: 'The learner taps a piece to put it in the habitat, taps a piece in the habitat to take it out, and presses '
-      + '"I\'m done!"; the activity checks the habitat itself. You cannot place pieces for the learner.'
-      + (opts.preReader ? ' The learner does not read; the piece names reach them only through you.' : ''),
+    // The family's never-say rule for the build: many habitats pass, and knowing the needs is the task.
+    constraints: `Knowing what the ${animal.name} needs is the task: never name a need it is missing.`,
   } };
 }
 
@@ -253,37 +251,6 @@ export const isFewerNeeds = (id: string) => id.endsWith(FEWER_SUFFIX);
 /** The easier ask: the same animal on an empty scene, two needs, both named. Null on an ask that is already small. */
 export const fewerNeeds = (needs: readonly HabitatNeed[]): HabitatNeed[] | null =>
   needs.length > 2 ? ['food', 'water'] : null;
-
-/**
- * The levers on a build item. Knowing the needs IS the task, so the item starts bare and these come on a miss.
- * - `needs_list` (help): beside the scene, the kinds of thing every animal needs; nothing is ticked.
- * - `piece_tags` (help): on each piece the learner put in, what it gives this animal, or that it is not for it.
- * - `fewer_needs` (simplify): an ungraded easier ask for the same animal, two needs named, on an empty scene.
- */
-export function habitatBuildLevers(needs: readonly HabitatNeed[] | null, pulled: readonly string[], practice: boolean): WorkspaceLever[] {
-  if (!needs || practice) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly HabitatBuildMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  return [
-    lever(NEEDS_LIST_LEVER, 'help', ['several_needs_unmet', 'one_need_unmet'],
-      'The learner puts in pieces without thinking about what an animal needs to stay alive.',
-      'Shows beside the habitat the kinds of thing every animal needs to live. Nothing on it is ticked or crossed off.'),
-    lever(PIECE_TAGS_LEVER, 'help', ['other_animals_piece', 'harmful_piece', 'one_need_unmet'],
-      'The learner puts in pieces that are for other animals, or one that would hurt this one.',
-      'Puts a small tag on each piece the learner put in the habitat: what it gives this animal, or that it is not for it.'),
-    ...(fewerNeeds(needs) ? [lever(FEWER_NEEDS_LEVER, 'simplify', ['several_needs_unmet', 'other_animals_piece'],
-      'The learner cannot build the whole habitat yet.',
-      'Opens an easier ask first: the same animal on an empty habitat, with two of its needs named. It is not graded; the full habitat comes back after it.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor. */
-export function habitatBuildLeverFacts(pulled: readonly string[]): string {
-  return [
-    pulled.includes(NEEDS_LIST_LEVER) && 'Beside the habitat is a list of the kinds of thing every animal needs to live.',
-    pulled.includes(PIECE_TAGS_LEVER) && 'Each piece in the habitat has a tag saying what it gives this animal, or that it is not for it.',
-  ].filter((s): s is string => !!s).join(' ');
-}
 
 /** Words the live line may never use: naming a need, or how the animal feels, would do the task for the learner. */
 export const HABITAT_WATCH_NEVER_SAY: readonly string[] = [

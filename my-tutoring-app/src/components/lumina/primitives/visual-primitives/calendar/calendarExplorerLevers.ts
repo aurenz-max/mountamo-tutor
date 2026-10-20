@@ -1,31 +1,34 @@
 /**
- * The in-item levers on a calendar-explorer item (`/add-support-tiers`, report
- * qa/eval-reports/calendar-explorer-levers-2026-10-08.md). No real-learner evidence: the misses are what
- * `calendarMiss` and `calendarSpokenMisses` observe. Pure: the component draws from these, the workspace publishes
- * them, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and is built by
- * `calendarPracticeItem`.
+ * The in-item levers on a calendar-explorer item, as one lever set (`CALENDAR_LEVERS`, `bossLevers.ts`;
+ * `/add-support-tiers`, report qa/eval-reports/calendar-explorer-levers-2026-10-08.md). No real-learner evidence: the
+ * misses are what `calendarMiss` and `calendarSpokenMisses` observe. Pure: the component draws from these, the set
+ * publishes them, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and is
+ * built by `calendarPracticeItem`.
  *
  * Help (the screen does more; the question is unchanged):
- * - `day_headers` the Sun..Sat header row back, only where the tier withdrew it (identify, pattern, count).
- * - `ring_dates` a ring on each date the question names, never on the answer date (`ringLeaks`; identify, pattern).
- * - `weekday_tint` every cell of the weekday the question names, only when the answer is a date or a count, never
- *   a weekday (`tintLeaks`; identify, pattern, and count where the tier withdrew its tint).
- * - `time_arrow` an arrow over the calendar: days go left to right along a row, then on to the next row; on no
- *   cell (identify items with a today star).
- * - `row_ranges` each week row's first and last date at its left; no cell marked (mark_events).
- * - `tick_taps` a tap on a date leaves a tick the learner can take off again; code never ticks (count,
+ * - `day_headers` (marks) the Sun..Sat header row back, only where the tier withdrew it (identify, pattern, count).
+ * - `ring_dates` (marks) a ring on each date the question names, never on the answer date (`ringLeaks`; identify, pattern).
+ * - `weekday_tint` (marks) every cell of the weekday the question names, only when the answer is a date or a count,
+ *   never a weekday (`tintLeaks`; identify, pattern, and count where the tier withdrew its tint).
+ * - `time_arrow` (marks) an arrow over the calendar: days go left to right along a row, then on to the next row; on no
+ *   cell (identify and pattern items with a today star).
+ * - `row_ranges` (marks) each week row's first and last date at its left; no cell marked (mark_events).
+ * - `tick_taps` (marks) a tap on a date leaves a tick the learner can take off again; code never ticks (count,
  *   interval_count).
- * - `week_strip` the seven days in order from the start day, only the start marked (`stripLeaks`; day_offset).
- * - `model_pair` (spoken chains) two OTHER days or months in order, never the turn's own or a pair still ahead in
- *   the chain (`modelPairLeaks`).
+ * - `week_strip` (layout) the seven days in order from the start day, only the start marked (`stripLeaks`; day_offset).
+ * - `model_pair` (model; spoken chains) two OTHER days or months in order, never the turn's own or a pair still ahead
+ *   in the chain (`modelPairLeaks`). When it comes is the item's support tier (`support`; medium when none).
  *
- * Simplify (`simpler_question`, the same mode one step simpler): identify the FIRST of the asked weekday; mark a date
- * in the top row; count a weekday in February 2026 (four full rows); count forward one day from another start; an
+ * Simplify (`simpler_question`, easier, the same mode one step simpler): identify the FIRST of the asked weekday; mark a
+ * date in the top row; count a weekday in February 2026 (four full rows); count forward one day from another start; an
  * interval two days long. Never the item's own answer or another item's question (`practiceLeaks`).
+ *
+ * The easy tier starts a grid item with its help levers shown (`tierShown`); a starting position is not a pull.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
-import type { CalendarSequenceItem } from './calendarExplorerScript';
+import { CALENDAR_MISSES, COUNT_MISSES, DATE_MISSES, OFFSET_MISSES, WEEKDAY_MISSES } from './calendarExplorer.card';
+import { isChain } from './calendarExplorerWorkspace';
 
 export const HEADERS_LEVER = 'day_headers';
 export const RING_LEVER = 'ring_dates';
@@ -45,9 +48,8 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
 
 const daysIn = (month: number, year: number) => new Date(year, month, 0).getDate();
 const firstDayOf = (month: number, year: number) => new Date(year, month - 1, 1).getDay();
-const weekdayOf = (day: number, month: number, year: number) => WEEKDAYS[new Date(year, month - 1, day).getDay()];
 const dayIndex = (s?: string) => WEEKDAYS.findIndex(w => w.toLowerCase() === (s ?? '').trim().toLowerCase());
-const lower = (s: string) => s.trim().toLowerCase();
+const lower = (s: string) => (s ?? '').trim().toLowerCase();
 
 /** The answer as a day of the month ("15" or "March 15"), or null when it is a weekday or a count. */
 export function answerDate(c: CalendarExplorerChallenge): number | null {
@@ -57,8 +59,12 @@ export function answerDate(c: CalendarExplorerChallenge): number | null {
 }
 const isWeekdayAnswer = (c: CalendarExplorerChallenge) => dayIndex(c.correctAnswer) >= 0;
 
-/** What a lever reads beyond the item: every item in the session (a simpler item never repeats one). */
-export interface CalendarSession { challenges: readonly CalendarExplorerChallenge[]; supportTier?: 'easy' | 'medium' | 'hard' }
+/** What a lever reads beyond the item: every item in the session (a simpler item never repeats one), the tier, the band. */
+export interface CalendarSession {
+  challenges: readonly CalendarExplorerChallenge[];
+  supportTier?: 'easy' | 'medium' | 'hard';
+  gradeBand?: string;
+}
 
 // ── ring_dates (identify, pattern) ─────────────────────────────────────────
 
@@ -141,54 +147,38 @@ export const stripLeaks = (strip: readonly string[], marked: readonly number[], 
 
 // ── model_pair (spoken day and month chains) ───────────────────────────────
 
-const namesOf = (item: CalendarSequenceItem) => item.type === 'day_sequence' ? WEEKDAYS : MONTHS;
-const pairOf = (item: CalendarSequenceItem): [string, string] => item.type === 'day_sequence'
-  ? [item.currentDay, item.expectedDay] : [item.currentMonth, item.expectedMonth];
+const namesOf = (c: CalendarExplorerChallenge) => (c.type === 'day_sequence' ? WEEKDAYS : MONTHS);
+const pairOf = (c: CalendarExplorerChallenge): [string, string] => c.type === 'day_sequence'
+  ? [c.currentDay ?? '', c.expectedDay ?? ''] : [c.currentMonth ?? '', c.expectedMonth ?? ''];
 const pairKey = (a: string, b: string) => `${lower(a)}>${lower(b)}`;
-const turnsFrom = (item: CalendarSequenceItem, items: readonly CalendarSequenceItem[]) => {
-  const at = items.findIndex(i => i.id === item.id);
-  return (at < 0 ? [item, ...items] : items.slice(at)).filter(i => i.type === item.type);
+const turnsFrom = (c: CalendarExplorerChallenge, items: readonly CalendarExplorerChallenge[]) => {
+  const at = items.findIndex(i => i.id === c.id);
+  return (at < 0 ? [c, ...items] : items.slice(at)).filter(i => i.type === c.type);
 };
 
 /** Leak rule: neither name is the turn's own day (or month) or its successor, and the pair is no turn still ahead. */
-export function modelPairLeaks(pair: readonly [string, string], item: CalendarSequenceItem, items: readonly CalendarSequenceItem[]): boolean {
-  const [current, expected] = pairOf(item).map(lower);
+export function modelPairLeaks(pair: readonly [string, string], c: CalendarExplorerChallenge,
+  items: readonly CalendarExplorerChallenge[]): boolean {
+  const [current, expected] = pairOf(c).map(lower);
   if (pair.some(n => lower(n) === current || lower(n) === expected)) return true;
-  const ahead = new Set(turnsFrom(item, items).map(i => pairKey(...pairOf(i))));
+  const ahead = new Set(turnsFrom(c, items).map(i => pairKey(...pairOf(i))));
   return ahead.has(pairKey(pair[0], pair[1]));
 }
 
 /** Two other names in order, as far round the cycle from the turn as the leak rule allows; null if none. */
-export function modelPair(item: CalendarSequenceItem, items: readonly CalendarSequenceItem[]): [string, string] | null {
-  const names = namesOf(item), n = names.length;
-  const at = names.findIndex(x => lower(x) === lower(pairOf(item)[0]));
+export function modelPair(c: CalendarExplorerChallenge, items: readonly CalendarExplorerChallenge[]): [string, string] | null {
+  if (!isChain(c)) return null;
+  const names = namesOf(c), n = names.length;
+  const at = names.findIndex(x => lower(x) === lower(pairOf(c)[0]));
   if (at < 0) return null;
   for (let k = 3; k < n + 3; k++) {
     const pair: [string, string] = [names[(at + k) % n], names[(at + k + 1) % n]];
-    if (!modelPairLeaks(pair, item, items)) return pair;
+    if (!modelPairLeaks(pair, c, items)) return pair;
   }
   return null;
 }
 
-export function modelPairFact(item: CalendarSequenceItem, pair: readonly [string, string]): string {
-  const unit = item.type === 'day_sequence' ? 'day' : 'month';
-  return `A model card: ${pair[0]}, then ${pair[1]} (two other ${unit}s in order, printed with an arrow between them). `
-    + `It is not this turn: never say this turn's ${unit} or the one after it.`;
-}
-
-export function calendarSequenceLevers(item: CalendarSequenceItem | null, items: readonly CalendarSequenceItem[],
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || !modelPair(item, items)) return [];
-  const unit = item.type === 'day_sequence' ? 'day' : 'month';
-  return [{
-    id: MODEL_PAIR_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(MODEL_PAIR_LEVER),
-    answers: item.type === 'day_sequence' ? ['start_day', 'day_after', 'day_before_start', 'other_day']
-      : ['start_month', 'month_after', 'month_before_start', 'other_month'],
-    when: `The learner says the given ${unit} back, skips one, goes backwards, or says another ${unit}.`,
-    does: `Shows a model card of two OTHER ${unit}s in order. Read it once ("after the first comes the second"), then ask `
-      + `this turn again. It is not this turn: never say this turn's ${unit} or the one after it, and do not go on from the model.`,
-  }];
-}
+const unitOf = (c: CalendarExplorerChallenge) => (c.type === 'day_sequence' ? 'day' : 'month');
 
 // ── simpler items ──────────────────────────────────────────────────────────
 
@@ -196,7 +186,7 @@ export function calendarSequenceLevers(item: CalendarSequenceItem | null, items:
  * Leak rule for a simpler item: never the item's id, never another mode, never the item's own answer, and never the
  * question of any item in the session.
  */
-export function practiceLeaks(p: CalendarExplorerChallenge, c: CalendarExplorerChallenge, session: CalendarSession): boolean {
+export function practiceLeaks(p: CalendarExplorerChallenge, c: CalendarExplorerChallenge, session: Pick<CalendarSession, 'challenges'>): boolean {
   return p.id === c.id || p.type !== c.type || lower(p.correctAnswer) === lower(c.correctAnswer)
     || session.challenges.some(x => lower(x.question) === lower(p.question));
 }
@@ -204,7 +194,6 @@ export function practiceLeaks(p: CalendarExplorerChallenge, c: CalendarExplorerC
 const practiceOf = (c: CalendarExplorerChallenge, fields: Partial<CalendarExplorerChallenge>): CalendarExplorerChallenge =>
   ({ ...c, id: `${c.id}${PRACTICE_SUFFIX}`, hint: '', narration: '', ...fields });
 
-const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth'];
 const ORDINAL_RE = /\b(first|second|third|fourth|fifth|last)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i;
 
 /** identify "the Nth <weekday>" → the FIRST of that weekday in the same month. Null when the ask is already first. */
@@ -219,7 +208,7 @@ function firstOfWeekday(c: CalendarExplorerChallenge): CalendarExplorerChallenge
 }
 
 /** mark_events: a free date in the top row, when the item's date is below it. */
-function topRowMark(c: CalendarExplorerChallenge, session: CalendarSession): CalendarExplorerChallenge | null {
+function topRowMark(c: CalendarExplorerChallenge, session: Pick<CalendarSession, 'challenges'>): CalendarExplorerChallenge | null {
   const a = answerDate(c);
   if (c.type !== 'mark_events' || a === null) return null;
   const rowEnd = 7 - firstDayOf(c.month, c.year);
@@ -282,8 +271,8 @@ function shortInterval(c: CalendarExplorerChallenge): CalendarExplorerChallenge 
 }
 
 /** The simpler item for a session item, same mode, or null where the item is already the plainest of its kind (or the
- *  mode has no code-built simpler item: pattern, a weekday identify). */
-export function calendarPracticeItem(c: CalendarExplorerChallenge, session: CalendarSession): CalendarExplorerChallenge | null {
+ *  mode has no code-built simpler item: pattern, a weekday identify, the chains). */
+export function calendarPracticeItem(c: CalendarExplorerChallenge, session: Pick<CalendarSession, 'challenges'>): CalendarExplorerChallenge | null {
   const p = c.type === 'identify' ? firstOfWeekday(c)
     : c.type === 'mark_events' ? topRowMark(c, session)
       : c.type === 'count' ? fourRowCount(c)
@@ -296,110 +285,106 @@ export function calendarPracticeItem(c: CalendarExplorerChallenge, session: Cale
 export const calendarPracticeParent = (id: string | null | undefined, challenges: readonly CalendarExplorerChallenge[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-// ── the grid levers ────────────────────────────────────────────────────────
+// ── what the tier withdrew ─────────────────────────────────────────────────
 
-/** What the tier withdrew on this item (the K band floor withdraws nothing). */
-export interface CalendarWithdrawn { headers: boolean; tint: boolean }
+/** The K band floor withdraws nothing. */
+const preReader = (s: CalendarSession) => s.gradeBand === 'K';
+/** The tier withdrew the Sun..Sat header row on this item. */
+export const headersWithdrawn = (c: CalendarExplorerChallenge, s: CalendarSession) => !preReader(s) && c.showDayHeaders === false;
+/** The tier withdrew count's target-day tint on this item. */
+export const tintWithdrawn = (c: CalendarExplorerChallenge, s: CalendarSession) =>
+  c.type === 'count' && !preReader(s) && c.showTargetDayColumn === false;
 
-/** Easy starts with the item's help pictures shown; a starting position is not a pull. */
-export const helpStartsShown = (session: CalendarSession) => session.supportTier === 'easy';
+// ── the lever set ──────────────────────────────────────────────────────────
 
-const WEEKDAY_MISSES = ['day_before', 'day_after', 'other_day'];
-const DATE_MISSES = ['same_column_date', 'next_to_date', 'other_date'];
-const COUNT_MISSES = ['one_less', 'one_more', 'other_count'];
-const OFFSET_MISSES = ['start_day', 'day_before', 'day_after', 'other_day'];
+const back = 'then this question comes back blank.';
+const IDENTIFY_PATTERN = ['identify', 'pattern'] as const;
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls. */
-export function calendarGridLevers(c: CalendarExplorerChallenge | null, session: CalendarSession, withdrawn: CalendarWithdrawn,
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const starts = helpStartsShown(session);
-  const help = (id: string, answers: string[], when: string, does: string, carrier: WorkspaceLever['carrier'] = 'shown') =>
-    levers.push({ id, kind: 'help', carrier, when, does, pulled: starts || pulled.includes(id), answers });
-  const back = 'then this question comes back blank.';
-  switch (c.type) {
-    case 'identify':
-    case 'pattern': {
-      if (ringDates(c)) help(RING_LEVER, [...WEEKDAY_MISSES, ...DATE_MISSES],
-        'The learner picks a day or date next to the right one, or cannot find the date the question names.',
-        'Draws a ring on each date the question names. Point to the ring; never say which column or day it is in.');
-      if (tintWeekday(c)) help(TINT_LEVER, DATE_MISSES,
-        'The learner taps a date in the wrong column, or the wrong week of the right column.',
-        `Tints every ${tintWeekday(c)} on the calendar. You may point to the tinted cells; never say which one is the answer.`);
-      if (c.todayDate !== undefined) help(ARROW_LEVER, [...WEEKDAY_MISSES, ...DATE_MISSES],
-        'The learner goes the wrong way from today (before for after), or lands two or more days off.',
-        'Draws an arrow over the calendar: days go left to right along a row, then on to the next row. It is on no date; '
-          + 'never say which square comes before or after the star.', 'both');
-      if (withdrawn.headers) help(HEADERS_LEVER, [...WEEKDAY_MISSES, 'next_to_date'],
-        'The learner cannot tell which day of the week a column is.',
-        'Puts the Sun to Sat header row back above the calendar. You may point to it; never read out the answer column.');
-      const p = c.type === 'identify' ? calendarPracticeItem(c, session) : null;
-      if (p) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-        answers: ['same_column_date', 'other_date'], when: 'The learner cannot find the right one of that weekday even with the help.',
-        does: `Opens an ungraded practice question asking for the first ${namedWeekday(c)} of the same month; ${back}` });
-      return levers;
-    }
-    case 'mark_events': {
-      if (rowRanges(c).length && !rowsLeak(rowRanges(c), c)) help(ROWS_LEVER, DATE_MISSES,
-        'The learner puts the marker on the wrong date, a week off or next to it.',
-        'Writes each week row\'s first and last date at its left. You may point to the row labels; never say which row or square.');
-      const p = calendarPracticeItem(c, session);
-      if (p) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-        answers: DATE_MISSES, when: 'The learner still cannot find the date with the row labels on screen.',
-        does: `Opens an ungraded practice question: mark a date in the top row; ${back}` });
-      return levers;
-    }
-    case 'count':
-    case 'interval_count': {
-      if (c.type === 'count' && withdrawn.tint && tintWeekday(c)) help(TINT_LEVER, COUNT_MISSES,
-        'The learner cannot find the days to count.',
-        `Tints every ${tintWeekday(c)} on the calendar again. Never count them or say how many there are.`);
-      help(TICKS_LEVER, COUNT_MISSES,
-        'The learner\'s count is one off or more: they lose track of what they have counted.',
-        'Lets the learner tap each date as they count to leave a tick on it (tap again to take it off). Only the learner\'s '
-          + 'taps make ticks. Suggest tapping as they count; never count for them or say how many.');
-      if (c.type === 'count' && withdrawn.headers) help(HEADERS_LEVER, ['other_count'],
-        'The learner cannot find which column is the day to count.',
-        'Puts the Sun to Sat header row back above the calendar. Never say how many there are.');
-      const p = calendarPracticeItem(c, session);
-      if (p) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-        answers: COUNT_MISSES, when: 'The learner still miscounts with the ticks.',
-        does: c.type === 'count'
-          ? `Opens an ungraded practice question: count the same day in February 2026, a month of four full rows; ${back}`
-          : `Opens an ungraded practice question: two marked dates two days apart, the same counting rule; ${back}` });
-      return levers;
-    }
-    case 'day_offset': {
-      if (weekStrip(c)) help(STRIP_LEVER, OFFSET_MISSES,
-        'The learner lands on the start day, one short, one past, or elsewhere.',
-        `Shows the seven days in order starting at ${c.startDay}, only ${c.startDay} marked. Point to the start; `
-          + 'never count along it for them or say where they land.');
-      const p = calendarPracticeItem(c, session);
-      if (p) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-        answers: OFFSET_MISSES, when: 'The learner still cannot count forward with the week strip.',
-        does: `Opens an ungraded practice question: count forward one day from another start; ${back}` });
-      return levers;
-    }
-    default:
-      return levers;
-  }
-}
+export const CALENDAR_LEVERS = leverSet<CalendarExplorerChallenge, CalendarSession>({
+  modeOf: c => c.type,
+  missesOf: mode => CALENDAR_MISSES[mode as keyof typeof CALENDAR_MISSES] ?? [],
+  // The model pair is two other days (or months) in order; when it comes is the tier's.
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => `two other ${unitOf(c)}s in order`,
+    own: c => `the ${unitOf(c)} that comes next`,
+  },
+  specs: [
+    { id: RING_LEVER, type: 'marks', modes: IDENTIFY_PATTERN, answers: [...WEEKDAY_MISSES, ...DATE_MISSES], content: c => ringDates(c),
+      when: 'The learner picks a day or date next to the right one, or cannot find the date the question names.',
+      does: 'Draws a ring on each date the question names. Point to the ring; never say which column or day it is in.',
+      fact: (ring: number[], c) => `A ring on ${ring.map(d => `${MONTHS[c.month - 1]} ${d}`).join(' and ')}, `
+        + `the date${ring.length > 1 ? 's' : ''} the question names.` },
+    { id: TINT_LEVER, type: 'marks', modes: IDENTIFY_PATTERN, answers: DATE_MISSES, content: c => tintWeekday(c),
+      when: 'The learner taps a date in the wrong column, or the wrong week of the right column.',
+      does: c => `Tints every ${tintWeekday(c)} on the calendar. You may point to the tinted cells; never say which one is the answer.`,
+      fact: (day: string) => `Every ${day} on the calendar is tinted.` },
+    { id: TINT_LEVER, type: 'marks', modes: ['count'], answers: COUNT_MISSES,
+      content: (c, s) => (tintWithdrawn(c, s) ? tintWeekday(c) : null),
+      when: 'The learner cannot find the days to count.',
+      // The scene's `shown` names the tint while it is on screen.
+      does: c => `Tints every ${tintWeekday(c)} on the calendar again. Never count them or say how many there are.` },
+    { id: ARROW_LEVER, type: 'marks', carrier: 'both', modes: IDENTIFY_PATTERN, answers: [...WEEKDAY_MISSES, ...DATE_MISSES],
+      offer: c => c.todayDate !== undefined,
+      when: 'The learner goes the wrong way from today (before for after), or lands two or more days off.',
+      does: 'Draws an arrow over the calendar: days go left to right along a row, then on to the next row. It is on no date; '
+        + 'never say which square comes before or after the star.',
+      fact: 'An arrow over the calendar shows the days go left to right along a row, then on to the next row; it is on no date.' },
+    { id: HEADERS_LEVER, type: 'marks', modes: IDENTIFY_PATTERN, answers: [...WEEKDAY_MISSES, 'next_to_date'],
+      offer: (c, s) => headersWithdrawn(c, s),
+      when: 'The learner cannot tell which day of the week a column is.',
+      does: 'Puts the Sun to Sat header row back above the calendar. You may point to it; never read out the answer column.',
+      fact: 'The Sun to Sat header row is back above the calendar.' },
+    { id: TICKS_LEVER, type: 'marks', modes: ['count', 'interval_count'], answers: COUNT_MISSES,
+      when: 'The learner\'s count is one off or more: they lose track of what they have counted.',
+      does: 'Lets the learner tap each date as they count to leave a tick on it (tap again to take it off). Only the learner\'s '
+        + 'taps make ticks. Suggest tapping as they count; never count for them or say how many.',
+      fact: 'Tapping a date now leaves a tick on it (tap again to take it off); only the learner\'s taps make ticks.' },
+    { id: HEADERS_LEVER, type: 'marks', modes: ['count'], answers: ['other_count'], offer: (c, s) => headersWithdrawn(c, s),
+      when: 'The learner cannot find which column is the day to count.',
+      does: 'Puts the Sun to Sat header row back above the calendar. Never say how many there are.',
+      fact: 'The Sun to Sat header row is back above the calendar.' },
+    { id: ROWS_LEVER, type: 'marks', modes: ['mark_events'], answers: DATE_MISSES,
+      content: c => { const rows = rowRanges(c); return rows.length && !rowsLeak(rows, c) ? rows : null; },
+      when: 'The learner puts the marker on the wrong date, a week off or next to it.',
+      does: 'Writes each week row\'s first and last date at its left. You may point to the row labels; never say which row or square.',
+      fact: 'Each week row has its first and last date written at its left.' },
+    { id: STRIP_LEVER, type: 'layout', modes: ['day_offset'], answers: OFFSET_MISSES, content: c => weekStrip(c),
+      when: 'The learner lands on the start day, one short, one past, or elsewhere.',
+      does: c => `Shows the seven days in order starting at ${c.startDay}, only ${c.startDay} marked. Point to the start; `
+        + 'never count along it for them or say where they land.',
+      fact: (strip: string[]) => `A strip of the seven days in order starting at ${strip[0]}, only ${strip[0]} marked as the start.` },
+    { id: MODEL_PAIR_LEVER, type: 'model', modes: ['day_sequence', 'month_sequence'], answers: 'all',
+      content: (c, s) => modelPair(c, s.challenges),
+      when: c => `The learner says the given ${unitOf(c)} back, skips one, goes backwards, or says another ${unitOf(c)}.`,
+      does: c => `Shows a model card of two OTHER ${unitOf(c)}s in order. Read it once ("after the first comes the second"), then `
+        + `ask this turn again. It is not this turn: never say this turn's ${unitOf(c)} or the one after it, and do not go on from the model.`,
+      fact: (pair: [string, string], c) => `A model card: ${pair[0]}, then ${pair[1]} (two other ${unitOf(c)}s in order, printed with `
+        + `an arrow between them). It is not this turn: never say this turn's ${unitOf(c)} or the one after it.` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['identify'], answers: ['same_column_date', 'other_date'],
+      content: (c, s) => calendarPracticeItem(c, s),
+      when: 'The learner cannot find the right one of that weekday even with the help.',
+      does: c => `Opens an ungraded practice question asking for the first ${namedWeekday(c)} of the same month; ${back}` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['mark_events'], answers: DATE_MISSES,
+      content: (c, s) => calendarPracticeItem(c, s),
+      when: 'The learner still cannot find the date with the row labels on screen.',
+      does: `Opens an ungraded practice question: mark a date in the top row; ${back}` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['count'], answers: COUNT_MISSES,
+      content: (c, s) => calendarPracticeItem(c, s),
+      when: 'The learner still miscounts with the ticks.',
+      does: `Opens an ungraded practice question: count the same day in February 2026, a month of four full rows; ${back}` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['interval_count'], answers: COUNT_MISSES,
+      content: (c, s) => calendarPracticeItem(c, s),
+      when: 'The learner still miscounts with the ticks.',
+      does: `Opens an ungraded practice question: two marked dates two days apart, the same counting rule; ${back}` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['day_offset'], answers: OFFSET_MISSES,
+      content: (c, s) => calendarPracticeItem(c, s),
+      when: 'The learner still cannot count forward with the week strip.',
+      does: `Opens an ungraded practice question: count forward one day from another start; ${back}` },
+  ],
+});
 
-/** What the pulled help levers put on screen, for the tutor and JEV: what is drawn, never the answer. */
-export function calendarLeverFacts(c: CalendarExplorerChallenge, on: readonly string[]): string | undefined {
-  const parts: string[] = [];
-  const month = MONTHS[c.month - 1];
-  if (on.includes(HEADERS_LEVER)) parts.push('The Sun to Sat header row is back above the calendar');
-  const ring = on.includes(RING_LEVER) ? ringDates(c) : null;
-  if (ring) parts.push(`A ring on ${ring.map(d => `${month} ${d}`).join(' and ')}, the date${ring.length > 1 ? 's' : ''} the question names`);
-  const tint = on.includes(TINT_LEVER) && c.type !== 'count' ? tintWeekday(c) : null;
-  if (tint) parts.push(`Every ${tint} on the calendar is tinted`);
-  if (on.includes(ARROW_LEVER) && c.todayDate !== undefined)
-    parts.push('An arrow over the calendar shows the days go left to right along a row, then on to the next row; it is on no date');
-  if (on.includes(ROWS_LEVER)) parts.push('Each week row has its first and last date written at its left');
-  if (on.includes(TICKS_LEVER)) parts.push('Tapping a date now leaves a tick on it (tap again to take it off); only the learner\'s taps make ticks');
-  const strip = on.includes(STRIP_LEVER) ? weekStrip(c) : null;
-  if (strip) parts.push(`A strip of the seven days in order starting at ${strip[0]}, only ${strip[0]} marked as the start`);
-  return parts.length ? parts.join('. ') + '.' : undefined;
-}
+/** The help levers the easy tier starts a grid item with, shown from the start; not a pull. */
+export const tierShown = (c: CalendarExplorerChallenge | null, s: CalendarSession): string[] =>
+  (c && !isChain(c) && s.supportTier === 'easy'
+    ? CALENDAR_LEVERS.declare(c, s, []).filter(l => l.kind === 'help').map(l => l.id) : []);

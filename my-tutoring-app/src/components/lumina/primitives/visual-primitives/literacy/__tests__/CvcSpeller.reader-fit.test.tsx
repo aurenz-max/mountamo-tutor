@@ -19,10 +19,10 @@
  *  6. word-sort: no `short-a` dev slug anywhere, and no vowel column exists
  *     until an answer has been affirmed.
  *
- * The live loop itself is NOT driven here. It cannot be driven honestly in
- * jsdom (the mic never opens, the context refs never re-render), and a green
- * test that never fired the path is worse than no test — the pedagogy is
- * pinned in CvcSpeller.di-script.test.ts instead.
+ * The live loop itself is NOT driven here: the bound-mount tests
+ * (CvcSpeller.workspace.test.tsx, CvcSpeller.levers.workspace.test.tsx) drive
+ * it through the workspace harness, and the ask and key are the boss's
+ * (cvcSpeller.boss.ts).
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

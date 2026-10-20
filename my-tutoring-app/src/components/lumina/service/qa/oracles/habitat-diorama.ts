@@ -1,7 +1,7 @@
 import type { ContentOracle, OracleResult, OracleViolation } from './types';
 import { asRecordArray } from './helpers';
 import { HABITAT_ANIMALS, HABITAT_PIECES } from '../../../primitives/visual-primitives/biology/habitatBuild';
-import { itemFromChallenge } from '../../../primitives/visual-primitives/biology/habitatDioramaScript';
+import { itemFromChallenge } from '../../../primitives/visual-primitives/biology/habitatDioramaDomain';
 
 /**
  * Habitat-diorama oracle, `build_habitat` (the open build). The component judges a habitat with `readHabitatBuild`:

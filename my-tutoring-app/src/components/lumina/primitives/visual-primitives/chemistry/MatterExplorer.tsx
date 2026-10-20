@@ -481,7 +481,7 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
     const levers = practice ? [] : MATTER_LEVERS.declare(sessionItem, leverSession, pulledLevers);
     workspace.current = {
       ...leverScene(matterScene(shownItem, { practice: !!practice }), {
-        support: practice ? '' : MATTER_LEVERS.support(sessionItem),
+        support: practice ? '' : MATTER_LEVERS.support(sessionItem, leverSession),
         onScreen: practice ? '' : MATTER_LEVERS.onScreen(sessionItem, leverSession, pulledLevers) }),
       levers,
       pullLever: (id: string) => {

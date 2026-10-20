@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Within-mode SUPPORT TIER verification for constellation-builder.
+ * Within-mode SUPPORT TIER verification for constellation-builder, on bound mounts (the component is taught only on
+ * the teaching workspace; an unbound mount shows the shared "needs the tutor" card).
  *
  * The tier is render-support withdrawal only — it never changes the stars, the
  * challenges, the connections, or the answer. What it changes:
@@ -9,7 +10,7 @@
  *                              opacity (no membership render signal)
  *   L2 distractor interactivity easy/legacy = background stars inert;
  *                              medium/hard = clickable in free_connect ONLY,
- *                              a wrong tap costs an attempt via the existing
+ *                              a wrong tap is a checked miss via the existing
  *                              wrong-star branch (constellationStarIds source)
  *   L3 hint specificity        easy/legacy = specific directive hints;
  *                              medium/hard = generic "Not quite — try again."
@@ -27,48 +28,22 @@
  *
  * A payload with NO supportTier field must render the legacy full-help UI.
  */
-import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
+vi.mock('../../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 
-vi.mock('../../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    submittedResult: null,
-    elapsedMs: 0,
-  }),
-}));
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent } from '@testing-library/react';
+import { installRuntimeTimers, resetSeams, restoreRuntimeTimers } from '../../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace, type WorkspaceHarness } from '../../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { ConstellationBuilderData, ConstellationChallenge, StarData } from '../ConstellationBuilder';
 
-vi.mock('../../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-// reader-fit: the component now opens a tutor channel. `useLuminaAI` reads a
-// React context and THROWS outside a `LuminaAIProvider`, so an unmocked hook
-// crashes every render in this file — nothing to do with support tiers. The
-// tutor beats are asserted in ConstellationBuilder.reader-fit.test.tsx.
-// The stub MUST be hoisted: returning a fresh `vi.fn()` per call gives
-// `sendText` a new identity every render, which re-fires any effect that depends
-// on it. The real hook returns a `useCallback`, so this keeps the stub honest.
-const sendTextStub = vi.fn();
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: sendTextStub, isAudioPlaying: false, isConnected: true }),
-}));
-
-// The real panel fires confetti/celebration timers; here it is only the score
-// sink — the attempt-cost lever (L2) is observable through its overallScore prop.
-vi.mock('../../../../components/PhaseSummaryPanel', () => ({
-  default: ({ overallScore }: { overallScore: number }) => (
-    <div data-testid="phase-summary">score:{overallScore}</div>
-  ),
-}));
-
-import ConstellationBuilder, {
-  type ConstellationBuilderData,
-  type ConstellationChallenge,
-  type StarData,
-} from '../ConstellationBuilder';
+let harness: WorkspaceHarness | null = null;
+beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
+afterEach(() => { harness?.close(); harness = null; cleanup(); restoreRuntimeTimers(); });
 
 const GENERIC = 'Not quite — try again.';
 const LEGACY_GUIDED_HINT = 'Look for the numbered star!';
@@ -132,6 +107,15 @@ const makeData = (
   ...(tier ? { supportTier: tier } : {}),
 });
 
+/** A bound mount, the way a lesson mounts it; its container stands in for render's. */
+const mount = (data: ConstellationBuilderData) => {
+  harness = mountWorkspace({ primitiveId: 'constellation-builder', evalMode: data.challenges[0].type, instanceId: 'constellation', data: data as unknown as Record<string, unknown> });
+  harness.settle(1000);
+  return { container: harness.view.container as HTMLElement };
+};
+const text = () => harness!.view.container.textContent ?? '';
+const attempts = () => harness!.state().task!.workspace!.attempts;
+
 /** The visible star dot at an SVG position (fill is one of the two dot fills). */
 const dotAt = (container: HTMLElement, cx: number, cy: number): SVGCircleElement => {
   const dot = Array.from(container.querySelectorAll('circle')).find(c =>
@@ -159,10 +143,9 @@ const opacityOf = (el: Element) => parseFloat(el.getAttribute('opacity') ?? 'NaN
 // ============================================================================
 
 describe('constellation-builder tier · L1 member-star highlight', () => {
-  afterEach(cleanup);
 
   it('legacy (no tier): member star forced bright #fffbe6 + opacity 1; background dims by magnitude', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT])} />);
+    const { container } = mount(makeData([FREE_CONNECT]));
     const m1 = dotAt(container, 60, 45);
     expect(m1.getAttribute('fill')).toBe('#fffbe6');
     expect(opacityOf(m1)).toBeCloseTo(1, 5);
@@ -172,14 +155,14 @@ describe('constellation-builder tier · L1 member-star highlight', () => {
   });
 
   it('easy renders the member highlight identically to legacy', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'easy')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'easy'));
     const m1 = dotAt(container, 60, 45);
     expect(m1.getAttribute('fill')).toBe('#fffbe6');
     expect(opacityOf(m1)).toBeCloseTo(1, 5);
   });
 
   it('medium withdraws the membership signal: uniform fill, magnitude-only opacity', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'medium')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'medium'));
     const m1 = dotAt(container, 60, 45);
     expect(m1.getAttribute('fill')).toBe('#e2e8f0');         // no bright member fill
     expect(opacityOf(m1)).toBeCloseTo(0.85, 5);              // mag 1 → 1 − 0.15, NOT forced 1
@@ -188,7 +171,7 @@ describe('constellation-builder tier · L1 member-star highlight', () => {
   });
 
   it('hard renders all stars purely by magnitude — no membership signal', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'hard')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'hard'));
     expect(dotAt(container, 60, 45).getAttribute('fill')).toBe('#e2e8f0');
     expect(dotAt(container, 180, 45).getAttribute('fill')).toBe('#e2e8f0');
     expect(opacityOf(dotAt(container, 60, 45))).toBeCloseTo(0.85, 5);  // mag 1
@@ -196,7 +179,7 @@ describe('constellation-builder tier · L1 member-star highlight', () => {
   });
 
   it('identify at hard keeps its pre-drawn blue lines (task identity) while star styling follows L1', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([IDENTIFY], 'hard')} />);
+    const { container } = mount(makeData([IDENTIFY], 'hard'));
     expect(container.querySelectorAll('line[stroke="#60a5fa"]')).toHaveLength(2);
     expect(dotAt(container, 60, 45).getAttribute('fill')).toBe('#e2e8f0');
   });
@@ -207,54 +190,55 @@ describe('constellation-builder tier · L1 member-star highlight', () => {
 // ============================================================================
 
 describe('constellation-builder tier · L2 distractor-star interactivity', () => {
-  afterEach(cleanup);
 
   it('legacy free_connect: background stars are inert — no hit circle, no cursor, click does nothing', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT])} />);
+    const { container } = mount(makeData([FREE_CONNECT]));
     expect(hitAt(container, 300, 225)).toBeUndefined();
     const b1 = dotAt(container, 300, 225);
     expect(b1.getAttribute('class') ?? '').not.toContain('cursor-pointer');
     fireEvent.click(b1);
-    expect(screen.queryByText(LEGACY_WRONG_STAR)).toBeNull();
-    expect(screen.queryByText(GENERIC)).toBeNull();
+    expect(text()).not.toContain(LEGACY_WRONG_STAR);
+    expect(text()).not.toContain(GENERIC);
   });
 
   it('easy free_connect: background stars stay inert (easy = legacy)', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'easy')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'easy'));
     expect(hitAt(container, 300, 225)).toBeUndefined();
     fireEvent.click(dotAt(container, 300, 225));
-    expect(screen.queryByText(GENERIC)).toBeNull();
+    expect(text()).not.toContain(GENERIC);
   });
 
-  it('medium free_connect: a background-star tap fires the wrong-star branch and costs an attempt (score 90)', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'medium')} />);
+  it('medium free_connect: a background-star tap fires the wrong-star branch and is a checked miss', () => {
+    const { container } = mount(makeData([FREE_CONNECT], 'medium'));
     expect(hitAt(container, 300, 225)).toBeDefined();          // clickable now
-    fireEvent.click(dotAt(container, 300, 225));               // wrong tap → attempt 1
-    expect(screen.getByText(GENERIC)).toBeTruthy();
-    // Complete correctly: m1→m2, m2→m3
+    fireEvent.click(dotAt(container, 300, 225));               // wrong tap: a checked miss
+    expect(text()).toContain(GENERIC);
+    expect(attempts().at(-1)).toMatchObject({ correct: false, miss: 'background_star' });
+    // Try again, then complete correctly: m1-m2, m2-m3
+    harness!.dispatch('retry'); harness!.confirmVisible();
     fireEvent.click(dotAt(container, 60, 45));
     fireEvent.click(dotAt(container, 120, 45));
     fireEvent.click(dotAt(container, 120, 45));
     fireEvent.click(dotAt(container, 180, 45));
-    // 1 wrong attempt → 100 − 10 = 90 (the attempt genuinely cost score)
-    expect(screen.getByTestId('phase-summary').textContent).toContain('score:90');
+    harness!.settle();
+    expect(attempts().map(a => a.correct)).toEqual([false, true]);
   });
 
   it('hard free_connect: same as medium — every star is clickable (6 hit circles)', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'hard')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'hard'));
     expect(hitCircles(container)).toHaveLength(6);
   });
 
   it('medium guided_trace: background stars STAY inert (order is the task)', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([GUIDED], 'medium')} />);
+    const { container } = mount(makeData([GUIDED], 'medium'));
     expect(hitAt(container, 300, 225)).toBeUndefined();
     expect(hitCircles(container)).toHaveLength(4);             // member-flag stars only
     fireEvent.click(dotAt(container, 300, 225));
-    expect(screen.queryByText(GENERIC)).toBeNull();
+    expect(text()).not.toContain(GENERIC);
   });
 
   it('hard identify: stars stay non-interactive by design (no hit circles at all)', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([IDENTIFY], 'hard')} />);
+    const { container } = mount(makeData([IDENTIFY], 'hard'));
     expect(hitCircles(container)).toHaveLength(0);
   });
 });
@@ -264,49 +248,48 @@ describe('constellation-builder tier · L2 distractor-star interactivity', () =>
 // ============================================================================
 
 describe('constellation-builder tier · L3 hint specificity', () => {
-  afterEach(cleanup);
 
   it('legacy guided wrong tap: the specific numbered-star hint', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([GUIDED])} />);
+    const { container } = mount(makeData([GUIDED]));
     fireEvent.click(dotAt(container, 120, 45)); // expected m1, tapped m2
-    expect(screen.getByText(LEGACY_GUIDED_HINT)).toBeTruthy();
+    expect(text()).toContain(LEGACY_GUIDED_HINT);
   });
 
   it('hard guided wrong tap: generic — but NEVER silent', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([GUIDED], 'hard')} />);
+    const { container } = mount(makeData([GUIDED], 'hard'));
     fireEvent.click(dotAt(container, 120, 45));
-    expect(screen.getByText(GENERIC)).toBeTruthy();
-    expect(screen.queryByText(LEGACY_GUIDED_HINT)).toBeNull();
+    expect(text()).toContain(GENERIC);
+    expect(text()).not.toContain(LEGACY_GUIDED_HINT);
   });
 
   it('legacy free_connect wrong star names the discriminating feature ("brighter")', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT])} />);
+    const { container } = mount(makeData([FREE_CONNECT]));
     // m4 is member-flagged but outside the connections → clickable at legacy,
     // and the checker (constellationStarIds) rejects it.
     fireEvent.click(dotAt(container, 240, 45));
-    expect(screen.getByText(LEGACY_WRONG_STAR)).toBeTruthy();
+    expect(text()).toContain(LEGACY_WRONG_STAR);
   });
 
   it('medium free_connect wrong star: generic', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'medium')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'medium'));
     fireEvent.click(dotAt(container, 300, 225));
-    expect(screen.getByText(GENERIC)).toBeTruthy();
-    expect(screen.queryByText(LEGACY_WRONG_STAR)).toBeNull();
+    expect(text()).toContain(GENERIC);
+    expect(text()).not.toContain(LEGACY_WRONG_STAR);
   });
 
   it('legacy invalid pair: the specific not-connected hint', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT])} />);
+    const { container } = mount(makeData([FREE_CONNECT]));
     fireEvent.click(dotAt(container, 60, 45));   // select m1
     fireEvent.click(dotAt(container, 180, 45));  // m1–m3 is not a correct connection
-    expect(screen.getByText(LEGACY_BAD_PAIR)).toBeTruthy();
+    expect(text()).toContain(LEGACY_BAD_PAIR);
   });
 
   it('hard invalid pair: generic', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([FREE_CONNECT], 'hard')} />);
+    const { container } = mount(makeData([FREE_CONNECT], 'hard'));
     fireEvent.click(dotAt(container, 60, 45));
     fireEvent.click(dotAt(container, 180, 45));
-    expect(screen.getByText(GENERIC)).toBeTruthy();
-    expect(screen.queryByText(LEGACY_BAD_PAIR)).toBeNull();
+    expect(text()).toContain(GENERIC);
+    expect(text()).not.toContain(LEGACY_BAD_PAIR);
   });
 });
 
@@ -315,31 +298,26 @@ describe('constellation-builder tier · L3 hint specificity', () => {
 // ============================================================================
 
 describe('constellation-builder · F1 seasonal ≥2 options', () => {
-  afterEach(cleanup);
 
-  const optionButtons = () =>
-    screen.getAllByRole('button').filter(b => b.textContent !== 'Check Answer');
+  const optionButtons = () => Array.from(harness!.view.container.querySelectorAll('button'))
+    .filter(b => ['Cassiopeia', 'Orion', 'Ursa Major', 'Leo', 'Scorpius', 'Lyra'].includes(b.textContent ?? ''));
 
   it('a collapsed 1-option pool is padded to 3 options, correct answer retained (no tier)', () => {
-    render(<ConstellationBuilder data={makeData([SEASONAL_BARE])} />);
+    mount(makeData([SEASONAL_BARE]));
     const opts = optionButtons();
     expect(opts.length).toBe(3);
     expect(opts.map(b => b.textContent)).toContain('Cassiopeia');
   });
 
   it('padding applies at hard too — F1 is a defect fix, not a tier lever', () => {
-    render(<ConstellationBuilder data={makeData([SEASONAL_BARE], 'hard')} />);
+    mount(makeData([SEASONAL_BARE], 'hard'));
     const opts = optionButtons();
     expect(opts.length).toBe(3);
     expect(opts.map(b => b.textContent)).toContain('Cassiopeia');
   });
 
   it('a pool that already has ≥2 options is left untouched', () => {
-    render(
-      <ConstellationBuilder
-        data={makeData([{ ...SEASONAL_BARE, distractorName0: 'Orion' }])}
-      />,
-    );
+    mount(makeData([{ ...SEASONAL_BARE, distractorName0: 'Orion' }]));
     const names = optionButtons().map(b => b.textContent);
     expect(names).toHaveLength(2);
     expect(new Set(names)).toEqual(new Set(['Cassiopeia', 'Orion']));
@@ -351,10 +329,9 @@ describe('constellation-builder · F1 seasonal ≥2 options', () => {
 // ============================================================================
 
 describe('constellation-builder tier · guided ring is task identity', () => {
-  afterEach(cleanup);
 
   it('hard guided_trace keeps the pulsing ring and the step number', () => {
-    const { container } = render(<ConstellationBuilder data={makeData([GUIDED], 'hard')} />);
+    const { container } = mount(makeData([GUIDED], 'hard'));
     expect(container.querySelector('circle[stroke-dasharray="3,3"]')).toBeTruthy();
     const stepNumber = Array.from(container.querySelectorAll('text'))
       .find(t => t.textContent === '1');

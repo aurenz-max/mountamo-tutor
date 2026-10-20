@@ -14,6 +14,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
+import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
+import buildPayload from '../../../components/live-activity/runtime/testing/w1-payloads/sound-swap.swap_build.json';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -35,7 +37,7 @@ it.each(Object.keys(CHALLENGES))('%s binds: the new word is the spoken key and t
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'sound-swap', pin: mode, objectiveIds: ['o'], data })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'sound-swap', evalMode: mode, data });
   const c = CHALLENGES[mode];
-  expect(h.state().task!.workspace!.expectedAnswer).toBe(c.resultWord);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${c.resultWord}"\\. Sounding it out first`));
   expect(h.state().task!.task).toMatch(/\/[a-z]+\//);
   expect(h.state().task!.task).not.toMatch(new RegExp(`\\b${c.resultWord}\\b`));
   expect(screen.queryByText(String(c.resultWord))).toBeNull();
@@ -71,4 +73,24 @@ it('the adapter refuses a move that does not name its sound', () => {
   const broken = swap('substitution');
   delete (broken.challenges[0] as Record<string, unknown>).newPhoneme;
   expect(() => LIVE_ADAPTERS['sound-swap'].validate(broken)).toThrow();
+});
+
+it('a medial-vowel swap asks with sayable sounds, never the glyphs; a Latin-letter sound stays as written', () => {
+  const vowel = { title: 'Swap', gradeLevel: '1', challenges: [{ id: 'v', operation: 'substitution', originalWord: 'bit',
+    originalPhonemes: ['/b/', '/ɪ/', '/t/'], originalImage: '', oldPhoneme: '/ɪ/', newPhoneme: '/æ/', substitutePosition: 'middle',
+    resultWord: 'bat', resultPhonemes: ['/b/', '/æ/', '/t/'], resultImage: '' }] };
+  const h = mountWorkspace({ primitiveId: 'sound-swap', evalMode: 'substitution', data: vowel });
+  expect(h.state().task!.task).toBe('The word is bit. Change iii to aaa. Say the new word.');
+  h.close();
+  const add = mountWorkspace({ primitiveId: 'sound-swap', evalMode: 'addition', data: swap('addition') });
+  expect(add.state().task!.task).toBe('The word is an. Add /p/ at the beginning. Say the new word.');
+});
+
+it('swap_build: the boss wires the shared letter build, and Pip comes from the runner there too', () => {
+  const store = new PipSurfaceStore();
+  const h = mountWorkspace({ primitiveId: 'sound-swap', evalMode: 'swap_build', data: buildPayload.data, pipStore: store });
+  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect((h.state().task!.workspace!.levers ?? []).map(l => l.id)).toEqual(['pattern_card', 'model_word', 'small_bank']);
+  expect(h.view.container.querySelector('[data-pip-dock="ws"]')).not.toBeNull();
+  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['workspace']);
 });

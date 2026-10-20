@@ -45,7 +45,8 @@ const L = '/src/components/lumina';
 const cb = await runner.import(`${L}/primitives/visual-primitives/math/countingBoardDomain.ts`);
 const tfs = await runner.import(`${L}/primitives/visual-primitives/math/tenFrameScript.ts`);
 const tfw = await runner.import(`${L}/primitives/visual-primitives/math/tenFrameWorkspace.ts`);
-const lss = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLinkScript.ts`);
+const lss = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLinkDomain.ts`);
+const { letterSoundLinkBoss } = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLink.boss.ts`);
 const { runObservation } = await runner.import(`${L}/service/typesafe/observationKinds.ts`);
 const { spokenMissKind } = await runner.import(`${L}/service/typesafe/observeSpokenMiss.ts`);
 const { validSpokenMissRequest } = await runner.import(`${L}/components/live-activity/runtime/spokenMissContract.ts`);
@@ -166,8 +167,8 @@ function letterCases() {
   const d = payload('letter-sound-link.see_hear');
   const items = lss.buildLetterSoundLinkItems(d.challenges, 'medium').filter(i => i.mode === 'see-hear');
   return items.flatMap((item, k) => {
-    const l = item.letter.toLowerCase(), clipped = lss.isClippedSound(l), a = lss.workspaceAssignment(item);
-    const h = lss.letterSoundLinkHarnessAnswers(item), name = lss.letterNameFor(l);
+    const l = item.letter.toLowerCase(), clipped = lss.isClippedSound(l), a = letterSoundLinkBoss.assignment(item);
+    const h = lss.letterSoundLinkWorkspaceAnswers(item), name = lss.letterNameFor(l);
     const otherName = lss.letterNameFor(l === 'm' ? 'f' : 'm');
     const rows = HELD ? (HELD_LETTER[l] ?? []).map(([nm, learner, gold]) => [nm, learner, gold, 'heldout']) : [
       ...(CHILD_CORRECT[l] ?? [h.correct]).map((w, i) => [`correct_${i}`, w, null, i === 0 ? 'harness-correct' : 'constructed-noisy']),

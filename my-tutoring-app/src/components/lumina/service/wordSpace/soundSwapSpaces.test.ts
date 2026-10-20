@@ -3,7 +3,7 @@ import { lexWord } from './lexicon';
 import { mulberry32, tierPick } from './pick';
 import { soundSwapSpace, type SwapOperation } from './soundSwapSpaces';
 import { deriveOperationFields } from '../literacy/gemini-sound-swap';
-import { moveAsk } from '../../primitives/visual-primitives/literacy/soundSwapScript';
+import { moveAsk } from '../../primitives/visual-primitives/literacy/soundSwapDomain';
 import type { SupportTier } from '../generation/generationContext';
 
 const TIERS: SupportTier[] = ['easy', 'medium', 'hard'];

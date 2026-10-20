@@ -1,24 +1,24 @@
 'use client';
 
 /**
- * WordFlip — the child sees a counted-picture frame (one 🐕 "dog" → three 🐕🐕🐕 ___?),
- * may tap the one-thing card to hear its word, and SAYS THE NEW WORD ALOUD. It runs only
- * on the shared tutor/JEV teaching workspace (workspace rollout B2; the scripted speech
- * loop was retired, LA-14, user ruling 09-23: one path). The tutor teaches in its own
- * words, the observer judges the spoken word against the challenge's `answer`, and the
- * runtime owns progression. An unbound mount shows the shared "needs the tutor" card.
+ * WordFlip, taught on the shared teaching workspace only (the boss: `wordFlip.card.ts` + `wordFlip.boss.ts`). A mount
+ * with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * WHY THERE ARE NO CHIPS (qa/di/BACKLOG.md item 16). Tapping "dogs" out of three printed
- * words is READING, which a child who cannot form a plural does correctly every time, and
- * a chip PRINTS THE ANSWER. The answer is spoken.
+ * WHAT THE CHILD DOES. The child sees a counted-picture frame (one 🐕 "dog" → three 🐕🐕🐕 ___?) or an action today and
+ * yesterday, may tap the one-thing card to hear its word, and SAYS THE NEW WORD ALOUD; the tutor judges it against the
+ * key. build_inflect is the shared word-part build (`WordBuildAffix.tsx` with `inflectBuild.ts`): a word card and an
+ * ending card make a word for the ask, and the build checks it.
  *
- * ANSWER-LEAK RULE. The source word, its emoji and the frame are the stimulus and are
- * shown. The transformed word is the answer: the blank stays a blank until the word is
- * credited, and nothing on screen offers it.
+ * WHY THERE ARE NO CHIPS (qa/di/BACKLOG.md item 16). Tapping "dogs" out of three printed words is READING, which a
+ * child who cannot form a plural does correctly every time, and a chip PRINTS THE ANSWER. The answer is spoken.
+ *
+ * ANSWER-LEAK RULE. The source word, its emoji and the frame are the stimulus and are shown. The transformed word is
+ * the answer: the blank stays a blank until the word is credited, and nothing on screen offers it.
+ *
+ * The domain is `wordFlipDomain.ts`, the levers `wordFlipLevers.ts`; nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -36,27 +36,24 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { countWord, countWordCapitalized } from './wordFlipScript';
-import { flipAssignment, flipScene, isPluralFlip, sourceWordRequest } from './wordFlipWorkspace';
-import { COMMON_IRREGULAR_LEVER, FAMILIAR_LEVER, FLIP_EMOJI, IRREGULAR_LEVER, RULE_LEVER, flipModelFor, leversOnScreen,
-  practiceItemFor, wordFlipLevers } from './wordFlipLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { wordFlipPipPose } from '../../../pip/wordFlipPipPose';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import WordBuildAffix from './WordBuildAffix';
-import type { AffixBuildSummary, BuildPart } from './affixBuild';
+import type { AffixBuildItem, AffixBuildSummary, BuildPart } from './affixBuild';
 import { inflectBuildRules, type InflectBuildItem } from './inflectBuild';
+import { asFlipBuild, countWord, countWordCapitalized, flipScene, flipWords, isPluralFlip, sourceWordRequest, type FlipWord } from './wordFlipDomain';
+import { FLIP_EMOJI, FLIP_LEVERS, IRREGULAR_LEVER, RULE_LEVER, buildLevers, flipModelFor } from './wordFlipLevers';
+import { wordFlipBoss } from './wordFlip.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-// Grammar-transformation task identities. These four preserve the same honest
-// counted one-to-many surface. Pronoun and tense flips require a different
-// visual/script contract; article_choice remains off the spoken ladder.
+// Grammar-transformation task identities, each on the same counted one-to-many (or today-to-yesterday) frame.
 export type WordFlipChallengeType =
   | 'plural_s'
   | 'plural_es'
@@ -73,8 +70,7 @@ export interface WordFlipChallenge {
   /** The source word shown in the frame — "dog" or "jump". */
   sourceWord: string;
   /**
-   * The transformed word the student must PRODUCE ("dogs"). Derived by code
-   * by code so it can never desync from the stimulus.
+   * The transformed word the student must PRODUCE ("dogs"). Derived by code so it can never desync from the stimulus.
    */
   answer: string;
   /** Emoji picture of the noun/action. Repeated only on plural challenges. */
@@ -96,7 +92,7 @@ export interface WordFlipData {
   availableParts?: BuildPart[];
   /** The build's asks, code-written (`inflectAsksFor`). */
   buildItems?: InflectBuildItem[];
-  /** config.difficulty: the easy tier asks for one word per item. */
+  /** config.difficulty: the easy tier asks for one word per build item; on every mode, when the model lever comes. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -133,14 +129,15 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
   } = data;
 
   const gradeLevel = data.gradeLevel ?? 'K';
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
+  const items = useMemo(() => flipWords({ challenges, supportTier: data.supportTier }), [challenges, data.supportTier]);
+  const leverCtx = useMemo(() => ({ challenges, board: [] as BuildPart[] }), [challenges]);
 
   const [wordTapped, setWordTapped] = useState(false);
-  // In-item levers (`wordFlipLevers.ts`), keyed by the session item they were pulled on, and the easier practice
-  // item a simplify lever put on screen in its place.
+  // In-item levers, keyed by the session item they were pulled on, and the easier practice item a simplify lever put
+  // on screen in its place (ungraded; the full item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<WordFlipChallenge | null>(null);
+  const [practice, setPractice] = useState<FlipWord | null>(null);
   /** Visual only: clears the tapped-card highlight. Nothing here advances. */
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -179,10 +176,10 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
       undefined, diagnosisEvidence);
   };
 
-  const runner = useWorkspaceRunner<WordFlipChallenge>({
+  const runner = useWorkspaceRunner<FlipWord>({
     primitiveId: 'word-flip',
-    assignment: flipAssignment,
-    items: challenges,
+    assignment: wordFlipBoss.assignment,
+    items,
     workspace,
     objectiveId,
     planItemId: runtimePlanItemId,
@@ -202,67 +199,47 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   // ── Tap-to-hear — never withdrawn by band or tier ─────────────────
-  // Asks for the ONE-THING word, for a child who does not recognise the emoji; never the
-  // new word, which is the answer. Silent, so it is not a learner turn.
-  const handleSayWord = useCallback(() => {
+  // Asks for the ONE-THING word, for a child who does not recognise the emoji; never the new word, which is the
+  // answer. Silent and host-authored, so it is not a learner turn.
+  const handleSayWord = () => {
     if (!currentChallenge) return;
     SoundManager.tap();
     setWordTapped(true);
-    ctx.sendText(sourceWordRequest(currentChallenge.sourceWord), { silent: true, author: 'host' });
+    runner.requestHear(sourceWordRequest(currentChallenge.sourceWord));
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => setWordTapped(false), 1200);
-  }, [ctx, currentChallenge]);
+  };
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionItem) return;
-    const levers = practice ? [] : wordFlipLevers(sessionItem, pulledLevers, challenges);
-    const scene = flipScene(currentChallenge);
-    const onScreen = leversOnScreen(currentChallenge, pulledLevers, challenges);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on another word, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : FLIP_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = flipScene(currentChallenge);
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item on another word, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : FLIP_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : FLIP_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
-        if (id === FAMILIAR_LEVER || id === COMMON_IRREGULAR_LEVER) {
-          const simpler = practiceItemFor(sessionItem, challenges);
-          if (!simpler) return 'There is no easier item here.';
+        if (lever.kind === 'simplify') {
+          const simpler = FLIP_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler || simpler.mode === 'build_inflect') return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           setWordTapped(false);
-          return { practice: flipAssignment(simpler) };
+          return { practice: wordFlipBoss.assignment(simpler) };
         }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
       },
       endPractice: () => { setPractice(null); setWordTapped(false); },
-    };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own tap on the source
-  // card; Pip never answers, judges, or moves to the next item.
-  const pip = usePipTargets(currentChallenge?.id ?? null, runner.running);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id === 'frame' ? 'The word frame' : 'The one-thing card'));
-    const pose = wordFlipPipPose({
-      running: runner.running, preparing: false,
-      stage: runner.revealHeld ? 'affirmed' : runner.running ? 'asking' : 'done',
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueOnItem: runner.cuedItemId === currentChallenge.id && !runner.revealHeld,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Word flip',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -321,83 +298,81 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
               </div>
             )}
 
-            {/* The transformation frame. Plurals use one/many; past tense uses
-                today/yesterday. The source is tappable, while the transformed
-                answer stays blank until the tutor affirms it. */}
-            <div ref={pip.ref('frame')} data-pip-object="frame" className="flex items-stretch justify-center gap-3">
-              <button
-                ref={pip.ref('source')}
-                data-pip-object="source"
-                onClick={() => { pip.look('source'); handleSayWord(); }}
-                aria-label={`word ${currentChallenge.sourceWord}`}
-                className={`
-                  rounded-2xl border-2 px-5 py-4 text-center flex-1 max-w-[180px]
-                  transition-all duration-200 cursor-pointer select-none
-                  ${wordTapped
-                    ? 'bg-amber-500/25 border-amber-400/60 scale-105 shadow-lg shadow-amber-500/20'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:scale-[1.02]'
-                  }
-                `}
-              >
-                <div className="text-xs uppercase tracking-wide text-slate-500 font-mono mb-1">
-                  {currentIsPlural ? 'One' : 'Today'}
-                </div>
-                <div className="text-5xl leading-tight">{currentChallenge.emoji}</div>
-                <div className="text-xl font-black text-slate-100 mt-2">{currentChallenge.sourceWord}</div>
-              </button>
+            <PipDock />
 
-              <div className="flex items-center text-2xl text-slate-500" aria-hidden>→</div>
-
-              <div className="rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/30 px-5 py-4 text-center flex-1 max-w-[220px]">
-                <div className="text-xs uppercase tracking-wide text-emerald-300/80 font-mono mb-1">
-                  {currentIsPlural ? countWordCapitalized(currentChallenge.count ?? 2) : 'Yesterday'}
-                </div>
-                <div className="text-4xl leading-tight break-words">
-                  {currentIsPlural
-                    ? currentChallenge.emoji.repeat(currentChallenge.count ?? 2)
-                    : currentChallenge.emoji}
-                </div>
-                <div className="text-xl font-black mt-2">
-                  {runner.revealHeld ? (
-                    <span className="text-emerald-300 animate-bounce inline-block" data-flip-reward="true">{currentChallenge.answer}</span>
-                  ) : (
-                    <span className="text-emerald-300/70 border-b-2 border-emerald-400/60 px-4">&nbsp;___&nbsp;</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
-
-            {/* Help: the same change on another word, before and after. Never the item's answer. */}
-            {flipModel && (
-              <div data-lever="rule-model" aria-label="Word change model"
-                className="flex items-center justify-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3">
-                <div className="text-center">
-                  <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'One' : 'Today'}</div>
-                  <div className="text-3xl" role="img" aria-label={flipModel.singular}>{FLIP_EMOJI[flipModel.singular]}</div>
-                  <div className="font-bold text-slate-100">{flipModel.singular}</div>
-                </div>
-                <span aria-hidden className="text-xl text-slate-400">→</span>
-                <div className="text-center">
-                  <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'Two' : 'Yesterday'}</div>
-                  <div className="text-3xl" role="img" aria-label={flipModel.plural}>
-                    {currentIsPlural ? FLIP_EMOJI[flipModel.singular].repeat(2) : FLIP_EMOJI[flipModel.singular]}
+            <PipWorkspace className="space-y-4">
+              {/* The transformation frame. Plurals use one/many; past tense uses today/yesterday. The source is
+                  tappable, while the transformed answer stays blank until the tutor credits it. */}
+              <div data-flip-frame="true" className="flex items-stretch justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleSayWord}
+                  aria-label={`word ${currentChallenge.sourceWord}`}
+                  className={`
+                    rounded-2xl border-2 px-5 py-4 text-center flex-1 max-w-[180px]
+                    transition-all duration-200 cursor-pointer select-none
+                    ${wordTapped
+                      ? 'bg-amber-500/25 border-amber-400/60 scale-105 shadow-lg shadow-amber-500/20'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 hover:scale-[1.02]'
+                    }
+                  `}
+                >
+                  <div className="text-xs uppercase tracking-wide text-slate-500 font-mono mb-1">
+                    {currentIsPlural ? 'One' : 'Today'}
                   </div>
-                  <div className="font-bold text-emerald-200">{flipModel.plural}</div>
+                  <div className="text-5xl leading-tight">{currentChallenge.emoji}</div>
+                  <div className="text-xl font-black text-slate-100 mt-2">{currentChallenge.sourceWord}</div>
+                </button>
+
+                <div className="flex items-center text-2xl text-slate-500" aria-hidden>→</div>
+
+                <div className="rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/30 px-5 py-4 text-center flex-1 max-w-[220px]">
+                  <div className="text-xs uppercase tracking-wide text-emerald-300/80 font-mono mb-1">
+                    {currentIsPlural ? countWordCapitalized(currentChallenge.count ?? 2) : 'Yesterday'}
+                  </div>
+                  <div className="text-4xl leading-tight break-words">
+                    {currentIsPlural
+                      ? currentChallenge.emoji.repeat(currentChallenge.count ?? 2)
+                      : currentChallenge.emoji}
+                  </div>
+                  <div className="text-xl font-black mt-2">
+                    {runner.revealHeld ? (
+                      <span className="text-emerald-300 animate-bounce inline-block" data-flip-reward="true">{currentChallenge.answer}</span>
+                    ) : (
+                      <span className="text-emerald-300/70 border-b-2 border-emerald-400/60 px-4">&nbsp;___&nbsp;</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+
+              <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+              {/* rule_model_cards / irregular_model: the same change on another word, before and after. Never the
+                  item's answer. */}
+              {flipModel && (
+                <div data-lever="rule-model" aria-label="Word change model"
+                  className="flex items-center justify-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3">
+                  <div className="text-center">
+                    <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'One' : 'Today'}</div>
+                    <div className="text-3xl" role="img" aria-label={flipModel.singular}>{FLIP_EMOJI[flipModel.singular]}</div>
+                    <div className="font-bold text-slate-100">{flipModel.singular}</div>
+                  </div>
+                  <span aria-hidden className="text-xl text-slate-400">→</span>
+                  <div className="text-center">
+                    <div className="text-xs uppercase text-slate-500">{currentIsPlural ? 'Two' : 'Yesterday'}</div>
+                    <div className="text-3xl" role="img" aria-label={flipModel.plural}>
+                      {currentIsPlural ? FLIP_EMOJI[flipModel.singular].repeat(2) : FLIP_EMOJI[flipModel.singular]}
+                    </div>
+                    <div className="font-bold text-emerald-200">{flipModel.plural}</div>
+                  </div>
+                </div>
+              )}
+            </PipWorkspace>
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
                 Tap the word to hear it, then say the new word.
               </p>
-            )}
-
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
           </>
         )}
@@ -423,12 +398,20 @@ const buildMetrics = (s: AffixBuildSummary): WordFlipMetrics => ({
   averageAttemptsPerChallenge: s.total ? s.attemptsCount / s.total : 0,
 });
 
+/** The open build (`build_inflect`) on the shared word-part surface, wired from this boss. */
+function FlipBuildSurface({ data, className, runtimePlanItemId }: WordFlipProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    const levers = buildLevers({ challenges: [], board: data.availableParts ?? [] }, tier);
+    return { assignment: (item: AffixBuildItem) => wordFlipBoss.assignment(asFlipBuild(item as InflectBuildItem, tier)), levers };
+  }, [data.supportTier, data.availableParts]);
+  return <WordBuildAffix data={data} className={className} runtimePlanItemId={runtimePlanItemId}
+    primitiveId="word-flip" rules={inflectBuildRules} metrics={buildMetrics} boss={boss} />;
+}
+
 /** One mount, one shape: the open build (`build_inflect`) runs on the word-part surface; every other mode is spoken. */
 function WordFlipMount(props: WordFlipProps) {
-  return props.data.task === 'build_inflect'
-    ? <WordBuildAffix data={props.data} className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-        primitiveId="word-flip" rules={inflectBuildRules} metrics={buildMetrics} />
-    : <WordFlipSurface {...props} />;
+  return props.data.task === 'build_inflect' ? <FlipBuildSurface {...props} /> : <WordFlipSurface {...props} />;
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.

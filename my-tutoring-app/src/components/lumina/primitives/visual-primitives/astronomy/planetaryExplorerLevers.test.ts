@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { PlanetQuestion, PlanetStop } from './PlanetaryExplorer';
 import { planetItems, planetMiss, type PlanetItem } from './planetaryExplorerWorkspace';
-import { CARD_LEVER, DROP_LEVER, NO_LEVERS, cardLeak, cardText, farChoice, leverFacts, planetLevers } from './planetaryExplorerLevers';
+import { CARD_LEVER, DROP_LEVER, NO_LEVERS, PLANET_LEVERS, cardLeak, cardText, farChoice, type PlanetLeverState } from './planetaryExplorerLevers';
+
+/** The levers the set declares on an item, with nothing pulled unless `s` says so. */
+const planetLevers = (item: PlanetItem, s: PlanetLeverState, planets: readonly PlanetStop[]) =>
+  PLANET_LEVERS.declare(item, { planets, state: s }, s.pulled);
 
 const q = (question: string, options: string[], correctIndex: number, questionType: PlanetQuestion['questionType'] = 'mc'): PlanetQuestion =>
   ({ question, options, correctIndex, questionType, explanation: '', difficulty: 'easy' });
@@ -57,7 +61,7 @@ describe('drop_far_choice', () => {
 
   it('the scene fact names the greyed choice, never the key', () => {
     const item = quiz(['Mars', 'Jupiter', 'Neptune', 'Mercury'], 1);
-    const fact = leverFacts(item, [DROP_LEVER], [2], [])!;
+    const fact = PLANET_LEVERS.onScreen(item, { planets: [], state: { ...NO_LEVERS, pulled: [DROP_LEVER], dropped: [2] } }, [DROP_LEVER]);
     expect(fact).toContain('"Neptune", is greyed out');
     expect(fact).not.toContain('Jupiter');
   });

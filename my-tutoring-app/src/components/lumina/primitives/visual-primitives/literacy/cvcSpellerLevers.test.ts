@@ -6,11 +6,16 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { cvcUsableLetters, isCvcSpelling, type LetterGroup } from '../../../service/literacy/letterGroups';
 import type { CvcSpellerChallenge } from './CvcSpeller';
-import { cvcMiss, cvcScene } from './cvcSpellerWorkspace';
-import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
+import { asCvcWord, cvcMiss } from './cvcSpellerDomain';
+import { cvcSpellerCard } from './cvcSpeller.card';
 import {
-  PRACTICE_WORDS, cvcLevers, middleModelFor, middleModelLeak, modelMiddleSaid, keywordFor, keywordsLeak, practiceLeak, sessionStimuli, smallerWord, vowelStrip, vowelStripLeak,
+  CVC_LEVERS, PRACTICE_WORDS, middleModelFor, middleModelLeak, modelMiddleSaid, keywordFor, keywordsLeak, practiceLeak, sessionStimuli,
+  smallerWord, vowelStrip, vowelStripLeak, type CvcLeverContext,
 } from './cvcSpellerLevers';
+
+/** The levers a word item declares in a group-2 lesson, as the component asks the set. */
+const cvcLevers = (c: CvcSpellerChallenge, pulled: readonly string[], letterGroup: number, stimuli: ReturnType<typeof sessionStimuli>,
+  bank: readonly string[]) => CVC_LEVERS.declare(asCvcWord(c, 'medium'), { letterGroup, stimuli, bank } satisfies CvcLeverContext, pulled);
 
 const spell = (word: string, emoji = '🐱', id = word): CvcSpellerChallenge => ({ id, taskType: 'spell-word', targetWord: word,
   targetLetters: word.split(''), targetPhonemes: [], emoji, imageDescription: word, distractorLetters: [] });
@@ -141,7 +146,7 @@ describe('middle_model on the spoken modes (handoff 24)', () => {
   it('every short vowel asked: the model is a long-vowel word, said by its name', () => {
     const model = middleModelFor(everyVowel[0], sessionStimuli(everyVowel))!;
     expect(['ay', 'ee', 'oh']).toContain(modelMiddleSaid(model));
-    expect(cvcScene(everyVowel[0], { boxes: [], model: { word: model.word, said: modelMiddleSaid(model) } }).facts.levers_on_screen)
+    expect(CVC_LEVERS.onScreen(asCvcWord(everyVowel[0], 'medium'), { stimuli: sessionStimuli(everyVowel), bank: [] }, ['middle_model']))
       .not.toMatch(/\b(ah|eh|ih|aw|uh)\b/);
   });
 
@@ -153,12 +158,23 @@ describe('middle_model on the spoken modes (handoff 24)', () => {
   });
 
   it('every spoken miss is answered or unanswered by decision (J9)', () => {
-    const entry = LITERACY_CATALOG.find(c => c.id === 'cvc-speller')!.teachingWorkspace!;
-    expect(entry.levers).toBe(true);
-    const item = say('cat');
-    const answered = cvcLevers(item, [], 2, sessionStimuli([item]), []).flatMap(l => l.answers ?? []);
-    for (const mode of ['fill_vowel', 'word_sort']) {
-      expect([...answered, ...entry.unanswered![mode]].sort()).toEqual([...entry.misses![mode]].sort());
+    expect(cvcSpellerCard.levers).toBe(true);
+    for (const taskType of ['fill-vowel', 'word-sort'] as const) {
+      const item = say('cat', '🐱', taskType);
+      const mode = asCvcWord(item, 'medium').mode;
+      const answered = cvcLevers(item, [], 2, sessionStimuli([item]), []).flatMap(l => l.answers ?? []);
+      expect([...answered, ...(cvcSpellerCard.modes[mode].unanswered ?? [])].sort()).toEqual([...cvcSpellerCard.modes[mode].misses].sort());
     }
+  });
+});
+
+describe('the boxes\' check (cvcMiss)', () => {
+  const cat = { id: 'c', taskType: 'spell-word', targetWord: 'cat', targetLetters: ['c', 'a', 't'] } as unknown as CvcSpellerChallenge;
+  it.each([
+    [['c', 'a', 't'], undefined], [['C', 'A', 'T'], undefined], [['k', 'a', 't'], 'first_letter'], [['c', 'o', 't'], 'middle_letter'],
+    [['c', 'a', 'p'], 'last_letter'], [['t', 'a', 'c'], 'letters_out_of_order'], [['a', 'c', 't'], 'letters_out_of_order'],
+    [['c', 'u', 'p'], 'two_or_more_letters'], [['c', 'a', null], 'last_letter'],
+  ] as const)('%j', (placed, miss) => {
+    expect(cvcMiss(cat, placed)).toBe(miss);
   });
 });

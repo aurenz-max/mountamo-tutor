@@ -34,6 +34,8 @@ const [board, shapes, sounds, words, facts, trains, links, sentences, procedure,
 
 /** One built item per fixture. Built one at a time, because two builders drop an item that
  *  repeats a letter or shape an earlier item already named. */
+const { countingBoardBoss: boardBoss } = await domain('math/countingBoard.boss.ts');
+const { shapeSorterBoss: shapeBoss } = await domain('math/shapeSorter.boss.ts');
 const only = (built, key) => {
   if (built.length < 1) throw new Error(`Fixture ${key} built no item; the domain refused it`);
   return built[0];
@@ -45,7 +47,7 @@ const shapePool = shapeList => shapeList.map(([shape, color, rotation = 0]) => (
 const boardItem = (count, objectWord = 'fish') => {
   const item = only(board.itemsFromChallenges([{ id: `count-${count}`, type: 'count_all', targetAnswer: count, count }],
     { objectWord }), `count-${count}`);
-  return { assignment: board.workspaceAssignment(item), scene: board.workspaceScene(item, FRESH_BOARD) };
+  return { assignment: boardBoss.assignment(item), scene: board.workspaceScene(item, FRESH_BOARD) };
 };
 const BOARD_ITEMS = { five: boardItem(5), eight: boardItem(8), eighteen: boardItem(18), blocks: boardItem(5, 'blocks') };
 const BOARD_CASES = [
@@ -83,7 +85,7 @@ const BOARD_CASES = [
 const shapeItem = (id, pool, type = 'identify', ruleAttribute = 'shape') => {
   const drawn = shapePool(pool);
   const item = only(shapes.itemsFromChallenges([{ id, type, ruleAttribute, shapes: drawn }], { isPreReader: true }), id);
-  return { assignment: shapes.workspaceAssignment(item), scene: shapes.workspaceScene(item, drawn) };
+  return { assignment: shapeBoss.assignment(item), scene: shapes.workspaceScene(item, drawn) };
 };
 const realObjectPool = list => list.map(([shape, color, realObject, realObjectId]) =>
   ({ shape, color, size: 'large', rotation: 0, realObject, realObjectId }));
@@ -91,7 +93,7 @@ const realObjectItem = (id, list) => {
   const drawn = realObjectPool(list);
   const item = only(shapes.itemsFromChallenges([{ id, type: 'identify-real-object', ruleAttribute: 'shape', shapes: drawn }],
     { isPreReader: true }), id);
-  return { assignment: shapes.workspaceAssignment(item), scene: shapes.workspaceScene(item, drawn) };
+  return { assignment: shapeBoss.assignment(item), scene: shapes.workspaceScene(item, drawn) };
 };
 const SHAPE_ITEMS = {
   triangle: shapeItem('triangle', [['triangle', 'red'], ['square', 'blue']]),
@@ -352,9 +354,12 @@ const TRAIN_CASES = [
 // NAME affirmed as its sound, a tutor verdict that contradicts a checked tap, and the
 // letter's own sound accepted as a picture word. `tap` publishes NO expected answer:
 // the activity checks the tap and the tutor is never told which letter makes the sound.
+const { letterSoundLinkBoss: linkBoss } = await domain('literacy/letterSoundLink.boss.ts');
+const { LETTER_SOUND_LEVERS: linkLevers } = await domain('literacy/letterSoundLinkLevers.ts');
 const linkItem = challenge => {
   const item = only(links.buildLetterSoundLinkItems([challenge], 'medium'), challenge.id);
-  return { assignment: links.workspaceAssignment(item), scene: links.workspaceScene(item) };
+  return { assignment: linkBoss.assignment(item),
+    scene: published(links.workspaceScene(item), linkLevers, item, { items: [item], letterGroup: 4 }) };
 };
 const LINK_ITEMS = {
   held: linkItem({ id: 'see-m', mode: 'see-hear', targetLetter: 'm', targetSound: '/m/', keywordWord: 'map' }),
@@ -567,7 +572,10 @@ const WORD_PROBLEM_CASES = [
 // ── math-fact-fluency (a number said aloud beside the tap/Submit check) ─────────
 // Session 2026-10-13 750ca99a: "18" said to 9 + 9 was praised and never credited, because every item was gesture-only.
 const fluency = await domain('math/mathFactFluencyWorkspace.ts');
-const fluencyItem = challenge => ({ assignment: fluency.mathFactAssignment(challenge), scene: fluency.mathFactScene(challenge, { maxNumber: 10 }) });
+const fluencyBoss = await domain('math/mathFactFluency.boss.ts');
+const fluencyLevers = await domain('math/mathFactFluencyLevers.ts');
+const fluencyItem = challenge => ({ assignment: fluencyBoss.mathFactFluencyBoss.assignment(challenge),
+  scene: published(fluency.mathFactScene(challenge, { maxNumber: 10 }), fluencyLevers.FLUENCY_LEVERS, challenge, { maxNumber: 10 }) });
 const FLUENCY_ITEMS = {
   recall: fluencyItem({ id: 'c1', type: 'speed-round', instruction: 'What is 9 + 9?', operation: 'addition', operand1: 9, operand2: 9,
     result: 18, equation: '9 + 9 = 18', correctAnswer: 18, unknownPosition: 'result' }),
@@ -592,7 +600,10 @@ const FLUENCY_CASES = [
 
 // ── fast-fact (a choice said aloud beside the tap) ─────────────────────────────
 const fastFact = await domain('core/fastFactWorkspace.ts');
-const fastItem = challenge => ({ assignment: fastFact.workspaceAssignment(challenge), scene: fastFact.workspaceScene(challenge, { picked: null }) });
+const fastBoss = await domain('core/fastFact.boss.ts');
+const fastLevers = await domain('core/fastFactLevers.ts');
+const fastItem = challenge => ({ assignment: fastBoss.fastFactBoss.assignment(challenge),
+  scene: published(fastFact.workspaceScene(challenge, { picked: null }), fastLevers.FAST_FACT_LEVERS, challenge, { state: fastLevers.NO_LEVERS }) });
 const FAST_ITEMS = {
   sum: fastItem({ id: 'c', type: 'core', challengeType: 'recall', prompt: { text: '7 + 3 = ?', subtext: 'Find the sum' }, correctAnswer: '10',
     responseMode: 'choice', options: ['21', '10', '9', '12'] }),
@@ -611,8 +622,10 @@ const FAST_CASES = [
 
 // ── addition-fact-strategies (the sum said aloud beside the 0-18 pad) ──────────
 const addFacts = await domain('math/additionFactStrategiesWorkspace.ts');
-const addItem = challenge => ({ assignment: addFacts.additionFactAssignment(challenge),
-  scene: addFacts.additionFactScene(challenge, { strategy: challenge.type }) });
+const addBoss = await domain('math/additionFactStrategies.boss.ts');
+const addLevers = await domain('math/additionFactStrategiesLevers.ts');
+const addItem = challenge => ({ assignment: addBoss.additionFactStrategiesBoss.assignment(challenge),
+  scene: published(addFacts.additionFactScene(challenge, { strategy: challenge.type }), addLevers.ADDITION_FACT_LEVERS, challenge, { session: [challenge] }) });
 const ADD_ITEMS = {
   near: addItem({ id: 'f1', type: 'facts_7_8', a: 7, b: 8, sum: 15 }),
 };
@@ -628,8 +641,13 @@ const ADD_CASES = [
 
 // ── comparison-builder (a comparison or one number said aloud beside the tap) ──
 const compare = await domain('math/comparisonBuilderWorkspace.ts');
-const compareItem = challenge => ({ assignment: compare.workspaceAssignment(challenge), scene: compare.workspaceScene(challenge,
-  { selected: null, ordered: [], oneMore: null, oneLess: null, shuffled: [], countsShown: false }) });
+const compareBoss = await domain('math/comparisonBuilder.boss.ts');
+const compareLevers = await domain('math/comparisonBuilderLevers.ts');
+// Grade 1, as the cases' words ("fewer", "greater than") answer the Grade 1 asks.
+const compareItem = challenge => { const item = { ...challenge, band: '1' };
+  return { assignment: compareBoss.comparisonBuilderBoss.assignment(item), scene: published(compare.comparisonScene(item,
+    { selected: null, ordered: [], oneMore: null, oneLess: null, shuffled: [], countsShown: false }), compareLevers.COMPARISON_LEVERS, item,
+    { tapped: { left: 0, right: 0 } }) }; };
 const COMPARE_ITEMS = {
   numbers: compareItem({ id: 'n1', type: 'compare-numbers', instruction: 'Compare 8 and 5. Which sign goes between them?',
     leftNumber: 8, rightNumber: 5, correctSymbol: '>' }),
@@ -652,8 +670,11 @@ const COMPARE_CASES = [
 
 // ── calendar-explorer (a weekday, date or count said aloud beside the tap) ─────
 const calendar = await domain('calendar/calendarExplorerWorkspace.ts');
-const calendarItem = challenge => ({ assignment: calendar.calendarGridAssignment(challenge), scene: calendar.calendarGridScene(challenge,
-  { showDayHeaders: true, showMonthLabel: true, showTargetDayColumn: true, revealPolicy: '' }) });
+const calendarBoss = await domain('calendar/calendarExplorer.boss.ts');
+const calendarLevers = await domain('calendar/calendarExplorerLevers.ts');
+const calendarItem = challenge => ({ assignment: calendarBoss.calendarExplorerBoss.assignment(challenge), scene: published(
+  calendar.calendarGridScene(challenge, { showDayHeaders: true, showMonthLabel: true, showTargetDayColumn: true, headersBack: false }),
+  calendarLevers.CALENDAR_LEVERS, challenge, { challenges: [challenge] }) });
 const calChallenge = over => ({ id: 'c1', type: 'identify', month: 3, year: 2025, options: [], hint: '', narration: '', ...over });
 const CALENDAR_ITEMS = {
   weekday: calendarItem(calChallenge({ question: 'What day of the week is March 15, 2025?', correctAnswer: 'Saturday',
@@ -681,7 +702,10 @@ const CALENDAR_CASES = [
 
 // ── time-sequencer (a time of day, a card, which takes longer or a schedule activity said aloud beside the tap) ──
 const timeSeq = await domain('math/timeSequencerWorkspace.ts');
-const timeItem = challenge => ({ assignment: timeSeq.workspaceAssignment(challenge), scene: timeSeq.workspaceScene(challenge, timeSeq.EMPTY_TIME_VIEW) });
+const timeSeqBoss = await domain('math/timeSequencer.boss.ts');
+const timeSeqLevers = await domain('math/timeSequencerLevers.ts');
+const timeItem = challenge => ({ assignment: timeSeqBoss.timeSequencerBoss.assignment(challenge), scene: published(
+  timeSeq.timeScene(challenge, timeSeq.EMPTY_TIME_VIEW, true), timeSeqLevers.TIME_LEVERS, challenge, null) });
 const tsCard = (id, label) => ({ id, label, emoji: '' });
 const TIMESEQ_ITEMS = {
   time: timeItem({ id: 't1', type: 'match-time-of-day', instruction: 'When do you eat breakfast?', event: tsCard('b', 'Eat breakfast'),
@@ -709,7 +733,10 @@ const TIMESEQ_CASES = [
 
 // ── spatial-scene (identify / describe: a position word said aloud beside the tap) ─────
 const spatial = await domain('math/spatialSceneWorkspace.ts');
-const spatialItem = challenge => ({ assignment: spatial.spatialAssignment(challenge), scene: spatial.spatialScene(challenge, {}) });
+const spatialBoss = await domain('math/spatialScene.boss.ts');
+const spatialLevers = await domain('math/spatialSceneLevers.ts');
+const spatialItem = challenge => ({ assignment: spatialBoss.spatialSceneBoss.assignment(challenge),
+  scene: published(spatial.spatialScene(challenge, {}), spatialLevers.SPATIAL_LEVERS, challenge, { step: 0, gridSize: 3 }) });
 const ssThing = (name, row, col) => ({ name, image: '', position: { row, col } });
 const SPATIAL_ITEMS = {
   // The ball two rows above the box: "above"; "on" is not it (a gap).
@@ -739,9 +766,12 @@ const SPATIAL_CASES = [
 
 // ── length-lab (compare / indirect: which object, said aloud beside the tap) ─────
 const length = await domain('math/lengthLabWorkspace.ts');
+const lengthBoss = await domain('math/lengthLab.boss.ts');
+const lengthLevers = await domain('math/lengthLabLevers.ts');
 const LENGTH_VIEW = { answer: null, tiles: 0, estimate: null, countA: null, countB: null, unitA: 'cubes', unitB: 'cubes', order: [],
   ticksShown: false, fitShown: true };
-const lengthItem = challenge => ({ assignment: length.workspaceAssignment(challenge), scene: length.workspaceScene(challenge, LENGTH_VIEW) });
+const lengthItem = challenge => ({ assignment: lengthBoss.lengthLabBoss.assignment(challenge), scene: published(
+  length.lengthScene(challenge, LENGTH_VIEW), lengthLevers.LENGTH_LEVERS, challenge, { ticksShown: false, sessionUnit: 'cubes' }) });
 const llBase = { hint: '', narration: '', objectColor0: '#f00', objectColor1: '#0f0' };
 const LENGTH_ITEMS = {
   // The crayon is the shorter; the question asks which is shorter.
@@ -756,7 +786,7 @@ const LENGTH_ITEMS = {
     referenceObjectName: 'string', referenceObjectLength: 6, referenceObjectColor: '#888' }),
 };
 const LENGTH_CASES = [
-  ['object_named', 'the crayon', 'Yes! The crayon is shorter than the pencil.', 'correct', 'advance', 'shorter'],
+  ['relation_word', 'shorter', 'Yes! The crayon is shorter than the pencil.', 'correct', 'advance', 'shorter'],
   ['sentence', 'the toothbrush is longer', "That's right, the toothbrush is longer!", 'correct', 'advance', 'longer'],
   ['button_wording', 'crayon is shorter', 'Yes, the crayon is shorter, so the toothbrush is the longer one.', 'correct', 'advance', 'longer'],
   ['other_object_praise', 'the pencil', 'Great job!', 'none', 'none', 'shorter'],
@@ -770,9 +800,12 @@ const LENGTH_CASES = [
 
 // ── analog-clock (read / match / elapsed / hand_name: a time, a duration or a hand, said aloud beside the pick) ─────
 const clock = await domain('math/analogClockWorkspace.ts');
+const clockBoss = await domain('math/analogClock.boss.ts');
+const clockLevers = await domain('math/analogClockLevers.ts');
 const CLOCK_VIEW = { selectedOption: null, pickedHand: null, countedNumerals: [], displayHour: 12, displayMinute: 0,
   minuteNumbersShown: false, handLegendShown: false, digitalEchoShown: false };
-const clockItem = challenge => ({ assignment: clock.workspaceAssignment(challenge), scene: clock.workspaceScene(challenge, CLOCK_VIEW) });
+const clockItem = challenge => ({ assignment: clockBoss.analogClockBoss.assignment(challenge), scene: published(
+  clock.clockScene(challenge, CLOCK_VIEW), clockLevers.CLOCK_LEVERS, challenge, clockLevers.PLAIN_CLOCK_VIEW) });
 const clockRead = (id, type, hour, minute, options) => clockItem({ id, type, hint: '', targetHour: hour, targetMinute: minute,
   instruction: type === 'match' ? 'Find the digital time for this clock.' : 'What time does the clock show?',
   option0: options[0], option1: options[1], option2: options[2], option3: options[3],
@@ -804,9 +837,14 @@ const CLOCK_CASES = [
 
 // ── coin-counter (count / compare / make-change: an amount or a group, said aloud beside the typed answer) ─────
 const coins = await domain('math/coinCounterWorkspace.ts');
+const coinBoss = await domain('math/coinCounter.boss.ts');
+const coinLevers = await domain('math/coinCounterLevers.ts');
 const COIN_VIEW = { selectedCoin: null, countInput: '', counted: 0, enacted: null, placed: [], selectedGroup: null, changeInput: '',
   valuesShown: true, runningTotalShown: true };
-const coinItem = challenge => ({ assignment: coins.workspaceAssignment(challenge, '2'), scene: coins.workspaceScene(challenge, COIN_VIEW) });
+// Grade 2, where every count, compare and change is a spoken item.
+const coinItem = challenge => { const item = { ...challenge, band: '2' };
+  return { assignment: coinBoss.coinCounterBoss.assignment(item), scene: published(coins.coinScene(item, COIN_VIEW), coinLevers.COIN_LEVERS,
+    item, { valuesShown: true, valuesOn: true, runningTotalShown: true, enactedTap: false }) }; };
 const COIN_ITEMS = {
   // 3 dimes and 2 pennies: 5 coins, 32¢.
   mixed: coinItem({ id: 'n1', type: 'count', instruction: 'How much money is shown?', countMode: 'mixed',
@@ -837,12 +875,17 @@ const COIN_CASES = [
 
 // ── skip-counting-runner (predict / find_skip_value / connect_multiplication: a number said aloud beside the box) ─────
 const skip = await domain('math/skipCountingWorkspace.ts');
+const { skipCountingBoss } = await domain('math/skipCounting.boss.ts');
+const { SKIP_LEVERS } = await domain('math/skipCountingLevers.ts');
 const SKIP_LINE = { skipValue: 5, startFrom: 0, endAt: 30, direction: 'forward' };
-const skipItem = challenge => {
+const skipItem = raw => {
+  const challenge = { ...raw, line: SKIP_LINE, supportTier: 'medium' };
   const spots = skip.openingSpots(SKIP_LINE, challenge);
-  return { assignment: skip.workspaceAssignment(challenge, SKIP_LINE), scene: skip.workspaceScene(challenge,
-    { line: SKIP_LINE, character: 'frog', supportTier: 'medium', aids: skip.aidsFor(challenge, {}) },
-    { position: spots[spots.length - 1], landings: spots, filled: [], answer: null }) };
+  const position = spots[spots.length - 1];
+  const scene = skip.skipScene(challenge, { line: SKIP_LINE, character: 'frog', supportTier: 'medium', aids: skip.aidsFor(challenge, {}) },
+    { position, landings: spots, filled: [], answer: null });
+  return { assignment: skipCountingBoss.assignment(challenge),
+    scene: published(scene, SKIP_LEVERS, challenge, { session: { challenges: [challenge] }, position, character: 'frog' }) };
 };
 const SKIP_ITEMS = {
   // The frog stands on 15 on a count by 5s: the next landing is 20.
@@ -865,7 +908,8 @@ const SKIP_CASES = [
 
 // ── hundreds-chart (identify_pattern / find_skip_value: a description or a skip value, said aloud beside the pick) ─────
 const hundreds = await domain('math/hundredsChartWorkspace.ts');
-const hundredsItem = challenge => ({ assignment: hundreds.hundredsChartAssignment(challenge), scene: hundreds.hundredsChartScene(challenge, { gridMax: 100 }) });
+const { hundredsChartBoss } = await domain('math/hundredsChart.boss.ts');
+const hundredsItem = challenge => ({ assignment: hundredsChartBoss.assignment(challenge), scene: hundreds.hundredsChartScene(challenge, { gridMax: 100 }) });
 const FIVES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
 const HUNDREDS_ITEMS = {
   identify: hundredsItem({ id: 'h1', type: 'identify_pattern', instruction: 'Look at the highlighted cells. Which description best matches the visual pattern on the grid?',

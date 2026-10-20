@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * sound-wave-explorer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * sound-wave-explorer on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The
+ * generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer, nothing on screen answers it before credit (the After wave is "?", classify sounds do not play, the
+ * key (`soundKey`), nothing on screen answers it before credit (the After wave is "?", classify sounds do not play, the
  * observe picture shows the moment before the change), a wrong tap names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -21,13 +21,17 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { SoundWaveExplorerData } from './SoundWaveExplorer';
 import {
   afterWave, askOf, buildSoundItems, choicesOf, keyChoice, SAME_WAVES, seededRng, SOUND_MISSES, soundHarnessAnswers,
-  soundItems, soundMiss, validSoundItem, workspaceAssignment, workspaceScene,
+  soundItems, soundMiss, validSoundItem, workspaceScene,
   type ApplyItem, type ClassifyItem, type ObserveItem, type PredictItem, type SoundFocus, type SoundItem, type SoundMode, type SoundTier,
 } from './soundWaveWorkspace';
 import {
   changeLines, CHANGE_LEVER, CREST_LEVER, FEATURE_LEVER, FEATURE_LINES, EASIER_CHANGE_LEVER, ONE_CHANGE_LEVER,
-  ONE_DIFFERENCE_LEVER, PLAIN_LINK_LEVER, possibleMisses, shakeLines, SHAKE_LEVER, simplerItem, soundLevers, soundWordLeak,
+  ONE_DIFFERENCE_LEVER, PLAIN_LINK_LEVER, possibleMisses, shakeLines, SHAKE_LEVER, simplerItem, SOUND_LEVERS, soundWordLeak,
 } from './soundWaveLevers';
+import { soundWaveExplorerBoss } from './soundWaveExplorer.boss';
+
+/** The levers an item declares with these already pulled. */
+const declared = (i: SoundItem, pulled: string[] = []) => SOUND_LEVERS.declare(i, { pulled }, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -69,7 +73,8 @@ it.each(MODES)('%s binds as a spoken-or-tapped choice whose key stays out of the
   expect(getComponentById('sound-wave-explorer')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(soundWaveExplorerBoss.assignment(item).task);
+  expect(soundWaveExplorerBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe('speech');
   expect(h.state().task!.workspace!.expectedAnswer).toContain(keyChoice(item));
   const facts = JSON.stringify({ ...demand(h), choices: '' });
@@ -166,7 +171,7 @@ it('observe: the picture shows the moment before; shake_card commits; plain_link
   answer(h, 'A sound starts');
   expect(last(h)).toMatchObject({ correct: true, assisted: true, levers: [SHAKE_LEVER] });
   expect(h.view.container.querySelector('[data-sound-mark="on"]')).not.toBeNull();
-  expect(soundLevers(HEARD, []).map(l => l.id)).toEqual([SHAKE_LEVER, PLAIN_LINK_LEVER]);
+  expect(declared(HEARD).map(l => l.id)).toEqual([SHAKE_LEVER, PLAIN_LINK_LEVER]);
   expect(simplerItem(HEARD)).toMatchObject({ mode: 'observe', event: 'held', maker: 'bell' });
   h.close();
 });
@@ -243,7 +248,7 @@ describe('the pure rules', () => {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...SOUND_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
         for (const c of choicesOf(i)) expect(!!soundMiss(i, c), `${i.id} ${c}`).toBe(c !== keyChoice(i));
-        const ls = soundLevers(i, []);
+        const ls = declared(i);
         for (const miss of possibleMisses(i)) expect(ls.find(l => l.id === nextLever(ls, miss))!.kind, `${i.id} ${miss}`).toBe('help');
         for (const l of ls) expect(`${l.when} ${l.does}`).not.toContain(keyChoice(i));
       }
@@ -269,11 +274,11 @@ describe('the pure rules', () => {
       expect(validSoundItem(s), JSON.stringify(s)).toBe(true);
       expect(keyChoice(s)).not.toBe(keyChoice(i));
       expect(simplerItem(s)).toBeNull();
-      expect(soundLevers(s, [])).toEqual([]);
+      expect(declared(s).filter(l => l.kind === 'simplify')).toEqual([]);
     }
     expect(simplerItem(STRUCK)).toBeNull();
     // one_difference: two waves differing only in pitch, the key moved off the full item's label.
-    expect(soundLevers(CROSSED, []).map(l => l.id)).toContain(ONE_DIFFERENCE_LEVER);
+    expect(declared(CROSSED).map(l => l.id)).toContain(ONE_DIFFERENCE_LEVER);
     expect(simplerItem(CROSSED)).toMatchObject({ waves: [{ amp: 3, crests: 4 }, { amp: 3, crests: 2 }] });
     expect(keyChoice(simplerItem(CROSSED)!)).toBe('Sound A');
   });

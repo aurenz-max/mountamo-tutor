@@ -17,6 +17,7 @@ import { workspaceBinding } from '../../../components/live-activity/lessonWorksp
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { AdditionFactStrategiesData, AdditionFactStrategy } from './AdditionFactStrategies';
 import { additionFactHarnessInputs, additionFactMiss, additionFactSpokenMisses } from './additionFactStrategiesWorkspace';
+import { spokenIntegerWord } from './spokenNumberWords';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -60,9 +61,9 @@ it.each(MODES)('%s: a checked tap beside a spoken key; a wrong tap draws nothing
     const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: mode, data });
     const task = h.state().task!;
     // The sum may be said aloud: the observer judges the tutor's feedback against the key; the tap stays checked.
-    expect(task.workspace!.expectedAnswer?.startsWith(`${a + b} (${a} + ${b} = ${a + b})`)).toBe(true);
-    expect(task.demand.response).toBe('speech');
-    expect(task.demand).toMatchObject({ problem: `${a} + ${b} = ?` });
+    expect(task.workspace!.expectedAnswer?.startsWith(`"${spokenIntegerWord(a + b)}"`)).toBe(true);
+    expect(task.workspace!.expectedAnswer).toContain(`"${a + b}"`);
+    expect(task.demand.response).toBe('speech');    expect(task.demand).toMatchObject({ problem: `${a} + ${b} = ?` });
     expect(JSON.stringify(task)).not.toMatch(/"sum"|knownFact/);
     // The scene the tutor reads never states the sum.
     expect(JSON.stringify(task.demand)).not.toContain(`= ${a + b}`);

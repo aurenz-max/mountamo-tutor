@@ -1,66 +1,22 @@
 'use client';
 
 /**
- * LetterSpotter — letter names and forms. It runs only on the shared tutor/JEV
- * teaching workspace (workspace rollout C2; the scripted runner was retired,
- * LA-14, user ruling 09-23: one path). The observer judges the spoken letter on
- * name it, the activity checks each tap on find it and match it, and the runtime
- * owns progression. An unbound mount shows the shared "needs the tutor" card.
- * There is no advance timer, no Check button, no Next button and no answer
- * anywhere on screen before it is credited.
+ * LetterSpotter, taught on the shared teaching workspace only (the boss: `letterSpotter.card.ts` +
+ * `letterSpotter.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * WHAT WENT, AND WHY (all four traced to one live session, 42edfc52e539):
- *  - **Three cue sites that each ordered the sentence re-read** — one on
- *    advance, one on a wrong answer ("re-read the sentence slowly") and, worst,
- *    one on a RIGHT answer ("read the full sentence aloud as celebration"). One
- *    item was spoken 2-4 times; the log has "I see an ant walk away" three
- *    times inside 13 seconds. The pack now speaks each item ONCE, and the only
- *    repeat is a child-initiated tap-to-hear.
- *  - **The advance handler, and every improvised tutor message this file used
- *    to push.** The cue queue they fed ran 8-16s behind the screen while the
- *    option buttons went live immediately, so the log shows a child answering
- *    before the question had finished being asked. Progression now has exactly
- *    one cause: a verdict.
- *  - **The three-attempt reveal-and-lock ladder.** Corrections cap in the
- *    runner and the lesson moves on; a hard item resurfaces through distributed
- *    review, not by drilling a five-year-old.
- *  - **The shape hint.** Group 1's `newLetters` IS the whole group, so the
- *    "NEW letter — hint at its shape" branch fired on every single item ("a
- *    triangle with a line across the middle"). That handed the answer to any
- *    child who knows letterforms. No cue in this pack may describe a letter's
- *    shape, at any tier, and the tap contract says so to the tutor explicitly.
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - name_it: the tutor reads a sentence; one word's first letter is hidden behind a star, and the child SAYS the
+ *    letter (its name or its sound). The tutor judges it against the key. No answer tiles: a 1-in-4 menu turned
+ *    production into recognition (user ruling 2026-08-13).
+ *  - find_it: the tutor names a letter; the child TAPS the one cell holding it. The answer is a POSITION.
+ *  - match_it: a capital is printed; the child TAPS its little form. The answer is a FORM.
+ *  On both tap modes the tap IS the commit, checked by the activity (`commitGesture`); the tutor never sees the key.
  *
- * WHAT CHANGED AGAIN (2026-08-13, user ruling from session 6ada8c0a1bcf):
- *  - **name-it is SPOKEN, and its four option tiles are deleted.** "In real life
- *    … i ask the student to use context clues and the word to say the missing
- *    letter … they dont need to click a button." The tiles were never pedagogy:
- *    they existed because `letter_name` was marked BLOCKED, and they cost the
- *    mode its production task (a 1-in-4 menu is recognition) while smuggling the
- *    very homophony they were meant to avoid into the option set — the drive
- *    that produced the ruling offered n / s / i / a, and n and s share a cluster.
- *    The class is now `accepted-build-ahead`, judged against ONE target and
- *    accepting the letter's sound as well as its name.
+ * Nothing shows the answer before credit: the star covers the letter, no cell or tile is marked, and no lever draws
+ * the target. The printed word residue under the star stays (the rest of the word is the decodable cue).
  *
- * WHAT STAYED, AND WHY:
- *  - **find-it and match-it are still answered with the hands** — and only
- *    because their answers are not sayable. find-it's answer is a POSITION;
- *    match-it's is which lowercase FORM matches, which saying "S" would not
- *    demonstrate. Their verdicts stay CODE-COMPUTED (`commitGesture`), and the
- *    key never reaches the tutor.
- *  - **The printed word residue.** The click-era render replaced the WHOLE
- *    target word with the marker ("I see a ⭐ walk away"), which threw away the
- *    one decodable cue and left the sentence pure decoration — the data model
- *    already stored the marker over just the first character. It is rendered as
- *    stored now, so the sentence carries information again.
- *  - **The structural difficulty axis** (distractor letterform similarity) and
- *    the find-it target reference — both are RENDER levers a pre-reader can
- *    actually use. `strategyHint` did not survive: it was on-card text at a
- *    band that cannot read, and the tier now composes the spoken DISTAR lead-in
- *    instead (letterSpotterScript).
- *
- * Build gates, the asks and the tier ladder live in `letterSpotterScript.ts`; the
- * workspace assignment and scene in `letterSpotterWorkspace.ts`. Nothing in this
- * file writes a spoken line.
+ * The domain (build gates, ask, key, misses, scene) is `letterSpotterDomain.ts`; the levers `letterSpotterLevers.ts`.
+ * Nothing in this file writes a spoken line.
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -80,25 +36,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LetterSpotterMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeLetterTap, hearQuestionRequest, letterSpotterAssignment, letterSpotterMiss, letterSpotterScene } from './letterSpotterWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
-  itemsFromChallenges,
-  SPOTTER_EMOJI,
-  type LetterSpotterItem,
-  type LetterSpotterMode,
-  type LetterSpotterTier,
-} from './letterSpotterScript';
+  describeLetterTap, hearQuestionRequest, letterSpotterMiss, letterSpotterScene, SPOTTER_EMOJI,
+  type LetterSpotterItem, type LetterSpotterMode, type LetterSpotterTier,
+} from './letterSpotterDomain';
+import { letterSpotterBoss, letterSpotterItems } from './letterSpotter.boss';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { CASE_LEVER, FIRST_LETTER_LEVER, PARTNER_LEVER, SCAN_LEVER, SMALL_GRID_LEVER, TWO_CHOICES_LEVER, firstLetterModelFor,
-  letterSpotterLevers, partnerCapitals, practiceItem } from './letterSpotterLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
+import { CASE_LEVER, FIRST_LETTER_LEVER, LETTER_SPOTTER_LEVERS, PARTNER_LEVER, SCAN_LEVER, firstLetterModelFor,
+  partnerCapitals } from './letterSpotterLevers';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
@@ -133,8 +85,7 @@ export interface LetterSpotterChallenge {
   targetWord?: string;
 
   // ── Legacy within-mode support-tier scaffolds, stamped by the generator.
-  //    `strategyHint` is INERT on the judged surface — on-card prose at a band
-  //    that cannot read it. The tier now composes the spoken lead-in instead.
+  //    `strategyHint` is INERT: on-card prose at a band that cannot read it.
   //    `showTargetReference` is live: it is a picture, not prose. ──
   strategyHint?: string;
   showTargetReference?: boolean;
@@ -207,7 +158,6 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
 
   /** Pre-reader band: adult chrome is hidden, never read (reader-fit rule 7). */
   const isPreReader = gradeLevel === 'K';
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `letter-spotter-${Date.now()}`);
@@ -215,10 +165,9 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
 
   const tier: LetterSpotterTier = supportTier ?? 'medium';
 
-  /** Build gates drop what cannot be asked — a placeholder in a judged loop
-   *  becomes a spoken ask the tutor has to stand behind. */
+  /** The boss's builder: the component, the boss and the journey drop the same unaskable items. */
   const items = useMemo<LetterSpotterItem[]>(
-    () => itemsFromChallenges(challenges, tier),
+    () => letterSpotterItems({ challenges, supportTier: tier }),
     [challenges, tier],
   );
 
@@ -313,7 +262,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
 
   const runner = useWorkspaceRunner<LetterSpotterItem>({
     primitiveId: 'letter-spotter',
-    assignment: letterSpotterAssignment,
+    assignment: letterSpotterBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -332,7 +281,6 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
       // Try again frees the surface for another go.
       setTapped(null);
       setTappedCell(null);
-      pip.clear();
     },
   });
 
@@ -342,31 +290,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own tap; Pip never
-  // answers, taps, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = letterSpotterPipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(),
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      mode: currentItem.mode,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Letter spotter', dock: pip.dock.current, targets, pose };
-  });
-  const pipDock = pipStore && (
-    <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-      className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-  );
+  const leverCtx = useMemo(() => ({ items, letterGroup: data.letterGroup, wrongTaps }), [items, data.letterGroup, wrongTaps]);
 
   /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved || practiceSolved;
@@ -381,35 +305,31 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
   const partners = leverOn(PARTNER_LEVER) && sessionItem ? partnerCapitals(sessionItem, wrongTaps) : [];
   const firstModel = leverOn(FIRST_LETTER_LEVER) && sessionItem ? firstLetterModelFor(sessionItem, items, data.letterGroup) : null;
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : letterSpotterLevers(sessionItem, pulledLevers, items, data.letterGroup, wrongTaps);
-    const scene = letterSpotterScene(currentItem);
-    const shown = [
-      leverOn(CASE_LEVER) ? 'the named letter as a small letter on a card beside the grid' : '',
-      leverOn(SCAN_LEVER) ? 'a highlight sweeping the rows of the grid one at a time, over and over' : '',
-      partners.length ? `the big letter that goes with each little letter the learner tapped wrongly (${partners.join(', ')}), on that tile` : '',
-      firstModel ? `a model on another word, ${firstModel.word}, as a picture and in print with its first letter lit: `
-        + `${firstModel.word} starts with ${firstModel.letter.toUpperCase()}. It is not this item's word` : '',
-    ].filter(Boolean);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(shown.length ? { levers_on_screen: shown.join('; ') } : {}),
-        ...(practice ? { practice: 'An easier practice item with a different letter, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : LETTER_SPOTTER_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = letterSpotterScene(currentItem);
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item with a different letter, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : LETTER_SPOTTER_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : LETTER_SPOTTER_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === SMALL_GRID_LEVER || id === TWO_CHOICES_LEVER) {
-          const simpler = practiceItem(sessionItem, items, data.letterGroup);
+        if (lever.kind === 'simplify') {
+          const simpler = LETTER_SPOTTER_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!simpler) return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           setTapped(null); setTappedCell(null);
-          return { practice: letterSpotterAssignment(simpler) };
+          return { practice: letterSpotterBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -421,8 +341,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
   /** Asks the tutor for the question again: a silent host request, never the answer. */
   const hearQuestion = useCallback(() => {
     if (!currentItem) return;
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearQuestionRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── The tap IS the commit on find it and match it, checked by the activity ──
   const commitTap = useCallback((item: LetterSpotterItem, letter: string) => {
@@ -496,9 +416,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
           <button
             key={`${item.id}-${option}`}
             type="button"
-            ref={pip.ref(`option-${option}`)}
             data-pip-object={`option-${option}`}
-            onClick={() => { pip.look(`option-${option}`); handleOptionTap(option); }}
+            onClick={() => handleOptionTap(option)}
             disabled={!runner.canAttempt}
             className={`
               h-20 rounded-xl border-2 text-4xl font-bold transition-all
@@ -526,6 +445,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
         const parts = printed.split(SPOTTER_EMOJI);
         return (
           <div className="space-y-6">
+            <PipDock />
+            <PipWorkspace className="space-y-6">
             {/* The sentence. Tapping it re-speaks the QUESTION — the click-era
                 item had no replay at all, and its audio ran up to 16s behind. */}
             <div className="flex justify-center">
@@ -540,7 +461,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
                     <React.Fragment key={i}>
                       {part}
                       {i < parts.length - 1 && (
-                        <span ref={pip.ref('marker')} data-pip-object="marker" className="relative inline-block mx-0.5">
+                        <span data-pip-object="marker" className="relative inline-block mx-0.5">
                           <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-dashed border-amber-400/70 animate-pulse" />
                           {revealed ? (
                             <span className="text-4xl text-emerald-300">
@@ -571,7 +492,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
             )}
             {/* No answer tiles. The sentence IS the whole stage — the child
                 reads the star, hears the word, and says the letter. */}
-            {pipDock}
+            </PipWorkspace>
           </div>
         );
       }
@@ -618,10 +539,11 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
               </div>
             )}
 
-            {/* Pip outlines the grid as a whole; every cell is a choice. */}
-            {pipDock}
+            {/* Pip watches the grid as a whole; every cell is a choice. */}
+            <PipDock />
 
-            <div ref={pip.ref('grid')} data-pip-object="grid" data-lever={scanning ? 'row-scan' : undefined} className={`grid ${cols} gap-2 mx-auto`}>
+            <PipWorkspace>
+            <div data-pip-object="grid" data-lever={scanning ? 'row-scan' : undefined} className={`grid ${cols} gap-2 mx-auto`}>
               {grid.map((letter, i) => {
                 const isTarget = letter.toLowerCase() === item.targetLetter.toLowerCase();
                 const state = revealed && isTarget
@@ -632,10 +554,9 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
                 return (
                   <button
                     key={`${item.id}-${i}`}
-                    ref={pip.ref(`cell-${i}`)}
                     data-pip-object={`cell-${i}`}
                     data-scan-row={scanning && Math.floor(i / 4) === scanRow ? 'lit' : undefined}
-                    onClick={() => { pip.look(`cell-${i}`); handleCellTap(i); }}
+                    onClick={() => handleCellTap(i)}
                     disabled={!runner.canAttempt}
                     className={`
                       aspect-square rounded-xl border-2 font-bold text-2xl
@@ -650,6 +571,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
                 );
               })}
             </div>
+            </PipWorkspace>
           </div>
         );
       }
@@ -662,7 +584,6 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
               <div
                 role="button"
                 tabIndex={0}
-                ref={pip.ref('letter')}
                 data-pip-object="letter"
                 onClick={hearQuestion}
                 className={`
@@ -676,8 +597,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
             </div>
             {/* Between the big letter and the little ones, so a pointer to the
                 question side never crosses an option. */}
-            {pipDock}
-            {renderOptions(item)}
+            <PipDock />
+            <PipWorkspace>{renderOptions(item)}</PipWorkspace>
           </div>
         );
     }

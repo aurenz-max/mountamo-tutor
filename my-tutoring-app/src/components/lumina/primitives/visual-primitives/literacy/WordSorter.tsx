@@ -194,7 +194,7 @@ function SorterWorkspace({ data, items, className, runtimePlanItemId }: WordSort
     const levers = WORD_SORTER_LEVERS.declare(currentItem, leverCtx, pulledLevers);
     workspace.current = {
       ...leverScene(wordSorterScene(currentItem), {
-        support: WORD_SORTER_LEVERS.support(currentItem),
+        support: WORD_SORTER_LEVERS.support(currentItem, leverCtx),
         onScreen: WORD_SORTER_LEVERS.onScreen(currentItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.

@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { spatialAssignment, spatialMiss, spatialSpokenMisses } from './spatialSceneWorkspace';
+import { spatialMiss, spatialSpokenMisses } from './spatialSceneWorkspace';
+import { spatialSceneBoss } from './spatialScene.boss';
 import type { SpatialSceneChallenge } from './SpatialScene';
 
 const obj = (name: string, row: number, col: number) => ({ name, image: '', position: { row, col } });
@@ -44,7 +45,7 @@ it.each([
   const misses = spatialSpokenMisses(c);
   expect(misses.flatMap(m => m.examples ?? [])).toEqual(examples);
   expect(misses.every(m => m.id === 'opposite_word')).toBe(true);
-  expect(spatialAssignment(c).misses).toEqual(misses.length ? misses : undefined);
+  expect(spatialSceneBoss.assignment(c).misses).toEqual(misses.length ? misses : undefined);
 });
 
 // VB-1: a spoken position word names its miss with the tap's ids, every untrue word grouped under one.
@@ -55,5 +56,5 @@ it('spoken word: each untrue word under the id its tap would get', () => {
     ['same_axis_word', ['The cat is on the box.']],
     ['other_axis_word', ['The cat is beside the box.', 'The cat is left of the box.', 'The cat is right of the box.']],
   ]);
-  expect(spatialAssignment(above).misses).toEqual(misses);
+  expect(spatialSceneBoss.assignment(above).misses).toEqual(misses);
 });

@@ -15,12 +15,14 @@
  * authoring-time audit: qa/open-build/picture-vocabulary-2026-10-08/clash-audit.json), and no right pair sits side by
  * side or one above the other on the 4-column board.
  *
- * Pure: the surface, the generator, the live adapter, the oracle's schema reading and the tests read the same rules.
+ * Pure: the surface, the generator, the oracle's schema reading and the tests read the same rules.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
 import type { PairBoardItem, PairBuildRules } from './rhymePairBuild';
+import type { PicturePairMiss } from './pictureVocabulary.card';
+
+export { PICTURE_PAIR_MISSES, type PicturePairMiss } from './pictureVocabulary.card';
 
 export type PairRelation = 'opposite' | 'goes_with';
 export interface PairPicture {
@@ -101,8 +103,6 @@ export const CLASH: ReadonlySet<string> = new Set([
 const key = (a: string, b: string) => [a, b].sort().join('+');
 export const picturePairKey = (pair: readonly string[]) => key(pair[0], pair[1]);
 
-export type PicturePairMiss = 'alike' | 'not_opposite' | 'same_kind' | 'no_link' | 'same_pair';
-export const PICTURE_PAIR_MISSES: readonly PicturePairMiss[] = ['alike', 'not_opposite', 'same_kind', 'no_link', 'same_pair'];
 
 /** How two pictures relate under the table, before "made before". */
 function relate(a: PairPicture, b: PairPicture): 'pass' | Exclude<PicturePairMiss, 'same_pair'> {
@@ -267,12 +267,7 @@ export const ASKS: Record<PairRelation, string> = {
   opposite: 'Find two pictures that are opposites and put them together.',
   goes_with: 'Find two pictures that go together and put them together.',
 };
-const RELATION_WORDS: Record<PairRelation, string> = { opposite: 'are opposites', goes_with: 'go together' };
-const waysLine = (item: PicturePairItem) => item.ways === 2 ? ' Then find a different pair.' : '';
-
-export const picturePairAssignment = (item: PicturePairItem): TeachingAssignment =>
-  ({ id: item.id, task: `${ASKS[item.relation]}${waysLine(item)}`, response: 'gesture' });
-
+export const RELATION_WORDS: Record<PairRelation, string> = { opposite: 'are opposites', goes_with: 'go together' };
 export const describePicturePair = (pair: readonly string[]) => pair.length ? `Put together: ${pair.join(' and ')}` : 'Nothing put together';
 
 /** What the tutor is told: the pictures by name (it says them on request), the tray, never which pairs are right. */
@@ -286,13 +281,14 @@ export function picturePairScene(item: PicturePairItem, pair: readonly string[],
     ...(inspectorSaid ? { inspectorSaid } : {}),
     constraints: 'Pictures only, no words are printed. The learner taps two pictures into the pair tray (tap one in the tray '
       + 'to take it back), may tap a picture\'s speaker to hear its name, and presses "I\'m done!". The builder checks that '
-      + `the two ${RELATION_WORDS[item.relation]}. Several pairs on the board are right. You cannot move a picture.`,
+      + `the two ${RELATION_WORDS[item.relation]}. Several pairs on the board are right. You cannot move a picture. Before the `
+      + `learner has tried, never say which pictures ${RELATION_WORDS[item.relation]} or name a pair on the board.`,
   } };
 }
 
 export const picturePairSayName = (word: string) => `The learner tapped a picture's speaker. Say only this word, once, plainly: "${word}"`;
 
-// ── Levers (start bare) ──────────────────────────────────────────────────────
+// ── What the pair levers show (the lever set is `pictureVocabularyLevers.ts`) ──────────────────────────
 export const PP_NAMES_LEVER = 'say_names';
 export const PP_MODEL_LEVER = 'model_pair';
 export const PP_SMALL_BOARD_LEVER = 'small_board';
@@ -310,7 +306,8 @@ export function picturePairModelFor(item: PicturePairItem): [PairPicture, PairPi
   return null;
 }
 
-/** The easier practice board: one right pair and two pictures that make no right pair, the pair not side by side. */
+/** The easier practice board: one right pair and two pictures that make no right pair, the pair not side by side and
+ *  not always in the same places (a fixed first-and-third layout would answer the board without the pictures). */
 export function picturePairSmallBoard(item: PicturePairItem): PicturePairItem | null {
   const { relation } = item;
   const want = relation === 'opposite' ? 'alike' : 'same_kind';
@@ -321,46 +318,11 @@ export function picturePairSmallBoard(item: PicturePairItem): PicturePairItem | 
     const ranked = [...rest.filter(w => pair.some(p => picturePairMiss([w, p], [], relation) === want)),
       ...rest.filter(w => !pair.some(p => picturePairMiss([w, p], [], relation) === want))];
     for (let i = 0; i < ranked.length; i++) for (let j = i + 1; j < ranked.length; j++) {
-      const board = [pair[0], ranked[i], pair[1], ranked[j]];
+      const board = spreadBoard([pair[0], ranked[i], pair[1], ranked[j]], relation) ?? [pair[0], ranked[i], pair[1], ranked[j]];
       if (passingPairs(board, relation).length === 1) return { id: `${item.id}~small`, board, ways: 1, relation };
     }
   }
   return null;
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly PicturePairMiss[],
-  when: string, does: string, pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier, when, does, answers, pulled: pulled.includes(id) });
-
-export function picturePairLevers(item: PicturePairItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const misses: readonly PicturePairMiss[] = item.relation === 'opposite' ? ['alike', 'not_opposite'] : ['same_kind', 'no_link'];
-  const rel = RELATION_WORDS[item.relation];
-  return [
-    lever(PP_NAMES_LEVER, 'help', 'voiced', misses,
-      `The learner puts together two pictures that do not ${item.relation === 'opposite' ? 'mean opposite things' : 'go together'}.`,
-      'You say the name of every picture on the board once, plainly, in board order. Never group them, pause between two '
-        + `that ${rel}, or say which ones ${rel}.`,
-      pulled),
-    ...(picturePairModelFor(item) ? [lever(PP_MODEL_LEVER, 'help', 'shown', misses,
-      'The learner still makes a wrong pair after hearing the names.',
-      `Shows one pair of pictures that ${rel}, NOT on this board, and you say both names and why they ${rel} in a few words. `
-        + 'It is about those two pictures only: never point it at a picture on the board or say which board pictures pair up.',
-      pulled)] : []),
-    ...(picturePairSmallBoard(item) ? [lever(PP_SMALL_BOARD_LEVER, 'simplify', 'shown', misses,
-      'The learner cannot find a pair on a board of eight.',
-      `Opens a practice board of four pictures with one pair that ${rel}, ungraded. The full board comes back after it.`,
-      pulled)] : []),
-  ];
-}
-
-export function picturePairLeverFacts(pulled: readonly string[], item: PicturePairItem): string | undefined {
-  const model = picturePairModelFor(item);
-  const notes = [
-    pulled.includes(PP_NAMES_LEVER) && 'You are to say every picture name on the board once, plainly.',
-    pulled.includes(PP_MODEL_LEVER) && model
-      && `A model pair not on this board is shown: ${model[0].word} and ${model[1].word}. Say both names and why they ${RELATION_WORDS[item.relation]}.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 export function picturePairMissWords(miss: string | undefined): string {
@@ -380,14 +342,11 @@ export const PICTURE_PAIR_RULES: PairBuildRules<PicturePairItem> = {
   pictureOf: pairPictureOf,
   itemsFrom: picturePairItemsFrom,
   ask: item => ASKS[item.relation],
-  assignment: picturePairAssignment,
   miss: (pair, made, item) => picturePairMiss(pair, made, item.relation),
   missWords: picturePairMissWords,
   rightWords: (pair, item) => `Yes! ${pair[0]} and ${pair[1]} ${RELATION_WORDS[item.relation]}.`,
   describe: describePicturePair,
   scene: picturePairScene,
-  levers: picturePairLevers,
-  leverFacts: picturePairLeverFacts,
   modelLever: PP_MODEL_LEVER,
   modelFor: picturePairModelFor,
   smallBoardFor: picturePairSmallBoard,

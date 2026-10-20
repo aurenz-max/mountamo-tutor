@@ -1,22 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  affirmFor,
-  itemCue,
+  askFor,
   itemsFromChallenge,
-  itemsFromChallenges,
   wordWorkoutHarnessAnswers,
-  wordWorkoutPackBase,
-} from '../wordWorkoutScript';
+  wordWorkoutKey,
+} from '../wordWorkoutDomain';
 import {
   EARLY_CONTEXT_TRIALS,
   EARLY_EXTENDED_WORDS,
   earlyExtendedWordFor,
   objectiveRequiresWordMeaning,
 } from '../wordWorkoutEarlyDecoding';
-import { checkPackGates } from '../../../../hooks/judgedScriptContract.testkit';
-
-const spokenLine = (cue: string): string =>
-  cue.match(/Say exactly: "([^"]+)"/)?.[1] ?? '';
 
 describe('WordWorkout early-decoding scope', () => {
   it('bounds inflections to -s/-ing/-ed and compounds to two printed roots', () => {
@@ -58,11 +52,11 @@ describe('WordWorkout early-decoding scope', () => {
     expect(withMeaning.map((item) => item.kind)).toEqual(['read_extended_word', 'answer_word_meaning']);
   });
 
-  it('withholds the word before a cold read, then models its parts after the attempt', () => {
+  it('withholds the word before a cold read; reading the first part alone is the signature miss', () => {
     const [read] = itemsFromChallenge({ id: 'c1', mode: 'compound-word', targetWord: 'sunset' });
-    expect(spokenLine(itemCue(read, { opening: true }))).not.toContain('sunset');
-    expect(spokenLine(itemCue(read, { opening: true }))).not.toContain('sun');
-    expect(affirmFor(read)).toContain('sun ... set ... sunset');
+    expect(askFor(read)).not.toMatch(/sun/);
+    expect(read.decodingParts).toEqual(['sun', 'set']);
+    expect(wordWorkoutKey(read)).toMatchObject({ answer: 'sunset', signatureError: expect.stringContaining('"sun" alone') });
   });
 
   it('turns one context trial into two decoding scores and one separate context score', () => {
@@ -75,14 +69,5 @@ describe('WordWorkout early-decoding scope', () => {
     expect(items[0].targetWord).not.toBe(items[1].targetWord);
     expect(items[2].responseClass).toBe('closed_set_choice');
     expect(wordWorkoutHarnessAnswers(items[2]).correct).toBe('cat');
-  });
-
-  it('passes the judged-loop gates with transfer, meaning, and context turns together', () => {
-    const items = itemsFromChallenges([
-      { id: 'c1', mode: 'inflected-word', targetWord: 'cats', includeMeaning: true },
-      { id: 'c2', mode: 'compound-word', targetWord: 'sunset', includeMeaning: true },
-      { id: 'c3', mode: 'context-discrimination', contextTrialId: 'cat-cap' },
-    ]);
-    expect(checkPackGates({ ...wordWorkoutPackBase(items) })).toEqual([]);
   });
 });

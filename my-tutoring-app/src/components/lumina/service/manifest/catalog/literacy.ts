@@ -14,36 +14,29 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 import { SYLLABLE_CLAPPER_EVAL_MODES } from '../../../primitives/visual-primitives/literacy/syllableClapperModes';
-import type { CvcMiss, SpokenCvcMiss } from '../../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
-import type { SpokenBlendMiss } from '../../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
-import type { SpokenLetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
-import type { SpokenInteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
-import type { LetterSoundMiss, SpokenLetterMiss } from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
-import type { LetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import { letterSpotterCard } from '../../../primitives/visual-primitives/literacy/letterSpotter.card';
+import { interactiveBookCard } from '../../../primitives/visual-primitives/literacy/interactiveBook.card';
 import type { LetterWorkshopMiss } from '../../../primitives/visual-primitives/literacy/letterWorkshopWorkspace';
-import type { WordWorkoutMiss } from '../../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
-import type { InteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
-import type { SpokenStoryBridgeMiss, StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
-import type { RhymeMiss } from '../../../primitives/visual-primitives/literacy/rhymeStudioLevers';
+import { storyBridgeCard } from '../../../primitives/visual-primitives/literacy/storyBridge.card';
+import { rhymeStudioCard } from '../../../primitives/visual-primitives/literacy/rhymeStudio.card';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { phonemeExplorerCard } from '../../../primitives/visual-primitives/literacy/phonemeExplorer.card';
 import { wordSorterCard } from '../../../primitives/visual-primitives/literacy/wordSorter.card';
 import { decodableReaderCard } from '../../../primitives/visual-primitives/literacy/decodableReader.card';
-import type { SwapMiss } from '../../../primitives/visual-primitives/literacy/soundSwapLevers';
+import { letterSoundLinkCard } from '../../../primitives/visual-primitives/literacy/letterSoundLink.card';
+import { phonicsBlenderCard } from '../../../primitives/visual-primitives/literacy/phonicsBlender.card';
+import { soundSwapCard } from '../../../primitives/visual-primitives/literacy/soundSwap.card';
+import { cvcSpellerCard } from '../../../primitives/visual-primitives/literacy/cvcSpeller.card';
+import { wordWorkoutCard } from '../../../primitives/visual-primitives/literacy/wordWorkout.card';
 import type { SyllableMiss } from '../../../primitives/visual-primitives/literacy/syllableClapperLevers';
-import type { FlipMiss } from '../../../primitives/visual-primitives/literacy/wordFlipLevers';
-import type { InflectBuildMiss } from '../../../primitives/visual-primitives/literacy/inflectBuild';
-import type { SpokenPictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
-import type { PictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyLevers';
+import { wordFlipCard } from '../../../primitives/visual-primitives/literacy/wordFlip.card';
+import { pictureVocabularyCard } from '../../../primitives/visual-primitives/literacy/pictureVocabulary.card';
 import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import type { AffixBuildMiss } from '../../../primitives/visual-primitives/literacy/affixBuild';
 import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
 import type { SpellingMiss } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
-import type { RhymePairMiss } from '../../../primitives/visual-primitives/literacy/rhymePairBuild';
-import type { RouteMiss } from '../../../primitives/visual-primitives/math/spatialPathWorkspace';
-import type { PicturePairMiss } from '../../../primitives/visual-primitives/literacy/picturePairBuild';
+import { spatialPathCard } from '../../../primitives/visual-primitives/math/spatialPath.card';
 import { youAndMeCard } from '../../../primitives/visual-primitives/literacy/youAndMe.card';
 import { oralSentenceStudioCard } from '../../../primitives/visual-primitives/literacy/oralSentenceStudio.card';
 import { storyRibbonCard } from '../../../primitives/visual-primitives/literacy/storyRibbon.card';
@@ -67,25 +60,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2, challengeTypes: ['choose_route'],
         description: 'Choose, from at least three routes with one shared start and finish, the route whose path goes over, under, through, around, or across the landmark. The route identity is checked; the endpoint is not.' },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten'],
-      guidance: 'The map checks the answer itself, and you are not told it: the learner taps a numbered route, then presses '
-        + 'Animate this route, and the traveler walks it. Every route starts and ends at the same place, so where a route '
-        + 'ends is never the answer; what its path does at the landmark is. A Kindergarten learner may not read: read the '
-        + 'ask aloud and say the movement word clearly. Before the check, and after a wrong one, never say which number '
-        + 'to tap, point at a route, or say what the right path looks like or where on this map it goes (straight, '
-        + 'curved, high, low, into an opening): that gives the answer away. Explaining the movement word with an '
-        + 'everyday example away from the map (crawling under a table, walking through a door) is teaching. After a '
-        + 'wrong check you may name what the animated route did. You cannot tap or animate a route; beyond its levers '
-        + 'you cannot change the screen.',
-      // Levers: `spatialPathLevers.ts`; both help levers answer every miss on every item, so nothing is unanswered.
-      levers: true,
-      // The map's own check (`routeMiss`): the movement the chosen route made instead of the asked one.
-      misses: missLists<RouteMiss>({
-        choose_route: ['went_over', 'went_under', 'went_through', 'went_around', 'went_across'],
-      }),
-    },
     supportsEvaluation: true,
+    ...bossEntry(spatialPathCard),
   },
   {
     id: 'you-and-me',
@@ -130,29 +106,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'after credit. Gesture modes use pictured choices and never judge microphone speech. Spoken modes '
       + 'accept age-appropriate defensible comparisons but reject a response that references only one story. '
       + 'The manifest must not supply story text, names, comparison answers, or event pairings.',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Two short read-aloud stories stay on screen as pictures, titles and friends; the story text is '
-        + 'heard, not printed. Read both stories aloud before the first question, and again when asked. Match '
-        + 'characters, match settings, the picture Venn diagram and event sequences are answered by tapping a choice; '
-        + 'the activity checks the tap. Say alike, say different and compare big ideas are answered out loud: any '
-        + 'true comparison across BOTH stories counts, not only the reference wording, but a detail about one story '
-        + 'alone is not a comparison. Before an attempt never say the comparison or which choice is right. The '
-        + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything; '
-        + 'beyond its levers you cannot change the screen.',
-      levers: true,
-      // Taps: the tap's own check (`storyBridgeMiss`); spoken comparisons: `storyBridgeSpokenMisses`. Every miss has a
-      // help lever on every item (`storyBridgeLevers.ts`), so nothing is unanswered.
-      misses: missLists<StoryBridgeMiss | SpokenStoryBridgeMiss>({
-        match_character: ['same_look', 'other_character'],
-        match_setting: ['same_for_different', 'different_for_same'],
-        venn_place: ['both_for_one', 'one_for_both', 'other_side'],
-        sequence_two: ['earlier_event', 'later_event'],
-        say_alike: ['one_friend_only', 'told_difference'],
-        say_different: ['one_friend_only', 'told_likeness'],
-        main_idea_compare: ['one_story_only'],
-      }),
-    },
     evalModes: [
       {
         evalMode: 'match_character', label: 'Match characters', beta: 2.0, discrimination: 1.2,
@@ -191,81 +144,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    audioInput: JUDGED_AUDIO_INPUT,
-    tutoring: {
-      taskDescription:
-        'Story Bridge is a live-judged Kindergarten comparison activity. The same two illustrated stories remain '
-        + 'available on turn {{currentTurn}} of {{totalTurns}}, mode "{{challengeType}}". {{taskFocus}} The two '
-        + 'post-attempt evidence references are {{evidenceA}} and {{evidenceB}}. Gesture turns are taps selected '
-        + 'from {{farShore}} and must not be judged from speech. Spoken turns require a defensible relationship '
-        + 'across both stories; a one-story fact is incomplete. Speak only exact scripted lines.',
-      contextKeys: ['challengeType', 'anchorName', 'anchorStory', 'targetStory', 'farShore', 'taskFocus', 'evidenceA', 'evidenceB', 'currentTurn', 'totalTurns'],
-      scaffoldingLevels: {
-        level1: 'Use the exact correction line supplied by the application. It places one evidence reference from each story together, states the relationship, and re-asks without requiring reading.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for your own hint, a re-told story, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Taps the friend who LOOKS like the anchor (same kind of animal or person) instead of the one who acted alike',
-          response: 'Run the scripted correction for the item exactly — it re-reads what the anchor did and says what both friends did — then wait. Never add which card it is.',
-        },
-        {
-          pattern: 'Taps a card on the anchor\'s own side or taps before the stories finish',
-          response: 'Say nothing; the screen does not accept those taps. Finish the quoted line and wait.',
-        },
-        {
-          pattern: 'Goes quiet and does nothing for a long time',
-          response: 'Wait longer in silence first. If the child taps the hear-again control, an [SB_HEAR] message gives you both stories and the ask to say again, exactly as written.',
-        },
-        {
-          pattern: 'Gives a detail from only one story during a spoken comparison',
-          response: 'Treat it as incomplete. Use the scripted correction, which brings evidence from both stories together, then wait for a relationship across both.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [SB_ITEM], [SB_TAP], [SB_MOVE], [SB_HEAR] or [SB_COMPLETE] contain the only '
-            + 'lesson words you may speak, and each one quotes the exact line after "Say exactly:". The '
-            + 'square-bracket label is private metadata: never speak, reproduce, or invent it. Affirmations '
-            + 'begin with "Yes" and corrections begin with "My turn" — never begin any other sentence with '
-            + 'those words. The application decides which item comes next; never introduce one yourself, never '
-            + 'announce progress, and never re-read a story you have already read unless a message asks you to.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [SB_ITEM] carries the greeting, how the game works, BOTH stories, and the first ask '
-            + 'inside one quoted line. Speak it and stop. Do not greet the child separately, do not explain '
-            + 'the activity in your own words, do not summarize or comment on the stories, and do not add a '
-            + 'warm-up question — the quoted line is the whole opening.',
-        },
-        {
-          title: 'GESTURE AND SPOKEN TURNS',
-          instruction:
-            'Read the current bracketed contract. On gesture turns, stay silent until [SB_TAP] supplies the '
-            + 'code-computed verdict; never judge microphone speech. On spoken turns, judge meaning: accept any '
-            + 'age-appropriate defensible comparison grounded in both texts, and refuse a fact about only one.',
-        },
-        {
-          title: 'COMPARISON EVIDENCE IS HIDDEN UNTIL THE VERDICT',
-          instruction:
-            'Before a verdict, never reveal the matching character, same/different choice, Venn region, paired '
-            + 'event, reference comparison, or a screen position. After a verdict, the scripted line names the '
-            + 'relationship and reads the relevant evidence from each story side by side.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP. Do not re-ask, do not fill the pause, do not retell a story, and do not '
-            + 'narrate what the child might be thinking. A long pause is a five-year-old holding two stories '
-            + 'in mind. The application will tell you what was tapped, hear and judge a spoken comparison, or '
-            + 'hand you the hear-again line according to the current item contract.',
-        },
-      ],
-    },
+    ...bossEntry(storyBridgeCard),
     affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 6 },
   },
   {
@@ -583,7 +462,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     {
       id: 'phonics-blender',
       misconceptionScope: 'primitive',
-    description: 'Sound-by-sound word building with phoneme tiles. Students tap to hear individual sounds, then blend into words. Supports CVC, CVCE, blends, digraphs, diphthongs, and r-controlled vowels. Audio playback via TTS. AI-generated word images on success. ESSENTIAL for K-2 phonics instruction.',
+    description: 'Decode and blend: the student reads the letters of a word, may tap a letter to hear its sound (voiced by '
+      + 'the live tutor), and says the whole word out loud; the tutor judges it. Supports CVC, CVCE, blends, digraphs, '
+      + 'diphthongs, and r-controlled vowels, plus an open build that joins two tiles into a word with a blend. An emoji '
+      + 'word-picture appears once the word is said. ESSENTIAL for K-2 phonics instruction.',
     constraints: 'Grades K-2 only. Requires phonics/decoding content.',
     // reader: 'none' — READY @ PRE (cvc, the K census route), live-confirmed 3/3
     // (qa/reader-fit/phonics-blender-PRE-2026-07-15.md).
@@ -635,173 +517,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      levers: true,
-      guidance: 'The learner sees the letters of a word and says the whole word out loud; it is judged against the word you '
-        + 'are given. Sounding it out and then saying the word is a correct blend. Separate sounds with no word at the '
-        + 'end, letter names, or a close but different word (cap for cat) are not yet the word. A tapped letter asks you '
-        + 'for its sound: say only that sound, never the word. The word is never printed and its picture appears only '
-        + 'after the word is credited. You cannot tap letters or show the picture. On build a blend word (the open build) '
-        + 'the learner joins a start tile and an ending tile into any real word with a blend at the start or the end and '
-        + 'presses "I am done"; many words pass. Never say a word that would fit or which tiles to use.',
-      // The spoken blend's known wrong answers (`blendSpokenMisses`).
-      misses: { ...sameMisses<SpokenBlendMiss>(['cvc', 'cvce_blend', 'digraph', 'advanced'], ['letter_name', 'sounds_no_word',
-        'read_backwards', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
-        build_blend: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'] },
-      // build_blend (`letterBuild.ts` blend kinds): the tiles' order and the blend in code, then the word judge.
-      // `same_word` and `pick_another` have no lever: the word already made stays on screen.
-      unanswered: { build_blend: ['same_word', 'pick_another'] },
-    },
-    // ── DI MODALITY, PURELY VERBAL (2026-08-09, two user rulings) ──────────
-    // The tutor owns the clock and the task is spoken end to end. It models the
-    // sounds and the word, waits, judges the audio in-band, corrects
-    // contrastively, and its OWN affirmation is the advance — there is no Check
-    // button, no Next button, no push-to-talk mic and no advance timer anywhere
-    // in the path. The child SEES the letters, may tap any letter to hear its
-    // sound, and SAYS the whole word. (The first port kept a tile-arranging
-    // step; driven live the child answered the "put them in order" ask by
-    // SAYING the word, which is the right response to a blending task — so the
-    // tiles became a stimulus to read, not pieces to assemble.)
-    // The cue lines and the per-item judging contract live in
-    // `phonicsBlenderScript.ts` (hand-authored, DISTAR discipline); this block
-    // is the session-level frame around them.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn", or the engine's
-    // sentence-scoped verdict scan would classify a phantom verdict.
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction sound blending for a beginning reader '
-        + '(pattern: {{patternType}}, grade {{gradeLevel}}). You speak the exact scripted lines from each '
-        + 'bracketed application message, you pronounce any single sound the child taps, and you judge each '
-        + 'spoken attempt from the audio you heard using only the two allowed reply branches. The child sees '
-        + "the word's letters on screen and SAYS the whole word aloud; blending the sounds together out loud "
-        + 'is the entire skill being practiced.',
-      // Trimmed to exactly what the component pushes through updateContext. An
-      // unpushed key renders the literal string "(not set)" into the prompt,
-      // which the tutor then reads as content — the phase/placed/attempts keys
-      // the click-driven version carried are gone with the phases themselves.
-      contextKeys: ['patternType', 'currentWord', 'targetPhonemes', 'supportTier'],
-      // Correction territory, not answer territory: every level here describes
-      // what happens AFTER an attempt, and re-modeling at every tier is the DI
-      // rule (standing gate 3 — remediation is not scaffolding).
-      scaffoldingLevels: {
-        level1: 'Ask which sound the first letter makes, then wait.',
-        level2: 'Say the sounds of the word in order once, slowly, then hand it back to them.',
-        level3: 'Say the sounds and then run them together into the word, then ask them for the word once more.',
-      },
-      // Observable behaviours only. The first is this activity's signature
-      // error class; the third protects against OVER-correcting a child who
-      // actually blended, which strict judging makes the risk in the other
-      // direction.
-      commonStruggles: [
-        {
-          pattern: 'Says the separate sounds but never runs them together — "cuh… a… tuh" with no word at the end',
-          response: 'Treat the sounds alone as unfinished: re-model the blend ending in the whole word, then ask what word it is.',
-        },
-        {
-          pattern: 'Says a close-sounding DIFFERENT word — "cap" for "cat", "pin" for "pen"',
-          response: 'A different word is a different word: correct it and re-model the target, however close it sounded.',
-        },
-        {
-          pattern: 'Sounds it out slowly first and then says the whole word correctly',
-          response: 'That is a correct blend — affirm it, because blending out loud is the skill at this stage, not a fault.',
-        },
-        {
-          pattern: 'Names the letters instead of their sounds — "see-ay-tee"',
-          response: 'Say that letters have a name and a sound, model the sounds, then ask for the whole word.',
-        },
-        {
-          pattern: 'Goes quiet after being asked what word it is',
-          response: 'Say the word together once, then hand it back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_BLEND_ITEM], [DI_BLEND_MOVE_ON] or [DI_BLEND_COMPLETE] contain the only '
-            + 'lesson words you may speak. The square-bracket label is private metadata: never speak, '
-            + 'reproduce, or invent it. Each [DI_BLEND_ITEM] carries a two-branch judging rule: affirmations '
-            + 'must begin with "Yes" and corrections must begin with "My turn", using the exact quoted lines. '
-            + 'Never begin any other sentence with those words. Judge honestly from the audio: affirm a real '
-            + 'blend of the target word; correct a wrong, missing, or unfinished one. EVERY correction '
-            + 're-models the sounds and then the word before handing it back. Do not praise to be kind. The '
-            + 'application decides which word comes next; never introduce one yourself.',
-        },
-        {
-          title: 'BLENDING (what counts as the answer)',
-          instruction:
-            'The target is the WHOLE WORD said aloud. A child who sounds it out first and then says it fast '
-            + 'has blended correctly — affirm that, it is the method being taught. A child who produces only '
-            + 'the separate sounds and stops has not finished: running them together is the skill, so that '
-            + 'gets the correction branch, warmly. Judge the FINAL word strictly — a close-sounding different '
-            + 'word (like "cap" for "cat") is wrong. Letter NAMES are never the answer. Never say the whole '
-            + 'target word before the quoted lesson text for that word asks you to, and never preview a word '
-            + 'that is still coming.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask "What word?", STOP and stay silent until the child answers. Do not re-ask, do not '
-            + 'fill the pause, do not sound the word out again unprompted, and do not count the letters for '
-            + 'them. A long silence is a child working the sounds out, and that working-out is the activity. '
-            + 'If they tap a letter you will receive a separate pronunciation message — answer that and '
-            + 'nothing more, then go back to waiting.',
-        },
-        {
-          // Residual SWAP-1 (live, 2026-08-09): this directive used to ask the
-          // tutor to COMPOSE a how-to-play before speaking the scripted line,
-          // which gave the opening turn two jobs. On sound-swap, whose opener
-          // has the identical shape, the tutor did the first job, spoke the
-          // literal bracket tag, improvised its own ask, and reached the
-          // scripted line only after a barge-in — item 1 ran without its model.
-          // The how-to-play is now TEXT INSIDE the opening quote
-          // (`phonicsBlenderScript.ts`), so this directive only forbids adding
-          // to it.
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'At Grade K the learner is a pre-reader: on-screen text is invisible to them, so YOUR VOICE is '
-            + 'the only instruction channel — and the FIRST [DI_BLEND_ITEM] of the session already carries '
-            + 'how to play INSIDE its quoted line. Speak that quote exactly and add nothing of your own: no '
-            + 'separate greeting, no how-to-play in your own wording, no rephrased question. It OVERRIDES any '
-            + '"keep it to one sentence" cap from a lesson switch — the quoted line is the length it is meant '
-            + 'to be. Never spell the word for them and never say it before the quoted line does.',
-        },
-        {
-          title: 'PRONUNCIATION COMMANDS',
-          instruction:
-            'When you receive a message starting with [PRONOUNCE_SOUND], you MUST immediately and clearly '
-            + 'say ONLY the requested sound. Do NOT add commentary, questions, encouragement, or extra '
-            + 'words, do NOT say the whole word, and do NOT treat it as an attempt to judge. This is the '
-            + 'child tapping a letter to hear it, and that audio IS this activity — it is answered at every '
-            + 'grade and every support tier, including while you are waiting for their answer. Say the '
-            + 'isolated sound (e.g., just "sss" for /s/, just "aaa" for /a/).',
-        },
-        {
-          title: 'SUPPORT TIER — REVEAL POLICY (match your voice to the on-screen help level)',
-          instruction:
-            'This activity carries a within-mode support tier in {{supportTier}} (easy, medium, hard, or '
-            + 'null when no tier was requested). The tier changes ONLY how much help is shown — never the '
-            + 'words, the sounds, or the answer. You are the SECOND scaffold channel, so your reveal '
-            + 'latitude must MATCH it; otherwise a cue the screen just withdrew leaks straight back in by '
-            + 'voice.\n'
-            + 'easy or null: the letters are shown separated and the scripted line models the sounds in '
-            + 'order; you may confirm a single sound if the child asks.\n'
-            + 'medium: the letters are still separated but less strongly cued. Confirm one sound if asked, '
-            + 'but do not recite the whole sequence unprompted.\n'
-            + 'hard: the letters are joined into one solid word and the scripted line models only the word, '
-            + 'because segmenting it is the work. Do NOT read the sounds out, do NOT say how many there '
-            + 'are, and do NOT give their order — even though {{targetPhonemes}} sits in your context.\n'
-            + 'NEVER withdrawn at ANY tier: (1) pronunciation on demand — a [PRONOUNCE_SOUND] message is '
-            + 'always answered, because that audio IS this activity; (2) the Grade-K how-to-play protocol '
-            + 'above — telling a pre-reader HOW TO PLAY is protocol, not the answer; (3) the correction '
-            + 'branch, which re-models at every tier by design.',
-        },
-      ],
-    },
+    ...bossEntry(phonicsBlenderCard),
+    // tutoring removed 2026-10-20 (boss migration): its [DI_BLEND_*] scripted-cue directives and contextKeys fed the
+    // retired runner; bound sessions send `tutoring: null`. The card (`phonicsBlender.card.ts`) is the wiring.
   },
   {
     id: 'decodable-reader',
@@ -849,47 +567,22 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'interactive-book',
     description:
-      'Live picture-book work with a spoken tutor. The tutor asks, waits and responds, and a credited '
-      + 'answer moves the lesson on. Two directions, and the answer is made of something different in '
-      + 'each: Read Together (the tutor reads a real book sentence up to one glowing word, stops, and the child '
-      + 'READS that word out loud — supported oral reading), and Book Detective (the tutor names a printed book '
-      + 'part — title, author, heading, caption, page number — and the child TAPS it on the page — print '
-      + 'awareness and text features). The tap direction taps because its answer is WHICH printed element on '
-      + 'the page it is — a position, like pointing at a real book — while reading the part\'s words aloud '
-      + 'would be a different skill. Nothing on screen shows an answer before it is credited. Requires a '
-      + 'microphone. ESSENTIAL for K-2 print awareness and early oral reading.',
+      'Live picture-book work with a spoken tutor, who teaches in its own words. Two directions, and the answer is '
+      + 'made of something different in each: Read Together (the tutor reads a real book sentence up to one glowing '
+      + 'word, stops, and the child READS that word out loud, judged by the tutor: supported oral reading), and Book '
+      + 'Detective (the tutor names a printed book part (title, author, heading, caption, page number) and the child '
+      + 'TAPS it on the page, which checks the tap: print awareness and text features). The tap direction taps because '
+      + 'its answer is WHICH printed element on the page it is, a position, like pointing at a real book, while reading '
+      + 'the words of the part aloud would be a different skill. Nothing on screen shows an answer before it is credited. '
+      + 'Read Together requires a microphone. ESSENTIAL for K-2 print awareness and early oral reading.',
     constraints:
-      'Requires the live tutor and a microphone. Uses one generated nonfiction book. The manifest must not '
-      + 'provide book text, feature answers, focus-word answers, page data, image prompts, or challenges; the '
+      'Requires the live tutor; Read Together also needs a microphone. Uses one generated nonfiction book. The manifest '
+      + 'must not provide book text, feature answers, focus-word answers, page data, image prompts, or challenges; the '
       + 'generator derives all scored contracts from visible book content. Every focus word needs at least two '
       + 'natural words before it in its sentence so the tutor has a real lead-in to read and stop after. Not a '
       + 'story or compare activity yet.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['spoken', 'tap'], role: 'apply', minutes: 8 },
-    // ── DI MODALITY (2026-08-14) — FOURTEENTH literacy port. The tutor owns
-    // the clock in both directions: it asks once, waits, judges the spoken word
-    // from the audio in-band, is handed a CODE-COMPUTED verdict for the tap,
-    // and its own line is the advance. There is no advance timer, no Next
-    // button, no push-to-talk mic and no voice-mode fork anywhere in the path.
-    // THIS WAS THE LAST LITERACY SURFACE ON THE PUSH-TO-TALK CAPTURE HOOK —
-    // porting it discharges a standing open-mic doctrine violation. The old
-    // tap-the-glowing-word fallback is gone with it: tapping a word completes
-    // an ORAL READING task without reading anything (the costume test).
-    // THE SPLIT is the table picture: shared reading is the most spoken thing
-    // a teacher and a five-year-old do (read-focus-word → voice,
-    // short_spoken_word, benched); "show me the title" is answered by POINTING
-    // at the page (find-feature → gesture — concepts-of-print assessment is
-    // administered by pointing, and a pre-reader can find the title without
-    // being able to read it, which is the skill this mode measures).
-    // find-feature's silence is enforced by the runner HOLDING THE ACTIVITY
-    // BRACKET for the item, not by asking the tutor to wait.
-    // Free page navigation is gone: the screen follows the lesson to each
-    // item's page, so the child can no longer wander off the target page
-    // mid-question (the click-era block had a struggle entry for that state).
-    // Cue lines and the per-item judging contracts live in
-    // `interactiveBookScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. SENTINEL DISCIPLINE (standing gate 2) re-checked on
-    // every line below: no sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    ...bossEntry(interactiveBookCard),
     evalModes: [
       {
         evalMode: 'find-feature',
@@ -912,127 +605,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'The tutor reads a book sentence up to one glowing word and stops; the child reads that word aloud and the tutor judges it in-band. Already priced as spoken production; the old partial-credit tap escape is deleted, not restructured; β holds.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction book work for a young child. Right now the direction is '
-        + '"{{challengeType}}" and the question side is "{{stimulus}}". How the child answers depends on the '
-        + 'direction, and each application message tells you which: in the reading direction they READ the '
-        + 'glowing word out loud and you judge what you hear; in the find direction they TAP a printed part of '
-        + 'a book page you cannot see, and you stay silent until the application tells you what they tapped. '
-        + 'You speak the exact scripted lines from each bracketed application message and nothing else. '
-        + 'Working the answer out from the page is the entire skill being practiced, so nothing you say may '
-        + 'hand it over first.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16).
-      // Found by the per-rung census run during picture-vocabulary's port
-      // (19h-i-b port 4), NOT by the sweep: interactive-book shipped 2026-08-14,
-      // before 18d's literacy shape was named, so the handoff's table — which
-      // censused only the ports still UNPORTED — could not see it. A shipped
-      // port has been carrying a live no-verdict channel since.
-      // The defect: a re-spoken ask opens with neither "Yes" nor "My turn:", so
-      // the reducer records no verdict, the correction counter freezes, and the
-      // child waits on a tutor that has already spoken.
-      scaffoldingLevels: {
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the answer and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it. On a find item there is no line to speak here: the application sends the verdict to you in an [IB_TAP] message.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower reading of the ask, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Says a word that fits the sentence but is not the glowing word',
-          response: 'Run the scripted correction for the item, then hand the question back and wait — the printed word, not the story, is the task.',
-        },
-        {
-          pattern: 'Taps a different printed part of the page',
-          response: 'Run the scripted correction for the item, then hand the question back and wait.',
-        },
-        {
-          pattern: 'Goes quiet and does nothing for a long time',
-          response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.',
-        },
-        {
-          pattern: 'Talks about the picture instead of answering',
-          response: 'Stay warm and silent; when the talk ends, say the question once more exactly as written and wait.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [IB_ITEM], [IB_TAP], [IB_MOVE], [IB_HEAR] or [IB_COMPLETE] contain the only '
-            + 'lesson words you may speak, and each one quotes the exact line after "Say exactly:". The '
-            + 'square-bracket label is private metadata: never speak, reproduce, or invent it. Affirmations '
-            + 'begin with "Yes" and corrections begin with "My turn" — never begin any other sentence with '
-            + 'those words. The application decides which item comes next; never introduce one yourself, never '
-            + 'announce progress, and never re-read a sentence you have already read unless a message asks you to.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [IB_ITEM] carries the greeting, how the game works, and the first question inside one '
-            + 'quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
-            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (it differs by direction)',
-          instruction:
-            'In the READING direction the child answers OUT LOUD, and the [IB_ITEM] message names the one word '
-            + 'that is correct. The word on its own, or inside a short phrase, is the answer; slow sounding-out '
-            + 'that lands on the word is the answer too. A different word that would fit the sentence is not, '
-            + 'however confident it sounds — the child is reading print, not guessing the story. In the FIND '
-            + 'direction the child taps a page you cannot see, so after you ask there is nothing for you to '
-            + 'judge — a separate [IB_TAP] message tells you what was tapped and gives you the exact line to '
-            + 'say, and only then do you speak.',
-        },
-        {
-          title: 'NEVER READ THE PAGE FIRST',
-          instruction:
-            'The book\'s printed words are the child\'s work, not yours. Before a verdict, never say the '
-            + 'glowing word, never read the title, headings, captions or any printed text aloud, and never '
-            + 'hint at where on the page an answer sits. In the reading direction you read ONLY the scripted '
-            + 'lead-in and stop where it stops — the glowing word belongs to the child. After a verdict, the '
-            + 'scripted line may name what was found; speak it exactly and nothing more.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP. Do not re-ask, do not fill the pause, do not read along, and do not finish a '
-            + 'word the child is working out. A long pause is a five-year-old decoding print or scanning a '
-            + 'page, and that work IS the activity. Think time is unbounded and the application, not the '
-            + 'clock, decides when to move on.',
-        },
-        {
-          title: 'HEAR IT AGAIN ON DEMAND',
-          instruction:
-            'When you receive [IB_HEAR], the child tapped to hear the question again. Say ONLY the quoted '
-            + 'line, warmly, then go back to waiting. Add nothing, judge nothing you just heard, and never let '
-            + 'the repeat carry more help than the first asking did. This channel is answered at every grade '
-            + 'and every support tier.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'One picture book; the screen shows the page the item is on. Read the glowing word: read the '
-        + 'sentence up to it aloud and stop; the learner reads that word out loud, judged against the '
-        + 'given word. The lead-in said back or a different word is not it; never say the glowing word '
-        + 'before they try. Find a book part: name the part (title, author\'s name, heading, picture caption, page '
-        + 'number) and the learner taps it on the page; the activity checks the tap. Before they tap, never read out '
-        + 'or point to which printed words are that part; after a tap you may say what each part is for. The '
-        + 'speaker button asks for the question again only. You cannot tap or turn a page.',
-      levers: true,
-      // The tap's own check (`interactiveBookMiss`), then read-focus-word's spoken miss.
-      misses: {
-        ...missLists<InteractiveBookMiss>({
-          'find-feature': ['tapped_title', 'tapped_author', 'tapped_heading', 'tapped_caption', 'tapped_page_number'],
-        }),
-        // Spoken (`interactiveBookSpokenMisses`). The dots and short-word levers answer `context_guess`; no lever
-        // answers the lead-in said back.
-        ...missLists<SpokenInteractiveBookMiss>({ 'read-focus-word': ['said_lead_in', 'context_guess'] }),
-      },
-      unanswered: { 'read-focus-word': ['said_lead_in'] },
-    },
+    // tutoring removed 2026-10-20 (boss migration): its [IB_*] scripted-cue directives and contextKeys fed the retired
+    // runner; bound sessions send `tutoring: null`. The card (`interactiveBook.card.ts`) is the wiring.
   },
 
   {
@@ -1045,8 +620,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'rhymes from a small set (Find the Rhyme), or THINKS OF A RHYME with nothing on screen but the target '
       + 'word (Think of a Rhyme), or fills three retained slots with three different valid rhymes (Build a Rhyme Family). '
       + 'Only identification shows choices, and they are the closed set the child '
-      + 'speaks from; nothing anywhere is tapped to answer. Tap-to-hear repeats the question. Requires a '
-      + 'microphone. ESSENTIAL for K-2 phonological awareness — and Think of a Rhyme is rhyme GENERATION, the '
+      + 'speaks from; in those four modes nothing is tapped to answer. Rhyme Pairs (the open build) is the one tapped '
+      + 'mode: the child puts two pictures whose names rhyme in a tray. Tap-to-hear repeats the question. The spoken '
+      + 'modes require a microphone. ESSENTIAL for K-2 phonological awareness — and Think of a Rhyme is rhyme GENERATION, the '
       + 'Bloom tier above recognising one.',
     constraints:
       'Use 8-10 challenges for recognition/identification mixes; collection uses 1-2 base-word challenges because '
@@ -1056,7 +632,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'orange or month). COLLECTION uses the same open rule but retains three learner-produced words, rejects '
       + 'duplicates, and supplies no example answers. Generate 1-2 collection challenges because each one elicits '
       + 'three judged responses. Route FREE rhyme generation ("tell me a word that rhymes with cat") HERE. '
-      + 'Every answer is spoken; requires the live tutor and a microphone. '
+      + 'Every answer in the four spoken modes is spoken; they require the live tutor and a microphone. '
       + 'PRE-READER (K): all four modes route at K. Each word in recognition and identification (target, '
       + 'comparison, every option) carries a single depicting emoji so a non-reader can tell the words apart; '
       + 'production needs no answer surface, while collection shows only the child’s accepted words in three slots.',
@@ -1064,69 +640,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md); production is purely oral
     // with nothing on screen but the target, so it carries no higher demand.
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'Every answer is spoken. Rhyming is about the ending sound: on recognition the learner says yes or no to '
-        + 'whether two words rhyme; on identification the learner says the choice that rhymes with the target; on '
-        + 'production the learner says any real word that rhymes; on collection the learner says a new rhyme for each '
-        + 'of three spots, never one already collected. The target said back, a word that only starts the same, or a '
-        + 'made-up word is not a rhyme. Before the learner has tried, never say which words rhyme, never name the '
-        + 'ending, and never stretch a word to point at its ending. On identification read the choices aloud only '
-        + 'when the namingChoices fact allows it. A tapped card asks you to repeat the question only. You cannot mark '
-        + 'a choice or fill a spot. A lever\'s model uses other words: say those freely. On rhyme pairs (the open build) '
-        + 'the learner taps two of eight pictures into a pair tray and presses "I am done"; several pairs are right. A '
-        + 'picture speaker asks you to say that picture\'s name only. Never say which pictures rhyme or name a pair.',
-      levers: true,
-      // The misses a spoken answer names (`rhymeStudioLevers.ts`), emitted by `rhymeSpokenMisses` on recognition and
-      // identification. `unanswered` stays the levers' own list (`rhymeStudioLevers.test.ts` pins it).
-      misses: missLists<RhymeMiss | RhymePairMiss>({
-        recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
-        identification: ['onset_foil', 'echo_target', 'off_menu'],
-        production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
-        collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
-        // The open build (`rhymePairBuild.ts`), checked in code from the pictures' rimes.
-        pair_build: ['no_rhyme', 'same_start', 'same_pair'],
-      }),
-      unanswered: {
-        recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
-        identification: ['onset_foil', 'echo_target', 'off_menu'],
-        production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
-        collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
-        // pair_build: the pair already found stays on screen.
-        pair_build: ['same_pair'],
-      },
-    },
-    // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
-    // clock in every mode; there is no advance timer, no push-to-talk mic, no
-    // Next button and no Start gate anywhere in the path.
-    // ⭐ THE BENCH IS CLEARED AND THE BANK IS DELETED (2026-08-19).
-    // `open_set_word` was the family's last BLOCKED response class and free
-    // rhyme production its canonical case, which is why this primitive sat
-    // behind a sitting longer than any other literacy surface. The bench ran
-    // 72 probes over six rimes against this exact contract
-    // (`qa/di-bench/run-2026-08-19-open-set-word.md`) and the judge's affirm
-    // set was EXACTLY the 17 planted valid rhymes — every echo, onset match,
-    // semantic neighbour, off-task turn and nonword refused. So `production` is
-    // now genuinely open: no bank, no menu, the tutor judges against a rule.
-    // USER RULING 2026-08-18: "we shouldnt need an answer bank for synthesis,
-    // trust the model."
-    // The K gate went with the bank — it existed because bank distractors
-    // could not be pictured, and an oral-only mode needs no pictures.
-    // RECOGNITION IS SPOKEN, and it took a user drive to get there. It shipped
-    // for one day with a 👍/👎 tap, on the argument that a yes/no verdict is
-    // not made of language. USER RULING 2026-08-12: "we should just be able to
-    // say yes to the tutor." The session log showed the tap could not have
-    // survived regardless — asked a spoken question the child answered aloud,
-    // the silence contract had no scripted line for that, and the tutor
-    // invented a verdict the engine could not read, wedging the run. `yes_no`
-    // ships as accepted-build-ahead on that ruling; acceptance drive #94.
-    // The cue lines and per-item judging contracts live in
-    // `rhymeStudioScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    // The live-tutor wiring is the boss (`rhymeStudio.card.ts`, `rhymeStudio.boss.ts`): the card's modes, misses and
+    // words, and the microphone. Bound sessions send no catalog tutoring block; the boss describes the activity.
+    ...bossEntry(rhymeStudioCard),
     evalModes: [
       {
         evalMode: 'recognition',
@@ -1193,73 +709,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'duplicate, target echo, non-rhyme, or invented word is explained and retried without revealing examples.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction rhyming practice for a young child. Right now the mode is '
-        + '"{{challengeMode}}" and the question side is "{{stimulus}}". The child answers every mode OUT LOUD and '
-        + 'you judge the audio you heard — recognition is answered "yes" or "no", the other three with a word. '
-        + 'Nothing on screen is tapped to answer, so an answer will always reach you as speech. Hearing how two words '
-        + 'END is the entire skill being practiced, so the child does the listening — you never say which words '
-        + 'rhyme before they answer.',
-      // Trimmed 10 -> 2, to exactly what the component pushes through
-      // updateContext (and that the connect-time primitive_data also carries).
-      // The stimulus is ANSWER-FREE by construction: the RIME is never pushed in
-      // any mode, because it names the family the answer belongs to and IS the
-      // whole question in recognition. `rhymeStudioScript`'s stimulusFor is the
-      // single builder.
-      contextKeys: ['challengeMode', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt, and re-modeling is the scripted correction's
-      // job — these are the shape it takes, never a pre-attempt hint.
-      scaffoldingLevels: {
-        level1:
-          'After a wrong answer, re-direct attention to the ENDS of the words: "Listen again to how each word '
-          + 'finishes." Do not say which words rhyme.',
-        level2:
-          'After a second wrong answer, say the two words slowly with a clear pause between them so the endings '
-          + 'stand apart, then ask again.',
-        level3:
-          'When the scripted correction has already named the rhyming word, keep it warm and short: say the pair '
-          + 'once more together, then move on. Never drill a child who has missed twice.',
-      },
-      // Voice contract (di-spoken-practice's 2026-08-11 lesson, arriving here a
-      // second time): every response is a MOVE the tutor PERFORMS with its
-      // scripted lines, in performable terms — never meta-commentary about the
-      // session. The silence row used to open "Think time is unbounded — wait",
-      // and on 2026-08-13 (log …f76f154cd898) the tutor spoke it to a child as
-      // "Think time is unbounded — take your time." A response that cannot be
-      // performed can only be recited.
-      commonStruggles: [
-        {
-          pattern: 'Confusing rhyme with alliteration (same beginning)',
-          response:
-            'Rhyming is about the ENDING sound, not the beginning. Say the pair the correction gave you and let '
-            + 'the child hear the ends land together.',
-        },
-        {
-          pattern: 'Says the target word back instead of a rhyme',
-          response:
-            'A word does not rhyme with itself in this game. Ask again for a different word that ends the same way.',
-        },
-        {
-          pattern: 'Repeats a rhyme already accepted in the family',
-          response:
-            'Name the already-filled response, explain that the family needs three different words, and ask for a '
-            + 'new word with the same ending sound. Do not offer an unused example.',
-        },
-        {
-          pattern: 'Silence after the ask',
-          response:
-            'Wait for them without speaking — a child working out a rhyme is doing the exercise, and filling the '
-            + 'silence takes it away from them. If the silence stretches long, say the scripted question once '
-            + 'more, slowly — never a new question and never a remark about waiting.',
-        },
-      ],
-      // aiDirectives removed 2026-09-28 (handoff 22 L2): they ordered bracketed [RS_ITEM] turns and the "Yes," /
-      // "My turn:" openers of the retired runner. Bound sessions send `tutoring: null`, so they reached no
-      // workspace tutor, only an unbound mount, which shows the needs-the-tutor card. The no-answer rule lives in
-      // teachingWorkspace.guidance.
-    },
     supportsEvaluation: true,
   },
   {
@@ -1603,12 +1052,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'sound-swap',
     misconceptionScope: 'primitive',
     description:
-      'Spoken phoneme manipulation with a live Direct Instruction tutor. The tutor says a word, names one sound to add, '
-      + 'take away, or change, and the student SAYS THE NEW WORD ALOUD; the tutor judges the answer from the audio and its '
-      + 'own affirmation moves the lesson on. Three operation modes: Addition (add a phoneme to make a new word), Deletion '
-      + '(remove a phoneme to reveal a new word), and Substitution (swap one phoneme for another). The starting word and its '
-      + 'sounds are on screen and every sound is tappable to hear; there are no answer buttons and nothing to click to '
-      + 'advance. Requires a microphone. ESSENTIAL for K-2 reading readiness.',
+      'Spoken phoneme manipulation with the live tutor. The student hears a starting word and one named sound to add, '
+      + 'take away, or change, and SAYS THE NEW WORD ALOUD; the tutor judges the answer and a credited word moves the '
+      + 'lesson on. Three operation modes: Addition (add a phoneme to make a new word), Deletion (remove a phoneme to '
+      + 'reveal a new word), and Substitution (swap one phoneme for another). The starting word and its sounds are on '
+      + 'screen and every sound is tappable to hear; there are no answer buttons. Change One Letter is an open build: the '
+      + 'student changes one letter of a word in letter boxes to make any new real word and presses done. Requires a '
+      + 'microphone for the spoken modes. ESSENTIAL for K-2 reading readiness.',
     constraints: 'Use simple CVC/CVCC words. All result words must be real words. Use proper phoneme notation with slashes. Spoken answers — requires the live tutor and a microphone.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['spoken'], role: 'apply', minutes: 4 },
     evalModes: [
@@ -1649,189 +1099,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The learner sees a starting word and its sounds, hears one sound to add, take away or change, and says '
-        + 'the new word aloud; it is judged against the word you are given. The starting word said back, or a different '
-        + 'word, is not yet the answer. Always name the sound to change: without it the ask has many right answers. A '
-        + 'tapped sound asks you for that sound only. The new word is not shown until credited: never say it before the '
-        + 'learner has tried. You cannot tap sounds or show the new word. On change one letter (the open build) no sound is '
-        + 'named: the learner changes any one letter of the word in the boxes to make any real word and presses "I am done"; '
-        + 'many words pass. Never say a word that would fit or which letter to change.',
-      levers: true,
-      // Spoken misses (`soundSwapLevers.ts`), emitted by `swapSpokenMisses`. `unanswered` stays the levers' own list
-      // (`soundSwapLevers.test.ts` pins it).
-      misses: missLists<SwapMiss | LetterBuildMiss>({ addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        // The open build (`letterBuild.ts`): one letter changed in code, then the word judge's not_a_word.
-        swap_build: ['not_cvc', 'same_as_given', 'changed_more', 'same_word', 'pick_another', 'not_a_word'] }),
-      unanswered: { addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        swap_build: ['same_word', 'pick_another'] },
-    },
-    // \u2500\u2500 DI MODALITY, PURELY VERBAL (2026-08-09) \u2014 second literacy port after
-    // phonics-blender, same two user rulings. The tutor owns the clock and the
-    // task is spoken end to end: it says the starting word, names the one sound
-    // to add / take away / change, waits, judges the audio in-band, corrects
-    // contrastively, and its OWN affirmation is the advance. There is no answer
-    // button, no Next button, no push-to-talk mic and no advance timer anywhere
-    // in the path. (Before the port the child TAPPED a tile or PICKED one of
-    // 3-5 sound buttons and the screen computed the new word \u2014 a task a child
-    // who cannot manipulate phonemes can still perform correctly. Changing a
-    // sound in a word you are holding in your head is an ORAL skill, so the
-    // whole answer is oral.)
-    // The cue lines and the per-challenge judging contract live in
-    // `soundSwapScript.ts` (hand-authored, DISTAR discipline); this block is the
-    // session-level frame around them.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn", or the engine's
-    // sentence-scoped verdict scan would classify a phantom verdict.
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction phoneme manipulation for a beginning reader. '
-        + 'The current move is {{operation}} on the word "{{originalWord}}", and the answer the child has to '
-        + 'produce is "{{resultWord}}". You speak the exact scripted lines from each bracketed application '
-        + 'message, you pronounce any single sound the child taps, and you judge each spoken attempt from the '
-        + 'audio you heard using only the two allowed reply branches. The child sees the STARTING word and its '
-        + 'sounds on screen and SAYS THE NEW WORD aloud; changing a sound in a word held in the head is the '
-        + 'entire skill being practiced.',
-      // Trimmed to exactly what the component pushes through updateContext. An
-      // unpushed key renders the literal string "(not set)" into the prompt,
-      // which the tutor then reads aloud as content \u2014 the challenge/phase/
-      // attempts keys the click-driven version carried went with the clicks.
-      contextKeys: ['operation', 'originalWord', 'resultWord', 'supportTier'],
-      // Correction territory, not answer territory: every level here describes
-      // what happens AFTER an attempt, and re-modeling at every tier is the DI
-      // rule (standing gate 3 \u2014 remediation is not scaffolding).
-      scaffoldingLevels: {
-        level1: 'Say the starting word once more, then hand the change back to them.',
-        level2: 'Say the sounds of the starting word in order, slowly, then ask for the new word again.',
-        level3: 'Say the change and the word it makes, then ask them for the new word once more.',
-      },
-      // Observable behaviours only. The first is this activity's signature error
-      // class, and it is the one most likely to be mistaken for success: it is
-      // fluent, confident, and completely unchanged.
-      commonStruggles: [
-        {
-          pattern: 'Says the STARTING word back unchanged \u2014 "cat" when asked for cat without /k/',
-          response: 'Treat an unchanged word as not yet answered: re-model the change through to the new word, then ask again.',
-        },
-        {
-          pattern: 'Changes a different sound than the one named \u2014 "cap" when asked to change /k/ in "cat"',
-          response: 'Name the sound that was supposed to change, re-model that change through to the word it makes, then ask again.',
-        },
-        {
-          pattern: 'Produces a non-word \u2014 "vat" for a change that should make "bat", or something with no meaning',
-          response: 'A non-word is not the answer: re-model the change through to the real word, then hand it back.',
-        },
-        {
-          pattern: 'Says the separate sounds after the change but never runs them into a word',
-          response: 'Sounds alone are unfinished: re-model them running together into the new word, then ask what word it is.',
-        },
-        {
-          pattern: 'Sounds it out slowly first and then says the whole new word correctly',
-          response: 'That is a correct answer \u2014 affirm it, because sounding out is the method being taught at this stage.',
-        },
-        {
-          pattern: 'Goes quiet after being asked what word it is',
-          response: 'Say the starting word once more, then hand the change back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_SWAP_ITEM], [DI_SWAP_MOVE_ON] or [DI_SWAP_COMPLETE] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each [DI_SWAP_ITEM] carries a two-branch judging rule: affirmations must begin with '
-            + '"Yes" and corrections must begin with "My turn", using the exact quoted lines. Never begin any '
-            + 'other sentence with those words. Judge honestly from the audio: affirm the new word, correct a '
-            + 'wrong, missing, or unchanged one. EVERY correction re-states the change and the word it makes '
-            + 'before handing it back. Do not praise to be kind. The application decides which challenge comes '
-            + 'next; never introduce one yourself.',
-        },
-        {
-          title: 'PHONEME MANIPULATION (what counts as the answer)',
-          instruction:
-            'The target is the NEW WORD said aloud \u2014 the one the change produces. A child who sounds it out '
-            + 'first and then says it fast has answered correctly; that is the method being taught. Three '
-            + 'things look like answers and are not: saying the STARTING word back unchanged (fluent, '
-            + 'confident, and completely unchanged \u2014 this is the signature error of this skill), producing '
-            + 'only the separate sounds with no word at the end, and a close-sounding DIFFERENT word, which '
-            + 'here usually means a different sound was changed. All three take the correction branch, warmly. '
-            + 'Letter NAMES are never the answer. Never say the new word before the quoted lesson text for '
-            + 'that challenge asks you to, and never preview a challenge that is still coming.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask "What word?", STOP and stay silent until the child answers. Do not re-ask, do not '
-            + 'fill the pause, do not say the sounds again unprompted, and do not make the change for them. A '
-            + 'long silence is a child holding a word in their head and working on it, and that working-out IS '
-            + 'the activity. If they tap a sound you will receive a separate pronunciation message \u2014 answer '
-            + 'that and nothing more, then go back to waiting.',
-        },
-        {
-          // Residual SWAP-1 (live, 2026-08-09, this primitive): the directive
-          // here used to ask the tutor to COMPOSE a how-to-play before speaking
-          // the scripted line. It did the first job, spoke the literal
-          // "[DI_SWAP_ITEM]", improvised its own ask, and reached the scripted
-          // line only after a barge-in \u2014 item 1 ran without its model. The
-          // anti-echo warning was already in the opening cue and did not hold,
-          // because the fault was the two-job turn, not the warning. How to
-          // play is now TEXT INSIDE the opening quote (`soundSwapScript.ts`).
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'At Grade K the learner is a pre-reader: on-screen text is invisible to them, so YOUR VOICE is the '
-            + 'only instruction channel \u2014 and the FIRST [DI_SWAP_ITEM] of the session already carries how to '
-            + 'play INSIDE its quoted line. Speak that quote exactly and add nothing of your own: no separate '
-            + 'greeting, no how-to-play in your own wording, no rephrased question. It OVERRIDES any "keep it '
-            + 'to one sentence" cap from a lesson switch \u2014 the quoted line is the length it is meant to be. '
-            + 'Never say the new word for them and never say it before the quoted line does.',
-        },
-        {
-          title: 'PRONUNCIATION COMMANDS',
-          instruction:
-            'When you receive a message starting with [PRONOUNCE_SOUND], you MUST immediately and clearly say '
-            + 'ONLY the requested sound. Do NOT add commentary, questions, encouragement, or extra words, do '
-            + 'NOT say any word that contains it, and do NOT treat it as an attempt to judge. This is the '
-            + 'child tapping a sound to hear it, and that audio IS this activity \u2014 it is answered at every '
-            + 'grade and every support tier, including while you are waiting for their answer. Produce clean '
-            + 'phonemes: just "sss" for /s/, just "aaa" for /a/, never "suh" or "tuh".',
-        },
-        {
-          title: 'SUPPORT TIER \u2014 REVEAL POLICY (match your voice to the on-screen help level)',
-          instruction:
-            'This activity carries a within-mode support tier in {{supportTier}} (easy, medium, hard, or null '
-            + 'when no tier was requested). Here the tier changes what is on the SCREEN — the starting '
-            + "word's picture cue, and whether the sound to change is marked. Your spoken line is the SAME at "
-            + 'every tier, so you match the screen by what you decline to ADD: at hard the picture and the '
-            + 'marker are gone, so do not describe them and do not hint at which sound is the target beyond '
-            + 'the scripted ask.\n'
-            + 'THE SPOKEN ASK IS THREE BEATS AND NOTHING ELSE: the starting word, the change, "What word?". '
-            + "Do NOT walk the word's sounds one at a time before asking, at any tier. That was tried live "
-            + 'and it read as noise over an instruction that was already clear.\n'
-            + 'AT EVERY TIER the change itself is named \u2014 which sound to add, take away, or swap, and what to '
-            + 'swap it for. That is not scaffolding, it is what makes the question answerable: "change one '
-            + 'sound in cat" is answered correctly by cap, cot, bat and a dozen others, and a tier must never '
-            + 'turn one right answer into many.\n'
-            + 'NEVER withdrawn at ANY tier: (1) pronunciation on demand \u2014 a [PRONOUNCE_SOUND] message is '
-            + 'always answered, because that audio IS this activity; (2) the Grade-K how-to-play protocol '
-            + 'above \u2014 telling a pre-reader HOW TO PLAY is protocol, not the answer; (3) the correction '
-            + 'branch, which re-models at every tier by design.',
-        },
-      ],
-    },
+    ...bossEntry(soundSwapCard),
   },
   {
     id: 'letter-spotter',
     misconceptionScope: 'primitive',
     description:
-      'Live letter RECOGNITION with a spoken tutor. The tutor asks, waits and responds, and a credited answer '
-      + 'moves the lesson on. Three directions, and the answer is made of something different '
-      + 'in each: Sentence Spotter (the tutor reads a sentence with one word’s first letter hidden behind a '
+      'Live letter RECOGNITION with the live tutor, who asks and teaches in its own words. Three directions, and '
+      + 'the answer is made of something different in each: Sentence Spotter (the tutor reads a sentence with one word’s first letter hidden behind a '
       + 'star and the child SAYS the letter it hides, out loud with no answer choices on screen — initial '
       + 'sound to grapheme), Find It (the tutor names a letter and the child TAPS the one cell holding it '
       + 'among sixteen — letterform discrimination under visual search), and Match It (a capital is printed '
@@ -1851,176 +1126,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // user ruling, drive 6ada8c0a1bcf) — voice GONE nowhere, it is the mode's
     // ONLY surface now; find_it/match_it stay tapped (position/form, unspeakable).
     affordances: { representation: 'symbolic', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      levers: true,
-      guidance: 'On name it you read the sentence and the learner says the letter the starred word starts with; it is '
-        + 'judged against that letter, and its name or its sound counts. The word said back is not a letter. On find it '
-        + 'you name a letter and the learner taps the one cell holding it; on match it the learner taps the little '
-        + 'letter that matches the big one. The activity checks every tap and tells you what was tapped. Never say, '
-        + 'spell or describe the shape of the answer letter before the learner has tried, and on match it never name '
-        + 'the big letter: matching its shape is the task. The hear-again control asks you to repeat the question '
-        + 'only. You cannot tap a letter.',
-      // The tap's own check (`letterSpotterMiss`), and name_it's spoken wrong answers (`letterSpotterSpokenMisses`).
-      misses: missLists<LetterSpotterMiss | SpokenLetterSpotterMiss>({
-        find_it: ['same_shape_family', 'other_letter'],
-        match_it: ['mirror_form', 'same_shape_family', 'other_letter'],
-        name_it: ['said_the_word', 'later_letter', 'letter_not_in_word'],
-      }),
-    },
-    // ── DI MODALITY (2026-08-13) — ELEVENTH literacy port. The tutor owns the
-    // clock in all three directions: it asks once, waits, is handed a
-    // CODE-COMPUTED verdict for the tap, and its own line is the advance.
-    // There is no advance timer, no Check button, no Next button and no
-    // push-to-talk mic anywhere in the path.
-    // THE PORT WAS CALLED BY A LIVE DRIVE (42edfc52e539), not by the sweep:
-    // three separate cue sites each ordered the sentence re-read, so one item
-    // was spoken 2-4 times; the child answered faster than the tutor spoke, so
-    // the floor gate coalesced a try-again hint and an answer reveal into one
-    // utterance; and 109s of a 125s session was tutor speech running up to 16s
-    // behind a screen whose buttons were already live.
-    // THE SPLIT, REVISED 2026-08-13 BY USER RULING (drive 6ada8c0a1bcf): name-it
-    // is SPOKEN and its four option tiles are deleted — "in real life if i have
-    // a sentence with a missing letter … they should be able to translate the
-    // sentence and missing letter verbally. they dont need to click a button."
-    // The tiles were a consequence of `letter_name` being BLOCKED, not pedagogy,
-    // and they cost the mode its production task: a 1-in-4 menu is recognition,
-    // and the drive's own option set (n / s / i / a) held two letters from the
-    // same /ɛ/ cluster the menu was supposedly protecting the judge from. The
-    // class is now accepted-build-ahead: the judge is handed ONE target, and the
-    // pack accepts the letter's SOUND as well as its name.
-    // find-it and match-it still TAP, and now for the only admissible reason —
-    // their answers are a LOCATION and a FORM, neither of which can be said.
-    // Their silence is enforced by the runner HOLDING THE ACTIVITY BRACKET for
-    // the item, not by asking the tutor to wait: the same drive proved a closed
-    // turn owes a reply, and under a "stay silent" instruction the model
-    // fabricated an [LSP_TAP] message and read it aloud, instructions included.
-    // find-it CHANGED SHAPE: "select every instance, then press Check" became
-    // one target per grid and one tap per commit. The Check button is what the
-    // modality deletes, and a batch commit gave no correction at the moment a
-    // b/d confusion actually happened.
-    // THE SHAPE RIDDLE IS GONE. Group 1's newLetters IS the whole group, so the
-    // click-era "NEW letter — hint at its shape" branch fired every item ("a
-    // triangle with a line across the middle"). No cue may describe a letter's
-    // shape at any tier, and the tap contract tells the tutor so.
-    // Cue lines and the per-item judging contracts live in
-    // `letterSpotterScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction letter spotting for a young child. Right now the direction is '
-        + '"{{challengeType}}" and the question side is "{{stimulus}}". How the child answers depends on the '
-        + 'direction, and each application message tells you which: in the sentence direction they SAY the '
-        + 'letter out loud and you judge what you hear; in the find and match directions they TOUCH a screen '
-        + 'you cannot see, and you stay silent until the application tells you what they touched. You speak '
-        + 'the exact scripted lines from each bracketed application message and nothing else. Finding the '
-        + 'letter themselves is the entire skill being practiced, so nothing on screen shows it for them and '
-        + 'you never point to it first.',
-      // Exactly what the pack pushes through contextFor — every other key the
-      // click-era block interpolated (targetLetter, sentence, targetWord) was
-      // the ANSWER or the material that gives it away.
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16,
-      // 19h-i-b port 6). The defect: a re-spoken ask opens with neither "Yes"
-      // nor "My turn:", so the reducer records no verdict, the correction
-      // counter freezes, and the child waits on a tutor that has already spoken.
-      // level1 and level2 were both that, and the sweep's census counted them
-      // correctly here because this entry calls its stimulus "the question" and
-      // matches the family's fingerprint exactly. What a rung census cannot see
-      // is the fourth commonStruggles row below — census by MEANING.
-      scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message in the sentence direction, inside the touch message in the find and match directions. It already re-models and hands the question back, so it IS the first scaffold, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a re-read of the sentence, or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all, and the child waits on a lesson that cannot advance.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses (script moves a
-      // tutor can speak — never meta-instructions, which get recited).
-      commonStruggles: [
-        {
-          pattern: 'Touches a letter that mirrors the target - d for b, q for p, u for n',
-          response: 'Run the scripted correction for the item, then hand the question back and wait.',
-        },
-        {
-          pattern: 'Touches the screen instantly, before the question has finished',
-          response: 'Treat it as their answer and run the scripted line for what they touched; the next item slows them down.',
-        },
-        {
-          pattern: 'Goes quiet and touches nothing for a long time',
-          response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.',
-        },
-        {
-          // 18d, the instance no rung census can reach — and this one was worse
-          // than a stall. Written before name-it became a SPOKEN mode, the row
-          // said flatly that "only a touch is an answer here", so a tutor
-          // reading it in the sentence direction would sit silent through a
-          // child's correct spoken letter: no verdict, no advance, and the one
-          // direction where speaking IS the answer. Scoped to the two touch
-          // directions, where silence is genuinely right because nothing has
-          // been committed yet.
-          pattern: 'Says a letter out loud in a TOUCH direction instead of touching one',
-          response: 'In the find and match directions a spoken letter is not an answer — the touch is, and the application reports it — so stay silent and keep waiting. In the sentence direction the opposite holds: a letter said out loud IS the answer there, and you judge it with the two lines that item message gave you.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [LSP_ITEM], [LSP_TAP], [LSP_MOVE], [LSP_HEAR] or [LSP_COMPLETE] contain the only '
-            + 'lesson words you may speak, and each one quotes the exact line after "Say exactly:". The '
-            + 'square-bracket label is private metadata: never speak, reproduce, or invent it. Affirmations '
-            + 'begin with "Yes" and corrections begin with "My turn" — never begin any other sentence with '
-            + 'those words. The application decides which item comes next; never introduce one yourself, never '
-            + 'announce progress, and never re-read a sentence you have already read unless a message asks you to.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [LSP_ITEM] carries the greeting, how the game works, and the first question inside one '
-            + 'quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
-            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (it differs by direction)',
-          instruction:
-            'In the SENTENCE direction the child answers OUT LOUD, and the [LSP_ITEM] message names the one '
-            + 'letter that is correct. A single letter said on its own is the answer, and saying that letter’s '
-            + 'SOUND instead of its name is equally correct — accept either. Saying the whole word back is not '
-            + 'an answer, however confidently it comes: the word is the question. In the FIND and MATCH '
-            + 'directions the child touches a screen you cannot see, so after you ask there is nothing for you '
-            + 'to judge — a separate [LSP_TAP] message tells you what was touched and gives you the exact line '
-            + 'to say, and only then do you speak.',
-        },
-        {
-          title: 'NEVER DESCRIBE WHAT THE ANSWER LOOKS LIKE',
-          instruction:
-            'Never say which letter is the answer, never spell it, and never describe its SHAPE — not its '
-            + 'curves, lines, dots, circles, sticks or what it resembles. A shape description is the answer '
-            + 'said a different way, and it replaces the sound work the child is here to do. In the sentence '
-            + 'direction you may say the WORD, because hearing the word is the question; the letter it starts '
-            + 'with stays for the child. In the find direction you may say the LETTER, because there the '
-            + 'question is where it is — say nothing about its position, row, column or neighbours.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a hint, and do not count '
-            + 'down. A long silence is a five-year-old searching a screen, and that searching IS the activity. '
-            + 'Think time is unbounded and the application, not the clock, decides when to move on.',
-        },
-        {
-          title: 'HEAR IT AGAIN ON DEMAND',
-          instruction:
-            'When you receive [LSP_HEAR], the child tapped to hear the question again. Say ONLY the quoted '
-            + 'line, warmly, then go back to waiting. Add nothing, judge nothing you just heard, and never let '
-            + 'the repeat carry more help than the first asking did. This channel is answered at every grade '
-            + 'and every support tier.',
-        },
-      ],
-    },
+    ...bossEntry(letterSpotterCard),
     evalModes: [
       {
         evalMode: 'name_it',
@@ -2064,51 +1170,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 3,
         challengeTypes: ['match-it'],
         description:
-          'A capital letter is printed; the child taps its lowercase form from four. The tutor names neither '
-          + 'case until it corrects — case correspondence is the skill, so the pairing is what must be earned.',
+          'A capital letter is printed; the child taps its lowercase form from three or four. The tutor does not '
+          + 'name the big letter or describe any letter — case correspondence is the skill, so the pairing is what '
+          + 'must be earned.',
       },
     ],
     supportsEvaluation: true,
   },
   {
     id: 'letter-sound-link',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      levers: true,
-      // Trimmed 09-29 to fit the 2000-char cap once `levers: true` adds LEVER_DOCTRINE; every rule kept.
-      guidance: `Where the learner SAYS the answer, judge the audio you hear against the assignment fact; a letter's NAME is not its sound. `
-        + 'Where the facts give soundToSay, the learner TAPS one of two letters: say that sound, then stop. Never say, spell '
-        + 'or point out either letter, and judge nothing you hear; the activity checks the tap. '
-        + 'Where two pictures are shown, the answer IS one of their names: never name either before the learner answers; '
-        + 'talk about the sound, or the picture that does NOT start with it. Where no picture is drawn, its keyword '
-        + 'is withheld until the answer is recorded. '
-        + 'demonstrate takes ids from workspace.objects; [] clears them. Never mark the picture that starts with this '
-        + 'sound: mark the other picture to contrast, or the printed letter. '
-        + 'You cannot change the letter, replace a picture, write, or answer for the child.',
-      // The tap's own check (`letterSoundMiss`). see_hear and keyword_match are spoken (handoff 20 Part B).
-      // The tapped letter's kind (`letterSoundMiss`), and the spoken modes' known wrong answers (`letterSoundSpokenMisses`).
-      misses: missLists<LetterSoundMiss | SpokenLetterMiss>({ hear_see: ['other_short_vowel', 'voicing_partner', 'other_letter'],
-        see_hear: ['letter_name', 'keyword_word', 'added_vowel', 'other_sound'],
-        keyword_match: ['other_picture', 'letter_name', 'said_the_sound'] }),
-      // The spoken modes' one lever is `letter_model` (`letterSoundLinkLevers.ts`). Another letter's sound does not
-      // separate this letter from the one said; only its own keyword does, and that is never shown before credit.
-      unanswered: { see_hear: ['other_sound'] },
-    },
+    ...bossEntry(letterSoundLinkCard),
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction letter-sound practice with a spoken tutor. The tutor asks, waits, judges the answer '
-      + 'and its own affirmation moves the lesson on. Three directions, and the answer is made of something different '
-      + 'in each: Say the Sound (a letter is printed and the child SAYS the sound it makes — grapheme→phoneme '
-      + 'PRODUCTION, held sounds only), Find the Letter (the tutor says a sound and the child TAPS which of two '
-      + 'confusable letters makes it — phoneme→grapheme, and the only direction that covers stop consonants), and '
-      + 'Say the Word (a letter plus two pictures; the child SAYS the picture word that starts with that letter\'s '
-      + 'sound). Nothing on screen prints a sound, a word or a keyword before the tutor affirms. Cumulative letter '
-      + 'groups 1-4. Requires a microphone. ESSENTIAL for kindergarten and first-grade phonics.',
+      'Letter-sound practice with the live tutor, who asks and teaches in its own words. Three directions, and the '
+      + 'answer is made of something different in each: Say the Sound (a letter is printed and the child SAYS the sound '
+      + 'it makes, grapheme→phoneme PRODUCTION: held sounds, short vowels and clipped stops), Find the Letter (the tutor '
+      + 'says a sound and the child TAPS which of two confusable letters makes it, phoneme→grapheme; the activity checks '
+      + 'the tap), and Say the Word (a letter plus two pictures; the child SAYS the picture word that starts with that '
+      + 'letter\'s sound). Nothing on screen prints a sound, a word or a keyword before the answer is credited. Cumulative '
+      + 'letter groups 1-4. Requires a microphone. ESSENTIAL for kindergarten and first-grade phonics.',
     constraints:
       'Requires the live tutor and a microphone. Supports 4 cumulative letter groups. '
-      + 'Say the Sound can only target letters whose sound can be HELD (s n m f l r v z and the short vowels) — '
-      + 'stops, affricates, glides and clusters are not askable as isolated child production and the generator '
-      + 'retargets them automatically; they are covered by the other two directions instead. '
+      + 'Say the Sound can only target letters whose sound a child can say alone: held sounds (s n m f l r v z), the '
+      + 'short vowels and the clipped stops t p c k h d g b. Affricates, glides and clusters (j w y x qu) are not '
+      + 'askable as isolated child production and the generator retargets them; they are covered by the other two '
+      + 'directions instead. '
       + 'Say the Word cannot target x or i — /ks/ never begins an English word, and no short-i word has a picture '
       + 'a pre-reader names; both keep full coverage in the other two directions. '
       + 'One letter is asked ONCE per session, so a group bounds how many challenges a lesson can carry. '
@@ -2117,110 +1203,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // (qa/reader-fit/letter-sound-link-PRE-2026-07-14.md + the 2026-08-16 live DI reports).
     // `hear_see` is the one tapped direction: a grapheme cannot be spoken, so it is touched.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
-    // ── DI MODALITY (2026-08-11) — seventh literacy port. The tutor owns the
-    // clock: no advance timer, no push-to-talk mic, no Next button, and no
-    // per-option audition protocol. The old two-tap "tap to hear, tap to keep"
-    // interaction WAS the leak — it handed the child the sound as audio and
-    // asked only for recognition — so both speaker-bubble modes now ask for
-    // production instead.
-    // HEAR-SEE TAPS, and that is a response-class ruling: naming a letter aloud
-    // is `letter_name`, a BLOCKED class (b/p/d/e/g are homophonic to the
-    // judge). A grapheme cannot be spoken, so it is touched; its verdict is
-    // CODE-COMPUTED and the tutor is handed its exact line ([LSL_TAP]).
-    // Cue lines and per-item judging contracts live in
-    // `letterSoundLinkScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction letter-sound practice for a young child. Right now the direction is '
-        + '"{{challengeMode}}" and the question side is "{{stimulus}}". On see-hear and keyword-match the child '
-        + 'answers OUT LOUD and you judge the audio you heard. On hear-see the child answers by TAPPING a letter, '
-        + 'which you cannot see, so you stay silent until the application tells you what they tapped. You speak the '
-        + 'exact scripted lines from each bracketed application message and nothing else. Producing the sound (or '
-        + 'the word) from their own memory is the entire skill being practiced, so nothing on screen prints it for '
-        + 'them and you never say it first.',
-      // Trimmed 10 -> 2, to exactly what the component pushes through
-      // updateContext (and that the connect-time primitive_data also carries).
-      // The stimulus is ANSWER-FREE by construction: see-hear pushes no letter
-      // at all, because the letter determines the sound that IS the answer —
-      // letterSoundLinkScript's stimulusFor is the single builder.
-      contextKeys: ['challengeMode', 'stimulus'],
-      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16,
-      // 19h-i-b port 7). The defect: a re-spoken ask opens with neither "Yes"
-      // nor "My turn:", so the reducer records no verdict, the correction
-      // counter freezes, and the child waits on a tutor that has already
-      // spoken. level1 and level2 were both exactly that.
-      scaffoldingLevels: {
-        level1: 'Speak this item\'s scripted correction line, exactly as the application gave it — inside the item message in the two spoken directions, inside the tap message in the find-the-letter direction. It already re-models the sound and hands the question back, so it IS the first scaffold, and it opens with "My turn:" where the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a re-stated sound, or any other wording however patient: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all, and the child waits on a lesson that cannot advance.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next question to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses (script moves a
-      // tutor can speak — never meta-instructions, which get recited).
-      //
-      // ⚠️ TWO ROWS HERE WERE 18d AND NO RUNG CENSUS REACHES THEM, because they
-      // sit on the ACCEPT side: both told the tutor to affirm without giving it
-      // the affirmation. "Warmly echo the clean sound" and "affirm it and echo
-      // the target word" produce a turn that opens with neither sentinel, so a
-      // CORRECT child stalls — the worst version of the stall, and invisible to
-      // a census that greps for a re-spoken ask. Census by MEANING.
-      commonStruggles: [
-        {
-          pattern: 'Says the letter NAME where the SOUND was asked for - "ess" for s, "em" for m',
-          response: 'Treat the letter name as a wrong answer and run the scripted correction: re-model the sound, then ask again.',
-        },
-        {
-          pattern: 'Adds an "uh" to a consonant sound - "sssuh", "mmmuh"',
-          response: 'That is a correct answer - a five-year-old\'s mouth is still learning. Say the item\'s scripted affirmation, the one that opens with "Yes," and gives the clean sound; do not replace it with a warmer line of your own, because a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict and the child waits.',
-        },
-        {
-          pattern: 'Goes quiet, or answers so softly the audio is unclear',
-          response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.',
-        },
-        {
-          pattern: 'Says a fair different name for the same picture - "cap" for a hat picture',
-          response: 'A fair name for the same picture is a correct answer. Say the item\'s scripted affirmation exactly - it opens with "Yes," and echoes the target word for them, which is both the verdict the activity is listening for and the anchor you wanted to give.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'CLEAN SOUND PRODUCTION',
-          instruction:
-            'Whenever a scripted line quotes a sound, produce ONLY that clean sound. Held sounds are written '
-            + 'stretched ("sss", "mmm", "aaa") and should be said that way. Consonants must NOT have an "uh" added: '
-            + 'say /t/ not "tuh", /p/ not "puh". NEVER say a letter\'s NAME in place of its sound — "ess" is the '
-            + 'name of s, and this whole lesson is about the difference.',
-        },
-        {
-          title: 'THE KEYWORD IS NEVER SPOKEN BEFORE A VERDICT',
-          instruction:
-            'Every letter here has an anchor word (s→sun, m→map). It is the thing being taught, and in all three '
-            + 'directions saying it early hands over the item: in see-hear it encodes the sound, in keyword-match '
-            + 'it IS the answer, in hear-see it spells out the letter. Say a keyword ONLY inside a scripted '
-            + 'correction or affirmation. Never volunteer one, and never offer one as a hint.',
-        },
-        {
-          title: 'SUPPORT TIER — IT IS ALREADY IN THE LINE YOU WERE GIVEN',
-          instruction:
-            'The session\'s support tier is composed into each scripted line before you receive it: easy hands the '
-            + 'child a model and a "say it with me", medium a model only, hard nothing at all. You add nothing to '
-            + 'either end of it. When a line tells you the learner is answering cold, that is the hard tier — do '
-            + 'not stretch, hint at or model the sound before they answer, in any channel.',
-        },
-        {
-          title: 'THE TAP DIRECTION IS SILENT',
-          instruction:
-            'On hear-see the child answers with their hands and you cannot see the screen. After you say the '
-            + 'question, wait in COMPLETE silence: do not describe the letters, do not name or spell either one, '
-            + 'do not count down, and do not judge anything the microphone picks up. The application will tell you '
-            + 'what was tapped and give you the exact line to say.',
-        },
-      ],
-    },
     evalModes: [
       {
         evalMode: 'see_hear',
@@ -2233,9 +1215,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['see-hear'],
         description:
-          'Grapheme→phoneme PRODUCTION — see a letter and say the sound it makes aloud; the tutor judges the '
-          + 'audio in-band. No options are shown. Held sounds only (s n m f l r v z + short vowels): stops and '
-          + 'clusters cannot be produced in isolation by a five-year-old for a judge.',
+          'Grapheme→phoneme PRODUCTION — see a letter and say the sound it makes aloud; the tutor judges it '
+          + 'against the key. No options are shown. Held sounds, short vowels and clipped stops; affricates, glides '
+          + 'and clusters cannot be produced in isolation by a five-year-old for a judge.',
       },
       {
         evalMode: 'hear_see',
@@ -2252,6 +1234,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'keyword_match',
+        affordances: { representation: 'pictorial', answers: ['spoken'] },
         label: 'Say the Word (Letter → Spoken Keyword)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2311,7 +1294,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'skill',
     description:
       'Live picture-vocabulary practice with a spoken tutor. ORAL VOCABULARY for K-1: the tutor '
-      + 'asks, waits and responds to the child’s answer, and a credited answer moves the lesson on. FIVE of '
+      + 'asks, waits and judges the child’s answer, and a credited answer moves the lesson on. FIVE of '
       + 'the six modes are ANSWERED ALOUD — the child names a picture (Say It), produces an opposite (Opposites), '
       + 'says what goes with a shown thing (Goes Together), says the missing rung of a spoken word scale (Word '
       + 'Scale), or finishes a spoken sentence (Finish the Sentence) — there are no word chips to tap and nothing '
@@ -2329,66 +1312,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'set is one word wide, not one sentence wide. Requires the live tutor and a microphone. '
       + 'The manifest must NOT supply specific words — the generator builds the word pool and challenges '
       + 'deterministically from the eval mode.',
-    // reader: 'none' — shipped judged-loop port (port 5, 2026-08-11) that the user drove the
-    // same day ("an incredibly strong modality from a learning standpoint"): nothing on screen
-    // prints the word, five of six modes are answered aloud, and receptive_match taps a picture.
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'On listen and find you say the word and the learner taps its picture among four wordless cards; the '
-        + 'activity checks the tap and tells you what was tapped. Every other mode is one spoken word, judged against '
-        + 'the answer you are given: the picture\'s name, the opposite of the shown word, something that goes with it '
-        + '(many answers are right: judge whether it plainly goes together), the missing scale word, or the word that '
-        + 'finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is not '
-        + 'it. Before a try never say the answer or name the picture, and never hint at its first sound, letters or '
-        + 'rhymes; what it does or where it is found is fair. Tapping the card asks you to repeat the question only. '
-        + 'You cannot tap a card; beyond its levers you cannot change the screen. On picture pairs (the open build) the '
-        + 'learner taps two of eight wordless pictures into a pair tray, two that are opposites or two that go together, '
-        + 'and presses "I am done"; several pairs are right. A picture speaker asks you to say that picture\'s name only. '
-        + 'Never say which pictures pair up or name a pair on the board.',
-      levers: true,
-      // naming: spoken misses (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match: the tap's own check
-      // against the recorded kinds (`pictureVocabMiss`; `other_picture` when a payload records none). Levers in
-      // `pictureVocabularyLevers.ts` answer all of them.
-      // Each relation mode's one lever is a worked model on other words (`pictureVocabularyLevers.ts`, handoff 24).
-      misses: missLists<SpokenPictureVocabMiss | PictureVocabMiss | PicturePairMiss>({ naming: ['category_word', 'other_thing'],
-        opposite: ['said_base_word', 'not_opposite'], association: ['said_base_word', 'no_link'],
-        gradable_scale: ['given_rung', 'off_scale'], sentence_frame: ['does_not_fit'],
-        receptive_match: ['same_category', 'other_category', 'other_picture'],
-        // The open build (`picturePairBuild.ts`), checked in code from the pictures' known relations.
-        pair_build: ['alike', 'not_opposite', 'same_kind', 'no_link', 'same_pair'] }),
-      // pair_build: the pair already found stays on screen.
-      unanswered: { pair_build: ['same_pair'] },
-    },
-    // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
-    // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
-    // no advance timer, no push-to-talk mic, no Next button and no answer chips
-    // anywhere in the path. The old 4-chip "support net" printed the answer for
-    // any Grade-1 reader (word-flip's chips, a third time) and is deleted.
-    // ⭐ ASSOCIATION WENT SPOKEN ON 2026-08-19 (item 25). It tapped emoji cards
-    // for exactly one reason — "what goes with sock" has many honest spoken
-    // answers (shoe, foot, drawer) and open-set spoken production was a BLOCKED
-    // response class, so the cards closed the set while the relation stayed the
-    // skill. `open_set_word` was BENCHED on 2026-08-19 (rhyme-studio: 72 probes
-    // over 6 rimes, zero false affirmations in the hard REFUSE buckets), the
-    // block is gone, and the cards were the costume. Five of six modes now
-    // answer aloud.
-    //
-    // RECEPTIVE_MATCH STILL TAPS, and that is a RULING rather than residual
-    // debt: a child without the word cannot pick the referent out of four
-    // distinct pictures, so the tap IS receptive identification. DI is
-    // spoken-first about answers a child would naturally SAY; pointing at the
-    // picture you just heard named is page-work.
-    //
-    // The cue lines and per-item judging contracts live in
-    // `pictureVocabularyScript.ts` (hand-authored, DISTAR); this block is the
-    // session-level frame. Association's six guards are scored in
-    // `service/qa/di/associationBench.ts` — the contract claims they are
-    // refused and the bench is that claim made testable.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    // reader: 'none' — nothing on screen prints the word before credit; five modes are answered aloud,
+    // receptive_match taps a picture and pair_build puts two pictures in a tray.
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken', 'tap', 'build'], role: 'apply', minutes: 5 },
+    ...bossEntry(pictureVocabularyCard),
     evalModes: [
       {
         evalMode: 'receptive_match',
@@ -2400,10 +1327,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['receptive_match'],
         description:
           'Receptive vocabulary — hear a word spoken, tap the matching picture from 4 emoji-only cards. The tap '
-          + 'is the commit; the tutor’s verdict is the advance.',
+          + 'is the commit, and the activity checks it.',
       },
       {
         evalMode: 'naming',
+        affordances: { answers: ['spoken'] },
         label: 'Say It (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -2414,6 +1342,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'association',
+        affordances: { answers: ['spoken'] },
         label: 'Goes Together (Tier 3)',
         beta: 3.0,
         scaffoldingMode: 3,
@@ -2427,6 +1356,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'opposite',
+        affordances: { answers: ['spoken'] },
         label: 'Opposites (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2450,6 +1380,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'sentence_frame',
+        affordances: { answers: ['spoken'] },
         label: 'Finish the Sentence (Tier 4)',
         beta: 5.0,
         scaffoldingMode: 4,
@@ -2459,6 +1390,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'gradable_scale',
+        affordances: { answers: ['spoken'] },
         label: 'Word Scale (Tier 5)',
         beta: 6.0,
         scaffoldingMode: 5,
@@ -2468,160 +1400,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + '(freezing→cold→__→warm→hot). A word already in the list is never the answer.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction vocabulary practice for a young child. Right now the mode is '
-        + '"{{challengeType}}" and the question side is "{{stimulus}}". On the five spoken modes the child answers '
-        + 'out loud and you judge the audio you heard; on the ONE tap mode (receptive_match) the child answers by '
-        + 'tapping a picture card, which you cannot see, so you stay silent until the application tells you what '
-        + 'they tapped. You speak the exact scripted lines from each bracketed application message and nothing '
-        + 'else. Retrieving the word from their own memory is the entire skill being practiced, so the child '
-        + 'produces it — nothing on screen prints it for them.',
-      // Trimmed 5 -> 2, to exactly what the component pushes through
-      // updateContext (and that the connect-time primitive_data also carries).
-      // The stimulus is ANSWER-FREE by construction: naming pushes no word at
-      // all (its picture's word IS the answer) — pictureVocabularyScript's
-      // stimulusFor is the single builder.
-      contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt, and re-modeling is the scripted correction's
-      // job (standing gate 3).
-      //
-      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION (2026-08-16).
-      // The first two used to read "Say the question once more, then wait for
-      // them alone." / "Say the question again slowly and clearly, then wait."
-      // That reads as restraint and is a NO-VERDICT CHANNEL: a re-spoken ask
-      // opens with neither "Yes" nor "My turn:", so the reducer records no
-      // verdict, the correction counter freezes, and the child waits on a tutor
-      // that has already spoken. Only level3 was ever correct — which is exactly
-      // why a per-ENTRY grep for "scripted correction" reported this entry as
-      // already fixed. Census per RUNG.
-      scaffoldingLevels: {
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the word and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it. On a tap mode there is no line to speak here: the application sends the verdict to you in a [PV_TAP] message.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower reading of the ask, or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next ask to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses (script moves a
-      // tutor can speak or do — never meta-instructions, which get recited).
-      commonStruggles: [
-        {
-          pattern: 'Says a fair different name for the same thing - "puppy" for a dog picture',
-          response: 'A fair name for the same thing is a correct answer: affirm it and echo the target word.',
-        },
-        {
-          pattern: 'Says the shown word back instead of its opposite - "big" when asked for the opposite of big',
-          response: 'Treat the shown word said back as not yet answered: give the scripted correction, which names the opposite, then ask again.',
-        },
-        {
-          pattern: 'Says a word already given on the scale instead of the missing one',
-          response: 'Treat it as wrong: the scripted correction reads the whole scale and names the missing word, then asks again.',
-        },
-        {
-          pattern: 'Says the shown thing back on Goes Together - "sock" when asked what goes with sock',
-          response: 'Speak the ECHO correction branch the cue gives you for this exact case, not the general one: it says a thing cannot go with itself, models the relation on a different pair, and asks for something different.',
-        },
-        {
-          pattern: 'Names the whole group on Goes Together - "clothes" for sock, "animals" for dog',
-          response: 'Speak the GROUP correction branch the cue gives you: it says that names a whole group, asks for one thing, and models the relation on a different pair.',
-        },
-        {
-          pattern: 'Offers a thing on Goes Together that only connects through a story - "a cat, because cats play with socks"',
-          response: 'Treat it as wrong however charming the reasoning is, and speak the general scripted correction. A connection that needs explaining is not one a five-year-old is learning here.',
-        },
-        {
-          pattern: 'Goes quiet after being asked',
-          response: 'Say the question once more, then wait for them alone.',
-        },
-        {
-          pattern: 'Speaks too quietly for a clear judgment',
-          response: 'Ask them to say it once more in a big proud voice, then wait.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [PV_ITEM], [PV_TAP], [PV_MOVE], [PV_COMPLETE] or [PV_HEAR] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or invent '
-            + 'it. Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin with '
-            + '"My turn", using the exact quoted lines. Never begin any other sentence with those words. Judge '
-            + 'honestly from the audio: affirm a right answer, correct a wrong or missing one, and do not praise to '
-            + 'be kind. The application decides which word comes next; never introduce one yourself. '
-            + 'YOUR WHOLE REPLY TO AN ATTEMPT IS ONE OF THOSE TWO QUOTED LINES and nothing else — not the first '
-            + 'time, not any time: no praise, no encouragement, no hint, no reminder of the method, no re-spoken '
-            + 'question, however kind it would be. A reply that is neither reaches the activity as no verdict at '
-            + 'all, and the child waits.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [PV_ITEM] of a session, and any later one that carries a how-to-play sentence, has the '
-            + 'greeting, the action and the question INSIDE its quoted line. Speak that quote exactly and add '
-            + 'nothing of your own: no separate greeting, no how-to-play of your own wording, no rephrased '
-            + 'question. This activity has different actions (say it aloud, tap a picture) and one session can mix '
-            + 'them, so a how-to-play sentence arriving mid-session means the action just changed; it is deliberate '
-            + 'and it is the whole instruction the child gets. This OVERRIDES any "keep it to one sentence" cap '
-            + 'from a lesson switch: the quoted line is the length it is meant to be.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (and the answer law)',
-          instruction:
-            'On spoken modes the answer is ONE word from the child’s own mouth. The cue’s judging rule names what '
-            + 'also counts (a fair synonym, a close word for the same amount) and what looks like an answer and is '
-            + 'not: the shown word said back unchanged (fluent and confident, which makes it the signature error), '
-            + 'a word already given on the scale, or a category word like animal. All of those take the correction '
-            + 'branch, warmly. GOES TOGETHER IS THE ONE OPEN MODE: there is no single target there, so its cue '
-            + 'hands you a RULE instead — accept any everyday thing that plainly goes with the shown thing, '
-            + 'including one you would not have thought of yourself, and refuse a connection you can only justify '
-            + 'by telling a story, the name of the group the shown thing belongs to, or another member of that '
-            + 'same group. LAW: never say the target word before the child has been affirmed — the microphone '
-            + 'is open the whole time, so saying it first hands the answer over; the scripted correction is the one '
-            + 'place the answer is spoken, and only because the attempt is already judged. On receptive_match you '
-            + 'MUST say the stimulus word clearly — there the word is the question and the child answers by '
-            + 'tapping.',
-        },
-        {
-          title: 'TAP ITEMS ARE SILENT (receptive_match)',
-          instruction:
-            'When the child answers by tapping a picture you cannot see the screen, so after you speak the ask you '
-            + 'say NOTHING AT ALL until the application sends a [PV_TAP] message telling you what they tapped: no '
-            + 'describing pictures, no hints about which card, no commentary, and no judging of anything you '
-            + 'happen to hear through the open microphone. A child who talks to themselves while choosing is not '
-            + 'answering you. [PV_TAP] carries the one line to speak; speak it exactly and go back to waiting.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the pause, and '
-            + 'do not answer for them. A long silence is a child searching their own memory for a word, and that '
-            + 'searching IS the activity. If they tap to hear the question you will receive a separate [PV_HEAR] '
-            + 'message: answer that and nothing more, then go back to waiting.',
-        },
-        {
-          title: 'QUESTION ON DEMAND ([PV_HEAR])',
-          instruction:
-            'When you receive a message starting with [PV_HEAR], immediately and clearly say ONLY the quoted '
-            + 'question line it carries, and nothing else. Do NOT add clues, do NOT say the answer word, and do '
-            + 'NOT treat anything you just heard as an attempt to judge. This is the child tapping to re-hear the '
-            + 'question, which is how a pre-reader recovers the stimulus, and it is answered at every grade, '
-            + 'including while you are waiting for their answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'cvc-speller',
     misconceptionScope: 'primitive',
     description:
-      'Live Direct Instruction CVC sounds-and-letters practice with a spoken tutor. PHONICS / ENCODING for K-1: the '
-      + 'tutor says a CVC word, waits, judges the answer, and its own affirmation moves the lesson on. Two of the '
-      + 'three modes are ANSWERED ALOUD \u2014 the child hears a word and SAYS ITS MIDDLE SOUND (there are no vowel '
-      + 'buttons and no sound buckets to tap). The third, Spell It, is answered WITH THE HANDS: the child puts a '
-      + 'letter in each of three Elkonin boxes from a letter bank, and the third letter landing is the answer \u2014 '
-      + 'there is no Check button and nothing to click to advance. Tap-to-hear repeats the word. Requires a '
-      + 'microphone. ESSENTIAL for K-1 phonics encoding (sound \u2192 letter), the direction phonics-blender does not '
-      + 'cover.',
+      'CVC sounds-and-letters practice with the live tutor. PHONICS / ENCODING for K-1: the child hears a CVC word and '
+      + 'the tutor teaches in its own words. Two of the word modes are ANSWERED ALOUD \u2014 the child hears a word and '
+      + 'SAYS ITS MIDDLE SOUND (there are no vowel buttons and no sound buckets to tap), judged by the tutor. Spell It is '
+      + 'answered WITH THE HANDS: the child puts a letter in each of three Elkonin boxes from a letter bank, and the third '
+      + 'letter landing is the answer, checked by the activity \u2014 there is no Check button. Make a Word is an open '
+      + 'build of any real word that fits the ask. Tap-to-hear repeats the word. Requires a microphone. ESSENTIAL for K-1 '
+      + 'phonics encoding (sound \u2192 letter), the direction phonics-blender does not cover.',
     constraints:
       'Only CVC (3-letter) words. SCOPE IS THE CUMULATIVE LETTER GROUP (1-4, the shared phonics progression that '
       + 'letter-spotter and letter-sound-link also use): every letter of every word comes from that group, and the '
@@ -2635,30 +1426,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'from the letter group and the objective.',
     // reader: 'none' \u2014 READY @ PRE for all three modes (qa/reader-fit/cvc-speller-PRE-2026-07-14.md).
     affordances: { representation: ['concrete', 'symbolic'], reader: 'none', answers: ['spoken', 'build'], role: 'apply', minutes: 5 },
-    // \u2500\u2500 DI MODALITY (2026-08-10) \u2014 fourth literacy port after phonics-blender,
-    // sound-swap and word-flip, same two user rulings. The tutor owns the clock
-    // in all three modes: it says the word, waits, judges, corrects
-    // contrastively, and its OWN verdict is the advance. There is no advance
-    // timer, no Check button, no push-to-talk mic and no Next button anywhere
-    // in the path.
-    // TWO MODES DIED BY THE ANSWER-LEAK GATE, not by the timer: fill_vowel's
-    // two vowel buttons and word_sort's two buckets each printed one of two
-    // options that INCLUDED THE ANSWER, captioned with its keyword - word-flip's
-    // chips exactly. Both answers are now spoken. spell_word stays a placement
-    // (three ordered slots out of a distractor bank is not guessable, and
-    // encoding is what makes this primitive not a duplicate of phonics-blender)
-    // and is the judged-loop GESTURE anchor's first production caller.
-    // The cue lines and the per-item judging contract live in
-    // `cvcSpellerScript.ts` (hand-authored, DISTAR discipline); this block is
-    // the session-level frame.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn", or the engine's
-    // sentence-scoped verdict scan would classify a phantom verdict.
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'fill_vowel',
+        affordances: { answers: ['spoken'] },
         label: 'Middle Sound (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -2678,7 +1449,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['spell-word'],
         description:
           'Hear a word and put a letter in each of three Elkonin boxes from a letter bank. The third letter landing '
-          + 'is the answer; the tutor judges the build and its verdict is the advance.',
+          + 'is the answer, checked by the activity; Try again keeps the letters that were right.',
       },
       {
         evalMode: 'make_word',
@@ -2694,6 +1465,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'word_sort',
+        affordances: { answers: ['spoken'] },
         label: 'Sound Groups (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -2703,152 +1475,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'the answer changes from word to word. Affirmed words collect into two on-screen vowel groups.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction sounds-and-letters practice for a young child. Right now the action is '
-        + '"{{task}}", the word is "{{word}}", and its middle sound is "{{middleSound}}". On "fill-vowel" and '
-        + '"word-sort" the child SAYS the middle sound aloud and you judge the audio you heard; on "spell-word" the '
-        + 'child puts letters into boxes, which you cannot hear, so you stay silent until the application tells you '
-        + 'what they built. You speak the exact scripted lines from each bracketed application message and nothing '
-        + 'else. Hearing one sound inside a whole word, and knowing which letter makes it, is the entire skill being '
-        + 'practiced, so the child produces it, never picks it from a list.',
-      // Trimmed 12 -> 3, to exactly what the component pushes through
-      // updateContext (and that the connect-time primitive_data also carries).
-      // An unpushed key renders the literal string "(not set)" into the prompt,
-      // which the tutor then reads aloud as content -- the challenge-index,
-      // attempts and placed-letters keys the click-driven version carried went
-      // with the clicks.
-      contextKeys: ['task', 'word', 'middleSound'],
-      // Correction territory, not answer territory: every level here describes
-      // what happens AFTER an attempt, and re-modeling at every tier is the DI
-      // rule (standing gate 3 -- remediation is not scaffolding).
-      scaffoldingLevels: {
-        level1: 'Say the word once more, then hand the question straight back to them.',
-        level2: 'Say the word with its middle sound held, name that sound, then ask them for it again.',
-        level3: 'Name the sound and the letter that makes it, then ask them for it once more.',
-      },
-      // Observable behaviours only. The first is this activity's signature error
-      // class, and it is the one most likely to be mistaken for success: it is
-      // fluent, confident, and exactly what you just said yourself.
-      commonStruggles: [
-        {
-          pattern: 'Says the WHOLE WORD back instead of one sound - "cat" when asked for the middle sound',
-          response: 'Treat a repeated word as not yet answered: say the word, name the middle sound, then ask again.',
-        },
-        {
-          pattern: 'Says the NAME of a letter instead of the sound it makes - "ay" for the sound in "cat"',
-          response: 'A real confusion at this age, and it is the exact distinction being taught: say the sound, not the name, then hand it back.',
-        },
-        {
-          pattern: 'Says one of the OTHER sounds in the word - the first or the last instead of the middle',
-          response: 'Say the word with the middle sound held so the position is audible, name it, then ask again.',
-        },
-        {
-          pattern: 'Says the right sound inside a phrase, or holds it long - "it is aaa", "aaaaa"',
-          response: 'That is a correct answer, so affirm it. Holding the sound is what a child does when they are sure.',
-        },
-        {
-          pattern: 'Puts letters in the wrong boxes, or reverses two of them (spell-word)',
-          response: 'Name the sound at the box that is wrong, then hand the build straight back. Do not spell the whole word until a quoted line tells you to.',
-        },
-        {
-          pattern: 'Goes quiet after being asked',
-          response: 'Say the word once more, then hand the question back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_CVC_ITEM], [DI_CVC_BUILD], [DI_CVC_MOVE_ON] or [DI_CVC_COMPLETE] contain the only '
-            + 'lesson words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin '
-            + 'with "My turn", using the exact quoted lines. Never begin any other sentence with those words. Judge '
-            + 'honestly from the audio: affirm the right sound, correct a wrong, missing or repeated one. EVERY '
-            + 'correction says the word and names the sound before handing it back. Do not praise to be kind. The '
-            + 'application decides which word comes next; never introduce one yourself.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [DI_CVC_ITEM] of a session, and any later one that carries a how-to-play sentence, has the '
-            + 'greeting, the action and the question INSIDE its quoted line. Speak that quote exactly and add '
-            + 'nothing of your own: no separate greeting, no how-to-play of your own wording, no rephrased '
-            + 'question. This activity has three different actions and one session can mix them, so a how-to-play '
-            + 'sentence arriving mid-session means the action just changed; it is deliberate and it is the whole '
-            + 'instruction the child gets. This OVERRIDES any "keep it to one sentence" cap from a lesson switch: '
-            + 'the quoted line is the length it is meant to be.',
-        },
-        {
-          title: 'SOUNDS, NOT LETTER NAMES (what counts as the answer)',
-          instruction:
-            'On "fill-vowel" and "word-sort" the target is the MIDDLE SOUND of the word said aloud, which is '
-            + '"{{middleSound}}" for "{{word}}". It counts clipped, held, or inside a short phrase; holding a vowel '
-            + 'is not an error. Three things look like answers and are not: saying the whole word back (fluent, '
-            + 'confident, and exactly what you just said, which makes it the signature error of this skill), making '
-            + 'one of the OTHER sounds in the word, and saying the NAME of a letter rather than the sound it makes. '
-            + 'All three take the correction branch, warmly. LAW: never say the middle sound of the word on screen, '
-            + 'and never spell the word out letter by letter or break it into separate sounds, until a quoted '
-            + 'lesson line tells you to -- the microphone is open the whole time, so saying it first hands the '
-            + 'answer over. Saying the WORD is always safe. Never preview a word that is still coming.',
-        },
-        {
-          title: 'BUILD ITEMS ARE SILENT ("spell-word")',
-          instruction:
-            'When the action is "spell-word" the child answers by putting letters into boxes. You cannot hear that, '
-            + 'so after you speak the ask you say NOTHING AT ALL until the application sends you a [DI_CVC_BUILD] '
-            + 'message telling you what they built: no repeating the word, no naming or sounding out letters, no '
-            + 'commentary on what they are doing, and no judging of anything you happen to hear through the open '
-            + 'microphone. A child who talks to themselves while they work is not answering you. [DI_CVC_BUILD] '
-            + 'carries the one line to speak; speak it exactly and go back to waiting.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the pause, do '
-            + 'not say the sound again unprompted, and do not answer for them. A long silence is a child working '
-            + 'out a sound, and that working-out IS the activity. If they tap to hear the word you will receive a '
-            + 'separate [SAY_WORD] message: answer that and nothing more, then go back to waiting.',
-        },
-        {
-          title: 'WORD ON DEMAND ([SAY_WORD])',
-          instruction:
-            'When you receive a message starting with [SAY_WORD], you MUST immediately and clearly say ONLY the one '
-            + 'word it quotes, twice, and nothing else. Do NOT spell it, do NOT name its letters, do NOT break it '
-            + 'into separate sounds, do NOT add commentary or encouragement, and do NOT treat it as an attempt to '
-            + 'judge. This is the child tapping to hear what the word is, which is how a pre-reader recovers the '
-            + 'stimulus, and it is answered at every grade, including while you are waiting for their answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      levers: true,
-      guidance: 'Each item is a short word. On middle sound and sound groups the learner says the sound in the middle of '
-        + 'the word aloud and it is judged against that sound; the whole word said back, an outside sound, or a letter '
-        + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
-        + 'checks the third letter itself: never name, sound out or spell a letter of the word for them. Hear It asks '
-        + 'you to say the whole word only. You cannot place letters or fill the blank. On make a word the learner fills the '
-        + 'three boxes with any real word that fits the ask (a short vowel sound, or a rhyme) and presses "I am done"; '
-        + 'many words pass. Never say a word that would fit or a letter to use.',
-      // The boxes' own check (`cvcMiss`), and the spoken middle sound's known wrong answers (`cvcSpokenMisses`).
-      misses: missLists<CvcMiss | SpokenCvcMiss | LetterBuildMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'],
-        // The open build (`letterBuild.ts`): what the ask states, in code, then the word judge's not_a_word.
-        make_word: ['not_cvc', 'wrong_vowel', 'same_as_given', 'wrong_family', 'same_word', 'pick_another', 'not_a_word'],
-        ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['whole_word', 'letter_name', 'first_sound', 'last_sound', 'other_vowel']) }),
-      // The spoken modes' one lever is `middle_model` (`cvcSpellerLevers.ts`). A wrong short vowel has none: any cue
-      // that separates short vowels names the item's vowel or teaches one that answers a session item.
-      unanswered: { ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['other_vowel']),
-        // make_word: the word already made stays on screen; a word not for lessons has no smaller form.
-        make_word: ['same_word', 'pick_another'] },
-    },
+    ...bossEntry(cvcSpellerCard),
   },
   {
     id: 'word-workout',
+    ...bossEntry(wordWorkoutCard),
     description:
-      'Live CVC word reading with a spoken tutor. The tutor asks, waits and responds to the child\'s '
-      + 'answer, and a credited answer moves the lesson on. THE PRINT IS DECODED COLD AND '
+      'Live CVC word reading with a spoken tutor, who teaches in its own words; the activity checks each picture '
+      + 'tap. THE PRINT IS DECODED COLD AND '
       + 'MOST ANSWERS ARE SPOKEN: the child READS two printed words and SAYS the real one (Real or Silly?), reads '
       + 'each word of a one-letter-change chain OUT LOUD (Word Chain), and READS a decodable sentence ALOUD before '
       + 'SAYING the answer to a question about it (Read It). It also extends decoding beyond isolated CVC: the '
@@ -2874,67 +1509,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'compound modes select only from the code-owned Kindergarten early-decoding pool; Gemini cannot invent a '
       + 'harder word, its decoding parts, or its meaning key. Context trials likewise use only code-owned CVC '
       + 'near-word pairs with exactly one sentence fit. All printed targets stay visible; tutor pronunciation and '
-      + 'answer-identifying pictures stay withheld before the cold read. The tutor models word parts only after '
-      + 'an attempt, then the next word checks independent transfer.',
+      + 'answer-identifying pictures stay withheld before the cold read. Word parts are shown only after an '
+      + 'attempt, then the next word checks independent transfer.',
     // reader: 'none' base — READY @ PRE for real_vs_nonsense/picture_match/
     // word_chains (qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md);
     // sentence_reading overridden 'emerging' — floored Grade 1+, the
     // decodable-reader precedent that doc invokes by name.
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 6 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'Everything printed is read cold: never say a printed word, a '
-        + 'part of one, or a sound in it before the learner has read it, and never read the sentence for them. On real '
-        + 'or silly the learner says the real word, not the made-up one. On word chains, inflected, compound and '
-        + 'near words the learner reads the lit word; the word before it in the chain or its near neighbour is not '
-        + 'it. On sentence reading the learner reads the sentence, then says the answer to the question, which is '
-        + 'a word in the sentence. On meaning and context items the learner says what the word means or which word '
-        + 'fits the blank. On picture match the learner reads the word silently and taps its picture; the activity '
-        + 'checks the tap. After an attempt you may model the word or its parts. Hear-again asks you to repeat the '
-        + 'instruction or question only. You cannot tap.',
-      levers: true,
-      // The tap's own check (`wordWorkoutMiss`), then the spoken misses (`wordWorkoutLevers.ts`); `wordWorkoutSpokenMisses`
-      // emits real_vs_nonsense's so far. `unanswered` stays the levers' own list (`wordWorkoutLevers.L3.test.ts` pins it).
-      misses: {
-        ...missLists<WordWorkoutMiss>({ picture_match: ['same_start', 'same_end', 'same_vowel', 'other_word'] }),
-        real_vs_nonsense: ['said_nonword'], word_chains: ['previous_word', 'other_word'], read_inflected: ['base_only', 'other_word'],
-        read_compound: ['base_only', 'other_word'], choose_in_context: ['misread_word', 'wrong_fit'],
-        sentence_reading: ['word_swap', 'word_skip', 'lifted_word'],
-      },
-      unanswered: {
-        real_vs_nonsense: ['said_nonword'], word_chains: ['previous_word', 'other_word'], read_inflected: ['base_only', 'other_word'],
-        read_compound: ['base_only', 'other_word'], choose_in_context: ['misread_word', 'wrong_fit'],
-        sentence_reading: ['word_swap', 'word_skip', 'lifted_word'],
-      },
-    },
-    // ── DI MODALITY (2026-08-14) — SIXTEENTH literacy port, the last of Phase 1.
-    // The tutor owns the clock: it asks once, waits, judges the spoken answer
-    // from the audio in-band, and its own line is the advance. No advance timer,
-    // no Next button, no push-to-talk mic.
-    // ONE CHALLENGE IS NOT ONE ITEM: a chain is a judged read per WORD and a
-    // sentence is a read PLUS a spoken question (decodable-reader's split,
-    // second use). The click era judged NEITHER — handleChainAdvance recorded
-    // correct/100 for every chain whatever the child said, and the sentence was
-    // "read" by pressing a button called "I Read It!", which is the costume
-    // test's own example.
-    // THE FORK KEPT ONE TAP AND EARNED IT: picture-match's answer is WHICH
-    // PICTURE, and naming it aloud would only echo the printed word — decoding
-    // evidence, not meaning evidence (picture-vocabulary's receptive_match).
-    // Everything else went verbal, including real-vs-nonsense, which the queue
-    // predicted would stay a tap over a sentinel collision on "yes"; the
-    // challenge never carried a yes/no question at all, it carries realWord and
-    // nonsenseWord, so the natural answer is the word.
-    // IT ALSO DELETED THREE AUDIO SCAFFOLDS that handed over the print (the
-    // per-card speakers, the whole-sentence model read, and the per-word
-    // tap-to-hear inside the sentence). Hearing "cat" beside "zat" decides that
-    // item with zero decoding: a scaffold that fails the costume test is not a
-    // tier lever. chainCueLevel survives as the one lever, and now governs the
-    // spoken correction as well as the amber highlight.
-    // Cue lines and the per-item judging contracts live in wordWorkoutScript.ts
-    // (hand-authored, DISTAR); this block is the session-level frame. SENTINEL
-    // DISCIPLINE (standing gate 2) re-checked on every line below: no sentence
-    // begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'real_vs_nonsense',
@@ -2982,8 +1563,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['inflected-word'],
         description:
-          'Cold-read code-bounded early words with -s, -ing, and -ed. After the attempt the tutor models base + ending; '
-          + 'a new word checks transfer. A separate meaning turn appears only for an explicit comprehension objective.',
+          'Cold-read code-bounded early words with -s, -ing, and -ed. After a first try a bar can split base and ending, '
+          + 'and the parts show once it is read; a new word checks transfer. A separate meaning turn appears only for an '
+          + 'explicit comprehension objective.',
       },
       {
         evalMode: 'read_compound',
@@ -2994,8 +1576,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['compound-word'],
         description:
-          'Cold-read a code-bounded compound made from two familiar decodable words. After the attempt the tutor '
-          + 'models the two parts; a new word checks transfer. Meaning is a separate turn when comprehension is named.',
+          'Cold-read a code-bounded compound made from two familiar decodable words. After a first try a bar can split '
+          + 'the two parts, and they show once it is read; a new word checks transfer. Meaning is a separate turn when '
+          + 'comprehension is named.',
       },
       {
         evalMode: 'choose_in_context',
@@ -3022,129 +1605,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'READ the decodable sentence ALOUD (judged word by word), then SAY the answer to a question about it. β raised for judged reading and unaided production.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction early word reading for a young child. Right now the turn is "{{challengeType}}" '
-        + 'and what the child is working from is {{stimulus}}. You speak the exact scripted lines from each '
-        + 'bracketed application message, and you judge each attempt from the audio you heard using only the '
-        + 'allowed reply branches. Decoding the print is the whole skill being practiced, so the child reads it — '
-        + 'you never read it for them.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory, and every level is a
-      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
-      // hints is a no-verdict stall: on a repeated wrong answer the model
-      // reaches for the sanctioned-sounding alternative and says something that
-      // opens with neither sentinel, so the loop records no verdict at all and
-      // the correction counter freezes (number-bond's cap drill, 2026-08-14;
-      // queue item 18d).
-      scaffoldingLevels: {
-        level1: 'Use the scripted correction line for this item, then hand it back and wait.',
-        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
-        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
-      },
-      // Observable behaviours only, headed by each turn kind's signature error:
-      // the wrong answer that arrives fluent, confident, and most likely to be
-      // affirmed by mistake.
-      commonStruggles: [
-        {
-          pattern: 'Says the made-up word confidently — picked by the first letter or by the shape of the word instead of reading it',
-          response: 'Treat it as not yet answered: run the scripted correction for this pair, then hand the question back and wait.',
-        },
-        {
-          pattern: 'Says the word BEFORE it in the chain — reading the row from memory, and it sounds fluent',
-          response: 'A remembered word is not a read word. Run the scripted correction, then ask once more and wait.',
-        },
-        {
-          pattern: 'Swaps a small word while reading a sentence — "a" for "the", "then" for "and"',
-          response: 'It sounds fluent and it is still wrong. Use the contrast branch, naming just the words that came out wrong.',
-        },
-        {
-          pattern: 'Reads only the base or first half — says "cat" for "cats" or "sun" for "sunset"',
-          response: 'The ending or second word is part of the read. Use the scripted post-attempt chunk model, then hand the whole word back and wait.',
-        },
-        {
-          pattern: 'Reads both near words correctly but chooses the one that does not fit the sentence',
-          response: 'Keep the decoding credit. Run only the scripted context-choice correction; the separate meaning evidence is the part that missed.',
-        },
-        {
-          pattern: 'Answers a comprehension question with a word lifted out of the sentence that does not answer it',
-          response: 'It sounds right because it came from the sentence, and that is exactly the miss to catch. Run the scripted correction, then wait.',
-        },
-        {
-          pattern: 'Sounds a word out slowly and effortfully but lands on it',
-          response: 'That counts as read: give the scripted affirmation for this item, unchanged and on its own. Accuracy is what is measured here, never speed.',
-        },
-        {
-          pattern: 'Answers inside a phrase — "cat is real", "on the mat" — instead of one bare word',
-          response: 'That is a correct answer. Affirm it and echo the word itself.',
-        },
-        {
-          pattern: 'Goes quiet in front of a word, or taps to hear the question again',
-          response: 'Silence is a five-year-old decoding, and their think time is unbounded — wait. If they tap, the application sends the repeat; never volunteer to read the print.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [WW_ITEM], [WW_TAP], [WW_MOVE], [WW_HEAR] or [WW_COMPLETE] contain the only lesson '
-            + 'words you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket '
-            + 'label is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
-            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge honestly '
-            + 'from the audio and do not praise to be kind. YOUR WHOLE REPLY TO AN ATTEMPT IS ONE OF THE '
-            + 'QUOTED LINES THAT MESSAGE GIVES YOU AND NOTHING ELSE — never praise, never a hint, never your own '
-            + 'encouragement, however kind it would be; a reply that is neither line reaches the activity as no '
-            + 'verdict at all and the lesson stalls there. The application decides what comes next; never '
-            + 'introduce an item yourself, never announce progress, and never read back or narrate a state block '
-            + 'you were given — if the screen changed, say only the quoted line about it.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [WW_ITEM] carries the greeting, how this kind of turn works, and the first ask inside one '
-            + 'quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity in '
-            + 'your own words, and do not add a warm-up question — the quoted line is the whole opening.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (it differs by turn)',
-          instruction:
-            'The [WW_ITEM] message names what is correct for THIS turn, and {{challengeType}} tells you which kind '
-            + 'of turn it is. On "real_word", "chain_word", "read_sentence" and "answer_question" the child answers '
-            + 'OUT LOUD and you judge what you heard: a word said inside a little phrase is a full answer, a '
-            + 'different word that truly names the same thing is a full answer, and slow effortful sounding-out '
-            + 'that lands on the right word is correct. On "picture_tap" the child answers by TOUCHING a picture '
-            + 'and says nothing at all — stay silent, judge nothing you hear, and wait to be told what they '
-            + 'tapped. Never invite a tap on a spoken turn, and never ask a child to say anything on a tap turn.',
-        },
-        {
-          title: 'THE PRINT IS THEIRS TO READ',
-          instruction:
-            'Every word, chain and sentence in this activity is printed in front of the child, and decoding it IS '
-            + 'the skill. You never read it first, never sound it out, never give the first sound, and never say '
-            + 'part of a word to get them started — not when they are stuck, and not if they ask. Being stuck is '
-            + 'answered by the scripted correction, which models the word properly and then hands it back. On a '
-            + 'comprehension question the answer is one of the words printed in the sentence and finding it there '
-            + 'is the task: never say it, never say which part of the sentence holds it, and never read the '
-            + 'sentence out for them.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not start '
-            + 'sounding anything out. A long pause is a five-year-old decoding, and that work IS the activity. '
-            + 'Think time is unbounded and the application, not the clock, decides when to move on.',
-        },
-        {
-          title: 'HEAR IT AGAIN ON DEMAND',
-          instruction:
-            'When you receive [WW_HEAR], the child tapped to hear the question again. Say ONLY the quoted line, '
-            + 'warmly, then go back to waiting. On a reading turn that line is the instruction alone — the printed '
-            + 'words stay unspoken, which is the whole mode — and on a comprehension turn it is the question '
-            + 'again. Add nothing, judge nothing you just heard, and never let the repeat carry more help than the '
-            + 'first ask did. This channel is answered at every grade and every support tier.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
 
@@ -3398,12 +1858,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-flip',
     description:
-      'Spoken word-transformation practice with a live Direct Instruction tutor. GRAMMAR / oral language for K-2 '
+      'Spoken word-transformation practice with a live tutor. GRAMMAR / oral language for K-2 '
       + '(plural nouns and past-tense verbs) — NOT a phonics or decoding primitive (never select for CVC-decoding, letter-sound, '
       + 'blending, or spelling objectives; route those to cvc-speller / word-workout / phonics-blender). A '
       + 'before/after frame shows either one→many ("dog → dogs") or today→yesterday ("jump → jumped"); the tutor '
-      + 'names the source frame, waits, and the child SAYS THE CHANGED WORD ALOUD. The tutor '
-      + 'judges the answer from the audio and its own affirmation moves the lesson on. The one-thing word is on '
+      + 'asks for the changed word, waits, and the child SAYS THE CHANGED WORD ALOUD. The tutor '
+      + 'judges the answer from the audio, and the lesson moves on once it is credited. The one-thing word is on '
       + 'screen and tappable to hear; there are no answer chips and nothing to click to advance. Requires a '
       + 'microphone. Teaches regular and irregular noun plurals plus regular -ed and common irregular past forms. '
       + 'ESSENTIAL for early-elementary Language Arts grammar. One mode is the exception: in build_inflect (open build, '
@@ -3416,24 +1876,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // removed entirely by the 2026-08-09 DI port
     // (qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md).
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
-    // ── DI MODALITY, PURELY VERBAL (2026-08-09) — third literacy port after
-    // phonics-blender and sound-swap, same two user rulings. The tutor owns the
-    // clock and the task is spoken end to end: it models the rule on a noun this
-    // session never asks about, names the one thing, says how many there are
-    // now, waits, judges the audio in-band, corrects contrastively, and its OWN
-    // affirmation is the advance. There is no answer chip, no Next button, no
-    // start-screen fork and no advance timer anywhere in the path. (Before the
-    // port the child could TAP the plural out of three printed words — reading,
-    // which a child who cannot form a plural does correctly every time — and the
-    // chip printed the answer on screen. One deletion closed the costume and the
-    // leak together.)
-    // The cue lines and the per-item judging contract live in `wordFlipScript.ts`
-    // (hand-authored, DISTAR discipline); this block is the session-level frame.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn", or the engine's
-    // sentence-scoped verdict scan would classify a phantom verdict.
-    audioInput: { manual_activity: true },
+    ...bossEntry(wordFlipCard),
     evalModes: [
       {
         evalMode: 'build_inflect',
@@ -3512,142 +1955,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           'Recall and produce common irregular past forms that cannot be made by appending -ed (run → ran; go → went).',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction word-transformation practice for a young child. The frame is '
-        + '"{{transformationFrame}}": the source word is "{{sourceWord}}", and the child SAYS its changed form '
-        + '"{{answer}}". You speak the exact scripted lines from each bracketed application message, you say the '
-        + 'source word when the child taps it, and you judge each spoken attempt from the audio you heard using '
-        + 'only the two allowed reply branches. Producing the grammatical transformation is the entire skill, '
-        + 'so the child says it — never picks it.',
-      // Trimmed to exactly what the component pushes through updateContext (and
-      // that the connect-time primitive_data also carries). An unpushed key
-      // renders the literal string "(not set)" into the prompt, which the tutor
-      // then reads aloud as content — the challenge-index/attempts/voiceMode
-      // keys the click-driven version carried went with the clicks.
-      contextKeys: ['sourceWord', 'transformationFrame', 'answer'],
-      // Correction territory, not answer territory: every level here describes
-      // what happens AFTER an attempt, and re-modeling at every tier is the DI
-      // rule (standing gate 3 — remediation is not scaffolding).
-      scaffoldingLevels: {
-        level1: 'Say the source word once more, then hand the transformation back to them.',
-        level2: 'Model the same transformation on a DIFFERENT word, then ask for theirs again.',
-        level3: 'Say the source-and-answer contrast for the word on screen, then ask them to produce the answer once more.',
-      },
-      // Observable behaviours only. The first is this activity's signature error
-      // class, and it is the one most likely to be mistaken for success: it is
-      // fluent, confident, and completely unchanged.
-      commonStruggles: [
-        {
-          pattern: 'Says the ONE-thing word back with nothing added — "dog" when asked what three of them are',
-          response: 'Treat an unchanged word as not yet answered: say the one-and-many pair for that word, then ask again.',
-        },
-        {
-          pattern: 'Says the TODAY action back unchanged — "jump" when the frame asks what happened yesterday',
-          response: 'Treat the unchanged verb as not yet transformed: contrast today with yesterday, then ask again.',
-        },
-        {
-          pattern: 'Regularizes an irregular past form — "runned" instead of "ran"',
-          response: 'Say the today-and-yesterday contrast once, then hand the yesterday frame straight back.',
-        },
-        {
-          pattern: 'Adds too much ending — "dogses" for "dogs"',
-          response: 'A real error at this age, not carelessness: the rule was applied twice. Say the correct pair once, hand it straight back, and do not dwell on it.',
-        },
-        {
-          pattern: 'Says the NUMBER instead of the word — "three"',
-          response: 'The number is already in the picture; the word is what is being asked for. Say the pair for that word, then ask again.',
-        },
-        {
-          pattern: 'Names something else in the picture, or a different word entirely',
-          response: 'Say the one-thing word, then the many word, then ask them for the many word once more.',
-        },
-        {
-          pattern: 'Says the right word inside a phrase — "three dogs" rather than "dogs" alone',
-          response: 'That is a correct answer — affirm it. The ending is what is being measured, not whether the word arrived alone.',
-        },
-        {
-          pattern: 'Goes quiet after being asked',
-          response: 'Say the one-thing word once more, then hand the question back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_FLIP_ITEM], [DI_FLIP_MOVE_ON] or [DI_FLIP_COMPLETE] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each [DI_FLIP_ITEM] carries a two-branch judging rule: affirmations must begin with '
-            + '"Yes" and corrections must begin with "My turn", using the exact quoted lines. Never begin any '
-            + 'other sentence with those words. Judge honestly from the audio: affirm the transformed answer word, '
-            + 'correct a wrong, missing, or unchanged one. EVERY correction says the source-and-answer contrast for that '
-            + 'word before handing it back. Do not praise to be kind. The application decides which item comes '
-            + 'next; never introduce one yourself.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The FIRST [DI_FLIP_ITEM] of a session carries the greeting, how to play, and the first question '
-            + 'INSIDE its quoted line. Speak that quote exactly and add nothing of your own — no separate '
-            + 'greeting, no how-to-play of your own wording, no rephrased question. It already models the rule '
-            + 'on a word this session never asks about, which is the whole introduction the child needs. This '
-            + 'holds at every grade, and it OVERRIDES any "keep it to one sentence" cap from a lesson switch: '
-            + 'the quoted line is the length it is meant to be.',
-        },
-        {
-          title: 'WORD TRANSFORMATIONS (what counts as the answer)',
-          instruction:
-            'The target is the CHANGED word said aloud. It counts alone or inside the short phrase named by the '
-            + 'item contract. Plausible forms can still be wrong: the source word unchanged, an -s form where -es '
-            + 'or -ies is required ("dishs", "babys"), a regularized irregular ("mouses", "runned"), or an '
-            + 'overbuilt ending ("dogses", "jumpeded"). All take the correction branch warmly. LAW: never say '
-            + 'the answer form of the word on screen until a quoted lesson '
-            + 'line tells you to — the microphone is open the whole time, so saying it first hands the answer '
-            + 'over. Saying the source word is safe; saying its transformed answer is a leak. Never '
-            + 'preview an item that is still coming.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the pause, '
-            + 'do not say the pattern again unprompted, and do not make the change for them. A long silence is a '
-            + 'child working out a word, and that working-out IS the activity. If they tap the picture you will '
-            + 'receive a separate [SAY_WORD] message — answer that and nothing more, then go back to waiting.',
-        },
-        {
-          title: 'WORD ON DEMAND ([SAY_WORD])',
-          instruction:
-            'When you receive a message starting with [SAY_WORD], you MUST immediately and clearly say ONLY the '
-            + 'one word it quotes, twice, and nothing else. Do NOT add commentary, questions, encouragement, or '
-            + 'extra words; do NOT transform it into the answer form; and do NOT treat it as an attempt to '
-            + 'judge. This is the child tapping the source card to hear its word, which is how a '
-            + 'learner recovers the stimulus, and it is answered at every grade — including while you are '
-            + 'waiting for their answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The frame shows one thing and how many there are now, or an action today and yesterday. The learner '
-        + 'says the changed word aloud and it is judged against the word you are given; saying it inside a phrase '
-        + '(three dogs, yesterday I jumped) is correct. The word said back unchanged, or the rule applied twice '
-        + '(dogses, jumpeded), is not yet the answer. The new word is a blank until credited: never say it before the '
-        + 'learner has tried. A tapped card asks you to say its word unchanged. You cannot tap or fill in the blank. On '
-        + 'build_inflect the learner instead taps a word card and an ending card into a row to MAKE a word for the ask and '
-        + 'presses "I\'m done!"; many words can fit. Never say a word that would fit, which ending to use, or which word '
-        + 'takes which ending; when they stop, invite them to read the word in their row and check it against the ask.',
-      levers: true,
-      // Spoken misses (`wordFlipLevers.ts`), emitted by `flipSpokenMisses`. `unanswered` stays the levers' own list
-      // (`wordFlipLevers.test.ts` pins it). The open build: code checks, then the shared literacy judge (`inflectBuild.ts`).
-      misses: missLists<FlipMiss | InflectBuildMiss>({ plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
-        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'],
-        build_inflect: ['base_only', 'ending_only', 'parts_out_of_order', 'double_ending', 'wrong_ending_kind', 'other_base',
-          'wrong_ending', 'missed_y_change', 'same_word', 'not_a_word', 'wrong_meaning'] }),
-      // build_inflect `same_word` has no lever: the word already made stays on screen above the row.
-      unanswered: { build_inflect: ['same_word'], plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
-        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'] },
-    },
   },
   {
     id: 'character-web',

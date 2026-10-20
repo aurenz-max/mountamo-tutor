@@ -1,17 +1,14 @@
 /**
- * Light and shadow lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
- *
- * Pure: the component, the journey and the tests read the same options, assignment, scene, work and miss.
- * Every item is one tapped choice and Check, judged by the activity against the shadow computed in code
- * from the item's sun position, so the tutor is never handed the shadow or the time.
+ * Light and shadow lab's domain, pure: the boss (`lightShadowLab.boss.ts`), the component, the levers and the tests read
+ * the same options, key, scene, work and miss. Every item is one tapped choice and Check Answer, judged by the activity
+ * against the shadow computed in code from the item's sun position, so the tutor is never handed the shadow or the time.
  *
  * The choices are built here, not taken from the generator: its distractors were free text ("Morning",
  * "East") beside a key printed as "West (right), Long", so the key was the only option in its own format.
  * Every option now has the key's form, and each wrong one is a known error (the shadow on the sun's side,
  * the length of a high sun for a low one, the time on the other side of noon).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import type { RelativeLength, ShadowChallenge, ShadowDirection, SunPosition } from './LightShadowLab';
 
@@ -86,10 +83,6 @@ export function shadowOptions(c: ShadowChallenge, sunPositions: readonly SunPosi
 /** The option the activity credits. */
 export const keyOption = (c: ShadowChallenge) => c.type === 'apply' ? normalizeTime(c.sunPosition.time)
   : comboLabel(keyShadow(c).direction, keyShadow(c).relativeLength);
-
-export function workspaceAssignment(c: ShadowChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
 
 /**
  * What a wrong choice shows (`TeachingAttempt.miss`, handoff 20):
@@ -190,38 +183,29 @@ export const hidesShadow = (c: ShadowChallenge) => c.type === 'predict';
 export const hidesSun = (c: ShadowChallenge) => c.type === 'apply';
 
 /**
- * What is drawn and asked. The shadow's length and direction are never stated where they are the answer
- * (observe, predict, measure), and on apply the time and the sun are hidden, so neither is stated there.
+ * What is drawn, and the choices on screen. The shadow's length and direction are never stated where they are the answer
+ * (observe, predict, measure), and on apply the time and the sun are hidden, so neither is stated there. How the learner
+ * answers is the card's `moves`, not a fact here.
  */
-export function workspaceScene(c: ShadowChallenge, view: ShadowView, sunPositions: readonly SunPosition[] = []): WorkspaceScene {
+export function workspaceScene(c: ShadowChallenge, view: ShadowView, sunPositions: readonly SunPosition[] = []): SceneOf {
   const drawn: Record<string, string> = {};
-  const choices = shadowOptions(c, sunPositions).join(' | ');
   if (c.type === 'observe') {
     const marks = timeMarks(c, sunPositions), at = markAt(marks, view.sun);
-    drawn.scene = 'An object stands on the ground with its shadow; the learner drags the sun across the sky and the shadow '
-      + `moves with it. The sun's path has time marks (${marks.map(m => m.time).join(', ')}) and the sun snaps onto a mark it is dragged near`;
+    drawn.scene = 'An object stands on the ground with its shadow, which moves with the sun. '
+      + `The sun's path has time marks (${marks.map(m => m.time).join(', ')}) and the sun snaps onto a mark it is dragged near`;
     drawn.sunNow = `the sun is ${sunWords(view.sun)}${at ? `, on the ${at.time} mark` : ', between marks'}`;
-    drawn.howToAnswer = `drag the sun to explore, then tap one choice and check it; the choices are: ${choices}`;
   } else if (c.type === 'predict') {
     drawn.scene = `The sun is fixed ${sunWords(c.sunPosition)} at ${normalizeTime(c.sunPosition.time)}. `
       + (view.solved ? 'The shadow is now drawn.' : 'No shadow is drawn yet: the learner predicts it, and it appears once the prediction is right');
-    drawn.howToAnswer = `tap the shadow you predict, then check it; the choices are: ${choices}`;
   } else if (c.type === 'measure') {
     drawn.scene = `The sun is fixed ${sunWords(c.sunPosition)} at ${normalizeTime(c.sunPosition.time)}, and the object's shadow is drawn on the ground. `
       + 'The learner reads which way it points and how long it is from the picture; that reading is the answer, so it is not given here';
-    drawn.howToAnswer = `tap the shadow that matches the picture, then check it; the choices are: ${choices}`;
   } else {
     drawn.scene = view.solved ? 'The sun and the time are now drawn.'
-      : 'The object\'s shadow is drawn on the ground; the sun and the clock time are hidden, because the time is the answer';
-    drawn.howToAnswer = `tap the time of day the shadow shows, then check it; the choices are: ${choices}`;
+      : "The object's shadow is drawn on the ground; the sun and the clock time are hidden, because the time is the answer";
   }
   return {
     objects: [],
-    facts: {
-      kind: c.type, ...drawn,
-      learnerWork: describeShadowWork(view.choice),
-      constraints: 'The learner answers by tapping a choice and checking it; the activity judges it. '
-        + 'You cannot move the sun, tap or check for the learner.',
-    },
+    facts: { kind: c.type, ...drawn, choices: shadowOptions(c, sunPositions).join(' | '), learnerWork: describeShadowWork(view.choice) },
   };
 }

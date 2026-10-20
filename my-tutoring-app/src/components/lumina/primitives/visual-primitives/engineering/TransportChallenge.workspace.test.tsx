@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * transport-challenge on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * transport-challenge on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The
+ * generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every mode is a code-keyed pick of one vehicle, tapped and checked or said aloud: the key is published only as the
- * spoken expectedAnswer, and no trips or totals are on screen before a pick is checked. A wrong pick names its miss,
- * and every miss has a help lever first.
+ * spoken key (`transportKey`), and no trips or totals are on screen before a pick is checked. A wrong pick names its
+ * miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -21,13 +21,17 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { TransportChallengeData } from './TransportChallenge';
 import {
   askOf, buildItem, buildTransportItems, DEFAULT_FRAMES, fillsEvenly, keyVehicle, seededRng, totalFor, TRANSPORT_MISSES,
-  transportCorrect, transportHarnessAnswers, transportItems, transportMiss, tripsFor, validTransportItem, vehicleMiss,
-  workspaceAssignment, type TransportItem, type TransportMode, type TransportTier,
+  transportCorrect, transportHarnessAnswers, transportItems, transportKey, transportMiss, tripsFor, validTransportItem,
+  vehicleMiss, type TransportItem, type TransportMode, type TransportTier,
 } from './transportWorkspace';
 import {
-  leverFact, leverLeak, possibleMisses, SHOW_TRIPS_LEVER, simplerItem, SMALLER_JOB_LEVER, TIMES_SETUP_LEVER, timesLines,
-  transportLevers, tripLine,
+  leverLeak, NO_CONTEXT, possibleMisses, SHOW_TRIPS_LEVER, simplerItem, SMALLER_JOB_LEVER, TIMES_SETUP_LEVER, timesLines,
+  TRANSPORT_LEVERS, tripLine,
 } from './transportLevers';
+import { transportChallengeBoss } from './transportChallenge.boss';
+
+const transportLevers = (i: TransportItem, pulled: string[] = []) => TRANSPORT_LEVERS.declare(i, NO_CONTEXT, pulled);
+const leverFact = (i: TransportItem, pulled: string[]) => TRANSPORT_LEVERS.onScreen(i, NO_CONTEXT, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -83,22 +87,33 @@ it('the hand-built jobs are keyed as described', () => {
   for (const i of [ROUND, EVEN, MULTI, FULL]) expect(validTransportItem(i), i.id).toBe(true);
 });
 
-it.each(MODES)('%s binds with its key out of the scene and off the screen', mode => {
+it.each(MODES)('%s binds with its key only in the spoken key, out of the scene and off the screen', mode => {
   const h = mount(mode);
   const item = BY_MODE[mode][0];
   expect(getComponentById('transport-challenge')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(transportChallengeBoss.assignment(item).task);
+  expect(transportChallengeBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe('speech');
+  expect(transportKey(item).answer).toBe(keyVehicle(item)!.name);
   expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${keyVehicle(item)!.name}"`);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/was run|Credited|within\)|over\)/);
   // No trips, totals, verdict, table or lever before a checked pick.
   expect(text(h)).not.toMatch(/\d+ trips|of \$|Next job|Finish/);
   expect(h.view.container.querySelector('[data-lever], [data-run], [data-compare]')).toBeNull();
+  // Taught only on the workspace: no read-the-job button, Next or reveal of its own.
   expect(h.view.container.querySelector('[aria-label="Read the job to me"]')).toBeNull();
   h.close();
+});
+
+it('the harness says each job\'s key and a wrong vehicle the key does not accept', () => {
+  for (const mode of MODES) for (const item of BY_MODE[mode]) {
+    const said = (right: boolean) => String((transportChallengeBoss.drive.play(right, item, {} as never).at(-1) as { text?: string }).text);
+    expect(said(true)).toBe(transportKey(item).answer);
+    expect(said(false)).not.toBe(transportKey(item).answer);
+  }
 });
 
 it('single: a wrong tap names its miss, runs only that vehicle and closes the cards; Try again clears; right, then spoken, submits once', async () => {
@@ -247,7 +262,6 @@ describe('the pure rules', () => {
       expect(s.vehicles.every(v => fillsEvenly(s, v))).toBe(true);
       expect(keyVehicle(s)!.id).not.toBe(keyVehicle(i)!.id);
       expect(simplerItem(s)).toBeNull();
-      expect(transportLevers(s, [])).toEqual([]);
     }
     expect(built).toBeGreaterThan(30);
   });

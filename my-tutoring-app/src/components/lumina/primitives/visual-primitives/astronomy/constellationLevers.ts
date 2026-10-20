@@ -1,6 +1,6 @@
 /**
- * The in-item levers on a constellation-builder item (`/add-support-tiers`; report
- * qa/eval-reports/constellation-builder-levers-2026-10-15.md). No real-learner evidence: the misses are what the
+ * The in-item levers on a constellation-builder item, as one lever set (`CONSTELLATION_LEVERS`, `bossLevers.ts`;
+ * `/add-support-tiers`; report qa/eval-reports/constellation-builder-levers-2026-10-15.md). No real-learner evidence: the misses are what the
  * activity's own checks observe (`constellationWorkspace.ts`), plus the catalog's documented struggles (random taps
  * with no pattern in mind; a wrong star near a right one; dim stars mistaken for pattern stars). Pure: the component
  * draws from these, the workspace publishes them, the tests hold each leak rule. Every help lever is a drawing with no
@@ -15,9 +15,10 @@
  * - `easier_pattern` (simplify, every mode): an ungraded item of the same mode with a different, smaller or plainer
  *   real constellation from `PATTERNS`, never the item's own constellation (on identify, never any name it offers).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ConnectionLine, ConstellationChallenge, StarData } from './ConstellationBuilder';
-import { identifyOptions, patternStars, sameName, type ConstellationMiss } from './constellationWorkspace';
+import { CONSTELLATION_MISSES } from './constellationBuilder.card';
+import { identifyOptions, patternStars, sameName } from './constellationWorkspace';
 
 export const SPOTLIGHT_LEVER = 'spotlight';
 export const SHAPE_CARD_LEVER = 'shape_card';
@@ -148,50 +149,39 @@ export function practiceLeaks(parent: ConstellationChallenge, p: ConstellationCh
     || (parent.type === 'seasonal' && seasonOf(p.season) === seasonOf(parent.season));
 }
 
-const GUIDED_MISSES: readonly ConstellationMiss[] = ['later_star', 'traced_star', 'other_star'];
-const FREE_MISSES: readonly ConstellationMiss[] = ['background_star', 'wrong_pair'];
+/** What the lever set reads beside the item: whether the field already draws the pattern's stars bright (the easy tier). */
+export interface ConstellationLeverCtx { membersBright: boolean }
 
-/** `membersBright`: whether the field already draws the pattern's stars bright (the easy tier). */
-export function constellationLevers(c: ConstellationChallenge | null, pulled: readonly string[], membersBright: boolean,
-  challenges: readonly ConstellationChallenge[] = []): WorkspaceLever[] {
-  if (!c || isPractice(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly ConstellationMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const simpler = practiceItem(c, challenges);
-  const easier = simpler ? [lever(EASIER_PATTERN_LEVER, 'simplify',
-    c.type === 'guided_trace' ? GUIDED_MISSES : c.type === 'free_connect' ? FREE_MISSES : c.type === 'identify' ? ['wrong_name'] : ['other_name', 'several_names'],
-    c.type === 'identify' ? 'The learner cannot yet tell this pattern from the other names.'
-      : c.type === 'seasonal' ? 'The learner does not yet know which constellations go with this season.'
-        : 'The learner cannot yet keep track of this many stars.',
-    c.type === 'identify' ? 'Opens an easier item first: a plainer constellation\'s lines with only two names to choose from. '
-      : c.type === 'seasonal' ? 'Opens an easier item first: another season with only two names to choose from. '
-        : 'Opens an easier item first: a smaller star pattern of the same kind. ',
-  )].map(l => ({ ...l, does: `${l.does}It is not graded; the full item comes back after it.` })) : [];
-  if (c.type === 'guided_trace') return [
-    lever(SPOTLIGHT_LEVER, 'help', GUIDED_MISSES, 'The learner taps stars other than the ringed one.',
-      'Fades every star except the ringed one and the ones already joined, and makes the ring bigger. It marks no other star.'),
-    ...easier,
-  ];
-  if (c.type === 'free_connect') return [
-    lever(SHAPE_CARD_LEVER, 'help', FREE_MISSES, 'The learner joins stars the pattern does not join, or does not know the shape to look for.',
-      'Shows a small card beside the sky with the pattern\'s lines and stars only, as a picture of the shape to find. '
-        + 'It has no background stars and does not mark any star in the sky.'),
-    ...(membersBright ? [] : [lever(BRIGHT_STARS_LEVER, 'help', ['background_star'], 'The learner taps dim background stars.',
-      'Draws the pattern\'s stars brighter than the background stars. It draws no line.')]),
-    ...easier,
-  ];
-  return easier;
-}
-
-/** What the pulled help levers put on screen, for the tutor. Never a star's place or a pair to join. */
-export function leverFacts(c: ConstellationChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPractice(c)) return '';
-  return [
-    pulled.includes(SPOTLIGHT_LEVER) && c.type === 'guided_trace' && 'The other stars are faded and the ring around the next star is bigger.',
-    pulled.includes(SHAPE_CARD_LEVER) && c.type === 'free_connect' && 'A small card beside the sky shows the pattern\'s shape: its lines and stars only.',
-    pulled.includes(BRIGHT_STARS_LEVER) && c.type === 'free_connect' && 'The pattern\'s stars are now drawn brighter than the background stars.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const CONSTELLATION_LEVERS = leverSet<ConstellationChallenge, ConstellationLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => CONSTELLATION_MISSES[mode as keyof typeof CONSTELLATION_MISSES] ?? [],
+  specs: [
+    { id: SPOTLIGHT_LEVER, type: 'marks', modes: ['guided_trace'], answers: 'all',
+      when: 'The learner taps stars other than the ringed one.',
+      does: 'Fades every star except the ringed one and the ones already joined, and makes the ring bigger. It marks no other star.',
+      fact: 'The other stars are faded and the ring around the next star is bigger.' },
+    { id: SHAPE_CARD_LEVER, type: 'custom', carrier: 'shown', modes: ['free_connect'], answers: 'all',
+      why: 'It draws the pattern\'s shape on a separate card beside the sky: no mark on the field, and not a different item.',
+      when: 'The learner joins stars the pattern does not join, or does not know the shape to look for.',
+      does: 'Shows a small card beside the sky with the pattern\'s lines and stars only, as a picture of the shape to find. '
+        + 'It has no background stars and does not mark any star in the sky.',
+      fact: 'A small card beside the sky shows the pattern\'s shape: its lines and stars only.' },
+    { id: BRIGHT_STARS_LEVER, type: 'marks', modes: ['free_connect'], answers: ['background_star'],
+      // Only where the tier drew every star by its own brightness.
+      offer: (_c, ctx) => !ctx.membersBright,
+      when: 'The learner taps dim background stars.',
+      does: 'Draws the pattern\'s stars brighter than the background stars. It draws no line.',
+      fact: 'The pattern\'s stars are now drawn brighter than the background stars.' },
+    { id: EASIER_PATTERN_LEVER, type: 'easier', answers: 'all',
+      when: c => (c.type === 'identify' ? 'The learner cannot yet tell this pattern from the other names.'
+        : c.type === 'seasonal' ? 'The learner does not yet know which constellations go with this season.'
+          : 'The learner cannot yet keep track of this many stars.'),
+      does: c => `${c.type === 'identify' ? 'Opens an easier item first: a plainer constellation\'s lines with only two names to choose from. '
+        : c.type === 'seasonal' ? 'Opens an easier item first: another season with only two names to choose from. '
+          : 'Opens an easier item first: a smaller star pattern of the same kind. '}It is not graded; the full item comes back after it.`,
+      content: c => practiceItem(c) },
+  ],
+});
 
 /** The shape card's lines, scaled into a `w` x `h` box: the pattern's own lines, no other star. */
 export function shapeCardLines(c: ConstellationChallenge, stars: readonly StarData[], w: number, h: number) {

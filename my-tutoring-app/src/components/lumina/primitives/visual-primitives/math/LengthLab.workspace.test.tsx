@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Length lab on the teaching workspace: what is its own. The generic W1 contract
+ * Length lab on its boss (`lengthLab.boss.ts`), on the teaching workspace: what is its own. The generic W1 contract
  * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -17,6 +17,7 @@ import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContrac
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { LengthLabChallenge } from './LengthLab';
+import { lengthAsk } from './lengthLabWorkspace';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -80,7 +81,8 @@ it.each(Object.values(CASES))('$c.type: a checked gesture that publishes no key;
     // A one-choice compare or indirect is also spoken (LengthLab.spoken.workspace.test.tsx); the rest are tap-only, no key.
     if (c.type === 'compare' || c.type === 'indirect') {
       expect(task.demand.response).toBe('speech');
-      expect(task.task.startsWith(c.instruction)).toBe(true);
+      // The tutor is handed the boss's ask, in the words of the buttons, never the generated instruction.
+      expect(task.task).toBe(lengthAsk(c));
     } else {
       expect(task.workspace!.expectedAnswer).toBeUndefined();
       expect(task.demand.response).toBe('gesture');

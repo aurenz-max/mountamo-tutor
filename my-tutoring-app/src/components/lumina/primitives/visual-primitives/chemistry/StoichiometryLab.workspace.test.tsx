@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * stoichiometry-lab on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every item is built and keyed by code from one reaction: convert is a tapped chain of factor cards, limiting a
- * spoken-or-tapped choice, yield a spoken-or-typed number. The key is published only as a spoken expectedAnswer,
- * nothing on screen computes it before credit, a wrong check names its miss, and every miss has a help lever.
+ * stoichiometry-lab on its boss (the spoken preset: a conversion-chain board and two SAY_OR_SHOW modes) and its lever
+ * set, mounted the way a lesson mounts it. Every item is built and keyed by code from one reaction: convert is a tapped
+ * chain of factor cards, limiting a spoken-or-tapped choice, yield a spoken-or-typed number. The key is published only
+ * as the spoken key (`stoichKey`), nothing on screen computes it before credit, a wrong check names its miss, and every
+ * miss has a help lever.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -18,17 +18,20 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import type { StoichChallenge, StoichiometryLabData } from './StoichiometryLab';
 import {
   atomsOf, BOTH, buildStoichChallenges, cardLabel, convertKey, convertMiss, extentOf, limitingMiss, limitingOf, molarMassOf,
-  molesOf, normalizeReaction, reactionFromLibrary, REACTIONS, STOICH_MISSES, STOICH_MODES, STOICH_TIERS, stoichCorrect,
-  stoichHarnessAnswers, stoichItems, stoichMiss, stoichSpokenMisses, workspaceAssignment, yieldDistractors, yieldMiss, yieldOf,
+  askOf, molesOf, normalizeReaction, reactionFromLibrary, REACTIONS, STOICH_MODES, STOICH_TIERS, stoichCorrect,
+  stoichHarnessAnswers, stoichItems, stoichKey, stoichMiss, stoichSpokenMisses, yieldDistractors, yieldMiss, yieldOf,
   type ConvertItem, type LimitingItem, type StoichItem, type StoichMode, type YieldItem,
 } from './stoichiometryLabWorkspace';
 import {
-  amountLeverLeaks, EASIER_LEVER, easierItem, leverFact, MAP_LEVER, mapLeaks, mapStations, MOLES_LEVER, RECIPE_LEVER,
-  recipeLine, moleLine, stoichLevers, UNITS_LEVER,
+  amountLeverLeaks, EASIER_LEVER, easierItem, MAP_LEVER, mapLeaks, mapStations, MOLES_LEVER, RECIPE_LEVER,
+  recipeLine, moleLine, STOICH_LEVERS, UNITS_LEVER,
 } from './stoichiometryLabLevers';
+import { STOICH_MISSES } from './stoichiometryLab.card';
+import { stoichiometryLabBoss } from './stoichiometryLab.boss';
 import { eligibleReactions, reactionByTopic } from '../../../service/chemistry/gemini-stoichiometry-lab';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -69,6 +72,7 @@ const type = (h: WorkspaceHarness, item: YieldItem, grams: string) => {
   h.press('Check Answer'); h.settle();
 };
 const flush = () => act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
+const leversOn = (item: StoichItem, items: readonly StoichItem[]) => STOICH_LEVERS.declare(item, { items }, []);
 
 it.each(MODES)('%s binds with its key out of the scene and nothing computed on screen', mode => {
   const h = mount(mode);
@@ -76,8 +80,12 @@ it.each(MODES)('%s binds with its key out of the scene and nothing computed on s
   expect(getComponentById('stoichiometry-lab')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(stoichiometryLabBoss.assignment(item).task);
+  expect(stoichiometryLabBoss.assignment(item)).toMatchObject(item.mode === 'convert'
+    ? { response: 'gesture' } : { response: 'speech', acceptsGesture: true });
   const ws = h.state().task!.workspace!;
+  // The scene's rule is this item's fact, never how the learner answers (the card's moves).
+  expect(String(demand(h).constraints)).not.toMatch(/\btap|Check (chain|Answer)|\btype/i);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/runs out first\.|limiting reactant is|answer is|correct/i);
   // No description, no mole counts, no running units, no recipe, no Next before a lever or credit.
@@ -155,7 +163,7 @@ it('limiting: a wrong tap names its miss; mole_counts and recipe_card draw witho
   expect(h.dispatch('pull_lever', { lever: RECIPE_LEVER }).status).toBe('committed');
   expect(h.view.container.querySelectorAll('[data-lever="recipe-card"] span.rounded-full')).toHaveLength(2 + 1 + 2);
   const item = current(h, 'limiting');
-  expect(amountLeverLeaks(item, leverFact(item, [MOLES_LEVER, RECIPE_LEVER]))).toBe(false);
+  expect(amountLeverLeaks(item, STOICH_LEVERS.onScreen(item, { items: [item] }, [MOLES_LEVER, RECIPE_LEVER]))).toBe(false);
   h.dispatch('retry'); h.confirmVisible();
   h.press('O2'); h.press('Check Answer'); h.settle();
   expect(last(h)).toMatchObject({ correct: true, levers: [MOLES_LEVER, RECIPE_LEVER] });
@@ -283,7 +291,7 @@ describe('the pure rules', () => {
         const work = item.mode === 'convert' ? { chain: convertKey(item).length === 1 ? ['H2|mol>g', 'O2|mol>g'].filter(x => x.startsWith(item.given.formula)) : [], choice: null, typed: '' }
           : item.mode === 'limiting' ? { chain: [], choice: wrong[0], typed: '' } : { chain: [], choice: null, typed: wrong[0] };
         if (item.mode !== 'convert') expect(STOICH_MISSES[mode]).toContain(stoichMiss(item, work));
-        const ls = stoichLevers(item, [], items);
+        const ls = leversOn(item, items);
         for (const miss of STOICH_MISSES[mode]) expect(ls.find(l => l.id === nextLever(ls, miss))!.kind, `${item.id} ${miss}`).toBe('help');
         const key = item.mode === 'yield' ? String(yieldOf(item)) : item.mode === 'limiting' ? `${limitingOf(item.rx, item.a, item.b)} runs out` : '';
         for (const l of ls) if (key) expect(`${l.when} ${l.does}`).not.toContain(key);
@@ -300,6 +308,24 @@ describe('the pure rules', () => {
         }
       }
     }
+  });
+
+  it('no ask says its spoken key, limiting asks its whole menu, and a convert item has no key', () => {
+    for (const mode of MODES) {
+      for (const item of stoichItems(data(mode, buildStoichChallenges(WATER, [mode], null, 11)))) {
+        const key = stoichKey(item);
+        if (item.mode === 'convert') { expect(key).toBeNull(); continue; }
+        expect(askLeaks(askOf(item), key!), item.id).toEqual([]);
+        if (item.mode === 'limiting') expect(key!.menu).toEqual([item.a.formula, item.b.formula, 'both']);
+        else expect(key!.answer).toBe(String(yieldOf(item)));
+      }
+    }
+    const [med, , both] = stoichItems(data('limiting')) as LimitingItem[];
+    expect(stoichKey(med)).toMatchObject({ answer: 'O2', alsoAccept: ['oxygen', 'the oxygen', 'oxygen is the limiting reactant'] });
+    expect(stoichKey(both)!.answer).toBe('both');
+    // A practice item opens no lever of its own, and an easy item has no easier one.
+    const easy = stoichItems(data('limiting'))[2];
+    expect(STOICH_LEVERS.simpler(easy, { items: [easy] }, EASIER_LEVER)).toBeNull();
   });
 
   it('the generator picks among reactions every requested mode can use, and falls back on topic words', () => {

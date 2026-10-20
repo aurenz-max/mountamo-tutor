@@ -1,28 +1,29 @@
 /**
- * The in-item levers on vehicle-comparison-lab (`/add-support-tiers`; report
+ * The in-item levers on vehicle-comparison-lab, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/vehicle-comparison-lab-levers-2026-10-16.md). No real-learner evidence: the misses are what
  * `comparisonMiss` observes; the failures behind them are documented (the old catalog's commonStruggles: looks only
  * at speed, struggles with the constraints) or inferred (compares numbers by their first digit, reads the wrong
  * column, forgets that a smaller CO2 number is better, picks the impressive vehicle instead of the one the job
  * needs). Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `count_digits` (help; every mode): writes under each number in the asked column (evidence_choice: every column)
+ * - `count_digits` (marks; every mode): writes under each number in the asked column (evidence_choice: every column)
  *   how many digits its whole number has. It orders and marks nothing.
- * - `smaller_is_better` (help; a lower-is-better column asked): a card saying a smaller CO2 number means less pollution.
- * - `focus_column` (help; metric_leader with other columns): fades every column but the one the ask names.
- * - `column_meanings` (help; evidence_choice): a card saying what each column measures, in plain words, every column alike.
- * - `mark_minimums` (help; constraint_tradeoff): a tick or a cross beside each minimum cell of every row. It does not
+ * - `smaller_is_better` (clue; a lower-is-better column asked): a card saying a smaller CO2 number means less pollution.
+ * - `focus_column` (layout; metric_leader with other columns): fades every column but the one the ask names.
+ * - `column_meanings` (meaning; evidence_choice): a card saying what each column measures, in plain words, every column alike.
+ * - `mark_minimums` (marks; constraint_tradeoff): a tick or a cross beside each minimum cell of every row. It does not
  *   mark the priority column.
- * - `two_rows` (simplify; metric_leader, 3+ rows): the same column on two other vehicles, ungraded, then the full item.
- * - `fewer_columns` (simplify; evidence_choice): the same job on fewer vehicles (not the one that leads) and two
+ * - `two_rows` (easier; metric_leader, 3+ rows): the same column on two other vehicles, ungraded, then the full item.
+ * - `fewer_columns` (easier; evidence_choice): the same job on fewer vehicles (not the one that leads) and two
  *   columns, ungraded, then the full item.
- * - `one_minimum` (simplify; constraint_tradeoff): one minimum, without the vehicle that answers the full item,
+ * - `one_minimum` (easier; constraint_tradeoff): one minimum, without the vehicle that answers the full item,
  *   ungraded, then the full item.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { VEHICLE_MISSES } from './vehicleComparisonLab.card';
 import {
-  cellText, comparisonMiss, emptyWork, feasibleRows, keyOf, leaderOf, lowerWins, meets, METRIC_LABEL, METRIC_MEANING,
-  minimumText, ranked, VEHICLE_MISSES,
+  cellText, comparisonMiss, emptyWork, feasibleRows, keyName, keyOf, leaderOf, lowerWins, meets, METRIC_LABEL, METRIC_MEANING,
+  minimumText, ranked,
   type EvidenceItem, type LeaderItem, type MetricKey, type TradeoffItem, type VehicleItem, type VehicleMiss, type VehicleRow,
 } from './vehicleComparisonWorkspace';
 
@@ -93,78 +94,76 @@ export function simplerItem(item: VehicleItem): VehicleItem | null {
   return null;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly VehicleMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
+type Mode = VehicleItem['mode'];
+const digitsWhere = (item: VehicleItem) => (item.mode === 'evidence_choice' ? 'in every column' : `in the ${METRIC_LABEL[item.metric]} column`);
+const countDigits = (mode: Mode, answers: readonly VehicleMiss[]) => ({
+  id: COUNT_DIGITS_LEVER, type: 'marks' as const, modes: [mode], answers,
+  when: 'The learner compares the numbers by their first digit, or misreads how big they are.',
+  does: (item: VehicleItem) => `Writes under each number ${digitsWhere(item)} how many digits it has. It orders and marks nothing.`,
+  fact: (_on: unknown, item: VehicleItem) => `Under each number ${item.mode === 'evidence_choice' ? '' : `in the ${METRIC_LABEL[item.metric]} column `}`
+    + 'its digit count is written: '
+    + digitColumns(item).map(c => item.rows.map(r => `${r.name} ${cellText(item, r, c)} (${digitNote(r.values[c]!)})`).join(', ')).join('; ') + '.',
+});
+const smallerIsBetter = (modes: readonly Mode[], answers: readonly VehicleMiss[]) => ({
+  id: SMALLER_IS_BETTER_LEVER, type: 'clue' as const, modes, answers,
+  when: 'The learner chose the largest number where a smaller number is better.',
+  does: (item: VehicleItem) => `Shows a card: for ${METRIC_LABEL[item.metric]}, a smaller number means less pollution.`,
+  offer: (item: VehicleItem) => lowerWins(item.metric),
+  fact: (_on: unknown, item: VehicleItem) => `A card: ${smallerLine(item.metric)}`,
+});
 
-/** The levers on the current session item. A practice item has none. */
-export function vehicleLevers(item: VehicleItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const simpler = simplerItem(item);
-  const lower = lowerWins(item.metric);
-  const smaller = () => lever(SMALLER_IS_BETTER_LEVER, 'help', pulled, ['reversed'],
-    'The learner chose the largest number where a smaller number is better.',
-    `Shows a card: for ${METRIC_LABEL[item.metric]}, a smaller number means less pollution.`);
-  const digits = (answers: readonly VehicleMiss[], where: string) => lever(COUNT_DIGITS_LEVER, 'help', pulled, answers,
-    'The learner compares the numbers by their first digit, or misreads how big they are.',
-    `Writes under each number ${where} how many digits it has. It orders and marks nothing.`);
-  if (item.mode === 'metric_leader') {
-    if (lower) out.push(smaller());
-    if (item.columns.length > 1) {
-      out.push(lever(FOCUS_COLUMN_LEVER, 'help', pulled, ['other_column_leader'], 'The learner reads a different column from the one asked.',
-        `Fades every column except ${METRIC_LABEL[item.metric]}.`));
-    }
-    out.push(digits(['leading_digit', 'reversed', 'runner_up', 'not_leader'], `in the ${METRIC_LABEL[item.metric]} column`));
-    if (simpler) {
-      out.push(lever(TWO_ROWS_LEVER, 'simplify', pulled, VEHICLE_MISSES.metric_leader, 'The learner cannot compare several numbers at once.',
-        `Opens the same column on just two other vehicles first. It is not graded; this item comes back after it.`));
-    }
-    return out;
-  }
-  if (item.mode === 'evidence_choice') {
-    out.push(lever(COLUMN_MEANINGS_LEVER, 'help', pulled, ['wrong_evidence', 'other_column_leader'],
-      'The learner does not connect the job to a column, or picks a vehicle for a different reason than the job.',
-      'Shows a card saying what each column measures, in plain words, every column alike.'));
-    out.push(digits(['misread_column', 'not_leader', 'other_column_leader'], 'in every column'));
-    if (lower) out.push(smaller());
-    if (simpler) {
-      out.push(lever(FEWER_COLUMNS_LEVER, 'simplify', pulled, VEHICLE_MISSES.evidence_choice, 'The learner is lost in a big table.',
-        'Opens the same job on fewer vehicles and two columns first. It is not graded; this item comes back after it.'));
-    }
-    return out;
-  }
-  out.push(lever(MARK_MINIMUMS_LEVER, 'help', pulled, ['ignored_minimum'], 'The learner picks a vehicle that misses a minimum.',
-    `Puts a tick or a cross beside each vehicle's ${item.minimums.map(n => METRIC_LABEL[n.metric]).join(' and ')} number: ticked when it meets the minimum.`));
-  if (lower) out.push(smaller());
-  out.push(digits(['reversed', 'not_priority_leader'], `in the ${METRIC_LABEL[item.metric]} column`));
-  if (simpler) {
-    out.push(lever(ONE_MINIMUM_LEVER, 'simplify', pulled, VEHICLE_MISSES.constraint_tradeoff, 'The learner cannot hold two minimums at once.',
-      'Opens a job with one minimum on a smaller table first. It is not graded; this item comes back after it.'));
-  }
-  return out;
-}
+/** The levers read nothing beside the item. */
+export type VehicleLeverContext = Record<string, never>;
+export const NO_CONTEXT: VehicleLeverContext = {};
 
-/** What the pulled levers put on screen, as a scene fact. Never a key or a ranking. */
-export function leverFact(item: VehicleItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(SMALLER_IS_BETTER_LEVER)) parts.push(`A card: ${smallerLine(item.metric)}`);
-  if (pulled.includes(FOCUS_COLUMN_LEVER)) parts.push(`Every column except ${METRIC_LABEL[item.metric]} is faded.`);
-  if (pulled.includes(COLUMN_MEANINGS_LEVER)) parts.push(`A card says what each column measures: ${meaningLines(item).join(' ')}`);
-  if (pulled.includes(COUNT_DIGITS_LEVER)) {
-    parts.push(`Under each number ${item.mode === 'evidence_choice' ? '' : `in the ${METRIC_LABEL[item.metric]} column `}its digit count is written: `
-      + digitColumns(item).map(c => item.rows.map(r => `${r.name} ${cellText(item, r, c)} (${digitNote(r.values[c]!)})`).join(', ')).join('; ')
-      + '.');
-  }
-  if (pulled.includes(MARK_MINIMUMS_LEVER) && item.mode === 'constraint_tradeoff') {
-    parts.push(`Beside each minimum number is a tick when it meets "${item.minimums.map(n => minimumText(item, n)).join('" and "')}", a cross when not: `
-      + item.rows.map(r => `${r.name} ${minimumMarks(item, r).map(m => `${METRIC_LABEL[m.metric]} ${m.met ? 'tick' : 'cross'}`).join(', ')}`).join('; ')
-      + '.');
-  }
-  return parts.join(' ');
-}
+/** In the order the observer offers them: on every miss a help lever comes before the item's easier one. */
+export const VEHICLE_LEVERS = leverSet<VehicleItem, VehicleLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => VEHICLE_MISSES[mode as Mode] ?? [],
+  // No card's words name the vehicle that answers the item.
+  answersOf: item => [keyName(item)],
+  specs: [
+    { id: MARK_MINIMUMS_LEVER, type: 'marks', modes: ['constraint_tradeoff'], answers: ['ignored_minimum'],
+      when: 'The learner picks a vehicle that misses a minimum.',
+      does: item => `Puts a tick or a cross beside each vehicle's ${item.mode === 'constraint_tradeoff'
+        ? item.minimums.map(n => METRIC_LABEL[n.metric]).join(' and ') : ''} number: ticked when it meets the minimum.`,
+      fact: (_on: unknown, item) => (item.mode !== 'constraint_tradeoff' ? ''
+        : `Beside each minimum number is a tick when it meets "${item.minimums.map(n => minimumText(item, n)).join('" and "')}", a cross when not: `
+          + item.rows.map(r => `${r.name} ${minimumMarks(item, r).map(m => `${METRIC_LABEL[m.metric]} ${m.met ? 'tick' : 'cross'}`).join(', ')}`).join('; ')
+          + '.') },
+    smallerIsBetter(['metric_leader', 'constraint_tradeoff'], ['reversed']),
+    { id: FOCUS_COLUMN_LEVER, type: 'layout', modes: ['metric_leader'], answers: ['other_column_leader'],
+      when: 'The learner reads a different column from the one asked.',
+      does: item => `Fades every column except ${METRIC_LABEL[item.metric]}.`,
+      offer: item => item.columns.length > 1,
+      fact: (_on: unknown, item) => `Every column except ${METRIC_LABEL[item.metric]} is faded.` },
+    { id: COLUMN_MEANINGS_LEVER, type: 'meaning', modes: ['evidence_choice'], answers: ['wrong_evidence', 'other_column_leader'],
+      when: 'The learner does not connect the job to a column, or picks a vehicle for a different reason than the job.',
+      does: 'Shows a card saying what each column measures, in plain words, every column alike.',
+      content: item => meaningLines(item),
+      fact: (lines: string[]) => `A card says what each column measures: ${lines.join(' ')}` },
+    countDigits('metric_leader', ['leading_digit', 'reversed', 'runner_up', 'not_leader']),
+    countDigits('evidence_choice', ['misread_column', 'not_leader', 'other_column_leader']),
+    countDigits('constraint_tradeoff', ['reversed', 'not_priority_leader']),
+    // On evidence_choice a lower-is-better column is the job's own (the cleanest trip): the largest number there misreads it.
+    smallerIsBetter(['evidence_choice'], ['misread_column', 'not_leader']),
+    { id: TWO_ROWS_LEVER, type: 'easier', modes: ['metric_leader'], answers: 'all',
+      when: 'The learner cannot compare several numbers at once.',
+      does: `Opens the same column on just two other vehicles first. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+    { id: FEWER_COLUMNS_LEVER, type: 'easier', modes: ['evidence_choice'], answers: 'all',
+      when: 'The learner is lost in a big table.',
+      does: `Opens the same job on fewer vehicles and two columns first. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+    { id: ONE_MINIMUM_LEVER, type: 'easier', modes: ['constraint_tradeoff'], answers: 'all',
+      when: 'The learner cannot hold two minimums at once.',
+      does: `Opens a job with one minimum on a smaller table first. ${PRACTICE_NOTE}`,
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's work can show. */
 export function possibleMisses(item: VehicleItem): VehicleMiss[] {

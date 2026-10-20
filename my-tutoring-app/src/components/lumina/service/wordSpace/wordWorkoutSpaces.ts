@@ -25,7 +25,7 @@ import { basicScope, decodableWords } from './scope';
 import type { WordSpaceItem } from './pick';
 import nonsenseData from './nonsense.json';
 import { EARLY_CONTEXT_TRIALS, EARLY_EXTENDED_WORDS } from '../../primitives/visual-primitives/literacy/wordWorkoutEarlyDecoding';
-import { isSayableWord } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { isSayableWord } from '../../primitives/visual-primitives/literacy/wordWorkoutDomain';
 
 export type WorkoutSpaceMode = 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'inflected-word' | 'compound-word' | 'context-discrimination';
 export type WorkoutPayload = Record<string, unknown>;

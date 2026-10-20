@@ -19,20 +19,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CoinCounterMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { COIN_CENTS, coinMiss, describeCoinWork, isSpokenCoin, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { coinCounterBoss } from './coinCounter.boss';
+import { COIN_CENTS, coinItems, coinKey, coinMiss, coinScene, describeCoinWork, type CoinView } from './coinCounterWorkspace';
 import {
-  CHANGE_BAR_LEVER, COIN_VALUES_LEVER, PRACTICE_NOTE, RUNNING_TOTAL_LEVER, SIZE_ROW_LEVER, SKIP_STRIP_LEVER, SORT_LEVER, VALUE_TAGS_LEVER,
-  changeBar, coinCounterLevers, leverFacts, practiceItem, runningValues, sizeOrder, skipStrip, sortedRows, type CoinLeverView,
+  CHANGE_BAR_LEVER, COIN_LEVERS, COIN_VALUES_LEVER, PRACTICE_NOTE, RUNNING_TOTAL_LEVER, SIZE_ROW_LEVER, SKIP_STRIP_LEVER, SORT_LEVER,
+  VALUE_TAGS_LEVER, changeBar, runningValues, sizeOrder, skipStrip, sortedRows, tierPulled, type CoinLeverView,
 } from './coinCounterLevers';
 import { CoinBuildTray, MAX_TRAY } from './CoinBuildTray';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
@@ -195,49 +195,6 @@ function expandCoins(coins: CoinDef[]): CoinType[] {
   return result;
 }
 
-/**
- * Keeps the AI tutor's reveal level in sync with the on-screen support tier so it
- * never speaks the value a hard tier hid. 'identify' is a recognition mode — the
- * tutor must never name which coin to tap at any tier; the tier only dials coaching depth.
- */
-function tierRevealClause(tier: string | undefined, type: string): string {
-  if (!tier) return '';
-  const recognition = type === 'identify';
-  if (tier === 'easy') {
-    return recognition
-      ? ' [TIER easy] You may richly describe the coin (size, color, name) but never say which one to tap.'
-      : ' [TIER easy] You may name the strategy (skip-count / subtract) and the value of each coin shown.';
-  }
-  if (tier === 'medium') {
-    return recognition
-      ? ' [TIER medium] Give ONE size/color cue; do not say which coin to tap.'
-      : ' [TIER medium] Nudge the next step only; do not state any coin value or the total.';
-  }
-  // hard
-  return recognition
-    ? ' [TIER hard] Ask what the student notices about the coin; reveal nothing.'
-    : ' [TIER hard] On-screen coin values are HIDDEN — do NOT state any coin\'s value, the total, or the answer; ask which coins they see and what each is worth.';
-}
-
-/**
- * Spoken twin for the Grade-1 enacted count protocol (reader-fit 14b). The on-screen
- * "Tap each coin to count it!" cue is a short sentence, which the EMERGING band may
- * only lean on if it is ALSO spoken — so every challenge-start message carries the
- * protocol for the tutor. Answer-free by construction (names the acts, never a value).
- */
-function enactedCountG1Clause(
-  gradeBand: string,
-  ch: CoinCounterChallenge | null | undefined,
-): string {
-  if (gradeBand !== '1' || ch?.type !== 'count' || ch?.countMode !== 'like') return '';
-  return (
-    ' [G1 ENACTED COUNT] The coins on screen are tappable: the student taps each coin'
-    + ' once to count it, and the total entry box appears only after every coin is'
-    + ' tagged. When you read the instruction, ALSO tell the student to tap each coin'
-    + ' to count it, then type the total. Never state the total.'
-  );
-}
-
 function formatCents(cents: number): string {
   if (cents >= 100) {
     const dollars = Math.floor(cents / 100);
@@ -264,8 +221,9 @@ interface CoinCounterProps {
 // Component
 // ============================================================================
 
-const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  CoinCounterProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CoinCounterChallenge>) => Progress }) => {
+const useCoinProgress = useWorkspaceProgressFor('coin-counter');
+
+const CoinCounterSurface = ({ data, className, runtimePlanItemId }: CoinCounterProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -274,7 +232,6 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     gradeBand = '1',
     showCoinValues = true,
     showRunningTotal = true,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -283,7 +240,9 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge Progress (shared hooks). On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace owns it and moves the index. ──
+  // The lesson's items: each challenge with the grade band its key reads (an enacted like count has none).
+  const items = useMemo(() => coinItems({ challenges, gradeBand }), [challenges, gradeBand]);
   const stableInstanceIdRef = useRef(instanceId || `coin-counter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // Bound below, once the setters and the evaluation exist.
@@ -295,12 +254,11 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
-  const progress = useController({
-    challenges,
+  const progress = useCoinProgress({
+    challenges: items,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    // The grade band decides whether a like count is enacted (tap only) or a total the learner may say.
-    workspace, assignment: ch => workspaceAssignment(ch, gradeBand),
+    workspace, assignment: coinCounterBoss.assignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
     onSolved: index => solvedAloud.current(index),
@@ -312,11 +270,10 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     results: challengeResults,
     isComplete: allChallengesComplete,
     incrementAttempts,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next challenge. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -336,20 +293,22 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // Levers (`coinCounterLevers.ts`), keyed by the session item they were pulled on, and the easier ask a simplify
   // lever put on screen in its place. A tier aid already on screen (make-amount's running total) counts as pulled.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<CoinCounterChallenge | null>(null);
-  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  const [practice, setPractice] = useState<(typeof items)[number] | null>(null);
+  const sessionChallenge = items[currentChallengeIndex] ?? null;
   /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
-  const leverView: CoinLeverView = {
-    valuesShown: showCoinValues, runningTotalShown: showRunningTotal,
-    enactedTap: gradeBand === 'K' && sessionChallenge?.type === 'count' && sessionChallenge.countMode === 'like',
-  };
-  const itemLevers = practice ? [] : coinCounterLevers(sessionChallenge, pulledLevers, leverView);
   /** A runtime pull on the session item; never on a practice item. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   /** Coin values on the coins (never on identify): the tier's, or the coin_values lever. */
   const valuesOn = showCoinValues || leverOn(COIN_VALUES_LEVER);
+  const leverView: CoinLeverView = {
+    valuesShown: showCoinValues, valuesOn, runningTotalShown: showRunningTotal,
+    enactedTap: gradeBand === 'K' && sessionChallenge?.type === 'count' && sessionChallenge.countMode === 'like',
+  };
+  // A tier aid already on screen (make-amount's running total) is offered as pulled.
+  const itemLevers = practice || !sessionChallenge ? []
+    : COIN_LEVERS.declare(sessionChallenge, leverView, [...pulledLevers, ...tierPulled(sessionChallenge, leverView)]);
   /** make-amount's running total: the tier's, or the lever. */
   const makeTotalOn = showRunningTotal || leverOn(RUNNING_TOTAL_LEVER);
 
@@ -401,52 +360,6 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'count',
-    countMode: currentChallenge?.countMode,
-    instruction: currentChallenge?.instruction ?? '',
-    targetCoin: currentChallenge?.targetCoin,
-    correctTotal: currentChallenge?.correctTotal,
-    targetAmount: currentChallenge?.targetAmount,
-    correctGroup: currentChallenge?.correctGroup,
-    correctChange: currentChallenge?.correctChange,
-    attemptNumber: currentAttempts + 1,
-    supportTier,
-  }), [
-    gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier,
-  ]);
-
-  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'coin-counter',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Coin Counter activity for Grade ${gradeBand}. `
-      + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's learn about coins and money!" Then read the first instruction.`
-      + tierRevealClause(supportTier, currentChallenge?.type ?? 'count')
-      + enactedCountG1Clause(gradeBand, currentChallenge),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, supportTier]);
-
   // ── Reset domain state on challenge change ─────────────────────────
   const resetDomainState = useCallback(() => {
     setSelectedCoin(null);
@@ -480,136 +393,63 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   };
 
   // ── Check Handlers ─────────────────────────────────────────────────
+  // Each returns the verdict and shows its words; the workspace records the check (`commitCheck`, below).
 
   const handleCheckIdentify = useCallback(() => {
     if (!currentChallenge || !selectedCoin) return;
     const correct = selectedCoin === currentChallenge.targetCoin;
-
-    if (correct) {
-      setFeedback(`Correct! That's a ${currentChallenge.targetCoin} — worth ${formatCents(COIN_VALUES[currentChallenge.targetCoin!])}.`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student identified ${currentChallenge.targetCoin} correctly. `
-        + `Congratulate: "Great job! You know your coins!"`,
-        { silent: true },
-      );
-    } else {
-      setFeedback(`That's a ${selectedCoin}, not a ${currentChallenge.targetCoin}. Try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedCoin}" but correct is "${currentChallenge.targetCoin}". `
-        + `Hint about size/color: "${currentChallenge.hint || `Look at the coin's value and name.`}"`
-        + tierRevealClause(supportTier, 'identify'),
-        { silent: true },
-      );
-    }
+    setFeedback(correct
+      ? `Correct! That's a ${currentChallenge.targetCoin} — worth ${formatCents(COIN_VALUES[currentChallenge.targetCoin!])}.`
+      : `That's a ${selectedCoin}, not a ${currentChallenge.targetCoin}. Try again!`);
+    setFeedbackType(correct ? 'success' : 'error');
     return correct;
-  }, [currentChallenge, selectedCoin, sendText, supportTier]);
+  }, [currentChallenge, selectedCoin]);
 
   const handleCheckCount = useCallback(() => {
     if (!currentChallenge) return;
     const answer = parseInt(countInput, 10);
     const target = currentChallenge.correctTotal ?? 0;
     const correct = answer === target;
-
-    if (correct) {
-      setFeedback(`Yes! The total is ${formatCents(target)}!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student correctly counted ${formatCents(target)}. Congratulate briefly.`,
-        { silent: true },
-      );
-    } else {
-      setFeedback(`You said ${formatCents(answer || 0)}, but the total is different. Try counting again!`);
-      setFeedbackType('error');
-      const coins = currentChallenge.displayedCoins || [];
-      const coinList = coins.map(c => `${c.count} ${c.type}${c.count > 1 ? 's' : ''}`).join(', ');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer}¢ but correct is ${target}¢. `
-        + `Coins shown: ${coinList}. Hint: "Try skip-counting. Start with the biggest coins first."`
-        + tierRevealClause(supportTier, 'count'),
-        { silent: true },
-      );
-    }
+    setFeedback(correct ? `Yes! The total is ${formatCents(target)}!`
+      : `You said ${formatCents(answer || 0)}, but the total is different. Try counting again!`);
+    setFeedbackType(correct ? 'success' : 'error');
     return correct;
-  }, [currentChallenge, countInput, sendText, supportTier]);
+  }, [currentChallenge, countInput]);
 
   const handleCheckMakeAmount = useCallback(() => {
     if (!currentChallenge) return;
     const placed = placedCoins.reduce((sum, c) => sum + COIN_VALUES[c], 0);
     const target = currentChallenge.targetAmount ?? 0;
     const correct = placed === target;
-
-    if (correct) {
-      setFeedback(`Perfect! You made exactly ${formatCents(target)}!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student made ${formatCents(target)} using ${placedCoins.length} coins. Celebrate!`,
-        { silent: true },
-      );
-    } else {
-      setFeedback(`You have ${formatCents(placed)} — ${placed < target ? 'you need more!' : 'that\'s too much!'}`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student placed ${formatCents(placed)} but needs ${formatCents(target)}. `
-        + `Difference: ${formatCents(Math.abs(target - placed))}. Give a hint about which coin to add or remove.`
-        + tierRevealClause(supportTier, 'make-amount'),
-        { silent: true },
-      );
-    }
+    setFeedback(correct ? `Perfect! You made exactly ${formatCents(target)}!`
+      : `You have ${formatCents(placed)} — ${placed < target ? 'you need more!' : 'that\'s too much!'}`);
+    setFeedbackType(correct ? 'success' : 'error');
     return correct;
-  }, [currentChallenge, placedCoins, sendText, supportTier]);
+  }, [currentChallenge, placedCoins]);
 
   const handleCheckCompare = useCallback(() => {
     if (!currentChallenge || !selectedGroup) return;
     const correct = selectedGroup === currentChallenge.correctGroup;
-
     const aTotal = calcTotalCents(currentChallenge.groupA || []);
     const bTotal = calcTotalCents(currentChallenge.groupB || []);
-
-    if (correct) {
-      const explanation = currentChallenge.correctGroup === 'equal'
-        ? `Both groups have ${formatCents(aTotal)}!`
-        : `Group ${currentChallenge.correctGroup} has more (${formatCents(Math.max(aTotal, bTotal))} vs ${formatCents(Math.min(aTotal, bTotal))})!`;
-      setFeedback(`Correct! ${explanation}`);
-      setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student correctly compared groups. ${explanation}`, { silent: true });
-    } else {
-      setFeedback('Not quite. Count each group carefully!');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedGroup}" but correct is "${currentChallenge.correctGroup}". `
-        + `Group A = ${formatCents(aTotal)}, Group B = ${formatCents(bTotal)}. Hint: "Count each group separately."`
-        + tierRevealClause(supportTier, 'compare'),
-        { silent: true },
-      );
-    }
+    const explanation = currentChallenge.correctGroup === 'equal'
+      ? `Both groups have ${formatCents(aTotal)}!`
+      : `Group ${currentChallenge.correctGroup} has more (${formatCents(Math.max(aTotal, bTotal))} vs ${formatCents(Math.min(aTotal, bTotal))})!`;
+    setFeedback(correct ? `Correct! ${explanation}` : 'Not quite. Count each group carefully!');
+    setFeedbackType(correct ? 'success' : 'error');
     return correct;
-  }, [currentChallenge, selectedGroup, sendText, supportTier]);
+  }, [currentChallenge, selectedGroup]);
 
   const handleCheckMakeChange = useCallback(() => {
     if (!currentChallenge) return;
     const answer = parseInt(changeInput, 10);
     const target = currentChallenge.correctChange ?? 0;
     const correct = answer === target;
-
-    if (correct) {
-      setFeedback(`Yes! The change is ${formatCents(target)}!`);
-      setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student correctly calculated ${formatCents(target)} change. Congratulate!`, { silent: true });
-    } else {
-      setFeedback(`Not quite. How much is ${formatCents(currentChallenge.paidAmount ?? 0)} minus ${formatCents(currentChallenge.itemCost ?? 0)}?`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer}¢ but change is ${target}¢. `
-        + `Paid: ${currentChallenge.paidAmount}¢, Cost: ${currentChallenge.itemCost}¢. `
-        + `Hint: "Subtract the cost from what you paid."`
-        + tierRevealClause(supportTier, 'make-change'),
-        { silent: true },
-      );
-    }
+    setFeedback(correct ? `Yes! The change is ${formatCents(target)}!`
+      : `Not quite. How much is ${formatCents(currentChallenge.paidAmount ?? 0)} minus ${formatCents(currentChallenge.itemCost ?? 0)}?`);
+    setFeedbackType(correct ? 'success' : 'error');
     return correct;
-  }, [currentChallenge, changeInput, sendText, supportTier]);
+  }, [currentChallenge, changeInput]);
 
   /** show-amount ("I'm done!"): any coins that add up to the amount pass. The words name no amount or direction. */
   const handleCheckShowAmount = useCallback(() => {
@@ -645,62 +485,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   }, [currentChallenge, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange,
     handleCheckShowAmount]);
 
-  // ── Advance to Next Challenge ──────────────────────────────────────
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All complete
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter((r) => r.correct).length / challenges.length) * 100,
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their money skills!`,
-        { silent: true },
-      );
-
-      // The workspace path submits the scored session from `onFinished` (below), not this tally.
-      if (!hasSubmittedEvaluation && !tutorOwned) {
-        const correctCount = challengeResults.filter((r) => r.correct).length;
-        const score = Math.round((correctCount / challenges.length) * 100);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-
-        const metrics: CoinCounterMetrics = {
-          type: 'coin-counter',
-          accuracy: score,
-          totalAttempts,
-          challengesCompleted: correctCount,
-          challengesTotal: challenges.length,
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          score,
-          metrics,
-          { challengeResults },
-        );
-      }
-      return;
-    }
-
-    // Reset domain state and announce next challenge
-    resetDomainState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`
-      + enactedCountG1Clause(gradeBand, nextChallenge),
-      { silent: true },
-    );
-  }, [
-    advanceProgress, phaseResults, challengeResults, challenges, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, gradeBand, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
   finish.current = (result) => {
     if (hasSubmittedEvaluation) return;
@@ -721,8 +506,8 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // result a correct tap records, and the credited answer shown as a correct tap shows it. The shared lifecycle plays
   // the success sound.
   solvedAloud.current = (index) => {
-    const solved = challenges[index];
-    if (!solved || tappedCorrect.current === solved.id || !isSpokenCoin(solved, gradeBand)) return;
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || !coinKey(solved)) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
     if (solved.type === 'count') {
       setCountInput(String(solved.correctTotal ?? 0));
@@ -740,7 +525,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
   // comes back blank when the practice closes. A tap shows its own credit in the check.
   practiceAloud.current = (source) => {
-    if (source !== 'speech' || !practice || !isSpokenCoin(practice, gradeBand)) return;
+    if (source !== 'speech' || !practice || !coinKey(practice)) return;
     if (practice.type === 'count') {
       setCountInput(String(practice.correctTotal ?? 0));
       setFeedback(`Yes! The total is ${formatCents(practice.correctTotal ?? 0)}!`);
@@ -753,15 +538,6 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     }
     setFeedbackType('success');
   };
-
-  // Auto-submit when all complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
   // ── Computed ───────────────────────────────────────────────────────
   const isCurrentChallengeCorrect = challengeResults.some(
@@ -825,16 +601,17 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   };
   coinView.current = currentView;
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation. Every mode declares its levers.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets; every mode
+  // declares its levers (`COIN_LEVERS`), and the lever set writes what a pulled one put on screen.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, coinView.current);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverView);
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = coinScene(currentChallenge, coinView.current);
+    const onScreen = practice ? '' : COIN_LEVERS.onScreen(sessionChallenge, leverView, pulledLevers);
     const levers = itemLevers;
+    const published = leverScene(scene, { support: COIN_LEVERS.support(practice ? null : sessionChallenge, leverView), onScreen });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -842,11 +619,11 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = COIN_LEVERS.simpler(sessionChallenge, leverView, id);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); resetDomainState(); setPractice(easier);
-          return { practice: workspaceAssignment(easier, gradeBand) };
+          return { practice: coinCounterBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -858,7 +635,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // ── Open build (show-amount): the tray, the live line, the commit ──
   const trayRef = useRef<SVGSVGElement | null>(null);
   const isShowAmount = currentChallenge?.type === 'show-amount';
-  const buildOpen = isShowAmount && !isCurrentChallengeCorrect && !(tutorOwned && progress.canAttempt === false);
+  const buildOpen = isShowAmount && !isCurrentChallengeCorrect && progress.canAttempt !== false;
   // The live line (shared build layer): what the tray looks like so far, NEVER a number — adding up is the task.
   const buildSeeing = useBuildWatcher({
     buildKey: placedCoins.join('|'),
@@ -907,14 +684,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setFeedback(`You counted ${formatCents(target)}!`);
     setFeedbackType('success');
     commitCheck.current(describeCoinWork(currentChallenge, coinView.current), true);
-    sendText(
-      `[ANSWER_CORRECT] Student counted every coin by tapping and reached ${formatCents(target)}. `
-      + `Celebrate the skip-count briefly.`,
-      { silent: true },
-    );
-  }, [
-    isEnactedCount, currentChallenge, countedOrder.length, enactedCoins.length, sendText,
-  ]);
+  }, [isEnactedCount, currentChallenge, countedOrder.length, enactedCoins.length]);
 
   // ── Render Helpers ─────────────────────────────────────────────────
 
@@ -1414,18 +1184,6 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   };
 
   // ── Main Render ────────────────────────────────────────────────────
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The coins',
-    solved: isCurrentChallengeCorrect,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -1491,9 +1249,10 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the workspace, and the
+                workspace as one region, never a single coin. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
             {/* Challenge-type-specific UI */}
             {currentChallenge.type === 'identify' && renderIdentifyChallenge()}
             {currentChallenge.type === 'count' && renderCountChallenge()}
@@ -1501,8 +1260,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             {currentChallenge.type === 'compare' && renderCompareChallenge()}
             {currentChallenge.type === 'make-change' && renderMakeChangeChallenge()}
             {currentChallenge.type === 'show-amount' && renderShowAmountChallenge()}
-
-            </div>
+            </PipWorkspace>
 
             {/* Feedback */}
             {feedback && (
@@ -1537,7 +1295,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   action="check"
                   onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}
                   disabled={
-                    (tutorOwned && progress.canAttempt === false) ||
+                    progress.canAttempt === false ||
                     (currentChallenge.type === 'identify' && !selectedCoin) ||
                     (currentChallenge.type === 'count' && !countInput) ||
                     (currentChallenge.type === 'make-amount' && placedCoins.length === 0) ||
@@ -1546,14 +1304,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   }
                 />
                 )
-              ) : tutorOwned ? null : (
-                <LuminaActionButton
-                  action="next"
-                  onClick={advanceToNextChallenge}
-                >
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </LuminaActionButton>
-              )}
+              ) : null}
             </div>
           </div>
         )}
@@ -1570,8 +1321,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const CoinCounter = withWorkspaceController<CoinCounterProps, ProgressOptions<CoinCounterChallenge>, Progress>(
-  'coin-counter', CoinCounterSurface, useScriptedProgress, useWorkspaceProgressFor('coin-counter'));
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const CoinCounter = withWorkspaceOnly<CoinCounterProps>('coin-counter', CoinCounterSurface, (props) => props.data.title);
 
 export default CoinCounter;

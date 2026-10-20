@@ -213,7 +213,7 @@ export interface AffixBuildSummary { solved: number; total: number; accuracy: nu
 
 /**
  * Everything `WordBuildAffix` asks of its host's domain. word-builder's rules are the default; word-flip passes
- * `inflectBuildRules` (`inflectBuild.ts`). The surface owns the interaction (tap in, tap out, "I'm done!", Try again
+ * `inflectBuildRules` (`inflectBuild.ts`) and its boss's lever set. The surface owns the interaction (tap in, tap out, "I'm done!", Try again
  * keeps the row, a two-way item keeps the first word), the judge call and the evaluation; the rules own the words.
  */
 export interface AffixBuildRules {
@@ -231,8 +231,9 @@ export interface AffixBuildRules {
   judgeRequest: (item: AffixBuildItem, view: AffixBuildView, board: readonly BuildPart[], grade?: string) => WordBuildJudgeRequest;
   describe: (view: AffixBuildView) => string;
   scene: (item: AffixBuildItem, board: readonly BuildPart[], view: AffixBuildView, said?: string) => WorkspaceScene;
-  levers: (item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]) => WorkspaceLever[];
-  leverFacts: (pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]) => string | undefined;
+  /** The levers and their facts; a boss host passes its lever set instead (`WordBuildAffix`'s `boss`). */
+  levers?: (item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]) => WorkspaceLever[];
+  leverFacts?: (pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]) => string | undefined;
   smallBoardFor: (item: AffixBuildItem, board: readonly BuildPart[]) => AffixBuildItem | null;
   /** The frame lever's boxes, empty when it is not pulled. */
   frame: (item: AffixBuildItem, board: readonly BuildPart[], pulled: readonly string[]) => FrameBox[];

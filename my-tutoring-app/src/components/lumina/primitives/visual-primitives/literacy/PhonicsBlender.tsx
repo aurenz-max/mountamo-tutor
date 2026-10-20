@@ -1,33 +1,27 @@
 'use client';
 
 /**
- * PhonicsBlender — the child sees a word's letters, may tap any letter to hear its
- * sound, and SAYS THE WORD ALOUD. It runs only on the shared tutor/JEV teaching
- * workspace (workspace rollout B2; the scripted speech loop was retired, LA-14, user
- * ruling 09-23: one path). The tutor teaches in its own words, the observer judges the
- * spoken word against `targetWord`, and the runtime owns progression. An unbound mount
- * shows the shared "needs the tutor" card.
+ * PhonicsBlender, taught on the shared teaching workspace only (the boss: `phonicsBlender.card.ts` +
+ * `phonicsBlender.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * WHY THE TASK IS PURELY VERBAL (2026-08-09). An earlier port kept a tile-arranging
- * step, so a word took two answers; driven live, the child answered "put the sounds in
- * order" by SAYING the word, which is the right response to a blending task. The
- * letters are a stimulus to read, not pieces to assemble.
+ * WHAT THE CHILD DOES. The child sees a word's letters, may tap any letter to hear its sound, and SAYS THE WORD
+ * ALOUD; the tutor judges it against the key. build_blend is the shared letter build (`LetterBuildSurface.tsx`): a
+ * start tile and an ending tile make a real word with a blend, and the build checks it.
  *
- * ANSWER-LEAK RULE. The letters are the stimulus and are always shown. What must not
- * appear before the word is credited: the whole word printed as a word, and the
- * picture (🐱 hands a five-year-old "cat" without a sound being blended). The emoji is
- * a reward, shown while the credited word is held on screen.
+ * WHY THE TASK IS PURELY VERBAL (2026-08-09). An earlier port kept a tile-arranging step, so a word took two answers;
+ * driven live, the child answered "put the sounds in order" by SAYING the word, which is the right response to a
+ * blending task. The letters are a stimulus to read, not pieces to assemble.
  *
- * DOCTRINE HELD: tap-to-hear is never withdrawn (contract R2); the K band-gate
- * presentation is kept (R3); nothing on screen commits or advances (R4).
+ * ANSWER-LEAK RULE. The letters are the stimulus and are always shown. What must not appear before the word is
+ * credited: the whole word printed as a word, and the picture (🐱 hands a five-year-old "cat" without a sound being
+ * blended). The emoji is a reward, shown while the credited word is held on screen.
  *
- * IN-ITEM LEVERS (`phonicsBlenderLevers.ts`, handoff 24): the row slides together, dots mark each sound on a joined
- * row, an arrow shows reading order, a name/sound model on another letter, and an easier practice word. All but the
- * model are visual only: the voice never reads this word's letters.
+ * DOCTRINE HELD: tap-to-hear is never withdrawn (contract R2); the K band-gate presentation is kept (R3); nothing on
+ * screen commits or advances (R4). The domain is `phonicsBlenderDomain.ts`, the levers `phonicsBlenderLevers.ts`;
+ * nothing in this file writes a spoken line.
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -45,19 +39,18 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
-import type { LetterBuildItem } from './letterBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import type { BlendItem } from './phonicsBlenderScript';
-import { blendAssignment, blendItems, blendScene, soundRequest } from './phonicsBlenderWorkspace';
-import { ARROW_LEVER, DOTS_LEVER, NAME_MODEL_LEVER, SHORT_WORD_LEVER, SLIDE_LEVER, leversOnScreen, nameModelFor,
-  phonicsBlenderLevers, shortWordFor } from './phonicsBlenderLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { phonicsBlenderPipPose } from '../../../pip/phonicsBlenderPipPose';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
+import { blendScene, blendWords, soundRequest, type BlendWord, type Segmentation } from './phonicsBlenderDomain';
+import { ARROW_LEVER, BLEND_LEVERS, DOTS_LEVER, NAME_MODEL_LEVER, SLIDE_LEVER, buildLevers, nameModelFor } from './phonicsBlenderLevers';
+import { phonicsBlenderBoss } from './phonicsBlender.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -84,8 +77,8 @@ export interface PhonicsBlenderData {
   }>;
 
   // ── Within-mode support tier (stamped in code by the generator from
-  //    ctx.supportTier). Presentation / instruction ONLY — never the words, the
-  //    sounds, or the answer. ALL OPTIONAL: absent ⇒ full help. ──
+  //    ctx.supportTier). Presentation, and when the model lever comes (the lever set's `support` fact). Never the
+  //    words, the sounds, or the answer. ALL OPTIONAL: absent ⇒ full help, medium for the model. ──
   supportTier?: 'easy' | 'medium' | 'hard';
   /** `build_blend` (open build): the shared letter build surface runs the session from `buildItems`; `words` is empty. */
   task?: 'letter_build';
@@ -154,15 +147,14 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const items = useMemo(() => blendItems(words), [words]);
+  const items = useMemo(() => blendWords({ words, patternType, supportTier: data.supportTier }), [words, patternType, data.supportTier]);
 
   const [activeSoundId, setActiveSoundId] = useState<string | null>(null);
   // In-item levers, keyed by the session word they were pulled on, and the easier practice word a simplify lever
   // put on screen in its place (ungraded; the full word comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<BlendItem | null>(null);
+  const [practice, setPractice] = useState<BlendWord | null>(null);
   /** Visual only: clears the tapped-letter highlight. Nothing here advances. */
   const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** When each word opened, for the blending-speed metric. */
@@ -173,8 +165,9 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const isPreReader = isPreReaderGrade(gradeLevel);
-  const segmentation: 'full' | 'word' | 'none' =
+  const segmentation: Segmentation =
     showBlendPreview === 'none' ? 'none' : showBlendPreview === 'word' ? 'word' : 'full';
+  const leverCtx = useMemo(() => ({ words: items, segmentation }), [items, segmentation]);
 
   const evaluation = usePrimitiveEvaluation<PhonicsBlenderMetrics>({
     primitiveType: 'phonics-blender',
@@ -212,9 +205,9 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
       undefined, diagnosisEvidence);
   };
 
-  const runner = useWorkspaceRunner<BlendItem>({
+  const runner = useWorkspaceRunner<BlendWord>({
     primitiveId: 'phonics-blender',
-    assignment: blendAssignment,
+    assignment: phonicsBlenderBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -243,66 +236,47 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
   // ── Tap-to-hear (R2) — never withdrawn by band or tier ───────────
-  // Asks for the SOUND, never the whole word: the word is the answer. Silent, so the
-  // request is not a learner turn and never reaches the observer.
-  const handlePlaySound = useCallback((phonemeId: string) => {
+  // Asks for the SOUND, never the whole word: the word is the answer. Silent and host-authored, so the request is
+  // not a learner turn and never reaches the observer.
+  const handlePlaySound = (phonemeId: string) => {
     const phoneme = currentWord?.phonemes.find(p => p.id === phonemeId);
     if (!phoneme) return;
     SoundManager.tap();
     setActiveSoundId(phonemeId);
-    ctx.sendText(soundRequest(phoneme.sound), { silent: true, author: 'host' });
+    runner.requestHear(soundRequest(phoneme.sound));
     if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
     soundTimerRef.current = setTimeout(() => setActiveSoundId(null), 1200);
-  }, [ctx, currentWord]);
+  };
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice word carries no levers.
   useLayoutEffect(() => {
     if (!currentWord || !sessionWord) return;
-    const levers = practice ? [] : phonicsBlenderLevers(sessionWord, patternType, segmentation, pulledLevers, items);
-    const scene = blendScene(currentWord, { segmentation: practice ? 'full' : segmentation });
-    const onScreen = practice ? null : leversOnScreen(pulledLevers, items);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice word, ungraded. The full word comes back after it.' } : {}) },
+    const levers = practice ? [] : BLEND_LEVERS.declare(sessionWord, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = blendScene(currentWord, practice ? 'full' : segmentation);
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice word, ungraded. The full word comes back after it.' } }
+        : scene, {
+        support: practice ? '' : BLEND_LEVERS.support(sessionWord, leverCtx),
+        onScreen: practice ? '' : BLEND_LEVERS.onScreen(sessionWord, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this word.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
-        if (id === SHORT_WORD_LEVER) {
-          const simpler = shortWordFor(sessionWord, patternType, items);
-          if (!simpler) return 'There is no easier word for this item.';
+        if (lever.kind === 'simplify') {
+          const simpler = BLEND_LEVERS.simpler(sessionWord, leverCtx, id);
+          if (!simpler || simpler.mode === 'build_blend') return 'There is no easier word for this item.';
+          setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          return { practice: blendAssignment(simpler) };
+          return { practice: phonicsBlenderBoss.assignment(simpler) };
         }
+        setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
         return true;
       },
       endPractice: () => setPractice(null),
-    };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own letter taps; Pip
-  // never answers, judges, or moves to the next word.
-  const pip = usePipTargets(currentWord?.id ?? null, runner.running);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentWord || showSummary) return null;
-    const targets = pip.targets(undefined, (id) => (id === 'letters' ? 'The letters' : 'A letter'));
-    const pose = phonicsBlenderPipPose({
-      running: runner.running, preparing: false,
-      stage: runner.revealHeld ? 'affirmed' : runner.running ? 'reading' : 'done',
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueOnWord: runner.cuedItemId === currentWord.id && !runner.revealHeld,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentWord.id, label: 'Sound blending',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -334,7 +308,7 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const slid = leverOn(SLIDE_LEVER), dotted = leverOn(DOTS_LEVER);
   const renderLetters = () => (
     <div className="flex flex-col items-center gap-2">
-    <div ref={pip.ref('letters')} data-pip-object="letters" data-lever={slid ? 'blend-slide' : undefined}
+    <div data-blend-stage={shownSegmentation} data-lever={slid ? 'blend-slide' : undefined}
       className={`flex items-start justify-center transition-all duration-500 ${shownSegmentation === 'none' || slid ? 'gap-0' : 'gap-3'}`}>
       {currentWord.phonemes.map((phoneme, i) => (
         <React.Fragment key={phoneme.id}>
@@ -343,9 +317,8 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
           )}
           <div className="flex flex-col items-center">
           <button
-            ref={pip.ref(`letter-${phoneme.id}`)}
-            data-pip-object={`letter-${phoneme.id}`}
-            onClick={() => { pip.look(`letter-${phoneme.id}`); handlePlaySound(phoneme.id); }}
+            type="button"
+            onClick={() => handlePlaySound(phoneme.id)}
             aria-label={`sound ${phoneme.sound}`}
             className={`
               rounded-xl border-2 font-bold uppercase transition-all duration-200 cursor-pointer select-none
@@ -400,9 +373,17 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
               </div>
             )}
 
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                Tap a letter to hear its sound, then say the whole word.
+              </p>
+            )}
+
+            <PipDock />
+
             {/* The stage: the letters, and nothing that names the word. The reward picture
                 appears only while the credited word is held on screen. */}
-            <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+            <PipWorkspace className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
               {renderLetters()}
               {/* name_sound_model: a letter no session word uses, its name beside its sound. The tutor says both. */}
               {nameModel && (
@@ -420,18 +401,7 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
                 </div>
               )}
               <div className="mt-4 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
-            </div>
-
-            {!isPreReader && (
-              <p className="text-center text-xs text-slate-500">
-                Tap a letter to hear its sound, then say the whole word.
-              </p>
-            )}
-
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            </PipWorkspace>
           </>
         )}
 
@@ -449,22 +419,28 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   );
 }
 
-// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 /** build_blend's metrics in this primitive's shape. */
 const buildBlendMetrics = (s: LetterBuildSummary): PhonicsBlenderMetrics => ({ type: 'phonics-blender', patternType: 'blend',
   gradeLevel: '', wordsBlended: s.solved, wordsTotal: s.total, phonemeAccuracy: s.accuracy, averageBlendingSpeed: 0,
   soundsCorrectOnFirstTry: s.firstTryCorrect, soundsTotal: s.total, attemptsCount: s.attemptsCount });
 
-/** One mount, one shape: the open build (`build_blend`) runs on the shared letter build surface. */
-function PhonicsBlenderHost(props: PhonicsBlenderProps) {
-  const { data } = props;
-  if (data.task === 'letter_build') {
-    return <LetterBuildSurface primitiveId="phonics-blender" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildBlendMetrics} />;
-  }
-  return <PhonicsBlenderSurface {...props} />;
+/** The open build (`build_blend`) on the shared letter build surface, wired from this boss. */
+function BlendBuildSurface({ data, className, runtimePlanItemId }: PhonicsBlenderProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    const levers = buildLevers({ words: [], segmentation: 'full' }, tier);
+    return { assignment: (item: LetterBuildItem) => phonicsBlenderBoss.assignment({ ...item, mode: 'build_blend', supportTier: tier }), levers };
+  }, [data.supportTier]);
+  return <LetterBuildSurface primitiveId="phonics-blender" className={className} runtimePlanItemId={runtimePlanItemId}
+    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildBlendMetrics} boss={boss} />;
 }
 
+/** One mount, one shape: the open build (`build_blend`) runs on the shared letter build surface. */
+function PhonicsBlenderHost(props: PhonicsBlenderProps) {
+  return props.data.task === 'letter_build' ? <BlendBuildSurface {...props} /> : <PhonicsBlenderSurface {...props} />;
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
 const PhonicsBlender = withWorkspaceOnly<PhonicsBlenderProps>('phonics-blender', PhonicsBlenderHost,
   props => props.data.title);
 

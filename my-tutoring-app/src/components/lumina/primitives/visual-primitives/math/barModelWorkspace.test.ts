@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { barModelMiss, barModelSpokenMisses, workspaceAssignment, workspaceScene, type BarModelView } from './barModelWorkspace';
+import { barModelMiss, barModelSpokenMisses, workspaceScene, type BarModelView } from './barModelWorkspace';
+import { barModelBoss } from './barModel.boss';
 import type { BarModelChallenge } from './BarModel';
 
 const rows = (...vs: number[]) => vs.map((value, i) => ({ label: `r${i}`, value }));
@@ -44,7 +45,7 @@ it.each([
   const misses = barModelSpokenMisses(c);
   expect(misses.map(m => m.id)).toEqual(ids);
   expect(misses.flatMap(m => m.examples ?? [])).toEqual(examples);
-  expect(workspaceAssignment(c).misses).toEqual(misses);
+  expect(barModelBoss.assignment(c).misses).toEqual(misses);
 });
 
 it('a graph answered on screen lists none', () => expect(barModelSpokenMisses(read)).toEqual([]));

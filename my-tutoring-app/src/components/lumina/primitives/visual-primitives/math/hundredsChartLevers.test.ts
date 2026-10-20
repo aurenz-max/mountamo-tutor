@@ -8,8 +8,8 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { HundredsChartChallenge } from './HundredsChart';
 import { hundredsChartMatches, neededCells } from './hundredsChartWorkspace';
 import {
-  DOTS_LEVER, MODEL_LEVER, PATTERN_DESCRIPTIONS, SIMPLER_LEVER, TALLY_LEVER, dotsLeak, hopDots, hundredsChartLevers, modelChart,
-  modelLeaks, practiceItem, practiceLeaks, practiceParent, rowTally, tallyLeaks,
+  DOTS_LEVER, HUNDREDS_LEVERS, MODEL_LEVER, PATTERN_DESCRIPTIONS, SIMPLER_LEVER, TALLY_LEVER, dotsLeak, hopDots, modelChart,
+  modelLeaks, practiceItem, practiceLeaks, practiceParent, rowTally, startsShown, tallyLeaks, type ChartSession,
 } from './hundredsChartLevers';
 import complete from '../../../components/live-activity/runtime/testing/w1-payloads/hundreds-chart.complete_sequence.json';
 import find from '../../../components/live-activity/runtime/testing/w1-payloads/hundreds-chart.find_skip_value.json';
@@ -17,6 +17,9 @@ import highlight from '../../../components/live-activity/runtime/testing/w1-payl
 import identify from '../../../components/live-activity/runtime/testing/w1-payloads/hundreds-chart.identify_pattern.json';
 
 type Type = HundredsChartChallenge['type'];
+/** The levers on an item with nothing tapped, as the component declares them (easy's starting dots included). */
+const hundredsChartLevers = (c: HundredsChartChallenge, session: ChartSession, pulled: string[]) =>
+  HUNDREDS_LEVERS.declare(c, { tapped: [], session }, [...startsShown(c), ...pulled]);
 const seq = (sv: number, end: number) => Array.from({ length: Math.floor(end / sv) }, (_, i) => sv * (i + 1));
 
 /** An item shaped the way the generator builds it (start = the skip value). */
@@ -146,7 +149,8 @@ describe('simpler charts: the builders', () => {
     expect(practiceItem(h, { challenges: [h] })).toMatchObject({ correctCells: [10, 20, 30, 40, 50], givenCells: [] });
     expect(practiceItem(i, { challenges: [i] })).toMatchObject({ correctAnswer: PATTERN_DESCRIPTIONS[10].correct,
       options: [PATTERN_DESCRIPTIONS[10].correct, 'They are scattered randomly'] });
-    expect(practiceItem(f, { challenges: [f] })).toMatchObject({ givenCells: [2, 4, 6, 8], options: ['2', '10'] });
+    // From the count's second step: the first highlighted number is never the answer.
+    expect(practiceItem(f, { challenges: [f] })).toMatchObject({ givenCells: [4, 6, 8, 10], options: ['2', '10'] });
   });
   it('identify and find never practise a later item\'s answer', () => {
     const i1 = item('a', 'identify_pattern', 2), i2 = item('b', 'identify_pattern', 10), i3 = item('c', 'identify_pattern', 5);
@@ -170,10 +174,14 @@ describe('which lever comes next', () => {
   ] as const)('%#: %s -> %s', (x, miss, pulled, want) => {
     expect(nextLever(L(x, pulled as unknown as string[]), miss)).toBe(want);
   });
-  it('easy starts the picture help shown, the tally and the simpler chart released', () => {
+  it('easy starts the hop dots shown; the tally, the model chart and the simpler chart are pulled', () => {
     expect(L({ ...h, supportTier: 'easy' }, []).map(l => [l.id, l.pulled]))
       .toEqual([[DOTS_LEVER, true], [TALLY_LEVER, false], [SIMPLER_LEVER, false]]);
-    expect(L({ ...i, supportTier: 'easy' }, []).map(l => [l.id, l.pulled])).toEqual([[MODEL_LEVER, true], [SIMPLER_LEVER, false]]);
+    expect(L({ ...i, supportTier: 'easy' }, []).map(l => [l.id, l.pulled])).toEqual([[MODEL_LEVER, false], [SIMPLER_LEVER, false]]);
+  });
+  it('the model chart comes by the set\'s support: before the try at easy, after a miss at medium', () => {
+    expect(HUNDREDS_LEVERS.support({ ...i, supportTier: 'easy' })).toMatch(/model_chart/);
+    expect(HUNDREDS_LEVERS.support(h)).toBe('');
   });
 });
 

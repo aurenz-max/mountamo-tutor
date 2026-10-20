@@ -80,7 +80,7 @@ it('a chain is one credited read per word, and each read word is marked', () => 
   h.say('cat'); h.feedback('correct', 'advance'); h.confirmVisible();
   h.say('bat'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(screen.getAllByText('✓')).toHaveLength(2);
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^bad\b/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"bad"/);
 });
 
 it('hear-again asks for the instruction silently, as the host, never the print', () => {

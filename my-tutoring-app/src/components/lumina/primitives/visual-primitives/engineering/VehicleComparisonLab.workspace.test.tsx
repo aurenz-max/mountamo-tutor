@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * vehicle-comparison-lab on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The
- * generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * vehicle-comparison-lab on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The
+ * generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
  * Every mode is a code-keyed choice from a data table, tapped and checked or said aloud: the key is published only as
- * the spoken expectedAnswer, and nothing marks a leader before credit. A wrong answer names its miss, and every miss
+ * the spoken key (`vehicleKey`), and nothing marks a leader before credit. A wrong answer names its miss, and every miss
  * has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -22,13 +22,17 @@ import fixtures from '../../../pip/testing/workspaceFixtures.json';
 import type { VehicleComparisonLabData } from './VehicleComparisonLab';
 import {
   askOf, buildVehicleItems, comparisonMiss, keyName, keyOf, METRIC_LABEL, rosterOf, seededRng, VEHICLE_MISSES, vehicleCorrect,
-  vehicleHarnessAnswers, vehicleItems, validVehicleItem, workspaceAssignment, feasibleRows, meets,
+  vehicleHarnessAnswers, vehicleItems, vehicleKey, validVehicleItem, feasibleRows, meets,
   METRIC_KEYS, METRIC_MEANING, NEED_JOB, type ComparisonVehicle, type EvidenceItem, type LeaderItem, type TradeoffItem, type VehicleItem, type VehicleMode, type VehicleTier,
 } from './vehicleComparisonWorkspace';
 import {
-  COLUMN_MEANINGS_LEVER, COUNT_DIGITS_LEVER, FEWER_COLUMNS_LEVER, FOCUS_COLUMN_LEVER, leverFact, MARK_MINIMUMS_LEVER, meaningLines,
-  ONE_MINIMUM_LEVER, possibleMisses, rankLeak, simplerItem, SMALLER_IS_BETTER_LEVER, smallerLine, TWO_ROWS_LEVER, vehicleLevers,
+  COLUMN_MEANINGS_LEVER, COUNT_DIGITS_LEVER, FEWER_COLUMNS_LEVER, FOCUS_COLUMN_LEVER, MARK_MINIMUMS_LEVER, meaningLines, NO_CONTEXT,
+  ONE_MINIMUM_LEVER, possibleMisses, rankLeak, simplerItem, SMALLER_IS_BETTER_LEVER, smallerLine, TWO_ROWS_LEVER, VEHICLE_LEVERS,
 } from './vehicleComparisonLevers';
+import { vehicleComparisonLabBoss } from './vehicleComparisonLab.boss';
+
+const vehicleLevers = (i: VehicleItem, pulled: string[] = []) => VEHICLE_LEVERS.declare(i, NO_CONTEXT, pulled);
+const leverFact = (i: VehicleItem, pulled: string[]) => VEHICLE_LEVERS.onScreen(i, NO_CONTEXT, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -88,15 +92,17 @@ const tap = (h: WorkspaceHarness, ...labels: string[]) => { for (const l of labe
 const current = (h: WorkspaceHarness, mode: VehicleMode) => vehicleItems(data(mode)).find(i => i.id === h.state().task!.itemId)!;
 const flush = () => act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
 
-it.each(MODES)('%s binds with its key only in the spoken expectedAnswer, and nothing marks a leader', mode => {
+it.each(MODES)('%s binds with its key only in the spoken key, and nothing marks a leader', mode => {
   const h = mount(mode);
   const item = current(h, mode);
   expect(getComponentById('vehicle-comparison-lab')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(vehicleComparisonLabBoss.assignment(item).task);
+  expect(vehicleComparisonLabBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(demand(h).response).toBe('speech');
-  expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${keyName(item)}"`);
+  expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${vehicleKey(item).answer}"`);
+  expect(vehicleKey(item).answer).toContain(keyName(item));
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/\bleads\b|answer and its reason|\bcorrect\b/i);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
@@ -154,6 +160,7 @@ it('metric_leader: focus_column and count_digits draw in one commit; smaller_is_
   expect(h.view.container.querySelector('[data-lever="smaller-is-better"]')!.textContent).toBe(smallerLine('co2PerPassengerKm'));
   const pair = h.dispatch('pull_lever', { lever: TWO_ROWS_LEVER });
   expect(pair.state.task).toMatchObject({ itemId: 'metric_leader-2~simpler' });
+  expect(leverIds(h)).toEqual([]);
   expect(h.view.container.querySelector('button[aria-label="Fast Train"]')).toBeNull();
   tap(h, 'Jet');
   expect(last(h)).toMatchObject({ itemId: 'metric_leader-2~simpler', correct: true });
@@ -210,6 +217,35 @@ it('constraint_tradeoff: the fastest misses a minimum (ignored_minimum); mark_mi
   tap(h, 'Fast Train');
   expect(last(h)).toMatchObject({ itemId: 'constraint_tradeoff-1', correct: true, levers: [MARK_MINIMUMS_LEVER, ONE_MINIMUM_LEVER] });
   h.close();
+});
+
+it('draws each vehicle class and marks no leader until an answer, then shows the reason', () => {
+  const ROW_ITEM: LeaderItem = {
+    id: 'metric_leader-1', mode: 'metric_leader', metric: 'topSpeed', columns: ['topSpeed'], units: { topSpeed: 'km/h' },
+    rows: [
+      { id: 'bus', name: 'School Bus', category: 'land', values: { topSpeed: 90 } },
+      { id: 'bike', name: 'Bicycle', category: 'land', values: { topSpeed: 25 } },
+      { id: 'train', name: 'Metro Train', category: 'land', values: { topSpeed: 80 } },
+      { id: 'car', name: 'Family Car', category: 'land', values: { topSpeed: 160 } },
+    ],
+  };
+  const h = mount('metric_leader', [ROW_ITEM, CLEAN]);
+  for (const kind of ['bus', 'bicycle', 'train', 'car']) {
+    expect(h.view.container.querySelector(`[data-vehicle-visual-kind="${kind}"]`)).toBeTruthy();
+  }
+  expect(text(h)).not.toMatch(/leads/);
+  tap(h, 'Family Car');
+  expect(text(h)).toMatch(/Family Car leads the Top speed column with 160 km\/h/);
+  h.close();
+});
+
+it('the harness says each mode key and a wrong answer the key does not accept', () => {
+  for (const mode of MODES) for (const item of BY_MODE[mode]) {
+    const play = (right: boolean) => vehicleComparisonLabBoss.drive.play(right, item, {} as never);
+    const said = (right: boolean) => String((play(right).at(-1) as { text?: string }).text);
+    expect(said(true)).toBe(vehicleKey(item).answer);
+    expect(said(false)).not.toBe(vehicleKey(item).answer);
+  }
 });
 
 describe('the pure rules', () => {
@@ -314,7 +350,6 @@ describe('the pure rules', () => {
       expect(s.mode).toBe(mode);
       expect(validVehicleItem(s), s.id).toBe(true);
       expect(simplerItem(s)).toBeNull();
-      expect(vehicleLevers(s, [])).toEqual([]);
       expect(keyOf(s).vehicle).not.toBe(keyOf(i).vehicle);
       expect(s.rows.length).toBeLessThan(i.rows.length);
     }

@@ -9,17 +9,16 @@
  * - context: a situation that never names the word; choose the word.
  *
  * Every item and key comes from `vocabularyExplorerWorkspace.ts`; Gemini writes only the word bank. Nothing on screen
- * marks the answer before a check. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor)
- * has its own Next and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
- * `progress.commitCheck` with a named miss, takes a spoken word judged by the tutor, and lets the runtime move on.
- * The levers live in `vocabularyExplorerLevers.ts`.
+ * marks the answer before a check. Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is
+ * `vocabularyExplorer.card.ts` + `vocabularyExplorer.boss.ts`): every check commits through `progress.commitCheck` with
+ * a named miss, a word said aloud is judged by the tutor, and the runtime moves on. The levers are one lever set in
+ * `vocabularyExplorerLevers.ts`.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { VocabularyExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -38,18 +37,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, clozeOf, clueText, describeVocabWork, emptyWork, extraMeaning, posOf, vocabCorrect, vocabItems, vocabMiss,
-  workComplete, workspaceAssignment, workspaceScene,
-  type ChoiceItem, type MatchItem, type VocabItem, type VocabKind, type VocabTerm, type VocabTier, type VocabWork,
+  askOf, clozeOf, clueText, describeVocabWork, emptyWork, extraMeaning, posOf, vocabChecks, vocabCorrect, vocabMiss,
+  workComplete, workspaceScene,
+  type ChoiceItem, type MatchItem, type VocabCheck, type VocabItem, type VocabKind, type VocabTerm, type VocabTier, type VocabWork,
 } from './vocabularyExplorerWorkspace';
 import {
-  DROP_LEVER, EXAMPLES_LEVER, examplesShown, farChoice, KINDS_LEVER, leverFacts, meaningsShown, MEANINGS_LEVER,
-  NO_LEVERS, simplerMatch, vocabLevers, type VocabLeverState,
+  DROP_LEVER, EXAMPLES_LEVER, examplesShown, farChoice, KINDS_LEVER, meaningsShown, MEANINGS_LEVER, NO_LEVERS,
+  VOCAB_LEVERS, type VocabLeverState,
 } from './vocabularyExplorerLevers';
+import { vocabularyExplorerBoss } from './vocabularyExplorer.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -94,13 +94,14 @@ const letter = (i: number) => String.fromCharCode(65 + i);
 // Component
 // ============================================================================
 
-const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  VocabularyExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<VocabItem>) => Progress }) => {
+const useVocabProgress = useWorkspaceProgressFor('vocabulary-explorer');
+
+const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId }: VocabularyExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, topic, introduction, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, introduction, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const bank: VocabTerm[] = useMemo(() => data.terms ?? [], [data.terms]);
 
-  const items = useMemo(() => vocabItems(data),
+  const items = useMemo(() => vocabChecks(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.items, data.terms, data.challengeTypes, data.difficulty, data.title]);
   const stableInstanceId = useRef(instanceId || `vocabulary-explorer-${Date.now()}`);
@@ -108,43 +109,38 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
 
   // ── Study: the word cards, before the check ──
   const [studying, setStudying] = useState(true);
-  const studyingRef = useRef(true);
-  studyingRef.current = studying;
   const [card, setCard] = useState(0);
   const [visited, setVisited] = useState<Set<string>>(() => new Set(bank[0] ? [bank[0].id] : []));
   const [relatedWordClicks, setRelatedWordClicks] = useState(0);
   const studyStarted = useRef(Date.now());
   const [studyMs, setStudyMs] = useState(0);
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useVocabProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: item => workspaceAssignment(item, bank, studyingRef.current),
+    workspace, assignment: vocabularyExplorerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => progress.canAttempt === false;
 
-  const sessionItem: VocabItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
-  const [practice, setPractice] = useState<MatchItem | null>(null);
-  const item: VocabItem | undefined = practice ?? sessionItem;
+  const sessionItem: VocabCheck | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<VocabCheck | null>(null);
+  const item: VocabCheck | undefined = practice ?? sessionItem;
 
   const [work, setWork] = useState<VocabWork>(emptyWork);
   /** match: the word tapped, waiting for its meaning. */
   const [activeWord, setActiveWord] = useState<string | null>(null);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string } & VocabLeverState>({ item: '', ...NO_LEVERS });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
@@ -152,7 +148,7 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const levers: VocabLeverState = sessionItem && leverState.item === sessionItem.id && !practice ? leverState : NO_LEVERS;
   const leverOn = (id: string) => levers.pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<VocabularyExplorerMetrics>({
     primitiveType: 'vocabulary-explorer',
@@ -161,27 +157,14 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const currentCard = bank[Math.min(card, Math.max(bank.length - 1, 0))];
-  const aiPrimitiveData = useMemo(() => ({
-    topic, totalTerms: bank.length, currentWord: studying ? currentCard?.word ?? '' : '',
-    partOfSpeech: studying ? currentCard?.partOfSpeech ?? '' : '', termsExplored: visited.size,
-    challengesCompleted: results.filter(r => r.correct).length, totalChallenges: items.length,
-    ask: !studying && item ? askOf(item, bank) : '',
-  }), [topic, bank, studying, currentCard, visited.size, results, items.length, item]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'vocabulary-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: 'Elementary', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
   const clearItem = () => {
-    setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setPracticeSolved(false);
   };
 
   openItem.current = (_index, retry) => {
-    if (retry) { setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    if (retry) { setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setPracticeSolved(false); return; }
     setPractice(null); clearItem();
   };
 
@@ -198,7 +181,6 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     SoundManager.navigate();
     setCard(i);
     setVisited(prev => new Set(prev).add(bank[i].id));
-    say(`[TERM_SELECTED] Card ${i + 1} of ${bank.length}: "${bank[i].word}" (${bank[i].partOfSpeech}). Pronounce it and give a brief, friendly introduction.`);
   };
   const followRelated = (word: string) => {
     const at = bank.findIndex(t => t.word.toLowerCase() === word.toLowerCase());
@@ -211,7 +193,6 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     SoundManager.select();
     setStudyMs(Date.now() - studyStarted.current);
     setStudying(false);
-    if (item) say(`[CHECK_STARTED] The word cards are closed. First question: ${askOf(item, bank)}`);
   };
 
   // ── Check handlers ──
@@ -220,19 +201,19 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     if (!item || item.kind !== 'match' || closed) return;
     SoundManager.select();
     if (work.pairs[id]) setWork(w => ({ ...w, pairs: Object.fromEntries(Object.entries(w.pairs).filter(([k]) => k !== id)) }));
-    setActiveWord(id); setFeedback(null);
+    setActiveWord(id);
   };
   const tapMeaning = (defId: string) => {
     if (!item || item.kind !== 'match' || closed || !activeWord) return;
     if (Object.values(work.pairs).includes(defId)) return;
     SoundManager.snap();
     setWork(w => ({ ...w, pairs: { ...w.pairs, [activeWord]: defId } }));
-    setActiveWord(null); setFeedback(null);
+    setActiveWord(null);
   };
   const pick = (id: string) => {
     if (!item || item.kind === 'match' || closed || levers.dropped.includes(id)) return;
     SoundManager.select();
-    setWork(w => ({ ...w, picked: id })); setFeedback(null);
+    setWork(w => ({ ...w, picked: id }));
   };
 
   const check = () => {
@@ -242,7 +223,6 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item, bank)} Praise briefly and use the word in a new sentence.`);
       return;
     }
     SoundManager.playIncorrect();
@@ -253,20 +233,7 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
         return base.picked.includes(picked) ? base : { ...base, picked: [...base.picked, picked] };
       });
     }
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      setWork(item.kind === 'match' ? { pairs: Object.fromEntries(item.terms.map(t => [t, t])), picked: null } : { pairs: {}, picked: item.term });
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item, bank)} The answer is now on screen; explain it with the word's meaning.`);
-      return;
-    }
-    setWork(emptyWork()); setActiveWord(null);
-    setFeedback(item.kind === 'match' ? 'Not every word is with its meaning yet. Read each meaning again and try once more.'
-      : 'Not quite. Read the sentence again with each word in it, and try once more.');
-    say(`[ANSWER_INCORRECT] ${describeVocabWork(item, work, bank)} for: ${askOf(item, bank)} It is wrong. You are not told the answer: give a hint about the meaning without naming a word.`);
+    setWrongShown(true);
   };
 
   const metrics = (): VocabularyExplorerMetrics => {
@@ -288,20 +255,7 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) {
-      clearItem();
-      say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1], bank)}`);
-      return;
-    }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 70, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} vocabulary items. Celebrate briefly.`);
-  };
-
+  // Under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong answer's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -311,27 +265,27 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render. The levers are the lever set's
+  // (`VOCAB_LEVERS`); none while the cards are open or on a practice item. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
-    const scene = workspaceScene(item, { studying, card, viewed: visited.size, work, solved: revealed }, bank);
-    const available = practice || studying ? [] : vocabLevers(sessionItem, bank, levers);
-    const onScreen = practice || studying ? {} : leverFacts(sessionItem, bank, levers);
+    if (!item || !sessionItem || isComplete) return;
+    const scene = workspaceScene(item, { studying, card, viewed: visited.size, work, solved: revealed, checkedWrong: wrongShown }, bank);
+    // Before Start the check the cards are open and nothing can be answered.
+    if (studying) { workspace.current = { ...scene, readyForResponse: false, levers: [] }; return; }
+    const ctx = { dropped: levers.dropped, picked: levers.picked };
+    const available = practice ? [] : VOCAB_LEVERS.declare(sessionItem, ctx, levers.pulled);
+    const onScreen = practice ? '' : VOCAB_LEVERS.onScreen(sessionItem, ctx, levers.pulled);
+    if (practice) scene.facts.practice = 'A smaller match of other words from the cards, before the full item comes back.';
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A smaller match of other words from the cards, before the full item comes back.' } : {}),
-        ...onScreen },
-      // Before Start the check the cards are open and nothing can be answered.
-      readyForResponse: !studying,
+      ...leverScene(scene, { support: VOCAB_LEVERS.support(practice ? null : sessionItem, ctx), onScreen }),
       levers: available,
       pullLever: (id) => {
         const l = available.find(x => x.id === id);
-        if (studying) return 'The check has not started: the learner is still reading the word cards.';
-        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
         const base = { ...levers, item: sessionItem.id };
-        if (id === DROP_LEVER) {
-          if (sessionItem.kind === 'match') return `No lever ${id} on this item.`;
+        // Drawn by id: the one lever that changes the choices themselves.
+        if (id === DROP_LEVER && sessionItem.kind !== 'match') {
           const drop = farChoice(sessionItem, bank, levers);
           if (!drop) return 'No choice can be greyed out: too few untried choices would remain.';
           setLeverState({ ...base, pulled: [...levers.pulled, id], dropped: [...levers.dropped, drop] });
@@ -339,10 +293,10 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
           return true;
         }
         if (l.kind === 'simplify') {
-          const simpler = simplerMatch(sessionItem, bank);
+          const simpler = VOCAB_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no smaller match here; try a help lever.';
           setLeverState({ ...base, pulled: [...levers.pulled, id] }); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler, bank) };
+          return { practice: vocabularyExplorerBoss.assignment(simpler) };
         }
         setLeverState({ ...base, pulled: [...levers.pulled, id] });
         return true;
@@ -351,14 +305,7 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || studying || !item ? null : item.id,
-    label: 'The check: the words and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!bank.length || !items.length) {
     return (
@@ -558,7 +505,13 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
           <LuminaFeedbackCard status="insight" label="Words checked">
             {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
           </LuminaFeedbackCard>
-        ) : studying ? renderStudy() : item && (
+        ) : studying || !item ? (
+          <>
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the word cards as its region. */}
+            <PipDock />
+            <PipWorkspace>{renderStudy()}</PipWorkspace>
+          </>
+        ) : (
           <>
             <LuminaSectionLabel accent="cyan" size="sm">
               {practice ? kindLabel : `${kindLabel} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
@@ -569,13 +522,14 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
                   : item.clue === 'scenario' ? 'Which word fits what is happening here?' : 'Which word means this?'}
             </LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {/* The dock above, the words and meanings or the choices as Pip's region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {item.kind === 'match' ? renderMatch(item) : renderChoice(item)}
               {item.kind === 'match' && activeWord && !closed && (
                 <p className="text-blue-400 text-xs text-center">Now tap the meaning that goes with it.</p>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -595,13 +549,6 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
                 {item.kind === 'match' ? 'Not every word is with its meaning.' : 'That is not it.'}
               </LuminaFeedbackCard>
             )}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -609,8 +556,6 @@ const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOw
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const VocabularyExplorer = withWorkspaceController<VocabularyExplorerProps, ProgressOptions<VocabItem>, Progress>(
-  'vocabulary-explorer', VocabularyExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('vocabulary-explorer'));
+const VocabularyExplorer = withWorkspaceOnly<VocabularyExplorerProps>('vocabulary-explorer', VocabularyExplorerSurface, props => props.data.title);
 
 export default VocabularyExplorer;

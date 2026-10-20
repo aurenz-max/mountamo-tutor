@@ -24,12 +24,16 @@
  *   trip time in years; which route uses the least fuel AND arrives within the limit. Each flyby gives the ship a free
  *   push, so more flybys need less fuel; flyby routes are slower. Fuel is never drawn.
  *
- * Every item is a sayable closed choice (J14, user 10-13): spoken and judged against `expectedAnswer`, or tapped and
- * checked by code. Pure: the component, the generator, the adapter, the journey row and the tests read the same items,
- * checks, misses and scene.
+ * Every item is a sayable closed choice (J14, user 10-13): said and judged by the tutor against its key (`missionKey`),
+ * or tapped and checked by code. The boss (`missionPlanner.boss.ts`) builds the assignment from them. Pure: the
+ * component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { MISSION_MISSES } from './missionPlanner.card';
+
+export { MISSION_MISSES };
 
 export type MissionMode = 'farther_closer' | 'pick_window' | 'pack_days' | 'assist_tradeoff';
 export const MISSION_MODES: MissionMode[] = ['farther_closer', 'pick_window', 'pack_days', 'assist_tradeoff'];
@@ -139,12 +143,6 @@ export type WindowMiss = 'far_apart' | 'close_together' | 'in_between_window';
 export type PackMiss = 'forgot_home' | 'stay_twice' | 'forgot_stay' | 'forgot_crew' | 'added_crew';
 export type AssistMiss = 'too_slow' | 'picked_direct' | 'fewer_flybys';
 export type MissionMiss = FartherMiss | WindowMiss | PackMiss | AssistMiss;
-export const MISSION_MISSES: Record<MissionMode, readonly MissionMiss[]> = {
-  farther_closer: ['other_end', 'next_in_line', 'in_between'],
-  pick_window: ['far_apart', 'close_together', 'in_between_window'],
-  pack_days: ['forgot_home', 'stay_twice', 'forgot_stay', 'forgot_crew', 'added_crew'],
-  assist_tradeoff: ['too_slow', 'picked_direct', 'fewer_flybys'],
-};
 
 /** Each slip's count of packs for a trip (pack_days foils). Crew slips only with more than one astronaut. */
 export function slipValue(i: Pick<PackItem, 'there' | 'stay' | 'crew'>, m: PackMiss): number | null {
@@ -490,32 +488,35 @@ export function revealText(item: MissionItem): string {
   return `${routeLabel(key)}: it gets to ${t} in ${plural(r.years, 'year')}, no more than ${item.limit}, and ${swing}.`;
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth'];
 const optionLabels = (item: MissionItem) => Array.from({ length: optionCount(item) }, (_, i) => optionLabel(item, i));
 
-function keySays(item: MissionItem, at: number): string {
+/** How a learner says one option, beside its label. */
+function optionSays(item: MissionItem, at: number): string[] {
   if (item.mode === 'farther_closer') {
     const p = item.places[at], n = lower(PLACE_NAME[p]);
-    return p === 'asteroids' ? `"${n}", "the asteroids", "the belt"` : `"${n}"${p === 'moon' ? ', "moon"' : ''}`;
+    return p === 'asteroids' ? [n, 'the asteroids', 'the belt'] : p === 'moon' ? [n, 'moon'] : [n];
   }
   if (item.mode === 'pick_window') {
     const m = item.windows[at].month.split(' ')[0];
-    return `"${m}", "the ${m} one", "${item.windows[at].month}"`;
+    return [m, `the ${m} one`];
   }
-  if (item.mode === 'pack_days') return `"${item.options[at]}", "${item.options[at]} packs"`;
-  const l = ROUTE_LETTERS[at];
-  return `"route ${l}", "${l}"`;
+  if (item.mode === 'pack_days') return [String(item.options[at])];
+  return [`route ${ROUTE_LETTERS[at]}`, ROUTE_LETTERS[at]];
 }
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function missionExpectedAnswer(item: MissionItem): string {
+/** The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. */
+export function missionKey(item: MissionItem): SpokenKey {
   const labels = optionLabels(item), at = keyOf(item);
-  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`).join(', ');
-  const place = item.mode === 'pack_days' ? '' : `, or its place in the row ("the ${ORDINAL[at]} one")`;
-  return `"${labels[at]}" (choice ${at + 1} of ${labels.length}): ${keySays(item, at)}${place} count. `
-    + `${others} ${labels.length > 2 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+  const says = [...optionSays(item, at), ...(item.mode === 'pack_days' ? [] : [`the ${ORDINAL[at]} one`])];
+  const others = labels.filter((_, i) => i !== at).map(l => `"${l}"`);
+  return {
+    answer: labels[at],
+    alsoAccept: says.filter((w, i) => w.toLowerCase() !== labels[at].toLowerCase() && says.indexOf(w) === i),
+    signatureError: `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`,
+  };
 }
 
 const MISS_WORDS: Record<MissionMiss, string> = {
@@ -549,20 +550,6 @@ export function missionSpokenMisses(item: MissionItem): KnownMiss[] {
   return out;
 }
 
-const HOW: Record<MissionMode, string> = {
-  farther_closer: 'The learner answers by saying the place, or tapping it and pressing Check.',
-  pick_window: 'The learner answers by saying the month, or tapping it and pressing Check.',
-  pack_days: 'The learner answers by saying the number of packs, or tapping it and pressing Check.',
-  assist_tradeoff: 'The learner answers by saying the route, or tapping it and pressing Check.',
-};
-
-/** Every item is a sayable closed choice: spoken (judged against `expectedAnswer`) or tapped and checked by code. */
-export function workspaceAssignment(item: MissionItem): TeachingAssignment {
-  const misses = missionSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: missionExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface MissionView {
@@ -584,8 +571,25 @@ export function describeMissionWork(item: MissionItem | undefined, w: MissionWor
   return `Picked ${item.mode === 'farther_closer' || item.mode === 'assist_tradeoff' ? lower(label) : label}`;
 }
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping and checking; the activity judges the tap. No distance, fuel '
-  + 'amount, total or ranking is drawn before the answer. You cannot tap or check for the learner.';
+/** What appears only after the answer is credited. */
+const DRAWN_AFTER = 'No distance, fuel amount, total or ranking is drawn before the answer is credited.';
+/**
+ * What this item asks the learner to work out, which the tutor never says (how to answer is the card's `moves`). A lever
+ * card the scene lists may say its rule; even then, sending the learner to the one choice that fits the rule is the answer.
+ */
+const NEVER_SAY: Record<MissionMode, string> = {
+  farther_closer: 'Which place is nearer or farther is the question: never say it of any place, and never put the places '
+    + 'in order.',
+  pick_window: 'Never say in which month the planets are closest together or farthest apart, which month is best, or that '
+    + 'being close means less fuel unless a card the scene lists says it. Never send the learner to the month with the '
+    + 'planets closest, farthest apart or on the far side, or to the shortest or longest line, and never ask which picture '
+    + 'shows them closest together.',
+  pack_days: 'Never say how many days the whole trip or the trip home takes, or any total, and never tell the learner to '
+    + 'count every square or to multiply by the crew.',
+  assist_tradeoff: 'Never say which route uses less fuel or arrives in time, or that flybys save fuel unless a card the scene '
+    + 'lists says it. Never send the learner to the route with the most flybys or the one in time, and never ask which '
+    + 'route has the most flybys.',
+};
 
 /** What is drawn and asked. Never the key; results only after the answer. */
 export function workspaceScene(item: MissionItem, view: MissionView): WorkspaceScene {
@@ -611,7 +615,8 @@ export function workspaceScene(item: MissionItem, view: MissionView): WorkspaceS
     });
   }
   facts.learnerWork = describeMissionWork(item, view.work);
-  facts.constraints = CONSTRAINTS;
+  facts.drawn = DRAWN_AFTER;
+  facts.constraints = NEVER_SAY[item.mode];
   return { objects: [], facts };
 }
 

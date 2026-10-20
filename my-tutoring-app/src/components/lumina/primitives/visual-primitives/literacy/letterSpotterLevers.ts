@@ -1,32 +1,28 @@
 /**
- * The in-item levers on letter spotter (`/add-support-tiers`, handoff 22 L1; name_it handoff 24). Shape
- * descriptions are banned in the tutor's voice, so every lever here is visual or names a sound.
+ * The in-item levers on letter spotter, as one lever set (`bossLevers.ts`; `/add-support-tiers`, handoff 22 L1, name_it
+ * handoff 24). Shape descriptions are banned in the tutor's voice, so every lever here is visual or names a sound.
  *
- * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * find_it (the tutor names a letter; the learner taps it in a grid of capitals):
- * - `other_case_reference` (help): the named letter in LOWERCASE beside the grid. Answers
- *   `same_shape_family`. Leak rule: never the grid's own case, and only where the two cases differ in shape
- *   (a lowercase o beside a grid of capitals is the same glyph to find).
- * - `row_scan` (help): a highlight that sweeps the rows in turn, looping, alike on every row. Answers
- *   `other_letter`. Leak rule: it never stops on or marks the target's row.
- * - `small_far_grid` (simplify): a practice grid of four with a new letter the session never targets, the
- *   others from other shape families.
+ * - `other_case_reference` (clue): the named letter in LOWERCASE beside the grid. Answers `same_shape_family`. Leak
+ *   rule (`referenceLeaks`): never the grid's own case, and only where the two cases differ in shape.
+ * - `row_scan` (marks): a highlight that sweeps the rows in turn, looping, alike on every row. Answers `other_letter`.
+ *   Leak rule: it never stops on or marks the target's row.
+ * - `small_far_grid` (easier): a practice grid of four with a new letter the session never targets, the others from
+ *   other shape families.
  * match_it (a big capital; the learner taps its lowercase):
- * - `wrong_choice_partner` (help): the capital of each letter the learner TAPPED wrongly, on that tile. Answers
- *   every miss. Leak rule: only the learner's own wrong choices, never the target's capital.
- * - `two_far_choices` (simplify): a practice item with a new capital and two lowercase choices, the foil from
- *   another shape family.
+ * - `wrong_choice_partner` (marks): the capital of each letter the learner TAPPED wrongly, on that tile. Offered only
+ *   after a wrong tap. Leak rule: only the learner's own wrong choices, never the target's capital.
+ * - `two_far_choices` (easier): a practice item with a new capital and two lowercase choices, the foil far in shape.
  * Every practice item is ungraded and uses no letter the session answers (the session invariant).
  * name_it (the tutor reads a sentence; the learner says the letter the starred word starts with):
- * - `first_letter_model` (help, both): another picture word, printed, its first letter lit; the tutor says the word,
- *   its first sound, and that letter. Answers `said_the_word`, `later_letter`, `letter_not_in_word` (the route from
- *   first sound to letter, on another word). Leak rule (`firstLetterModelLeak`): its first letter is no session
- *   target and it is no word of any session sentence. No simplify: another word asks the same thing, not less.
+ * - `first_letter_model` (model): another picture word, printed, its first letter lit; the tutor says the word, its
+ *   first sound and that letter. Leak rule (`firstLetterModelLeak`): its first letter is no session target and it is no
+ *   word of any session sentence. No simplify: another word asks the same thing, not less.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { LETTER_GROUPS, normalizeLetterGroup } from '../../../service/literacy/letterGroups';
-import type { LetterSpotterItem } from './letterSpotterScript';
-import { MIRRORS, SHAPE_FAMILIES } from './letterSpotterWorkspace';
+import { letterSpotterCard } from './letterSpotter.card';
+import { evalModeOf, MIRRORS, SHAPE_FAMILIES, type LetterSpotterItem } from './letterSpotterDomain';
 import { emojiForKeyword, keywordFor, keywordNamesItsPicture } from './letterSoundLinkDomain';
 
 export const CASE_LEVER = 'other_case_reference';
@@ -118,48 +114,56 @@ export function firstLetterModelFor(item: LetterSpotterItem, items: readonly Let
   return letter ? model(letter) : null;
 }
 
-/** The levers this item declares. `wrongTaps`: the learner's wrong taps on this item so far. */
-export function letterSpotterLevers(item: LetterSpotterItem | null, pulled: readonly string[], items: readonly LetterSpotterItem[],
-  letterGroup: number | undefined, wrongTaps: readonly string[] = []): WorkspaceLever[] {
-  if (!item) return [];
-  if (item.mode === 'name-it') {
-    const m = firstLetterModelFor(item, items, letterGroup);
-    return m ? [{ id: FIRST_LETTER_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(FIRST_LETTER_LEVER),
-      answers: ['said_the_word', 'later_letter', 'letter_not_in_word'],
+// ── The lever set ────────────────────────────────────────────────────────────
+
+/** What the set reads beyond the item: the session's items, the letter group, and the learner's wrong taps on the
+ *  current item so far (kept through Try again, for `wrong_choice_partner`). */
+export interface LetterSpotterLeverContext {
+  items: readonly LetterSpotterItem[];
+  letterGroup: number | undefined;
+  wrongTaps: readonly string[];
+}
+
+export const LETTER_SPOTTER_LEVERS = leverSet<LetterSpotterItem, LetterSpotterLeverContext>({
+  modeOf: evalModeOf,
+  missesOf: mode => letterSpotterCard.modes[mode].misses,
+  // The reference names the letter the ask already names (find_it's stimulus); its answer is a position.
+  answersOf: () => [],
+  support: { tier: item => item.tier, different: 'another picture word, its first letter lit',
+    own: 'the letter this item\'s word starts with' },
+  specs: [
+    { id: FIRST_LETTER_LEVER, type: 'model', modes: ['name_it'], answers: 'all',
       when: 'The learner says the word, a letter from later in it, or a letter it does not have.',
       // The model word is named only in the scene fact once pulled: named here, the tutor spoke of it before any pull.
       does: 'Shows another picture word in print with its first letter lit. Once it is on screen, say that word, its first '
-        + 'sound, and the letter it starts with. It is not this item\'s word.' }] : [];
-  }
-  const levers: WorkspaceLever[] = [];
-  const on = (id: string) => pulled.includes(id);
-  if (item.mode === 'find-it') {
-    if (hasOtherCaseShape(item.targetLetter)) levers.push({
-      id: CASE_LEVER, kind: 'help', carrier: 'shown', pulled: on(CASE_LEVER), answers: ['same_shape_family'],
+        + 'sound, and the letter it starts with. It is not this item\'s word.',
+      content: (item, ctx) => firstLetterModelFor(item, ctx.items, ctx.letterGroup),
+      fact: (m: FirstLetterModel) => `A model on another word, ${m.word}, is shown as a picture and in print with its first `
+        + `letter lit: ${m.word} starts with ${m.letter.toUpperCase()}. It is not this item's word.` },
+    { id: CASE_LEVER, type: 'clue', modes: ['find_it'], carrier: 'shown', answers: ['same_shape_family'],
       when: 'The learner taps a letter that looks like the named one.',
       does: 'Shows the named letter as a small letter on a card beside the grid of big letters.',
-    });
-    levers.push({
-      id: SCAN_LEVER, kind: 'help', carrier: 'shown', pulled: on(SCAN_LEVER), answers: ['other_letter'],
+      offer: item => hasOtherCaseShape(item.targetLetter),
+      fact: 'The named letter is shown as a small letter on a card beside the grid.' },
+    { id: SCAN_LEVER, type: 'marks', modes: ['find_it'], answers: ['other_letter'],
       when: 'The learner taps a letter that looks nothing like the named one, as if not searching.',
       does: 'A highlight sweeps the rows of the grid one at a time, over and over, so the learner can check each row in turn.',
-    });
-  } else if (partnerCapitals(item, wrongTaps).length || on(PARTNER_LEVER)) levers.push({
-    id: PARTNER_LEVER, kind: 'help', carrier: 'shown', pulled: on(PARTNER_LEVER),
-    answers: ['mirror_form', 'same_shape_family', 'other_letter'],
-    when: 'The learner tapped a little letter that does not go with the big one.',
-    does: 'Shows the big letter that goes with each little letter the learner tapped wrongly, on that tile.',
-  });
-  const simplify = practiceItem(item, items, letterGroup);
-  if (simplify) {
-    const find = item.mode === 'find-it';
-    levers.push({
-      id: find ? SMALL_GRID_LEVER : TWO_CHOICES_LEVER, kind: 'simplify', carrier: 'shown', pulled: on(find ? SMALL_GRID_LEVER : TWO_CHOICES_LEVER),
-      answers: find ? ['same_shape_family', 'other_letter'] : ['mirror_form', 'same_shape_family', 'other_letter'],
+      fact: 'A highlight sweeps the rows of the grid one at a time, over and over.' },
+    { id: SMALL_GRID_LEVER, type: 'easier', modes: ['find_it'], carrier: 'shown', answers: 'all',
       when: 'The learner cannot yet pick this letter out from letters like it.',
-      does: `Opens an easier practice item first: a different letter, ${find ? 'in a grid of four' : 'with two little letters to choose from'}, `
-        + 'the others shaped nothing like it. It is not graded; the full item comes back after it.',
-    });
-  }
-  return levers;
-}
+      does: 'Opens an easier practice item first: a different letter, in a grid of four, the others shaped nothing like it. '
+        + 'It is not graded; the full item comes back after it.',
+      content: (item, ctx) => practiceItem(item, ctx.items, ctx.letterGroup) },
+    { id: PARTNER_LEVER, type: 'marks', modes: ['match_it'], answers: 'all',
+      when: 'The learner tapped a little letter that does not go with the big one.',
+      does: 'Shows the big letter that goes with each little letter the learner tapped wrongly, on that tile.',
+      content: (item, ctx) => { const partners = partnerCapitals(item, ctx.wrongTaps); return partners.length ? partners : null; },
+      fact: (partners: string[]) => 'The big letter that goes with each little letter the learner tapped wrongly '
+        + `(${partners.join(', ')}) is shown on that tile.` },
+    { id: TWO_CHOICES_LEVER, type: 'easier', modes: ['match_it'], carrier: 'shown', answers: 'all',
+      when: 'The learner cannot yet pick this letter out from letters like it.',
+      does: 'Opens an easier practice item first: a different letter, with two little letters to choose from, the other '
+        + 'shaped nothing like it. It is not graded; the full item comes back after it.',
+      content: (item, ctx) => practiceItem(item, ctx.items, ctx.letterGroup) },
+  ],
+});

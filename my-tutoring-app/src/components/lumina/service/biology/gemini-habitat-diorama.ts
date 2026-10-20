@@ -14,7 +14,7 @@ import type {
   HabitatChallengeType,
   HabitatDioramaData,
 } from '../../primitives/visual-primitives/biology/HabitatDiorama';
-import { itemFromChallenge } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
+import { itemFromChallenge } from '../../primitives/visual-primitives/biology/habitatDioramaDomain';
 import { HABITAT_ANIMALS, needsForBand, trayFor } from '../../primitives/visual-primitives/biology/habitatBuild';
 
 /**

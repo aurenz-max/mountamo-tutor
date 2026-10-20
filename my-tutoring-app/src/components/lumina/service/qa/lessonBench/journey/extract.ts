@@ -1,12 +1,12 @@
 /** Content adapters read the production cue builders (or, for the workspace DI packs, the domain's
  *  ask and support tier). Catalog roles cannot prove instruction. */
 import { askFor as soundAsk, type DiLetterSoundChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
-import { itemCue as blendCue, canWalk, type BlendItem } from '../../../../primitives/visual-primitives/literacy/phonicsBlenderScript';
+import { blendAsk, blendModeOf, type BlendItem } from '../../../../primitives/visual-primitives/literacy/phonicsBlenderDomain';
 import { askFor as wordAsk, type DiWordReadingChallenge } from '../../../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
-import { itemsFromChallenges, itemCue as linkCue } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkScript';
-import type { LetterSoundChallengeLike, LetterSoundTier } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkScript';
-import { itemsFromChallenges as spotterItems, itemCue as spotterCue } from '../../../../primitives/visual-primitives/literacy/letterSpotterScript';
-import type { LetterSpotterChallengeLike, LetterSpotterTier } from '../../../../primitives/visual-primitives/literacy/letterSpotterScript';
+import { askFor as linkAsk, itemsFromChallenges } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import type { LetterSoundChallengeLike, LetterSoundTier } from '../../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import { askFor as spotterAsk, itemsFromChallenges as spotterItems } from '../../../../primitives/visual-primitives/literacy/letterSpotterDomain';
+import type { LetterSpotterChallengeLike, LetterSpotterTier } from '../../../../primitives/visual-primitives/literacy/letterSpotterDomain';
 import { askFor as phonemeAsk, itemsFromChallenges as phonemeItems, type PhonemeChallengeLike } from '../../../../primitives/visual-primitives/literacy/phonemeExplorerDomain';
 import type { LessonPackage } from '../lessonPackage';
 import type { ExtractedLesson, InstructionEvent, LessonContract } from './types';
@@ -107,12 +107,12 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           if (!it.id || !it.targetWord || !Array.isArray(it.phonemes) || !it.phonemes.length || it.phonemes.some((p) => !p.letters || !p.sound)) throw new Error(`Malformed word ${i}`);
           if (lower(it.phonemes.map((p) => p.letters).join('')) !== lower(it.targetWord)) throw new Error(`Word ${i}: graphemes disagree with targetWord`);
           if (!/^[a-z][aeiou][a-z]$/.test(lower(it.targetWord)) || it.phonemes.some((p) => !soundMatches(p.letters, p.sound))) throw new Error(`Word ${i}: outside the verified CVC sound adapter`);
-          const nameSounds = data.nameTargetPhonemes !== false;
-          const cue = spokenOpening(blendCue(it, { nameSounds, opening: i === 0, howToPlay: true }));
+          // The workspace ask (the boss's), not a scripted lead-in: the tutor never reads or blends the learner's own word.
+          const cue = blendAsk({ ...it, mode: blendModeOf(text(data.patternType)), supportTier: 'medium' });
           add({ itemId: it.id, evalMode: text(config.targetEvalMode) || 'mixed', capability: 'decode',
             target: lower(it.targetWord), graphemes: it.phonemes.map((p) => lower(p.letters)),
             cue, source: `${source}/words/${i}`,
-            modality: 'spoken', modeled: openingModelsAnswer(cue, it.targetWord), guided: /Together[,:]/i.test(cue), explainsRelation: nameSounds && canWalk(it),
+            modality: 'spoken', modeled: openingModelsAnswer(cue, it.targetWord), guided: false, explainsRelation: true,
           });
         });
       } else if (block.componentId === 'di-word-reading') {
@@ -132,7 +132,8 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
         if (items.length !== data.challenges.length) throw new Error('Production adapter filtered/retargeted challenges; inspect source mapping before certifying');
         items.forEach((it, i) => {
           const capability = it.mode === 'see-hear' ? 'sound-production' : it.mode === 'hear-see' ? 'sound-recognition' : 'keyword';
-          const cue = spokenOpening(linkCue(it));
+          // The workspace ask (the boss's), not a scripted lead-in: the tutor decides how much to model.
+          const cue = linkAsk(it);
           add({ itemId: it.id, evalMode: it.mode, capability, target: lower(capability === 'keyword' ? it.answer : it.letter), graphemes: [lower(it.letter)],
             cue, source: `${source}/challenges/${i}`,
             modality: it.mode === 'hear-see' ? 'tap' : 'spoken', modeled: it.mode === 'see-hear' ? openingModelsAnswer(cue, it.spoken) : it.mode === 'keyword-match' && openingModelsAnswer(cue, it.answer),
@@ -145,7 +146,8 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
         items.forEach((it, i) => {
           // find-it / match-it: a letterFORM by tap. name-it: the letter NAME, spoken. Neither is a sound.
           const spoken = it.mode === 'name-it';
-          const cue = spokenOpening(spotterCue(it, { opening: i === 0, howToPlay: i === 0 }));
+          // The workspace ask (the boss's), not a scripted lead-in: the tutor decides how much to model.
+          const cue = spotterAsk(it);
           add({ itemId: it.id, evalMode: it.mode, capability: spoken ? 'letter-name' : 'letter-recognition', target: lower(it.targetLetter), graphemes: [lower(it.targetLetter)],
             cue, source: `${source}/challenges/${i}`, modality: spoken ? 'spoken' : 'tap',
             modeled: spoken ? openingModelsAnswer(cue, it.targetLetter) : false, guided: /Together[,:]/i.test(cue), explainsRelation: false });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * cause-effect-chain's levers on the real teaching workspace (`causeEffectChainLevers.ts`): a pull changes the screen
+ * cause-effect-chain's levers on the real teaching workspace (`causeEffectChainLevers.ts`, the boss's lever set): a pull changes the screen
  * and the scene fact in one commit, the next attempt records it, a refused pull changes nothing, and a simplify pull
  * opens an ungraded practice item, then the full item comes back blank and is credited.
  */
@@ -14,9 +14,8 @@ import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import fixtures from '../../../pip/testing/workspaceFixtures.json';
-import { causeEffectItems } from './causeEffectChainWorkspace';
+import { causeEffectItems, type CauseEffectChainItem } from './causeEffectChainDomain';
 import { practiceItem } from './causeEffectChainLevers';
-import type { CauseEffectChainItem } from './causeEffectChainScript';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -54,7 +53,7 @@ it('build_chain: a reversed chain, then model_chain draws a model beside the boa
   expect(h.lever('model-chain')).toBeNull();
   const receipt = h.dispatch('pull_lever', { lever: 'model_chain' });
   expect(receipt.status).toBe('committed');
-  expect(String((receipt.state.task!.demand as Record<string, unknown>).onScreen)).toMatch(/model chain from everyday life drawn in order/);
+  expect(String((receipt.state.task!.demand as Record<string, unknown>).onScreen)).toMatch(/model chain from everyday life, not this item, drawn in order/);
   expect(h.lever('model-chain')!.textContent).toMatch(/🏁/);
   for (const c of chain.cards) expect(h.onScreen()).not.toContain(c.text.replace(/\.$/, ''));
   const before = { html: h.view.container.innerHTML, levers: h.levers(), attempts: h.attempts().length };

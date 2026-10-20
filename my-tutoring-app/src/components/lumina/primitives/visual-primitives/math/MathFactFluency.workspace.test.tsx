@@ -65,7 +65,7 @@ it.each(MODES)('%s: a checked gesture; a wrong answer reopens clean on Try again
       expect(task.demand.response).toBe('gesture');
     } else {
       // A number answer may also be said aloud: the observer judges the tutor's feedback against the key.
-      expect(task.workspace!.expectedAnswer?.startsWith(`${c.correctAnswer} (`)).toBe(true);
+      expect(task.workspace!.expectedAnswer).toContain(`(also accept "${c.correctAnswer}")`);
       expect(task.demand.response).toBe('speech');
     }
     // The scene never states the answer or the picture's count; only a printed equation choice may show it.

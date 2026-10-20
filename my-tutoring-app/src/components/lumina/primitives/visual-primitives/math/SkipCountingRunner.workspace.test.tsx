@@ -9,15 +9,14 @@ vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/co
 vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-import React from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
-import SkipCountingRunner, { type SkipCountingChallenge, type SkipCountingRunnerData } from './SkipCountingRunner';
+import type { SkipCountingChallenge, SkipCountingRunnerData } from './SkipCountingRunner';
 import { skipMiss } from './skipCountingWorkspace';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -174,21 +173,6 @@ it('the miss function names each pattern', () => {
   expect(skipMiss(CASES.count_along.c, line, at(5, 20))).toBe('jumped_far');
 });
 
-it('the scripted path (no runtime) keeps its own Next and submits once the last challenge is right', () => {
-  seam.submit.mockClear();
-  const view = render(<SkipCountingRunner data={runner([CASES.find_skip_value.c, CASES.predict.c])} />);
-  const type = (label: string, value: string) => act(() => {
-    fireEvent.change(view.container.querySelector(`input[aria-label="${label}"]`)!, { target: { value } });
-  });
-  const press = (re: RegExp) => act(() => {
-    fireEvent.click(Array.from(view.container.querySelectorAll('button')).find(b => re.test(b.textContent ?? ''))!);
-  });
-  type('Skip value', '5'); press(/check answer/i);
-  press(/next/i);
-  type('Next landing', '20'); press(/check answer/i);
-  expect(seam.submit).toHaveBeenCalledOnce();
-});
-
 it('find_skip_value items on their own lines: each opens on its line and is checked against its own step', () => {
   // Before 2026-10-14 every find item shared the session line: five items were one screen and one answer.
   const own = (id: string, skipValue: number, startFrom: number): SkipCountingChallenge => ({ ...base, id, type: 'find_skip_value',
@@ -196,7 +180,7 @@ it('find_skip_value items on their own lines: each opens on its line and is chec
   const items = [own('s1', 10, 23), own('s2', 2, 7)];
   const labels = (h: WorkspaceHarness) => Array.from(h.view.container.querySelectorAll('svg text')).map(t => t.textContent);
   const h = mountWorkspace({ primitiveId: 'skip-counting-runner', evalMode: 'find_skip_value', data: runner(items) as never });
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^10:/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"10"/);
   expect(labels(h)).toContain('23');
   play(h, items[0], typed('5')); // the session line's step is not this item's
   expect(h.state().task!.evidence.correctness).toBe('incorrect');
@@ -204,7 +188,7 @@ it('find_skip_value items on their own lines: each opens on its line and is chec
   play(h, items[0], typed('10'));
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.dispatch('advance'); h.confirmVisible();
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^2:/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"2"/);
   expect(labels(h)).toContain('7');
   play(h, items[1], typed('2'));
   expect(h.state().task!.evidence.correctness).toBe('correct');

@@ -40,7 +40,6 @@ import {
   constellationGradeFromProse,
 } from './gemini-constellation-builder';
 import type { GenerationContext } from '../generation/generationContext';
-import { ASTRONOMY_CATALOG } from '../manifest/catalog/astronomy';
 
 const K_PROSE = 'kindergarten students (ages 5-6) - Use clear, simple language';
 const G1_PROSE = 'first grade students (ages 6-7) - Use clear, simple language';
@@ -198,44 +197,5 @@ describe('constellation-builder — the pre-reader language bound', () => {
       const p = await promptFor(ctx(g, prose));
       expect(p).not.toMatch(/PRE-READER LANGUAGE RULES/);
     }
-  });
-});
-
-describe('constellation-builder — catalog scaffold reaches a non-reader', () => {
-  const entry = ASTRONOMY_CATALOG.find((e) => e.id === 'constellation-builder');
-
-  it('carries the cap-override clause, so the read-aloud survives a lesson switch', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /PRE-READER READ-ALOUD/i.test(x.title));
-    expect(d?.instruction).toMatch(/OVERRIDES any instruction to keep it to one sentence/i);
-  });
-
-  it('protects the answer: the next star is never named', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /NEVER SAY WHICH STAR IS NEXT/i.test(x.title));
-    expect(d?.instruction).toMatch(/Naming it, or saying where it sits/i);
-    expect(d?.instruction).toMatch(/Only at scaffolding level 3/i);
-  });
-
-  it('bans star counts and magnitudes at K-1 and SUPPLIES the replacement register', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /NO STAR NUMBERS OR MAGNITUDES/i.test(x.title));
-    expect(d?.instruction).toMatch(/do NOT say a star count, a step number/i);
-    expect(d?.instruction).toMatch(/the twinkling one/i);
-    expect(d?.instruction).toMatch(/From grade 2 up the counts and the brightness ARE part of the objective/i);
-  });
-
-  it('names every moment tag the component emits', () => {
-    const blob = JSON.stringify(entry?.tutoring ?? {});
-    for (const tag of [
-      'CONSTELLATION_ORIENT',
-      'CONSTELLATION_CHALLENGE_CHANGED',
-      'CONSTELLATION_WRONG_STAR',
-      'CONSTELLATION_COMPLETE',
-      'CONSTELLATION_READ_ALOUD',
-    ]) {
-      expect(blob).toContain(tag);
-    }
-  });
-
-  it('has no handlebars conditionals', () => {
-    expect(JSON.stringify(entry?.tutoring ?? {})).not.toMatch(/\{\{#/);
   });
 });

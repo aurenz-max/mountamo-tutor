@@ -2,8 +2,8 @@
 
 /**
  * WordWorkout — the child reads printed words aloud and answers about them. It
- * runs only on the shared tutor/JEV teaching workspace (workspace rollout C1; the
- * scripted runner was retired, LA-14, user ruling 09-23: one path). The tutor
+ * runs only on the shared tutor/JEV teaching workspace (the boss:
+ * `wordWorkout.card.ts` + `wordWorkout.boss.ts`; one path, user ruling 09-23). The tutor
  * teaches in its own words, the observer judges each spoken answer, the activity
  * checks each picture tap, and the runtime owns progression. An unbound mount shows
  * the shared "needs the tutor" card. There is no advance timer, no Next button, and
@@ -25,15 +25,14 @@
  *  - **The interim voice-answer rung** on word chains — the last live consumer
  *    of that generation of hooks in the repo. A separate Azure capture judged
  *    the child while the tutor talked past it; the judge is the tutor now.
- *  - **Eight improvised tutor sends** (activity start, pronounce-this-word,
- *    speak-the-chain-word, read-the-sentence, the two answer verdicts, next
- *    challenge, session complete) and the tier reveal-policy block that steered
- *    them. The cues carry the entire spoken surface.
+ *  - **Eight improvised tutor sends** and, later, the scripted cue lines that
+ *    replaced them. The tutor teaches in its own words from the boss's ask, key
+ *    and scene.
  *
  * WHAT STAYED: the print. The two words, the chain with its changed-letter
  * highlight, the sentence with its phonics tint — all of it is the stimulus AND
  * the target, which is why the leak rule here bites on the tutor's mouth rather
- * than on the screen (`coldReadGuard`, per item). The one printed thing that is
+ * than on the screen (the scene's `constraints`, per item). The one printed thing that is
  * not the task is the comprehension answer, and it stays unmarked until the
  * affirm.
  *
@@ -42,8 +41,8 @@
  * evidence, not meaning evidence). Pointing at the referent is the meaning
  * evidence — picture-vocabulary's `receptive_match` precedent.
  *
- * Build gates and the asks live in `wordWorkoutScript.ts`; the workspace assignment
- * and scene in `wordWorkoutWorkspace.ts`. Nothing in this file writes a spoken line.
+ * Build gates, the ask, the key and the scene live in `wordWorkoutDomain.ts`; the
+ * levers in `wordWorkoutLevers.ts`. Nothing in this file writes a spoken line.
  *
  * EXTENDED DECODING (2026-09-09): inflected and compound modes keep one word
  * visible for a cold spoken read, reveal/model its chunks only after the
@@ -69,8 +68,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { WordWorkoutMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
@@ -78,19 +76,22 @@ import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
-  itemsFromChallenges,
+  describePictureTap,
+  hearQuestionRequest,
+  wordWorkoutMiss,
+  wordWorkoutScene,
   type ChainCueLevel,
   type WordWorkoutItem,
   type WordWorkoutItemKind,
   type WordWorkoutMode,
   type WordWorkoutPictureOption,
-} from './wordWorkoutScript';
-import { describePictureTap, hearQuestionRequest, wordWorkoutAssignment, wordWorkoutMiss, wordWorkoutScene } from './wordWorkoutWorkspace';
-import { CHANGED_LETTER_LEVER, CHUNK_LEVER, DOTS_LEVER, QUESTION_ICON_LEVER, TRACK_LEVER, chunkFor, lessonVowels, leversOnScreen,
-  practiceFor, questionIcon, wordWorkoutLevers } from './wordWorkoutLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
+} from './wordWorkoutDomain';
+import { CHANGED_LETTER_LEVER, CHUNK_LEVER, DOTS_LEVER, QUESTION_ICON_LEVER, TRACK_LEVER, WORD_WORKOUT_LEVERS, chunkFor,
+  lessonVowels, questionIcon } from './wordWorkoutLevers';
+import { wordWorkoutBoss, wordWorkoutItems } from './wordWorkout.boss';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
@@ -131,10 +132,8 @@ export interface WordWorkoutChallenge {
    * The surviving support-tier lever (stamped by the generator from
    * `ctx.supportTier`): how much of the letter change is drawn — 'full' = amber
    * highlight + the "b → c" delta chip, 'highlight-only' = amber only, 'none' =
-   * neither, because finding what changed IS the task at that tier. It also
-   * governs the SPOKEN channel: at 'none' the chain correction re-models the
-   * word without naming what changed, so the tutor cannot hand back the
-   * scaffold the tier removed. Default 'full'.
+   * neither, because finding what changed IS the task at that tier; there the
+   * `changed_letter` lever can light it back. Default 'full'.
    *
    * The other three click-era tier fields (`showInstruction`, `allowPronounce`,
    * `allowSentenceModelRead`, `comprehensionChoiceCount`) died with the
@@ -213,7 +212,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `word-workout-${Date.now()}`);
@@ -223,7 +221,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
    *  several items — a chain is one judged read per word, a sentence is a read
    *  plus a question. */
   const items = useMemo<WordWorkoutItem[]>(
-    () => itemsFromChallenges(challenges),
+    () => wordWorkoutItems({ challenges }),
     [challenges],
   );
 
@@ -348,7 +346,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
 
   const runner = useWorkspaceRunner<WordWorkoutItem>({
     primitiveId: 'word-workout',
-    assignment: wordWorkoutAssignment,
+    assignment: wordWorkoutBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -365,7 +363,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
       setMissedItem(item.id);
       // Try again frees the pictures.
       setTapped(null);
-      pip.clear();
     },
     onAffirmed: (item) => {
       const start = openedAt.current.get(item.id);
@@ -385,53 +382,35 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   const revealed = runner.currentSolved || practiceSolved;
   const meta = KIND_META[currentItem?.kind ?? 'real_word'];
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state and the child's own picture tap; Pip
-  // never answers, taps, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = wordWorkoutPipPose({
-      kind: currentItem.kind,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(),
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Word workout', dock: pip.dock.current, targets, pose };
-  });
+  /** The lever set's context: the lesson's items and vowels, and the item that has had a wrong answer. */
+  const leverCtx = useMemo(() => ({ items, vowels: lessonVowels(data.masteredVowels, items), missed: missedItem }),
+    [items, data.masteredVowels, missedItem]);
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const vowels = lessonVowels(data.masteredVowels, items);
-    const levers = practice ? [] : wordWorkoutLevers(sessionItem, pulledLevers, items, vowels);
-    const scene = wordWorkoutScene(currentItem);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on new words, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : WORD_WORKOUT_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = wordWorkoutScene(currentItem);
+    workspace.current = {
+      ...leverScene(practice
+        ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice item on new words, ungraded. The full item comes back after it.' } }
+        : scene, {
+        support: practice ? '' : WORD_WORKOUT_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : WORD_WORKOUT_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === CHUNK_LEVER && missedItem !== sessionItem.id) return "The word's parts show only after a first try: let the learner read it first.";
         if (lever.kind === 'simplify') {
-          const simpler = practiceFor(id, sessionItem, items, vowels);
+          const simpler = WORD_WORKOUT_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!simpler) return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
           setTapped(null);
-          return { practice: wordWorkoutAssignment(simpler) };
+          return { practice: wordWorkoutBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -448,20 +427,19 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     // `canAttempt` closes through batched state; this stops a second tap inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
-    pip.look(`picture-${option.word}`);
     setTapped(option.word);
     // The practice item is ungraded: its success is local and never affirms the session item.
     if (practiceRef.current && option.word === item.targetWord) setPracticeSolved(true);
     commitGesture(runner, { response: describePictureTap(option.word), correct: option.word === item.targetWord,
       cue: () => describePictureTap(option.word), miss: wordWorkoutMiss(item, option.word) });
-  }, [runner, showSummary, pip]);
+  }, [runner, showSummary]);
 
   /** Hear-again asks the tutor for the instruction or question only: a silent host request, never the print. */
   const hearQuestion = useCallback(() => {
     if (!currentItem) return;
     SoundManager.tap();
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearQuestionRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const celebrationMessage = useMemo(() => {
@@ -492,7 +470,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
    *  is the costume this port deleted. The real one is marked only on the
    *  affirm. */
   const renderRealWord = (item: WordWorkoutItem) => (
-    <div ref={pip.ref('pair')} data-pip-object="pair" className="grid grid-cols-2 gap-4">
+    <div data-pip-object="pair" className="grid grid-cols-2 gap-4">
       {(item.pair ?? []).map((word) => {
         const isReal = word === item.realWord;
         const state = revealed ? (isReal ? 'correct' : 'dimmed') : 'idle';
@@ -517,7 +495,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   const renderPictureTap = (item: WordWorkoutItem) => (
     <div className="space-y-4">
       <div className="text-center">
-        <div ref={pip.ref('word')} data-pip-object="word"
+        <div data-pip-object="word"
           className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
           {dotsOn ? (
             // sound_dots: the shared print overlay, one dot under each grapheme. Visual only, never voiced.
@@ -538,7 +516,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
           return (
             <button
               key={`${item.id}-${option.word}`}
-              ref={pip.ref(`picture-${option.word}`)}
               data-pip-object={`picture-${option.word}`}
               onClick={() => handlePictureTap(option)}
               disabled={!runner.canAttempt}
@@ -573,7 +550,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
           return (
             <div
               key={`${word}-${idx}`}
-              ref={isActive ? pip.ref('chain-row') : undefined}
               data-pip-object={isActive ? 'chain-row' : undefined}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300
@@ -636,7 +612,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
     const isRead = item.kind === 'read_sentence';
     return (
       <div className="space-y-4">
-        <div ref={pip.ref('sentence')} data-pip-object="sentence" className="rounded-xl bg-white/5 border border-white/10 p-6">
+        <div data-pip-object="sentence" className="rounded-xl bg-white/5 border border-white/10 p-6">
           {isRead && on(TRACK_LEVER) ? (
             // tracking_underline: the shared print overlay, one underline per word. Never voiced.
             <div className="flex justify-center">
@@ -686,7 +662,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
    *  chunks appear only after the tutor has judged the attempt. */
   const renderExtendedWord = (item: WordWorkoutItem) => (
     <div className="space-y-4 text-center">
-      <div ref={pip.ref('word')} data-pip-object="word" className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
+      <div data-pip-object="word" className="inline-flex px-10 py-6 rounded-2xl bg-white/5 border-2 border-white/15">
         {item.kind === 'read_extended_word' && on(CHUNK_LEVER)
           ? <LuminaPrintSupport text={item.targetWord ?? ''} chunkBreak={chunkFor(item)} className="text-4xl font-bold tracking-wide text-slate-100" />
           : <span className="text-4xl font-bold tracking-wide text-slate-100">{item.targetWord}</span>}
@@ -717,7 +693,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
   const renderContextWords = (item: WordWorkoutItem) => (
     <div className="space-y-5">
       {item.kind === 'choose_context_word' && (
-        <p ref={pip.ref('sentence')} data-pip-object="sentence"
+        <p data-pip-object="sentence"
           className="rounded-xl border border-white/10 bg-white/5 p-5 text-center text-2xl font-semibold text-slate-100">
           {item.contextSentence}
         </p>
@@ -729,7 +705,6 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
           return (
             <div
               key={`${item.id}-${word}`}
-              ref={active ? pip.ref('context-target') : undefined}
               data-pip-object={active ? 'context-target' : undefined}
               className={`rounded-2xl border-2 px-6 py-6 text-center text-3xl font-bold tracking-wide
                 ${correct
@@ -822,15 +797,11 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
               </button>
             </div>
 
-            {/* Pip's dock sits above the stage: every cue target (the word, the
-                sentence, the marked row or card) is at the top of its stage, so
-                a pointer never crosses a picture or a near-word card. */}
-            {pipStore && (
-              <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-            )}
+            {/* Pip's dock sits above the stage, so a pointer to the stage never
+                crosses a picture or a near-word card. */}
+            <PipDock />
 
-            {renderStage(currentItem)}
+            <PipWorkspace>{renderStage(currentItem)}</PipWorkspace>
           </>
         )}
 

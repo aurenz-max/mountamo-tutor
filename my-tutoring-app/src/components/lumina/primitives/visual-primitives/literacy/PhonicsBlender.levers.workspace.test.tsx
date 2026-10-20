@@ -35,7 +35,7 @@ it('split row: blend_slide and the arrow change the screen and send nothing to t
   h.dispatch('pull_lever', { lever: 'tracking_arrow' });
   expect(q(h, '[data-lever="tracking-arrow"]')).toHaveLength(1);
   expect(seam.send.mock.calls.length).toBe(sent);
-  expect(String(h.state().task!.demand.levers_on_screen)).not.toMatch(/\bcat\b/);
+  expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\bcat\b/);
   h.say('cat'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'w1', correct: true, assisted: true,
     levers: ['blend_slide', 'tracking_arrow'] });
@@ -51,7 +51,7 @@ it('joined row (hard): sound_dots re-segments it, one dot per sound; the model l
   const model = q(h, '[data-lever="name-sound-model"]')[0];
   const letter = model.firstElementChild!.textContent!;
   expect('catdog').not.toContain(letter);
-  expect(String(h.state().task!.demand.levers_on_screen)).toMatch(new RegExp(`another letter, ${letter.toUpperCase()}`));
+  expect(String(h.state().task!.demand.onScreen)).toMatch(new RegExp(`another letter, ${letter.toUpperCase()}`));
   h.close();
 });
 
@@ -60,7 +60,7 @@ it('short_word: an ungraded two-letter practice word, then the full word back; o
   h.say('cap'); h.feedback('incorrect', 'retry');
   h.dispatch('pull_lever', { lever: 'short_word' });
   expect(h.state().task).toMatchObject({ itemId: 'w1~simpler' });
-  const practiceWord = h.state().task!.workspace!.expectedAnswer!;
+  const practiceWord = h.state().task!.workspace!.expectedAnswer!.match(/^"([^"]+)"/)![1];
   expect(practiceWord).toHaveLength(2);
   expect('cat'.endsWith(practiceWord)).toBe(false);
   h.say(practiceWord); h.feedback('correct', 'advance'); h.confirmVisible();

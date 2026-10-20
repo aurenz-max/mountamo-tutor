@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -23,21 +22,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { buildPictureGraphEvidence } from './barModelEvidence';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import type { PipTarget } from '../../../pip/PipSurfaceStore';
-import { barModelPipPose } from '../../../pip/barModelPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { OPTION_MODES, ROW_TAP_MODES, barModelMiss, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { OPTION_MODES, ROW_TAP_MODES, barModelMiss, describeGraphWork, workspaceScene, type BarModelView }
   from './barModelWorkspace';
-import { COUNTS_LEVER, LINE_LEVER, TWO_BARS_LEVER, isPracticeGraph, levelLineRow, makeGraphLevers, makeGraphMiss,
-  makeGraphVerdict, twoBarPractice, GRAPH_MAX, type GraphRule } from './barModelBuild';
+import { COUNTS_LEVER, LINE_LEVER, isPracticeGraph, levelLineRow, makeGraphMiss,
+  makeGraphVerdict, GRAPH_MAX, type GraphRule } from './barModelBuild';
 import { GraphBuildScene } from './GraphBuildScene';
-import { BAR_VALUES, DATA_BESIDE, GROUP_FIVES, GUIDE_LINE, ICON_VALUES, MARK_BARS, MARK_ROW, MINOR_TICKS, PAIR_ROWS, PILE_ROW,
-  PRACTICE_NOTE, SORT_PILE, STEP_MARKS, WORD_MODEL, barModelLevers, fivesRows, isSimplerGraph, leverFacts, leverRefusal, minorStep,
-  namedRows, simplerGraph, stepMarks, wordModel, type WordModel } from './barModelLevers';
+import { BAR_LEVERS, BAR_VALUES, DATA_BESIDE, GROUP_FIVES, GUIDE_LINE, ICON_VALUES, MARK_BARS, MARK_ROW, MINOR_TICKS, PAIR_ROWS,
+  PILE_ROW, PRACTICE_NOTE, SORT_PILE, STEP_MARKS, WORD_MODEL, fivesRows, isSimplerGraph, minorStep, namedRows, stepMarks,
+  tierPulled, wordModel, type BarLeverView, type WordModel } from './barModelLevers';
+import { barModelBoss } from './barModel.boss';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ---------------------------------------------------------------------------
@@ -191,8 +189,6 @@ interface BarsAreaProps {
   showEmptySlots?: boolean;
   /** K build: show how many stickers the child has placed in each row so far. */
   showPlacedCount?: boolean;
-  /** Registers each row (label and bar) as a Pip target. */
-  rowRef?: (id: string) => (element: Element | null) => void;
   /** Lever `mark_bars`: more rows with the amber mark. */
   markedRows?: readonly number[];
   /** Lever `group_fives`: the rows drawn with a gap after every fifth picture. */
@@ -220,7 +216,6 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   answerBarIndex = null,
   showEmptySlots = false,
   showPlacedCount = false,
-  rowRef,
   markedRows = [],
   fivesRows = [],
   guideRow = null,
@@ -319,7 +314,7 @@ const BarsArea: React.FC<BarsAreaProps> = ({
             const clampedWidth = Math.max(0, Math.min(100, widthPct));
 
             return (
-              <div key={i} ref={rowRef?.(`row-${i}`)} data-pip-object={rowRef ? `row-${i}` : undefined} className="space-y-1">
+              <div key={i} data-graph-row={i} className="space-y-1">
                 <div className="flex items-center gap-2 text-sm">
                   <span className={`font-medium ${isHighlighted ? 'text-amber-300' : 'text-slate-200'}`}>
                     {item.label}
@@ -676,7 +671,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: barModelBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solveSpoken.current(index),
   });
@@ -950,9 +945,10 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     submitResult(!makeGraphMiss(currentChallenge.graphRule, bars), { graphValues: bars });
   };
   const graphRule = isMakeGraph ? currentChallenge?.graphRule : undefined;
-  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
-  // Every other mode's levers: drawn on the session graph only while pulled (or on from the tier), never on an easier graph.
-  const itemLevers = sessionChallenge?.evalMode === 'make_graph' ? [] : barModelLevers(sessionChallenge, pulledLevers);
+  // The levers (`BAR_LEVERS`): drawn on the session graph only while pulled (or on from the tier), never on an easier graph.
+  const leverView: BarLeverView = { built: builtValues };
+  const itemLevers = practice || !sessionChallenge ? []
+    : BAR_LEVERS.declare(sessionChallenge, leverView, [...pulledLevers, ...tierPulled(sessionChallenge)]);
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   // The live line (shared build layer): what the graph looks like so far. Never a number, never a comparison:
   // which bar is tallest is the skill.
@@ -1023,72 +1019,34 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
       ? { index: selectedBarIndex, correct: feedback === 'correct' }
       : null;
 
-  // ── Pip shared surface ─────────────────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never places a sticker, chooses, checks, or
-  // advances. Tutor audio counts only while the tutor is on this block.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const [pipTouched, setPipTouched] = useState<{ scopeId: string; element: Element } | null>(null);
-  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const isCurrentChallengeCorrect = !!currentChallenge
-    && results.some((r) => r.challengeId === currentChallenge.id && r.correct);
-  const pipTouch = (node: EventTarget) => {
-    if (!currentChallenge || isCurrentChallengeCorrect || !(node instanceof Element)) return;
-    setPipTouched({ scopeId: currentChallenge.id, element: node.closest('button, [role="button"]') ?? node });
-  };
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || isComplete || hasSubmittedEvaluation) return null;
-    const rowIds = valuesToRender.map((_value, i) => `row-${i}`);
-    const targets: PipTarget[] = pip.targets(['graph', 'source', 'controls', ...rowIds], (id) => (
-      id === 'graph' ? 'The graph' : id === 'source' ? 'The group to count' : id === 'controls' ? 'The graph controls'
-        : valuesToRender[Number(id.slice(4))]?.label ?? 'A row'
-    ));
-    const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected ? pipTouched.element : null;
-    if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
-    const pose = barModelPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeCorrect, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      evalMode: currentChallenge.evalMode, markedRowIndex: highlightedIndex,
-      visibleIds: targets.map((target) => target.id), hasTouch: !!touched,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Bar model',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes what a pulled lever
+  // put on screen and when the model comes (`leverScene`).
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep });
-    const makeGraph = sessionChallenge.evalMode === 'make_graph';
-    const levers = practice ? [] : makeGraph ? makeGraphLevers(sessionChallenge, pulledLevers) : itemLevers;
+    const levers = itemLevers;
     /** A practice graph and the full graph it stands in for share no work. */
     const showItem = (c: BarModelChallenge) => {
       setBuiltValues(c.values); setFeedback(null); setVerdictText(''); setSelectedOption(null); setSelectedBarIndex(null);
       setChosenStep(null); setShowHint(false);
     };
-    const onScreen = practice || makeGraph ? undefined : leverFacts(sessionChallenge, helpOn, builtValues);
-    const note = makeGraph ? 'An easier graph with two bars, ungraded. The full graph comes back after it.' : PRACTICE_NOTE;
+    const onScreen = practice ? '' : BAR_LEVERS.onScreen(sessionChallenge, leverView, pulledLevers);
+    const published = leverScene(scene, { support: BAR_LEVERS.support(practice ? null : sessionChallenge, leverView), onScreen });
+    const note = sessionChallenge.evalMode === 'make_graph' ? 'An easier graph with two bars, ungraded. The full graph comes back after it.' : PRACTICE_NOTE;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: note } : {}) },
-      ...(levers.length || practice ? { levers } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: note } : {}) },
+      levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this graph.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        const refusal = makeGraph ? undefined : leverRefusal(sessionChallenge, id, builtValues);
-        if (refusal) return refusal;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = id === TWO_BARS_LEVER ? twoBarPractice(sessionChallenge) : simplerGraph(sessionChallenge);
+          const easier = BAR_LEVERS.simpler(sessionChallenge, leverView, id);
           if (!easier) return 'This graph has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); showItem(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: barModelBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1158,14 +1116,17 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
 
           {/* Per-challenge UI */}
           {!sessionOver && currentChallenge ? (
-            <div className="space-y-6" onPointerDownCapture={(event) => pipTouch(event.target)}
-              onFocusCapture={(event) => pipTouch(event.target)}>
+            <div className="space-y-6">
               <LuminaPrompt accent="cyan" center>
                 <span className="text-base">{currentChallenge.prompt}</span>
               </LuminaPrompt>
 
+              {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the workspace, and the
+                  workspace as one region, never a single row. */}
+              <PipDock />
+              <PipWorkspace className="space-y-6">
               {currentChallenge.sourceItems && currentChallenge.sourceItems.length > 0 ? (
-                <div ref={pip.ref('source')} data-pip-object="source">
+                <div>
                   <SourceCollection
                     items={currentChallenge.sourceItems}
                     sorted={helpOn(SORT_PILE)}
@@ -1175,8 +1136,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                 </div>
               ) : null}
 
-              {/* Every graph on screen, as one Pip region. */}
-              <div ref={pip.ref('graph')} data-pip-object="graph" className="space-y-6">
+              <div className="space-y-6">
                 <div className="px-2 space-y-5">
                   {leverDraw?.model && <WordModelPanel model={leverDraw.model} />}
                   {currentChallenge.graphLabel && !pairRows && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
@@ -1184,8 +1144,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   {isMakeGraph ? (
                     <div className="flex justify-center">
                       <GraphBuildScene ref={graphSvgRef} bars={builtValues} disabled={!graphOpen}
-                        lineRow={graphRule && leverOn(LINE_LEVER) ? levelLineRow(graphRule) : null} counts={leverOn(COUNTS_LEVER)}
-                        onAdd={i => setBar(i, 1)} onRemove={i => setBar(i, -1)} rowRef={pip.ref} />
+                        lineRow={graphRule && helpOn(LINE_LEVER) ? levelLineRow(graphRule) : null} counts={helpOn(COUNTS_LEVER)}
+                        onAdd={i => setBar(i, 1)} onRemove={i => setBar(i, -1)} />
                     </div>
                   ) : <BarsArea
                     values={pairRows ? pairedValues : valuesToRender}
@@ -1207,7 +1167,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                     answerBarIndex={answerBarIndex}
                     showEmptySlots={isStickerBuild}
                     showPlacedCount={false}
-                    rowRef={pip.ref}
                     markedRows={leverDraw?.marked}
                     fivesRows={leverDraw?.fives}
                     guideRow={leverDraw?.guide}
@@ -1222,11 +1181,6 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   <BarsArea values={currentChallenge.secondValues} graphStyle="picture" scale={scaleToRender} showBarValues={false} />
                 </div>}
               </div>
-
-              {pipStore && (
-                <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                  className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-              )}
 
               {isMakeGraph ? (
                 <div className="space-y-4">
@@ -1300,7 +1254,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
 
               {currentChallenge.evalMode === 'build_graph' ? (
                 <div className="space-y-4">
-                  <div ref={pip.ref('controls')} data-pip-object="controls">
+                  <div>
                     <BuildControls
                       values={builtValues}
                       onChange={setBuiltValues}
@@ -1323,6 +1277,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   </div>
                 </div>
               ) : null}
+              </PipWorkspace>
 
               {feedback ? (
                 <LuminaFeedbackCard

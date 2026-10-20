@@ -1,6 +1,6 @@
 /**
- * vocabulary-explorer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C34), and the code that
- * builds and keys its items.
+ * vocabulary-explorer's domain: the code that builds and keys its items, the checks, misses and scene (the wiring is
+ * `vocabularyExplorer.card.ts` + `vocabularyExplorer.boss.ts`).
  *
  * Gemini writes the word bank only: each word's meaning, an example sentence (on its card), a second sentence that
  * uses it (`clozeSentence`) and a short situation where it applies without naming it (`scenario`). Code builds every
@@ -13,11 +13,15 @@
  * The word cards (meaning, example, related words) are studied before the check and close when it starts.
  * fill_blank and context are one word, said aloud or tapped (J14); match is a gesture checked by code.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { CHOICE_MISSES, MATCH_MISSES, type ChoiceMiss, type VocabMiss } from './vocabularyExplorer.card';
+
+export { CHOICE_MISSES, MATCH_MISSES };
+export type { ChoiceMiss, MatchMiss, VocabMiss } from './vocabularyExplorer.card';
 
 export interface VocabTerm {
   id: string;
@@ -107,7 +111,7 @@ export function situationOf(t: VocabTerm): { text: string; clue: 'scenario' | 'd
   return null;
 }
 
-export function clueText(item: ChoiceItem, bank: VocabTerm[]): string {
+export function clueText(item: ChoiceItem, bank: readonly VocabTerm[]): string {
   const t = bank.find(x => x.id === item.term);
   if (!t) return '';
   return (item.kind === 'fill_blank' ? clozeOf(t)?.text : situationOf(t)?.text) ?? '';
@@ -117,7 +121,7 @@ export function clueText(item: ChoiceItem, bank: VocabTerm[]): string {
 
 export const extraMeaning = (item: MatchItem) => item.defs.find(d => !item.terms.includes(d)) ?? null;
 
-export function askOf(item: VocabItem, bank: VocabTerm[]): string {
+export function askOf(item: VocabItem, bank: readonly VocabTerm[]): string {
   if (item.kind === 'match') {
     return `Match each word to its meaning: tap a word, then the meaning that goes with it.${extraMeaning(item) ? ' One meaning goes with none of the words.' : ''}`;
   }
@@ -136,7 +140,7 @@ export function seededRng(seed: string): Rng {
   let a = h >>> 0;
   return () => { a += 0x6d2b79f5; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-export const shuffle = <T,>(xs: T[], rng: Rng): T[] => {
+export const shuffle = <T,>(xs: readonly T[], rng: Rng): T[] => {
   const a = [...xs];
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
@@ -168,7 +172,7 @@ export function meaningOrder(terms: string[], defs: string[], rng: Rng): string[
 
 const PAIRS: Record<VocabTier, number> = { easy: 3, medium: 4, hard: 4 };
 
-function buildMatch(bank: VocabTerm[], used: Set<string>, tier: VocabTier, rng: Rng): MatchItem | null {
+function buildMatch(bank: readonly VocabTerm[], used: Set<string>, tier: VocabTier, rng: Rng): MatchItem | null {
   const fresh = shuffle(bank.filter(t => !used.has(t.id)), rng), seen = shuffle(bank.filter(t => used.has(t.id)), rng);
   const want = PAIRS[tier] + (tier === 'hard' ? 1 : 0);
   let picks = pickPairs([...fresh, ...seen], want);
@@ -185,7 +189,7 @@ function buildMatch(bank: VocabTerm[], used: Set<string>, tier: VocabTier, rng: 
 /** A word that also fits a clue (a judge's reading at generation): never offered beside that key in that kind. */
 export type Avoid = (kind: 'fill_blank' | 'context', key: string, foil: string) => boolean;
 
-export function pickFoils(key: VocabTerm, bank: VocabTerm[], tier: VocabTier, clue: string, rng: Rng,
+export function pickFoils(key: VocabTerm, bank: readonly VocabTerm[], tier: VocabTier, clue: string, rng: Rng,
   avoid: (foil: string) => boolean = () => false): VocabTerm[] {
   const n = tier === 'easy' ? 2 : 3;
   const others = shuffle(bank.filter(t => t.id !== key.id && t.word.trim() && norm(t.word) !== norm(key.word) && !avoid(t.id)
@@ -201,7 +205,7 @@ export function pickFoils(key: VocabTerm, bank: VocabTerm[], tier: VocabTier, cl
   return picked;
 }
 
-function buildChoice(kind: 'fill_blank' | 'context', bank: VocabTerm[], keyed: Set<string>, used: Set<string>,
+function buildChoice(kind: 'fill_blank' | 'context', bank: readonly VocabTerm[], keyed: Set<string>, used: Set<string>,
   tier: VocabTier, rng: Rng, avoid?: Avoid): ChoiceItem | null {
   const rank = (t: VocabTerm) => (keyed.has(t.id) ? 2 : 0) + (used.has(t.id) ? 1 : 0);
   const keys = shuffle(bank, rng).sort((a, b) => rank(a) - rank(b));
@@ -226,7 +230,7 @@ export function composition(kinds: VocabKind[]): VocabKind[] {
   return ks.length ? ks : ['match', 'fill_blank', 'context'];
 }
 
-export function buildVocabItems(opts: { bank: VocabTerm[]; kinds: VocabKind[]; tier: VocabTier; rng: Rng; avoid?: Avoid }): VocabItem[] {
+export function buildVocabItems(opts: { bank: readonly VocabTerm[]; kinds: VocabKind[]; tier: VocabTier; rng: Rng; avoid?: Avoid }): VocabItem[] {
   const used = new Set<string>(), keyed = new Set<string>(), out: VocabItem[] = [];
   for (const kind of composition(opts.kinds)) {
     const item = kind === 'match' ? buildMatch(opts.bank, used, opts.tier, opts.rng)
@@ -264,7 +268,7 @@ export function resolveKinds(d: VocabItemsSource): VocabKind[] {
 }
 
 /** False when a stored item is not one code could have built from this bank (its key would not be computable). */
-export function validVocabItem(i: VocabItem | undefined, bank: VocabTerm[]): i is VocabItem {
+export function validVocabItem(i: VocabItem | undefined, bank: readonly VocabTerm[]): i is VocabItem {
   if (!i || typeof i.id !== 'string' || !i.id) return false;
   const ids = new Set(bank.map(t => t.id));
   const unique = (xs: unknown) => Array.isArray(xs) && xs.every(x => typeof x === 'string' && ids.has(x)) && new Set(xs).size === xs.length;
@@ -303,11 +307,6 @@ export function vocabCorrect(item: VocabItem | undefined, w: VocabWork): boolean
   return w.picked === item.term;
 }
 
-export type MatchMiss = 'extra_meaning' | 'swapped_pair' | 'several_wrong';
-export type ChoiceMiss = 'related_word' | 'wrong_kind_of_word' | 'other_word';
-export type VocabMiss = MatchMiss | ChoiceMiss;
-export const MATCH_MISSES: MatchMiss[] = ['extra_meaning', 'swapped_pair', 'several_wrong'];
-export const CHOICE_MISSES: ChoiceMiss[] = ['related_word', 'wrong_kind_of_word', 'other_word'];
 export const VOCAB_MISSES: Record<VocabMode, readonly VocabMiss[]> = {
   explore: MATCH_MISSES,
   recall: [...MATCH_MISSES, ...CHOICE_MISSES],
@@ -321,7 +320,7 @@ export function choiceMiss(key: VocabTerm, picked: VocabTerm): ChoiceMiss {
   return 'other_word';
 }
 
-export function vocabMiss(item: VocabItem | undefined, w: VocabWork, bank: VocabTerm[]): VocabMiss | undefined {
+export function vocabMiss(item: VocabItem | undefined, w: VocabWork, bank: readonly VocabTerm[]): VocabMiss | undefined {
   if (!item || !workComplete(item, w) || vocabCorrect(item, w)) return undefined;
   if (item.kind === 'match') {
     if (item.terms.some(t => !item.terms.includes(w.pairs[t]))) return 'extra_meaning';
@@ -333,15 +332,42 @@ export function vocabMiss(item: VocabItem | undefined, w: VocabWork, bank: Vocab
   return key && picked ? choiceMiss(key, picked) : 'other_word';
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The session's check items, spoken keys ──────────────────────────────────────────────
 
-const wordOf = (bank: VocabTerm[], id: string) => bank.find(t => t.id === id)?.word ?? id;
+const wordOf = (bank: readonly VocabTerm[], id: string) => bank.find(t => t.id === id)?.word ?? id;
 
-export function vocabExpectedAnswer(item: ChoiceItem, bank: VocabTerm[]): string {
-  const key = wordOf(bank, item.term);
-  const others = item.options.filter(o => o !== item.term).map(o => `"${wordOf(bank, o)}"`).join(', ');
-  return `"${key}" counts, said alone or in the sentence; another form of the same word (a plural, a past tense) also counts. `
-    + `${others} are wrong, and so is naming two words or hedging between them.`;
+/**
+ * A check item as the boss and the component carry it: the item, the eval mode it belongs to, and the lesson's word
+ * bank (so the ask, the key and the levers read the words without the lesson).
+ */
+export type VocabCheck = VocabItem & { mode: VocabMode; bank: readonly VocabTerm[] };
+
+/** The eval mode an item kind belongs to in a session of these kinds (a match sits in recall beside sentences). */
+export function modeOfKind(kind: VocabKind, kinds: readonly VocabKind[]): VocabMode {
+  if (kind === 'match') return kinds.includes('fill_blank') ? 'recall' : 'explore';
+  if (kind === 'context') return 'apply';
+  return kinds.includes('match') ? 'recall' : 'apply';
+}
+
+/** An item as a check of this lesson. */
+export const asCheck = (item: VocabItem, mode: VocabMode, bank: readonly VocabTerm[]): VocabCheck => ({ ...item, mode, bank });
+
+/** Every check item of the session (`vocabItems`), carrying its mode and the word bank. */
+export function vocabChecks(d: VocabItemsSource): VocabCheck[] {
+  const bank = d.terms ?? [], kinds = resolveKinds(d);
+  return vocabItems(d).map(i => asCheck(i, modeOfKind(i.kind, kinds), bank));
+}
+
+/** The key of a sentence or situation item: the word. Null on a match: the activity checks the pairs. */
+export function vocabKey(check: VocabCheck): SpokenKey | null {
+  if (check.kind === 'match') return null;
+  const answer = wordOf(check.bank, check.term).trim();
+  if (!answer) return null;
+  return {
+    answer, alsoAccept: [],
+    acceptRule: 'The word said alone or in the sentence counts, and so does another form of the same word (a plural, a past tense).',
+    signatureError: 'Naming two words, or hedging between them, is not an answer.',
+  };
 }
 
 const MISS_WHAT: Record<ChoiceMiss, string> = {
@@ -351,7 +377,7 @@ const MISS_WHAT: Record<ChoiceMiss, string> = {
 };
 
 /** A spoken item's known wrong answers, most specific first, with the tap's miss ids. */
-export function vocabSpokenMisses(item: ChoiceItem, bank: VocabTerm[]): KnownMiss[] {
+export function vocabSpokenMisses(item: ChoiceItem, bank: readonly VocabTerm[]): KnownMiss[] {
   const key = bank.find(t => t.id === item.term);
   if (!key) return [];
   const groups = new Map<ChoiceMiss, VocabTerm[]>();
@@ -368,20 +394,6 @@ export function vocabSpokenMisses(item: ChoiceItem, bank: VocabTerm[]): KnownMis
   }));
 }
 
-const HOW_CHOICE = 'The learner answers by saying the word, or tapping it and pressing Check Answer.';
-const HOW_MATCH = 'The learner taps a word, then a meaning, for every word, and presses Check Matches.';
-/** Before the check: the cards are open and nothing is asked yet. */
-export const STUDY_TASK = 'Read the word cards: each shows a word, what it means and a sentence using it. The check '
-  + 'starts when the learner presses Start the check; then the cards close.';
-
-export function workspaceAssignment(item: VocabItem, bank: VocabTerm[], studying = false): TeachingAssignment {
-  if (studying) return { id: item.id, task: STUDY_TASK, response: 'gesture' };
-  if (item.kind === 'match') return { id: item.id, task: `${askOf(item, bank)} ${HOW_MATCH}`, response: 'gesture' };
-  const misses = vocabSpokenMisses(item, bank);
-  return { id: item.id, task: `${askOf(item, bank)} ${HOW_CHOICE}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: vocabExpectedAnswer(item, bank), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface VocabView {
@@ -394,12 +406,14 @@ export interface VocabView {
   work: VocabWork;
   /** Credited: the answer is shown as right. */
   solved: boolean;
+  /** The work was checked and is shown wrong (until Try again). */
+  checkedWrong?: boolean;
 }
 
 const cap = (s: string, n = 480) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const letter = (i: number) => String.fromCharCode(65 + i);
 
-export function describeVocabWork(item: VocabItem | undefined, w: VocabWork, bank: VocabTerm[]): string {
+export function describeVocabWork(item: VocabItem | undefined, w: VocabWork, bank: readonly VocabTerm[]): string {
   if (!item) return 'Nothing chosen yet';
   if (item.kind === 'match') {
     const pairs = item.terms.filter(t => w.pairs[t]).map(t => `"${wordOf(bank, t)}" with meaning ${letter(item.defs.indexOf(w.pairs[t]))}`);
@@ -408,15 +422,22 @@ export function describeVocabWork(item: VocabItem | undefined, w: VocabWork, ban
   return w.picked ? `Chose "${wordOf(bank, w.picked)}"` : 'Nothing chosen yet';
 }
 
-const CONSTRAINTS_STUDY = 'The learner is reading the word cards; the check has not started and nothing is answered yet. '
-  + 'The cards close when the learner presses Start the check, and do not come back during the check. You cannot turn a card or start the check.';
-const CONSTRAINTS_MATCH = 'The learner pairs each word with a meaning by tapping, then presses Check Matches; the activity judges the pairs. '
-  + 'The word cards are closed. You cannot tap or check for the learner.';
-const CONSTRAINTS_CHOICE = 'The learner answers by saying the word, or by tapping it and pressing Check Answer; the activity judges the tap. '
-  + 'The word cards are closed, and no meaning is on screen. You cannot tap or check for the learner.';
+/**
+ * This word set's own rules for each part of the session (the shared doctrine already forbids saying the answer,
+ * ruling a choice out and doing the step): what is hidden, and the facts about the words that would answer the item.
+ */
+const CONSTRAINTS_STUDY = 'Nothing is asked yet: talk about the words freely while the learner reads, but do not ask the questions '
+  + 'of the check. The cards close for good when the learner presses Start the check.';
+const CONSTRAINTS_MATCH = 'The word cards are closed. Never retell a meaning so it points to one word, and never name an idea '
+  + 'from one meaning for the learner to look for ("warming up into a gas"), in the meanings or in example sentences.';
+const CONSTRAINTS_CHOICE = 'The word cards are closed. Never say the first sound or letter of the word. Never put what is happening '
+  + 'into the words of the right meaning ("liquid turning into a gas"): read the sentence or situation as written and ask '
+  + 'what is happening in it and which words are clues. Never say what kind of word the blank needs (an action word, a '
+  + 'thing), even when the choices are labeled. Never say what a choice means unless the meanings are on screen; then the '
+  + 'learner reads them (read them aloud only when asked, every one in order), and never point to one.';
 
 /** What is drawn and asked. Words and meanings as on screen, never which goes with which; the answer only once credited. */
-export function workspaceScene(item: VocabItem, view: VocabView, bank: VocabTerm[]): WorkspaceScene {
+export function workspaceScene(item: VocabItem, view: VocabView, bank: readonly VocabTerm[]): SceneOf {
   if (view.studying) {
     const t = bank[Math.max(0, Math.min(view.card, bank.length - 1))];
     return { objects: [], facts: {
@@ -425,26 +446,27 @@ export function workspaceScene(item: VocabItem, view: VocabView, bank: VocabTerm
       card: t ? cap(`Card ${view.card + 1} of ${bank.length}: "${t.word}" (${t.partOfSpeech}). It means: ${t.definition} Example: "${t.exampleSentence}"`) : 'No card',
       cardsOpened: `${view.viewed} of ${bank.length}`,
       constraints: CONSTRAINTS_STUDY,
-    } };
+    } } as SceneOf;
   }
   const facts: Record<string, string> = { kind: item.kind, question: cap(askOf(item, bank)) };
   if (item.kind === 'match') {
     facts.words = item.terms.map(t => wordOf(bank, t)).join(', ');
     item.defs.forEach((d, i) => { facts[`meaning${letter(i)}`] = cap(bank.find(t => t.id === d)?.definition ?? ''); });
     if (view.solved) facts.result = 'Every pair is checked right; the pairs are shown on screen.';
+    else if (view.checkedWrong) facts.pairsRight = `${item.terms.filter(t => view.work.pairs[t] === t).length} of ${item.terms.length} pairs are right.`;
   } else {
     facts.choices = item.options.map((o, i) => `${i + 1}) ${wordOf(bank, o)}`).join('  ');
     if (view.solved) facts.result = `Credited: "${wordOf(bank, item.term)}" is shown as the answer.`;
   }
   facts.learnerWork = describeVocabWork(item, view.work, bank);
   facts.constraints = item.kind === 'match' ? CONSTRAINTS_MATCH : CONSTRAINTS_CHOICE;
-  return { objects: [], facts };
+  return { objects: [], facts } as SceneOf;
 }
 
 // ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
 
 /** The journey's answers: the key, and a wrong answer showing the most telling miss the item can. */
-export function vocabHarnessAnswers(item: VocabItem, bank: VocabTerm[]): { correct: VocabWork; plainWrong: VocabWork } {
+export function vocabHarnessAnswers(item: VocabItem, bank: readonly VocabTerm[]): { correct: VocabWork; plainWrong: VocabWork } {
   if (item.kind === 'match') {
     const correct: VocabWork = { pairs: Object.fromEntries(item.terms.map(t => [t, t])), picked: null };
     const [a, b] = item.terms;

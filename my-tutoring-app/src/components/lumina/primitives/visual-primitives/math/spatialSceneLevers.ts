@@ -1,5 +1,5 @@
 /**
- * The in-item levers on a spatial-scene item (`/add-support-tiers`, report
+ * The in-item levers on a spatial-scene item, one lever set (`bossLevers.ts`; `/add-support-tiers`, report
  * qa/eval-reports/spatial-scene-levers-2026-10-08.md). No real-learner evidence: the misses are what `spatialMiss`
  * observes, and the catalog's commonStruggles. Pure: the component draws from these, the workspace publishes them, the
  * tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and is built by
@@ -17,8 +17,9 @@
  *   different answer (`practiceLeaks`). Not on follow_directions: its items are two steps round one thing already, and
  *   one step is the `place` mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { PositionWord, SceneObject, SpatialSceneChallenge } from './SpatialScene';
+import { SPATIAL_MISSES, type SpatialMode } from './spatialScene.card';
 import { placeCellCorrect } from './spatialSceneWorkspace';
 
 export const MARK_LEVER = 'mark_reference';
@@ -328,83 +329,85 @@ export const practiceParent = (id: string | null | undefined, challenges: readon
 /** Easy starts with the reference ringed (a perception aid, like the tier's grid and labels); not a pull. */
 export const markStartsShown = (c: SpatialSceneChallenge) => c.supportTier === 'easy';
 
-// ── the levers on an item ──────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
-const WORD_MISSES = ['opposite_word', 'same_axis_word', 'other_axis_word'];
-const PLACE_MISSES = ['opposite_cell', 'same_axis_cell', 'other_axis_cell', 'off_line_cell'];
-const IN_MISSES = ['other_object', 'next_to_container', 'away_from_container'];
-const BETWEEN_MISSES = ['next_to_one', 'touches_neither'];
-const STEP_MISSES = ['later_step_cell', 'other_cell'];
+/** What the screen holds that a lever reads: the follow-directions step on screen, and the grid's size. */
+export interface SpatialLeverContext { step: number; gridSize: number }
 
-/** The levers on a session item at its current step. `pulled` holds this item's runtime pulls. */
-export function spatialSceneLevers(c: SpatialSceneChallenge | null, pulled: readonly string[], step = 0, gridSize = 3):
-  WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const back = 'then this item comes back blank.';
-  const mark = (answers: string[]) => {
-    const ring = markCells(c, step);
-    if (!ring.length || markLeaks(c, ring, step)) return;
-    levers.push({ id: MARK_LEVER, kind: 'help', carrier: 'shown', pulled: markStartsShown(c) || pulled.includes(MARK_LEVER), answers,
+const missesOf = (c: SpatialSceneChallenge) => SPATIAL_MISSES[c.type as SpatialMode] ?? [];
+const MARK_ANSWERS: Partial<Record<SpatialMode, readonly string[]>> = {
+  identify: ['other_axis_word'], describe: ['other_axis_word'], place: ['other_axis_cell', 'off_line_cell'],
+  place_between: SPATIAL_MISSES.place_between, follow_directions: ['other_cell'],
+};
+const MARK_MODES = ['identify', 'describe', 'place', 'place_between', 'follow_directions'] as const;
+const CELL_MODES = ['place', 'place_in', 'place_between', 'follow_directions'] as const;
+const FEWER_MODES = ['identify', 'describe', 'place', 'place_in', 'place_between', 'describe_scene'] as const;
+const union = (lists: ReadonlyArray<readonly string[] | undefined>) => Array.from(new Set(lists.flatMap(l => l ?? [])));
+
+const BACK = 'then this item comes back blank.';
+const FENCE = 'You may point to the picture and say what it shows; never say which picture matches the scene, and '
+  + 'never move the picture onto the grid or say which square it means.';
+const PICTURE_DOES: Partial<Record<SpatialMode, string>> = {
+  place: `Draws a small picture of the asked word beside the grid, with a dot and a square. ${FENCE}`,
+  place_in: `Draws a small picture of "in" beside the grid: a dot inside a cup shape. ${FENCE} Never point to the `
+    + 'thing on the grid it goes in.',
+  place_between: `Draws a small picture of "between" beside the grid: a dot with a square on each side. ${FENCE}`,
+  follow_directions: `Draws a small picture of this step's word beside the step, with a dot and a square. ${FENCE}`,
+};
+const FEWER_DOES: Partial<Record<SpatialMode, string>> = {
+  identify: `Opens an ungraded practice scene with two other things and two words to choose from; ${BACK}`,
+  describe: `Opens an ungraded practice scene with two other things and two words to choose from; ${BACK}`,
+  place: `Opens an ungraded practice scene: the same word round one other thing, with one right square; ${BACK}`,
+  place_in: `Opens an ungraded practice scene with one other container and one other thing; ${BACK}`,
+  place_between: `Opens an ungraded practice scene with only two other things, on another line; ${BACK}`,
+  describe_scene: `Opens an ungraded practice scene with only two other things; ${BACK}`,
+};
+/** The picture words when drawing them leaks nothing; else null (not offered). */
+const pictured = (c: SpatialSceneChallenge, { step }: SpatialLeverContext) => {
+  const words = pictureWords(c, step);
+  return pictureLeaks(c, words, step) ? null : words;
+};
+
+/**
+ * Declared in the order the tutor reaches for them. Easy starts with `mark_reference` shown (`markStartsShown`): the
+ * component passes it as pulled, a perception aid like the tier's grid and labels, not a pull.
+ */
+export const SPATIAL_LEVERS = leverSet<SpatialSceneChallenge, SpatialLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => SPATIAL_MISSES[mode as SpatialMode] ?? [],
+  // place_in's answer is the container: no lever's words may name it.
+  answersOf: c => (c.type === 'place_in' && c.referenceObjectName ? [c.referenceObjectName] : []),
+  specs: [
+    { id: MARK_LEVER, type: 'marks', modes: MARK_MODES, answers: union(Object.values(MARK_ANSWERS)),
+      answersOn: c => MARK_ANSWERS[c.type as SpatialMode] ?? [],
       when: 'The learner compares with the wrong thing, or cannot find the thing the item names.',
       does: 'Rings the thing to compare with in yellow on the grid. You may point to it and say its name; never say '
-        + 'where the other thing is from it, which word fits or which square to tap.' });
-  };
-  const picture = (does: string, answers: string[]) => {
-    const words = pictureWords(c, step);
-    if (pictureLeaks(c, words, step)) return;
-    levers.push({ id: PICTURE_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(PICTURE_LEVER), answers,
-      when: 'The learner does not know what the position word means, or mixes it up with its opposite.', does });
-  };
-  const fewer = (does: string, answers: string[]) => {
-    if (practiceItem(c, gridSize)) levers.push({ id: FEWER_LEVER, kind: 'simplify', carrier: 'shown',
-      pulled: pulled.includes(FEWER_LEVER), answers, does,
-      when: 'The learner cannot do this item even with the help on screen: a scene with less in it first.' });
-  };
-  const fence = 'You may point to the picture and say what it shows; never say which picture matches the scene, and '
-    + 'never move the picture onto the grid or say which square it means.';
-  switch (c.type) {
-    case 'identify': case 'describe':
-      mark(['other_axis_word']);
-      picture(`Puts a small picture on every word button: a dot and a square showing what that word means. ${fence}`, WORD_MISSES);
-      fewer(`Opens an ungraded practice scene with two other things and two words to choose from; ${back}`, WORD_MISSES);
-      return levers;
-    case 'place':
-      mark(['other_axis_cell', 'off_line_cell']);
-      picture(`Draws a small picture of the asked word beside the grid, with a dot and a square. ${fence}`, PLACE_MISSES);
-      fewer(`Opens an ungraded practice scene: the same word round one other thing, with one right square; ${back}`, PLACE_MISSES);
-      return levers;
-    case 'place_in':
-      picture(`Draws a small picture of "in" beside the grid: a dot inside a cup shape. ${fence} Never point to the `
-        + 'thing on the grid it goes in.', IN_MISSES);
-      fewer(`Opens an ungraded practice scene with one other container and one other thing; ${back}`, IN_MISSES);
-      return levers;
-    case 'place_between':
-      mark(BETWEEN_MISSES);
-      picture(`Draws a small picture of "between" beside the grid: a dot with a square on each side. ${fence}`, BETWEEN_MISSES);
-      fewer(`Opens an ungraded practice scene with only two other things, on another line; ${back}`, BETWEEN_MISSES);
-      return levers;
-    case 'follow_directions':
-      mark(['other_cell']);
-      picture(`Draws a small picture of this step's word beside the step, with a dot and a square. ${fence}`, STEP_MISSES);
-      return levers;
-    case 'describe_scene':
-      levers.push({ id: SIDES_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(SIDES_LEVER), answers: ['opposite_word'],
-        when: 'The learner says the relation that points the other way (left for right, behind for in front of).',
-        does: 'Puts a left hand at the bottom-left of the scene and a right hand at the bottom-right, labelled, and '
-          + '"nearer you" by the YOU arrow, the same on every scene. You may point to them and to the learner\'s own '
-          + 'hands; never say which side or how near the object is, or the relation.' });
-      fewer(`Opens an ungraded practice scene with only two other things; ${back}`, ['opposite_word']);
-      return levers;
-  }
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV; never the answer. */
-export function leverFacts(c: SpatialSceneChallenge, shown: readonly string[], step = 0): string | undefined {
-  const facts = [
-    shown.includes(MARK_LEVER) ? markFact(c, step) : '',
-    shown.includes(PICTURE_LEVER) ? pictureFact(c, step) : '',
-    shown.includes(SIDES_LEVER) ? SIDES_FACT : '',
-  ].filter(Boolean);
-  return facts.length ? facts.join(' ') : undefined;
-}
+        + 'where the other thing is from it, which word fits or which square to tap.',
+      content: (c, { step }) => { const ring = markCells(c, step); return ring.length && !markLeaks(c, ring, step) ? ring : null; },
+      fact: (_ring: unknown, c, { step }) => markFact(c, step) },
+    // A picture on EVERY word button, none marked: a legend of the choices (`pictureLeaks` refuses a partial set).
+    { id: PICTURE_LEVER, type: 'legend', modes: ['identify', 'describe'], answers: SPATIAL_MISSES.identify,
+      when: 'The learner does not know what the position word means, or mixes it up with its opposite.',
+      does: `Puts a small picture on every word button: a dot and a square showing what that word means. ${FENCE}`,
+      content: pictured, fact: (_words: unknown, c, { step }) => pictureFact(c, step) },
+    // The asked word's meaning, drawn beside the grid; the answer is a square, which the picture never marks.
+    { id: PICTURE_LEVER, type: 'meaning', modes: CELL_MODES, carrier: 'shown', answers: union(CELL_MODES.map(m => SPATIAL_MISSES[m])),
+      answersOn: missesOf,
+      when: 'The learner does not know what the position word means, or mixes it up with its opposite.',
+      does: c => PICTURE_DOES[c.type as SpatialMode] ?? '',
+      content: pictured, fact: (_words: unknown, c, { step }) => pictureFact(c, step) },
+    // The same marks on every scene, whatever its relation: a legend of the sides and the depth.
+    { id: SIDES_LEVER, type: 'legend', modes: ['describe_scene'], carrier: 'both', answers: SPATIAL_MISSES.describe_scene,
+      when: 'The learner says the relation that points the other way (left for right, behind for in front of).',
+      does: 'Puts a left hand at the bottom-left of the scene and a right hand at the bottom-right, labelled, and '
+        + '"nearer you" by the YOU arrow, the same on every scene. You may point to them and to the learner\'s own '
+        + 'hands; never say which side or how near the object is, or the relation.',
+      fact: SIDES_FACT },
+    // follow_directions has none: two steps round one thing is its floor, and one step is the `place` mode.
+    { id: FEWER_LEVER, type: 'easier', modes: FEWER_MODES, carrier: 'shown', answers: union(FEWER_MODES.map(m => SPATIAL_MISSES[m])),
+      answersOn: missesOf,
+      when: 'The learner cannot do this item even with the help on screen: a scene with less in it first.',
+      does: c => FEWER_DOES[c.type as SpatialMode] ?? '',
+      content: (c, { gridSize }) => practiceItem(c, gridSize) },
+  ],
+});

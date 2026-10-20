@@ -1,9 +1,11 @@
 /**
- * sound-wave-explorer on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C28).
+ * sound-wave-explorer's domain: items, keys, misses and the scene the tutor/JEV workspace reads (ROLLOUT C28). Its
+ * wiring to the live tutor is `soundWaveExplorer.card.ts` + `soundWaveExplorer.boss.ts`.
  *
  * Every item is built and keyed by code from a small set of sound facts (a vibration makes the sound; bigger shakes
  * are louder, a taller wave; faster shakes are higher, crests packed closer; moving away and pumping the air out make
  * a sound quieter and leave its pitch alone). Each mode is one closed choice the learner taps and checks, or says (J14):
+ * said and judged by the tutor against its key (`soundKey`), or tapped and checked by code:
  * - observe: a sound maker starts or stops shaking, or a sound starts or stops; say what happens to the other half
  *   (the sound, or the shaking). Hard: a loud sound makes something else shake (rice on a drum beside a speaker).
  * - predict: one sound maker played once (its wave drawn, its sound playable); one change; predict what happens to the
@@ -15,11 +17,14 @@
  * medium names physical changes (tighten the string, walk away) or crosses the two features (the taller wave is the
  * lower sound); hard asks about the feature a change leaves alone ("stays the same" keys), three waves, or two changes.
  *
- * Pure: the component, the generator, the adapter, the journey row and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the generator, the boss and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { SOUND_MISSES } from './soundWaveExplorer.card';
+
+export { SOUND_MISSES };
 
 export type SoundMode = 'observe' | 'predict' | 'classify' | 'apply';
 export const SOUND_MODES: SoundMode[] = ['observe', 'predict', 'classify', 'apply'];
@@ -93,12 +98,6 @@ export type PredictMiss = 'opposite_direction' | 'said_same' | 'mixed_up_feature
 export type ClassifyMiss = 'read_other_feature' | 'opposite_end' | 'said_same' | 'missed_same';
 export type ApplyMiss = 'opposite_change' | 'wrong_feature' | 'loudness_misread' | 'pitch_misread' | 'both_misread';
 export type SoundWaveMiss = ObserveMiss | PredictMiss | ClassifyMiss | ApplyMiss;
-export const SOUND_MISSES: Record<SoundMode, readonly SoundWaveMiss[]> = {
-  observe: ['start_stop_swapped', 'said_no_change'],
-  predict: ['mixed_up_features', 'opposite_direction', 'said_same'],
-  classify: ['read_other_feature', 'opposite_end', 'missed_same', 'said_same'],
-  apply: ['wrong_feature', 'opposite_change', 'loudness_misread', 'pitch_misread', 'both_misread'],
-};
 
 /** observe: whether the ask is about the sound or the shaking, and whether the asked half starts or stops. */
 const OBSERVE: Record<ObserveEvent, { asks: 'sound' | 'shake'; starts: boolean }> = {
@@ -455,29 +454,45 @@ export function soundItems(d: SoundItemsSource): SoundItem[] {
   return buildSoundItems({ modes: resolveSoundModes(d), tier: resolveTier(d), focus: resolveFocus(d), rng: seededRng(`${d.title ?? 'sound'}:${resolveFocus(d)}`) });
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The spoken key ───────────────────────────────────────────────────────────────────────
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth'];
-const SAY: Record<string, string> = {
-  'A sound starts': '"a sound starts", "it makes a sound", "you hear it", "it rings"',
-  'The sound stops': '"the sound stops", "it goes quiet", "no more sound", "it stops"',
-  'Starts to shake': '"it starts to shake", "it shakes", "it vibrates", "they bounce", "they jump", "it wiggles", "ripples" or "splashes"',
-  'Stops shaking': '"it stops shaking", "it stops vibrating", "it goes still", "they stop bouncing"',
-  Louder: '"louder", "it gets louder", "more loud"',
-  Quieter: '"quieter", "softer", "it gets quieter", "less loud"',
-  Higher: '"higher", "a higher sound", "higher pitch", "squeakier"',
-  Lower: '"lower", "deeper", "a lower sound", "lower pitch"',
-  'Stays the same': '"it stays the same", "it does not change", "the same"',
-  [SAME_WAVES]: '"they are the same", "both the same", "neither"',
+/** The other ways a learner says each fixed choice. */
+const SAY: Record<string, readonly string[]> = {
+  'A sound starts': ['it makes a sound', 'you hear it', 'it rings'],
+  'The sound stops': ['it goes quiet', 'no more sound', 'it stops'],
+  'Starts to shake': ['it starts to shake', 'it shakes', 'it vibrates', 'they bounce', 'they jump', 'it wiggles', 'ripples', 'splashes'],
+  'Stops shaking': ['it stops shaking', 'it stops vibrating', 'it goes still', 'they stop bouncing'],
+  Louder: ['it gets louder', 'more loud'],
+  Quieter: ['softer', 'it gets quieter', 'less loud'],
+  Higher: ['a higher sound', 'higher pitch', 'squeakier'],
+  Lower: ['deeper', 'a lower sound', 'lower pitch'],
+  'Stays the same': ['it does not change', 'the same'],
+  [SAME_WAVES]: ['both the same', 'neither'],
 };
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function soundExpectedAnswer(item: SoundItem): string {
+/** The key a spoken reply is judged against: the right choice, the ways to say it, and the other choices as wrong. */
+export function soundKey(item: SoundItem): SpokenKey {
   const key = keyChoice(item), choices = choicesOf(item), at = choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
-  const others = choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
-  const ways = SAY[key] ?? (item.mode === 'classify' ? `"${key}", "${key.slice(-1)}"` : `"${key}" or the same change in other words`);
-  return `"${key}": ${ways}, or ${place}, counts. ${others} are wrong, and so is naming two or hedging between them.`;
+  const others = choices.filter(c => c !== key).map(c => `"${c}"`);
+  const signatureError = `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two or hedging between them.`;
+  const place = `the ${ORDINAL[at]} one`;
+  if (item.mode === 'apply') {
+    return { answer: key, alsoAccept: [place], acceptRule: 'The same change said in other words counts.', signatureError };
+  }
+  const ways = SAY[key] ?? (item.mode === 'classify' ? [key.slice(-1)] : []);
+  return { answer: key, alsoAccept: [...ways, place], signatureError };
+}
+
+/**
+ * What the ask says by design (`askLeaks`'s `given`): the setup it describes. An observe setup says what happens
+ * first ("it stops shaking" before asking about the sound); a predict change says the maker is played "the same way".
+ * Neither answers the question that follows it.
+ */
+export function soundAskGiven(item: SoundItem): string[] {
+  if (item.mode === 'observe') return [observeSetup(item)];
+  if (item.mode === 'predict') return [predictChange(item)];
+  return [];
 }
 
 const WHAT: Record<SoundWaveMiss, string> = {
@@ -506,14 +521,6 @@ export function soundSpokenMisses(item: SoundItem): KnownMiss[] {
   const fact = `The right answer is "${keyChoice(item)}".`;
   return SOUND_MISSES[item.mode].filter(m => groups.has(m)).map(m => ({ id: m,
     pattern: `${fact} The learner's answer ${WHAT[m]}: ${groups.get(m)!.map(x => `"${x}"`).join(', ')}.`, examples: groups.get(m)! }));
-}
-
-const HOW = 'The learner answers by saying it, or tapping one choice and pressing Check Answer.';
-
-export function workspaceAssignment(item: SoundItem): TeachingAssignment {
-  const misses = soundSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: soundExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
@@ -550,8 +557,18 @@ function shownFact(item: SoundItem): string {
     + 'reading that is the task. The After sound plays only once the answer is credited.';
 }
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-  + 'Nothing is run or played for the answer until it is credited. You cannot tap, check, play or run anything for the learner.';
+/** What this item's own shape forbids saying, beyond the shared rules. */
+function constraintsOf(item: SoundItem): string {
+  if (item.mode === 'observe') return '';
+  // The waves are drawn, and reading them is the task.
+  const waves = 'Never describe a wave, compare two waves, or say which part of a wave shows loudness or pitch; ask what '
+    + 'the learner sees in the waves. You may say that loudness is how loud a sound is and pitch is how high or low it is.';
+  // A change named physically (tighten the string) leaves what it does to the shaking as half the answer.
+  const physical = item.mode !== 'classify' && item.wording === 'physical'
+    ? ' Never say what the change does to the shaking ("it shakes faster"): ask what it does to the shaking, then what that does to the sound.'
+    : '';
+  return `${waves}${physical}`;
+}
 
 /** What the observe picture shows once the change has run. */
 const OBSERVE_AFTER: Record<ObserveEvent, string> = {
@@ -581,13 +598,14 @@ export function workspaceScene(item: SoundItem, view: SoundView): WorkspaceScene
   };
   if (view.solved) facts.run = runFact(item);
   facts.learnerWork = describeSoundWork(item, view);
-  facts.constraints = CONSTRAINTS;
+  const constraints = constraintsOf(item);
+  if (constraints) facts.constraints = constraints;
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The harness's learner (the boss's drive, the dry sweep) ──────────────────────────────
 
-/** The journey's answers: the key, and the wrong choice that shows the mode's first-listed miss it can. */
+/** The harness's answers: the key, and the wrong choice that shows the mode's first-listed miss it can. */
 export function soundHarnessAnswers(item: SoundItem): { correct: string; plainWrong: string } {
   const rank = SOUND_MISSES[item.mode];
   const wrong = choicesOf(item).filter(c => !soundCorrect(item, c))

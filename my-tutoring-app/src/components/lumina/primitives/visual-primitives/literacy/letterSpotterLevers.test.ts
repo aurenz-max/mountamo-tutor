@@ -5,9 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LETTER_GROUPS } from '../../../service/literacy/letterGroups';
-import type { LetterSpotterItem } from './letterSpotterScript';
-import { letterSpotterMiss } from './letterSpotterWorkspace';
-import { firstLetterModelFor, firstLetterModelLeak, hasOtherCaseShape, letterSpotterLevers, partnerCapitals, practiceItem, practiceLeak,
+import { letterSpotterMiss, type LetterSpotterItem } from './letterSpotterDomain';
+import { LETTER_SPOTTER_LEVERS, firstLetterModelFor, firstLetterModelLeak, hasOtherCaseShape, partnerCapitals, practiceItem, practiceLeak,
   referenceLeaks } from './letterSpotterLevers';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 
@@ -17,6 +16,9 @@ const find = (id: string, target: string, grid: string): LetterSpotterItem => ({
 const match = (id: string, target: string, options: string): LetterSpotterItem => ({ ...base, id, mode: 'match-it', action: 'match-it',
   targetLetter: target, options: options.split('') }) as unknown as LetterSpotterItem;
 const GRID = 'DATINBSETINSARIN';
+/** The levers the set declares on `item`, with the learner's wrong taps on it so far. */
+const letterSpotterLevers = (item: LetterSpotterItem, pulled: readonly string[], items: readonly LetterSpotterItem[], letterGroup: number,
+  wrongTaps: readonly string[] = []) => LETTER_SPOTTER_LEVERS.declare(item, { items, letterGroup, wrongTaps }, pulled);
 
 describe('the other-case reference', () => {
   it('is the lowercase of a capital grid, only where the cases differ in shape', () => {

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 /**
- * W1 binding, plain shape: the real PlanetaryExplorer on the shared teaching workspace, mounted the way a lesson mounts
- * it. A stop's card is read before its first question (no response yet); one tapped choice and Check Answer commits a
- * checked gesture with its named miss, or a spoken answer is judged; Try again clears the choice; the runtime owns
- * progression; the key is published only as the spoken expectedAnswer, never in the scene. Levers change the screen in
- * the same commit and never draw the answer.
+ * The real PlanetaryExplorer on its boss (`planetaryExplorer.boss.ts`), mounted the way a lesson mounts it. A stop's
+ * card is read before its first question (no response yet); one tapped choice and Check Answer commits a checked
+ * gesture with its named miss, or a spoken answer is judged; Try again clears the choice; the runtime owns progression;
+ * the key is published only as the spoken expectedAnswer, never in the scene. Levers change the screen in the same
+ * commit and never draw the answer. The K-1 chrome, support-tier and quiz-colour checks of the retired scripted tests
+ * run here on bound mounts.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -19,7 +20,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { PlanetQuestion, PlanetStop } from './PlanetaryExplorer';
-import { planetHarnessAnswers, planetItems, planetMiss } from './planetaryExplorerWorkspace';
+import { planetGiven, planetHarnessAnswers, planetItems, planetMiss } from './planetaryExplorerWorkspace';
+import { planetaryExplorerBoss } from './planetaryExplorer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
@@ -63,7 +65,7 @@ it.each(MODES)('%s: the card first, then a spoken-or-tapped question whose key s
   const ws = h.state().task!.workspace!;
   expect(h.state().task!.task).toMatch(/^How many moons does Mars have\?/);
   expect(demand(h).response).toBe('speech');
-  expect(ws.expectedAnswer).toMatch(/^"2" \(choice 3 of 4\)/);
+  expect(ws.expectedAnswer).toMatch(/^"2" \(also accept "choice C", "the third one"\)/);
   // The choices are named; which one is right is not, and the card is gone.
   expect(String(demand(h).choices)).toBe('1) 0  2) 1  3) 2  4) 4');
   expect(JSON.stringify(demand(h))).not.toMatch(/correct|answer is|Moons 2/i);
@@ -175,4 +177,66 @@ it('every saved payload question names a miss for each wrong choice, and the jou
       expect(a.plainWrong).not.toBe(a.correct);
     }
   }
+});
+
+it("the scene keeps this question's never-say rules: nicknames, the why, the quiz planet, and no units at K-1", () => {
+  const h = mount('apply', [{ ...JUPITER, questions: [JUPITER.questions[1]] }]);
+  ready(h);
+  const rules = String(demand(h).constraints);
+  expect(rules).toMatch(/nickname/);
+  expect(rules).toMatch(/never name the reason/);
+  expect(rules).not.toMatch(/units/);
+  h.close();
+  const q = mount('identify', [{ ...MARS, questions: [] }], QUIZ, { gradeLevel: 'K' });
+  expect(String(demand(q).constraints)).toMatch(/never name or describe that planet.*Say no units or decimals/);
+  q.close();
+});
+
+it('K-1 drops the question counter and the A./B. letters by conditional render; grade 4 keeps them; no button nests', () => {
+  for (const [grade, shown] of [['K', false], ['4', true]] as const) {
+    const h = mount('explore', [MARS], [], { gradeLevel: grade });
+    ready(h);
+    const text = h.view.container.textContent ?? '';
+    expect(/Q1\/2/.test(text), grade).toBe(shown);
+    expect(/A\./.test(text), grade).toBe(shown);
+    expect(h.view.container.querySelectorAll('.hidden')).toHaveLength(0);
+    expect(h.view.container.querySelectorAll('button button')).toHaveLength(0);
+    h.close();
+  }
+});
+
+it('hard withdraws the Earth comparisons on the card and keeps the values; other tiers keep them', () => {
+  const stop: PlanetStop = { ...MARS, keyStats: [{ label: 'Size', value: '6,779', unit: 'km', comparisonToEarth: 'About half of Earth' }] };
+  for (const [tier, shown] of [['hard', false], ['medium', true], ['easy', true]] as const) {
+    const h = mount('explore', [stop], [], { supportTier: tier });
+    const text = h.view.container.textContent ?? '';
+    expect(text.includes('About half of Earth'), tier).toBe(shown);
+    expect(text).toContain('6,779 km');
+    h.close();
+  }
+});
+
+it("quiz choices wear a neutral dot at every tier, while the card keeps the planet's colour", () => {
+  for (const tier of [undefined, 'easy', 'hard'] as const) {
+    const h = mount('identify', [{ ...MARS, questions: [] }], QUIZ, tier ? { supportTier: tier } : {});
+    for (const name of QUIZ[0].options) {
+      const btn = h.view.container.querySelector(`button[aria-label="${name}"]`)!;
+      expect(btn.querySelector('div')!.className).toContain('bg-slate-600');
+      expect(btn.innerHTML).not.toMatch(/background-color/);
+    }
+    h.close();
+  }
+  const h = mount('explore', [MARS], [], { supportTier: 'hard' });
+  // The card is on screen: Mars's header circle wears its colour #c1440e.
+  expect(Array.from(h.view.container.querySelectorAll('div')).some(d => (d as HTMLElement).style.backgroundColor === 'rgb(193, 68, 14)')).toBe(true);
+  h.close();
+});
+
+it('a compare ask names its pair by design; an ask naming the key alone is rejected at launch', () => {
+  const pair = planetItems([JUPITER])[0];
+  expect(planetGiven(pair)).toEqual(['Mars', 'Jupiter']);
+  const lone = mc('Is Jupiter the biggest planet of all?', ['Mars', 'Jupiter', 'Neptune'], 1);
+  expect(planetGiven(planetItems([], [lone])[0])).toEqual([]);
+  const data = { title: 'Trip', description: '', introduction: '', celebration: '', planets: [MARS], quizQuestions: [lone] };
+  expect(() => planetaryExplorerBoss.validate(data)).toThrow(/says the answer "Jupiter"/);
 });

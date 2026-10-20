@@ -1,19 +1,23 @@
 /**
- * rhyme-studio's levers (`/add-support-tiers`, handoff 22 L2): the model pool never uses a session word or
- * family, practice items stay in the mode and off the session, every lever has a shown carrier, and every miss
- * a lever lists is one the catalog declares.
+ * rhyme-studio's levers (`/add-support-tiers`, handoff 22 L2), as one lever set: the model pool never uses a session
+ * word or family, practice items stay in the mode and off the session, every word lever is shown and voiced, and
+ * every miss of every spoken mode is answered by a lever.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
-import { itemFromChallenge, itemsFromChallenge, pickModelRhymePair, rhymeSessionWords, type RhymeItem } from './rhymeStudioScript';
+import { itemFromChallenge, itemsFromChallenge, rhymeSessionWords, type RhymeItem } from './rhymeStudioDomain';
 import { K_RHYME_FAMILIES, MODEL_RHYME_SETS, PRACTICE_EXTRA_FAMILIES, pickModelRhymeSet, rimeOfWord, sessionWords } from './rhymeModels';
 import {
-  RHYME_MISSES, contrastModelFor, leversOnScreen, modelLeak, onsetCardsFor, practiceItemFor, practiceLeak,
-  rhymeStudioLevers, swapModelFor, usedOnsets,
+  RHYME_LEVERS, RHYME_MISSES, contrastModelFor, modelLeak, onsetCardsFor, practiceItemFor, practiceLeak,
+  swapModelFor, usedOnsets,
 } from './rhymeStudioLevers';
+
+/** The levers an item declares in a session of `items`. */
+const rhymeStudioLevers = (item: RhymeItem, pulled: readonly string[], items: readonly RhymeItem[]) =>
+  RHYME_LEVERS.declare(item, { items }, pulled);
 
 const PAYLOADS = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
 const payload = (mode: string): RhymeItem[] =>
@@ -50,8 +54,6 @@ describe('the model pool', () => {
   it('excludes a session family spelled another way, and never falls back to a used one', () => {
     const used = sessionWords(['whale', 'bee', 'car', 'snake', 'moon', 'sock', 'king', 'goat', 'fish']);
     expect(pickModelRhymeSet(used)).toBeNull();
-    // The retired runner's opening line keeps its fixed pair; the levers get null.
-    expect(pickModelRhymePair([rec('r', 'sock', 'rock', '-ock', true)]).pair).toEqual(['bee', 'tree']);
   });
 });
 
@@ -84,7 +86,8 @@ describe.each(['recognition', 'identification'])('saved payload: %s', mode => {
   });
 
   it('the pulled-lever fact names model words only', () => {
-    const fact = leversOnScreen(items[0], ['contrast_model'], items)!;
+    const fact = RHYME_LEVERS.onScreen(items[0], { items }, ['contrast_model']);
+    expect(fact).toMatch(/a model on other words/);
     const session = rhymeSessionWords(items).words;
     expect(Array.from(session).some(w => new RegExp(`\\b${w}\\b`).test(fact))).toBe(false);
   });
@@ -143,10 +146,20 @@ describe('levers, carriers and misses', () => {
     }
     for (const mode of Object.keys(RHYME_MISSES) as Array<keyof typeof RHYME_MISSES>) {
       expect(entry.misses![mode]).toEqual(RHYME_MISSES[mode]);
-      // No spoken miss is emitted yet (handoff 20 Part B): each is listed unanswered for J9.
-      expect(entry.unanswered![mode]).toEqual(RHYME_MISSES[mode]);
+      // Every spoken miss is answered by a lever of its mode, so none is listed unanswered.
+      expect(entry.unanswered?.[mode]).toBeUndefined();
+      const answered = new Set(items.filter(i => i.mode === mode).concat(mode === 'identification' ? [hard] : [])
+        .flatMap(i => rhymeStudioLevers(i, [], items).flatMap(l => l.answers ?? [])));
+      for (const miss of RHYME_MISSES[mode]) expect(answered.has(miss), `${mode} ${miss}`).toBe(true);
     }
     expect(entry.levers).toBe(true);
+  });
+
+  it('the support fact names each mode\'s one model lever, and a practice item carries the parent\'s tier', () => {
+    const recognition = { ...payload('recognition')[0], tier: 'medium' as const };
+    expect(RHYME_LEVERS.support(recognition)).toMatch(/contrast_model lever/);
+    expect(RHYME_LEVERS.support({ ...items.find(i => i.mode === 'production')!, tier: 'hard' })).toMatch(/^answer it cold/);
+    expect(RHYME_LEVERS.simpler({ ...recognition, tier: 'easy' }, { items }, 'far_pair')).toMatchObject({ id: `${recognition.id}~simpler`, tier: 'easy' });
   });
 
   it('name_choices only where the tier withdrew the read-aloud', () => {

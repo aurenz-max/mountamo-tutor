@@ -4,7 +4,7 @@
  * held are re-based onto the real runtime (support tiers, the K band floor, the today marker, the
  * day-name identify defect, the extended mode surfaces, the spoken chain with no printed names),
  * plus the binding's own: the grid key never reaches the tutor, a checked miss waits for Try again,
- * the scene follows the active challenge with its tier's reveal policy, completion is once.
+ * the scene follows the active challenge with its tier's never-say rule, completion is once.
  * The generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership and the packet.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -18,7 +18,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { isGridAnswerChallenge, tutorRevealPolicy, type CalendarExplorerChallenge } from './CalendarExplorer';
+import type { CalendarExplorerChallenge } from './CalendarExplorer';
+import { isGridDateAnswer } from './calendarExplorerWorkspace';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -58,7 +59,8 @@ describe('the grid on the workspace', () => {
     } else {
       expect(h.state().task!.demand.response).toBe('speech');
       expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
-      expect(h.state().task!.task).toMatch(new RegExp(`^${c.question.replace(/[?.]/g, m => `[${m}]`)} The learner answers by saying`));
+      // The ask is the printed question; the key goes to the judge, never into the ask.
+      expect(h.state().task!.task).toBe(c.question);
     }
     expect(screen.queryByRole('button', { name: /Next Question|See Results/ })).toBeNull();
   });
@@ -87,10 +89,11 @@ describe('the grid on the workspace', () => {
     expect(seam.submit).toHaveBeenCalledOnce();
   });
 
-  it('the scene carries the tier reveal policy, never the answer', () => {
+  it('the scene carries the hard tier never-say rule, never the answer', () => {
     const h = mount(data([count({ showDayHeaders: false, showMonthLabel: false, showTargetDayColumn: false })], { supportTier: 'hard' }), 'count');
     const facts = h.state().task!.demand;
-    expect(String(facts.revealPolicy)).toMatch(/Do NOT recite the Sun, Mon, Tue/);
+    expect(String(facts.constraints)).toMatch(/never recite the days of the week in order or say which column/);
+    expect(String(facts.constraints)).toMatch(/not tinted/);
     expect(String(facts.shown)).toContain('no day-name header row');
     expect(JSON.stringify(facts)).not.toMatch(/"5"|five/);
   });
@@ -132,18 +135,13 @@ describe('support tiers render', () => {
     h.dispatch('advance'); h.confirmVisible();
     expect(headers()).toHaveLength(0);
   });
-
-  it('the reveal policy text is unchanged', () => {
-    expect(tutorRevealPolicy(undefined)).toBe('');
-    expect(tutorRevealPolicy('hard')).toMatch(/Do NOT recite the Sun, Mon, Tue/);
-  });
 });
 
 describe('answer surfaces', () => {
   it('classifies the answer surface by the shape of correctAnswer', () => {
-    expect(isGridAnswerChallenge(dateIdentify())).toBe(true);
-    expect(isGridAnswerChallenge(dayNameIdentify())).toBe(false);
-    expect(isGridAnswerChallenge(count())).toBe(false);
+    expect(isGridDateAnswer(dateIdentify())).toBe(true);
+    expect(isGridDateAnswer(dayNameIdentify())).toBe(false);
+    expect(isGridDateAnswer(count())).toBe(false);
   });
 
   it('a day-name identify answers from its options, and a grid click does not poison it', () => {
@@ -207,7 +205,8 @@ describe('the spoken chain', () => {
     const h = mount(d, 'day_sequence');
     expect(screen.getByTestId('calendar-day-sequence')).toBeTruthy();
     for (const day of ['Sunday', ...days]) expect(screen.queryByText(day, { exact: true })).toBeNull();
-    expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^Tuesday\./);
+    expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"Tuesday"\./);
+    expect(h.state().task!.task).toBe('Listen: Monday. What day comes next?');
     expect(h.state().task!.demand.say).toBe('the day Monday');
   });
 
@@ -240,8 +239,10 @@ describe('the spoken chain', () => {
   });
 });
 
-it('the adapter refuses a spoken turn with no day to say', () => {
+it('the adapter refuses a spoken turn with no day to say, and a session mixing the chain and the grid', () => {
   const adapter = LIVE_ADAPTERS['calendar-explorer'];
   expect(() => adapter.validate(data([base({ type: 'day_sequence', options: [] })]))).toThrow();
+  expect(() => adapter.validate(data([count(), base({ id: 'd', type: 'day_sequence', currentDay: 'Monday', expectedDay: 'Tuesday' })])))
+    .toThrow(/not both/);
   expect(adapter.validate(data([count()]))).toBeTruthy();
 });

@@ -114,3 +114,10 @@ export function freeFamilies(used: SessionWords): Array<{ rime: string; words: P
     .map(f => ({ rime: rimeOfWord(`x${f.family.replace(/^-+/, '')}`), words: f.words.map(([word, emoji]) => ({ word, emoji })) }))
     .filter(f => !used.rimes.has(f.rime) && !f.words.some(w => used.words.has(w.word)));
 }
+
+/** Words that open a verdict sentence ("Yes, ...", "My turn: ..."): no generated rhyme word may be one of them. */
+const SENTINEL_TOKENS = new Set(['yes', 'my', 'turn']);
+
+/** May this generated word appear on a card or in a spoken line? The generator and the word space filter their pools
+ *  with it (contract R6: a hardcoded pool once held "yes"). */
+export const isSentinelSafeWord = (word: string): boolean => !SENTINEL_TOKENS.has(word.trim().toLowerCase());

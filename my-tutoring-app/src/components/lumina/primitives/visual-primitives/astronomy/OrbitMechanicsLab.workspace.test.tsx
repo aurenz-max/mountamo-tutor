@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 /**
- * orbit-mechanics-lab on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * pick_speed and orbit_speed are taps checked by code; predict_burn and circularize are code-keyed closed choices,
- * tapped and checked or said aloud: the key is published only as the spoken expectedAnswer. Nothing flies before the
- * check. A wrong answer names its miss, and every miss has a help lever first.
+ * orbit-mechanics-lab on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set: what is its own. The
+ * generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the packet and the wiring.
+ * Every mode is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
+ * key (`orbitKey`). Nothing flies before the check. A wrong answer names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -21,14 +20,19 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { OrbitMechanicsLabData } from './OrbitMechanicsLab';
 import {
   askOf, BURN_TEXT, buildOrbitItems, choiceKey, CIRCLE_TEXT, circleResult, craftSpeed, isTapItem, ORBIT_MISSES,
-  orbitCorrect, orbitHarnessAnswers, orbitItems, orbitMiss, PATHS, pushPath, seededRng, tapKey, validOrbitItem,
-  workspaceAssignment, workspaceScene,
+  orbitCorrect, orbitHarnessAnswers, orbitItems, orbitKey, orbitMiss, PATHS, pushLabel, pushPath, seededRng, tapKey,
+  validOrbitItem, workspaceScene,
   type BurnItem, type CircleItem, type OrbitItem, type OrbitMode, type OrbitTier, type RaceItem, type SpeedItem,
 } from './orbitWorkspace';
 import {
-  BURN_CARD_LEVER, DROP_LEVER, leverFacts, MARK_POINTS_LEVER, NO_LEVERS, orbitLevers, possibleMisses, PULL_LEVER,
-  SAME_SIZE_LEVER, SPEED_ARROWS_LEVER, THROW_LEVER,
+  BURN_CARD_LEVER, DROP_LEVER, MARK_POINTS_LEVER, NO_LEVERS, ORBIT_LEVERS, possibleMisses, PULL_LEVER,
+  SAME_SIZE_LEVER, SPEED_ARROWS_LEVER, THROW_LEVER, type OrbitLeverState,
 } from './orbitLevers';
+import { orbitMechanicsLabBoss } from './orbitMechanicsLab.boss';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
+
+const declared = (i: OrbitItem, s: OrbitLeverState = NO_LEVERS) => ORBIT_LEVERS.declare(i, { state: s }, s.pulled);
+const leverFacts = (i: OrbitItem, s: OrbitLeverState) => ORBIT_LEVERS.onScreen(i, { state: s }, s.pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -46,10 +50,10 @@ const CIRCLE: CircleItem = { id: 'circularize-1', mode: 'circularize', near: 1.5
   choices: ['far_up', 'far_down', 'near_up', 'near_down'] };
 const BY_MODE: Record<OrbitMode, OrbitItem[]> = { pick_speed: [SPEED], orbit_speed: [RACE], predict_burn: [BURN], circularize: [CIRCLE] };
 
-const data = (mode: OrbitMode): OrbitMechanicsLabData =>
-  ({ title: 'Rocket Around Earth', overview: 'Send the rocket.', challengeTypes: [mode], items: BY_MODE[mode], gradeLevel: '4' });
-const mount = (mode: OrbitMode) => {
-  const h = mountWorkspace({ primitiveId: 'orbit-mechanics-lab', evalMode: mode, instanceId: 'orbit-mechanics-lab', data: data(mode) as never });
+const data = (mode: OrbitMode, gradeLevel = '4'): OrbitMechanicsLabData =>
+  ({ title: 'Rocket Around Earth', overview: 'Send the rocket.', challengeTypes: [mode], items: BY_MODE[mode], gradeLevel });
+const mount = (mode: OrbitMode, gradeLevel?: string) => {
+  const h = mountWorkspace({ primitiveId: 'orbit-mechanics-lab', evalMode: mode, instanceId: 'orbit-mechanics-lab', data: data(mode, gradeLevel) as never });
   h.settle(1000);
   return h;
 };
@@ -67,16 +71,17 @@ it.each(MODES)('%s binds with its key out of the scene and nothing flown', mode 
   expect(getComponentById('orbit-mechanics-lab')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(orbitMechanicsLabBoss.assignment(item).task);
+  expect(orbitMechanicsLabBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
   expect(flight(h)).toBeNull();
   expect(text(h)).not.toMatch(/Next →|Finish|km|kN/);
   expect(demand(h).credited).toBeUndefined();
   expect(demand(h).flight).toBeUndefined();
-  // Every mode is a sayable closed choice (J14): the key is published only as the spoken expectedAnswer.
+  // Every mode is a sayable closed choice (J14): the key is published only as the spoken key.
   expect(demand(h).response).toBe('speech');
-  const expected = { pick_speed: /^"Medium push" \(choice 2 of 3\): "the medium push", "the middle-sized arrow"/,
-    orbit_speed: /^"Blue rocket" \(choice 2 of 3\): "the blue rocket"/, predict_burn: /^"Its loop reaches farther out/,
+  const expected = { pick_speed: /^"Medium push" \(also accept "the medium push", "the middle-sized arrow", "the second one"\)/,
+    orbit_speed: /^"Blue rocket" \(also accept "the blue rocket".*"the second one"\)/, predict_burn: /^"Its loop reaches farther out/,
     circularize: /^"Speed up at the far point"/ }[mode];
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(expected);
   if (!isTapItem(item)) {
@@ -86,12 +91,28 @@ it.each(MODES)('%s binds with its key out of the scene and nothing flown', mode 
   h.close();
 });
 
+it('K: a tap on push pictures with no input, number, unit or item count, and the pre-reader rule in the scene', () => {
+  const h = mount('pick_speed', 'K');
+  const c = h.view.container;
+  expect(c.querySelector('input')).toBeNull();
+  for (const p of SPEED.pushes.map((_, i) => pushLabel(SPEED, i))) expect(c.querySelector(`button[aria-label="${p}"]`)).not.toBeNull();
+  // The push buttons carry pictures, not words; the asked outcome is a picture too.
+  expect(c.querySelector('button[aria-label="Medium push"]')!.textContent).toBe('');
+  expect(c.querySelector('[data-asked="circle"]')).not.toBeNull();
+  expect(text(h)).not.toMatch(/\d+\s*(km|kN|m\/s|°)|item \d of/);
+  expect(String(demand(h).constraints)).toMatch(/no number, speed or unit/);
+  h.close();
+  const g4 = mount('pick_speed');
+  expect(String(demand(g4).constraints)).not.toMatch(/no number, speed or unit/);
+  g4.close();
+});
+
 it('a spoken push is credited like a tapped one: its flight is drawn', async () => {
   const h = mount('pick_speed');
   h.say('the medium push'); await flush(); h.feedback('correct', 'advance'); h.confirmVisible(); h.settle(); await flush(); h.settle();
   expect(h.state().status).toBe('completed');
   h.close();
-  const misses = workspaceAssignment(SPEED).misses!.map(m => m.id);
+  const misses = orbitMechanicsLabBoss.assignment(SPEED).misses!.map(m => m.id);
   expect(misses).toEqual(['picked_slower', 'picked_faster']);
 });
 
@@ -233,12 +254,14 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...ORBIT_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
-        const ls = orbitLevers(i, NO_LEVERS);
+        const ls = declared(i);
         const misses = possibleMisses(i);
         expect(misses.length, i.id).toBeGreaterThan(0);
         for (const m of misses) {
           expect(ORBIT_MISSES[mode]).toContain(m);
           expect(ls.find(l => l.id === nextLever(ls, m))?.kind, `${i.id} ${m}`).toBe('help');
+          // drop_one greys a choice out (assisted work): a miss is first answered by a lever that teaches.
+          expect(nextLever(ls, m), `${i.id} ${m}`).not.toBe(DROP_LEVER);
         }
         const a = orbitHarnessAnswers(i);
         expect(orbitCorrect(i, a.correct), i.id).toBe(true);
@@ -250,9 +273,10 @@ describe('the pure rules', () => {
 
   it('no ask, scene or lever line states the key before the answer', () => {
     for (const mode of MODES) for (const { i } of all(mode)) {
-      const s = { ...NO_LEVERS, pulled: orbitLevers(i, NO_LEVERS).filter(l => l.kind === 'help').map(l => l.id) };
+      const s = { ...NO_LEVERS, pulled: declared(i).filter(l => l.id !== DROP_LEVER).map(l => l.id) };
       const scene = workspaceScene(i, { work: { pick: null, choice: null }, solved: false, flown: false });
-      const lines = [askOf(i), String(scene.facts!.shown), leverFacts(i, s) ?? ''];
+      const lines = [askOf(i), String(scene.facts!.shown), leverFacts(i, s)];
+      expect(askLeaks(askOf(i), orbitKey(i), orbitMechanicsLabBoss.spoken!.given?.(i)), i.id).toEqual([]);
       expect(scene.facts!.flight).toBeUndefined();
       expect(scene.facts!.credited).toBeUndefined();
       if (i.mode === 'predict_burn') for (const l of lines) expect(l, `${i.id}: ${l}`).not.toMatch(new RegExp(BURN_TEXT[choiceKey(i) as keyof typeof BURN_TEXT], 'i'));

@@ -32,9 +32,9 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateHabitatDiorama } = await loader.import('/src/components/lumina/service/biology/gemini-habitat-diorama.ts');
-  const { validateHabitatDioramaData } = await loader.import('/src/components/lumina/components/live-activity/adapters/habitatDioramaLive.ts');
+  const { validateHabitatDioramaData } = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/habitatDiorama.boss.ts');
   const { habitatDioramaOracle } = await loader.import('/src/components/lumina/service/qa/oracles/habitat-diorama.ts');
-  const { itemsFromChallenges, askFor } = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/habitatDioramaScript.ts');
+  const { itemsFromChallenges, askFor } = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/habitatDioramaDomain.ts');
   const cases = [
     ['pinned-3-5', 'build_habitat', '4', 'What animals need to survive in a habitat', 'Build a habitat that meets every need of an animal'],
     ['pinned-K-2', 'build_habitat', '1', 'Animals need food, water and shelter', 'Make a home where an animal can live'],

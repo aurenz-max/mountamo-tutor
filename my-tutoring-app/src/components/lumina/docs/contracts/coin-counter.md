@@ -162,9 +162,9 @@ treat "how many real attempts exist" as unknown, not zero.
 
 ### R14 — a total, a group or the change may be said aloud; identify, enacted counts and builds stay on screen · OBSERVED (NEW 2026-10-13)
 - **Property:** a `count` that is not enacted (every `count-mixed` card, a `count-like` card from Grade 2), `compare` and
-  `make-change` are spoken items with `acceptsGesture` (`isSpokenCoin`): JEV judges the spoken amount or group against
-  `expectedAnswer` (`coinExpectedAnswer`), wrong ones map to the tap's miss ids (`coinSpokenMisses`, in the catalog's
-  lists), and the typed or tapped answer and Check is still checked by the activity. Tap only: `identify` (the question
+  `make-change` are spoken items with `acceptsGesture` (SAY_OR_SHOW card modes; the item has a `coinKey`): JEV judges the
+  spoken amount or group against the key (`spokenKeyText`), wrong ones map to the tap's miss ids (`coinSpokenMisses`, in
+  the card's lists), and the typed or tapped answer and Check is still checked by the activity. Tap only: `identify` (the question
   names the coin, so the answer is which drawn coin; R4 holds), the K and G1 like counts (R9, R11: tapping or tagging every
   coin is part of the answer), and `make-amount` / `fewest-coins` / `show-amount`. The scene never states the key.
 - **Evidence:** `CoinCounter.spoken.workspace.test.tsx`; journey sweep (J14 cleared for count-mixed and make-change);
@@ -337,3 +337,12 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   counts, R4's unnamed identify coins and every build path are unchanged; a spoken total, group or change is one more way
   to answer. Existing coin-counter suites green; the gesture-only "no key" assertions re-based to the kept modes.
 - 2026-10-13 — R15 item-space path (`/add-item-space`; qa/difficulty-demo/2026-10-13/time-money/); R8 amended; G7 closed.
+- 2026-10-19 — boss framework (`coinCounter.card.ts` + `coinCounter.boss.ts`, `spokenBoss`; PLAN bucket C). Every
+  requirement kept; runner-era wording re-based onto the workspace: R14's assignment is now `coinCounterBoss.assignment`
+  (a `SpokenKey` from `coinKey`, written by `spokenKeyText`; the compare ask adds its menu "Group A, group B, or the
+  same?"; a make-change ask may say the price and the paid amount by design, `coinGiven`); R13's levers are one lever
+  set (`COIN_LEVERS`, same ids, same leak rules); R9/R11 tests mount the bound workspace, and "judged" reads the
+  runtime's recorded check (the scripted Next button and its `[ANSWER_*]`/`[TIER ...]`/`[G1 ENACTED COUNT]` cues are
+  gone: the card's moves and a `grade` scene fact carry the K/G1 tap protocol, the `coinValues` fact the hidden-values
+  rule). Catalog: `count-like` affordances gain `spoken` (true from Grade 2, R14). The catalog `tutoring` block is
+  deleted (bound sessions sent `tutoring: null`). G8 unchanged: fewest-coins items read as make-amount (`coinModeOf`).

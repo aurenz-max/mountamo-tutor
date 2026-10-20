@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * spatial-path on the teaching workspace (W1, plain shape): what is its own. A route is a checked gesture (the map
+ * spatial-path on the teaching workspace (boss: `spatialPath.boss.ts`, tap preset): what is its own. A route is a checked gesture (the map
  * compares route ids); no route number, and no unchecked route's movement, reaches the tutor; a wrong check names the
  * movement the route made, stays closed, keeps the key hidden, and Try again clears the map; a right check completes
  * once. The generic W1 contract runs in `runtime/workspaceContract.test.tsx`.
@@ -15,7 +15,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { validateSpatialPathData } from '../../../components/live-activity/adapters/spatialPathLive';
+import { validateSpatialPathData } from './spatialPath.boss';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { selectSpatialPathChallenges } from '../../../service/math/gemini-spatial-path';
 import type { SpatialPathData } from './SpatialPath';
@@ -81,6 +81,23 @@ it('a wrong route names its movement, stays closed with the key hidden, and Try 
   expect(metrics).toMatchObject({ type: 'spatial-path', challengeType: 'choose_route', correctCount: 2 });
   expect(work2.teachingAttempts).toHaveLength(3);
   expect(evidence.phases).toEqual([expect.objectContaining({ itemId: THROUGH.id, miss: `went_${THROUGH.routes[wrong].relation}` })]);
+  h.close();
+});
+
+it('the key stays hidden until a right check, which turns it green and labels it; a check replays the chosen geometry (R3, R4)', () => {
+  const h = mount('choose_route');
+  const n = numberOf(THROUGH, THROUGH.correctRouteId);
+  expect(green(h)).toBe(0);
+  expect(h.view.container.textContent).not.toMatch(/Route \d: /);
+  const wrong = THROUGH.routes.findIndex(r => r.id !== THROUGH.correctRouteId);
+  choose(h, wrong + 1);
+  expect(h.view.container.querySelector('animateMotion, animatemotion')?.getAttribute('path')).toBe(THROUGH.routes[wrong].d);
+  expect(h.view.container.textContent).toMatch(new RegExp(`goes ${THROUGH.routes[wrong].relation}, not through`, 'i'));
+  expect(h.view.container.textContent).not.toMatch(new RegExp(`Route ${n}: through`));
+  h.dispatch('retry');
+  choose(h, n);
+  expect(green(h)).toBeGreaterThan(0);
+  expect(h.view.container.textContent).toMatch(new RegExp(`Route ${n}: through`));
   h.close();
 });
 

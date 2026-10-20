@@ -1,25 +1,25 @@
 /**
- * The in-item levers on cause-effect-chain (`/add-support-tiers`, report
- * qa/eval-reports/cause-effect-chain-levers-2026-10-08.md). No real-learner evidence: the misses are what
- * `chainMiss` (build_chain) and `causeEffectSpokenMisses` (identify_cause, root_vs_proximate) name.
+ * The in-item levers on cause-effect-chain, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/cause-effect-chain-levers-2026-10-08.md). No real-learner evidence: the misses are what `chainMiss`
+ * (build_chain) and `causeEffectSpokenMisses` (identify_cause, root_vs_proximate) name.
  *
- * The cards ARE the answer in pieces (catalog directive "NEVER NAME A CARD OR A SLOT"), so no lever marks, moves or
- * orders a learner's card. Help is either an empty decomposition under the item's own card (`two_tests`, nothing
- * ticked) or a model chain from everyday life beside the item (`causeEffectModels.ts`, `modelLeaks`). Simplify opens
- * a practice item `<item>~simpler` built from a model chain the help did not show:
+ * The cards ARE the answer in pieces, so no lever marks, moves or orders a learner's card. Help is either two empty
+ * checks under the item's own card (`two_tests`, nothing ticked) or a model chain from everyday life beside the item
+ * (`causeEffectModels.ts`, `modelLeaks`). Simplify opens a practice item `<item>~simpler` built from a model chain the
+ * help did not show:
  *
- * - identify_cause: `two_tests` (help) two empty checks under the card; `role_model` (help) a model ending with
+ * - identify_cause: `two_tests` (marks) two empty checks under the card; `role_model` (model) an everyday ending with
  *   three cards tagged by role. No simplify: one card and a yes or no is already the plainest shape.
- * - build_chain: `model_chain` (help) a model chain drawn in order; `shorter_chain` (simplify) a model chain one
+ * - build_chain: `model_chain` (model) an everyday chain drawn in order; `shorter_chain` (easier) an everyday chain one
  *   card shorter to build, never below two cards.
- * - root_vs_proximate: `ends_model` (help) a model chain drawn in order with its two ends tagged; `ordered_chain`
- *   (simplify) the same ask on a model chain drawn in order, so only the end is left to pick.
+ * - root_vs_proximate: `ends_model` (model) an everyday chain drawn in order with its two ends tagged; `ordered_chain`
+ *   (easier) the same ask on an everyday chain drawn in order, so only the end is left to pick.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { causeEffectChainCard } from './causeEffectChain.card';
 import {
   itemsFromChallenge, toWords, type CauseEffectChainItem, type ChainChallengeLike, type ChainTier,
-} from './causeEffectChainScript';
-import type { ChainMiss, SpokenChainMiss } from './causeEffectChainWorkspace';
+} from './causeEffectChainDomain';
 import { MODEL_CHAINS, type ModelChain } from './causeEffectModels';
 
 export const TWO_TESTS_LEVER = 'two_tests';
@@ -105,7 +105,8 @@ export function practiceItem(item: CauseEffectChainItem, s: ChainSession): Cause
     outcome: { id: `${chain.id}-outcome`, text: chain.outcome, category: 'social', icon: chain.icon },
     nodes, correctOrder: causes.map(c => c.id),
   };
-  const built = itemsFromChallenge(ch, { periodLabel: '', gradeLevel: s.gradeLevel }, { tier: s.tier })[0] ?? null;
+  // The practice item keeps its parent's tier: the model it follows is the parent's.
+  const built = itemsFromChallenge(ch, { periodLabel: '', gradeLevel: s.gradeLevel }, { tier: item.tier })[0] ?? null;
   return built && !practiceLeaks(built, item, s) ? built : null;
 }
 
@@ -137,63 +138,70 @@ export function practiceLeaks(practice: CauseEffectChainItem, item: CauseEffectC
   return true;
 }
 
-// ── what is on screen ──────────────────────────────────────────────────────
+// ── the tier's starting levers ─────────────────────────────────────────────
 
-const plain = (t: string) => t.replace(/[.!?]+$/, '');
-
-/** What the pulled levers put on screen, for the tutor and JEV: what is drawn, never this item's answer. */
-export function leversOnScreen(item: CauseEffectChainItem, on: readonly string[], s: ChainSession): string | null {
-  const parts: string[] = [];
-  if (on.includes(TWO_TESTS_LEVER) && item.kind === 'identify_cause') parts.push('under the event card, two empty checks: '
-    + '"Did it happen before the ending?" and "Did the ending need it?". Neither is ticked');
-  const role = on.includes(ROLE_MODEL_LEVER) ? roleModelFor(item, s) : null;
-  if (role) parts.push(`beside the item, a model from everyday life. Its ending: ${plain(role.chain.outcome)}. Three cards, each `
-    + `tagged: ${role.cards.map(c => `"${plain(c.text)}" (${ROLE_TAG[c.role]})`).join('; ')}. The model is not this item`);
-  const model = on.includes(MODEL_CHAIN_LEVER) || on.includes(ENDS_MODEL_LEVER) ? chainModelFor(item, s) : null;
-  if (model) {
-    const tagged = on.includes(ENDS_MODEL_LEVER);
-    parts.push(`beside the item, a model chain from everyday life drawn in order, each card leading to the next: `
-      + `${model.causes.map(plain).join(' -> ')} -> ending: ${plain(model.chain.outcome)}`
-      + (tagged ? `. Its first card is tagged "root" and its last card "right before the ending"` : '')
-      + '. Nothing on the learner\'s cards is marked or moved');
-  }
-  return parts.length ? parts.join('; ') : null;
-}
-
-// ── the levers ─────────────────────────────────────────────────────────────
-
-const IDENTIFY_MISSES: SpokenChainMiss[] = ['cause_denied', 'consequence_as_cause', 'background_as_cause'];
-const CHAIN_MISSES: ChainMiss[] = ['reversed', 'two_swapped', 'other_order'];
-const END_MISSES: SpokenChainMiss[] = ['other_end', 'middle_event'];
-const FENCE = 'Read the model cards if you like; never say which of the learner\'s cards is like a model card.';
-
-export function causeEffectLevers(item: CauseEffectChainItem | null, s: ChainSession, pulled: readonly string[],
-  starting: readonly string[] = []): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string) => {
-    if (!starting.includes(id)) levers.push({ id, kind, carrier: 'both', pulled: pulled.includes(id), answers, when, does });
-  };
-  if (item.kind === 'identify_cause') {
-    add(TWO_TESTS_LEVER, 'help', IDENTIFY_MISSES, 'The learner says yes to an event because it is about the same story, or no to one that is not the last or biggest.',
-      'Puts two empty checks under the event card: "Did it happen before the ending?" and "Did the ending need it?". '
-      + 'Read them and let the learner answer each. Never tick one or answer either.');
-    if (roleModelFor(item, s)) add(ROLE_MODEL_LEVER, 'help', IDENTIFY_MISSES, 'The learner still mixes up a cause with an event that came after, or one only true at the time.',
-      `Shows a model beside the item: an everyday ending and three cards, each tagged as came before and needed, happened after, or only true at the time. ${FENCE}`);
-  } else if (item.kind === 'build_chain') {
-    if (chainModelFor(item, s)) add(MODEL_CHAIN_LEVER, 'help', CHAIN_MISSES, 'The learner builds the chain backwards or out of order.',
-      `Shows a model chain from everyday life beside the board, built in order with an arrow from each card to the next. ${FENCE}`);
-    if (practiceItem(item, s)) add(SHORTER_LEVER, 'simplify', CHAIN_MISSES, 'The learner still cannot order the chain after help.',
-      'Opens an easier practice chain first: an everyday chain with one card fewer to put in order. Not graded; the full chain comes back after it, empty.');
-  } else {
-    if (chainModelFor(item, s)) add(ENDS_MODEL_LEVER, 'help', END_MISSES, 'The learner names the other end of the chain, or an event in the middle.',
-      `Shows a model chain from everyday life beside the item, drawn in order, its first card tagged root and its last tagged right before the ending. ${FENCE}`);
-    if (practiceItem(item, s)) add(ORDERED_LEVER, 'simplify', END_MISSES, 'The learner still cannot pick the end after help.',
-      'Opens an easier practice item first: the same question on an everyday chain drawn in order, so only the end is left to pick. Not graded; the full item comes back after it.');
-  }
-  return levers;
-}
-
-/** Phase 6: easy starts identify_cause with the two empty checks on screen. A starting position is not a pull. */
+/** Easy starts identify_cause with the two empty checks on screen: drawn from the first render, never offered. */
 export const startingLevers = (tier: string | undefined, item: CauseEffectChainItem | null) =>
   tier === 'easy' && item?.kind === 'identify_cause' ? [TWO_TESTS_LEVER] : [];
+
+const notStarting = (id: string) => (item: CauseEffectChainItem) => !startingLevers(item.tier, item).includes(id);
+
+// ── the lever set ──────────────────────────────────────────────────────────
+
+const plain = (t: string) => t.replace(/[.!?]+$/, '');
+const FENCE = 'Read the model cards if you like; never say which of the learner\'s cards is like a model card.';
+type Mode = keyof typeof causeEffectChainCard.modes;
+const chainFact = (tagged: boolean) => (m: { chain: ModelChain; causes: string[] }) =>
+  'Beside the item, a model chain from everyday life, not this item, drawn in order, each card leading to the next: '
+  + `${m.causes.map(plain).join(' -> ')} -> ending: ${plain(m.chain.outcome)}.`
+  + (tagged ? ' Its first card is tagged "root" and its last card "right before the ending".' : '')
+  + ' Nothing on the learner\'s cards is marked or moved.';
+
+/** Every lever of the family, in the order the tutor sees them. */
+export const CHAIN_LEVERS = leverSet<CauseEffectChainItem, ChainSession>({
+  modeOf: item => item.kind,
+  missesOf: mode => causeEffectChainCard.modes[mode as Mode]?.misses ?? [],
+  support: {
+    tier: item => item.tier,
+    different: 'an everyday chain from outside the lesson',
+    own: item => (item.kind === 'identify_cause' ? 'whether this event is a cause'
+      : item.kind === 'build_chain' ? 'this chain\'s order' : 'which event this one is'),
+  },
+  specs: [
+    { id: TWO_TESTS_LEVER, type: 'marks', carrier: 'both', modes: ['identify_cause'], answers: 'all',
+      offer: notStarting(TWO_TESTS_LEVER),
+      when: 'The learner says yes to an event because it is about the same story, or no to one that is not the last or biggest.',
+      does: 'Puts two empty checks under the event card: "Did it happen before the ending?" and "Did the ending need it?". '
+        + 'Read them and let the learner answer each. Never tick one or answer either.',
+      fact: 'Under the event card, two empty checks: "Did it happen before the ending?" and "Did the ending need it?". '
+        + 'Neither is ticked.' },
+    { id: ROLE_MODEL_LEVER, type: 'model', modes: ['identify_cause'], answers: 'all',
+      when: 'The learner still mixes up a cause with an event that came after, or one only true at the time.',
+      does: 'Shows a model beside the item: an everyday ending and three cards, each tagged as came before and needed, '
+        + `happened after, or only true at the time. ${FENCE}`,
+      content: roleModelFor,
+      fact: (m: { chain: ModelChain; cards: RoleCard[] }) => `Beside the item, a model from everyday life, not this item. Its ending: `
+        + `${plain(m.chain.outcome)}. Three cards, each tagged: ${m.cards.map(c => `"${plain(c.text)}" (${ROLE_TAG[c.role]})`).join('; ')}.` },
+    { id: MODEL_CHAIN_LEVER, type: 'model', modes: ['build_chain'], answers: 'all',
+      when: 'The learner builds the chain backwards or out of order.',
+      does: `Shows a model chain from everyday life beside the board, built in order with an arrow from each card to the next. ${FENCE}`,
+      content: chainModelFor,
+      fact: chainFact(false) },
+    { id: SHORTER_LEVER, type: 'easier', modes: ['build_chain'], answers: 'all',
+      when: 'The learner still cannot order the chain after help.',
+      does: 'Opens an easier practice chain first: an everyday chain with one card fewer to put in order. Not graded; the '
+        + 'full chain comes back after it, empty.',
+      content: practiceItem },
+    { id: ENDS_MODEL_LEVER, type: 'model', modes: ['root_vs_proximate'], answers: 'all',
+      when: 'The learner names the other end of the chain, or an event in the middle.',
+      does: 'Shows a model chain from everyday life beside the item, drawn in order, its first card tagged root and its last '
+        + `tagged right before the ending. ${FENCE}`,
+      content: chainModelFor,
+      fact: chainFact(true) },
+    { id: ORDERED_LEVER, type: 'easier', modes: ['root_vs_proximate'], answers: 'all',
+      when: 'The learner still cannot pick the end after help.',
+      does: 'Opens an easier practice item first: the same question on an everyday chain drawn in order, so only the end is '
+        + 'left to pick. Not graded; the full item comes back after it.',
+      content: practiceItem },
+  ],
+});

@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * W1 binding, plain shape: the real ReactionLab on the shared teaching workspace, mounted the way a lesson mounts it.
+ * reaction-lab on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set, mounted the way a lesson mounts it.
  * A predict challenge is asked beside the unmixed substances; any other challenge waits for Mix Substances! (no
  * response yet). One tapped choice and Check Answer commits a checked gesture with its named miss, or a spoken answer is
  * judged; Try again clears the choice; the runtime owns progression; the key is published only as the spoken
- * expectedAnswer. Levers change the screen in the same commit and never draw the answer.
+ * key (`reactionKey`). Levers change the screen in the same commit and never draw the answer.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -20,6 +20,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { ReactionChallenge } from './ReactionLab';
 import { itemChoices, keyValue, reactionHarnessAnswers, reactionItems, reactionMiss } from './reactionLabWorkspace';
 import { legendLeak } from './reactionLabLevers';
+import { reactionLabBoss } from './reactionLab.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
@@ -84,7 +85,8 @@ it.each([
   expect(demand(h).presentation).toBe('ready');
   expect(text(h)).toContain(challenge.instruction);
   expect(demand(h).response).toBe('speech');
-  expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${key}"`);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${key}" \\(also accept "choice [A-D]", "the `));
+  expect(reactionLabBoss.assignment(reactionItems([challenge])[0])).toMatchObject({ response: 'speech', acceptsGesture: true });
   expect(String(demand(h).choices)).toContain(key);
   expect(JSON.stringify(demand(h))).not.toMatch(/correct|answer is|right choice/i);
   // No Next, no notebook, no hint on the workspace path; the reaction is not drawn before a prediction.
@@ -122,6 +124,8 @@ it('a wrong tap commits its miss and closes the choices; Try again clears it; th
   h.dispatch('advance'); h.confirmVisible();
   // The classify challenge: said aloud this time, credited by the observer. The reaction is still shown.
   expect(h.state().task!.task).toMatch(/^Is this a chemical or a physical change\? \(Chemical Change or Physical Change\)/);
+  // A menu key: the ask says both words, and the judge reads the menu.
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"chemical" .*chooses one word from "chemical", "physical"/);
   expect(demand(h).presentation).toBe('ready');
   h.say('chemical'); await flush(); h.feedback('correct', 'advance'); h.confirmVisible(); h.settle(); await flush(); h.settle();
   expect(h.state().status).toBe('completed');
@@ -222,40 +226,4 @@ it('every saved payload challenge names a miss for each wrong choice, and the jo
       expect(a.plainWrong).not.toBe(a.correct);
     }
   }
-});
-
-it('scripted path (no tutor): prediction, predict challenge, experiment, notebook, then the rest; leaks closed there too', async () => {
-  const { render, fireEvent, screen } = await import('@testing-library/react');
-  const { default: ReactionLab } = await import('./ReactionLab');
-  const data = lab([PREDICT, CLASSIFY, CONSERVE], { gradeBand: '6-8', notebook: { predictPrompt: 'What will happen?',
-    predictionOptions: [{ id: 'A', text: 'It fizzes' }, { id: 'B', text: 'Nothing' }], correctPredictionId: 'A',
-    observePrompts: ['What did you see?'], explainPrompt: 'Why?' } });
-  const view = render(<ReactionLab data={data as never} />);
-  const press = (label: string | RegExp) => act(() => { fireEvent.click(screen.getByRole('button', { name: label })); });
-  // The equation bar prints the products: hidden while predicting.
-  expect(view.container.textContent).not.toContain('CO2');
-  press('It fizzes'); press('Submit Prediction');
-  expect(view.container.textContent).toContain(PREDICT.instruction);
-  press('Bubbles will form and it will fizz'); press('Check Answer');
-  press('Next Challenge');
-  press('Mix Substances!'); // nothing selected: refused
-  expect(view.container.textContent).not.toContain('Real View');
-  press(/baking soda/); press(/vinegar/); press('Mix Substances!');
-  act(() => { vi.advanceTimersByTime(4000); });
-  // The conservation counter prints "=" while the conservation statement is open.
-  expect(view.container.textContent).not.toMatch(/Conservation of Mass/);
-  expect(view.container.textContent).toContain('Observation Notebook');
-  // A marked sign stays one colour: the key is not readable by tapping every sign.
-  press('🫧 Fizzing / Bubbles'); press('💡 Light / Glow');
-  const marked = Array.from(view.container.querySelectorAll('button[aria-pressed="true"]')).map(b => b.className);
-  expect(new Set(marked).size).toBe(1);
-  press('Done Observing');
-  press('Physical Change'); press('Check Answer');
-  expect(view.container.textContent).toContain('Not quite');
-  press('Chemical Change'); press('Check Answer'); press('Next Challenge');
-  press('True'); press('Check Answer');
-  // The last right answer completes the set and submits once, with no Next.
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(view.container.textContent).toContain('Experiment Complete!');
-  view.unmount();
 });

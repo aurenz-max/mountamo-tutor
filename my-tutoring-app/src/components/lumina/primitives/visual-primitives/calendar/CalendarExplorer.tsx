@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * CalendarExplorer — a monthly calendar (tap a date or an option, then Check) and a spoken
- * day/month successor chain. Both run only on the shared tutor/JEV teaching workspace (workspace
- * rollout C4; the scripted runner and the click-era Check/Next progression were retired, LA-14,
- * user ruling 09-23: one path). The grid's Check is the activity's own check of the learner's pick; a
- * grid question with one weekday, date or count to say also takes it aloud (VB-1, 2026-10-13), and a
- * spoken answer the observer credits is recorded as a correct tap would be. The chain's spoken answer
- * is judged by the observer; the runtime owns progression on both. An
- * unbound mount shows the shared "needs the tutor" card.
+ * CalendarExplorer — a monthly calendar (tap a date or an option, then Check Answer) and a spoken day/month successor
+ * chain, taught only on the shared tutor/JEV teaching workspace. Its wiring is the boss (`calendarExplorer.boss.ts`,
+ * card `calendarExplorer.card.ts`): the assignment, the key, the levers (`CALENDAR_LEVERS`) and the harness play. The
+ * grid's Check is the activity's own check of the learner's pick; a grid question with one weekday, date or count to
+ * say also takes it aloud, and a spoken answer the observer credits is recorded as a correct tap would be. The chain's
+ * spoken answer is judged by the observer; the runtime owns progression on both. An unbound mount shows the shared
+ * "needs the tutor" card. Pip comes from the runner: the component marks `<PipDock />` and `<PipWorkspace>`.
  */
 
 import React, { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { CalendarExplorerMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { phaseResultsFromSummary, usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
@@ -25,31 +23,19 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { calendarGridPipPose, calendarSequencePipPose } from '../../../pip/calendarExplorerPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
-import type { CalendarSequenceItem } from './calendarExplorerScript';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { calendarExplorerBoss } from './calendarExplorer.boss';
 import {
-  calendarGridAssignment,
-  calendarGridScene,
-  calendarSequenceAssignment,
-  calendarSequenceScene,
-  calendarSequenceItemsFromChallenges,
-  calendarMiss,
-  describeCalendarPick,
-  hearSequenceRequest,
-  isSpokenCalendarSession,
+  calendarGridScene, calendarItems, calendarMiss, calendarSequenceScene, describeCalendarPick, hearSequenceRequest,
+  isGridDateAnswer, isSpokenCalendarSession,
 } from './calendarExplorerWorkspace';
 import {
-  ARROW_LEVER, HEADERS_LEVER, MODEL_PAIR_LEVER, PRACTICE_NOTE, RING_LEVER, ROWS_LEVER, STRIP_LEVER, TICKS_LEVER, TINT_LEVER,
-  calendarGridLevers, calendarLeverFacts, calendarPracticeItem, calendarSequenceLevers, modelPair, modelPairFact, ringDates,
-  rowRanges, tintWeekday, weekStrip,
+  ARROW_LEVER, CALENDAR_LEVERS, HEADERS_LEVER, MODEL_PAIR_LEVER, PRACTICE_NOTE, RING_LEVER, ROWS_LEVER, STRIP_LEVER,
+  TICKS_LEVER, TINT_LEVER, modelPair, ringDates, rowRanges, tierShown, tintWeekday, weekStrip, type CalendarSession,
 } from './calendarExplorerLevers';
-
-export { calendarSequenceItemsFromChallenges, daySequenceItemsFromChallenges, isSpokenCalendarSession }
-  from './calendarExplorerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -116,6 +102,8 @@ export interface CalendarExplorerChallenge {
   intervalEndDate?: number;
   /** interval_count only: whether endpoints are excluded or included. */
   countConvention?: 'between' | 'inclusive';
+  /** The lesson's support tier, stamped on each item by `calendarItems` (the model lever's timing reads it). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // ── Within-mode support-tier scaffolds (stamped by the generator from
   //    ctx.supportTier, in code, post-parse). DISPLAY / INSTRUCTION ONLY — they
@@ -135,7 +123,7 @@ export interface CalendarExplorerData {
   description?: string;
   challenges: CalendarExplorerChallenge[];
   gradeBand?: 'K' | '1' | '2' | '3' | '4-5';
-  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  /** Within-mode support tier from the manifest: when the chain's model card comes, and the grid's starting help. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -187,50 +175,6 @@ function getDayOfWeek(day: number, month: number, year: number): string {
   return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex];
 }
 
-/**
- * Is this challenge answered by clicking a date in the grid?
- *
- * Only identify challenges use the grid as the answer surface, and ONLY when the
- * expected answer is a date number — a grid click yields a numeric string, so an
- * identify challenge whose correctAnswer is a day NAME ("Saturday") could never be
- * matched from the grid. Those are answered from the generated option list instead
- * (the grid stays live for locating the date, it just isn't the answer channel).
- */
-export function isGridAnswerChallenge(challenge: CalendarExplorerChallenge): boolean {
-  return (challenge.type === 'identify' || challenge.type === 'mark_events')
-    && /^\d+$/.test((challenge.correctAnswer ?? '').trim());
-}
-
-/**
- * Tutor reveal policy keyed to the within-mode support tier. The live tutor is a
- * SECOND scaffold channel, so its reveal latitude must match what the screen shows:
- *  - easy   → the header row, the month caption and the target-day marking are all
- *             on screen, so the tutor may name them and walk the strategy.
- *  - medium → the month caption is gone; nudge the method, don't pre-solve it.
- *  - hard   → headers, caption AND the target-day marking are all withdrawn, so the
- *             tutor must not recite the Sun..Sat order, name the column, or hand over
- *             the counting strategy — that would restore the exact scaffold the tier
- *             removed (the catalog's level-3 line spells the header order out).
- * At every tier the tutor never states the answer.
- */
-export function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return '[SUPPORT_TIER easy] Full scaffolding: the day headers, the month caption and the '
-      + 'highlighted target-day cells are all on screen. You may name the day-of-week order and '
-      + 'point at the column to use. Never state the answer itself.';
-  }
-  if (tier === 'medium') {
-    return '[SUPPORT_TIER medium] Light scaffolding: the month caption is off screen (the question '
-      + 'names the month). Nudge the method, do not pre-solve it, and never state the answer.';
-  }
-  return '[SUPPORT_TIER hard] Minimal scaffolding: the day-name headers, the month caption and the '
-    + 'target-day highlighting are ALL withdrawn on purpose. Do NOT recite the Sun, Mon, Tue... header '
-    + 'order, do not say which column to look at, and do not hand over the counting strategy — that '
-    + 'would put back the exact scaffold this tier removed. Ask what the student notices and guide by '
-    + 'questioning. Never state the answer.';
-}
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -253,7 +197,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const {
     title,
     description,
-    challenges,
     gradeBand,
     supportTier,
     instanceId,
@@ -265,10 +208,10 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     objectiveText,
     onEvaluationSubmit,
   } = data;
+  const challenges = useMemo(() => calendarItems({ challenges: data.challenges, supportTier }), [data.challenges, supportTier]);
 
   // ── Evaluation ──────────────────────────────────────────────────
   const resolvedInstanceId = instanceId || 'standalone';
-  const ctx = useLuminaAIContext();
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const componentMounted = useRef(true);
@@ -300,7 +243,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const progress = useCalendarProgress<CalendarExplorerChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: calendarGridAssignment,
+    workspace, assignment: calendarExplorerBoss.assignment,
     // A fresh challenge and Try again both start from a clean calendar. The setters are declared
     // below; this runs only after render. Try again keeps a practice question (a simplify lever) and the
     // learner's ticks; a fresh item, or the full item back after practice, drops both.
@@ -329,8 +272,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  const { isAudioPlaying, activePrimitiveId } = ctx;
-
   // ── Local State ─────────────────────────────────────────────────
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
@@ -340,16 +281,16 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
   const startTimeRef = useRef(Date.now());
   const challengeStartRef = useRef(Date.now());
-  // In-item levers (`calendarExplorerLevers.ts`), keyed by the session item they were pulled on; the easier practice
-  // question a simplify lever puts in place of the session item until the observer returns to it; the learner's own
-  // ticks (the `tick_taps` lever), keyed by the question they were made on.
+  // In-item levers (`CALENDAR_LEVERS`), keyed by the session item they were pulled on; the easier practice question a
+  // simplify lever puts in place of the session item until the observer returns to it; the learner's own ticks (the
+  // `tick_taps` lever), keyed by the question they were made on.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<CalendarExplorerChallenge | null>(null);
   const [ticks, setTicks] = useState<{ item: string; dates: number[] }>({ item: '', dates: [] });
 
   const sessionChallenge = challenges[currentIndex];
   const currentChallenge = practice ?? sessionChallenge;
-  const session = useMemo(() => ({ challenges, supportTier }), [challenges, supportTier]);
+  const session: CalendarSession = useMemo(() => ({ challenges, supportTier, gradeBand }), [challenges, supportTier, gradeBand]);
 
   // ── Support-tier scaffold reads ─────────────────────────────────
   // `!== false` ⇒ an untiered payload renders exactly as before. The K band floor
@@ -358,11 +299,13 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const baseHeaders = (c?: CalendarExplorerChallenge) => preReaderBand || c?.showDayHeaders !== false;
   const baseTint = (c?: CalendarExplorerChallenge) => preReaderBand || c?.showTargetDayColumn !== false;
   const pulledLevers = !practice && sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
-  const itemLevers = sessionChallenge ? calendarGridLevers(sessionChallenge, session,
-    { headers: !baseHeaders(sessionChallenge), tint: sessionChallenge.type === 'count' && !baseTint(sessionChallenge) }, pulledLevers) : [];
+  /** This item's pulls, plus the help the easy tier starts with (shown, not pulled). */
+  const onLevers = sessionChallenge ? [...pulledLevers, ...tierShown(sessionChallenge, session)] : [];
+  const itemLevers = sessionChallenge ? CALENDAR_LEVERS.declare(sessionChallenge, session, onLevers) : [];
   /** A help lever is drawn on the session item while pulled (or shown from the start on easy), never on practice. */
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.kind === 'help' && l.pulled);
-  const showDayHeaders = baseHeaders(currentChallenge) || helpOn(HEADERS_LEVER);
+  const headersBack = !baseHeaders(currentChallenge) && helpOn(HEADERS_LEVER);
+  const showDayHeaders = baseHeaders(currentChallenge) || headersBack;
   const showMonthLabel = preReaderBand || currentChallenge?.showMonthLabel !== false;
   const showTargetDayColumn = baseTint(currentChallenge) || helpOn(TINT_LEVER);
   const ringed = new Set(helpOn(RING_LEVER) && sessionChallenge ? ringDates(sessionChallenge) ?? [] : []);
@@ -378,7 +321,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const strip = helpOn(STRIP_LEVER) && currentChallenge ? weekStrip(currentChallenge) : null;
 
   // ── Answer surface ──────────────────────────────────────────────
-  const answerFromGrid = currentChallenge ? isGridAnswerChallenge(currentChallenge) : false;
+  const answerFromGrid = currentChallenge ? isGridDateAnswer(currentChallenge) : false;
   const showOptionButtons = !answerFromGrid && (currentChallenge?.options?.length ?? 0) > 0;
 
   // ── Calendar Grid Data ──────────────────────────────────────────
@@ -411,8 +354,8 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
         return { item: id, dates: dates.includes(day) ? dates.filter(d => d !== day) : [...dates, day] };
       });
     }
-    // Only a DATE-answer identify challenge is answered by clicking the grid.
-    if (isGridAnswerChallenge(currentChallenge)) {
+    // Only a DATE-answer identify (or mark_events) challenge is answered by clicking the grid.
+    if (isGridDateAnswer(currentChallenge)) {
       setSelectedAnswer(String(day));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -470,6 +413,17 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     setSubmittedResult({ score });
   }, [allChallengesComplete, challengeResults, challenges.length, progress.recordsEvaluation, submitResult]);
 
+  /** The answer as the screen shows it: the date, or the printed option that is the key. */
+  const shownAnswer = (c: CalendarExplorerChallenge) => isGridDateAnswer(c) ? c.correctAnswer.trim()
+    : c.options?.find(o => o.trim().toLowerCase() === c.correctAnswer.trim().toLowerCase()) ?? c.correctAnswer;
+  const showCredited = (c: CalendarExplorerChallenge) => {
+    const shown = shownAnswer(c);
+    setSelectedAnswer(shown);
+    if (isGridDateAnswer(c)) setClickedDate(Number(shown));
+    setFeedback({ correct: true, message: 'Correct!' });
+    if (c.highlightDates) setHighlightedDates(new Set(c.highlightDates));
+  };
+
   // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
   // tap records, and the credited day shown as a correct tap shows it. The shared lifecycle plays the success sound.
   solvedAloud.current = (index) => {
@@ -477,24 +431,14 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     if (!solved || tappedCorrect.current === solved.id) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
       timeMs: Date.now() - challengeStartRef.current });
-    const shown = isGridAnswerChallenge(solved) ? solved.correctAnswer.trim()
-      : solved.options?.find(o => o.trim().toLowerCase() === solved.correctAnswer.trim().toLowerCase()) ?? solved.correctAnswer;
-    setSelectedAnswer(shown);
-    if (isGridAnswerChallenge(solved)) setClickedDate(Number(shown));
-    setFeedback({ correct: true, message: 'Correct!' });
-    if (solved.highlightDates) setHighlightedDates(new Set(solved.highlightDates));
+    showCredited(solved);
   };
 
   // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
   // comes back blank when the practice closes. A tap shows its own credit in the check.
   practiceAloud.current = (source) => {
     if (source !== 'speech' || !practice) return;
-    const shown = isGridAnswerChallenge(practice) ? practice.correctAnswer.trim()
-      : practice.options?.find(o => o.trim().toLowerCase() === practice.correctAnswer.trim().toLowerCase()) ?? practice.correctAnswer;
-    setSelectedAnswer(shown);
-    if (isGridAnswerChallenge(practice)) setClickedDate(Number(shown));
-    setFeedback({ correct: true, message: 'Correct!' });
-    if (practice.highlightDates) setHighlightedDates(new Set(practice.highlightDates));
+    showCredited(practice);
   };
 
   // ── Determine if we can proceed ─────────────────────────────────
@@ -508,21 +452,17 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     setTicks({ item: '', dates: [] });
   };
 
-  // What the tutor and the observer are shown, republished every render, with the session item's levers.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render: the scene, and the lever set's levers and
+  // facts (`leverScene`). No demonstration targets, no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const scene = calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn,
-      revealPolicy: tutorRevealPolicy(supportTier) });
+    const drawn = calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn, headersBack });
+    const scene = { ...drawn, facts: { ...drawn.facts } as Record<string, string | number> };
+    if (practice) scene.facts.practice = PRACTICE_NOTE;
     const levers = practice ? [] : itemLevers;
-    const onScreen = practice ? undefined
-      : calendarLeverFacts(sessionChallenge, levers.filter(l => l.kind === 'help' && l.pulled).map(l => l.id));
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        // The tier withdrew the header row; the lever put it back, so pointing at it is allowed again.
-        ...(helpOn(HEADERS_LEVER) ? { coaching: 'The header row is back on screen: you may point to it. Never name the answer column.' } : {}),
-        ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...leverScene(scene, { support: practice ? '' : CALENDAR_LEVERS.support(sessionChallenge, session),
+        onScreen: practice ? '' : CALENDAR_LEVERS.onScreen(sessionChallenge, session, onLevers) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -530,39 +470,16 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = calendarPracticeItem(sessionChallenge, session);
+          const easier = CALENDAR_LEVERS.simpler(sessionChallenge, session, id);
           if (!easier) return 'This question is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); clearWork();
-          return { practice: calendarGridAssignment(easier) };
+          return { practice: calendarExplorerBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
       },
       // Back to the full item, blank: the practice question is not the learner's work on it.
       endPractice: () => { setPractice(null); clearWork(); },
-    };
-  });
-
-  // ── Pip shared surface ──────────────────────────────────────────
-  // A projection of this question's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never picks a date or option, checks, or
-  // advances. Tutor audio counts only while the tutor is on this block and
-  // began on this question.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !hasAnsweredCurrent);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnQuestion = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete) return null;
-    const targets = pip.targets();
-    const pose = calendarGridPipPose({
-      running: true, preparing: false, currentSolved: feedback?.correct === true, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnQuestion,
-      type: currentChallenge.type, answerFromGrid,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Calendar',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -587,7 +504,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
               {title}
             </CardTitle>
             <Badge className="bg-white/5 border border-white/20 text-slate-300 text-xs">
-              {currentIndex + 1} / {challenges.length}
+              {Math.min(currentIndex + 1, challenges.length)} / {challenges.length}
             </Badge>
           </div>
           {description && (
@@ -629,282 +546,277 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
               )}
             </div>
 
-            {currentChallenge.type === 'day_offset' && (
-              <div
-                ref={pip.ref('offset')}
-                data-pip-object="offset"
-                data-testid="day-offset-surface"
-                className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-6 text-center"
-              >
-                <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">Start day</p>
-                <p className="mt-2 text-3xl font-light text-cyan-100">{currentChallenge.startDay}</p>
-                <div className="my-5 flex items-center justify-center gap-2" aria-label={`${currentChallenge.offsetDays} steps forward`}>
-                  {Array.from({ length: currentChallenge.offsetDays ?? 0 }, (_, index) => (
-                    <span
-                      key={index}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
-                      aria-hidden="true"
-                    >
-                      →
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm text-slate-300">
-                  Count forward {currentChallenge.offsetDays} {currentChallenge.offsetDays === 1 ? 'day' : 'days'}.
-                </p>
-                {/* The help lever `week_strip`: the week in order from the start day, only the start marked. */}
-                {strip && (
-                  <div data-lever="week-strip" aria-label="The week from the start day"
-                    className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-                    {strip.map((day, i) => (
-                      <span key={day} data-strip-start={i === 0 ? 'true' : undefined}
-                        className={`rounded-lg border px-2 py-1 text-xs ${i === 0
-                          ? 'border-cyan-300/70 bg-cyan-400/20 text-cyan-100' : 'border-white/15 bg-white/5 text-slate-300'}`}>
-                        {day}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the activity, and the
+                activity as one region, never a single date or option. */}
+            <PipDock />
+            <PipWorkspace>
+              {currentChallenge.type === 'day_offset' && (
+                <div
+                  data-pip-object="offset"
+                  data-testid="day-offset-surface"
+                  className="mb-6 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-6 text-center"
+                >
+                  <p className="text-xs uppercase tracking-[0.25em] text-cyan-300/70">Start day</p>
+                  <p className="mt-2 text-3xl font-light text-cyan-100">{currentChallenge.startDay}</p>
+                  <div className="my-5 flex items-center justify-center gap-2" aria-label={`${currentChallenge.offsetDays} steps forward`}>
+                    {Array.from({ length: currentChallenge.offsetDays ?? 0 }, (_, index) => (
+                      <span
+                        key={index}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+                        aria-hidden="true"
+                      >
+                        →
                       </span>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Calendar Grid */}
-            {currentChallenge.type !== 'day_offset' && (
-            <div className="mb-6" data-testid="calendar-grid">
-              {/* The help lever `time_arrow`: which way the days go, drawn over the grid and on no date. */}
-              {arrowOn && (
-                <div data-lever="time-arrow" className="mx-auto mb-2 flex max-w-md items-center justify-center gap-2 text-sm text-cyan-200">
-                  <span aria-hidden="true">→ → →</span>
-                  <span>days go this way, then on to the next row</span>
-                  <span aria-hidden="true">↵</span>
+                  <p className="text-sm text-slate-300">
+                    Count forward {currentChallenge.offsetDays} {currentChallenge.offsetDays === 1 ? 'day' : 'days'}.
+                  </p>
+                  {/* The help lever `week_strip`: the week in order from the start day, only the start marked. */}
+                  {strip && (
+                    <div data-lever="week-strip" aria-label="The week from the start day"
+                      className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+                      {strip.map((day, i) => (
+                        <span key={day} data-strip-start={i === 0 ? 'true' : undefined}
+                          className={`rounded-lg border px-2 py-1 text-xs ${i === 0
+                            ? 'border-cyan-300/70 bg-cyan-400/20 text-cyan-100' : 'border-white/15 bg-white/5 text-slate-300'}`}>
+                          {day}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-              <div ref={pip.ref('grid')} data-pip-object="grid"
-                className={`grid ${rowsOn ? 'grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]' : 'grid-cols-7'} gap-1 max-w-md mx-auto`}>
-                {/* Day headers — orientation scaffold, withdrawn at hard */}
-                {showDayHeaders && rowsOn && <div aria-hidden="true" />}
-                {showDayHeaders && DAY_HEADERS.map((day) => (
-                  <div
-                    key={day}
-                    data-testid="day-header"
-                    className="text-center text-xs font-mono text-slate-500 py-1"
-                  >
-                    {day}
+
+              {/* Calendar Grid */}
+              {currentChallenge.type !== 'day_offset' && (
+              <div className="mb-6" data-testid="calendar-grid">
+                {/* The help lever `time_arrow`: which way the days go, drawn over the grid and on no date. */}
+                {arrowOn && (
+                  <div data-lever="time-arrow" className="mx-auto mb-2 flex max-w-md items-center justify-center gap-2 text-sm text-cyan-200">
+                    <span aria-hidden="true">→ → →</span>
+                    <span>days go this way, then on to the next row</span>
+                    <span aria-hidden="true">↵</span>
                   </div>
-                ))}
-
-                {/* Calendar cells; with the `row_ranges` lever each week row starts with its first and last date. */}
-                {calendarGrid.map((day, idx) => {
-                  const range = rowsOn && idx % 7 === 0 ? ranges.find(([first]) => {
-                    const row = calendarGrid.slice(idx, idx + 7).filter((d): d is number => d !== null);
-                    return row.includes(first);
-                  }) : undefined;
-                  const label = rowsOn && idx % 7 === 0 ? (
-                    <div key={`row-${idx}`} data-lever={range ? 'row-range' : undefined}
-                      className="flex h-10 items-center justify-end pr-1 text-[10px] font-mono text-cyan-300/80">
-                      {range ? `${range[0]}–${range[1]}` : ''}
-                    </div>
-                  ) : null;
-                  if (day === null) {
-                    return <React.Fragment key={`blank-${idx}`}>{label}<div className="h-10" /></React.Fragment>;
-                  }
-
-                  const isHighlighted = highlightedDates.has(day);
-                  const isClicked = clickedDate === day;
-                  const isSelected = answerFromGrid && selectedAnswer === String(day);
-                  const isMarked = currentChallenge.markedDates?.includes(day) ?? false;
-                  const isRinged = ringed.has(day);
-                  const isTicked = ticksOn && ticked.has(day);
-
-                  // Day-of-week tinting: count's target day (the purple pre-marking does the
-                  // finding for the student, so it is withdrawn at hard and put back by the
-                  // `weekday_tint` lever), or the asked weekday on a date question (that lever).
-                  const dayOfWeek = getDayOfWeek(day, currentChallenge.month, currentChallenge.year);
-                  const isTargetDay = !!tintDay && dayOfWeek === tintDay;
-
-                  const isWeekend = new Date(currentChallenge.year, currentChallenge.month - 1, day).getDay() % 6 === 0;
-
-                  // The today marker is a STIMULUS, not feedback: it is on screen before
-                  // the child answers, and it survives selection and highlighting, so it
-                  // rides as an extra ring rather than a rung of the colour ladder.
-                  const isToday = currentChallenge.todayDate === day;
-                  const pipId = isToday ? 'today' : `date-${day}`;
-
-                  return (
-                    <React.Fragment key={day}>
-                    {label}
-                    <button
-                      ref={pip.ref(pipId)}
-                      data-pip-object={pipId}
-                      onClick={() => { pip.look(pipId); handleDateClick(day); }}
-                      data-testid={`date-${day}`}
-                      data-target-day={isTargetDay ? 'true' : undefined}
-                      data-today={isToday ? 'true' : undefined}
-                      data-marked={isMarked ? 'true' : undefined}
-                      data-lever={isRinged ? 'ring' : undefined}
-                      className={`
-                        relative h-10 rounded-lg text-sm font-mono transition-all duration-150
-                        ${isToday ? 'ring-2 ring-amber-400/80 font-bold' : ''}
-                        ${isRinged ? 'ring-2 ring-cyan-300/80' : ''}
-                        ${isHighlighted
-                          ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                          : isSelected
-                            ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50 ring-2 ring-blue-400/30'
-                            : isClicked
-                              ? 'bg-white/15 text-white border border-white/30'
-                              : isTargetDay
-                                ? 'bg-purple-500/15 text-purple-300 border border-purple-500/20'
-                                : isMarked
-                                  ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 ring-1 ring-amber-400/30'
-                                : isWeekend
-                                  ? 'bg-white/3 text-slate-500 border border-white/5 hover:bg-white/10'
-                                  : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }
-                      `}
+                )}
+                <div data-pip-object="grid"
+                  className={`grid ${rowsOn ? 'grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]' : 'grid-cols-7'} gap-1 max-w-md mx-auto`}>
+                  {/* Day headers — orientation scaffold, withdrawn at hard */}
+                  {showDayHeaders && rowsOn && <div aria-hidden="true" />}
+                  {showDayHeaders && DAY_HEADERS.map((day) => (
+                    <div
+                      key={day}
+                      data-testid="day-header"
+                      className="text-center text-xs font-mono text-slate-500 py-1"
                     >
                       {day}
-                      {/* Wordless, so the marker reads for a pre-reader. */}
-                      {isToday && (
-                        <span
-                          aria-label="today"
-                          className="absolute -top-1 -right-1 text-[10px] leading-none"
-                        >
-                          ⭐
-                        </span>
-                      )}
-                      {isMarked && !isToday && (
-                        <span
-                          aria-label="marked event"
-                          className="absolute -top-1 -right-1 text-[10px] leading-none"
-                        >
-                          📌
-                        </span>
-                      )}
-                      {currentChallenge.type === 'mark_events' && isSelected && (
-                        <span
-                          aria-label={`${currentChallenge.eventLabel ?? 'event'} marker placed`}
-                          className="absolute -top-1 -right-1 text-[10px] leading-none"
-                        >
-                          📍
-                        </span>
-                      )}
-                      {/* The `tick_taps` lever: the learner's own tick, never one placed by the activity. */}
-                      {isTicked && (
-                        <span data-lever="tick" aria-label="ticked"
-                          className="absolute -bottom-1 -left-1 text-[10px] leading-none text-emerald-300">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-
-              {/* Legend — only when a day is marked. The star is the child's anchor for
-                  today / yesterday / tomorrow, so it is named once, above the grid's
-                  own answer surface, and never prints the date itself. */}
-              {currentChallenge.todayDate !== undefined && (
-                <p
-                  data-testid="today-legend"
-                  className="text-xs text-amber-300/80 text-center mt-2"
-                >
-                  ⭐ = today
-                </p>
-              )}
-              {currentChallenge.type === 'interval_count' && (
-                <p className="mt-2 text-center text-xs text-amber-300/80">
-                  📌 = marked date
-                </p>
-              )}
-            </div>
-            )}
-
-            {/* Answer Options — every challenge that is NOT answered by clicking a
-                date in the grid (count, pattern, and day-name identify). */}
-            {/* Pip's dock sits between the calendar (the cue) and the option
-                buttons (the answers), so a pointer to the star never crosses one. */}
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto mb-4 flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
-            {showOptionButtons && (
-              <div className="mb-4">
-                <p className="text-xs text-slate-500 mb-2">Choose your answer:</p>
-                <div className="flex flex-wrap gap-2">
-                  {currentChallenge.options.map((option, optionIndex) => (
-                    <Button
-                      key={option}
-                      ref={pip.ref(`option-${optionIndex}`)}
-                      data-pip-object={`option-${optionIndex}`}
-                      variant="ghost"
-                      data-testid={`option-${option}`}
-                      onClick={() => { pip.look(`option-${optionIndex}`); handleOptionSelect(option); }}
-                      className={`
-                        border transition-all
-                        ${selectedAnswer === option
-                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                        }
-                      `}
-                      disabled={!!feedback}
-                    >
-                      {option}
-                    </Button>
+                    </div>
                   ))}
+
+                  {/* Calendar cells; with the `row_ranges` lever each week row starts with its first and last date. */}
+                  {calendarGrid.map((day, idx) => {
+                    const range = rowsOn && idx % 7 === 0 ? ranges.find(([first]) => {
+                      const row = calendarGrid.slice(idx, idx + 7).filter((d): d is number => d !== null);
+                      return row.includes(first);
+                    }) : undefined;
+                    const label = rowsOn && idx % 7 === 0 ? (
+                      <div key={`row-${idx}`} data-lever={range ? 'row-range' : undefined}
+                        className="flex h-10 items-center justify-end pr-1 text-[10px] font-mono text-cyan-300/80">
+                        {range ? `${range[0]}–${range[1]}` : ''}
+                      </div>
+                    ) : null;
+                    if (day === null) {
+                      return <React.Fragment key={`blank-${idx}`}>{label}<div className="h-10" /></React.Fragment>;
+                    }
+
+                    const isHighlighted = highlightedDates.has(day);
+                    const isClicked = clickedDate === day;
+                    const isSelected = answerFromGrid && selectedAnswer === String(day);
+                    const isMarked = currentChallenge.markedDates?.includes(day) ?? false;
+                    const isRinged = ringed.has(day);
+                    const isTicked = ticksOn && ticked.has(day);
+
+                    // Day-of-week tinting: count's target day (the purple pre-marking does the
+                    // finding for the student, so it is withdrawn at hard and put back by the
+                    // `weekday_tint` lever), or the asked weekday on a date question (that lever).
+                    const dayOfWeek = getDayOfWeek(day, currentChallenge.month, currentChallenge.year);
+                    const isTargetDay = !!tintDay && dayOfWeek === tintDay;
+
+                    const isWeekend = new Date(currentChallenge.year, currentChallenge.month - 1, day).getDay() % 6 === 0;
+
+                    // The today marker is a STIMULUS, not feedback: it is on screen before
+                    // the child answers, and it survives selection and highlighting, so it
+                    // rides as an extra ring rather than a rung of the colour ladder.
+                    const isToday = currentChallenge.todayDate === day;
+
+                    return (
+                      <React.Fragment key={day}>
+                      {label}
+                      <button
+                        data-pip-object={`date-${day}`}
+                        onClick={() => handleDateClick(day)}
+                        data-testid={`date-${day}`}
+                        data-target-day={isTargetDay ? 'true' : undefined}
+                        data-today={isToday ? 'true' : undefined}
+                        data-marked={isMarked ? 'true' : undefined}
+                        data-lever={isRinged ? 'ring' : undefined}
+                        className={`
+                          relative h-10 rounded-lg text-sm font-mono transition-all duration-150
+                          ${isToday ? 'ring-2 ring-amber-400/80 font-bold' : ''}
+                          ${isRinged ? 'ring-2 ring-cyan-300/80' : ''}
+                          ${isHighlighted
+                            ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
+                            : isSelected
+                              ? 'bg-blue-500/30 text-blue-300 border border-blue-500/50 ring-2 ring-blue-400/30'
+                              : isClicked
+                                ? 'bg-white/15 text-white border border-white/30'
+                                : isTargetDay
+                                  ? 'bg-purple-500/15 text-purple-300 border border-purple-500/20'
+                                  : isMarked
+                                    ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 ring-1 ring-amber-400/30'
+                                  : isWeekend
+                                    ? 'bg-white/3 text-slate-500 border border-white/5 hover:bg-white/10'
+                                    : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white'
+                          }
+                        `}
+                      >
+                        {day}
+                        {/* Wordless, so the marker reads for a pre-reader. */}
+                        {isToday && (
+                          <span
+                            aria-label="today"
+                            className="absolute -top-1 -right-1 text-[10px] leading-none"
+                          >
+                            ⭐
+                          </span>
+                        )}
+                        {isMarked && !isToday && (
+                          <span
+                            aria-label="marked event"
+                            className="absolute -top-1 -right-1 text-[10px] leading-none"
+                          >
+                            📌
+                          </span>
+                        )}
+                        {currentChallenge.type === 'mark_events' && isSelected && (
+                          <span
+                            aria-label={`${currentChallenge.eventLabel ?? 'event'} marker placed`}
+                            className="absolute -top-1 -right-1 text-[10px] leading-none"
+                          >
+                            📍
+                          </span>
+                        )}
+                        {/* The `tick_taps` lever: the learner's own tick, never one placed by the activity. */}
+                        {isTicked && (
+                          <span data-lever="tick" aria-label="ticked"
+                            className="absolute -bottom-1 -left-1 text-[10px] leading-none text-emerald-300">
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
 
-            {/* For grid-answer modes — show the selected date / placed marker. */}
-            {answerFromGrid && selectedAnswer && !feedback && (
-              <div className="mb-4 text-sm text-slate-300">
-                {currentChallenge.type === 'mark_events' ? 'Marker placed on: ' : 'Selected: '}
-                <span className="text-blue-300 font-medium">{selectedAnswer}</span>
-              </div>
-            )}
-
-            {/* Feedback */}
-            {feedback && (
-              <div className={`mb-4 p-3 rounded-lg border ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-              }`}>
-                {feedback.message}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              {!hasAnsweredCurrent && (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={handleCheckAnswer}
-                    disabled={!canCheckAnswer}
-                    aria-label="Check Answer"
-                    className="bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-300 disabled:opacity-40"
+                {/* Legend — only when a day is marked. The star is the child's anchor for
+                    today / yesterday / tomorrow, so it is named once, above the grid's
+                    own answer surface, and never prints the date itself. */}
+                {currentChallenge.todayDate !== undefined && (
+                  <p
+                    data-testid="today-legend"
+                    className="text-xs text-amber-300/80 text-center mt-2"
                   >
-                    Check Answer
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowHint(true)}
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-                    disabled={showHint}
-                  >
-                    Hint
-                  </Button>
-                </>
+                    ⭐ = today
+                  </p>
+                )}
+                {currentChallenge.type === 'interval_count' && (
+                  <p className="mt-2 text-center text-xs text-amber-300/80">
+                    📌 = marked date
+                  </p>
+                )}
+              </div>
               )}
-            </div>
 
-            {/* Hint */}
-            {showHint && currentChallenge.hint && (
-              <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
-                {currentChallenge.hint}
+              {/* Answer Options — every challenge that is NOT answered by clicking a
+                  date in the grid (count, pattern, and day-name identify). */}
+              {showOptionButtons && (
+                <div className="mb-4">
+                  <p className="text-xs text-slate-500 mb-2">Choose your answer:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {currentChallenge.options.map((option) => (
+                      <Button
+                        key={option}
+                        variant="ghost"
+                        data-testid={`option-${option}`}
+                        onClick={() => handleOptionSelect(option)}
+                        className={`
+                          border transition-all
+                          ${selectedAnswer === option
+                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                            : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                          }
+                        `}
+                        disabled={!!feedback}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* For grid-answer modes — show the selected date / placed marker. */}
+              {answerFromGrid && selectedAnswer && !feedback && (
+                <div className="mb-4 text-sm text-slate-300">
+                  {currentChallenge.type === 'mark_events' ? 'Marker placed on: ' : 'Selected: '}
+                  <span className="text-blue-300 font-medium">{selectedAnswer}</span>
+                </div>
+              )}
+
+              {/* Feedback */}
+              {feedback && (
+                <div className={`mb-4 p-3 rounded-lg border ${
+                  feedback.correct
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                }`}>
+                  {feedback.message}
+                </div>
+              )}
+
+              {/* Check and the printed hint; the runtime moves on, so there is no Next. */}
+              <div className="flex items-center gap-3">
+                {!hasAnsweredCurrent && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      onClick={handleCheckAnswer}
+                      disabled={!canCheckAnswer}
+                      aria-label="Check Answer"
+                      className="bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-blue-300 disabled:opacity-40"
+                    >
+                      Check Answer
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowHint(true)}
+                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+                      disabled={showHint}
+                    >
+                      Hint
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
+
+              {/* Hint */}
+              {showHint && currentChallenge.hint && (
+                <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+                  {currentChallenge.hint}
+                </div>
+              )}
+            </PipWorkspace>
           </CardContent>
         </Card>
       )}
@@ -915,12 +827,11 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
 /** Spoken mode is isolated from the calendar grid so each response channel has
  * one honest lifecycle: the tutor owns progression here; taps own it above. */
 const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps) => {
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const items = useMemo(
-    () => calendarSequenceItemsFromChallenges(data.challenges ?? []),
-    [data.challenges],
-  );
+  const items = useMemo(() => calendarItems({ challenges: data.challenges ?? [], supportTier: data.supportTier }),
+    [data.challenges, data.supportTier]);
+  const session: CalendarSession = useMemo(() => ({ challenges: items, supportTier: data.supportTier, gradeBand: data.gradeBand }),
+    [items, data.supportTier, data.gradeBand]);
   const dayOnly = items.length > 0 && items.every((item) => item.type === 'day_sequence');
   const monthOnly = items.length > 0 && items.every((item) => item.type === 'month_sequence');
   const unit = monthOnly ? 'month' : dayOnly ? 'day' : 'calendar item';
@@ -950,9 +861,9 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
       undefined, summary.diagnosisEvidence);
   };
 
-  const runner = useWorkspaceRunner<CalendarSequenceItem>({
+  const runner = useWorkspaceRunner<CalendarExplorerChallenge>({
     primitiveId: 'calendar-explorer',
-    assignment: calendarSequenceAssignment,
+    assignment: calendarExplorerBoss.assignment,
     items,
     workspace,
     objectiveId: data.objectiveId,
@@ -963,21 +874,19 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  // The `model_pair` lever (`calendarExplorerLevers.ts`), keyed by the turn it was pulled on.
+  // The `model_pair` lever (`CALENDAR_LEVERS`), keyed by the turn it was pulled on.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const turn = runner.currentItem;
   const pulledLevers = turn && leverState.item === turn.id ? leverState.pulled : [];
   const pair = turn && pulledLevers.includes(MODEL_PAIR_LEVER) ? modelPair(turn, items) : null;
 
-  // What the tutor and the observer are shown, republished every render, with the turn's lever.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render, with the turn's lever and when it comes.
   useLayoutEffect(() => {
     if (!turn) return;
-    const scene = calendarSequenceScene(turn);
-    const levers = calendarSequenceLevers(turn, items, pulledLevers);
+    const levers = CALENDAR_LEVERS.declare(turn, session, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(pair ? { onScreen: modelPairFact(turn, pair) } : {}) },
+      ...leverScene(calendarSequenceScene(turn), { support: CALENDAR_LEVERS.support(turn, session),
+        onScreen: CALENDAR_LEVERS.onScreen(turn, session, pulledLevers) }),
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -990,31 +899,10 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
+  const { requestHear } = runner;
   const hearQuestion = useCallback(() => {
-    if (!runner.currentItem) return;
-    ctx.sendText(hearSequenceRequest(runner.currentItem), { silent: true, author: 'host' });
-  }, [ctx, runner.currentItem]);
-
-  // ── Pip shared surface ──────────────────────────────────────────
-  // A projection of the runner's phase onto the listen card; Pip never says,
-  // judges, or advances anything.
-  const sequenceItem = runner.currentItem;
-  const pip = usePipTargets(sequenceItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !sequenceItem || showSummary) return null;
-    const targets = pip.targets(['stimulus'], () => 'The listen card');
-    const pose = calendarSequencePipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: false, tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === sequenceItem.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: sequenceItem.id, label: 'Calendar chain',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
+    if (turn) requestHear(hearSequenceRequest(turn));
+  }, [requestHear, turn]);
 
   const phaseResults = useMemo(
     () => phaseResultsFromSummary(items, runner.practiceSummary ?? null, (item) => ({
@@ -1060,39 +948,39 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
                 </Badge>
               </div>
 
-              {/* Intentionally no printed sequence names or strip. The tutor's
-                  voice is the stimulus and the child's voice is the answer. */}
-              <div ref={pip.ref('stimulus')} data-pip-object="stimulus"
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-center">
-                <div className="text-6xl" aria-hidden="true">📅</div>
-                <p className="mt-4 text-sm uppercase tracking-[0.3em] text-slate-500">
-                  listen · think · say
-                </p>
-              </div>
-
-              {/* The help lever `model_pair`: two OTHER names in order, never this turn's or a turn still ahead. */}
-              {pair && (
-                <div data-lever="model-pair" aria-label="Model pair"
-                  className="mx-auto flex w-fit items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-950/20 px-4 py-3 text-lg text-cyan-100">
-                  <span><span aria-hidden="true">📅 </span>{pair[0]}</span>
-                  <span aria-hidden="true" className="text-cyan-300">→</span>
-                  <span><span aria-hidden="true">📅 </span>{pair[1]}</span>
+              <PipDock />
+              <PipWorkspace className="space-y-5">
+                {/* Intentionally no printed sequence names or strip. The tutor's
+                    voice is the stimulus and the child's voice is the answer. */}
+                <div data-pip-object="stimulus"
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-10 text-center">
+                  <div className="text-6xl" aria-hidden="true">📅</div>
+                  <p className="mt-4 text-sm uppercase tracking-[0.3em] text-slate-500">
+                    listen · think · say
+                  </p>
                 </div>
-              )}
 
-              {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
+                {/* The help lever `model_pair`: two OTHER names in order, never this turn's or a turn still ahead. */}
+                {pair && (
+                  <div data-lever="model-pair" aria-label="Model pair"
+                    className="mx-auto flex w-fit items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-950/20 px-4 py-3 text-lg text-cyan-100">
+                    <span><span aria-hidden="true">📅 </span>{pair[0]}</span>
+                    <span aria-hidden="true" className="text-cyan-300">→</span>
+                    <span><span aria-hidden="true">📅 </span>{pair[1]}</span>
+                  </div>
+                )}
 
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  onClick={hearQuestion}
-                  aria-label="Hear the question again"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
-                >
-                  🔊 Hear the question again
-                </Button>
-              </div>
+                <div className="flex justify-center">
+                  <Button
+                    variant="ghost"
+                    onClick={hearQuestion}
+                    aria-label="Hear the question again"
+                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
+                  >
+                    🔊 Hear the question again
+                  </Button>
+                </div>
+              </PipWorkspace>
             </>
           )}
 
@@ -1115,9 +1003,8 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
 const CalendarGridExplorer = withWorkspaceOnly<CalendarExplorerProps>('calendar-explorer', CalendarGridSurface, props => props.data.title);
 const CalendarSequenceExplorer = withWorkspaceOnly<CalendarExplorerProps>('calendar-explorer', CalendarSequenceSurface, props => props.data.title);
 
-
 export const CalendarExplorer: React.FC<CalendarExplorerProps> = (props) =>
-  isSpokenCalendarSession(props.data.challenges)
+  isSpokenCalendarSession(props.data.challenges ?? [])
     ? <CalendarSequenceExplorer {...props} />
     : <CalendarGridExplorer {...props} />;
 

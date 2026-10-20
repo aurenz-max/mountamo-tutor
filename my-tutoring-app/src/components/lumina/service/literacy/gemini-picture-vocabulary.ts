@@ -14,7 +14,7 @@ import {
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import { isSingleEmojiPicture } from '../../utils/emojiPicture';
-import { clueLeak } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
+import { clueLeak } from '../../primitives/visual-primitives/literacy/pictureVocabularyDomain';
 import { makePicturePairItems } from '../../primitives/visual-primitives/literacy/picturePairBuild';
 import { clampGradeToK2 } from '../scopeContext';
 import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
@@ -255,7 +255,7 @@ const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\
 /** Single token, no spaces, 2-12 chars. "yes" is refused everywhere: a base
  *  word spoken as its own sentence ("Yes. Your turn…") would open the ask with
  *  the DI affirm sentinel and the verdict scan would misread it (standing
- *  gate 2 — see pictureVocabularyScript.ts). */
+ *  gate 2). */
 const isValidWordToken = (w: string): boolean =>
   /^\S{2,12}$/.test(w) && !/\s/.test(w) && w.toLowerCase() !== 'yes';
 
@@ -1176,6 +1176,8 @@ export const generatePictureVocabulary = async (
       challengeType: mode ?? 'naming',
       challenges,
       gradeLevel: ctx.gradeContext,
+      // The lesson's tier: when a relation mode's model lever comes (`supportFact`).
+      ...(ctx.supportTier ? { supportTier: ctx.supportTier } : {}),
     };
 
     console.log('Picture Vocabulary Generated:', {

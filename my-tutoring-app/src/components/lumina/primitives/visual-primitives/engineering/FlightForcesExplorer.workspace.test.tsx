@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * flight-forces-explorer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The
- * generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * predict and observe are code-keyed closed choices, tapped and checked or said aloud: the key is published only as
- * the spoken expectedAnswer, and the plane holds still until credit. adjust is a setting checked by code against the
+ * flight-forces-explorer on its boss (SAY_OR_SHOW choices and an adjust flight on the spoken preset) and its lever set:
+ * what is its own. The generic W1 contract (runtime/workspaceContract.test.tsx) and boss.test.ts cover ownership, the
+ * packet and the wiring. predict and observe are code-keyed closed choices, tapped and checked or said aloud: the key is
+ * published only as the spoken key (`flightKey`), and the plane holds still until credit. adjust is a setting checked by code against the
  * goal. A wrong answer names its miss, and every miss has a help lever first.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -21,14 +21,18 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { FlightForcesExplorerData } from './FlightForcesExplorer';
 import {
   AIRCRAFT_IDS, askedAxes, askOf, buildFlightItems, choicesFor, emptyWork, FLIGHT_MISSES, flightCorrect, flightHarnessAnswers,
-  flightItems, flightMiss, forcesAt, goalMet, keyLabel, keyOf, pressesTo, seededRng, solution, validFlightItem,
-  workspaceAssignment, type AdjustItem, type FlightItem, type FlightMode, type FlightTier, type ObserveItem, type PredictItem,
+  flightItems, flightKey, flightMiss, forcesAt, goalMet, keyLabel, keyOf, pressesTo, seededRng, solution, validFlightItem,
+  type AdjustItem, type FlightItem, type FlightMode, type FlightTier, type ObserveItem, type PredictItem,
 } from './flightForcesWorkspace';
 import {
-  countLines, COUNT_UNITS_LEVER, flightLevers, FORCE_LINK_LEVER, forceLinkLines, leverFact, motionLeak, ONE_AXIS_LEVER,
+  countLines, COUNT_UNITS_LEVER, FLIGHT_LEVERS, FORCE_LINK_LEVER, forceLinkLines, motionLeak, ONE_AXIS_LEVER,
   ONE_CONTROL_LEVER, ONE_STEP_LEVER, PAIR_UP_LEVER, possibleMisses, SHOW_ARROWS_LEVER, simplerItem, STALL_MARK_LEVER,
   stallLine, TARGET_MARKS_LEVER,
 } from './flightForcesLevers';
+import { flightForcesExplorerBoss } from './flightForcesExplorer.boss';
+
+const flightLevers = (i: FlightItem, pulled: string[] = []) => FLIGHT_LEVERS.declare(i, {}, pulled);
+const leverFact = (i: FlightItem, pulled: string[]) => FLIGHT_LEVERS.onScreen(i, {}, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -74,7 +78,7 @@ it.each(MODES)('%s binds with its key out of the scene and off the screen', mode
   expect(getComponentById('flight-forces-explorer')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(flightForcesExplorerBoss.assignment(item).task);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/has been run|now moves|flew the setting|\bcorrect\b/i);
   expect(h.view.container.querySelector('[data-lever]')).toBeNull();
@@ -87,7 +91,9 @@ it.each(MODES)('%s binds with its key out of the scene and off the screen', mode
   } else {
     expect(demand(h).response).toBe('speech');
     const key = keyLabel(item as PredictItem | ObserveItem, askedAxes(item)[0]);
-    expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${key}"`);
+    expect(flightForcesExplorerBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
+    expect(h.state().task!.workspace!.expectedAnswer).toContain(`"${flightKey(item)!.answer}"`);
+    expect(flightKey(item)!.answer).toBe(key.toLowerCase());
     expect(String(demand(h).question)).not.toContain(key === 'Stays level' ? 'Stays level' : key);
   }
   h.close();
@@ -212,6 +218,30 @@ it('adjust: a flight is the check; tilting the nose without more thrust is forgo
   h.close();
 });
 
+it('the harness says the key of each choice item and a wrong answer; an adjust flight presses the controls', () => {
+  for (const mode of MODES) for (const item of BY_MODE[mode]) {
+    const play = (right: boolean) => flightForcesExplorerBoss.drive.play(right, item, {} as never);
+    if (item.mode === 'adjust') {
+      expect(flightKey(item)).toBeNull();
+      expect(play(true)).toEqual([...pressesTo(item.start, solution(item)!).map(label => ({ type: 'choose', label })), { type: 'check' }]);
+      continue;
+    }
+    const said = (right: boolean) => String((play(right).at(-1) as { text?: string }).text);
+    expect(said(true)).toBe(flightKey(item)!.answer);
+    expect([flightKey(item)!.answer, ...flightKey(item)!.alsoAccept]).not.toContain(said(false));
+  }
+});
+
+it('the scene keeps the never-say rules of each mode as facts', () => {
+  const h = mount('predict');
+  expect(String(demand(h).constraints)).toMatch(/Never say which force the action changes/);
+  expect(String(demand(h).neverSay)).toMatch(/never say what the wrong choice came from/);
+  h.close();
+  const a = mount('adjust');
+  expect(String(demand(a).constraints)).toMatch(/never call them targets/);
+  a.close();
+});
+
 describe('the pure rules', () => {
   const all = (mode: FlightMode) => TIERS.flatMap(tier => AIRCRAFT_IDS.flatMap(aircraft =>
     buildFlightItems({ modes: [mode], tier, aircraft, rng: seededRng(`${mode}${tier}${aircraft}`) }).map(i => ({ i, tier }))));
@@ -293,7 +323,6 @@ describe('the pure rules', () => {
       if (!s) continue;
       expect(s.mode).toBe(mode);
       expect(simplerItem(s)).toBeNull();
-      expect(flightLevers(s, [])).toEqual([]);
       if (s.mode === 'predict' && i.mode === 'predict') expect(keyLabel(s, s.asked)).not.toBe(keyLabel(i, i.asked));
       if (s.mode === 'adjust') { expect(s.controls).toEqual(['nose']); expect(goalMet(s, s.start)).toBe(false); expect(solution(s)).not.toBeNull(); }
     }

@@ -12,16 +12,15 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { coinMiss, workspaceAssignment, type CoinView } from './coinCounterWorkspace';
-import { coinCounterLevers, smallerAmount } from './coinCounterLevers';
+import { coinMiss, type CoinView } from './coinCounterWorkspace';
+import { COIN_LEVERS, smallerAmount } from './coinCounterLevers';
+import { coinCounterBoss } from './coinCounter.boss';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'coins',
   conversation: [], sendText: seam.send, sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: true, isAudioPlaying: false,
-  activePrimitiveId: 'coins' }) }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => null,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
@@ -66,7 +65,7 @@ function mount(challenges: CoinCounterChallenge[], extra: Partial<CoinCounterDat
 }
 
 it('opens as a gesture item on an empty tray: the ask states the amount, no target or total beside the coins', () => {
-  expect(workspaceAssignment(SHOW).response).toBe('gesture');
+  expect(coinCounterBoss.assignment({ ...SHOW, band: '2' }).response).toBe('gesture');
   const h = mount([SHOW]);
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).toBe(SHOW.instruction);
@@ -174,14 +173,16 @@ it('misses, lever text and catalog wiring for the build', () => {
   expect(coinMiss(SHOW, { ...view, placed: ['dime', 'dime', 'dime'] })).toBe('over');
   expect(coinMiss(SHOW, { ...view, placed: ['nickel', 'nickel', 'nickel', 'penny'] })).toBeUndefined();
 
-  const levers = coinCounterLevers(SHOW, []);
+  const leverView = { valuesShown: true, valuesOn: true, runningTotalShown: false, enactedTap: false };
+  const levers = COIN_LEVERS.declare({ ...SHOW, band: '2' }, leverView, []);
   // The text names the build (the tray, putting in), never another mode's action or the amount asked for.
   for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/hand|give|type|16/i);
   expect(levers.every(l => /tray|amount/i.test(l.does))).toBe(true);
   expect(smallerAmount(SHOW)).toMatchObject({ id: 'a~smaller', targetAmount: 8 });
   expect(smallerAmount(smallerAmount(SHOW)!)).toBeNull();
   // make-amount has its own levers; their text names putting coins in, never the tray.
-  expect(coinCounterLevers({ ...SHOW, type: 'make-amount' }, []).map(l => l.id)).toEqual(['running_total', 'value_tags', 'smaller_amount']);
+  expect(COIN_LEVERS.declare({ ...SHOW, type: 'make-amount', band: '2' }, leverView, []).map(l => l.id))
+    .toEqual(['running_total', 'value_tags', 'smaller_amount']);
 
   const entry = getComponentById('coin-counter')!;
   const mode = entry.evalModes!.find(m => m.evalMode === 'show-amount')!;

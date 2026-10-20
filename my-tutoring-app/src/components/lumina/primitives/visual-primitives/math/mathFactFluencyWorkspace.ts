@@ -1,20 +1,26 @@
 /**
- * Math fact fluency on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C9), plain shape: `useWorkspaceProgress` in place of
- * `useChallengeProgress`. How the learner answers follows what is drawn:
+ * Math fact fluency on the shared tutor/JEV teaching workspace. The boss (`mathFactFluency.boss.ts`) asks each fact;
+ * how the learner answers follows what is drawn:
  *   - `choice`: a row of numbers (visual-fact, equation-solve), tapped;
  *   - `equation`: a match from a picture to one of the printed equations, tapped;
  *   - `picture`: a match from the printed fact to one of the pictures, tapped;
  *   - `stepper`: a number set with − and + and Submit (missing-number, speed-round).
- * A number answer (`choice`, `stepper`) may also be said aloud: the item is spoken, judged by JEV from the tutor's
- * feedback against `expectedAnswer`, and still takes the tap or Submit, which the activity checks (session
- * 2026-10-13 750ca99a: "18" said to 9 + 9 was praised and never credited). A match answers with a tap only:
- * "that one" names no equation or picture, so its key never reaches the tutor.
- * Response time stays a silent metric: nothing here advances or grades on a clock.
+ * A number answer (`choice`, `stepper`) may also be said aloud: the item has a spoken key (`mathFactKey`), judged by
+ * JEV from the tutor's feedback, and still takes the tap or Submit, which the activity checks (session 2026-10-13
+ * 750ca99a: "18" said to 9 + 9 was praised and never credited). A match answers with a tap only: "that one" names no
+ * equation or picture, so it has no key and its answer never reaches the tutor.
+ * Response time stays a silent metric: nothing here advances or grades on a clock, and nothing shows a timer.
+ *
+ * Pure: the component, the boss, the levers and the tests read the same ask, key, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberMisses, offByMisses, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { MathFactFluencyChallenge } from './MathFactFluency';
+import type { MathFactMiss } from './mathFactFluency.card';
+import { spokenIntegerWord } from './spokenNumberWords';
+
+export type { MathFactMiss };
 
 export type MathFactChannel = 'choice' | 'equation' | 'picture' | 'stepper';
 
@@ -30,6 +36,9 @@ export function mathFactChannel(c: MathFactFluencyChallenge): MathFactChannel {
   return c.options?.length ? 'choice' : 'stepper';
 }
 
+/** The eval mode a challenge type belongs to (`visual-fact` → `visual_fact`). */
+export const mathFactMode = (c: Pick<MathFactFluencyChallenge, 'type'>) => c.type.replace('-', '_');
+
 /** The number after "=" in an equation option. */
 export const equationResult = (eq: string) => parseInt(eq.split('=').pop()?.trim() ?? '', 10);
 
@@ -41,13 +50,16 @@ export function formatMathFact(c: MathFactFluencyChallenge): string {
   return `${c.operand1} ${op} ${c.operand2} = ?`;
 }
 
+/** The numbers printed in the fact, in reading order (not the "?"). */
+const printedNumbers = (c: MathFactFluencyChallenge) => (formatMathFact(c).match(/\d+/g) ?? []).map(Number);
+
 /** Whether the answer is a number the learner can say aloud. */
 export const mathFactSpoken = (c: MathFactFluencyChallenge) => {
   const channel = mathFactChannel(c);
   return channel === 'choice' || channel === 'stepper';
 };
 
-/** The fact with its answer in place, for the observer: "9 + 9 = 18". */
+/** The fact with its answer in place: "9 + 9 = 18". */
 function solvedFact(c: MathFactFluencyChallenge): string {
   const op = c.operation === 'addition' ? '+' : '−';
   const [a, b, r] = c.unknownPosition === 'operand1' ? [c.correctAnswer, c.operand2, c.result]
@@ -55,29 +67,50 @@ function solvedFact(c: MathFactFluencyChallenge): string {
   return `${a} ${op} ${b} = ${r}`;
 }
 
-/** A spoken answer's known wrong answers (handoff 20 Part B), most specific first, as `mathFactMiss` names them. */
+/**
+ * What the learner is asked: the instruction on screen and, when a fact is printed, that fact with its "?". A
+ * picture-to-equation match prints no fact; an equation-to-picture match's fact is in the scene's `problem`.
+ */
+export function mathFactAsk(c: MathFactFluencyChallenge): string {
+  // An instruction that already states the fact ("What is 9 + 9?") is not followed by it again.
+  const states = printedNumbers(c).every(n => new RegExp(`\\b${n}\\b`).test(c.instruction));
+  return mathFactSpoken(c) && !states ? `${c.instruction} The printed fact: ${formatMathFact(c)}.` : c.instruction;
+}
+
+/** What the ask says by design: the printed fact, and its numbers as words (an easy instruction says "start at three"). */
+export const mathFactGiven = (c: MathFactFluencyChallenge): string[] =>
+  [formatMathFact(c), ...printedNumbers(c).map(spokenIntegerWord)];
+
+/** The key a spoken number is judged against; null on a match, which is tapped only. */
+export function mathFactKey(c: MathFactFluencyChallenge): SpokenKey | null {
+  if (!mathFactSpoken(c)) return null;
+  const n = c.correctAnswer;
+  return { answer: spokenIntegerWord(n), alsoAccept: [String(n)],
+    acceptRule: `The whole fact said with that number in place (${solvedFact(c)}) is that answer.`,
+    signatureError: 'A different number is not the answer, however close it is, and neither is a number already printed in the fact.' };
+}
+
+/**
+ * A spoken answer's known wrong answers (handoff 20 Part B), most specific first, as `mathFactMiss` names them. One
+ * `printed_number` entry names every printed number: a miss id appears once per item (`validSpokenMissRequest`).
+ */
 export function mathFactSpokenMisses(c: MathFactFluencyChallenge): KnownMiss[] {
   if (!mathFactSpoken(c)) return [];
-  const printed = (formatMathFact(c).match(/\d+/g) ?? []).map(Number);
+  const printed = printedNumbers(c);
   const [a, b] = printed;
   const other = printed.length === 2 ? [a + b, Math.abs(a - b)].find(n => n !== c.correctAnswer) : undefined;
   const fact = formatMathFact(c);
+  const operation = numberMisses(c.correctAnswer, [{ id: 'other_operation', value: other,
+    pattern: n => `The learner's answer is ${n}: the two printed numbers in ${fact} combined the other way.` }]);
+  const echoes = numberMisses(c.correctAnswer, printed.filter(p => p !== other)
+    .map(value => ({ id: 'printed_number', value, pattern: (n: number) => String(n) })));
+  const named = echoes.map(m => m.pattern);
   return [
-    ...numberMisses(c.correctAnswer, [
-      { id: 'other_operation', value: other, pattern: n => `The learner's answer is ${n}: the two printed numbers in ${fact} combined the other way.` },
-      ...printed.map(p => ({ id: 'printed_number', value: p, pattern: (n: number) => `The learner's answer is ${n}, a number already printed in ${fact}.` })),
-    ]),
+    ...operation,
+    ...(echoes.length ? [{ id: 'printed_number', examples: echoes.flatMap(m => m.examples ?? []),
+      pattern: `The learner's answer is ${named.join(' or ')}, a number already printed in ${fact}.` }] : []),
     ...offByMisses(c.correctAnswer, `the number that replaces the "?" in ${fact}`),
   ];
-}
-
-export function mathFactAssignment(c: MathFactFluencyChallenge): TeachingAssignment {
-  if (!mathFactSpoken(c)) return { id: c.id, task: c.instruction, response: 'gesture' };
-  return { id: c.id, task: `${c.instruction} The learner answers ${formatMathFact(c)} by saying the number, `
-    + `${mathFactChannel(c) === 'choice' ? 'or tapping it' : 'or setting it and pressing Submit'}.`,
-  response: 'speech', acceptsGesture: true,
-  expectedAnswer: `${c.correctAnswer} (${solvedFact(c)}), said as a number, digits or words`,
-  misses: mathFactSpokenMisses(c) };
 }
 
 /** The activity's own check. */
@@ -94,15 +127,13 @@ export function mathFactMatches(c: MathFactFluencyChallenge, r: MathFactResponse
  * fact), then `one_short` / `one_over` / `short_by_more` / `over_by_more`. A picture-to-equation match prints
  * no fact, so it names only how far off the chosen equation's total is.
  */
-export type MathFactMiss = 'other_operation' | 'printed_number' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
-
 export function mathFactMiss(c: MathFactFluencyChallenge | null, r: MathFactResponse): MathFactMiss | undefined {
   if (!c) return undefined;
   const got = r.kind === 'number' ? r.value : r.kind === 'equation' ? equationResult(r.value) : c.visualOptions?.[r.index]?.count;
   const want = c.correctAnswer;
   if (got === undefined || Number.isNaN(got) || got === want) return undefined;
   if (mathFactChannel(c) !== 'equation') {
-    const printed = (formatMathFact(c).match(/\d+/g) ?? []).map(Number);
+    const printed = printedNumbers(c);
     const [a, b] = printed;
     if (printed.length === 2 && [a + b, Math.abs(a - b)].includes(got)) return 'other_operation';
     if (printed.includes(got)) return 'printed_number';
@@ -120,15 +151,12 @@ export function describeMathFactCheck(c: MathFactFluencyChallenge, r: MathFactRe
   return picked ? `Chose the ${visualWord(picked.type)} with ${picked.count}` : 'Chose a picture';
 }
 
+/** This item's never-say rules: what on screen would give the answer away. How the learner answers is the card's. */
 const CONSTRAINTS: Record<MathFactChannel, string> = {
-  choice: 'The learner says the number that answers the fact, or taps it; the activity checks a tap. Before the learner '
-    + 'answers, never say that number, and never count the picture aloud to its end.',
-  stepper: 'The learner says the number that replaces the "?", or sets it with the − and + buttons and presses Submit; '
-    + 'the activity checks a Submit. Before the learner answers, never say that number.',
-  equation: 'The learner taps the equation that matches the picture; the activity checks the tap. Which equation '
-    + 'matches, and how many the picture shows, are the answer: never say them.',
-  picture: 'The learner taps the picture that shows the answer to the printed fact; the activity checks the tap. The '
-    + 'answer and which picture shows it are the answer: never say them.',
+  choice: 'Before the learner answers, never say the number that answers the fact, and never count the picture aloud to its end.',
+  stepper: 'Before the learner answers, never say the number that replaces the "?".',
+  equation: 'Which equation matches, and how many the picture shows, are the answer: never say them.',
+  picture: 'The answer and which picture shows it are the answer: never say them.',
 };
 
 /** How far the tutor may go at this support tier, so it never says what the tier withheld on screen. */
@@ -139,7 +167,8 @@ function coaching(tier?: MathFactFluencyChallenge['supportTier']): string | unde
       : 'Do not name a strategy. Ask what the learner notices and let them reason.';
 }
 
-export function mathFactScene(c: MathFactFluencyChallenge, view: { maxNumber: number }): WorkspaceScene {
+/** What the tutor reads about the fact on screen. The lever set adds what pulled levers drew (`leverScene`). */
+export function mathFactScene(c: MathFactFluencyChallenge, view: { maxNumber: number }): SceneOf {
   const channel = mathFactChannel(c);
   const showsPicture = c.type === 'visual-fact' ? !!c.visualType : channel === 'equation';
   const tip = coaching(c.supportTier);
@@ -193,4 +222,10 @@ export function mathFactHarnessInputs(c: MathFactFluencyChallenge, wrong: boolea
   const presses: HarnessInput[] = value === 0 ? [{ type: 'choose', label: 'One more' }, { type: 'choose', label: 'One less' }]
     : Array.from({ length: value }, () => ({ type: 'choose' as const, label: 'One more' }));
   return [...presses, { type: 'choose', label: 'Submit' }];
+}
+
+/** The journey's spoken answers: the number's word, or a plainly different number (the off-by-one belongs to the probes). */
+export function mathFactHarnessWords(c: MathFactFluencyChallenge): { correct: string; plainWrong: string } {
+  const n = c.correctAnswer;
+  return { correct: spokenIntegerWord(n), plainWrong: spokenIntegerWord(n >= 4 ? n - 3 : n + 4) };
 }

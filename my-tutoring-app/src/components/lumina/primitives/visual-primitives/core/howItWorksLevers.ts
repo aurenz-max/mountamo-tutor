@@ -1,25 +1,29 @@
 /**
- * The in-item levers on how-it-works (`/add-support-tiers`; report qa/eval-reports/how-it-works-levers-2026-10-16.md).
- * No real-learner evidence: the misses are what `howMiss` observes; the failures behind them are documented (the old
- * catalog's commonStruggles: sequence challenges, predict questions, steps read too fast) or inferred (a neighbouring
- * step confused with the right one, a step that comes later chosen as next, a description not tied to its step). Every
- * lever starts released; `config.difficulty` changes the items, not the levers.
+ * The in-item levers on how-it-works, as one lever set (`HOW_LEVERS`, `bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/how-it-works-levers-2026-10-16.md). No real-learner evidence: the misses are what `howMiss` observes;
+ * the failures behind them are documented (the old catalog's commonStruggles: sequence challenges, predict questions,
+ * steps read too fast) or inferred (a neighbouring step confused with the right one, a step that comes later chosen as
+ * next, a description not tied to its step). Every lever starts released; `config.difficulty` changes the items, not
+ * the levers.
  *
- * - `step_numbers` (help; identify with no step list on screen): each choice shows its step number in the process.
- * - `two_choices` (help; every choice item with three or more choices): crosses out choices until two are left, the
- *   right one and one that is not its neighbour when there is one. Never one choice left.
- * - `last_step` (help; predict, readers): the last shown step's description under the step list, with the next step's
- *   name blanked out of it.
- * - `show_step` (help; explain): the asked step's description under the question.
- * - `show_why` (help; sequence, readers whose steps all have a purpose): under each card, what that step makes possible.
- * - `easier_item` (simplify; choice items): another step's item of the same kind with two choices, ungraded, then the
- *   full item back.
- * - `fewer_cards` (simplify; sequence): the first three cards (two when there are three), by name, ungraded.
+ * Help (the screen does more; the item is unchanged). Types: step_numbers `legend`, last_step and show_step `clue`,
+ * show_why `meaning`, two_choices `custom`; the simplify levers `easier`.
+ * - `step_numbers` (identify with no step list on screen): each choice shows its step number in the process.
+ * - `two_choices` (every choice item with three or more choices): crosses out choices until two are left, the right
+ *   one and one that is not its neighbour when there is one. Never one choice left.
+ * - `last_step` (predict, readers): the last shown step's description under the step list, with the next step's name
+ *   blanked out of it.
+ * - `show_step` (explain): the asked step's description under the question.
+ * - `show_why` (sequence, readers whose steps all have a purpose): under each card, what that step makes possible.
+ * Simplify (an ungraded practice item of the same kind, then the full item back; never the learner's own key):
+ * - `easier_item` (choice items): another step's item of the same kind with two choices.
+ * - `fewer_cards` (sequence): the first three cards (two when there are three), by name.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { CHOICE_MISSES, NEXT_MISSES, ORDER_MISSES } from './howItWorks.card';
 import {
-  bankFor, blankTitle, CHOICE_MISSES, choiceMiss, choiceText, cardText, firstSentences, keyStep, NEXT_MISSES, ORDER_MISSES, orderMiss, purposeOf,
-  seededRng, type ChoiceItem, type HowItem, type HowMiss, type OrderMiss, type ProcessStep,
+  asCheck, bankFor, blankTitle, choiceMiss, choiceText, firstSentences, isChoice, keyStep, missesOf, orderMiss, purposeOf,
+  seededRng, type ChoiceItem, type HowCheck, type HowItem, type HowMiss, type OrderMiss, type ProcessStep,
 } from './howItWorksWorkspace';
 
 export const STEP_NUMBERS_LEVER = 'step_numbers';
@@ -107,70 +111,68 @@ export function simplerItem(steps: ProcessStep[], item: HowItem, pictures: boole
   return options ? { ...item, id, target, options } : null;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly HowMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+const PRACTICE_NOTE = 'It is not graded; this item comes back after it.';
+const full = (c: HowCheck) => !isPractice(c);
+/** The practice item of this check, as a check of the same lesson, or null. */
+const practiceOf = (c: HowCheck): HowCheck | null => {
+  const s = simplerItem(c.steps, c, c.pictures);
+  return s ? asCheck(s, c.steps, c.pictures, c.question) : null;
+};
+const MODE_MISSES: Record<string, readonly HowMiss[]> = {
+  guided: CHOICE_MISSES, sequence: [...ORDER_MISSES, ...CHOICE_MISSES], predict: [...NEXT_MISSES, ...CHOICE_MISSES],
+};
+const shownOf = (c: HowCheck) => (c.kind === 'predict' ? c.shown : 0);
+const targetOf = (c: HowCheck) => (c.kind === 'explain' || c.kind === 'identify' ? c.target : 0);
 
-/** The levers on the current session item. A practice item has none. */
-export function howLevers(steps: ProcessStep[], item: HowItem | undefined, pulled: readonly string[], pictures: boolean): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  const easier = simplerItem(steps, item, pictures);
-  if (item.kind === 'sequence') {
-    if (!pictures && item.cards.every(i => (steps[i].purpose ?? '').length >= 12)) {
-      out.push(lever(SHOW_WHY_LEVER, 'help', pulled, ORDER_MISSES, 'The learner cannot tell which step leads to which.',
-        'Writes under each card what that step makes possible. It writes no position or number.'));
-    }
-    if (easier) {
-      out.push(lever(FEWER_CARDS_LEVER, 'simplify', pulled, ORDER_MISSES, 'The learner cannot hold all the cards at once.',
-        `Opens an order of only ${easier.kind === 'sequence' ? easier.cards.length : 2} of the steps, by name. It is not graded; this item comes back after it.`));
-    }
-    return out;
-  }
-  const answers = item.kind === 'predict' ? NEXT_MISSES : CHOICE_MISSES;
-  if (item.kind === 'identify' && !item.strip) {
-    out.push(lever(STEP_NUMBERS_LEVER, 'help', pulled, answers, 'The learner cannot place the description in the process.',
-      'Shows each choice\'s step number in the process (step 1 is first). It marks no choice.'));
-  }
-  if (item.kind === 'predict' && !pictures && steps[item.shown - 1].clue) {
-    out.push(lever(LAST_STEP_LEVER, 'help', pulled, answers, 'The learner does not use what the last shown step does.',
-      `Shows the description of the last shown step (step ${item.shown}) under the step list, with the next step's name blanked out.`));
-  }
-  if (item.kind === 'explain' && purposeOverlap(showStepLine(steps, item), purposeOf(steps, item.target)) <= 0.5) {
-    out.push(lever(SHOW_STEP_LEVER, 'help', pulled, answers, 'The learner does not recall what the step does.',
-      `Shows the description of step ${item.target + 1} under the question.`));
-  }
-  if (crossedOut(item).length) {
-    out.push(lever(TWO_CHOICES_LEVER, 'help', pulled, answers, 'The learner is unsure among many choices.',
-      'Crosses out choices until two are left. It marks neither of the two.'));
-  }
-  if (easier) {
-    out.push(lever(EASIER_ITEM_LEVER, 'simplify', pulled, answers, 'The learner cannot do this kind of question yet.',
-      'Opens an easier question of the same kind about another step, with two choices. It is not graded; this item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled levers put on screen, as scene facts. Never the key. */
-export function leverFacts(steps: ProcessStep[], item: HowItem | undefined, pulled: readonly string[]): Record<string, string> {
-  if (!item || isPractice(item)) return {};
-  const out: Record<string, string> = {};
-  if (item.kind === 'sequence') {
-    if (pulled.includes(SHOW_WHY_LEVER)) {
-      out.onScreen = 'Under each card, a line says what that step makes possible:';
-      item.bank.forEach((s, k) => { out[`why${k + 1}`] = `Under "${cardText(steps, item, s).slice(0, 80)}": ${whyLine(steps, s)}`; });
-    }
-    return out;
-  }
-  const parts: string[] = [];
-  if (pulled.includes(STEP_NUMBERS_LEVER) && item.kind === 'identify') parts.push('Each choice now shows its step number in the process.');
-  if (pulled.includes(LAST_STEP_LEVER) && item.kind === 'predict') parts.push(`Under the step list, step ${item.shown}'s description: "${lastStepLine(steps, item)}"`);
-  if (pulled.includes(SHOW_STEP_LEVER) && item.kind === 'explain') parts.push(`Under the question, step ${item.target + 1}'s description: "${showStepLine(steps, item)}"`);
-  if (pulled.includes(TWO_CHOICES_LEVER)) parts.push(`${crossedOut(item).length} choice${crossedOut(item).length > 1 ? 's are' : ' is'} crossed out; two are left.`);
-  if (parts.length) out.onScreen = parts.join(' ');
-  return out;
-}
+/**
+ * Every lever of every kind of item, as one set. Each spec names the modes whose items it can help and offers itself
+ * only on its own kind of item (`content` null otherwise). A practice item has no levers.
+ */
+export const HOW_LEVERS = leverSet<HowCheck, null>({
+  modeOf: c => c.mode,
+  missesOf: mode => MODE_MISSES[mode] ?? [],
+  // A clue may never name the item's key: the step's name, or on explain the purpose it makes possible.
+  answersOf: c => (c.kind === 'sequence' ? [] : c.kind === 'explain' ? [choiceText(c.steps, c, c.target)] : [c.steps[keyStep(c)].title]),
+  specs: [
+    { id: STEP_NUMBERS_LEVER, type: 'legend', modes: ['sequence'], answers: CHOICE_MISSES,
+      when: 'The learner cannot place the description in the process.',
+      does: "Shows each choice's step number in the process (step 1 is first). It marks no choice.",
+      content: c => (c.kind === 'identify' && !c.strip && full(c) ? c.options : null),
+      fact: 'Each choice now shows its step number in the process.' },
+    { id: LAST_STEP_LEVER, type: 'clue', modes: ['predict'], answers: NEXT_MISSES,
+      when: 'The learner does not use what the last shown step does.',
+      does: c => `Shows the description of the last shown step (step ${shownOf(c)}) under the step list, with the next step's name blanked out.`,
+      content: c => (c.kind === 'predict' && !c.pictures && full(c) && c.steps[c.shown - 1].clue ? lastStepLine(c.steps, c) : null),
+      fact: (line: string, c) => `Under the step list, step ${shownOf(c)}'s description: "${line}"` },
+    { id: SHOW_STEP_LEVER, type: 'clue', modes: ['predict'], answers: CHOICE_MISSES,
+      when: 'The learner does not recall what the step does.',
+      does: c => `Shows the description of step ${targetOf(c) + 1} under the question.`,
+      content: c => (c.kind === 'explain' && full(c) && purposeOverlap(showStepLine(c.steps, c), purposeOf(c.steps, c.target)) <= 0.5
+        ? showStepLine(c.steps, c) : null),
+      fact: (line: string, c) => `Under the question, step ${targetOf(c) + 1}'s description: "${line}"` },
+    { id: SHOW_WHY_LEVER, type: 'meaning', modes: ['sequence'], answers: ORDER_MISSES,
+      when: 'The learner cannot tell which step leads to which.',
+      does: 'Writes under each card what that step makes possible. It writes no position or number.',
+      content: c => (c.kind === 'sequence' && !c.pictures && full(c) && c.cards.every(i => (c.steps[i].purpose ?? '').length >= 12) ? c.cards : null),
+      fact: 'Under each card, a line says what that step makes possible (the why facts).' },
+    { id: TWO_CHOICES_LEVER, type: 'custom', carrier: 'shown', answers: [...CHOICE_MISSES, ...NEXT_MISSES], answersOn: c => missesOf(c),
+      why: 'It narrows this item in place (choices crossed out until two are left) rather than opening a practice item.',
+      when: 'The learner is unsure among many choices.',
+      does: 'Crosses out choices until two are left. It marks neither of the two.',
+      content: c => (isChoice(c) && full(c) && crossedOut(c).length ? crossedOut(c) : null),
+      fact: (out: number[]) => `${out.length} choice${out.length > 1 ? 's are' : ' is'} crossed out; two are left.` },
+    { id: EASIER_ITEM_LEVER, type: 'easier', answers: [...CHOICE_MISSES, ...NEXT_MISSES], answersOn: c => missesOf(c),
+      when: 'The learner cannot do this kind of question yet.',
+      does: `Opens an easier question of the same kind about another step, with two choices. ${PRACTICE_NOTE}`,
+      content: c => (isChoice(c) ? practiceOf(c) : null) },
+    { id: FEWER_CARDS_LEVER, type: 'easier', modes: ['sequence'], answers: ORDER_MISSES,
+      when: 'The learner cannot hold all the cards at once.',
+      does: c => `Opens an order of only ${c.kind === 'sequence' ? Math.min(3, c.cards.length > 3 ? 3 : c.cards.length - 1) : 2} of the steps, by name. ${PRACTICE_NOTE}`,
+      content: c => (c.kind === 'sequence' ? practiceOf(c) : null) },
+  ],
+});
 
 /** For tests: every miss this item's work can show. */
 export function possibleMisses(item: HowItem): HowMiss[] {

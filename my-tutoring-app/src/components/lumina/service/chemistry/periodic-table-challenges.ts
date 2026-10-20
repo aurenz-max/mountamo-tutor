@@ -5,7 +5,7 @@
  * live in code with name, symbol, group, period and shells, so an LLM in this
  * path could only add hallucination risk to facts we already hold. The draw
  * picks WHICH elements; every answer key is computed by the script module's
- * build gates (`periodicTableScript.itemFromChallenge`), which re-validate
+ * build gates (`periodicTableDomain.itemFromChallenge`), which re-validate
  * every challenge emitted here — both sides of the wire import the same pools
  * from ONE address, the letter-spotter rule.
  *
@@ -22,7 +22,7 @@ import {
   SIZE_COMPARE_GROUPS,
   elementFactsOf,
   type PeriodicChallengeType,
-} from '../../primitives/chemistry-primitives/periodicTableScript';
+} from '../../primitives/chemistry-primitives/periodicTableDomain';
 import type { PeriodicTableChallenge } from '../../types';
 
 const SESSION_LENGTH = 6;

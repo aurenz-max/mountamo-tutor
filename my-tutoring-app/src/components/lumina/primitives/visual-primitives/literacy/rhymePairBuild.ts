@@ -10,8 +10,10 @@
  *
  * Pure: the surface, the generator, the live adapter and the tests read the same rules.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { RhymePairMiss } from './rhymeStudio.card';
+
+export { RHYME_PAIR_MISSES, type RhymePairMiss } from './rhymeStudio.card';
 
 export interface Picture { word: string; emoji: string; rime: string; start: string }
 const P = (word: string, emoji: string, rime: string, start: string): Picture => ({ word, emoji, rime, start });
@@ -50,9 +52,6 @@ export interface RhymePairItem {
   board: string[];
   ways: 1 | 2;
 }
-
-export type RhymePairMiss = 'no_rhyme' | 'same_start' | 'same_pair';
-export const RHYME_PAIR_MISSES: readonly RhymePairMiss[] = ['no_rhyme', 'same_start', 'same_pair'];
 
 export const ASK = 'Find two pictures that rhyme and put them together.';
 const key = (a: string, b: string) => [a, b].sort().join('+');
@@ -106,11 +105,6 @@ export function makePairItems(count = 4): RhymePairItem[] {
   return out;
 }
 
-const waysLine = (item: RhymePairItem) => item.ways === 2 ? ' Then find a different pair.' : '';
-
-export const pairAssignment = (item: RhymePairItem): TeachingAssignment =>
-  ({ id: item.id, task: `${ASK}${waysLine(item)}`, response: 'gesture' });
-
 export const describePair = (pair: readonly string[]) => pair.length ? `Put together: ${pair.join(' and ')}` : 'Nothing put together';
 
 /** What the tutor is told: the pictures by name (it says them on request), the tray, never which pairs rhyme. */
@@ -124,14 +118,15 @@ export function pairScene(item: RhymePairItem, pair: readonly string[], made: re
     ...(inspectorSaid ? { inspectorSaid } : {}),
     constraints: 'Pictures only, no words are printed. The learner taps two pictures into the pair tray (tap one in the tray '
       + 'to take it back), may tap a picture\'s speaker to hear its name, and presses "I\'m done!". The builder checks that '
-      + 'the two names rhyme. Several pairs on the board are right. You cannot move a picture.',
+      + 'the two names rhyme. Several pairs on the board are right. You cannot move a picture. Before the learner has '
+      + 'tried, never say which pictures rhyme, never name a pair, and never stretch a name to point at its ending.',
   } };
 }
 
 /** "Say its name" asks the tutor for the picture's name only, never a rhyme. */
 export const sayNameRequest = (word: string) => `The learner tapped a picture's speaker. Say only this word, once, plainly: "${word}"`;
 
-// ── Levers (start bare) ──────────────────────────────────────────────────────
+// ── What rhyme-studio's pair levers show (the lever set is `rhymeStudioLevers.ts`) ─────────────────────
 export const NAMES_LEVER = 'say_names';
 export const MODEL_LEVER = 'model_pair';
 export const SMALL_BOARD_LEVER = 'small_board';
@@ -151,36 +146,6 @@ export function smallBoardFor(item: RhymePairItem): RhymePairItem | null {
   const rest = item.board.filter(w => !pair.includes(w) && !item.board.some(o => o !== w && !pairMiss([w, o]))).slice(0, 2);
   if (rest.length < 2) return null;
   return { id: `${item.id}~small`, board: shuffle([...pair, ...rest]), ways: 1 };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly RhymePairMiss[],
-  when: string, does: string, pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier, when, does, answers, pulled: pulled.includes(id) });
-
-export function pairLevers(item: RhymePairItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  return [
-    lever(NAMES_LEVER, 'help', 'voiced', ['no_rhyme', 'same_start'],
-      'The learner puts together two pictures that do not rhyme, or two that only start the same.',
-      'You say the name of every picture on the board once, plainly, in board order. Never stretch an ending, group them, or say which rhyme.',
-      pulled),
-    ...(modelPairFor(item) ? [lever(MODEL_LEVER, 'help', 'shown', ['no_rhyme', 'same_start'],
-      'The learner still pairs pictures that do not rhyme after hearing the names.',
-      'Shows one rhyming pair of pictures that are NOT on this board, with their names said by you, so the learner hears two endings that match.',
-      pulled)] : []),
-    ...(smallBoardFor(item) ? [lever(SMALL_BOARD_LEVER, 'simplify', 'shown', ['no_rhyme', 'same_start'],
-      'The learner cannot find a pair on a board of eight.',
-      'Opens a practice board of four pictures with one rhyming pair, ungraded. The full board comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function pairLeverFacts(pulled: readonly string[], item: RhymePairItem): string | undefined {
-  const model = modelPairFor(item);
-  const notes = [
-    pulled.includes(NAMES_LEVER) && 'You are to say every picture name on the board once, plainly.',
-    pulled.includes(MODEL_LEVER) && model && `A model pair not on this board is shown: ${model[0].word} and ${model[1].word}. Say both names.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 export function pairMissWords(miss: RhymePairMiss | undefined): string {
@@ -207,15 +172,12 @@ export interface PairBuildRules<I extends PairBoardItem = PairBoardItem> {
   itemsFrom(items: readonly I[], tier?: string): I[];
   /** The ask on screen (the second-pair line is added by the surface). */
   ask(item: I): string;
-  assignment(item: I): TeachingAssignment;
   /** The pair's miss, or undefined when it passes and was not made before. */
   miss(pair: readonly string[], made: readonly string[], item: I): string | undefined;
   missWords(miss: string | undefined): string;
   rightWords(pair: readonly string[], item: I): string;
   describe(pair: readonly string[]): string;
   scene(item: I, pair: readonly string[], made: readonly string[], inspectorSaid?: string): WorkspaceScene;
-  levers(item: I, pulled: readonly string[]): WorkspaceLever[];
-  leverFacts(pulled: readonly string[], item: I): string | undefined;
   modelLever: string;
   modelFor(item: I): readonly [{ emoji: string }, { emoji: string }] | null;
   smallBoardFor(item: I): I | null;
@@ -232,14 +194,11 @@ export const RHYME_PAIR_RULES: PairBuildRules<RhymePairItem> = {
   pictureOf,
   itemsFrom: pairItemsFrom,
   ask: () => ASK,
-  assignment: pairAssignment,
   miss: (pair, made) => pairMiss(pair, made),
   missWords: miss => pairMissWords(miss as RhymePairMiss | undefined),
   rightWords: pair => `Yes! ${pair[0]} and ${pair[1]} rhyme.`,
   describe: describePair,
   scene: pairScene,
-  levers: pairLevers,
-  leverFacts: pairLeverFacts,
   modelLever: MODEL_LEVER,
   modelFor: modelPairFor,
   smallBoardFor,

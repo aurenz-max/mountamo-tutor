@@ -7,9 +7,14 @@ import { betweenHolds, positionHolds } from '../../../service/math/spatial-scene
 import type { SpatialSceneChallenge } from './SpatialScene';
 import { placeCellCorrect, spatialMiss } from './spatialSceneWorkspace';
 import {
-  FEWER_LEVER, MARK_LEVER, PICTURE_LEVER, PICTURE_TEXT, SIDES_FACT, SIDES_LEVER, holds, leverFacts, markCells, markLeaks,
-  pictureLeaks, pictureWords, practiceItem, practiceLeaks, practiceParent, spatialSceneLevers, stepAsk,
+  FEWER_LEVER, MARK_LEVER, PICTURE_LEVER, PICTURE_TEXT, SIDES_FACT, SIDES_LEVER, SPATIAL_LEVERS, holds, markCells, markLeaks,
+  pictureLeaks, pictureWords, practiceItem, practiceLeaks, practiceParent, stepAsk,
 } from './spatialSceneLevers';
+
+/** The levers the set declares on an item at a step (3x3 grid). */
+const spatialSceneLevers = (c: SpatialSceneChallenge, pulled: readonly string[], step = 0) =>
+  SPATIAL_LEVERS.declare(c, { step, gridSize: 3 }, pulled);
+const leverFacts = (c: SpatialSceneChallenge, shown: readonly string[]) => SPATIAL_LEVERS.onScreen(c, { step: 0, gridSize: 3 }, shown);
 
 const PAYLOADS = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
 const payload = (mode: string): SpatialSceneChallenge[] =>

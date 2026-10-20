@@ -11,35 +11,35 @@
  * Every item is built and keyed by code (`gravityDropWorkspace.ts`). Nothing on screen states the answer first: the
  * tower prints no speed or landing time before credit, the asked drop runs only once the answer is credited (observe
  * is the exception: watching is its task, and the choices open after the first drop), and a hidden height is drawn
- * with no ruler. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next
- * and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
- * `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the runtime move on.
- * The levers live in `gravityDropLevers.ts`.
+ * with no ruler. Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is
+ * `gravityDropTower.card.ts` + `gravityDropTower.boss.ts`): every check commits through `progress.commitCheck` with a
+ * named miss, a spoken answer is judged by the tutor, and the runtime moves on. The levers are one lever set in
+ * `gravityDropLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { GravityDropTowerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton, LuminaAnswerChoice, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle,
   LuminaFeedbackCard, LuminaPanel, LuminaPrompt, LuminaSectionLabel, type AnswerChoiceState,
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   askOf, choicesOf, describeDropWork, dropCorrect, dropItems, dropMiss, fallen, fallTime, FALLERS, fmt, keyChoice,
-  keyOrder, landingOrder, landTogether, massText, measuredTime, nameOf, speedAt, tapLabel, workspaceAssignment,
+  keyOrder, landingOrder, landTogether, massText, measuredTime, nameOf, speedAt, tapLabel,
   workspaceScene, type Drop, type DropItem, type DropMode, type DropTier,
 } from './gravityDropWorkspace';
 import {
-  AIR_LEVER, airLines, dropLevers, FALL_LEVER, fallLines, FILL_LEVER, fillLines, FORMULA_LEVER, formulaLines, leverFact,
-  MOON_LEVER, MOON_LINES, PATTERN_LEVER, patternLines, SAME_LOOK_LEVER, simplerItem, SLOW_LEVER,
+  AIR_LEVER, airLines, DROP_LEVERS, FALL_LEVER, fallLines, FILL_LEVER, fillLines, FORMULA_LEVER, formulaLines,
+  MOON_LEVER, MOON_LINES, PATTERN_LEVER, patternLines, SAME_LOOK_LEVER, SLOW_LEVER, type DropLeverContext,
 } from './gravityDropLevers';
+import { gravityDropTowerBoss } from './gravityDropTower.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -230,8 +230,11 @@ const DropCanvas = ({ picture, run, onDone }: { picture: Omit<TowerPicture, 't'>
 // Component
 // ============================================================================
 
-const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  GravityDropTowerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DropItem>) => Progress }) => {
+const useDropProgress = useWorkspaceProgressFor('gravity-drop-tower');
+/** The levers read nothing beside the item. */
+const LEVER_CTX: DropLeverContext = {};
+
+const GravityDropTowerSurface = ({ data, className, runtimePlanItemId }: GravityDropTowerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
@@ -241,25 +244,25 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const stableInstanceId = useRef(instanceId || `gravity-drop-tower-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useDropProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: gravityDropTowerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: DropItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<DropItem | null>(null);
@@ -267,12 +270,9 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const [choice, setChoice] = useState<string | null>(null);
   const [order, setOrder] = useState<number[]>([]);
-  /** Workspace path: the wrong answer just checked, shown until Try again. */
+  /** The wrong answer just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<{ choice: string | null; order: number[] } | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const [watched, setWatched] = useState(0);
@@ -285,7 +285,7 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<GravityDropTowerMetrics>({
     primitiveType: 'gravity-drop-tower',
@@ -294,25 +294,14 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
-  }), [item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'gravity-drop-tower', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel ?? 'Grade 3', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
-
   const startRun = (drops: Drop[], air: boolean, opts: { slow?: number; stopwatch?: boolean } = {}) => {
     runKey.current += 1;
     setRun({ key: runKey.current, drops, air, rate: playRate(drops, air, opts.slow ?? (slowMo ? 3 : 1)), stopwatch: !!opts.stopwatch });
     setRunning(true);
   };
-  const clearWork = () => { setChoice(null); setOrder([]); setWrongPick(null); setFeedback(null); };
+  const clearWork = () => { setChoice(null); setOrder([]); setWrongPick(null); };
   const clearItem = () => {
-    clearWork(); setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false); setWatched(0); setRun(null); setRunning(false);
+    clearWork(); setPracticeSolved(false); setWatched(0); setRun(null); setRunning(false);
   };
 
   openItem.current = (_index, retry) => {
@@ -337,7 +326,7 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     setWrongPick(null);
   };
 
-  // Once credited (or revealed), the asked drop runs: the test of the prediction. Observe is run by the learner.
+  // Once credited, the asked drop runs: the test of the prediction. Observe is run by the learner.
   const revealedFor = revealed && item ? item.id : null;
   useEffect(() => {
     if (!revealedFor || !item || item.mode === 'observe') return;
@@ -363,12 +352,12 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const pick = (c: string) => {
     if (!item || closed || mustWatch) return;
     SoundManager.select();
-    setChoice(c); setFeedback(null);
+    setChoice(c);
   };
   const tapObject = (i: number) => {
     if (!item || closed || order.includes(i)) return;
     SoundManager.select();
-    setOrder(o => [...o, i]); setFeedback(null);
+    setOrder(o => [...o, i]);
   };
   const work = { choice, order };
   const ready = item ? (item.ask === 'order' ? order.length === item.drops.length : choice !== null) : false;
@@ -380,22 +369,10 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered "${describeDropWork(item, work)}" for: ${askOf(item)} The drop now runs on screen. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongPick({ choice, order }); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The drop has run and the answer is on screen ("${keyChoice(item)}"); explain it plainly.`);
-      return;
-    }
-    clearWork();
-    setFeedback(item.mode === 'observe' ? 'Not quite. Drop again and watch closely.' : 'Not quite. Think about what pulls the objects down and what pushes back, and try once more.');
-    say(`[ANSWER_INCORRECT] The learner answered "${describeDropWork(item, work)}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what they notice, without naming a choice.`);
+    setWrongPick({ choice, order });
   };
 
   const metrics = (): GravityDropTowerMetrics => {
@@ -408,16 +385,6 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const m = metrics();
-    setSubmitted(true);
-    submitResult(m.accuracy >= 70, m.accuracy, m, { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} drop challenges. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -427,17 +394,20 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const shownWork = wrongPick ?? work;
     const scene = workspaceScene(item, { ...shownWork, drops: watched, solved: revealed });
-    const levers = practice ? [] : dropLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    // No lever on the practice item: the full item's levers come back with it.
+    const levers = practice || !sessionItem ? [] : DROP_LEVERS.declare(sessionItem, LEVER_CTX, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : DROP_LEVERS.onScreen(sessionItem, LEVER_CTX, pulled) }),
+      // observe waits for the learner to drop: before that there is nothing to answer from.
       ...(item.mode === 'observe' && watched === 0 ? { readyForResponse: false } : {}),
       levers,
       pullLever: (id) => {
@@ -446,12 +416,13 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = DROP_LEVERS.simpler(sessionItem, LEVER_CTX, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: gravityDropTowerBoss.assignment(simpler) };
         }
         setLeverState(nextState);
+        // Drawing the pulled slow replay: it plays the drop again, slowed, and counts as watching.
         if (id === SLOW_LEVER) { setWatched(w => w + 1); startRun(sessionItem.drops, sessionItem.air, { slow: 4 }); }
         return true;
       },
@@ -459,14 +430,7 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The drop tower and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -524,8 +488,9 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
           <>
             <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the tower and the answers as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               <DropCanvas picture={picture} run={run} onDone={() => setRunning(false)} />
 
               {item.mode === 'observe' && (
@@ -627,7 +592,7 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
                   ))}
                 </div>
               )}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -635,11 +600,7 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
               </div>
             )}
 
-            {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
-                {revealText()}
-              </LuminaFeedbackCard>
-            )}
+            {revealed && <LuminaFeedbackCard status="correct">{revealText()}</LuminaFeedbackCard>}
             {revealed && item.mode !== 'observe' && (
               <div className="flex justify-center">
                 <LuminaButton tone="subtle" size="sm" disabled={running}
@@ -647,13 +608,6 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
               </div>
             )}
             {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{wrongPick.choice ? `"${wrongPick.choice}" is not it.` : 'That order is not it.'}</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -661,8 +615,6 @@ const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwne
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const GravityDropTower = withWorkspaceController<GravityDropTowerProps, ProgressOptions<DropItem>, Progress>(
-  'gravity-drop-tower', GravityDropTowerSurface, useScriptedProgress, useWorkspaceProgressFor('gravity-drop-tower'));
+const GravityDropTower = withWorkspaceOnly<GravityDropTowerProps>('gravity-drop-tower', GravityDropTowerSurface, props => props.data.title);
 
 export default GravityDropTower;

@@ -322,7 +322,7 @@ function resolveSupportStructure(
   // read as noise, and a voice cannot say the IPA glyphs it was made of).
   const spoken = 'The tutor says the same three things at every tier: the starting word, the change, and "What word?".';
   // The change itself is named at EVERY tier: the answer is spoken, so an
-  // unnamed target would have many right answers (see soundSwapScript.ts).
+  // unnamed target would have many right answers (see soundSwapDomain.ts `moveAsk`).
   const named = 'The sound to change is named at every tier — the student says the new word aloud, so the question must have exactly one right answer.';
 
   const lines: string[] = [lead, picture, spoken];
@@ -915,6 +915,7 @@ CRITICAL RULES:
 ${ctx.remediationFocus ? '- Remediation must choose word pairs whose changed phoneme isolates the diagnosed confusion; do not alter the requested operation.' : ''}
 - EVERY result word must be a REAL English word (no nonsense words like "un", "ig", "ap", "og"!)
 - EVERY original word must be a REAL English word (no nonsense words!)
+- EVERY challenge makes a DIFFERENT result word: never two challenges that both end in "at" (cat → at, bat → at)
 - Image descriptions should be brief (3-6 words) and kid-friendly
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Relate words to the topic "${topic}" when possible, but prioritize valid transformations
@@ -995,6 +996,20 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
     if (rejectedCount > 0) {
       console.warn(`[SoundSwap] Rejected ${rejectedCount} challenge(s) with non-real words`);
+    }
+
+    // A new word already asked for is answered by repeating it, not by changing a sound (cat, bat, hat all take
+    // away their first sound to make "at"): keep the first challenge for each new word, drop the repeats.
+    const seenResults = new Set<string>();
+    const distinct = challenges.filter(c => {
+      const key = c.resultWord.toLowerCase().trim();
+      if (seenResults.has(key)) return false;
+      seenResults.add(key);
+      return true;
+    });
+    if (distinct.length < challenges.length) {
+      console.warn(`[SoundSwap] Dropped ${challenges.length - distinct.length} challenge(s) repeating an earlier new word`);
+      challenges.splice(0, challenges.length, ...distinct);
     }
 
     // ── Within-mode support tier: withdraw on-screen / instructional scaffolding

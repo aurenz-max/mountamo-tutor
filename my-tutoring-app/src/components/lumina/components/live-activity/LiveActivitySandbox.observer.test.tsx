@@ -224,7 +224,8 @@ it('keeps row answers open until feedback confirms the full assignment, then fin
   await h.say('ocho');
   h.speak("That's correct, there are eight blocks in the first row! Now, how many are in the second row?"); h.drain();
   const request = JSON.parse(String(h.fetcher.mock.calls.filter(([url]) => url.endsWith('/observe-dialogue')).at(-1)![1]!.body));
-  expect(request).toMatchObject({ expectedAnswer: '18', priorTutor: 'How many blocks are in the first row?' });
+  // The boss key (`spokenKeyText`) reaches the observer whole.
+  expect(request).toMatchObject({ expectedAnswer: expect.stringMatching(/^"eighteen"\. Counting aloud and ending on eighteen/), priorTutor: 'How many blocks are in the first row?' });
   await h.decide({ verdict: 'none', transition: 'none', accepted: false, grounded: 0 });
   await h.say('Another eight?');
   h.speak("That's right, eight in the second row too. Now count the last two."); h.drain();

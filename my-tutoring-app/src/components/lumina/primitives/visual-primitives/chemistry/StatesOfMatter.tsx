@@ -787,7 +787,7 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
     const levers = practice ? [] : STATES_LEVERS.declare(sessionItem, leverSession, pulledLevers);
     workspace.current = {
       ...leverScene(statesScene(shownItem, { practice: !!practice }), {
-        support: practice ? '' : STATES_LEVERS.support(sessionItem),
+        support: practice ? '' : STATES_LEVERS.support(sessionItem, leverSession),
         onScreen: practice ? '' : STATES_LEVERS.onScreen(sessionItem, leverSession, pulledLevers) }),
       levers,
       pullLever: (id: string) => {

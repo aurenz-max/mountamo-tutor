@@ -1,7 +1,7 @@
 # Contract: word-flip
 
 - **Derived:** 2026-09-28 · evidence window: DI port 3 (2026-08) + reader-fit (`WordFlip.reader-fit.test.tsx`) + workspace rollout B2 + w1 payload + git
-- **Component:** `primitives/visual-primitives/literacy/WordFlip.tsx` (workspace only) + `wordFlipWorkspace.ts` + `wordFlipScript.ts` (model pairs, retired DI lines) · **Generator:** `service/literacy/gemini-word-flip.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:3867`
+- **Component:** `primitives/visual-primitives/literacy/WordFlip.tsx` (workspace only) + boss `wordFlip.card.ts` / `wordFlip.boss.ts` + `wordFlipDomain.ts` (ask, key, misses, model pairs) + `wordFlipLevers.ts` (lever set) · **Generator:** `service/literacy/gemini-word-flip.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`...bossEntry(wordFlipCard)`)
 - **Status:** ACTIVE (no open conflicts)
 
 Static derivation for the word-flip slice of handoff 22 L2.
@@ -13,20 +13,20 @@ Static derivation for the word-flip slice of handoff 22 L2.
 | K-2 inflection: plurals (-s, -es, -y→ies, irregular), past tense (-ed, irregular) | catalog evalModes | `literacy.ts` word-flip entry | live |
 | K PRE band | reader-fit [2] | `WordFlip.reader-fit.test.tsx`; `qa/reader-fit/word-workout-word-flip-PRE-2026-07-15.md` | 2026-07-15 |
 | DI port 3 (answer chips deleted: tapping printed plurals is reading, and printed the answer) | code [5] | `wordFlipScript.ts` header | 2026-08 |
-| Shared teaching workspace + live journey | live [2] + code | `wordFlipWorkspace.ts`; w1 payload | 2026-09-24 |
+| Shared teaching workspace + live journey (boss since 2026-10-20) | live [2] + code | `wordFlip.boss.ts`; w1 payloads | 2026-10-20 |
 
 ## Requirements
 
 ### R1 — The answer is the changed word, said aloud · OBSERVED
-- **Property:** plural: "one X, now N: N what?"; past: "today I X … yesterday I…". The source word said back and a doubled rule (dogses, jumpeded) are not it. No answer chips; the source card is tap-to-hear only.
+- **Property:** plural: "one X, now N: N what?"; past: "today I X … yesterday I…". The spoken key (`flipKey`) is the changed word, alone or in the frame's phrase; the source word said back and a doubled rule (dogses, jumpeded) are not it. An answer equal to its source word (one sheep, two sheep) is rejected by `validateWordFlipData`. No answer chips; the source card is tap-to-hear only (`runner.requestHear`, silent, the word unchanged).
 - **Demanded by:** DI port 3; workspace.
-- **Evidence:** `wordFlipWorkspace.ts`; `WordFlip.workspace.test.tsx`.
+- **Evidence:** `wordFlipDomain.ts`; `WordFlip.workspace.test.tsx`.
 - **Probe:** `npm test -- WordFlip.workspace`.
 
 ### R2 — The changed word is a blank until credit · OBSERVED
-- **Property:** the many/yesterday card shows the picture(s) and a blank; the answer prints only on credit (`data-flip-reward`). A rule is modeled only on a word the session never asks (`pickModelPair`).
+- **Property:** the many/yesterday card shows the picture(s) and a blank; the answer prints only on credit (`data-flip-reward`). A rule is modeled only on a word the session never asks (`flipModelFor`, the model levers of R4).
 - **Demanded by:** Pedagogy rule #1; DI port 3.
-- **Evidence:** `WordFlip.tsx` frame; `wordFlipScript.ts:110-180`.
+- **Evidence:** `WordFlip.tsx` frame; `wordFlipLevers.ts` (`freePairs`).
 - **Probe:** `npm test -- WordFlip`.
 
 ### R3 — Pre-reader chrome · OBSERVED
@@ -36,13 +36,13 @@ Static derivation for the word-flip slice of handoff 22 L2.
 - **Probe:** `npm test -- WordFlip.reader-fit`.
 
 ### R4 — In-item levers · OBSERVED
-- **Property:** `rule_model_cards` (regular) / `irregular_model` (irregular) show a before/after card pair on a word no session item uses; an irregular model never shares the item's change pattern (foot never gets tooth or goose). `familiar_noun` / `common_irregular` open an ungraded item of the same rule on another common word, not the model's. Carriers `both` / `shown`.
+- **Property:** `rule_model_cards` (regular) / `irregular_model` (irregular) show a before/after card pair on a word no session item uses; an irregular model never shares the item's change pattern (foot never gets tooth or goose). `familiar_noun` / `common_irregular` open an ungraded item of the same rule on another common word, not the model's. Carriers `both` / `shown`. One lever set (`FLIP_LEVERS`): the models are type `model` (the lesson's tier says when, `supportFact`), the practice items `easier`; every spoken miss is answered by a lever.
 - **Demanded by:** handoff 22 L2.
 - **Evidence:** `qa/eval-reports/levers-literacy-L2-2026-09-28.md`.
 - **Probe:** `npm test -- wordFlipLevers WordFlip.levers.workspace`.
 
 ### R5 — `build_inflect` is a fork · OBSERVED
-- **Property:** `build_inflect` (open build: base + ending cards, "I'm done!", many words pass) is its own challenge type and mounts its own surface (`WordBuildAffix` with the inflect rules). R1 and R2 do not apply to it: the answer is made from cards, not said, and the board shows the cards from the start. The six spoken modes are unchanged; a blend with a spoken mode leaves the build out.
+- **Property:** `build_inflect` (open build: base + ending cards, "I'm done!", many words pass) is its own challenge type and mounts its own surface (`WordBuildAffix` with the inflect rules and the boss's `boss` prop: assignment + bound lever set `word_frame` clue, `ending_chart` legend, `fewer_endings` easier). R1 and R2 do not apply to it: the answer is made from cards, not said, and the board shows the cards from the start. The six spoken modes are unchanged; a blend with a spoken mode leaves the build out.
 - **Demanded by:** OB-8L (`qa/open-build/ROADMAP.md`).
 - **Evidence:** `qa/open-build/word-flip-2026-10-08/REPORT.md`.
 - **Probe:** `npm test -- WordFlip.buildInflect.workspace`.
@@ -56,6 +56,7 @@ Static derivation for the word-flip slice of handoff 22 L2.
 None open.
 
 ## Changelog
+- 2026-10-20 — **Boss migration** (wave 2). Runner-era wiring re-based onto the workspace boss: R1's ask and key now come from `wordFlipDomain.ts` (`flipAsk`, `flipKey`, a `SpokenKey`) instead of `wordFlipWorkspace.ts`; R2's model pair from `flipModelFor` instead of the deleted `wordFlipScript.ts` (`pickModelPair`, DI cue lines); R4's levers are one lever set; R5's surface takes an optional `boss` prop (word-builder's `build_affix` unchanged). Deleted: `wordFlipScript.ts`, `wordFlipWorkspace.ts`, `adapters/wordFlipLive.ts`, `pip/wordFlipPipPose.ts`, the catalog tutoring block and guidance prose. Added to R1: a zero-plural item (answer = source) is rejected. The generator now stamps the lesson's `supportTier` on spoken sessions.
 - 2026-10-13 — **R-WS word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-flip/before.txt`): the tier changed nothing (cloud, cat, dog, star at easy and hard alike; box, fox, peach, bus, sandwich in every -es session). After: plural_s easy tag, car, whale → hard camera, ambulance, parrot; plural_y easy cherry, fly → hard trophy, factory, battery; past_irregular easy run, sit, give → hard go, do, say.
 
 - 2026-09-28 — derived (initial) with R4 (levers). `MODEL_PAIRS` exported for the levers. --check COMPATIBLE: `WordFlip.workspace`, `WordFlip.reader-fit` pass.

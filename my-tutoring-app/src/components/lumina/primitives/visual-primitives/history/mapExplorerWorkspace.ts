@@ -1,21 +1,19 @@
 /**
- * map-explorer on the shared tutor/JEV teaching workspace (born bound, plain shape).
+ * map-explorer on the shared tutor/JEV teaching workspace (boss `mapExplorer.boss.ts`, card `mapExplorer.card.ts`).
  *
- * Every item is one gesture item; the primitive's own code check judges it.
  * - find_by_direction: tap the place that lies in the named direction from the named place (town map).
- * - name_direction: tap the compass arm that points from one named place to the other (town map).
- * - build_route: give one-block steps with the arrows, then press Go; the bus must stop at the destination.
+ * - name_direction: say the direction from one named place to the other, or tap that arm of the compass (town map).
+ * - build_route: press the arrows, one hop each, then Land; the helicopter must land at the destination.
  * - find_on_globe: spin the globe and tap the named continent or ocean.
  * - world_direction: tap the continent or ocean just north/south/east/west of the named continent.
  *
- * The scene names what is drawn and asked. It never names the answer: no target place or region, no relation
- * between places, and on name_direction no direction at all.
+ * Code owns every key and every check (`map/mapModel.ts`). The scene names what is drawn and asked. It never names
+ * the answer: no target place or region, no relation between places, and on name_direction no direction at all.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { DIRECTIONS, OPPOSITE, REGION_NAME, type RegionId } from './map/mapGeo';
-
-const DIR_DEG = { north: 0, east: 90, south: 180, west: 270 } as const;
 import {
   isTownTask, placeById, quadrant, stepsInWords, type Direction, type MapChallenge, type TownMap,
 } from './map/mapModel';
@@ -23,6 +21,8 @@ import {
 export {
   mapMatches, mapMiss, describeMapAnswer, MAP_MISSES, type MapMiss, type MapAnswer,
 } from './map/mapModel';
+
+const DIR_DEG = { north: 0, east: 90, south: 180, west: 270 } as const;
 
 /** name_direction's spoken wrong answers: the opposite way, a quarter turn off, and on a turned map the screen's way. */
 export function mapSpokenMisses(c: MapChallenge): KnownMiss[] {
@@ -39,12 +39,29 @@ export function mapSpokenMisses(c: MapChallenge): KnownMiss[] {
   ];
 }
 
-/** Every ask is the primitive's own check; "which way?" is one sayable word, so it is spoken, with the arm tap beside it. */
-export function mapAssignment(c: MapChallenge): TeachingAssignment {
-  if (c.type === 'name_direction' && c.direction)
-    return { id: c.id, task: `${c.instruction} The learner answers by saying the direction, or tapping that arm of the compass.`,
-      response: 'speech', acceptsGesture: true, expectedAnswer: c.direction, misses: mapSpokenMisses(c) };
-  return { id: c.id, task: c.instruction, response: 'gesture' };
+/** What the learner is asked: the code-written instruction, as the screen prints it. */
+export const mapAsk = (c: MapChallenge): string => c.instruction;
+
+/** "Which way?" is one sayable word, so it has a key; every other ask is answered on the map (null). */
+export function mapKey(c: MapChallenge): SpokenKey | null {
+  if (c.type !== 'name_direction' || !c.direction) return null;
+  return { answer: c.direction, alsoAccept: [`${c.direction}ward`, `to the ${c.direction}`],
+    signatureError: 'Up, down, left or right names the screen, not the compass: not an answer yet; ask which way the compass says.' };
+}
+
+/**
+ * What a "which way" ask says by design: the two place names (code writes "Which way is <to> from <from>?"). A real
+ * place may carry a direction in its name ("North Station"); saying the name does not say the answer.
+ */
+export function mapGiven(c: MapChallenge): string[] {
+  const m = /^Which way is (.+) from (.+?)\?/.exec(c.instruction);
+  return m ? [m[1], m[2]] : [];
+}
+
+/** The journey's spoken answers on a "which way" ask: the direction, or the opposite way. */
+export function mapHarnessWords(c: MapChallenge): { correct: string; plainWrong: string } {
+  const dir = c.direction ?? 'north';
+  return { correct: dir, plainWrong: OPPOSITE[dir] };
 }
 
 export interface MapView {
@@ -62,7 +79,12 @@ export interface MapView {
 
 const SCREEN_WORD: Record<Direction, string> = { north: 'up', east: 'to the right', south: 'down', west: 'to the left' };
 
-export function mapScene(c: MapChallenge, map: TownMap | undefined, view: MapView): WorkspaceScene {
+/** The rules the tutor keeps on every ask (the family's never-say rules). */
+const NEVER_SAY = 'Never name the place, continent, ocean or direction that answers the ask, and never say which places '
+  + 'line up with each other; ask which way the compass rose says, and what is on that side of the named place. After a '
+  + 'check the screen says what the learner chose and where it is; talk about that.';
+
+export function mapScene(c: MapChallenge, map: TownMap | undefined, view: MapView): SceneOf {
   if (isTownTask(c.type) && map) {
     const from = placeById(map, c.fromId);
     return { objects: [], facts: {
@@ -71,16 +93,15 @@ export function mapScene(c: MapChallenge, map: TownMap | undefined, view: MapVie
       placesOnTheMap: map.places.map(p => p.name).join(', '),
       compass: !view.bearing || quadrant(-view.bearing) === 'north' ? 'north points up the screen'
         : `the map is turned: north points ${SCREEN_WORD[quadrant(-view.bearing)]} on the screen, so up is not north`,
-      ...(c.compassGlow ? { support: 'the compass rose is glowing' } : {}),
+      ...(c.compassGlow ? { compassGlow: 'the compass rose is glowing' } : {}),
       ...(from ? { startingPlace: `${from.name} (ringed in yellow)` } : {}),
       ...(c.type === 'build_route' ? { stepsSoFar: view.steps?.length ? stepsInWords(view.steps) : 'none yet' } : {}),
       checksSoFar: view.checks,
       ...(view.lastFeedback ? { lastCheckShowed: view.lastFeedback } : {}),
-      constraints: c.type === 'find_by_direction'
-        ? 'The learner taps a place pin on the map; the tap is the check. Exactly one place lies in the named direction; places off to the side do not count.'
-        : c.type === 'name_direction'
-          ? 'The learner taps one of the four arms of the compass rose (N, E, S, W); the tap is the check.'
-          : 'The learner presses the arrow buttons (North, East, South, West), each one hop of the helicopter, and the plan shows as a dotted line; Land is the check, then the helicopter flies it.',
+      constraints: 'Directions come from the compass rose, never from up and down on the screen: when the map is turned, '
+        + 'ask the learner to find N on the compass first.'
+        + (c.type === 'find_by_direction' ? ' Exactly one place lies the named way; places off to the side do not count.' : ''),
+      neverSay: NEVER_SAY,
     } };
   }
   const from = c.fromId ? REGION_NAME[c.fromId as RegionId] : null;
@@ -91,7 +112,7 @@ export function mapScene(c: MapChallenge, map: TownMap | undefined, view: MapVie
     compass: 'a compass rose in the corner; north is toward the top of the map',
     checksSoFar: view.checks,
     ...(view.lastFeedback ? { lastCheckShowed: view.lastFeedback } : {}),
-    constraints: 'The learner taps land or water on the map; the tap is the check. Each continent has its own colour; '
-      + 'names appear only where listed above.',
+    constraints: 'Names appear only where listed above, so never name a continent by its colour or say where to spin.',
+    neverSay: NEVER_SAY,
   } };
 }

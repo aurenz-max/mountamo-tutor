@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Reader-fit for mission-planner, re-based on the 2026-10-16 rebuild (scripted path, no tutor runtime).
+ * Reader-fit for mission-planner's K-1 story (`MissionStory.tsx`), re-based on the 2026-10-16 rebuild.
  *
  * Item 15A / S7 gave this primitive a tutor channel for a non-reader (ORIENT, a spoken twin of the instruction line, the
  * chosen place voiced). The 10-16 ruling makes K-1 an ungraded story: those beats now live on the story, and it never
- * submits a score. Grades 2-5 are the graded planner: the first answer scores and no answer is on screen before it.
+ * submits a score. Grades 2-5 are the graded planner on its boss; their checks are bound mounts in
+ * MissionPlanner.workspace.test.tsx.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -72,30 +73,5 @@ describe('MissionPlanner @ K-1: the ungraded story', () => {
     render(<MissionPlanner data={g3({ gradeLevel: 'K' })} />);
     expect(screen.queryByRole('button', { name: /Check/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'The Moon' })).toBeTruthy();
-  });
-});
-
-describe('MissionPlanner @ grade 3: graded', () => {
-  it('no map or distance before the answer; the first answer scores', () => {
-    const { container } = render(<MissionPlanner data={g3()} />);
-    expect(container.querySelector('[data-distance-strip]')).toBeNull();
-    expect(container.textContent).not.toMatch(/Best|\bAU\b|days away|closest!/i);
-    fireEvent.click(screen.getByRole('button', { name: 'Mars' }));
-    fireEvent.click(screen.getByRole('button', { name: /Check Answer/ }));
-    // Two choices: one wrong try reveals.
-    expect(container.querySelector('[data-distance-strip]')).not.toBeNull();
-    expect(container.textContent).toMatch(/Saturn is the farthest/);
-    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'The Moon' }));
-    fireEvent.click(screen.getByRole('button', { name: /Check Answer/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Finish/ }));
-    expect(submitResultSpy).toHaveBeenCalledOnce();
-    expect(submitResultSpy.mock.calls[0][1]).toBe(50);
-  });
-
-  it('a legacy payload (destinations, windows, supplies; no items) builds code items by grade', () => {
-    const legacy = { title: 'Mars Mission', gradeLevel: '3', destinations: [{ id: 'mars' }], launchWindows: [] } as unknown as MissionPlannerData;
-    const { container } = render(<MissionPlanner data={legacy} />);
-    expect(container.textContent).toMatch(/Near or far\? · item 1 of 6/);
   });
 });

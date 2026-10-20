@@ -1,22 +1,28 @@
 /**
- * The in-item levers on a mixing-and-dissolving challenge (`/add-support-tiers`, report
- * qa/eval-reports/mixing-and-dissolving-levers-2026-10-15.md). No real-learner evidence: the misses are what
+ * The in-item levers on a mixing-and-dissolving challenge, as one lever set (`bossLevers.ts`; `/add-support-tiers`,
+ * report qa/eval-reports/mixing-and-dissolving-levers-2026-10-15.md). No real-learner evidence: the misses are what
  * `dissolvingMiss` names, against the catalog's documented struggles. Pure: the component draws from these.
  *
- * - `model_beakers` (help, shown): small model beakers beside the question, filled with things that are not in this
- *   lesson, each tagged with what it does in water: one that spreads through it, one that sits on the bottom, one that
- *   floats in a layer (sort tags: dissolves or not; classify tags: solution, suspension, two layers). Leak rule (`modelsLeak`): no model shares a word with a lesson
- *   substance or the solvent, so no model is the item's substance.
- * - `particle_view` (help, shown): opens the particle view of the learner's own beaker on the particle question (the
- *   question asks about that view). Refused while the beaker is empty or the view is already open.
- * - `method_cards` (help, shown): a card for each separation method among the choices, saying in fixed words what it
+ * - `model_beakers` (model; dissolve, classify): small model beakers beside the question, filled with things that are
+ *   not in this lesson, each tagged with what it does in water: one that spreads through it, one that sits on the
+ *   bottom, one that floats in a layer (sort tags: dissolves or not; classify tags: solution, suspension, two layers).
+ *   Leak rule (`modelsLeak`): no model shares a word with a lesson substance or the solvent, so no model is the item's
+ *   substance. Support tier medium: the learner tries first, and the models come after a miss.
+ * - `particle_view` (layout; dissolve): opens the particle view of the learner's own beaker on the particle question
+ *   (the question asks about that view): the same beaker, drawn as particles. Offered once the beaker holds something
+ *   and while the view is closed.
+ * - `method_cards` (meaning): a card for each separation method among the choices, saying in fixed words what it
  *   catches. Names no substance and marks no card; the learner still has to see whether the substance dissolved.
- * - `drop_far_choice` (simplify, shown): greys out the wrong choice sharing the fewest words with the key, on the item
+ * - `drop_far_choice` (custom, shown): greys out the wrong choice sharing the fewest words with the key, on the item
  *   itself (user ruling 09-27: removing a choice is assisted work). Only while two untried wrong choices remain.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
 import type { DissolvingChallenge, MixingAndDissolvingData } from './MixingAndDissolving';
-import { methodsIn, type DissolvingMiss, type Method } from './mixingAndDissolvingWorkspace';
+import { DISSOLVING_MISSES } from './mixingAndDissolving.card';
+import {
+  dissolvingKey, dissolvingMode, methodsIn, type DissolvingMiss, type DissolvingMode, type Method,
+} from './mixingAndDissolvingWorkspace';
 
 export const MODELS_LEVER = 'model_beakers';
 export const PARTICLE_LEVER = 'particle_view';
@@ -80,7 +86,7 @@ export const modelsLeak = (models: readonly ModelBeaker[], lab: Lab) =>
 export const METHOD_CARDS: Readonly<Record<Method, string>> = {
   filtration: 'Filtration: pour through filter paper. Solid bits that did not dissolve stay on the paper; the liquid runs through.',
   evaporation: 'Evaporation: heat the liquid until it is gone. Anything that was dissolved in it is left behind.',
-  distillation: 'Distillation: boil the liquid and cool the steam back into liquid in another glass. Anything dissolved stays in the first one.',
+  distillation: 'Distillation: boil the liquid and cool the steam back into liquid in another glass. Anything dissolved stays behind in the first glass.',
   chromatography: 'Chromatography: let the liquid creep up paper. Colours mixed together spread apart.',
   magnet: 'Magnet: pulls out bits of iron. Nothing else sticks to it.',
   decanting: 'Decanting: pour off the top layer slowly. A layer that floats, or bits that sank, stay behind.',
@@ -89,6 +95,9 @@ export const METHOD_CARDS: Readonly<Record<Method, string>> = {
 /** The methods the choices name, in the order they appear. */
 export const methodsOnChoices = (ch: DissolvingChallenge): Method[] =>
   Array.from(new Set(ch.options.flatMap(o => methodsIn(o))));
+
+/** A method card's words without its name, so the fact lists the cards by the order of the choices. */
+const methodBody = (m: Method) => METHOD_CARDS[m].replace(/^[^:]+:\s*/, '');
 
 // ── drop_far_choice ──────────────────────────────────────────────────────────
 
@@ -104,52 +113,61 @@ export function farChoice(ch: DissolvingChallenge, s: DissolvingLeverState): num
   return [...foils].sort((a, b) => shared(a) - shared(b) || b - a)[0];
 }
 
-// ── the levers ───────────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────
 
-const MISSES: Record<DissolvingChallenge['type'], DissolvingMiss[]> = {
+/** The misses a lever answers on an item, by its challenge type (the particle question sits in dissolve). */
+const MISSES_BY_TYPE: Record<DissolvingChallenge['type'], readonly DissolvingMiss[]> = {
   dissolve_sort: ['chose_dissolves', 'chose_does_not_dissolve', 'other_choice'],
   particle_explain: ['chose_disappeared', 'chose_sank', 'other_choice'],
   classify: ['called_solution', 'called_suspension', 'called_layers'],
   separate: ['filter_for_dissolved', 'evaporate_for_undissolved', 'other_method', 'other_choice'],
   factor_test: ['other_choice'], saturation: ['other_choice'], concentration: ['other_choice'],
 };
+const onType = (ch: DissolvingChallenge) => MISSES_BY_TYPE[ch.type] ?? ['other_choice'];
 
-/** The levers this item declares, with their state. A lever that cannot be pulled now and was not pulled is left out. */
-export function dissolvingLevers(ch: DissolvingChallenge | null | undefined, s: DissolvingLeverState, lab: Lab,
-  view: DissolvingLeverView): WorkspaceLever[] {
-  if (!ch) return [];
-  const on = (id: string) => s.pulled.includes(id);
-  const answers = MISSES[ch.type] ?? ['other_choice'];
-  const levers: WorkspaceLever[] = [];
-  if (on(MODELS_LEVER) || modelsFor(ch, lab)) levers.push({ id: MODELS_LEVER, kind: 'help', carrier: 'both', pulled: on(MODELS_LEVER), answers,
-    when: ch.type === 'classify' ? 'The learner picks the wrong kind of mixture, or cannot tell a solution from a suspension.'
-      : 'The learner says it dissolves when it does not, or the other way round.',
-    does: 'Draws three small model beakers beside the question, filled with things that are not in '
-      + 'this lesson, each tagged with what it does in water. Read the tags if you like. Never say which model the learner\'s '
-      + 'substance is like.' });
-  if (ch.type === 'particle_explain' && view.particleViewAvailable && (on(PARTICLE_LEVER) || (!view.beakerEmpty && !view.particleViewOn)))
-    levers.push({ id: PARTICLE_LEVER, kind: 'help', carrier: 'shown', pulled: on(PARTICLE_LEVER), answers,
+/** What the levers read beside the item: the lesson's lab, the screen, and this item's lever state. */
+export interface DissolvingLeverContext { lab: Lab; view: DissolvingLeverView; state: DissolvingLeverState }
+
+export const DISSOLVING_LEVERS = leverSet<DissolvingChallenge, DissolvingLeverContext>({
+  modeOf: dissolvingMode,
+  missesOf: mode => DISSOLVING_MISSES[mode as DissolvingMode] ?? [],
+  // A meaning card's words never name the key or a way of saying it.
+  answersOf: ch => keyAnswers(dissolvingKey(ch)),
+  // No lesson carries a support tier. The models come after a try: before the first answer they would show what
+  // each kind of mixture looks like before the learner has looked at the beaker.
+  support: { tier: () => 'medium', different: 'other things in water', own: 'what this substance does' },
+  specs: [
+    { id: MODELS_LEVER, type: 'model', modes: ['dissolve', 'classify'], answers: 'all', answersOn: onType,
+      when: ch => (ch.type === 'classify' ? 'The learner picks the wrong kind of mixture, or cannot tell a solution from a suspension.'
+        : 'The learner says it dissolves when it does not, or the other way round.'),
+      does: 'Draws three small model beakers beside the question, filled with things that are not in this lesson, each '
+        + 'tagged with what it does in water. Read the tags if you like. Never say which model the learner\'s substance is like.',
+      content: (ch, { lab }) => modelsFor(ch, lab),
+      fact: (models: ModelBeaker[]) => 'Beside the question, model beakers of things not in this lesson, each tagged: '
+        + `${models.map(m => `${m.name} (${m.tag})`).join('; ')}. Nothing marks which one the item's substance is like.` },
+    { id: PARTICLE_LEVER, type: 'layout', modes: ['dissolve'], answers: 'all', answersOn: onType,
       when: 'The learner says the particles disappeared or sank, or is stuck, and the particle view is closed.',
-      does: 'Opens the particle view of the learner\'s own beaker: the liquid\'s particles as blue dots and each added substance\'s '
-        + 'particles in its colour. Ask what the learner sees; never say where the particles went.' });
-  if (on(METHODS_LEVER) || methodsOnChoices(ch).length >= 2) levers.push({ id: METHODS_LEVER, kind: 'help', carrier: 'both', pulled: on(METHODS_LEVER), answers,
-    when: 'The learner picks a method that cannot get this substance back, or does not know what the methods do.',
-    does: 'Shows a card for each method among the choices, saying what it catches, none marked. Never say which card fits this '
-      + 'substance or whether the substance dissolved.' });
-  if (on(DROP_LEVER) || farChoice(ch, s) !== null) levers.push({ id: DROP_LEVER, kind: 'simplify', carrier: 'shown', pulled: on(DROP_LEVER), answers,
-    when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
-    does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.' });
-  return levers;
-}
-
-/** What the pulled levers put on screen, for the tutor and JEV. Names the greyed-out choice, never the key. */
-export function leverFacts(ch: DissolvingChallenge, s: DissolvingLeverState, lab: Lab): string | null {
-  const parts: string[] = [];
-  const models = s.pulled.includes(MODELS_LEVER) ? modelsFor(ch, lab) : null;
-  if (models) parts.push(`beside the question, model beakers of things not in this lesson, each tagged: ${models.map(m => `${m.name} (${m.tag})`).join('; ')}. `
-    + 'Nothing marks which one the item\'s substance is like');
-  if (s.pulled.includes(PARTICLE_LEVER)) parts.push('the particle view of the learner\'s beaker is open');
-  if (s.pulled.includes(METHODS_LEVER)) parts.push(`method cards, none marked: ${methodsOnChoices(ch).map(m => METHOD_CARDS[m]).join(' ')}`);
-  for (const i of s.dropped) if (ch.options[i] !== undefined) parts.push(`choice ${i + 1}, "${ch.options[i]}", is greyed out and is not the answer`);
-  return parts.length ? parts.join('; ') : null;
-}
+      does: 'Opens the particle view of the learner\'s own beaker: the liquid\'s particles as blue dots and each added '
+        + 'substance\'s particles in its colour. Ask what the learner sees; never say where the particles went.',
+      content: (ch, { view }) => ch.type === 'particle_explain' && view.particleViewAvailable,
+      // Kept while pulled: the view it opened stays open.
+      offer: (_ch, { view, state }) => state.pulled.includes(PARTICLE_LEVER) || (!view.beakerEmpty && !view.particleViewOn),
+      fact: 'The particle view of the learner\'s beaker is open.' },
+    { id: METHODS_LEVER, type: 'meaning', answers: 'all', answersOn: onType,
+      when: 'The learner picks a method that cannot get this substance back, or does not know what the methods do.',
+      does: 'Shows a card for each method among the choices, saying what it catches, none marked. Never say which card '
+        + 'fits this substance or whether the substance dissolved.',
+      content: ch => (methodsOnChoices(ch).length >= 2 ? methodsOnChoices(ch) : null),
+      // In the order of the choices, not by name: a fact that repeats a choice's name beside its card reads as a pointer.
+      fact: (methods: Method[]) => 'Method cards, none marked, one for each method among the choices, in their order: '
+        + `${methods.map((m, i) => `${i + 1}. "${methodBody(m)}"`).join(' ')}` },
+    { id: DROP_LEVER, type: 'custom', answers: 'all', answersOn: onType, carrier: 'shown',
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
+      does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.',
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (ch, { state }) => (state.pulled.includes(DROP_LEVER) || farChoice(ch, state) !== null ? state.dropped : null),
+      fact: (dropped: readonly number[], ch) => dropped.filter(i => ch.options[i] !== undefined)
+        .map(i => `Choice ${i + 1}, "${ch.options[i]}", is greyed out and is not the answer.`).join(' ') },
+  ],
+});

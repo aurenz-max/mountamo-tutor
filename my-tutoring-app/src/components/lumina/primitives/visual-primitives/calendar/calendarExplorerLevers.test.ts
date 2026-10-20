@@ -1,5 +1,5 @@
 /**
- * calendar-explorer levers (`calendarExplorerLevers.ts`): each leak rule per mode, each simpler-question builder over
+ * calendar-explorer levers (`CALENDAR_LEVERS`, `calendarExplorerLevers.ts`): each leak rule per mode, each simpler-question builder over
  * many items (same mode, its key recomputed, never the item's own answer), the miss → lever table, and lever coverage
  * on the saved payloads' items (a lever that exists only on made-up items is not a lever).
  */
@@ -8,13 +8,12 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
-import { calendarMiss, calendarSequenceItemsFromChallenges } from './calendarExplorerWorkspace';
-import type { CalendarSequenceItem } from './calendarExplorerScript';
+import { calendarMiss } from './calendarExplorerWorkspace';
+import { calendarExplorerCard } from './calendarExplorer.card';
 import {
-  ARROW_LEVER, HEADERS_LEVER, MODEL_PAIR_LEVER, RING_LEVER, ROWS_LEVER, SIMPLER_LEVER, STRIP_LEVER, TICKS_LEVER, TINT_LEVER,
-  calendarGridLevers, calendarLeverFacts, calendarPracticeItem, calendarPracticeParent, calendarSequenceLevers, modelPair,
-  modelPairLeaks, namedDates, practiceLeaks, ringDates, ringLeaks, rowRanges, rowsLeak, stripLeaks, tintLeaks, tintWeekday,
-  weekStrip,
+  ARROW_LEVER, CALENDAR_LEVERS, HEADERS_LEVER, MODEL_PAIR_LEVER, RING_LEVER, ROWS_LEVER, SIMPLER_LEVER, STRIP_LEVER, TICKS_LEVER,
+  TINT_LEVER, calendarPracticeItem, calendarPracticeParent, modelPair, modelPairLeaks, namedDates, practiceLeaks, ringDates,
+  ringLeaks, rowRanges, rowsLeak, stripLeaks, tierShown, tintLeaks, tintWeekday, weekStrip, type CalendarSession,
 } from './calendarExplorerLevers';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -24,8 +23,9 @@ const daysIn = (m: number, y: number) => new Date(y, m, 0).getDate();
 
 const ch = (over: Partial<CalendarExplorerChallenge>): CalendarExplorerChallenge => ({ id: 'c1', type: 'identify', question: '',
   month: 3, year: 2025, correctAnswer: '', options: [], hint: 'h', narration: 'n', ...over });
-const solo = (c: CalendarExplorerChallenge) => ({ challenges: [c] });
-const none = { headers: false, tint: false };
+const solo = (c: CalendarExplorerChallenge): CalendarSession => ({ challenges: [c] });
+const declare = (c: CalendarExplorerChallenge, s: CalendarSession = solo(c), pulled: readonly string[] = []) =>
+  CALENDAR_LEVERS.declare(c, s, pulled);
 
 /** Every "Nth <weekday>" identify in 2024-2026. */
 const ordinalItems = () => [2024, 2025, 2026].flatMap(year => Array.from({ length: 12 }, (_, i) => i + 1).flatMap(month =>
@@ -59,8 +59,8 @@ describe('help levers: each leak rule', () => {
     expect(tintLeaks(ch({ correctAnswer: 'Friday' }))).toBe(true);
     expect(tintWeekday(ch({ question: 'What date is the second Tuesday of March 2025?', correctAnswer: '11' }))).toBe('Tuesday');
     expect(tintWeekday(ch({ type: 'count', targetDayOfWeek: 'Friday', correctAnswer: '5' }))).toBe('Friday');
-    expect(calendarGridLevers(ch({ question: 'What day of the week is March 15, 2025?', correctAnswer: 'Saturday' }), { challenges: [] }, none, [])
-      .map(l => l.id)).not.toContain(TINT_LEVER);
+    expect(declare(ch({ question: 'What day of the week is March 15, 2025?', correctAnswer: 'Saturday' })).map(l => l.id))
+      .not.toContain(TINT_LEVER);
   });
 
   it('row_ranges: every row of two or more dates, in order, and no label singles out the answer', () => {
@@ -88,30 +88,32 @@ describe('help levers: each leak rule', () => {
     for (const unit of ['day', 'month'] as const) {
       const names = unit === 'day' ? WEEKDAYS : MONTHS;
       for (let start = 0; start < names.length; start++) {
-        const items: CalendarSequenceItem[] = Array.from({ length: 5 }, (_, i) => unit === 'day'
-          ? { id: `t${i}`, type: 'day_sequence', currentDay: names[(start + i) % 7], expectedDay: names[(start + i + 1) % 7] } as CalendarSequenceItem
-          : { id: `t${i}`, type: 'month_sequence', currentMonth: names[(start + i) % 12], expectedMonth: names[(start + i + 1) % 12] } as CalendarSequenceItem);
+        const items = Array.from({ length: 5 }, (_, i) => unit === 'day'
+          ? ch({ id: `t${i}`, type: 'day_sequence', currentDay: names[(start + i) % 7], expectedDay: names[(start + i + 1) % 7] })
+          : ch({ id: `t${i}`, type: 'month_sequence', currentMonth: names[(start + i) % 12], expectedMonth: names[(start + i + 1) % 12] }));
         for (const item of items) {
           const pair = modelPair(item, items)!;
           expect(pair).not.toBeNull();
           expect(modelPairLeaks(pair, item, items)).toBe(false);
           expect(names.indexOf(pair[1])).toBe((names.indexOf(pair[0]) + 1) % names.length);
-          expect(calendarSequenceLevers(item, items, []).map(l => l.id)).toEqual([MODEL_PAIR_LEVER]);
+          expect(declare(item, { challenges: items }).map(l => l.id)).toEqual([MODEL_PAIR_LEVER]);
         }
       }
     }
-    const item = { id: 'x', type: 'day_sequence', currentDay: 'Monday', expectedDay: 'Tuesday' } as CalendarSequenceItem;
+    const item = ch({ id: 'x', type: 'day_sequence', currentDay: 'Monday', expectedDay: 'Tuesday' });
     expect(modelPairLeaks(['Tuesday', 'Wednesday'], item, [item])).toBe(true);
     expect(modelPairLeaks(['Monday', 'Tuesday'], item, [item])).toBe(true);
   });
 
   it('the scene facts name what is drawn, never the answer', () => {
     const c = ch({ question: 'What day of the week is March 15, 2025?', correctAnswer: 'Saturday' });
-    const fact = calendarLeverFacts(c, [RING_LEVER, HEADERS_LEVER])!;
+    const fact = CALENDAR_LEVERS.onScreen({ ...c, showDayHeaders: false }, solo(c), [RING_LEVER, HEADERS_LEVER]);
+    expect(fact).toMatch(/header row is back/);
     expect(fact).toMatch(/A ring on March 15/);
     expect(fact).not.toMatch(/Saturday/);
     const offset = ch({ type: 'day_offset', startDay: 'Tuesday', offsetDays: 3, correctAnswer: 'Friday' });
-    expect(calendarLeverFacts(offset, [STRIP_LEVER])).not.toMatch(/Friday/);
+    expect(CALENDAR_LEVERS.onScreen(offset, solo(offset), [STRIP_LEVER])).toMatch(/starting at Tuesday/);
+    expect(CALENDAR_LEVERS.onScreen(offset, solo(offset), [STRIP_LEVER])).not.toMatch(/Friday/);
   });
 });
 
@@ -229,22 +231,42 @@ describe('this wrong answer, then this lever', () => {
   ] as const)('%#: %s', (c, picked, pulled, want) => {
     const miss = calendarMiss(c, picked);
     expect(miss).toBeDefined();
-    const levers = calendarGridLevers(c, solo(c), none, pulled as unknown as string[]);
+    const levers = declare(c, solo(c), pulled as unknown as string[]);
     if (want) expect(levers.find(l => l.id === want)!.answers).toContain(miss);
     expect(nextLever(levers, miss)).toBe(want);
   });
 
   it('hard withdrew the header row and the tint: each comes back as a lever; K never withdraws them', () => {
-    const levers = calendarGridLevers(count, solo(count), { headers: true, tint: true }, []);
-    expect(levers.map(l => l.id)).toEqual([TINT_LEVER, TICKS_LEVER, HEADERS_LEVER, SIMPLER_LEVER]);
-    expect(calendarGridLevers(weekdayIdentify, solo(weekdayIdentify), { headers: true, tint: false }, []).map(l => l.id))
-      .toEqual([RING_LEVER, HEADERS_LEVER]);
+    const hard = { ...count, showDayHeaders: false, showTargetDayColumn: false };
+    expect(declare(hard).map(l => l.id)).toEqual([TINT_LEVER, TICKS_LEVER, HEADERS_LEVER, SIMPLER_LEVER]);
+    expect(declare({ ...weekdayIdentify, showDayHeaders: false }).map(l => l.id)).toEqual([RING_LEVER, HEADERS_LEVER]);
+    expect(declare(hard, { challenges: [hard], gradeBand: 'K' }).map(l => l.id)).toEqual([TICKS_LEVER, SIMPLER_LEVER]);
   });
 
-  it('easy starts with the help shown, not pulled', () => {
-    const levers = calendarGridLevers(mark, { challenges: [mark], supportTier: 'easy' }, none, []);
+  it('easy starts with the help shown, not pulled; the chain starts with none', () => {
+    const easy: CalendarSession = { challenges: [mark], supportTier: 'easy' };
+    expect(tierShown(mark, easy)).toEqual([ROWS_LEVER]);
+    const levers = declare(mark, easy, tierShown(mark, easy));
     expect(levers.find(l => l.id === ROWS_LEVER)!.pulled).toBe(true);
     expect(levers.find(l => l.id === SIMPLER_LEVER)!.pulled).toBe(false);
+    const turn = ch({ type: 'day_sequence', currentDay: 'Monday', expectedDay: 'Tuesday' });
+    expect(tierShown(turn, { challenges: [turn], supportTier: 'easy' })).toEqual([]);
+  });
+
+  it("the chain's model card comes by the item's tier; a grid item has no model and no support fact", () => {
+    const turn = (supportTier?: 'easy' | 'medium' | 'hard') => ch({ type: 'day_sequence', currentDay: 'Monday', expectedDay: 'Tuesday', supportTier });
+    expect(CALENDAR_LEVERS.support(turn('easy'))).toMatch(/^before the learner tries, pull the model lever \(model_pair\), a card of two other days in order/);
+    expect(CALENDAR_LEVERS.support(turn())).toMatch(/^the learner tries first/);
+    expect(CALENDAR_LEVERS.support(turn('hard'))).toBe('answer it cold: model nothing before the learner tries, and never say the day that comes next');
+    expect(CALENDAR_LEVERS.support(count)).toBe('');
+  });
+
+  it('every miss of every mode is answered by a lever in it', () => {
+    for (const [mode, m] of Object.entries(calendarExplorerCard.modes)) {
+      const answered = new Set(CALENDAR_LEVERS.specs.filter(s => !s.modes || s.modes.includes(mode))
+        .flatMap(s => (s.answers === 'all' ? m.misses : s.answers)));
+      for (const miss of m.misses) expect(answered.has(miss), `${mode} ${miss}`).toBe(true);
+    }
   });
 });
 
@@ -256,7 +278,7 @@ describe('the saved payloads: every checked miss has a lever on its own item', (
     const data = load('calendar-explorer.identify.json');
     let simplerOffered = 0;
     for (const c of data.challenges) {
-      const levers = calendarGridLevers(c, data, none, []);
+      const levers = declare(c, data);
       if (levers.some(l => l.id === SIMPLER_LEVER)) simplerOffered++;
       const wrongs = c.options.filter(o => o !== c.correctAnswer);
       for (const w of wrongs) {
@@ -268,7 +290,7 @@ describe('the saved payloads: every checked miss has a lever on its own item', (
   });
 
   it('day_sequence: every turn has the model pair', () => {
-    const items = calendarSequenceItemsFromChallenges(load('calendar-explorer.day_sequence.json').challenges);
-    for (const item of items) expect(calendarSequenceLevers(item, items, []).map(l => l.id)).toEqual([MODEL_PAIR_LEVER]);
+    const items = load('calendar-explorer.day_sequence.json').challenges;
+    for (const item of items) expect(declare(item, { challenges: items }).map(l => l.id)).toEqual([MODEL_PAIR_LEVER]);
   });
 });

@@ -10,7 +10,8 @@ const session = vi.hoisted(() => ({
   tutorSpeaking: true,
 }));
 
-// Keep the real helper, Counting Board, surface registry, companion and actor.
+// Keep the real helper, Ten Frame (a runner-era board that still wires Pip itself; counting-board is a boss whose
+// Pip comes from the runner on a bound mount), surface registry, companion and actor.
 // Only the network/audio session, judged runner and evaluation services are faked.
 // Like the real provider, a connection is one more claim on Pip, never a gate.
 vi.mock('@/contexts/LuminaAIContext', async () => {
@@ -26,7 +27,7 @@ vi.mock('@/contexts/LuminaAIContext', async () => {
       session.connect = (id) => { setActiveId(id); store.setActive(id); };
       return <Context.Provider value={{
         isConnected: activeId !== null, activePrimitiveId: activeId,
-        activePrimitiveType: activeId ? 'counting-board' : null,
+        activePrimitiveType: activeId ? 'ten-frame' : null,
         activePrimitiveData: null, isAIResponding: false, isAudioPlaying: false,
         isListening: false, sessionEnded: false, conversation: [], disconnect,
       }}><PipSurfaceContext.Provider value={store}>{children}</PipSurfaceContext.Provider></Context.Provider>;
@@ -40,7 +41,7 @@ vi.mock('../hooks/useJudgedScriptRunner', () => ({
     currentItem: pack.items[0], currentIndex: 0, cuedItemId: pack.items[0]?.id,
     tutorSpeaking: session.tutorSpeaking, stage: 'asking', currentSolved: false,
     canAttempt: true, running: true, preparing: false, summary: null, revealHeld: false,
-    start: vi.fn(), isAwaitingGesture: () => false, submitGestureAttempt: vi.fn(),
+    start: vi.fn(), isAwaitingGesture: () => false, submitGestureAttempt: vi.fn(), armStillness: vi.fn(), clearStillness: vi.fn(),
   }),
 }));
 vi.mock('../evaluation', () => ({
@@ -59,8 +60,8 @@ vi.mock('../config/primitiveRegistry', () => ({ getPrimitive: () => undefined })
 vi.mock('../components/live-activity/TesterWorkspace', () => ({ TesterWorkspace: ({ children }: any) => children, testerBinds: () => false }));
 
 const data = {
-  title: 'Count the apples', objects: { type: 'apples' }, gradeBand: 'K',
-  challenges: [{ id: 'first', type: 'count_all', count: 3, targetAnswer: 3, arrangement: 'line', instruction: '', hint: '', narration: '' }],
+  title: 'Build three', mode: 'single', counters: { count: 0, color: 'red', positions: [] },
+  challenges: [{ id: 'first', type: 'build', targetCount: 3, instruction: 'Put 3 counters on the ten frame!', hint: '', narration: '' }],
 };
 
 beforeEach(() => {
@@ -78,7 +79,7 @@ async function generate() {
 describe('Math helper Pip integration', () => {
   it('puts one Pip in the real board from the board’s own phase, with no tutor session', async () => {
     const { container } = render(<MathPrimitivesTester onBack={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Counting Board/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Ten Frame/ }));
     await generate();
     const dock = container.querySelector<HTMLElement>('[data-pip-dock]')!;
     const instanceId = dock.dataset.pipDock!;
@@ -89,9 +90,8 @@ describe('Math helper Pip integration', () => {
     session.tutorSpeaking = false;
     fireEvent.click(screen.getByRole('button', { name: /Raw JSON/ }));
     expect(container.querySelector('[data-pip-dock]')).toBe(dock);
-    fireEvent.click(container.querySelector('[data-pip-object="object-1"]')!);
+    fireEvent.click(container.querySelector('[data-pip-object="cell-1"]')!);
     expect(dock.querySelector('[data-pip-surface-body]')?.getAttribute('data-pip-gesture')).toBe('look');
-    expect(container.textContent).toContain('Counted: 1');
 
     // A session that starts later changes nothing about where Pip is.
     act(() => session.connect(instanceId));
@@ -101,7 +101,7 @@ describe('Math helper Pip integration', () => {
 
   it('replaces the actor and ends the old session on regeneration or primitive selection', async () => {
     const { container } = render(<MathPrimitivesTester onBack={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Counting Board/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Ten Frame/ }));
     await generate();
     const firstDock = container.querySelector<HTMLElement>('[data-pip-dock]')!;
     act(() => session.connect(firstDock.dataset.pipDock!));
@@ -113,7 +113,7 @@ describe('Math helper Pip integration', () => {
     expect(nextDock.dataset.pipDock).not.toBe(firstDock.dataset.pipDock);
     expect(container.querySelectorAll('[data-pip-surface-body]')).toHaveLength(1);
     expect(nextDock.querySelector('[data-pip-surface-body]')).not.toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Ten Frame/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Counting Board/ }));
     expect(session.disconnect).toHaveBeenCalledTimes(2);
     expect(container.querySelector('[data-pip-surface-body]')).toBeNull();
     expect(container.querySelector('[data-pip-dock]')).toBeNull();

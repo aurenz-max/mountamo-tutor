@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * calendar-explorer levers (`calendarExplorerLevers.ts`), mounted the way a lesson mounts it: a help pull changes the
+ * calendar-explorer levers (`CALENDAR_LEVERS`), mounted the way a lesson mounts it: a help pull changes the
  * screen and the scene fact in one commit and leaves the answer to the learner; the next attempt records the lever; a
  * refused pull changes nothing; the simpler question is ungraded and gives the full item back blank, which is credited
  * with the levers recorded; the spoken chain's model pair is two other days.
@@ -80,7 +80,7 @@ it('identify "third Wednesday": the tint (a second pull refused, nothing changes
     screen: h.view.container.innerHTML }).toEqual(before);
 
   h.dispatch('pull_lever', { lever: SIMPLER_LEVER });
-  expect(h.state().task).toMatchObject({ itemId: 'c1~simpler', task: expect.stringMatching(/^What date is the first Wednesday of January 2025\? The learner answers by saying/) });
+  expect(h.state().task).toMatchObject({ itemId: 'c1~simpler', task: 'What date is the first Wednesday of January 2025?' });
   expect(h.state().task!.demand.practice).toMatch(/ungraded/);
   expect(levers(h)).toEqual([]);
   expect(q(h, '[data-target-day="true"]')).toHaveLength(0);
@@ -95,7 +95,7 @@ it('identify "third Wednesday": the tint (a second pull refused, nothing changes
   expect(last(h)).toMatchObject({ itemId: 'c1~simpler', correct: true });
 
   h.dispatch('advance'); h.confirmVisible();
-  expect(h.state().task).toMatchObject({ itemId: 'c1', task: expect.stringMatching(/^What date is the third Wednesday of January 2025\? The learner answers by saying/) });
+  expect(h.state().task).toMatchObject({ itemId: 'c1', task: 'What date is the third Wednesday of January 2025?' });
   expect(screen.queryByText(/Selected:/)).toBeNull();
   expect(screen.queryByText('Practice question')).toBeNull();
   expect(q(h, '[data-target-day="true"]')).toHaveLength(5);
@@ -166,6 +166,8 @@ it('the day chain: the model pair is two other days, and the next answer records
   const h = mount(Array.from({ length: 5 }, (_, i) => ch({ id: `day-${i + 1}`, type: 'day_sequence', correctAnswer: days[i + 1],
     currentDay: days[i], expectedDay: days[i + 1], chainPosition: i + 1 })), 'day_sequence', { gradeBand: 'K' });
   expect(levers(h).map(l => [l.id, l.pulled])).toEqual([[MODEL_PAIR_LEVER, false]]);
+  // No tier: medium. The learner tries first; the model card comes after a miss (the lever set writes it).
+  expect(String(h.state().task!.demand.support)).toMatch(/^the learner tries first; after a miss, model two other days in order with the model_pair lever/);
   h.say('Monday'); h.feedback('incorrect', 'retry'); h.confirmVisible();
   const receipt = h.dispatch('pull_lever', { lever: MODEL_PAIR_LEVER });
   expect(receipt.status).toBe('committed');

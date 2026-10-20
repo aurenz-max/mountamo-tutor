@@ -33,14 +33,14 @@ const text = (h: WorkspaceHarness) => h.view.container.textContent ?? '';
 it('recognition: a wrong answer, the observer pulls the contrast model on other words; the item\'s cards are unchanged', () => {
   const h = mountWorkspace({ primitiveId: 'rhyme-studio', evalMode: 'recognition', data: data('K', REC) });
   expect(levers(h)).toEqual([['contrast_model', false], ['far_pair', false]]);
-  const pair = q(h, '[data-pip-object="pair"]')[0].innerHTML;
+  const pair = q(h, '[data-rhyme-pair]')[0].innerHTML;
   h.say('yes'); h.feedback('incorrect', 'retry');
   expect(observerLever(h.state(), true)).toBe('contrast_model');
   const receipt = h.dispatch('pull_lever', { lever: 'contrast_model' });
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-lever="contrast-model"] [role="img"]').map(p => p.getAttribute('aria-label'))).toEqual(['bee', 'tree', 'bee', 'bus']);
-  expect(q(h, '[data-pip-object="pair"]')[0].innerHTML).toBe(pair);
-  const fact = String(receipt.state.task!.demand.levers_on_screen);
+  expect(q(h, '[data-rhyme-pair]')[0].innerHTML).toBe(pair);
+  const fact = String(receipt.state.task!.demand.onScreen);
   expect(fact).toMatch(/bee and tree.*bee and bus/);
   expect(fact).not.toMatch(/\bcat\b|\bcap\b/);
   h.say('no'); h.feedback('correct');
@@ -101,7 +101,7 @@ it('production: the swap model and the onset strip act on other words; the targe
   const sounds = q(h, '[data-onset]').map(c => c.getAttribute('data-onset'));
   expect(sounds).toHaveLength(6);
   expect(sounds).not.toContain('b');
-  const fact = String(h.state().task!.demand.levers_on_screen);
+  const fact = String(h.state().task!.demand.onScreen);
   expect(fact).toMatch(/never put one together with the ending yourself/);
   expect(fact).not.toMatch(/\bbed\b|\b-?ed\b/);
   h.close();
@@ -115,7 +115,7 @@ it('collection: the strip greys first sounds already collected; practice is one 
   h.dispatch('pull_lever', { lever: 'dense_family_item' });
   const task = h.state().task!;
   expect(task.itemId).toBe('col-slot-2~simpler');
-  expect(task.workspace!.expectedAnswer).toMatch(/^Any real word that rhymes with (?!hat)/);
+  expect(task.workspace!.expectedAnswer).toMatch(/^"any real word that rhymes with (?!hat)/);
   expect(q(h, '[aria-label="Your rhyme family"]')).toHaveLength(0);
   h.say('big'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('col-slot-2');

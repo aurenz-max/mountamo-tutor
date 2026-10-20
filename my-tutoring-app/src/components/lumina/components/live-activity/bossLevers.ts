@@ -23,12 +23,14 @@ import { supportFact, type SupportTier } from './supportFact';
  * - `meaning`: what each option or label means, never which one is right.
  * - `marks`: rings, dots or lines on what is already on screen.
  * - `layout`: the same things, arranged to be easier to see (rows of five).
+ * - `legend`: a key or reference that names EVERY choice alike, none marked (a litmus key, the timeline read before).
+ *   Not leak-checked: naming every choice is what it is, so it never singles out the answer.
  * - `custom`: anything else; `why` says what no stock type does.
  */
-export type LeverType = 'model' | 'easier' | 'clue' | 'meaning' | 'marks' | 'layout' | 'custom';
+export type LeverType = 'model' | 'easier' | 'clue' | 'meaning' | 'marks' | 'layout' | 'legend' | 'custom';
 
 const CARRIER: Record<LeverType, WorkspaceLever['carrier'] | null> = {
-  model: 'both', easier: 'both', clue: 'both', meaning: 'both', marks: 'shown', layout: 'shown', custom: null,
+  model: 'both', easier: 'both', clue: 'both', meaning: 'both', marks: 'shown', layout: 'shown', legend: 'shown', custom: null,
 };
 /** The types whose words are checked against the item's answers. */
 const WORDED: ReadonlySet<LeverType> = new Set<LeverType>(['clue', 'meaning']);
@@ -92,8 +94,13 @@ export type SceneOf = WorkspaceScene & { facts: { support?: never; onScreen?: ne
 
 export interface LeverSet<I, C> {
   specs: readonly LeverSpec<I, C>[];
-  /** The `support` scene fact for an item: when its model lever comes (`supportFact`). '' when the set has no model. */
-  support: (item: I | null) => string;
+  /**
+   * The `support` scene fact for an item: when its model lever comes (`supportFact`). '' when the item's mode has no
+   * model lever. Given the lesson context (every production caller passes the one it gives `declare`), only a model
+   * lever OFFERED on this item counts: '' when none is, and the lever is named only when exactly one is. Without ctx
+   * (tests only) every model lever in the item's mode counts.
+   */
+  support: (item: I | null, ctx?: C, lastMiss?: string) => string;
   /** The lever ids each mode can offer, in order (for the card and the tests). */
   idsFor: (mode: string) => string[];
   declare: (item: I | null, ctx: C, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
@@ -104,7 +111,7 @@ export interface LeverSet<I, C> {
     declare: (item: I, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
     onScreen: (item: I, pulled: readonly string[]) => string;
     simpler: (item: I, lever: string, lastMiss?: string) => I | null;
-    support: (item: I) => string;
+    support: (item: I, lastMiss?: string) => string;
   };
 }
 
@@ -133,17 +140,6 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
       + '(tier, different, own); supportFact writes when it comes. No scene writes that rule by hand.');
   }
 
-  const support: LeverSet<I, C>['support'] = item => {
-    if (!item || !def.support) return '';
-    const { tier, different, own } = def.support;
-    const word = (w: string | ((item: I) => string)) => (typeof w === 'function' ? w(item) : w);
-    // The item's own model lever, named when its mode has exactly one. A mode with no model lever has no support
-    // rule to state: telling the tutor to pull a model it is not offered is false.
-    const inItemMode = models.filter(spec => inMode(spec, modeOf(item)));
-    if (!inItemMode.length) return '';
-    return supportFact(tier(item), { different: word(different), own: word(own),
-      ...(inItemMode.length === 1 ? { lever: inItemMode[0].id } : {}) });
-  };
   const contentOf = (spec: LeverSpec<I, C>, item: I, ctx: C, lastMiss?: string) =>
     (spec.content ? spec.content(item, ctx, lastMiss) : true);
   const factOf = (spec: LeverSpec<I, C>, content: unknown, item: I, ctx: C) =>
@@ -153,14 +149,31 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
     const words = factOf(spec, content, item, ctx);
     return (def.answersOf?.(item, ctx) ?? []).some(answer => containsPhrase(words, answer));
   };
+  /** The rule `declare` applies: in the mode, `offer` holds, it has content, and its words do not name the answer. */
+  const offered = (spec: LeverSpec<I, C>, item: I, ctx: C, lastMiss?: string) => {
+    if (!inMode(spec, modeOf(item)) || (spec.offer && !spec.offer(item, ctx, lastMiss))) return false;
+    const content = contentOf(spec, item, ctx, lastMiss);
+    return !(content == null || content === false || leaks(spec, content, item, ctx));
+  };
 
+  // `ctx` is told apart by argument count, not by value: a set whose context is null or void still passes it.
+  const support: LeverSet<I, C>['support'] = (item, ...rest: [ctx?: C, lastMiss?: string]) => {
+    if (!item || !def.support) return '';
+    const { tier, different, own } = def.support;
+    const word = (w: string | ((item: I) => string)) => (typeof w === 'function' ? w(item) : w);
+    // The item's own model lever, named when exactly one is offered on it. With none offered there is no support
+    // rule to state: telling the tutor to pull a model it is not offered is false.
+    const inItemMode = models.filter(spec => (rest.length
+      ? offered(spec, item, rest[0] as C, rest[1]) : inMode(spec, modeOf(item))));
+    if (!inItemMode.length) return '';
+    return supportFact(tier(item), { different: word(different), own: word(own),
+      ...(inItemMode.length === 1 ? { lever: inItemMode[0].id } : {}) });
+  };
   const declare: LeverSet<I, C>['declare'] = (item, ctx, pulled, lastMiss) => {
     if (!item) return [];
     const mode = modeOf(item);
     return specs.flatMap(spec => {
-      if (!inMode(spec, mode) || (spec.offer && !spec.offer(item, ctx, lastMiss))) return [];
-      const content = contentOf(spec, item, ctx, lastMiss);
-      if (content == null || content === false || leaks(spec, content, item, ctx)) return [];
+      if (!offered(spec, item, ctx, lastMiss)) return [];
       const listed = spec.answers === 'all' ? def.missesOf(mode) : spec.answers;
       const onItem = spec.answersOn?.(item, ctx);
       return [{ id: spec.id, kind: leverKind(spec.type), carrier: spec.carrier ?? CARRIER[spec.type] ?? 'both',
@@ -193,7 +206,7 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
       declare: (item, pulled, lastMiss) => declare(item, ctx, pulled, lastMiss),
       onScreen: (item, pulled) => onScreen(item, ctx, pulled),
       simpler: (item, lever, lastMiss) => simpler(item, ctx, lever, lastMiss),
-      support,
+      support: (item, lastMiss) => support(item, ctx, lastMiss),
     }),
   };
 }

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Periodic table on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Periodic table on the teaching workspace (its boss): what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared contract
+ * over every boss (pip/WorkspacePip.surface.test.tsx).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -15,9 +16,8 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../components/
 import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../components/live-activity/activityContract';
 import { workspaceBinding } from '../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../pip/PipSurfaceStore';
 import PeriodicTable from './PeriodicTable';
-import { periodicItems } from './chemistry-primitives/periodicTableWorkspace';
+import { periodicItems } from './periodicTable.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -32,8 +32,8 @@ const BY_MODE: Record<string, any[]> = {
 };
 const MODES = Object.keys(BY_MODE);
 const payload = (mode: string) => ({ title: 'The Periodic Table', challenges: BY_MODE[mode], supportTier: 'medium' as const });
-const mount = (mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'periodic-table', evalMode: mode, data: payload(mode), instanceId: 'periodic-table', pipStore });
+const mount = (mode: string) =>
+  mountWorkspace({ primitiveId: 'periodic-table', evalMode: mode, data: payload(mode), instanceId: 'periodic-table' });
 const tap = (name: string) => fireEvent.click(document.querySelector(`[data-pip-object="element-${name}"]`)!);
 
 it.each(MODES)('%s binds; a spoken ask publishes its key, a find does not', mode => {
@@ -52,7 +52,7 @@ it('the keys carry the signature misses', () => {
   const h = mount('trend');
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"Potassium".*"Lithium" is wrong/);
   h.say('potassium'); h.feedback('correct', 'advance'); h.confirmVisible();
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^five .*"15" is the group number/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"five".*"15" is the group number/);
 });
 
 it('a wrong tap commits as a miss, rings the box, and Try again clears it; the right tap credits', () => {
@@ -85,15 +85,6 @@ it('right answers complete once and submit the table metrics', async () => {
   await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'periodic-table', challengesCorrect: 2, findAccuracy: 100 });
-});
-
-it('Pip outlines the table and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('periodic-table');
-  const h = mount('identify', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('iron'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('no challenges is the exploration table; challenges outside a runtime show the needs-the-tutor card', () => {

@@ -6,12 +6,13 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import type { FastFactMiss } from '../../../primitives/visual-primitives/core/fastFactWorkspace';
-import type { VocabMiss } from '../../../primitives/visual-primitives/core/vocabularyExplorerWorkspace';
-import type { FactFileMiss } from '../../../primitives/visual-primitives/core/factFileWorkspace';
-import type { TimelineMiss } from '../../../primitives/visual-primitives/core/timelineExplorerWorkspace';
-import type { HowMiss } from '../../../primitives/visual-primitives/core/howItWorksWorkspace';
-import { missLists, sameMisses } from './missLists';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { fastFactCard } from '../../../primitives/visual-primitives/core/fastFact.card';
+import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/core/vocabularyExplorer.card';
+import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
+import { timelineExplorerCard } from '../../../primitives/visual-primitives/core/timelineExplorer.card';
+import { howItWorksCard } from '../../../primitives/visual-primitives/core/howItWorks.card';
+import { missLists } from './missLists';
 import type { SkillMiss } from '../../../primitives/visual-primitives/core/digitalSkillsWorkspace';
 
 export const CORE_CATALOG: ComponentDefinition[] = [
@@ -319,27 +320,10 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fast-fact',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
-        'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'A fact drill with no timer: never mention speed, a clock or answering quickly. The learner says a choice or '
-        + 'taps it; a spoken choice is a real answer, and a tap is checked by the activity at once. When the choices are '
-        + 'pictures you are not told the answer. Read the question aloud, and for a young learner read every choice aloud '
-        + 'in the order shown, in the same voice for each. Before an answer, and after a wrong one, never say the answer, which choice it is, or rule choices out until one is left. A counting picture '
-        + 'is counted by the learner: point them to it, never say how many. Teaching is how to get to the fact: what the '
-        + 'question asks, a related fact they know, a way to work it out that the learner then carries out. Never count, '
-        + 'add or work it through yourself, not even to one step short of the end. You cannot tap for the learner.',
-      // Every mode has levers (`fastFactLevers.ts`): spread_pictures on counting pictures, count_model on a sum,
-      // difference or product, drop_far_choice on any menu with two untried choices to spare. No miss is unanswered by
-      // decision; a two-choice item, or a three-choice text item after one wrong tap, offers none (reported).
-      levers: true,
-      // The tap's own check (`fastFactMiss`), every mode: the drill is subject-agnostic, so the misses are the shapes a
-      // wrong choice has in any subject.
-      misses: sameMisses<FastFactMiss>(['recognize', 'recall', 'apply'],
-        ['wrong_operation', 'one_less', 'one_more', 'other_number', 'other_choice']),
-    },
+    // The live wiring is fastFact.card.ts + fastFact.boss.ts.
+    ...bossEntry(fastFactCard),
     description: 'Untimed fluency drill for rapid recall across any subject. '
-      + 'Multiple-choice challenges with configurable phases and visual prompts. No countdown or time pressure — students answer at their own pace; response time is measured silently for the automaticity signal only. '
+      + 'Multiple-choice challenges with configurable phases and visual prompts. No countdown or time pressure — students answer at their own pace, and nothing is timed. '
       + 'Use for: math facts, sight words, vocabulary, element symbols, dates & events, translations — '
       + 'any domain requiring automaticity. Generates 8-12 challenges across 2-3 phases with streak tracking. '
       + 'ESSENTIAL for building fluency and automaticity at any grade level.',
@@ -350,7 +334,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       + 'phoneme-explorer already owns that ground answered ALOUD (spoken-first ruling); '
       + 'picking fast-fact there duplicates it tap-only. Fine for other K-2 LA automaticity '
       + '(sight words, vocabulary) where no spoken-native primitive already claims the objective.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: ['apply', 'assess'], minutes: 3 },
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'spoken'], role: ['apply', 'assess'], minutes: 3 },
     evalModes: [
       {
         evalMode: 'recognize',
@@ -380,99 +364,15 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Use a known fact in a short context, cloze, comparison, or reverse-direction association.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Guide the student through an untimed fluency drill (no clock, no time pressure). Subject: {{subject}}. '
-        + 'Current challenge: "{{promptText}}" ({{challengeType}}, {{responseMode}} mode). '
-        + 'Correct answer: "{{correctAnswer}}". '
-        + 'Attempt {{attemptNumber}}. Streak: {{streak}}. Accuracy: {{accuracy}}%. '
-        + 'Challenge {{currentIndex}} of {{totalChallenges}}. Never rush the student or mention speed.',
-      contextKeys: [
-        'subject', 'challengeType', 'promptText', 'correctAnswer',
-        'responseMode', 'difficulty', 'attemptNumber', 'streak',
-        'accuracy', 'averageTime', 'totalChallenges', 'currentIndex',
-        'gradeBand', 'targetResponseTime',
-      ],
-      scaffoldingLevels: {
-        level1:
-          '"Take a moment and think. What do you already know about this?"',
-        level2:
-          '"Let\'s break it down. Look at the question again — what clue stands out? '
-          + 'Can you narrow it to two options?"',
-        level3:
-          '"Here\'s a strong strategy: connect this to something you already know well, '
-          + 'then rule out the choices that clearly do not fit. Which one feels right now?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student answers without reading carefully and gets it wrong', response: 'There is no rush — take a breath and read the whole question once more. What is it really asking?' },
-        { pattern: 'Student freezes or seems unsure', response: 'It is okay to take your time, and okay to make your best guess! Even a guess helps you learn. What feels closest?' },
-        { pattern: 'Student gets frustrated after wrong answers', response: 'Every wrong answer teaches your brain something. You are making progress — keep going!' },
-        { pattern: 'Student answers correctly but is still working it out step by step', response: 'You know this! The more you practice, the more it will just pop into your head — no rush at all.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ACTIVITY INTRODUCTION',
-          instruction:
-            'When you receive [ACTIVITY_START], welcome the student to the fluency drill. '
-            + 'Mention the subject and number of challenges. Reassure them it is untimed and they can take all the time they need. '
-            + 'Then say the first question out loud, word for word — a young student may not be able to read it. '
-            + 'Keep it to 2-3 sentences.',
-        },
-        {
-          title: 'CORRECT ANSWER FEEDBACK',
-          instruction:
-            'When you receive [ANSWER_CORRECT], briefly celebrate the correct thinking. '
-            + 'Do NOT mention speed or how fast they answered. '
-            + 'If on a streak, mention it. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'INCORRECT ANSWER GUIDANCE',
-          instruction:
-            'When you receive [ANSWER_INCORRECT], do NOT punish. '
-            + 'If more attempts remain, give a brief subject-appropriate hint without revealing the answer. '
-            + 'If max attempts reached, acknowledge the correct answer and move on encouragingly. '
-            + 'Keep to 1-2 sentences.',
-        },
-        {
-          title: 'NEXT CHALLENGE TRANSITION',
-          instruction:
-            'When you receive [NEXT_ITEM], say the new question itself out loud ("{{promptText}}") — a young student may not be able to read it. '
-            + 'Acknowledge progress if relevant. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'COMPLETION CELEBRATION',
-          instruction:
-            'When you receive [ALL_COMPLETE], celebrate the student\'s effort. '
-            + 'Mention phase scores and best streak, and affirm their accuracy and growing confidence — not speed. '
-            + 'Give subject-specific encouragement. Keep to 2-3 sentences.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'fact-file',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'A fact file (key stats and tabbed sections) with multiple-choice questions about it. You cannot see the '
-        + 'file text, so never state a fact, number or detail as if from it. Open file: the learner looks the answer up. '
-        + 'Closed file: the learner remembers it. While the learner is reading, the question is hidden: help them read '
-        + 'and do not ask it. Read the question aloud, and for a young learner every choice, in the same voice. Before '
-        + 'an answer and after a wrong one: never say the answer or which choice it is; never describe a choice by what '
-        + 'it says or is about ("the one about species"); never hint at the idea the answer rests on ("think about '
-        + 'what makes things float", "heavier or lighter?"); never say what a wrong choice is or means; never rule '
-        + 'choices out until one is left. Never name a section in words, not even as a memory cue ("think back to the '
-        + 'Key Stats", "what you read about records"): point_to_section shows it, recorded as help. Teaching is what the '
-        + 'question asks and how to look or remember, never the content of the answer. You cannot tap or open a tab '
-        + 'for the learner.',
-      // Every mode: point_to_section (help) and drop_far_choice (simplify), `factFileLevers.ts`.
-      levers: true,
-      // The tap's own check (`factFileMiss`): the wrong choice is a fact the file states elsewhere, or one it does not state.
-      misses: sameMisses<FactFileMiss>(['explore', 'recall', 'apply'], ['other_file_fact', 'not_in_file']),
-    },
+    // The live wiring is factFile.card.ts + factFile.boss.ts.
+    ...bossEntry(factFileCard),
     description: 'Magazine-style profile card with key stats, quick facts, deep dive sections, records, and "did you know?" callouts. Students explore tabbed sections then answer self-check questions. Works for ANY topic — trash trucks, volcanoes, ancient civilizations, animals. ESSENTIAL for K-8 general content delivery.',
     constraints: 'Best for topics with concrete facts and stats. Not ideal for purely narrative content.',
-    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap'], role: ['introduce', 'apply'], minutes: 6 },
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
@@ -499,71 +399,6 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Student reads the Fact File, then answers 4 harder questions with the file closed, requiring inference, comparison, or application of facts to new scenarios',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Guide the student through a Fact File about "{{title}}" ({{category}}). '
-        + 'The student explores key stats, quick facts, deep dive sections, records, and "did you know" callouts. '
-        + 'Currently viewing: {{activeTab}}. Sections explored: {{sectionsExplored}} of {{totalSections}}. '
-        + 'Self-check progress: {{checksCompleted}} of {{totalChecks}}.',
-      contextKeys: [
-        'title', 'category', 'activeTab', 'sectionsExplored', 'totalSections',
-        'checksCompleted', 'totalChecks', 'currentKeyStats',
-      ],
-      scaffoldingLevels: {
-        level1: '"Look at the key stats at the top. What number surprises you the most?"',
-        level2: '"Click on the {{activeTab}} tab and read through the details. '
-          + 'What connection do you see between this and the key stats?"',
-        level3: '"Let me walk you through this. Start with the key stats — {{title}} has some amazing numbers. '
-          + 'Now click Deep Dive to understand WHY those numbers matter. '
-          + 'Finally, check the Records section for the most extreme examples."',
-      },
-      commonStruggles: [
-        { pattern: 'Student only looks at key stats and skips other tabs', response: 'The key stats are just the beginning! Click on the other tabs — Deep Dive has the best details, and Did You Know has surprising facts.' },
-        { pattern: 'Student clicks through tabs too quickly without reading', response: 'Slow down and read each section carefully. There are some amazing details hidden in there that you will want to remember.' },
-        { pattern: 'Student struggles with self-check questions', response: 'Go back and re-read the section related to this question. The answer is in the facts you just explored.' },
-        { pattern: 'Student does not connect facts across sections', response: 'Try to connect what you learned in different sections. How do the key stats relate to the deep dive details?' },
-      ],
-      aiDirectives: [
-        {
-          title: 'TAB EXPLORATION',
-          instruction:
-            'When you receive [TAB_OPENED], briefly introduce the section the student opened. '
-            + 'Highlight one interesting detail to look for. If this is Deep Dive, connect it to a key stat. '
-            + 'If this is Did You Know, build excitement. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'KEY STAT REACTION',
-          instruction:
-            'When you receive [STAT_TAPPED], react to the specific stat the student tapped. '
-            + 'Provide a relatable comparison (e.g., "That is as heavy as 8 elephants!"). '
-            + 'Keep to 1-2 sentences.',
-        },
-        {
-          title: 'SELF-CHECK FEEDBACK',
-          instruction:
-            'When you receive [CHECK_CORRECT], celebrate briefly and reinforce the fact. '
-            + 'When you receive [CHECK_INCORRECT], hint at which section contains the answer '
-            + 'without revealing it. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'ALL EXPLORED',
-          instruction:
-            'When you receive [ALL_SECTIONS_EXPLORED], congratulate the student on reading everything. '
-            + 'Ask them what their favorite fact was. If self-checks are coming, preview them. '
-            + 'Keep to 2-3 sentences.',
-        },
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten)',
-          instruction:
-            'For a pre-reader (kindergarten) the child CANNOT read the self-check question or options. '
-            + 'When you receive [FACTCHECK_READ_ALOUD], READ ALOUD, word for word, exactly what the message gives you: '
-            + 'the question, then EVERY option slowly with its letter, then ask which picture they want to tap. '
-            + 'Reading this aloud IS your turn — this OVERRIDES any instruction to keep it to one sentence or to be brief; read all of it. '
-            + 'Never say or hint which option is correct. '
-            + 'When you receive [FACTCHECK_RETRY], give ONE warm spoken hint that narrows it down without revealing the answer, and invite them to tap another picture.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
@@ -600,92 +435,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Student sees the first steps and predicts the next one (hard: both wrong choices come later in the process), and explains why a step matters by choosing what it makes possible. Requires inference beyond memorization.',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Code builds every question from the process steps and checks every answer; you are not told the key. '
-        + 'The learner first reads the steps (a pre-reader sees pictures: read them aloud); the questions start when they press Start. '
-        + 'Once they start, never retell the steps in order. IDENTIFY: the description of a step, its own name blanked; never say '
-        + 'which step it is, its number, or the blanked words. SEQUENCE: no step list is on screen; never say or imply which card '
-        + 'comes first, next or last, what comes before or after any card, or that two cards are swapped, even as a question '
-        + '("what happens after your foot pushes down?"). PREDICT: never say or describe what the next step does, or hint with a '
-        + 'word from the name of a choice. EXPLAIN: never say in your own words what the asked step makes possible, carries or '
-        + 'connects (that is the answer), or which choice fits. Outside SEQUENCE you may ask what has to happen before or after a '
-        + 'step the learner names. After a miss, never say why the wrong choice was chosen. Describe a lever only by what the '
-        + 'scene says it shows. You cannot tap, place, check or press Start for the learner.',
-      // identify: step_numbers (no step list on screen), two_choices, easier_item; predict: last_step, two_choices,
-      // easier_item; explain: show_step, two_choices, easier_item; sequence: show_why (every card has a purpose) and
-      // fewer_cards (`howItWorksLevers.ts`). A pre-reader's picture order has only fewer_cards.
-      levers: true,
-      // The activity's own check (`howMiss`) on a tap or an order, and the same ids as each spoken item's known misses.
-      misses: missLists<HowMiss>({
-        guided: ['neighbour_step', 'far_step'],
-        sequence: ['adjacent_swap', 'reversed', 'one_moved', 'two_swapped', 'mixed_order', 'neighbour_step', 'far_step'],
-        predict: ['skipped_ahead', 'went_back', 'neighbour_step', 'far_step'],
-      }),
-    },
-    tutoring: {
-      taskDescription:
-        'Guide the student through a step-by-step process: "{{title}}". '
-        + 'Overview: {{overview}}. Currently on Step {{currentStep}} of {{totalSteps}}: "{{currentStepTitle}}". '
-        + 'Steps explored: {{stepsExplored}} of {{totalSteps}}. '
-        + 'Detail expanded: {{detailExpanded}}. '
-        + 'Challenges completed: {{challengesCompleted}} of {{totalChallenges}}.',
-      contextKeys: [
-        'title', 'overview', 'totalSteps', 'currentStep', 'currentStepTitle',
-        'detailExpanded', 'stepsExplored', 'challengesCompleted', 'totalChallenges',
-      ],
-      scaffoldingLevels: {
-        level1: '"Look at this step carefully. What do you think is happening here?"',
-        level2: '"Read the description of Step {{currentStep}}: \\"{{currentStepTitle}}\\". '
-          + 'How does this connect to what happened in the previous step?"',
-        level3: '"Let me walk you through this. First, read the step description carefully. '
-          + 'Then open the \\"What\'s Happening?\\" section for deeper details. '
-          + 'Think about WHY this step needs to happen before the next one."',
-      },
-      commonStruggles: [
-        { pattern: 'Student clicks Next rapidly without reading step descriptions', response: 'Slow down! Each step builds on the last. Go back and read the description — the details matter for understanding the whole process.' },
-        { pattern: 'Student never opens "What\'s Happening?" sections', response: 'Try opening the "What\'s Happening?" section — it explains the science and mechanics behind each step with cool details.' },
-        { pattern: 'Student struggles with sequence challenges', response: 'Think about cause and effect. What has to happen BEFORE this step? What would break if you swapped these two?' },
-        { pattern: 'Student gets predict question wrong', response: 'Go back and re-read the step before this one. The clue is in how it ends — each step sets up the next.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER PICTURE STORY (K)',
-          instruction:
-            'If this activity is the picture story for a young child (you will receive [ACTIVITY_START_PRE] with a numbered list of steps), READ IT ALOUD as your greeting: read every step out loud in order, word for word, and invite the child to tap the big play button when ready for the questions. '
-            + 'Reading the steps aloud IS your greeting — this OVERRIDES any one-sentence or "keep it brief" cap; do not shorten it or skip a step. '
-            + 'When you receive [READ_QUESTION] or [NEXT_QUESTION], read the question aloud word for word. Once the questions start, never say the order of the steps or which picture is right.',
-        },
-        {
-          title: 'STEP NAVIGATION',
-          instruction:
-            'When you receive [STEP_NAVIGATION], briefly introduce the new step and connect it to the previous one '
-            + 'with "Now that X happened..." transitions. If student skipped steps, gently remind them. '
-            + 'Keep to 1-2 sentences.',
-        },
-        {
-          title: 'DETAIL EXPANSION',
-          instruction:
-            'When you receive [DETAIL_EXPANDED], react with enthusiasm about the deeper explanation. '
-            + 'Add a relatable comparison or real-world context. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'CHALLENGE FEEDBACK',
-          instruction:
-            'When you receive [CHALLENGE_CORRECT], celebrate and reinforce understanding. '
-            + 'When you receive [CHALLENGE_INCORRECT], hint at the relevant step without giving the answer. '
-            + 'For sequence challenges, ask "What needs to happen BEFORE this?" '
-            + 'Keep to 1-2 sentences.',
-        },
-        {
-          title: 'PROCESS COMPLETE',
-          instruction:
-            'When you receive [ALL_COMPLETE], celebrate understanding. '
-            + 'Summarize the full process in one sentence. Highlight the most important takeaway. '
-            + 'Keep to 2-3 sentences.',
-        },
-      ],
-    },
+    ...bossEntry(howItWorksCard),
     supportsEvaluation: true,
   },
   {
@@ -722,78 +472,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Student matches each cause to the later event it led to and says when events happened, with the timeline hidden (easy: 2 pairs; hard: 3 pairs and an extra event that happened before every cause). Requires understanding WHY things happened, not just WHEN.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Guide the student through a timeline: "{{title}}" spanning {{timeSpan}}. '
-        + 'Total events: {{totalEvents}}. Currently viewing event {{currentEventIndex}}: "{{currentEventTitle}}" ({{currentEventDate}}). '
-        + 'Events explored: {{eventsExplored}} of {{totalEvents}}. '
-        + 'Challenge progress: {{challengesCompleted}} of {{totalChallenges}}.',
-      contextKeys: [
-        'title', 'timeSpan', 'totalEvents', 'currentEventIndex',
-        'currentEventTitle', 'currentEventDate', 'eventsExplored',
-        'challengesCompleted', 'totalChallenges',
-      ],
-      scaffoldingLevels: {
-        level1: '"Look at event {{currentEventIndex}}. When did this happen? What changed?"',
-        level2: '"Read about {{currentEventTitle}} ({{currentEventDate}}). '
-          + 'How is it different from the event before it? What made it possible?"',
-        level3: '"Let me help you connect the dots. {{currentEventTitle}} happened in {{currentEventDate}}. '
-          + 'Look at the Impact section — it tells you why this was a turning point. '
-          + 'Now think about what came before and what came after."',
-      },
-      commonStruggles: [
-        { pattern: 'Student jumps to the end without reading middle events', response: 'The middle events are where the most interesting changes happen. Go back and explore them — each one builds on the last.' },
-        { pattern: 'Student struggles with chronological ordering', response: 'Think about what technology or idea had to exist FIRST before the next one could happen. Cause comes before effect.' },
-        { pattern: 'Student confuses similar events', response: 'Look at the dates and the key difference between those two events. What changed between them?' },
-        { pattern: 'Student does not read the Impact sections', response: 'The Impact line tells you WHY this event mattered. Read it — it helps you understand the whole timeline story.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'EVENT EXPLORATION',
-          instruction:
-            'When you receive [EVENT_SELECTED], introduce the event with historical context. '
-            + 'Connect it to the previous event with "X years later..." or "Building on..." '
-            + 'Highlight the impact. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'CHALLENGE FEEDBACK',
-          instruction:
-            'When you receive [CHALLENGE_CORRECT], reinforce the chronological connection. '
-            + 'When you receive [CHALLENGE_INCORRECT], ask about cause-and-effect to guide thinking. '
-            + 'For ordering: "Think about what had to happen first." '
-            + 'Keep to 1-2 sentences.',
-        },
-        {
-          title: 'TIMELINE COMPLETE',
-          instruction:
-            'When you receive [ALL_COMPLETE], summarize the arc of the timeline in one sentence. '
-            + 'Highlight the key theme and ask the student what they think comes next. '
-            + 'Keep to 2-3 sentences.',
-        },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'First the learner reads the timeline: they open every event, then press Begin the questions. While they read, talk '
-        + 'about the events freely. Then the timeline closes and code builds and checks every question from the events; you are '
-        + 'not told the key. IDENTIFY: a clue describes one event; the learner says or taps its title. DATE: the learner says or '
-        + 'taps when an event happened. ORDER: the learner moves cards into time order, earliest at the top. '
-        + 'CAUSE AND EFFECT: the learner matches each cause to the event it led to. During the questions never say an '
-        + 'event\'s date, which event fits the clue, where an event falls in time (first, last, next to another), which card comes before another (never name a card or a pair to look at), or which effect '
-        + 'goes with a cause, and never retell what an event was about; ask what the learner remembers of it. When you restate a clue, never add a word from a choice\'s title. After a miss, never '
-        + 'say which choice it was close to. Describe a lever card only by what the scene says it shows. You cannot open, tap, '
-        + 'move, match or check for the learner.',
-      // identify: show_timeline, two_choices; date: before_after, date_line, two_dates; order: read_cards, led_to,
-      // fewer_cards; cause_effect: read_cards, show_dates, two_links (`timelineExplorerLevers.ts`). Every miss is answered
-      // by a help lever first.
-      levers: true,
-      // The activity's own check (`timelineMiss`) on a tap or a check, and the same ids as each spoken item's known misses.
-      misses: missLists<TimelineMiss>({
-        explore: ['adjacent_event', 'distant_event'],
-        order: ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order', 'adjacent_event', 'distant_event'],
-        connect: ['used_extra', 'effect_before_cause', 'pairs_swapped', 'mixed_links', 'adjacent_date', 'distant_date'],
-      }),
-    },
+    ...bossEntry(timelineExplorerCard),
     supportsEvaluation: true,
   },
   {
@@ -801,30 +480,6 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     description: 'Topic-specific vocabulary: 6-8 word cards (what each word means, a sentence using it, related words, pronunciation and origin) that students study, then a check built by code from those words. The cards close when the check starts. Tasks: match words to their meanings; choose the word that completes a new sentence; choose the word that fits a described situation that never names it. Students say the word or tap it. Natural complement to any content primitive. ESSENTIAL for K-8 vocabulary building across all subjects.',
     constraints: 'Best for topics with specialized terminology (6-8 words). Not ideal for topics without distinct vocabulary. Code builds every question, choice and answer from the word cards; the manifest picks the topic, never the questions. Evaluable: every answer is checked by code.',
     affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 6 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Code builds and checks every item from the word cards; you are not told which word or meaning is right. '
-        + 'Before the check the learner reads the cards (what each word means, a sentence using it): talk about the words then, '
-        + 'and do not ask the questions of the check. Start the check closes the cards for good. MATCH: the words and meanings are '
-        + 'on screen; never say which meaning goes with a word, never retell a meaning so it points to one word, never say which '
-        + 'pairs are wrong, and never name an idea from one meaning for the learner to look for ("warming up into a gas", '
-        + '"cooling into drops"), in the meanings or in the example sentences. SENTENCE and '
-        + 'SITUATION items: the learner says the word or taps it. Never say the word, its first sound or letter, and never rule a '
-        + 'choice out. Never put what is happening into the words of the right meaning ("liquid turning into a gas", "water '
-        + 'gathering together"): read the sentence or situation as written and ask what is happening in it and which words are '
-        + 'clues. Never say what kind of word the blank needs (an action word, a thing), even when the choices are labeled. Never '
-        + 'say what a choice means unless the meanings are on screen; then the learner reads them (read them aloud only when '
-        + 'asked, every one in order), and never point to one. You cannot tap, '
-        + 'pair or check for the learner.',
-      // match publishes show_examples and fewer_pairs (when other words are left for a smaller match); fill_blank
-      // tag_word_kinds (choices of two kinds), show_meanings, drop_choice; context show_meanings, drop_choice
-      // (`vocabularyExplorerLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`vocabMiss`) on a tap, and the same ids as each spoken item's known misses.
-      misses: missLists<VocabMiss>({ explore: ['extra_meaning', 'swapped_pair', 'several_wrong'],
-        recall: ['extra_meaning', 'swapped_pair', 'several_wrong', 'related_word', 'wrong_kind_of_word', 'other_word'],
-        apply: ['related_word', 'wrong_kind_of_word', 'other_word'] }),
-    },
     evalModes: [
       {
         evalMode: 'explore',
@@ -837,6 +492,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'recall',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Recall & Fill (Unguided)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -853,60 +509,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Student chooses the word that completes a new sentence and the word that fits a described situation that never names it. Requires transferring vocabulary to novel contexts.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Guide the student through vocabulary exploration for "{{topic}}". '
-        + 'Total terms: {{totalTerms}}. Currently viewing: "{{currentWord}}" ({{partOfSpeech}}). '
-        + 'Terms explored: {{termsExplored}} of {{totalTerms}}. '
-        + 'Challenge progress: {{challengesCompleted}} of {{totalChallenges}}.',
-      contextKeys: [
-        'topic', 'totalTerms', 'currentWord', 'partOfSpeech',
-        'termsExplored', 'challengesCompleted', 'totalChallenges',
-      ],
-      scaffoldingLevels: {
-        level1: '"Read the definition of {{currentWord}}. Have you heard this word before?"',
-        level2: '"Look at the example sentence for {{currentWord}}. '
-          + 'Can you see how it connects to the related words listed below?"',
-        level3: '"Let me help you learn {{currentWord}}. First, read the definition out loud. '
-          + 'Then read the example sentence. Now look at the Word Origin section — '
-          + 'knowing where a word comes from helps you remember what it means."',
-      },
-      commonStruggles: [
-        { pattern: 'Student skips reading definitions and goes straight to challenges', response: 'Go back and read each definition carefully first. The challenges will be much easier if you understand the terms.' },
-        { pattern: 'Student confuses similar terms', response: 'Compare those two terms side by side. Read both definitions and example sentences — what makes them different?' },
-        { pattern: 'Student struggles with fill-in-blank challenges', response: 'Think about which word makes the sentence make sense. Try reading the sentence with each option and see which one sounds right.' },
-        { pattern: 'Student does not read example sentences', response: 'The example sentence shows you how the word is actually used. Read it out loud — it makes the definition click.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'TERM INTRODUCTION',
-          instruction:
-            'When you receive [TERM_SELECTED], pronounce the word and give a brief, '
-            + 'kid-friendly introduction. Connect it to something the student might already know. '
-            + 'If the word has an interesting origin, tease it. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'CHECK STARTED',
-          instruction:
-            'When you receive [CHECK_STARTED], the word cards have closed. Read the first question aloud '
-            + 'and let the student answer. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'CHALLENGE FEEDBACK',
-          instruction:
-            'When you receive [ANSWER_CORRECT], celebrate and use the word in a new sentence. '
-            + 'When you receive [ANSWER_INCORRECT], give a hint about the meaning '
-            + 'without naming a word or ruling a choice out. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'VOCABULARY MASTERY',
-          instruction:
-            'When you receive [ALL_COMPLETE], celebrate vocabulary mastery. '
-            + 'Mention the total terms learned and encourage using them in conversation. '
-            + 'Keep to 2-3 sentences.',
-        },
-      ],
-    },
+    ...bossEntry(vocabularyExplorerCard),
     supportsEvaluation: true,
   },
   {

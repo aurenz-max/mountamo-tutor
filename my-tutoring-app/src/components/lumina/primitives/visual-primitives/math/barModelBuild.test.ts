@@ -1,12 +1,15 @@
 import { expect, it } from 'vitest';
-import { MAKE_GRAPH_MISSES, makeGraphAsk, makeGraphLevers, makeGraphMiss, makeGraphVerdict, twoBarPractice, type GraphRule }
+import { MAKE_GRAPH_MISSES, makeGraphAsk, makeGraphMiss, makeGraphVerdict, twoBarPractice, type GraphRule }
   from './barModelBuild';
+import { BAR_LEVERS } from './barModelLevers';
 import { barModelMiss } from './barModelWorkspace';
 import type { BarModelChallenge } from './BarModel';
 
 const most: GraphRule = { kind: 'most', a: 0 }, fewest: GraphRule = { kind: 'fewest', a: 0 };
 const same: GraphRule = { kind: 'same', a: 0, b: 1 }, twoMore: GraphRule = { kind: 'more_than', a: 0, b: 1, by: 2 };
 const LABELS = ['apples', 'pears', 'plums'];
+/** make_graph's levers from the one lever set, as the component declares them. */
+const makeGraphLevers = (c: BarModelChallenge, pulled: readonly string[]) => BAR_LEVERS.declare(c, { built: c.values }, pulled);
 const item = (graphRule: GraphRule, rows = 3): BarModelChallenge => ({ id: 'g1', evalMode: 'make_graph', graphStyle: 'picture',
   values: LABELS.slice(0, rows).map(label => ({ label, value: 0 })), graphRule, prompt: makeGraphAsk(LABELS, graphRule) });
 
@@ -53,7 +56,8 @@ it('levers start bare, name the build, and between them answer every miss the ch
   }
   expect([...MAKE_GRAPH_MISSES].filter(m => !answered.has(m))).toEqual([]);
   expect(makeGraphLevers(item(most), ['bar_counts']).find(l => l.id === 'bar_counts')?.pulled).toBe(true);
-  expect(makeGraphLevers({ ...item(most), evalMode: 'most_least' }, [])).toEqual([]);
+  expect(makeGraphLevers({ ...item(most), evalMode: 'most_least', targetBarIndex: 0 }, []).map(l => l.id))
+    .not.toEqual(expect.arrayContaining(['level_line']));
 });
 
 it('simplify keeps the ask on two empty bars, and a two-bar graph has no easier version', () => {

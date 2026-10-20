@@ -5,7 +5,8 @@
  * Three boxes, a letter bank, "I'm done!". Code checks what the ask states; a well-made word goes to the shared word
  * judge for "is it real?". Try again keeps the boxes and the verdict words; a new item opens with fresh boxes (empty,
  * or the given word on a swap). Mounted by its host when the payload has `task: 'letter_build'`, on the teaching
- * workspace only.
+ * workspace only. A host on the boss framework passes `boss`: its assignment and its bound lever set replace the shared
+ * defaults (`letterAssignment`, `letterBuildLevers`).
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -14,12 +15,15 @@ import {
   LuminaFeedbackCard, LuminaPanel, LuminaPrompt, LuminaReadAloud,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingAssignment, TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { WordBuildVerdict } from '../../../service/build-layer/wordBuildDecision';
 import {
   MODEL_LEVER, PATTERN_LEVER, describeLetterBuild, letterAssignment, letterBuildLevers, letterBuildScene, letterItemsFrom,
@@ -52,6 +56,19 @@ export interface LetterBuildSurfaceProps {
   metrics: (s: LetterBuildSummary) => object;
   className?: string;
   runtimePlanItemId?: string;
+  /** A boss host's wiring (`boss.ts`, `bossLevers.ts`): the assignment and the lever set bound to this lesson. */
+  boss?: LetterBuildBoss;
+}
+
+/** What a boss host hands the surface in place of the shared defaults. */
+export interface LetterBuildBoss {
+  assignment: (item: LetterBuildItem) => TeachingAssignment;
+  levers: {
+    declare: (item: LetterBuildItem, pulled: readonly string[]) => WorkspaceLever[];
+    onScreen: (item: LetterBuildItem, pulled: readonly string[]) => string;
+    simpler: (item: LetterBuildItem, lever: string) => LetterBuildItem | null;
+    support: (item: LetterBuildItem) => string;
+  };
 }
 
 type Phase = 'building' | 'checking' | 'checked';
@@ -60,7 +77,14 @@ interface Work { item: string; row: string[]; made: string[] }
 const progressHooks: Record<string, ReturnType<typeof useWorkspaceProgressFor>> = {};
 const progressFor = (id: string) => (progressHooks[id] ??= useWorkspaceProgressFor(id));
 
-export default function LetterBuildSurface({ primitiveId, data, metrics, className, runtimePlanItemId }: LetterBuildSurfaceProps) {
+/** The answer region Pip watches: from the runner on a boss host, from the hand-wired surface otherwise. */
+function PipRegion({ boss, hand, className, children }: { boss: boolean; hand: ReturnType<typeof useWorkspacePipSurface>['workspace'];
+  className: string; children: React.ReactNode }) {
+  return boss ? <PipWorkspace className={className}>{children}</PipWorkspace> : <div {...hand} className={className}>{children}</div>;
+}
+
+export default function LetterBuildSurface({ primitiveId, data, metrics, className, runtimePlanItemId, boss }: LetterBuildSurfaceProps) {
+  const assignment = boss?.assignment ?? letterAssignment;
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -80,7 +104,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   const progress = useProgress<LetterBuildItem>({
     challenges: items, getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: letterAssignment,
+    workspace, assignment,
     onItemOpened: (_index, retry) => {
       openCount.current += 1;
       setPhase('building'); setNotice('');
@@ -181,7 +205,8 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
 
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allDone || hasSubmitted || !current ? null : current.id,
+    // A boss host takes Pip from the runner (`<PipDock />`, `<PipWorkspace>`); the shared default still wires it here.
+    scopeId: boss || allDone || hasSubmitted || !current ? null : current.id,
     label: 'The letter boxes',
     solved: phase === 'checked' && !!verdict?.met,
     checking: phase === 'checking',
@@ -192,12 +217,16 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   useLayoutEffect(() => {
     if (!current || !sessionItem) return;
     const scene = letterBuildScene(current, rowWork.row, rowWork.made, phase === 'checked' && verdict ? verdict.words : undefined);
-    const levers = practice ? [] : letterBuildLevers(sessionItem, pulled);
-    const onScreen = practice ? undefined : letterLeverFacts(pulled, sessionItem);
+    const levers = practice ? [] : boss ? boss.levers.declare(sessionItem, pulled) : letterBuildLevers(sessionItem, pulled);
+    const practiceFact: Record<string, string> = practice ? { practice: 'The same ask with a smaller letter bank, one word, ungraded. The full item comes back after it.' } : {};
+    // A boss host's lever set writes the support and on-screen facts (`leverScene`); the shared default writes its own.
+    const published: WorkspaceScene = boss
+      ? leverScene({ ...scene, facts: { ...scene.facts, ...practiceFact } }, {
+        support: practice ? '' : boss.levers.support(sessionItem), onScreen: practice ? '' : boss.levers.onScreen(sessionItem, pulled) })
+      : (() => { const onScreen = practice ? undefined : letterLeverFacts(pulled, sessionItem);
+        return { ...scene, facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...practiceFact } }; })();
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'The same ask with a smaller letter bank, one word, ungraded. The full item comes back after it.' } : {}) },
+      ...published,
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -205,10 +234,10 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
         if (lever.pulled) return `${id} is already pulled.`;
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallBankFor(sessionItem);
+          const easier = boss ? boss.levers.simpler(sessionItem, id) : smallBankFor(sessionItem);
           if (!easier) return 'There is no smaller bank for this item.';
           setLeverState(next); setVerdict(null); setPhase('building'); setPractice(easier);
-          return { practice: letterAssignment(easier) };
+          return { practice: assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -249,15 +278,15 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                 <div className="flex items-center gap-2">
                   <div className="text-lg leading-snug">{current.ask}</div>
                   {open && <LuminaReadAloud iconOnly size="lg" label="Hear the task" speaking={tutorSpeaking}
-                    onClick={() => say(hearAskRequest(letterAssignment(current)))} />}
+                    onClick={() => say(hearAskRequest(assignment(current)))} />}
                 </div>
                 {current.ways === 2 && <div className="text-sm text-slate-300">Then make a different one.</div>}
                 {practice && <div className="text-xs text-amber-300">{open ? 'Practice with fewer cards' : 'Practice with fewer letters'}</div>}
               </div>
             </LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            {boss ? <PipDock /> : pip.store && <div {...pip.dock} />}
+            <PipRegion boss={!!boss} hand={pip.workspace} className="space-y-3">
               {rowWork.made.length > 0 && (
                 <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-slate-300" data-testid="lb-made">
                   <span>Made:</span>
@@ -342,7 +371,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                   <p className="text-base font-semibold">{verdict.words}</p>
                 </LuminaFeedbackCard>
               )}
-            </div>
+            </PipRegion>
           </>
         )}
       </LuminaCardContent>

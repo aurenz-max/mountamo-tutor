@@ -7,6 +7,8 @@
  *  - RhymeStudio (rhymes; `RHYME_PAIR_RULES` in `rhymePairBuild.ts`, the default), and
  *  - PictureVocabulary (opposites, goes together; `PICTURE_PAIR_RULES` in `picturePairBuild.ts`).
  * Everything about what makes a pair right lives in the rules object; this file is the board, the tray and the commit.
+ * Both hosts are bosses and pass `boss`: the assignment and the lever set bound to the lesson. Pip comes from the
+ * runner (`<PipDock />`, `<PipWorkspace>`).
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -16,12 +18,14 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { PrimitiveMetrics } from '../../../evaluation/types';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingAssignment, TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { usePhaseResults, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { RHYME_PAIR_RULES, pairKey, type PairBoardItem, type PairBuildRules, type RhymePairItem } from './rhymePairBuild';
 
 /** One progress hook per family, made once (a rules object's family never changes under a mount). */
@@ -42,13 +46,27 @@ export interface PairBuildData<I extends PairBoardItem = PairBoardItem> {
 /** rhyme-studio's payload (the original name). */
 export type RhymePairData = PairBuildData<RhymePairItem>;
 
+/** What a boss host hands the surface in place of the rules' assignment and levers (`boss.ts`, `bossLevers.ts`). */
+export interface PairBuildBoss<I extends PairBoardItem = PairBoardItem> {
+  assignment: (item: I) => TeachingAssignment;
+  levers: {
+    declare: (item: I, pulled: readonly string[]) => WorkspaceLever[];
+    onScreen: (item: I, pulled: readonly string[]) => string;
+    simpler: (item: I, lever: string) => I | null;
+    support: (item: I) => string;
+  };
+}
+
 type Phase = 'building' | 'checking' | 'checked';
 interface Work { item: string; pair: string[]; made: string[] }
 
-export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem>({ data, className, runtimePlanItemId, rules: given }: {
+export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem>({ data, className, runtimePlanItemId, rules: given, boss }: {
   data: PairBuildData<I>; className?: string; runtimePlanItemId?: string; rules?: PairBuildRules<I>;
+  /** The host boss's wiring: the assignment and the lever set bound to this lesson. */
+  boss: PairBuildBoss<I>;
 }) {
   const rules = (given ?? RHYME_PAIR_RULES) as unknown as PairBuildRules<I>;
+  const { assignment } = boss;
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -66,7 +84,7 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
   const progress = PROGRESS[rules.primitiveId]<I>({
     challenges: items, getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: rules.assignment,
+    workspace, assignment,
     onItemOpened: (_index, retry) => {
       setPhase('building');
       if (retry) return;
@@ -134,24 +152,16 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
       { challengeResults: results });
   }, [allDone, hasSubmitted, items, results, submitResult, progress.recordsEvaluation, rules]);
 
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allDone || hasSubmitted || !current ? null : current.id,
-    label: 'The picture board',
-    solved: phase === 'checked' && !!verdict?.met,
-    checking: phase === 'checking',
-    handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   useLayoutEffect(() => {
     if (!current || !sessionItem) return;
     const scene = rules.scene(current, w.pair, w.made, phase === 'checked' && verdict ? verdict.words : undefined);
-    const levers = practice ? [] : rules.levers(sessionItem, pulled);
-    const onScreen = practice ? undefined : rules.leverFacts(pulled, sessionItem);
+    const levers = practice ? [] : boss.levers.declare(sessionItem, pulled);
+    const practiceFact: Record<string, string> = practice ? { practice: rules.practiceNote } : {};
+    // The lever set writes the support and on-screen facts (`leverScene`).
+    const published: WorkspaceScene = leverScene({ ...scene, facts: { ...scene.facts, ...practiceFact } }, {
+      support: practice ? '' : boss.levers.support(sessionItem), onScreen: practice ? '' : boss.levers.onScreen(sessionItem, pulled) });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: rules.practiceNote } : {}) },
+      ...published,
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -159,10 +169,10 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
         if (lever.pulled) return `${id} is already pulled.`;
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = rules.smallBoardFor(sessionItem);
+          const easier = boss.levers.simpler(sessionItem, id);
           if (!easier) return 'There is no smaller board for this item.';
           setLeverState(next); setVerdict(null); setPhase('building'); setPractice(easier);
-          return { practice: rules.assignment(easier) };
+          return { practice: assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -201,8 +211,8 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
               {practice && <div className="text-xs text-amber-300">Practice board</div>}
             </LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {w.made.length > 0 && (
                 <div className="flex flex-wrap items-center justify-center gap-2 text-2xl" data-testid="rp-made">
                   {w.made.map(m => <span key={m} className="rounded-full bg-emerald-500/15 px-3 py-1">{m.split('+').map(emojiOf).join(' ')}</span>)}
@@ -249,7 +259,7 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
                   <p className="text-base font-semibold">{verdict.words}</p>
                 </LuminaFeedbackCard>
               )}
-            </div>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

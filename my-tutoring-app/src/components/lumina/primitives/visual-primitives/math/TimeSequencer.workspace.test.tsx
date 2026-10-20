@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Time sequencer on the teaching workspace: what is its own. The generic W1 contract
- * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Time sequencer on the teaching workspace (its boss, `timeSequencer.boss.ts`): what is its own, through the tap
+ * path. The generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance;
+ * the journey sweep plays the boss's own harness (spoken answers on the one-choice modes).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -13,7 +14,6 @@ import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { LIVE_JOURNEYS } from '../../../components/live-activity/liveJourneySpec';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimeSequencerChallenge, TimeSequencerData } from './TimeSequencer';
 import { EMPTY_TIME_VIEW, timeSequencerMiss } from './timeSequencerWorkspace';
@@ -46,13 +46,32 @@ const MODES = (getComponentById('time-sequencer')?.evalModes ?? []).map(m => m.e
 const data = (challenges: TimeSequencerChallenge[], gradeBand: TimeSequencerData['gradeBand'] = '1') =>
   ({ title: 'Time', gradeBand, challenges }) as unknown as Record<string, unknown>;
 
-/** The journey row's own inputs, through the real buttons. */
-function perform(h: ReturnType<typeof mountWorkspace>, d: Record<string, unknown>, intent: 'wrong' | 'correct') {
-  const inputs = LIVE_JOURNEYS['time-sequencer'].inputsFor(intent, { itemId: h.state().task!.itemId, data: d } as never);
-  for (const input of inputs) {
-    if (input.type === 'choose') h.press(input.label);
-    else if (input.type === 'check') h.press(/check/i);
+/** The buttons a learner taps for a right or a wrong answer (each mode's signature error), then Check. */
+function taps(c: TimeSequencerChallenge, wrong: boolean): string[] {
+  const labelOf = (cards: { id: string; label: string }[], id: string) => cards.find(e => e.id === id)!.label;
+  if (c.type === 'sequence-events' || c.type === 'clock-sequence') {
+    const order = c.correctOrder!;
+    // The start-here card is already placed (and placed again after Try again): tapping it would take it out.
+    const rest = c.prelabelFirstSlot && order.length > 1 ? order.slice(1) : order;
+    return (wrong ? [...rest].reverse() : rest).map(id => labelOf(c.events!, id));
   }
+  if (c.type === 'match-time-of-day') {
+    const periods = ['morning', 'afternoon', 'evening', 'night'];
+    const p = wrong ? periods[(periods.indexOf(c.correctPeriod!) + 1) % 4] : c.correctPeriod!;
+    return [p.charAt(0).toUpperCase() + p.slice(1)];
+  }
+  if (c.type === 'before-after') return [labelOf(c.options!, wrong ? c.options!.find(e => e.id !== c.correctEvent)!.id : c.correctEvent!)];
+  if (c.type === 'duration-compare') {
+    const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'A' ? 'B' : 'A';
+    return [pick === 'same' ? 'About the Same' : (pick === 'A' ? c.eventA! : c.eventB!).label];
+  }
+  const options = c.activityOptions ?? c.schedule!.map(r => r.activity);
+  return [wrong ? options.find(o => o !== c.correctActivity)! : c.correctActivity!];
+}
+function perform(h: ReturnType<typeof mountWorkspace>, d: Record<string, unknown>, intent: 'wrong' | 'correct') {
+  const c = (d.challenges as TimeSequencerChallenge[]).find(x => x.id === h.state().task!.itemId)!;
+  for (const label of taps(c, intent === 'wrong')) h.press(label);
+  h.press(/check/i);
 }
 
 it('every catalog mode has a hand-built challenge', () => {
@@ -149,7 +168,7 @@ it('timeSequencerMiss names each type\'s signature error', () => {
   expect(timeSequencerMiss({ ...rs, targetTime: '8:00', correctActivity: 'Reading' }, { ...v, activity: 'Lunch' })).toBe('other_row');
 });
 
-it('the adapter refuses a challenge its check cannot answer', () => {
+it('the boss refuses a challenge its check cannot answer', () => {
   const validate = LIVE_ADAPTERS['time-sequencer'].validate;
   expect(() => validate(data([CHALLENGES['sequence-3']]))).not.toThrow();
   expect(() => validate(data([{ ...CHALLENGES['sequence-3'], correctOrder: ['w', 'b'] }]))).toThrow();

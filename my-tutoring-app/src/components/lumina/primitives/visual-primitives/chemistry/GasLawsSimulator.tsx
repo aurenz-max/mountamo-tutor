@@ -7,19 +7,18 @@
  * - predict: one change; choose the new value.
  * - calculate: two changes at once; choose the new value.
  *
- * Every item is built and keyed by code (`gasLawsWorkspace.ts`); the particle cylinder shows the gas BEFORE the change
- * and runs the change only once the answer is credited (or, on the scripted path, shown after two misses), so no
- * readout, plot or piston position states the answer first. Two paths, chosen by `withWorkspaceController`: the
- * scripted path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain
- * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
- * tutor, and lets the runtime move on. The levers live in `gasLawsLevers.ts`.
+ * Taught only on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `gasLawsSimulator.card.ts` +
+ * `gasLawsSimulator.boss.ts`, a SAY_OR_SHOW card on the spoken preset). Every item is built and keyed by code
+ * (`gasLawsWorkspace.ts`); the particle cylinder shows the gas BEFORE the change and runs the change only once the
+ * answer is credited, so no readout, plot or piston position states the answer first. A tap commits through
+ * `progress.commitCheck` with its named miss, a spoken answer is judged by the tutor, and the levers are one lever set
+ * (`gasLawsLevers.ts`) published with the scene. No Next: the runtime moves the item.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { GasLawsSimulatorMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -35,18 +34,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, choicesOf, describeGasWork, directionOf, gasCorrect, gasItems, gasMiss, heldVars, keyChoice, NAME, showValue,
-  stateAfter, workspaceAssignment, workspaceScene, type Apparatus, type GasItem, type GasLawFocus, type GasMode,
+  askOf, choicesOf, describeGasWork, directionOf, gasCorrect, gasMiss, heldVars, keyChoice, NAME, showValue,
+  stateAfter, workspaceScene, type Apparatus, type GasItem, type GasLawFocus, type GasMode,
   type GasState, type GasTier, type GasVar,
 } from './gasLawsWorkspace';
 import {
-  factorLines, FACTOR_LEVER, gasLevers, heldLines, HELD_LEVER, kelvinLines, KELVIN_LEVER, leverFact, particleLines,
-  PARTICLE_LEVER, relationLines, RELATION_LEVER, simplerItem,
+  factorLines, FACTOR_LEVER, GAS_LEVER_CONTEXT, GAS_LEVERS, heldLines, HELD_LEVER, kelvinLines, KELVIN_LEVER, particleLines,
+  PARTICLE_LEVER, relationLines, RELATION_LEVER,
 } from './gasLawsLevers';
+import { gasLawsSimulatorBoss } from './gasLawsSimulator.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -168,56 +168,53 @@ const GasContainer = ({ apparatus, state, scale }: { apparatus: Apparatus; state
 
 const ROWS: GasVar[] = ['P', 'V', 'T'];
 
-const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  GasLawsSimulatorProps & { tutorOwned: boolean; useController: (options: ProgressOptions<GasItem>) => Progress }) => {
-  const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, gradeBand = '9-10', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+const useGasProgress = useWorkspaceProgressFor('gas-laws-simulator');
 
-  const items = useMemo(() => gasItems(data),
+const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId }: GasLawsSimulatorProps) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => [...gasLawsSimulatorBoss.items(data)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.items, data.challengeTypes, data.difficulty, data.lawFocus, data.gas, data.title]);
   const stableInstanceId = useRef(instanceId || `gas-laws-simulator-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useGasProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: gasLawsSimulatorBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: GasItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<GasItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [choice, setChoice] = useState<string | null>(null);
-  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  /** The wrong choice just checked, shown until Try again. */
   const [wrongPick, setWrongPick] = useState<string | null>(null);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
   const tappedCorrect = useRef<string | null>(null);
 
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
-  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<GasLawsSimulatorMetrics>({
     primitiveType: 'gas-laws-simulator',
@@ -226,25 +223,12 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand, mode: item?.mode ?? 'observe', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
-  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'gas-laws-simulator', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '8' ? 'Grade 8' : gradeBand === '9-10' ? 'Grade 9-10' : 'Grade 11-12', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+  const clearItem = () => { setChoice(null); setWrongPick(null); setPracticeSolved(false); };
 
-  const clearItem = () => {
-    setChoice(null); setWrongPick(null); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
-  };
-
+  // A fresh item (or the full item back after practice) opens blank; Try again clears the choice.
   openItem.current = (_index, retry) => {
-    if (retry) { setChoice(null); setWrongPick(null); setFeedback(null); setPracticeSolved(false); return; }
-    setPractice(null); clearItem();
+    if (!retry) setPractice(null);
+    clearItem();
   };
 
   solvedAloud.current = (index) => {
@@ -266,7 +250,7 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const pick = (c: string) => {
     if (!item || revealed || wrongPick !== null || learnerBlocked()) return;
     SoundManager.select();
-    setChoice(c); setFeedback(null);
+    setChoice(c);
   };
 
   const check = () => {
@@ -276,23 +260,11 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} The change now runs on screen. Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongPick(choice); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The change has run and the answer is on screen ("${keyChoice(item)}"); explain it plainly with the particles.`);
-      return;
-    }
-    setChoice(null);
-    setFeedback('Not quite. Look at what the container keeps the same, and try once more.');
-    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what `
-      + 'the container keeps the same and what the change does to the particles, without naming a choice.');
+    // The tutor and the runtime take it from here: the wrong choice stays marked until Try again.
+    setWrongPick(choice);
   };
 
   const metrics = (): GasLawsSimulatorMetrics => {
@@ -307,16 +279,7 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -326,27 +289,29 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render. A practice item offers no lever. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || !sessionItem || isComplete) return;
     const scene = workspaceScene(item, { choice: wrongPick ?? choice, solved: revealed });
-    const levers = practice ? [] : gasLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    const ctx = GAS_LEVER_CONTEXT;
+    const levers = practice ? [] : GAS_LEVERS.declare(sessionItem, ctx, pulled);
+    const published = leverScene(scene, { support: practice ? '' : GAS_LEVERS.support(sessionItem, ctx),
+      onScreen: practice ? '' : GAS_LEVERS.onScreen(sessionItem, ctx, pulled) });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}) },
       levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
-        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = GAS_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: gasLawsSimulatorBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -355,14 +320,7 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The gas container and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -423,8 +381,9 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
           <>
             <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the lab and the choices as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-[auto_1fr]">
                 <div className="flex flex-col items-center gap-2">
                   {/* Before the answer is credited the container shows the gas BEFORE the change. */}
@@ -483,7 +442,7 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
                   </LuminaAnswerChoice>
                 ))}
               </div>
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -492,18 +451,11 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
             )}
 
             {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+              <LuminaFeedbackCard status="correct">
                 {revealText()}
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
-            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -511,8 +463,6 @@ const GasLawsSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwne
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const GasLawsSimulator = withWorkspaceController<GasLawsSimulatorProps, ProgressOptions<GasItem>, Progress>(
-  'gas-laws-simulator', GasLawsSimulatorSurface, useScriptedProgress, useWorkspaceProgressFor('gas-laws-simulator'));
+const GasLawsSimulator = withWorkspaceOnly<GasLawsSimulatorProps>('gas-laws-simulator', GasLawsSimulatorSurface, props => props.data.title);
 
 export default GasLawsSimulator;

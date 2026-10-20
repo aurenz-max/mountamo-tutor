@@ -1,37 +1,38 @@
 /**
- * Skip counting runner on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C12). Pure: the component, the journey row and any probe read the
- * same assignment, check and scene. Every challenge is answered on the screen and checked by the activity:
- *   - count_along: the learner taps the tick where the character lands next, one jump at a time, then Check;
- *     a tap past the next landing is a checked miss.
- *   - predict / find_skip_value / connect_multiplication: the learner types a number and presses Check.
- *   - fill_missing: the learner types one missing number at a time; each that fits fills its "?", and the item
- *     is checked correct when the last "?" is filled. A number that does not fit is a checked miss.
- * Voice beside the tap (ROLLOUT.md VB-1, 2026-10-13): predict, find_skip_value, connect_multiplication and a
- * fill_missing item with one "?" ask for one number, so each may also be said aloud: the item is spoken with
- * `acceptsGesture`, JEV judges it from the tutor's feedback against `expectedAnswer`, and a typed number and Check
- * is still checked by the activity. Kept on screen: count_along (the taps along the line are the count) and a
- * fill_missing item with two or more "?" (one runtime item, checked one gap at a time, so no single spoken answer).
+ * Skip counting runner on the shared tutor/JEV teaching workspace: the line, the runner's own check, the spoken key
+ * and the scene, which the boss (`skipCounting.boss.ts`), the component, the levers and the tests read. Every
+ * challenge is one workspace item, on its line (`skipItems` stamps the session's line on items that have none):
+ *   - count_along: the learner taps the tick where the character lands next, one jump at a time, then Check; a tap
+ *     past the next landing is a checked miss. No key;
+ *   - predict / find_skip_value / connect_multiplication: one number, said (the tutor judges it against the key) or
+ *     typed and checked (VB-1, 2026-10-13);
+ *   - fill_missing: one "?" is said or typed, like the others; two or more are typed one at a time, each that fits
+ *     fills its "?", and the item is checked correct when the last is filled (no key).
  * The scene never states the next landing, a gap, the jump size on find_skip_value or the jumps on connect.
+ *
+ * Pure: no React.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { numberMisses, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SkipCountingChallenge, SkipCountingRunnerData } from './SkipCountingRunner';
+import type { SkipCountingMiss } from './skipCounting.card';
+
+export type { SkipCountingMiss };
 
 /** The number line every challenge of a lesson shares. */
 export type SkipLine = Pick<SkipCountingRunnerData, 'skipValue' | 'startFrom' | 'endAt' | 'direction'>;
+
+/** A challenge on the line it is drawn on, with the lesson's support tier (the levers' `support` reads it). */
+export type SkipItem = SkipCountingChallenge & { line: SkipLine };
 
 /** The line a lesson's data draws, with the component's defaults. */
 export const lineOf = (d: Pick<SkipCountingRunnerData, 'skipValue' | 'endAt'> & Partial<SkipLine>): SkipLine =>
   ({ skipValue: d.skipValue, startFrom: d.startFrom ?? 0, endAt: d.endAt, direction: d.direction ?? 'forward' });
 
-/** `line` is the line the item is drawn on (a practice count has its own). */
-export function workspaceAssignment(c: SkipCountingChallenge, line: SkipLine): TeachingAssignment {
-  const key = spokenSkipKey(c, line);
-  if (key === null) return { id: c.id, task: c.instruction, response: 'gesture' };
-  return { id: c.id, task: `${c.instruction} The learner answers by saying ${SAYS[c.type]}, or typing it and pressing Check.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: skipExpectedAnswer(c, line)!, misses: skipSpokenMisses(c, line) };
-}
+/** The lesson's items: each on its own line (find_skip_value) or the session's, with the lesson's tier (default medium). */
+export const skipItems = (d: Pick<SkipCountingRunnerData, 'challenges' | 'skipValue' | 'endAt' | 'supportTier'> & Partial<SkipLine>): SkipItem[] =>
+  (d.challenges ?? []).map(c => ({ ...c, line: c.line ?? lineOf(d), supportTier: c.supportTier ?? d.supportTier ?? 'medium' }));
 
 const stepOf = (line: SkipLine) => (line.direction === 'backward' ? -line.skipValue : line.skipValue);
 
@@ -102,33 +103,7 @@ export function skipMatches(c: SkipCountingChallenge, line: SkipLine, view: Skip
   }
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads; drawn from the
- * catalog's commonStruggles (losing the rhythm, prediction errors, not seeing the multiplication):
- * - count_along: `skipped_a_landing` (tapped two jumps ahead), `jumped_far` (three or more);
- * - predict: `stayed_put` (the number it is on), `added_one` (counted on by one), `two_jumps`, `wrong_way` (the
- *   landing before), `near_miss` (within 2 of the landing: an adding slip), `off_count`;
- * - fill_missing: `not_a_gap` (a number of the count that is not hidden), `already_filled`, `near_miss`, `off_count`;
- * - find_skip_value: `twice_the_step`, `half_the_step`, `typed_a_landing` (a number on the line), `one_short`,
- *   `one_over`, `short_by_more`, `over_by_more`;
- * - connect_multiplication: `typed_product` (the number reached), `typed_skip` (the jump size), `counted_start`
- *   (one more: the start counted as a jump), `one_short`, `short_by_more`, `over_by_more`.
- */
-export type SkipCountingMiss = 'skipped_a_landing' | 'jumped_far'
-  | 'stayed_put' | 'added_one' | 'two_jumps' | 'wrong_way' | 'near_miss' | 'off_count'
-  | 'not_a_gap' | 'already_filled'
-  | 'twice_the_step' | 'half_the_step' | 'typed_a_landing' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more'
-  | 'typed_product' | 'typed_skip' | 'counted_start';
-
-/** Every miss a mode's check can name (the catalog's `teachingWorkspace.misses`). */
-export const SKIP_MISSES_BY_MODE: Record<SkipCountingChallenge['type'], SkipCountingMiss[]> = {
-  count_along: ['skipped_a_landing', 'jumped_far'],
-  predict: ['stayed_put', 'added_one', 'two_jumps', 'wrong_way', 'near_miss', 'off_count'],
-  fill_missing: ['not_a_gap', 'already_filled', 'near_miss', 'off_count'],
-  find_skip_value: ['twice_the_step', 'half_the_step', 'typed_a_landing', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-  connect_multiplication: ['typed_product', 'typed_skip', 'counted_start', 'one_short', 'short_by_more', 'over_by_more'],
-};
-
+/** What a wrong check shows, from the work the check reads (the ids and their meaning: the card's `SkipCountingMiss`). */
 export function skipMiss(c: SkipCountingChallenge | null, line: SkipLine, view: SkipView): SkipCountingMiss | undefined {
   if (!c || view.answer === null || skipMatches(c, line, view)) return undefined;
   const got = view.answer, step = stepOf(line);
@@ -173,11 +148,6 @@ export function skipMiss(c: SkipCountingChallenge | null, line: SkipLine, view: 
 }
 
 // ── Spoken answers (VB-1) ─────────────────────────────────────────────────────
-/** What the learner says on each spoken mode, for the task text. */
-const SAYS: Record<SkipCountingChallenge['type'], string> = {
-  count_along: '', predict: 'the next landing', fill_missing: 'the missing number', find_skip_value: 'how far each jump goes',
-  connect_multiplication: 'how many jumps',
-};
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
@@ -185,7 +155,6 @@ const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 
 const words = (n: number): string => n < 0 || n > 999 ? String(n) : n < 20 ? ONES[n]
   : n < 100 ? TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : '')
     : `${ONES[Math.floor(n / 100)]} hundred${n % 100 ? ` ${words(n % 100)}` : ''}`;
-const sayN = (n: number) => `"${n}", "${words(n)}"`;
 
 /** The opening landing the item is asked from (the start, or its startPosition). */
 const atOf = (c: SkipCountingChallenge, line: SkipLine) => { const s = openingSpots(line, c); return s[s.length - 1]; };
@@ -202,27 +171,39 @@ export function spokenSkipKey(c: SkipCountingChallenge, line: SkipLine): number 
   }
 }
 
-/** The answer a spoken item is judged against, with the ways of saying it and what is not it. */
-export function skipExpectedAnswer(c: SkipCountingChallenge, line: SkipLine): string | undefined {
-  const key = spokenSkipKey(c, line);
-  if (key === null) return undefined;
+const forms = (n: number, ...more: string[]) => Array.from(new Set([words(n), ...more])).filter(f => f !== String(n));
+
+/** The key a spoken item is judged against; null on an item answered on screen (count_along, two or more gaps). */
+export function skipKey(c: SkipItem): SpokenKey | null {
+  const { line } = c, key = spokenSkipKey(c, line);
+  if (key === null) return null;
   const at = atOf(c, line), S = line.skipValue;
   switch (c.type) {
     case 'predict':
-      return `${key}, the landing right after ${at} on a count by ${S}s ${line.direction === 'backward' ? 'down' : 'up'}; `
-        + `said as ${sayN(key)}. Counting on from ${at} and ending on ${key} is it. ${at}, where the character stands `
-        + 'now, the landing before it, or any other number is not it.';
+      return { answer: String(key), alsoAccept: forms(key),
+        acceptRule: `${key} said alone, or in a sentence about where it lands next, counts.`,
+        signatureError: `${at}, where the character stands now, the landing before it, or any other number is not it.` };
     case 'find_skip_value':
-      return `${S}: each jump goes ${S}; said as ${sayN(S)}, "by ${S}s", "${words(S)} each time", "it counts by ${S}s". `
-        + 'Another landing on the line, the number of jumps, or any other number is not it.';
+      return { answer: String(S), alsoAccept: forms(S, `by ${S}s`, `${words(S)} each time`, `plus ${S}`),
+        acceptRule: `${S} said alone, or in a sentence about how far each jump goes, counts.`,
+        signatureError: 'Another landing on the line, the number of jumps, or any other number is not it.' };
     case 'connect_multiplication':
-      return `${key} jumps (${key} × ${S}, from ${line.startFrom} to ${at}); said as ${sayN(key)}, "${words(key)} jumps", `
-        + `"${key} times ${S}". The number reached (${at}), the jump size (${S}), or any other number is not it.`;
+      return { answer: String(key), alsoAccept: forms(key, `${key} jumps`, `${words(key)} jumps`, `${key} times ${S}`),
+        acceptRule: `${key} said alone, or as ${key} jumps of ${S}, counts.`,
+        signatureError: `The number reached (${at}), the jump size (${S}), or any other number is not it.` };
     case 'fill_missing':
-      return `${key}, the number hidden as "?" on a count by ${S}s; said as ${sayN(key)}. A number already shown on the `
-        + 'line, or any other number, is not it.';
-    default: return undefined;
+      return { answer: String(key), alsoAccept: forms(key),
+        signatureError: 'A number already shown on the line, or any other number, is not it.' };
+    default: return null;
   }
+}
+
+/** What the ask says by design: connect_multiplication names the start, the number reached and the jump size; predict
+ *  names where the character stands. */
+export function skipGiven(c: SkipItem): string[] {
+  const at = atOf(c, c.line);
+  if (c.type === 'connect_multiplication') return [String(c.line.startFrom), String(at), String(c.line.skipValue)];
+  return c.type === 'predict' ? [String(at)] : [];
 }
 
 /** A list-shaped miss: the values not yet claimed and above zero, or nothing when none is left. */
@@ -234,11 +215,11 @@ function listMiss(claimed: Set<number>, id: string, pattern: (vs: number[]) => s
 }
 
 /**
- * A spoken item's known wrong answers, with the check's ids (`skipMiss`, the catalog's lists), concrete ones first.
+ * A spoken item's known wrong answers, with the check's ids (`skipMiss`, the card's lists), concrete ones first.
  * A number that is the key is never an example, and a number two misses share goes to the first.
  */
-export function skipSpokenMisses(c: SkipCountingChallenge, line: SkipLine): KnownMiss[] {
-  const key = spokenSkipKey(c, line);
+export function skipSpokenMisses(c: SkipItem): KnownMiss[] {
+  const { line } = c, key = spokenSkipKey(c, line);
   if (key === null) return [];
   const at = atOf(c, line), S = line.skipValue, step = stepOf(line);
   const near = (cl: Set<number>, what: string) => listMiss(cl, 'near_miss', vs => `The learner says ${vs.join(' or ')}, within 2 of ${what}: an adding slip.`,
@@ -288,6 +269,13 @@ export function skipSpokenMisses(c: SkipCountingChallenge, line: SkipLine): Know
   }
 }
 
+/** The journey's spoken answers: the key, and the mode's signature error (one more than the key; predict counts on by one). */
+export function skipHarnessWords(c: SkipItem): { correct: string; plainWrong: string } {
+  const key = spokenSkipKey(c, c.line) ?? 0;
+  const wrong = c.type === 'predict' ? atOf(c, c.line) + Math.sign(stepOf(c.line)) * (c.line.skipValue === 1 ? 2 : 1) : key + 1;
+  return { correct: String(key), plainWrong: String(wrong) };
+}
+
 /** The learner's checked work in their terms, never the key. */
 export function describeSkipWork(c: SkipCountingChallenge, line: SkipLine, view: SkipView): string {
   const hops = view.landings.length - 1;
@@ -335,30 +323,17 @@ export function aidsFor(c: SkipCountingChallenge | null, options: NonNullable<Sk
 
 const CHARACTER = (type: string | undefined) => (!type || type === 'custom' ? 'the character' : `the ${type}`);
 
-/** Spoken items: how the learner answers, and that a spoken answer is judged before the tutor says anything. */
-const spokenConstraint = (what: string, never: string) => `The learner says ${what}, or types it in the box and presses `
-  + 'Check; a Check is checked by the activity. A spoken answer is a real answer: say plainly whether it is right. '
-  + `Before the learner has answered, never say ${never}. You cannot type or jump for the learner.`;
-
-function constraintsFor(c: SkipCountingChallenge, who: string, product: number, spoken: boolean): string {
-  switch (c.type) {
-    case 'count_along':
-      return `The learner taps the number where ${who} lands next, one jump at a time, and presses Check at the end; `
-        + 'the activity checks each tap. A tap past the next landing is a miss. You cannot jump for the learner.';
-    case 'predict':
-      return spokenConstraint('the next landing', 'the next landing or count on to it');
-    case 'fill_missing':
-      return spoken ? spokenConstraint('the missing number', 'the missing number or count across the "?"')
-        : 'The learner types one missing number at a time and presses Check; each one that fits fills its "?", and the '
-          + 'item is done when every "?" is filled. The missing numbers are the answer: never say them.';
-    case 'find_skip_value':
-      return spokenConstraint('how far each jump goes', 'the jump size, a count-by phrase, or the difference between two landings');
-    case 'connect_multiplication':
-      return `The box completes "? x jump size = ${product}" with how many jumps ${who} made. `
-        + spokenConstraint('how many jumps', 'the number of jumps or count the jumps aloud to the end');
-    default: return 'The learner answers on the screen; the activity checks it.';
-  }
-}
+/** What each mode's answer is, which the tutor never says before the learner answers (how the learner answers is the
+ *  card's `moves`; that the tutor cannot do the task is the doctrine's). */
+const CONSTRAINTS: Record<SkipCountingChallenge['type'], string> = {
+  count_along: 'Where the character lands next is the answer: never say it, and never count on past the character.',
+  predict: 'The next landing is the answer: before the learner has answered, never say it or count on to it.',
+  fill_missing: 'The hidden numbers are the answer: before the learner has answered, never say one or count across a "?".',
+  find_skip_value: 'The jump size is the answer: before the learner has answered, never say it, a count-by phrase, or the '
+    + 'difference between two landings.',
+  connect_multiplication: 'The number of jumps is the answer: before the learner has answered, never say it or count the '
+    + 'jumps aloud to the end.',
+};
 
 /** How far the tutor may go at this support tier, so it never says what the tier withheld on screen. */
 function coaching(c: SkipCountingChallenge, tier: SkipCountingRunnerData['supportTier']): string | undefined {
@@ -378,7 +353,7 @@ export interface SkipSceneContext {
 }
 
 /** What is drawn and asked. Never the next landing, a gap, the jump size on find, or the jumps on connect. */
-export function workspaceScene(c: SkipCountingChallenge, ctx: SkipSceneContext, view: SkipView): WorkspaceScene {
+export function skipScene(c: SkipCountingChallenge, ctx: SkipSceneContext, view: SkipView): SceneOf {
   const { line, aids } = ctx, who = CHARACTER(ctx.character);
   const lo = Math.min(line.startFrom, line.endAt, 0), hi = Math.max(line.startFrom, line.endAt);
   const tip = coaching(c, ctx.supportTier);
@@ -392,6 +367,9 @@ export function workspaceScene(c: SkipCountingChallenge, ctx: SkipSceneContext, 
         : 'numbers are written under the ticks of the count',
     jumpSize: aids.jumpSize ? `shown on screen ("Count by ${line.skipValue}s")` : 'not shown on screen',
   };
+  if (c.type === 'connect_multiplication') {
+    facts.box = `The box completes "? x ${line.skipValue} = ${Math.abs(view.position - line.startFrom)}" with how many jumps ${who} made`;
+  }
   if (c.type === 'fill_missing') {
     const gaps = gapsOf(c, line);
     facts.gaps = `${gaps.length} number${gaps.length === 1 ? '' : 's'} of the count hidden as "?"; ${view.filled.length} filled so far`;
@@ -403,7 +381,7 @@ export function workspaceScene(c: SkipCountingChallenge, ctx: SkipSceneContext, 
   if (ctx.supportTier) facts.supportTier = ctx.supportTier;
   if (tip) facts.coaching = tip;
   facts.learnerWork = describeSkipWork(c, line, view);
-  facts.constraints = constraintsFor(c, who, Math.abs(view.position - line.startFrom), spokenSkipKey(c, line) !== null);
+  facts.constraints = CONSTRAINTS[c.type];
   return { objects: [], facts };
 }
 

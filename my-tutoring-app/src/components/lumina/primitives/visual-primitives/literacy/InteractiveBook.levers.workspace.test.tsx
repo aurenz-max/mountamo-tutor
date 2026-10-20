@@ -15,8 +15,8 @@ import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever, observerLever } from '../../../components/live-activity/runtime/observerLever';
 import type { InteractiveBookVolume } from './InteractiveBook';
-import type { InteractiveBookItem } from './interactiveBookScript';
-import { interactiveBookLevers, modelFor, modelLeak, practicePage } from './interactiveBookLevers';
+import { itemFromChallenge, type InteractiveBookItem } from './interactiveBookDomain';
+import { INTERACTIVE_BOOK_LEVERS, bookWords, cvcFocus, modelFor, modelLeak, practicePage } from './interactiveBookLevers';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -42,6 +42,7 @@ const part = (h: WorkspaceHarness, text: string) => act(() => {
 const q = (h: WorkspaceHarness, sel: string) => Array.from(h.view.container.querySelectorAll(sel));
 const item = (feature: string, pageId: string) => ({ id: 'i', mode: 'find-feature', feature, targetPageId: pageId, targetText: '' }) as unknown as InteractiveBookItem;
 const book = BOOK as unknown as InteractiveBookVolume;
+const levers = (i: InteractiveBookItem, pulled: string[]) => INTERACTIVE_BOOK_LEVERS.declare(i, { book }, pulled);
 
 it('the model never uses the book\'s text and lights exactly the asked kind', () => {
   for (const [feature, pageId] of [['title', 'cover'], ['author', 'cover'], ['heading', 'p1'], ['caption', 'p2'], ['page-number', 'p2']]) {
@@ -53,12 +54,12 @@ it('the model never uses the book\'s text and lights exactly the asked kind', ()
 });
 
 it('the practice page: the asked kind against the far one, none of it the book\'s; none on the cover', () => {
-  expect(practicePage(item('heading', 'p1'), book)!.parts.map(p => p.feature)).toEqual(['heading', 'caption']);
-  expect(practicePage(item('page-number', 'p1'), book)!.parts.map(p => p.feature)).toEqual(['page-number', 'caption']);
-  expect(practicePage(item('caption', 'p2'), book)!.parts.map(p => p.feature)).toEqual(['heading', 'caption']);
+  expect(practicePage(item('heading', 'p1'), book)!.parts!.map(p => p.feature)).toEqual(['heading', 'caption']);
+  expect(practicePage(item('page-number', 'p1'), book)!.parts!.map(p => p.feature)).toEqual(['page-number', 'caption']);
+  expect(practicePage(item('caption', 'p2'), book)!.parts!.map(p => p.feature)).toEqual(['heading', 'caption']);
   expect(practicePage(item('title', 'cover'), book)).toBeNull();
-  expect(interactiveBookLevers(item('title', 'cover'), [], book).map(l => l.id)).toEqual(['model_page']);
-  expect(nextLever(interactiveBookLevers(item('caption', 'p2'), ['model_page'], book), 'tapped_heading')).toBe('two_part_page');
+  expect(levers(item('title', 'cover'), []).map(l => l.id)).toEqual(['model_page']);
+  expect(nextLever(levers(item('caption', 'p2'), ['model_page']), 'tapped_heading')).toBe('two_part_page');
 });
 
 it('a wrong part: the observer pulls the model, beside the book, and the book\'s parts stay unmarked', () => {
@@ -70,7 +71,7 @@ it('a wrong part: the observer pulls the model, beside the book, and the book\'s
   expect(receipt.status).toBe('committed');
   expect(q(h, '[data-model-lit]').map(p => p.textContent)).toEqual(['👉A fox in the snow']);
   expect(q(h, '[data-lever="model-page"] [data-pip-object]')).toHaveLength(0);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/model page/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/model page/);
   expect(JSON.stringify(receipt.state.task!.demand)).not.toMatch(/Nest Above/);
   h.dispatch('retry');
   part(h, 'Nest Above');
@@ -118,14 +119,11 @@ const mountRead = (...challenges: unknown[]) => mountWorkspace({ primitiveId: 'i
 
 it('read-focus-word: dots under the glowing word only, nothing said; the practice sentence shares no book word', async () => {
   const { seam } = await import('../../../components/live-activity/runtime/testing/liveRuntimeSeams');
-  const book = BOOK as unknown as InteractiveBookVolume;
-  const { itemFromChallenge } = await import('./interactiveBookScript');
   const item = itemFromChallenge(READ_OK as never)!;
-  expect(interactiveBookLevers(item, [], book).map(l => l.id)).toEqual(['sound_dots', 'cvc_focus']);
-  expect(nextLever(interactiveBookLevers(item, [], book), 'context_guess')).toBe('sound_dots');
-  const { cvcFocus, bookWords } = await import('./interactiveBookLevers');
-  const practice = cvcFocus(item, book)!;
-  expect(practice.line.toLowerCase().split(/[^a-z]+/).filter(Boolean).some(w => bookWords(book).has(w))).toBe(false);
+  expect(levers(item, []).map(l => l.id)).toEqual(['sound_dots', 'cvc_focus']);
+  expect(nextLever(levers(item, []), 'context_guess')).toBe('sound_dots');
+  const practice = { item: cvcFocus(item, book)! };
+  expect(practice.item.line!.toLowerCase().split(/[^a-z]+/).filter(Boolean).some(w => bookWords(book).has(w))).toBe(false);
   expect(practice.item.readLead!.split(' ').length).toBeGreaterThanOrEqual(2);
   expect(cvcFocus({ ...item, targetText: 'hop' }, book)).toBeNull();
 

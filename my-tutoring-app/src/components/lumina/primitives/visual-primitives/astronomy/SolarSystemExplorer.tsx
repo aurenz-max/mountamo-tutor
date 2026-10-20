@@ -808,7 +808,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
     const levers = practice ? [] : SOLAR_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     workspace.current = {
       ...leverScene(solarScene(currentItem, { preReader: isPreReader }), {
-        support: practice ? '' : SOLAR_LEVERS.support(sessionItem),
+        support: practice ? '' : SOLAR_LEVERS.support(sessionItem, leverCtx),
         onScreen: practice ? '' : SOLAR_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the sky changes before this returns.

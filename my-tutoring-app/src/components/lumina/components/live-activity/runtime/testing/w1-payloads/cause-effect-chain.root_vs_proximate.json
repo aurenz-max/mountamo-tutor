@@ -1,0 +1,54 @@
+{
+ "source": "pip/testing/workspaceFixtures.json cause-effect-chain (a generated lesson), its root_vs_proximate challenge",
+ "primitiveId": "cause-effect-chain",
+ "evalMode": "root_vs_proximate",
+ "data": {
+  "title": "Rails Across the Plains",
+  "description": "Students figure out how iron tracks transformed frontier settlements into bustling towns.",
+  "context": "In the mid nineteenth century, wooden wagons crawled slowly across the grassy prairies carrying families toward new homes. Life relied on horses and riverboats until heavy metal tracks connected distant cities to the lonely frontier. Every spike driven into the soil changed how people traded goods, received news, and built their homes.",
+  "periodLabel": "the 1800s frontier",
+  "challenges": [
+   {
+    "id": "cec-1",
+    "type": "root_vs_proximate",
+    "chainTheme": "mail delivery",
+    "outcome": {
+     "id": "cec-1-outcome",
+     "text": "Town families receive daily letters and newspapers from distant eastern cities.",
+     "category": "social",
+     "icon": "👥"
+    },
+    "nodes": [
+     {
+      "id": "cec-1-3",
+      "text": "Local postal workers sort sacks of mail inside the wooden depot every morning.",
+      "category": "social",
+      "icon": "👥"
+     },
+     {
+      "id": "cec-1-1",
+      "text": "Railway crews lay heavy iron tracks across the open prairie.",
+      "category": "technological",
+      "icon": "⚙️"
+     },
+     {
+      "id": "cec-1-2",
+      "text": "Locomotives pull heavy mail cars loaded with letters right into the station.",
+      "category": "economic",
+      "icon": "💰"
+     }
+    ],
+    "correctOrder": [
+     "cec-1-1",
+     "cec-1-2",
+     "cec-1-3"
+    ],
+    "explanation": "Iron tracks had to be laid across the prairie before steam locomotives could pull heavy mail cars into the station to deliver letters.",
+    "hint": "Which of these events had to happen before trains could roll onto the prairie?",
+    "ask": "root"
+   }
+  ],
+  "challengeType": "root_vs_proximate",
+  "gradeLevel": "elementary"
+ }
+}

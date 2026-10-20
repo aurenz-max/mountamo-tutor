@@ -17,6 +17,7 @@ import { bossEntry, renderBoss, SAY_OR_SHOW, SPOKEN, spokenBoss, spokenLeaksOf, 
 import { askLeaks, type SpokenKey } from './spokenKey';
 import { leverScene, leverSet, type SceneOf } from './bossLevers';
 import { supportFact } from './supportFact';
+import { genreSession } from '../../primitives/visual-primitives/literacy/genreExplorerLevers';
 
 const LUMINA = join(__dirname, '../..');
 const PRIMITIVES = join(LUMINA, 'primitives');
@@ -313,6 +314,17 @@ describe('boss cards in the catalog', () => {
     expect(mixed).toContain('after a check you may say how many parts are right, never which');
   });
 
+  it('says equal moves once, naming their modes (all modes alike: no names)', () => {
+    const words = { job: 'answer', answer: 'the answer', question: 'the prompt' };
+    const tap = { answer: 'spoken', judge: 'either', flow: 'one-at-a-time', moves: 'may instead tap a choice' } as const;
+    const all = ROTATION_DOCTRINE({ words, modes: { a: tap, b: tap, c: tap } });
+    expect(all.match(/may instead tap a choice/g)).toHaveLength(1);
+    expect(all).toContain('The learner may instead tap a choice.');
+    const some = ROTATION_DOCTRINE({ words, modes: { a: tap, b: tap, c: { ...tap, moves: 'presses Go first' } } });
+    expect(some).toContain('In a and b, the learner may instead tap a choice.');
+    expect(some).toContain('In c, the learner presses Go first.');
+  });
+
   it('names steps, not modes, when a mode is wired by step', () => {
     const words = { job: 'answer', answer: 'the answer', question: 'the prompt' };
     const say = { answer: 'spoken', judge: 'tutor', flow: 'one-at-a-time' } as const;
@@ -358,6 +370,51 @@ describe('support is the lever set\'s: a mode cannot write the tier rule itself'
     expect(set.support({ id: 'b', mode: 'sort' })).toBe('');
   });
 
+  it('given the lesson context, support names only a model lever offered on the item', () => {
+    type Ctx = { withModel: boolean };
+    const set = leverSet<Item, Ctx>({ missesOf: () => [], support,
+      specs: [{ ...model, content: (_i, ctx) => (ctx.withModel ? 'a solved one' : null) }] });
+    expect(set.support({ id: 'a' }, { withModel: true })).toMatch(/model_it/);
+    expect(set.support({ id: 'a' }, { withModel: false })).toBe('');
+    expect(set.bind({ withModel: false }).support({ id: 'a' })).toBe('');
+    const two = leverSet<Item, null>({ missesOf: () => [], support, specs: [
+      { ...model, offer: () => false }, { ...model, id: 'model_two' }] });
+    expect(two.support({ id: 'a' }, null)).toMatch(/model_two/);
+    expect(two.support({ id: 'a' })).not.toMatch(/model_two/);
+  });
+
+  // A boss carries no lesson context builder, so the payload guard runs per family with each family's own ctx.
+  const SUPPORT_CTX: Record<string, (data: any, boss: Boss) => unknown> = {
+    'periodic-table': (data, boss) => ({ items: boss.items(data) }),
+    'genre-explorer': data => genreSession(data),
+  };
+  it('on every saved payload item, a model lever support names is one declare offers', async () => {
+    const payloadDir = join(__dirname, 'runtime/testing/w1-payloads');
+    const payloads = readdirSync(payloadDir).filter(f => f.endsWith('.json'));
+    let fixed = 0;
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      const build = SUPPORT_CTX[boss.card.id];
+      if (!build) continue;
+      const models = boss.levers!.specs.filter(spec => spec.type === 'model').map(spec => spec.id);
+      const named = (fact: string) => models.find(id => fact.includes(`(${id})`) || fact.includes(`the ${id} lever`));
+      const mine = payloads.filter(f => f.startsWith(`${boss.card.id}.`));
+      expect(mine.length, boss.card.id).toBeGreaterThan(0);
+      for (const file of mine) {
+        const data = boss.validate(JSON.parse(readFileSync(join(payloadDir, file), 'utf8')).data);
+        const ctx = build(data, boss);
+        for (const item of boss.items(data)) {
+          const offered = boss.levers!.declare(item, ctx, []).map(l => l.id);
+          const lever = named(boss.levers!.support(item, ctx));
+          if (lever) expect(offered, `${file} ${(item as { id: string }).id}: support names ${lever}`).toContain(lever);
+          const blind = named(boss.levers!.support(item));
+          if (blind && !offered.includes(blind)) fixed++;
+        }
+      }
+    }
+    // The payloads hold items where the context-blind rule named a lever that is not offered (the bug this guards).
+    expect(fixed).toBeGreaterThan(0);
+  });
+
   it('a scene that writes support or onScreen throws when published', () => {
     expect(() => leverScene({ objects: [], facts: { support: 'answer it cold' } }, { support: 'x', onScreen: '' })).toThrow(/lever set writes it/);
     expect(leverScene({ objects: [], facts: { kind: 'k' } }, { support: 's', onScreen: '' }).facts).toEqual({ kind: 'k', support: 's' });
@@ -381,11 +438,11 @@ describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 64, 'spokenBoss builds the assignment from speech.ask/key/misses'],
-    ['hand-written spoken key text', /also accept/i, 5, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 145, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
-    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 174, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
-    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 92, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
+    ['hand-built spoken assignments', /response: 'speech'/, 10, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-written spoken key text', /also accept/i, 4, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 81, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 115, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
+    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 54, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
     ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
     expect(count(pattern), `more files than the ratchet allows; use ${instead}`).toBeLessThanOrEqual(ceiling);
@@ -398,6 +455,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(135);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(77);
   });
 });

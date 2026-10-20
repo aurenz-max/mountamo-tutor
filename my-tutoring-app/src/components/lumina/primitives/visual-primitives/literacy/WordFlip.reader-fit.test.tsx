@@ -21,9 +21,8 @@
  *  4. No button carries the child forward at any grade: no start-screen fork,
  *     no chips, no Next / Finish. The tutor owns every transition.
  *
- * The live loop itself is NOT driven here. It cannot be driven honestly in
- * jsdom (the mic never opens, the context refs never re-render) — the pedagogy
- * is asserted in __tests__/WordFlip.di-script.test.ts, where it is real.
+ * The live loop itself is NOT driven here: WordFlip.workspace.test.tsx drives
+ * it on the bound workspace (key, retry, credit, completion).
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

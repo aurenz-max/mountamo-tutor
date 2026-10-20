@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   HABITAT_ANIMALS, HABITAT_WATCH_NEVER_SAY, animalById, buildAsk, needsForBand, pieceTag, readHabitatBuild, trayFor,
 } from './habitatBuild';
-import { itemFromChallenge } from './habitatDioramaScript';
+import { itemFromChallenge } from './habitatDioramaDomain';
 import { keepWatchLine } from '../../../service/build-layer/gemini-build-watch';
 import { habitatDioramaOracle, passingHabitats } from '../../../service/qa/oracles/habitat-diorama';
 

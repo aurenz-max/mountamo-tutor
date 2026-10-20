@@ -1,15 +1,15 @@
 /**
- * Reaction lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, C26).
+ * Reaction lab's items, keys, misses and scene: the pure half of its boss (`reactionLab.boss.ts`, a SAY_OR_SHOW card
+ * on the spoken preset).
  *
- * Pure: the component, the adapter, the journey row and the tests read the same items, checks, misses, assignment and
- * scene. Every item is one generated challenge with a code-held key (`correctOptionId`, `correctBoolean`, or a classify
+ * Every item is one generated challenge with a code-held key (`correctOptionId`, `correctBoolean`, or a classify
  * `targetAnswer` of chemical/physical). A predict challenge is asked before the substances are mixed; every other
  * challenge after the reaction has run. A choice is tapped and checked, or said aloud (user ruling 10-13: a sayable
- * choice takes speech as well as the tap); JEV judges speech against `expectedAnswer`.
+ * choice takes speech as well as the tap); the tutor judges speech against `reactionKey`.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import type { ChallengeOption, ReactionChallenge, ReactionLabData } from './ReactionLab';
 
@@ -85,12 +85,6 @@ export const reactionCorrect = (item: ReactionItem | null | undefined, value: st
  */
 export type ReactionMiss = 'true_false_flipped' | 'chemical_physical_swap' | 'unbalanced_equation' | 'no_change' | 'other_choice';
 
-export const REACTION_MISSES: Record<'predict' | 'observe' | 'explain', readonly ReactionMiss[]> = {
-  predict: ['no_change', 'chemical_physical_swap', 'true_false_flipped', 'other_choice'],
-  observe: ['chemical_physical_swap', 'no_change', 'true_false_flipped', 'other_choice'],
-  explain: ['unbalanced_equation', 'chemical_physical_swap', 'true_false_flipped', 'no_change', 'other_choice'],
-};
-
 const NO_CHANGE = /\b(nothing|no (visible |observable |new )?changes?|no reaction|stays? the same|no signs?)\b/i;
 const kindOf = (t: string) => (/\bchemical\b/i.test(t) ? 'chemical' : /\bphysical\b/i.test(t) ? 'physical' : null);
 
@@ -117,10 +111,17 @@ export const describeReactionWork = (item: ReactionItem | null | undefined, valu
   return label ? `Chose "${label}"` : 'Nothing chosen yet';
 };
 
-/** The ask the tutor is given. */
+/** The catalog's eval modes. */
+export type ReactionMode = 'predict' | 'observe' | 'explain';
+const EXPLAIN_TYPES: readonly ReactionChallenge['type'][] = ['explain', 'balance', 'conservation'];
+/** An item's eval mode, from its stage and challenge type (the catalog's `challengeTypes`). */
+export const reactionMode = (item: ReactionItem): ReactionMode =>
+  (item.stage === 'before' ? 'predict' : EXPLAIN_TYPES.includes(item.challenge.type) ? 'explain' : 'observe');
+
+/** The ask the tutor is given. A true-false or classify ask says its whole menu. */
 export function askOf(item: ReactionItem): string {
   const c = item.challenge, form = answerForm(c), text = c.instruction.trim();
-  if (form === 'true_false') return `True or false: ${text}`;
+  if (form === 'true_false') return /^true or false\b/i.test(text) ? text : `True or false: ${text}`;
   if (form === 'classify') return `${text} (Chemical Change or Physical Change)`;
   return text;
 }
@@ -129,25 +130,31 @@ const stripEnd = (t: string) => t.trim().replace(/[.!?]+$/, '');
 const quoted = (xs: readonly string[]) => xs.map(x => `"${stripEnd(x)}"`).join(', ');
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function reactionExpectedAnswer(item: ReactionItem): string {
+/**
+ * The key a spoken reply is judged against. True-false and classify are menu keys (the ask says both words); a choice
+ * is the choice's words, its letter or its place in the list.
+ */
+export function reactionKey(item: ReactionItem): SpokenKey {
   const c = item.challenge, form = answerForm(c);
   if (form === 'true_false') {
     const truth = c.correctBoolean === true;
-    return `${truth ? 'true' : 'false'}: the statement is ${truth ? 'true' : 'false'}. `
-      + `${truth ? '"yes", "yeah", "right", "it is"' : '"no", "nope", "wrong", "it is not"'} count too, alone or in a short `
-      + 'sentence. The statement said back gives no verdict and is not it.';
+    return { answer: truth ? 'true' : 'false', menu: ['true', 'false'],
+      alsoAccept: truth ? ['yes', 'yeah', 'right', 'it is'] : ['no', 'nope', 'wrong', 'it is not'],
+      signatureError: `"${truth ? 'false' : 'true'}" is wrong. The statement said back gives no verdict and is not it.` };
   }
   if (form === 'classify') {
     const key = keyValue(c)!, other = key === 'chemical' ? 'physical' : 'chemical';
-    return `"${key}": a ${key} change. "${key}", "${key} change" or "it's ${key}" count. "${other}" is wrong, and so is `
-      + 'naming both or hedging between them.';
+    return { answer: key, menu: ['chemical', 'physical'], alsoAccept: [`${key} change`, `it's ${key}`],
+      signatureError: `"${other}" is wrong, and so is naming both or hedging between them.` };
   }
   const choices = itemChoices(c), at = choices.findIndex(x => x.value === keyValue(c));
-  const others = choices.filter((_, i) => i !== at).map(x => x.label);
-  return `"${stripEnd(choices[at]?.label ?? '')}" (choice ${choices[at]?.letter}, ${at + 1} of ${choices.length}). The whole choice, `
-    + `the part that tells it apart from the others, its letter, or its place in the list ("the ${ORDINAL[at] ?? 'last'} one") all `
-    + `count. ${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`;
+  const label = choices[at]?.label ?? '', others = choices.filter((_, i) => i !== at).map(x => x.label);
+  return {
+    answer: stripEnd(label),
+    alsoAccept: [`choice ${choices[at]?.letter}`, `the ${ORDINAL[at] ?? 'last'} one`],
+    ...(label.split(/\s+/).length > 1 ? { acceptRule: 'The part of the choice that tells it apart from the others counts too.' } : {}),
+    signatureError: `${quoted(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`,
+  };
 }
 
 /** A spoken item's known wrong answers, most specific first, with the tap's ids (the catalog's lists). */
@@ -180,12 +187,6 @@ export function reactionSpokenMisses(item: ReactionItem): KnownMiss[] {
   const order: ReactionMiss[] = ['chemical_physical_swap', 'unbalanced_equation', 'no_change', 'other_choice'];
   return order.filter(m => groups.has(m)).map(m => ({ id: m, pattern: `The right choice is "${key}". The learner's answer ${what[m](groups.get(m)!)}.`,
     examples: groups.get(m)!.slice(0, 6) }));
-}
-
-export function workspaceAssignment(item: ReactionItem): TeachingAssignment {
-  const misses = reactionSpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} The learner answers by saying it, or tapping one choice and pressing Check Answer.`,
-    response: 'speech', acceptsGesture: true, expectedAnswer: reactionExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
 }
 
 // ── What is on screen ─────────────────────────────────────────────────────
@@ -245,8 +246,12 @@ export function workspaceScene(item: ReactionItem, view: ReactionView, lab: Lab)
     facts.choices = itemChoices(item.challenge).map(x => `${x.letter}) ${x.label}`).join('  ');
     facts.learnerWork = describeReactionWork(item, view.choice);
   }
-  facts.constraints = 'The learner answers by saying it, or by tapping one choice and pressing Check Answer; the activity '
-    + 'judges the tap. You cannot tap, check, mix or point at a choice for the learner.';
+  // How the learner answers is the card's `moves`; what the reaction shows, and why, is the learner's to find.
+  facts.constraints = item.stage === 'before'
+    ? 'What the substances will do together is the prediction: never say what will happen.'
+    : reactionMode(item) === 'explain'
+      ? 'Why it happened is the question: never give the reason or the particle story, or say whether the atoms or the mass stay the same.'
+      : 'What the beaker shows is the learner\'s to read: never say which signs it shows or whether the change is chemical or physical.';
   return { objects: [], facts };
 }
 

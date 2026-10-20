@@ -103,7 +103,7 @@ const COMPOUND_WORDS = [
   },
   {
     word: 'bedbug', mode: 'compound-word', kind: 'compound', decodingParts: ['bed', 'bug'], scopeVowels: ['e', 'u'],
-    meaningSentence: 'A bedbug is an insect.', meaningQuestion: 'What kind of thing is a bedbug?',
+    meaningSentence: 'A bedbug can bite.', meaningQuestion: 'What kind of thing is a bedbug?',
     meaningAnswer: 'an insect', acceptedMeaningAnswers: ['an insect', 'insect', 'a bug', 'bug'],
   },
   {

@@ -9,7 +9,7 @@ import {
   opensWithSentinel,
   startsWithADigraph,
   SPOTTER_EMOJI,
-} from "../../primitives/visual-primitives/literacy/letterSpotterScript";
+} from "../../primitives/visual-primitives/literacy/letterSpotterDomain";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -112,7 +112,7 @@ function fixArticleAgreement(sentence: string): string {
   });
 }
 
-// Shape + sentinel gates are IMPORTED from letterSpotterScript (top of file):
+// Shape + sentinel gates are IMPORTED from letterSpotterDomain (top of file):
 // both sides of the wire must agree on what is sayable, and the hand-synced
 // copies that used to live here had already drifted (90 vs 100 sentence chars).
 // The 400-char `targetWord` runaway story — why a field that cannot be
@@ -1060,10 +1060,10 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
 
         // #2 strategy cue — NO LONGER STAMPED. It was on-card prose at a band
         // that cannot read, so under the judged loop it withdrew nothing from
-        // the child who needed it. The lever survives as the SPOKEN DISTAR
-        // lead-in (letterSpotterScript: easy = model + guide, medium = model,
-        // hard = nothing). `resolveSupportStructure` still resolves it because
-        // it is the readable record of what each tier means.
+        // the child who needed it. The tier now reaches the tutor as the lever
+        // set's `support` fact (when the model lever comes) and, at easy, the
+        // word said alone in the ask. `resolveSupportStructure` still resolves it
+        // because it is the readable record of what each tier means.
         void sc.strategyHint;
 
         // #1 perception reference — find-it only (UI contract: other modes ignore it).

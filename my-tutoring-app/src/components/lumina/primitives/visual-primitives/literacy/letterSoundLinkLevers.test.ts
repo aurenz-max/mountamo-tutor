@@ -8,7 +8,7 @@ import { LETTER_GROUPS } from '../../../service/literacy/letterGroups';
 import { itemFromChallenge, letterSoundMiss, type LetterSoundItem } from './letterSoundLinkDomain';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import {
-  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterModelFor, letterModelLeak, letterSoundLevers, pairModelFor, pairModelLeak, practiceLeak, voiceModelFor,
+  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterModelFor, letterModelLeak, LETTER_SOUND_LEVERS, pairModelFor, pairModelLeak, practiceLeak, voiceModelFor,
 } from './letterSoundLinkLevers';
 import hear_seePayload from '../../../components/live-activity/runtime/testing/w1-payloads/letter-sound-link.hear_see.json';
 
@@ -82,15 +82,15 @@ describe('levers and the miss they answer', () => {
   ])('item %i, tapped %s: the miss is %s and the next lever %s', (index, tapped, miss, lever) => {
     const item = items[index];
     expect(letterSoundMiss(item, tapped)).toBe(miss);
-    expect(nextLever(letterSoundLevers(item, [], items, index, 3), miss)).toBe(lever);
+    expect(nextLever(LETTER_SOUND_LEVERS.declare(item, { items, letterGroup: 3 }, []), miss)).toBe(lever);
   });
 
   it('with the help pulled, the practice pair is next', () => {
-    expect(nextLever(letterSoundLevers(items[1], ['voice_feel_model'], items, 1, 3), 'voicing_partner')).toBe('far_letter_pair');
+    expect(nextLever(LETTER_SOUND_LEVERS.declare(items[1], { items, letterGroup: 3 }, ['voice_feel_model']), 'voicing_partner')).toBe('far_letter_pair');
   });
 
   it('the spoken modes declare letter_model only', () => {
-    expect(letterSoundLevers(see('s', 'm'), [], [see('s', 'm')], 0, 3).map(l => [l.id, l.kind, l.carrier]))
+    expect(LETTER_SOUND_LEVERS.declare(see('s', 'm'), { items: [see('s', 'm')], letterGroup: 3 }, []).map(l => [l.id, l.kind, l.carrier]))
       .toEqual([['letter_model', 'help', 'both']]);
   });
 });
@@ -122,14 +122,14 @@ describe('letter_model (handoff 24)', () => {
     ['match', 'other_picture'], ['match', 'letter_name'], ['match', 'said_the_sound'],
   ])('%s: %s -> letter_model', (kind, miss) => {
     const item = kind === 'see' ? see('s1', 's') : match('k1', 's', 'net');
-    expect(nextLever(letterSoundLevers(item, [], [item], 0, 4), miss)).toBe('letter_model');
+    expect(nextLever(LETTER_SOUND_LEVERS.declare(item, { items: [item], letterGroup: 4 }, []), miss)).toBe('letter_model');
   });
 
   it('every spoken miss is answered or unanswered by decision (J9)', () => {
     const entry = LITERACY_CATALOG.find(c => c.id === 'letter-sound-link')!.teachingWorkspace!;
     expect(entry.levers).toBe(true);
     for (const [mode, item] of [['see_hear', see('s1', 's')], ['keyword_match', match('k1', 's', 'net')]] as const) {
-      const answered = letterSoundLevers(item, [], [item], 0, 4).flatMap(l => l.answers ?? []);
+      const answered = LETTER_SOUND_LEVERS.declare(item, { items: [item], letterGroup: 4 }, []).flatMap(l => l.answers ?? []);
       expect([...answered, ...(entry.unanswered?.[mode] ?? [])].sort()).toEqual([...entry.misses![mode]].sort());
     }
   });
@@ -138,7 +138,7 @@ describe('letter_model (handoff 24)', () => {
 it('letter_model: its description names no model letter or word (read before the pull)', () => {
   const item = see('s1', 's');
   const m = letterModelFor(item, [item], 4)!;
-  const [lever] = letterSoundLevers(item, [], [item], 0, 4);
+  const [lever] = LETTER_SOUND_LEVERS.declare(item, { items: [item], letterGroup: 4 }, []);
   expect(lever.does).not.toMatch(new RegExp(`\\b(${m.letter}|${m.word}|${m.sound})\\b`, 'i'));
 });
 
@@ -153,7 +153,7 @@ describe('pair_model (J12: hear-see items with no keyword lever)', () => {
     'payload item %i, tapped %s (%s): pair_model is the next lever', (index, tapped, miss) => {
       const item = items[index];
       expect(letterSoundMiss(item, tapped)).toBe(miss);
-      const levers = letterSoundLevers(item, [], items, index, payload.letterGroup);
+      const levers = LETTER_SOUND_LEVERS.declare(item, { items, letterGroup: payload.letterGroup }, []);
       expect(levers.map(l => l.id)).not.toContain('keyword_under_both');
       expect(nextLever(levers, miss)).toBe('pair_model');
       const pair = pairModelFor(item, items, payload.letterGroup)!;
@@ -182,7 +182,7 @@ describe('pair_model (J12: hear-see items with no keyword lever)', () => {
   });
 
   it('its description names no model letter or word (read before the pull)', () => {
-    const lever = letterSoundLevers(items[0], [], items, 0, 1).find(l => l.id === 'pair_model')!;
+    const lever = LETTER_SOUND_LEVERS.declare(items[0], { items, letterGroup: 1 }, []).find(l => l.id === 'pair_model')!;
     for (const m of pairModelFor(items[0], items, 1)!) expect(lever.does).not.toMatch(new RegExp(`\b(${m.letter}|${m.word})\b`, 'i'));
   });
 });

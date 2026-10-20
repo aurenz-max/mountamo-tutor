@@ -1,26 +1,30 @@
 /**
- * The in-item levers on gas-laws-simulator (`/add-support-tiers`; report qa/eval-reports/gas-laws-simulator-levers-2026-10-15.md).
- * No real-learner evidence: the misses are what `gasMiss` observes; the failures behind them come from the catalog's
- * commonStruggles (what is held constant, pressure and volume moving opposite ways, Celsius in a ratio, more gas read
- * as a higher temperature). Every lever starts released; `config.difficulty` changes the items, not the levers.
+ * The in-item levers on gas-laws-simulator, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/gas-laws-simulator-levers-2026-10-15.md). No real-learner evidence: the misses are what `gasMiss`
+ * observes; the failures behind them come from the documented struggles (what is held constant, pressure and volume
+ * moving opposite ways, Celsius in a ratio, more gas read as a higher temperature). Every lever starts released;
+ * `config.difficulty` changes the items, not the levers. No lever comes from the tier, so there is no model lever and
+ * no `support`.
  *
- * - `particle_card` (help; observe): what the change does to the particles, and what pressure, volume and temperature
- *   are in particle terms. It names no direction for the asked quantity.
- * - `held_label` (help; observe, an item whose ask does not name what is held and whose asked quantity is not held):
- *   labels what the container does (the piston slides until..., the steel cannot stretch, the bath keeps...).
- * - `kelvin_scale` (help; predict, calculate, Celsius items): each Celsius temperature with its kelvin value.
- * - `factor_line` (help; predict, calculate): each change as a factor, temperatures in kelvin ("twice as much"). It
- *   names only the changed quantities.
- * - `relation_card` (help; predict, calculate): what stays constant for this container (pressure times volume, ...).
- * - `simpler_numbers` (simplify; predict): the same container, change and question with a factor of 2 or 1/2 in kelvin,
+ * - `particle_card` (clue, shown; observe): what the change does to the particles, and what pressure, volume and
+ *   temperature are in particle terms. It names no direction for the asked quantity.
+ * - `held_label` (clue, shown; observe, an item whose ask does not name what is held and whose asked quantity is not
+ *   held): labels what the container does (the piston slides until..., the steel cannot stretch, the bath keeps...).
+ * - `kelvin_scale` (clue, shown; predict, calculate, Celsius items): each Celsius temperature with its kelvin value.
+ * - `relation_card` (clue, shown; predict, calculate): what stays constant for this container (pressure times volume, ...).
+ * - `factor_line` (clue, shown; predict, calculate): each change as a factor, temperatures in kelvin ("twice as much").
+ *   It names only the changed quantities.
+ * - `simpler_numbers` (easier; predict): the same container, change and question with a factor of 2 or 1/2 in kelvin,
  *   ungraded, then the full item back.
- * - `one_change` (simplify; calculate): the same cylinder and question with only the first change, ungraded, then the
+ * - `one_change` (easier; calculate): the same cylinder and question with only the first change, ungraded, then the
  *   full item back.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { keyAnswers } from '../../../components/live-activity/spokenKey';
+import { GAS_MISSES } from './gasLawsSimulator.card';
 import {
-  choicesOf, directionOf, fmtNum, GAS_MISSES, heldVars, keyChoice, NAME, numericChoices, showValue, stateAfter,
-  type GasChange, type GasItem, type GasLawsMiss,
+  directionOf, fmtNum, gasKey, gasMode, heldVars, keyChoice, NAME, numericChoices, showValue, stateAfter,
+  type GasChange, type GasItem, type GasLawsMiss, type GasMode,
 } from './gasLawsWorkspace';
 
 export const PARTICLE_LEVER = 'particle_card';
@@ -145,60 +149,70 @@ export function simplerItem(item: GasItem): GasItem | null {
   return null;
 }
 
-// ── Levers on the current item ───────────────────────────────────────────────────────────
+// ── The lever set ────────────────────────────────────────────────────────────────────────
 
-const lever = (id: string, kind: WorkspaceLever['kind'], pulled: readonly string[], answers: readonly GasLawsMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+/** The levers read nothing beside the item. */
+export type GasLeverContext = Record<string, never>;
+export const GAS_LEVER_CONTEXT: GasLeverContext = {};
 
-/** The levers on the current session item. A practice item has none. */
-export function gasLevers(item: GasItem | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || isPractice(item)) return [];
-  const out: WorkspaceLever[] = [];
-  if (item.mode === 'observe') {
-    out.push(lever(PARTICLE_LEVER, 'help', pulled, GAS_MISSES.observe,
-      'The learner cannot connect the change to what the particles do, or mixes up which way the quantity moves.',
-      'Shows a card beside the container: what the change does to the particles, and what pressure, volume and temperature are in particle terms. It names no direction for the asked quantity.'));
-    if (!item.heldNamed && !heldVars(item).includes(item.asked)) {
-      out.push(lever(HELD_LEVER, 'help', pulled, GAS_MISSES.observe,
-        'The learner does not see what the container keeps the same.',
-        'Labels the container with what it does (the piston slides freely, the steel cannot stretch, the water bath, sealed). It says nothing about the asked quantity.'));
-    }
-    return out;
-  }
-  const misses = GAS_MISSES[item.mode];
-  if (item.celsius) {
-    out.push(lever(KELVIN_LEVER, 'help', pulled, ['celsius_ratio'],
-      'The learner divides degrees Celsius, or does not convert to kelvin.',
-      'Writes each Celsius temperature with its kelvin value beside the table. It computes nothing else.'));
-  }
-  out.push(lever(RELATION_LEVER, 'help', pulled, misses.filter(m => m !== 'celsius_ratio'),
-    'The learner applies a change the wrong way round, or does not know what stays constant for this container.',
-    'Shows what stays constant for this container in words (for example "pressure times volume stays the same"), with no numbers.'));
-  out.push(lever(FACTOR_LEVER, 'help', pulled, misses,
-    'The learner cannot see how big the change is, or keeps the old value.',
-    'Writes each change as a factor under the table, temperatures in kelvin (for example "twice as much"). It names only the changed quantities.'));
-  const simpler = simplerItem(item);
-  if (simpler) {
-    out.push(item.mode === 'predict'
-      ? lever(SIMPLER_LEVER, 'simplify', pulled, misses, 'The learner cannot work with these numbers.',
-        'Opens the same container and question first with the change doubled or halved, in kelvin. It is not graded; this item comes back after it.')
-      : lever(ONE_CHANGE_LEVER, 'simplify', pulled, misses, 'The learner cannot handle two changes at once.',
-        `Opens the same cylinder and question first with only the ${NAME[item.changes[0].v]} change (the ${NAME[item.changes[1].v]} stays as it was). It is not graded; this item comes back after it.`));
-  }
-  return out;
-}
+/** Each card is read by what it shows, never as the answer it leads to. */
+const NOT_THE_CONCLUSION = 'Never read it back as the conclusion ("so the pressure goes up"); ask the learner what it tells them.';
 
-/** What the pulled levers put on screen, as a scene fact. Never a key. */
-export function leverFact(item: GasItem | undefined, pulled: readonly string[]): string {
-  if (!item || isPractice(item)) return '';
-  const parts: string[] = [];
-  if (pulled.includes(PARTICLE_LEVER)) parts.push(`Beside the container, a particle card: ${particleLines(item).join(' ')}`);
-  if (pulled.includes(HELD_LEVER)) parts.push(`On the container, a label: ${heldLines(item).join(' ')}`);
-  if (pulled.includes(KELVIN_LEVER)) parts.push(`Beside the table: ${kelvinLines(item).join('; ')}`);
-  if (pulled.includes(RELATION_LEVER)) parts.push(`A relation card: ${relationLines(item).join(' ')}`);
-  if (pulled.includes(FACTOR_LEVER)) parts.push(`Under the table: ${factorLines(item).join(' ')}`);
-  return parts.join(' ');
-}
+/** Lines that state no direction or after value for the asked quantity, else null (the lever is not offered). */
+const unleaked = (item: GasItem, lines: string[]) =>
+  (lines.length && !lines.some(l => directionLeak(l, item) || valueLeak(l, item)) ? lines : null);
+
+export const GAS_LEVERS = leverSet<GasItem, GasLeverContext>({
+  modeOf: gasMode,
+  missesOf: mode => GAS_MISSES[mode as GasMode] ?? [],
+  // No card names the key or a way of saying it.
+  answersOf: item => keyAnswers(gasKey(item)),
+  specs: [
+    { id: PARTICLE_LEVER, type: 'clue', carrier: 'shown', modes: ['observe'], answers: 'all',
+      when: 'The learner cannot connect the change to what the particles do, or mixes up which way the quantity moves.',
+      does: 'Shows a card beside the container: what the change does to the particles, and what pressure, volume and '
+        + `temperature are in particle terms. It names no direction for the asked quantity. ${NOT_THE_CONCLUSION}`,
+      content: item => unleaked(item, particleLines(item)),
+      fact: (lines: string[]) => `Beside the container, a particle card: ${lines.join(' ')}` },
+    { id: HELD_LEVER, type: 'clue', carrier: 'shown', modes: ['observe'], answers: 'all',
+      when: 'The learner does not see what the container keeps the same.',
+      does: 'Labels the container with what it does (the piston slides freely, the steel cannot stretch, the water bath, '
+        + `sealed). It says nothing about the asked quantity. ${NOT_THE_CONCLUSION}`,
+      // Only where the ask names nothing held, and never on an item asking about a held quantity (it would state the answer).
+      content: item => (!item.heldNamed && !heldVars(item).includes(item.asked) ? unleaked(item, heldLines(item)) : null),
+      fact: (lines: string[]) => `On the container, a label: ${lines.join(' ')}` },
+    { id: KELVIN_LEVER, type: 'clue', carrier: 'shown', modes: ['predict', 'calculate'], answers: ['celsius_ratio'],
+      when: 'The learner divides degrees Celsius, or does not convert to kelvin.',
+      does: 'Writes each Celsius temperature with its kelvin value beside the table. It computes nothing else.',
+      content: item => (item.celsius ? kelvinLines(item) : null),
+      fact: (lines: string[]) => `Beside the table: ${lines.join('; ')}` },
+    { id: RELATION_LEVER, type: 'clue', carrier: 'shown', modes: ['predict', 'calculate'],
+      answers: ['inverse_factor', 'kept_value', 'first_change_only', 'second_change_only', 'ratio_inverted'],
+      answersOn: item => GAS_MISSES[item.mode].filter(m => m !== 'celsius_ratio'),
+      when: 'The learner applies a change the wrong way round, or does not know what stays constant for this container.',
+      does: 'Shows what stays constant for this container in words (for example "pressure times volume stays the same"), '
+        + `with no numbers. ${NOT_THE_CONCLUSION}`,
+      // It says which product or ratio stays the same by design, so only an after value is a leak here.
+      content: item => { const lines = relationLines(item); return lines.some(l => valueLeak(l, item)) ? null : lines; },
+      fact: (lines: string[]) => `A relation card: ${lines.join(' ')}` },
+    { id: FACTOR_LEVER, type: 'clue', carrier: 'shown', modes: ['predict', 'calculate'], answers: 'all',
+      when: 'The learner cannot see how big the change is, or keeps the old value.',
+      does: 'Writes each change as a factor under the table, temperatures in kelvin (for example "twice as much"). It '
+        + `names only the changed quantities. ${NOT_THE_CONCLUSION}`,
+      content: item => unleaked(item, factorLines(item)),
+      fact: (lines: string[]) => `Under the table: ${lines.join(' ')}` },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['predict'], answers: 'all',
+      when: 'The learner cannot work with these numbers.',
+      does: 'Opens the same container and question first with the change doubled or halved, in kelvin. It is not graded; '
+        + 'this item comes back after it.',
+      content: item => simplerItem(item) },
+    { id: ONE_CHANGE_LEVER, type: 'easier', modes: ['calculate'], answers: 'all',
+      when: 'The learner cannot handle two changes at once.',
+      does: item => `Opens the same cylinder and question first with only the ${NAME[item.changes[0].v]} change (the `
+        + `${NAME[(item.changes[1] ?? item.changes[0]).v]} stays as it was). It is not graded; this item comes back after it.`,
+      content: item => simplerItem(item) },
+  ],
+});
 
 /** For tests: every miss this item's choices can show. */
 export const possibleMisses = (item: GasItem): GasLawsMiss[] =>

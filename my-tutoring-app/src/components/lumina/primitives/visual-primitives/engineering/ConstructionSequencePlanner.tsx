@@ -9,19 +9,17 @@
  *
  * Every item is built and keyed by code (`constructionSequenceWorkspace.ts`) from a library of real jobs per project.
  * Nothing on screen gives the order, a week for a job, or the total before the learner's own check: a checked plan is
- * built on screen block by block, and a plan that breaks stops at the first job whose need was not done. Two paths,
- * chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a
- * reveal; the workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss,
- * takes a spoken total judged by the tutor on critical_path, and lets the runtime move on. The levers live in
- * `constructionSequenceLevers.ts`.
+ * built on screen block by block, and a plan that breaks stops at the first job whose need was not done. Taught only
+ * on the shared tutor/JEV workspace (`withWorkspaceOnly`; its wiring is `constructionSequencePlanner.card.ts` +
+ * `constructionSequencePlanner.boss.ts`): every check commits through `progress.commitCheck` with a named miss, a
+ * spoken total on critical_path is judged by the tutor against the key, and the runtime moves on. The levers are one
+ * lever set in `constructionSequenceLevers.ts`.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ConstructionSequencePlannerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { ReadMeButton } from '../../shared/ReadMeButton';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
@@ -38,18 +36,19 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askOf, buildOrder, criticalWeeks, cspCorrect, cspItems, cspMiss, describeCspWork, emptyWork, fastestPlan, firstBreak,
-  isOrderMode, nameOf, parallelProblem, runText, weekRows, weeksUsed, workComplete, workspaceAssignment,
+  askOf, buildOrder, criticalWeeks, cspCorrect, cspItems, cspMiss, describeCspWork, emptyWork, firstBreak,
+  isOrderMode, nameOf, parallelProblem, runText, weekRows, weeksUsed, workComplete,
   workspaceScene, type CspItem, type CspMode, type CspTier, type CspWork, type Job, type ProjectId,
 } from './constructionSequenceWorkspace';
 import {
-  asYouGoMarks, chainLines, CHECK_AS_YOU_GO_LEVER, cspLevers, leverFact, NOT_READY, SAME_NEEDS_LEVER, sameNeedsTags,
-  simplerItem, TICK_NEEDS_LEVER, TRACE_CHAINS_LEVER, WEEK_BLOCKS_LEVER,
+  asYouGoMarks, chainLines, CHECK_AS_YOU_GO_LEVER, CSP_LEVERS, NOT_READY, SAME_NEEDS_LEVER, sameNeedsTags,
+  TICK_NEEDS_LEVER, TRACE_CHAINS_LEVER, WEEK_BLOCKS_LEVER,
 } from './constructionSequenceLevers';
+import { constructionSequencePlannerBoss } from './constructionSequencePlanner.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -133,7 +132,7 @@ const BuildRun = ({ item, plan, step }: { item: CspItem; plan: CspWork; step: nu
   );
 };
 
-/** critical_path, once credited or revealed: each job drawn from the week it can start, as soon as its needs end. */
+/** critical_path, once credited: each job drawn from the week it can start, as soon as its needs end. */
 const Timeline = ({ item }: { item: CspItem }) => {
   const start = new Map<string, number>();
   const at = (id: string): number => {
@@ -164,10 +163,11 @@ const Timeline = ({ item }: { item: CspItem }) => {
 // Component
 // ============================================================================
 
-const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ConstructionSequencePlannerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CspItem>) => Progress }) => {
+const useCspProgress = useWorkspaceProgressFor('construction-sequence-planner');
+
+const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId }: ConstructionSequencePlannerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, description, gradeLevel = '3', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const { title, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
   const items = useMemo(() => cspItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,21 +175,25 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
   const stableInstanceId = useRef(instanceId || `construction-sequence-planner-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useCspProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: constructionSequencePlannerBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: CspItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<CspItem | null>(null);
@@ -199,10 +203,8 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
   /** The plan last checked, built on screen. */
   const [checked, setChecked] = useState<CspWork | null>(null);
   const [buildStep, setBuildStep] = useState(0);
-  /** Workspace path: the checked wrong work, shown until Try again. */
+  /** The checked wrong work, shown until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [submitted, setSubmitted] = useState(false);
@@ -211,7 +213,7 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
   const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = solvedNow;
 
   // The checked plan is built one step at a time (visual only; the verdict is already committed).
   useEffect(() => {
@@ -229,24 +231,10 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    projectType: item?.project ?? 'house', gradeLevel, mode: item?.mode ?? 'sequence', taskCount: item?.jobs.length ?? 0,
-    itemIndex: currentIndex + 1, totalItems: items.length, ask: item ? askOf(item) : title,
-  }), [item, gradeLevel, currentIndex, items.length, title]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'construction-sequence-planner', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel, enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+  const clearItem = () => { setWork(emptyWork()); setChecked(null); setWrongShown(false); setPracticeSolved(false); };
 
-  const clearItem = () => {
-    setWork(emptyWork()); setChecked(null); setWrongShown(false);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
-  };
-
-  openItem.current = (index, retry) => {
-    if (retry) { setWork(emptyWork()); setChecked(null); setWrongShown(false); setPracticeSolved(false); return; }
+  openItem.current = (_index, retry) => {
+    if (retry) { clearItem(); return; }
     setPractice(null); clearItem();
   };
 
@@ -257,9 +245,16 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
     setWork(w => ({ ...w, choice: criticalWeeks(solved) })); setWrongShown(false);
   };
 
+  // A spoken total credited on the practice item: shown there as on a session item, recorded nowhere.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || practice.mode !== 'critical_path') return;
+    setPracticeSolved(true);
+    setWork(w => ({ ...w, choice: criticalWeeks(practice) })); setWrongShown(false);
+  };
+
   // ── Handlers ──
   const closed = revealed || wrongShown || learnerBlocked();
-  /** An edit after a scripted miss clears the last build. */
+  /** An edit clears the last build. */
   const edit = (f: (w: CspWork) => CspWork) => { setWork(f); setChecked(null); };
 
   const tapCard = (id: string) => {
@@ -291,25 +286,10 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner's plan works: ${askOf(item)} Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      const key: CspWork = { ...emptyWork(), order: buildOrder(item), week: item.mode === 'parallel' ? fastestPlan(item) : {},
-        choice: item.mode === 'critical_path' ? criticalWeeks(item) : null };
-      setWork(key);
-      if (item.mode !== 'critical_path') setChecked(key);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} A plan that works is now on screen; explain it with the needs.`);
-      return;
-    }
-    if (item.mode === 'critical_path') setWork(w => ({ ...w, choice: null }));
-    say(`[ANSWER_INCORRECT] ${describeCspWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what each job needs first, without naming an order.`);
+    setWrongShown(true);
   };
 
   const metrics = (): ConstructionSequencePlannerMetrics => {
@@ -331,16 +311,6 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -350,16 +320,18 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || isComplete) return;
     const scene = workspaceScene(item, { work, checked, solved: revealed });
-    const levers = practice ? [] : cspLevers(sessionItem, pulled);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled, work);
+    // No lever on the practice item: the full item's levers come back with it.
+    const levers = practice || !sessionItem ? [] : CSP_LEVERS.declare(sessionItem, work, pulled);
+    const withPractice = practice
+      ? { ...scene, facts: { ...scene.facts, practice: 'A simpler item of the same kind, before the full item comes back.' } }
+      : scene;
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...leverScene(withPractice, { support: '',
+        onScreen: practice || !sessionItem ? '' : CSP_LEVERS.onScreen(sessionItem, work, pulled) }),
       levers,
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
@@ -367,10 +339,10 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = simplerItem(sessionItem);
+          const simpler = CSP_LEVERS.simpler(sessionItem, work, id);
           if (!simpler) return 'There is no simpler item here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: constructionSequencePlannerBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -379,14 +351,7 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
     };
   });
 
-  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The job cards and your plan',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const done = hasSubmitted || submitted || isComplete;
 
   if (!items.length) {
     return (
@@ -434,13 +399,7 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
   const runCard = (): React.ReactNode => {
     if (!item || item.mode === 'critical_path' || !checked) return null;
     const ok = cspCorrect(item, checked);
-    const text = runText(item, checked);
-    if (scriptedReveal && !solvedNow) return <LuminaFeedbackCard status="insight" label="A plan that works">{text}</LuminaFeedbackCard>;
-    return (
-      <LuminaFeedbackCard status={ok ? 'correct' : 'incorrect'}>
-        {text}{!ok && !tutorOwned ? ' Fix the plan and check again.' : ''}
-      </LuminaFeedbackCard>
-    );
+    return <LuminaFeedbackCard status={ok ? 'correct' : 'incorrect'}>{runText(item, checked)}</LuminaFeedbackCard>;
   };
 
   return (
@@ -462,18 +421,12 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
           </LuminaFeedbackCard>
         ) : item && (
           <>
-            <div className="flex items-start gap-2">
-              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
-              {!tutorOwned && (
-                <ReadMeButton instruction={`${askOf(item)} The job cards: ${item.jobs.map(j => j.name).join(', ')}.`}
-                  ask="Look at the job cards, then make your plan."
-                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the task to me" />
-              )}
-            </div>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above the activity, and the
+                cards and the plan as one region, never a single card. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {/* Order modes: the cards left to place, and the plan */}
               {isOrderMode(item.mode) && (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -581,7 +534,7 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
               )}
 
               {checked && item.mode !== 'critical_path' && <BuildRun item={item} plan={checked} step={buildStep} />}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -593,20 +546,11 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
 
             {runCard()}
             {item.mode === 'critical_path' && revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+              <LuminaFeedbackCard status="correct">
                 {`The longest chain of needs takes ${criticalWeeks(item)} weeks, so the whole ${item.project} takes ${criticalWeeks(item)} weeks even with crews working at the same time.`}
               </LuminaFeedbackCard>
             )}
             {item.mode === 'critical_path' && !revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
-            {item.mode === 'critical_path' && !revealed && !tutorOwned && scriptedWrongs === 1 && (
-              <LuminaFeedbackCard status="incorrect">Not quite. Follow each chain of needs and add its weeks, then try once more.</LuminaFeedbackCard>
-            )}
-
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -614,8 +558,8 @@ const ConstructionSequencePlannerSurface = ({ data, className, runtimePlanItemId
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ConstructionSequencePlanner = withWorkspaceController<ConstructionSequencePlannerProps, ProgressOptions<CspItem>, Progress>(
-  'construction-sequence-planner', ConstructionSequencePlannerSurface, useScriptedProgress, useWorkspaceProgressFor('construction-sequence-planner'));
+// Taught only on the workspace: an unbound mount renders the shared "needs the tutor" card.
+const ConstructionSequencePlanner = withWorkspaceOnly<ConstructionSequencePlannerProps>(
+  'construction-sequence-planner', ConstructionSequencePlannerSurface, props => props.data.title);
 
 export default ConstructionSequencePlanner;

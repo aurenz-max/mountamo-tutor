@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Length lab answered aloud (ROLLOUT.md VB-1): compare and indirect ask for one choice, so they are spoken items that
- * still take the tap. The observer credits a spoken answer from the tutor's feedback; the tap stays checked by the
- * activity. Laying units, measuring with two units and putting objects in order stay tap-only.
+ * Length lab answered aloud (ROLLOUT.md VB-1; on the boss since 2026-10-19): compare and indirect ask for one choice,
+ * so they are SAY_OR_SHOW items with a menu key (`lengthKey`) that still take the tap. The observer credits a spoken
+ * answer from the tutor's feedback; the tap stays checked by the activity. Laying units, measuring with two units and
+ * putting objects in order have no key and stay tap-only.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -16,7 +17,8 @@ import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '..
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { LengthLabChallenge } from './LengthLab';
-import { lengthSpokenMisses } from './lengthLabWorkspace';
+import { askLeaks, spokenKeyText } from '../../../components/live-activity/spokenKey';
+import { lengthAsk, lengthKey, lengthSpokenMisses } from './lengthLabWorkspace';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -33,7 +35,7 @@ const INDIRECT: LengthLabChallenge = { ...base, id: 'i', type: 'indirect', instr
 
 /** One spoken challenge per converted mode, with a wrong and a right spoken answer and the tap that is right. */
 const SPOKEN: Array<[string, LengthLabChallenge, string, string, string]> = [
-  ['compare', COMPARE, 'the pencil', 'the crayon', 'crayon is shorter'],
+  ['compare', COMPARE, 'longer', 'shorter', 'crayon is shorter'],
   ['indirect', INDIRECT, 'the pencil', 'the ribbon is longer', 'ribbon is longer'],
 ];
 const lab = (challenges: LengthLabChallenge[]) =>
@@ -47,8 +49,9 @@ it.each(SPOKEN)('%s: a wrong spoken answer retries, a right one credited by the 
   const task = h.state().task!;
   expect(task.demand.response).toBe('speech');
   expect(task.workspace!.expectedAnswer).toBeTruthy();
-  // The scene says how the learner answers, never the answer.
-  expect(String(task.demand.constraints)).toMatch(/says the answer/);
+  // The task is the ask; the scene keeps this item's never-say rule.
+  expect(task.task).toBe(lengthAsk(c));
+  expect(String(task.demand.constraints)).toMatch(/^Before the learner answers, and after a wrong answer, never say which object is longer/);
   expect(JSON.stringify(task)).not.toMatch(/correctAnswer|objectLength|\b[3458]\b/);
   h.say(wrong); h.feedback('incorrect', 'retry');
   expect(h.state().status).not.toBe('completed');
@@ -113,8 +116,8 @@ it('laying units, measuring with two units and ordering stay tap-only with no ke
 it('every spoken miss is one the catalog lists for its mode, and none is the answer', () => {
   const lists = getComponentById('length-lab')!.teachingWorkspace!.misses as Record<string, readonly string[]>;
   const cases: Array<[string, LengthLabChallenge, string]> = [
-    ['compare', COMPARE, 'the crayon'],
-    ['compare', { ...COMPARE, correctAnswer: 'longer', objectLength0: 7 }, 'the crayon'],
+    ['compare', COMPARE, 'shorter'],
+    ['compare', { ...COMPARE, correctAnswer: 'longer', objectLength0: 7 }, 'longer'],
     ['compare', { ...COMPARE, correctAnswer: 'same', objectLength0: 5 }, 'the same'],
     ['indirect', INDIRECT, 'the ribbon'],
     ['indirect', { ...INDIRECT, correctAnswer: 'same' }, 'the same'],
@@ -128,4 +131,16 @@ it('every spoken miss is one the catalog lists for its mode, and none is the ans
       for (const e of m.examples ?? []) expect(e.toLowerCase()).not.toBe(key.toLowerCase());
     }
   }
+});
+
+it('the key is a menu the ask says in full, names the ways to say the answer, and no ask leaks', () => {
+  expect(lengthAsk(COMPARE)).toBe('Is the crayon longer or shorter than the pencil, or are they the same length?');
+  expect(spokenKeyText(lengthKey(COMPARE)!)).toMatch(/^"shorter" \(also accept "the crayon is shorter", "the pencil is longer"\)\. /);
+  expect(spokenKeyText(lengthKey(COMPARE)!)).toContain('chooses one word from "longer", "shorter", "the same"');
+  expect(lengthKey({ ...COMPARE, correctAnswer: 'same' })!.answer).toBe('the same');
+  expect(lengthAsk(INDIRECT)).toBe('Which is longer, the pencil or the ribbon? Or are they the same length?');
+  expect(lengthKey(INDIRECT)).toMatchObject({ answer: 'the ribbon', menu: ['the pencil', 'the ribbon', 'the same'] });
+  for (const c of [COMPARE, INDIRECT, { ...INDIRECT, correctAnswer: 'same' }]) expect(askLeaks(lengthAsk(c), lengthKey(c)!)).toEqual([]);
+  // The boards have no key.
+  expect(lengthKey({ ...COMPARE, type: 'tile_and_count' })).toBeNull();
 });

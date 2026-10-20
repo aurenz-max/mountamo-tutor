@@ -20,7 +20,7 @@
 import { isVowel, knownByForGrade, onsetOf, rimeOf, WORDS, type LexWord } from './lexicon';
 import type { WordSpaceItem } from './pick';
 import { isInflected } from './scope';
-import { isSentinelSafeWord } from '../../primitives/visual-primitives/literacy/rhymeStudioScript';
+import { isSentinelSafeWord } from '../../primitives/visual-primitives/literacy/rhymeModels';
 
 export type RhymeSpaceMode = 'recognition' | 'identification' | 'production' | 'collection';
 export type RhymePayload = Record<string, unknown>;

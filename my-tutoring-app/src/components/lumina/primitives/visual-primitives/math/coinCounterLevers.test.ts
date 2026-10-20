@@ -1,6 +1,6 @@
 /**
- * coin-counter levers (`coinCounterLevers.ts`): each leak rule, each easier-item builder over many random items, the
- * miss → lever table, and that every miss the catalog lists for a mode is answered on every saved payload item.
+ * coin-counter levers (`COIN_LEVERS`, `coinCounterLevers.ts`): each leak rule, each easier-item builder over many random
+ * items, the miss → lever table, and that every miss the catalog lists for a mode is answered on every saved payload item.
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
@@ -10,14 +10,24 @@ import { COIN_CENTS, fewestCoins } from './coinCounterWorkspace';
 import {
   CHANGE_BAR_LEVER, COIN_VALUES_LEVER, FEWER_COINS_LEVER, PLAINER_GROUPS_LEVER, ROUND_CHANGE_LEVER, RUNNING_TOTAL_LEVER,
   SIZE_ROW_LEVER, SKIP_STRIP_LEVER, SMALLER_LEVER, SORT_LEVER, TWO_COINS_LEVER, VALUE_TAGS_LEVER,
-  changeBar, changeBarLabels, coinCounterLevers, fewerCoins, fewerLeaks, leverFacts, plainerGroups, plainerLeaks, practiceItem,
-  practiceParent, roundChange, roundLeaks, sizeOrder, skipStrip, smallerAmount, sortedRows, stripLeaks, twoCoins, twoCoinsLeaks,
+  COIN_LEVERS, changeBar, changeBarLabels, fewerCoins, fewerLeaks, plainerGroups, plainerLeaks, practiceItem,
+  practiceParent, roundChange, roundLeaks, sizeOrder, skipStrip, smallerAmount, sortedRows, stripLeaks, tierPulled, twoCoins,
+  twoCoinsLeaks, type CoinLeverView,
 } from './coinCounterLevers';
 
 const COINS: CoinType[] = ['penny', 'nickel', 'dime', 'quarter', 'half-dollar', 'dollar'];
 const sum = (g: readonly CoinDef[] = []) => g.reduce((s, c) => s + COIN_CENTS[c.type] * c.count, 0);
 const ids = (levers: { id: string }[]) => levers.map(l => l.id);
-const view = (valuesShown = true, runningTotalShown = false, enactedTap = false) => ({ valuesShown, runningTotalShown, enactedTap });
+const view = (valuesShown = true, runningTotalShown = false, enactedTap = false): CoinLeverView =>
+  ({ valuesShown, valuesOn: valuesShown, runningTotalShown, enactedTap });
+/** The levers a mounted item declares: runtime pulls plus a tier aid already on screen, as the component passes them. */
+const coinCounterLevers = (c: CoinCounterChallenge, pulled: readonly string[], v = view()) => {
+  const item = { ...c, band: '2' };
+  return COIN_LEVERS.declare(item, v, [...pulled, ...tierPulled(item, v)]);
+};
+/** What the pulled levers put on screen, the coin values counted as on once their lever is pulled. */
+const leverFacts = (c: CoinCounterChallenge, pulled: readonly string[], v = view()) =>
+  COIN_LEVERS.onScreen({ ...c, band: '2' }, { ...v, valuesOn: v.valuesShown || pulled.includes(COIN_VALUES_LEVER) }, pulled);
 
 let seed = 7;
 const rnd = (n: number) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };

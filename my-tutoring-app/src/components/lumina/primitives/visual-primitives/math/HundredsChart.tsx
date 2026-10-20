@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -23,18 +22,18 @@ import type { HundredsChartMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartKey, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { hundredsChartBoss } from './hundredsChart.boss';
+import { answerChoice, describeHundredsChartCheck, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
   from './hundredsChartWorkspace';
 import {
-  DOTS_LEVER, MODEL_LEVER, PRACTICE_NOTE, TALLY_LEVER, TALLY_FACT, dotsFact, hopDots, hundredsChartLevers, modelChart, modelFact,
-  practiceItem, rowTally, type ChartModel,
+  DOTS_LEVER, HUNDREDS_LEVERS, MODEL_LEVER, PRACTICE_NOTE, TALLY_LEVER, hopDots, modelChart, rowTally, startsShown,
+  type ChartModel,
 } from './hundredsChartLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { hundredsChartPipPose } from '../../../pip/hundredsChartPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -133,7 +132,6 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `hundreds-chart-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -153,7 +151,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: hundredsChartAssignment,
+    workspace, assignment: hundredsChartBoss.assignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
@@ -362,7 +360,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
   // the result a correct Check records, and the credited choice shown as chosen. The shared lifecycle plays the sound.
   solvedAloud.current = (index) => {
     const solved = challenges[index];
-    const key = solved ? hundredsChartKey(solved) : null;
+    const key = solved ? answerChoice(solved) : null;
     if (!solved || key === null || checkedCorrect.current === solved.id) return;
     recordResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
       score: Math.max(0, 100 - currentRetries * RETRY_PENALTY * 100) });
@@ -374,7 +372,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
   // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
   // comes back blank when the practice closes. A tap shows its own credit in the check.
   practiceAloud.current = (source) => {
-    const key = practice ? hundredsChartKey(practice) : null;
+    const key = practice ? answerChoice(practice) : null;
     if (source !== 'speech' || !practice || key === null) return;
     setSelectedOption(key);
     setFeedback('Correct!');
@@ -416,12 +414,15 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
       ? selectedOption !== null
       : false;
 
-  // The session item's levers (`hundredsChartLevers.ts`); a help picture is drawn on or beside the session item only
-  // while it is pulled (or shown from the start on easy), never on a practice chart.
+  // The session item's levers (`HUNDREDS_LEVERS`); easy starts with the hop dots shown, which is not a pull. A help
+  // picture is drawn on the session item only while it is pulled, never on a practice chart.
   const leverSession = { challenges, gridMax };
-  const itemLevers = sessionChallenge ? hundredsChartLevers(sessionChallenge, leverSession, pulledLevers) : [];
-  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const tapped = Array.from(selectedCells).sort((a, b) => a - b);
+  const leverCtx = { tapped, session: leverSession };
+  const shownLevers = sessionChallenge
+    ? [...startsShown(sessionChallenge).filter(id => !pulledLevers.includes(id)), ...pulledLevers] : pulledLevers;
+  const itemLevers = sessionChallenge ? HUNDREDS_LEVERS.declare(sessionChallenge, leverCtx, shownLevers) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const dotCells = sessionChallenge && helpOn(DOTS_LEVER) ? hopDots(sessionChallenge, tapped) : null;
   const dotSet = new Set(dotCells ?? []);
   const tally = sessionChallenge && helpOn(TALLY_LEVER) ? rowTally(sessionChallenge, tapped, gridMax) : null;
@@ -433,14 +434,11 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     if (!currentChallenge || !sessionChallenge) return;
     const scene = hundredsChartScene(currentChallenge, { gridMax, option: selectedOption });
     const levers = practice ? [] : itemLevers;
-    const onScreen = [
-      dotCells ? dotsFact(sessionChallenge, tapped) : null,
-      tally ? TALLY_FACT : null,
-      shownModel ? modelFact(shownModel, sessionChallenge) : null,
-    ].filter(Boolean).join('. ');
+    const onScreen = practice ? '' : HUNDREDS_LEVERS.onScreen(sessionChallenge, leverCtx, levers.filter(l => l.pulled).map(l => l.id));
+    const published = leverScene(scene, { support: practice ? '' : HUNDREDS_LEVERS.support(sessionChallenge, leverCtx), onScreen });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -448,41 +446,16 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, leverSession);
+          const easier = HUNDREDS_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); reopen.current(true);
-          return { practice: hundredsChartAssignment(easier) };
+          return { practice: hundredsChartBoss.assignment(easier) };
         }
         setLeverState(next);
         return true as const;
       },
       // Back to the full item, blank: the practice chart is not the learner's work on it.
       endPractice: () => { setPractice(null); reopen.current(true); },
-    };
-  });
-
-  // -------------------------------------------------------------------------
-  // Pip shared surface
-  // -------------------------------------------------------------------------
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the cell or option the child last touched; Pip never selects, checks, or
-  // advances. Tutor audio counts only while the tutor is on this block and began
-  // on this challenge.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !currentSolved && !allChallengesComplete);
-  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
-    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete) return null;
-    const targets = pip.targets();
-    const pose = hundredsChartPipPose({
-      running: true, preparing: false, currentSolved, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Hundreds chart',
-      dock: pip.dock.current, targets, pose,
     };
   });
 
@@ -543,9 +516,14 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
           </LuminaPrompt>
         )}
 
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, and the chart with its choices
+            as one region, so no connector crosses a choice. */}
+        {!allChallengesComplete && <PipDock />}
+
+        <PipWorkspace className="space-y-4">
         {/* Hundreds Chart Grid — bespoke drag-to-paint interaction surface */}
         <div className="flex flex-wrap items-start justify-center gap-4">
-          <div ref={pip.ref('chart')} data-pip-object="chart" className="flex items-start gap-1">
+          <div data-pip-object="chart" className="flex items-start gap-1">
           <div
             ref={gridRef}
             className="grid gap-[2px] w-fit select-none"
@@ -573,23 +551,21 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
                   key={num}
                   type="button"
                   data-cell={num}
-                  ref={pip.ref(`cell-${num}`)}
                   data-pip-object={`cell-${num}`}
                   onMouseDown={(e) => {
                     e.preventDefault(); // prevent text selection
-                    if (clickable) { pip.look(`cell-${num}`); handlePointerDown(num); }
+                    if (clickable) handlePointerDown(num);
                   }}
                   onMouseEnter={() => {
-                    if (clickable && isDraggingRef.current) pip.look(`cell-${num}`);
                     if (clickable) handlePointerEnter(num);
                   }}
                   onTouchStart={() => {
-                    if (clickable) { pip.look(`cell-${num}`); handlePointerDown(num); }
+                    if (clickable) handlePointerDown(num);
                   }}
                   onClick={(e) => {
                     // A pointer press already toggled on mousedown/touchstart; only a click with no press
                     // behind it (keyboard, assistive tech) toggles here.
-                    if (e.detail === 0 && clickable) { pip.look(`cell-${num}`); handleKeyActivate(num); }
+                    if (e.detail === 0 && clickable) handleKeyActivate(num);
                   }}
                   disabled={!clickable && !isGiven}
                   className={`
@@ -625,13 +601,6 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
           {shownModel && <ModelChart model={shownModel} />}
         </div>
 
-        {/* Pip's dock sits between the chart and the answers below it
-            (options, Check), so an outline on the chart never crosses a choice. */}
-        {pipStore && !allChallengesComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-        )}
-
         {/* Multiple choice options */}
         {isMultipleChoice && currentChallenge && !allChallengesComplete && (
           <div className="flex flex-wrap gap-2 justify-center">
@@ -645,10 +614,9 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
               return (
                 <LuminaAnswerChoice
                   key={opt}
-                  ref={pip.ref(`option-${opt}`)}
                   data-pip-object={`option-${opt}`}
                   state={state}
-                  onClick={() => { if (learnerBlocked()) return; pip.look(`option-${opt}`); handleOptionSelect(opt); }}
+                  onClick={() => handleOptionSelect(opt)}
                   disabled={currentSolved || !canAttempt}
                   className="w-auto p-3 text-center"
                 >
@@ -658,6 +626,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
             })}
           </div>
         )}
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (

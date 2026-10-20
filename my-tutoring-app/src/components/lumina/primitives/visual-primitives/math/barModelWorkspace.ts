@@ -1,19 +1,19 @@
 /**
- * Bar model on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch B1).
- *
- * Pure: the component, the adapter and the journey read the same assignment and scene. Ten modes
- * are answered on the graph and checked by the primitive's own code, so the tutor is never handed
- * `expectedValue`, `targetBarIndex`, `expectedCounts`, `expectedDataset` or `expectedScaleStep`.
- * The two spoken modes (say_what_it_shows, compare_two_graphs) are judged by the tutor against
- * code-derived comparison facts: a bounded set of true claims about the rows on screen, published as
- * `expectedAnswer`. The workspace is bar-model's only teaching path (the scripted explanation runner
- * was deleted, LA-14).
+ * Bar model's domain on the shared tutor/JEV teaching workspace (the boss is `barModel.boss.ts`, the card
+ * `barModel.card.ts`). Pure: the component, the boss and the tests read the same key, scene and checks.
+ * Eleven modes are answered on the graph and checked by the primitive's own code, so the tutor is never handed
+ * `expectedValue`, `targetBarIndex`, `expectedCounts`, `expectedDataset` or `expectedScaleStep`. The two spoken
+ * modes (say_what_it_shows, compare_two_graphs) are judged by the tutor against a `SpokenKey` built from
+ * code-derived comparison facts: a bounded set of true claims about the rows on screen.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
+import type { BarModelMiss } from './barModel.card';
 import { makeGraphMiss } from './barModelBuild';
+
+export type { BarModelMiss, SpokenGraphMiss } from './barModel.card';
 
 export const SPOKEN_GRAPH_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
 export const ROW_TAP_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
@@ -54,19 +54,24 @@ export const graphExplanationAsk = (ch: BarModelChallenge) => {
   return `The rows show ${labels}. ${ch.prompt}${ch.supportTier !== 'hard' ? ' You can use more, fewer, or the same.' : ''}`;
 };
 
-/** What the tutor judges a spoken explanation against: every true claim, and what the ask requires of one. */
-export function spokenGraphAnswer(c: BarModelChallenge): string {
+/**
+ * The key of a spoken explanation: every true comparison the rows support, any one of which is the whole answer;
+ * null on an item answered on the graph.
+ */
+export function barModelKey(c: BarModelChallenge): SpokenKey | null {
+  const facts = isSpokenGraph(c) ? graphComparisonFacts(c) : [];
+  if (!facts.length) return null;
   const focus = c.comparisonFocus ? ` It must name a ${c.comparisonFocus === 'same' ? 'similarity' : 'difference'}.` : '';
   const across = c.evalMode === 'compare_two_graphs'
     ? ` It must compare ${c.graphLabel} with ${c.secondGraphLabel}, not two rows of one graph.` : '';
-  return `One true comparison is the whole answer; the learner does not compare every group. Any one of these, `
-    + `in the learner's own words (fewer for more reversed is the same claim): `
-    + `${graphComparisonFacts(c).join(' ')}${focus}${across}`
-    + ' Judge only the comparison: a count the learner says on the way, right or wrong, does not change whether the comparison is true.';
+  return {
+    answer: facts[0], alsoAccept: facts.slice(1),
+    acceptRule: 'Any one true comparison is the whole answer, in the learner\'s own words; the learner does not compare every '
+      + 'group, and fewer for more reversed is the same claim. A count said on the way, right or wrong, does not change '
+      + 'whether the comparison is true.',
+    signatureError: `A reversed claim, a bare number or a row name alone is not a comparison.${focus}${across}`,
+  };
 }
-
-/** What a wrong spoken comparison shows (handoff 20 Part B). */
-export type SpokenGraphMiss = 'reversed_comparison' | 'same_for_different' | 'rows_not_graphs' | 'no_comparison';
 
 /**
  * A spoken comparison's known wrong answers, in precedence order, for the `spoken_miss` observer, stated against the
@@ -97,13 +102,6 @@ export function barModelSpokenMisses(c: BarModelChallenge): KnownMiss[] {
     { id: 'no_comparison', pattern: `${shown} The learner's whole answer is one number or one row name, with no comparison word `
       + 'such as more, fewer or the same.', examples: [big.label, String(big.value)] },
   ];
-}
-
-export function workspaceAssignment(c: BarModelChallenge): TeachingAssignment {
-  const misses = barModelSpokenMisses(c);
-  return isSpokenGraph(c)
-    ? { id: c.id, task: graphExplanationAsk(c), response: 'speech', expectedAnswer: spokenGraphAnswer(c), ...(misses.length ? { misses } : {}) }
-    : { id: c.id, task: c.prompt, response: 'gesture' };
 }
 
 export interface BarModelView {
@@ -141,10 +139,6 @@ export function describeGraphWork(c: BarModelChallenge, view: BarModelView): str
  * - a made graph (make_graph): what the bars show against the ask (`makeGraphMiss`, barModelBuild.ts).
  * The spoken modes name none: the tutor judges them.
  */
-export type BarModelMiss = 'picked_icon_count' | 'another_row' | 'one_step_off' | 'one_short' | 'one_over' | 'short_by_more'
-  | 'over_by_more' | 'reversed' | 'other_row' | 'rows_swapped' | 'several_rows_off' | 'wrong_step'
-  | 'tied' | 'not_same' | 'left_empty';
-
 const offBy = (got: number, want: number): BarModelMiss | undefined => got === want ? undefined
   : got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
 
@@ -186,22 +180,28 @@ export function barModelMiss(c: BarModelChallenge | null, view: BarModelView): B
   return undefined;
 }
 
-const CHANNEL: Record<string, string> = {
-  options: 'The learner taps one of the numbers under the graph; the graph checks it.',
-  rows: 'The learner taps a row of the graph; the graph checks it.',
-  stickers: 'The learner taps a row to put one sticker in it (Take one off removes one), then presses Check my chart; '
-    + 'the chart checks every row.',
-  build: 'The learner sets each bar with its plus and minus buttons, picks a scale step, then presses Submit graph; '
-    + 'the graph checks the bars and the step.',
-  speech: 'The learner answers aloud with a comparison; nothing on screen is tapped.',
-  make: 'The graph starts empty. The learner taps a column to put one more picture in it and taps a picture to take one '
-    + 'out, then presses "I\'m done!"; the graph checks whether it fits the ask. Many graphs fit.',
-};
+/**
+ * This item's facts the tutor must keep (moves and judging are the card's and the doctrine's): how a tap answers,
+ * that a one-picture-for-one-thing row's total is the answer, that a made graph has no one answer, that the step is
+ * part of a built graph's answer. None on a spoken item: its key carries the rules.
+ */
+function itemConstraints(c: BarModelChallenge): string | undefined {
+  if (isSpokenGraph(c)) return undefined;
+  const parts: string[] = [];
+  if (OPTION_MODES.has(c.evalMode)) parts.push('The learner taps one of the numbers under the graph.');
+  if (ROW_TAP_MODES.has(c.evalMode)) parts.push('The learner taps a row of the graph.');
+  if (c.graphStyle === 'picture' && (c.scale?.iconValue ?? 1) <= 1 && c.evalMode !== 'make_graph')
+    parts.push('One picture stands for one thing and no row prints its number: counting a row with the learner, one '
+      + 'picture at a time, is teaching; saying its total is not.');
+  if (c.evalMode === 'make_graph') parts.push('The graph starts empty, and many graphs fit the ask: never say how many '
+    + 'pictures a bar needs or which bar to change.');
+  if (c.evalMode === 'build_graph') parts.push('The scale step is part of the answer: never say which step to pick.');
+  return parts.join(' ') || undefined;
+}
 
 /** What is drawn and asked. Row counts only where the rows are what the item asks about (the spoken modes). */
-export function workspaceScene(c: BarModelChallenge, view: BarModelView): WorkspaceScene {
-  const channel = isSpokenGraph(c) ? 'speech' : OPTION_MODES.has(c.evalMode) ? 'options' : ROW_TAP_MODES.has(c.evalMode) ? 'rows'
-    : c.evalMode === 'build_one_to_one' ? 'stickers' : c.evalMode === 'make_graph' ? 'make' : 'build';
+export function workspaceScene(c: BarModelChallenge, view: BarModelView): SceneOf {
+  const constraints = itemConstraints(c);
   const drawn: Record<string, string | number> = { rows: c.values.map(v => v.label).join(', ') };
   if (isSpokenGraph(c)) {
     const counts = (rows: BarModelChallenge['values']) => rows.map(v => `${v.label} ${v.value}`).join(', ');
@@ -224,7 +224,7 @@ export function workspaceScene(c: BarModelChallenge, view: BarModelView): Worksp
       ...(isSpokenGraph(c) ? {} : { learnerWork: describeGraphWork(c, view) }),
       // The made bars as numbers, one per row, so the workspace's work history can show where a bar turned back.
       ...(c.evalMode === 'make_graph' ? Object.fromEntries(view.built.map(r => [r.label, r.value])) : {}),
-      constraints: `${CHANNEL[channel]} You cannot tap, place, set or choose anything for the learner.`,
+      ...(constraints ? { constraints } : {}),
     },
   };
 }

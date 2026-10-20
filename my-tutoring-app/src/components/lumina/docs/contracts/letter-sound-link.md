@@ -1,8 +1,8 @@
 # Contract: letter-sound-link
 
 - **Derived:** 2026-09-28 · evidence window: eval-report 2026-03-15 + misconception-test 2026-07-12 + reader-fit PRE 2026-07-14 + K census trace 2026-07-14 + DI port 7 live reports 2026-08-16 + workspace adoption (LA-14) 2026-09-20/21 + authored map (live backend, 2026-09-28) + git to 2026-03
-- **Component:** `primitives/visual-primitives/literacy/LetterSoundLink.tsx` (scripted drill + `withTeachingWorkspace` switch) + `LetterSoundLinkTeaching.tsx` (workspace path) + `letterSoundLinkDomain.ts` (items, session gate, assignment, scene, misses) + `letterSoundLinkScript.ts` (retiring DISTAR pack, re-exports the domain) · **Generator:** `service/literacy/gemini-letter-sound-link.ts` · **Catalog:** `service/manifest/catalog/literacy.ts:2618` · **Live adapter:** `components/live-activity/adapters/letterSoundLinkLive.ts`
-- **Status:** ACTIVE (no open conflicts; catalog prose stale, see projection)
+- **Component:** `primitives/visual-primitives/literacy/LetterSoundLink.tsx` (`withWorkspaceOnly`) · **Boss:** `letterSoundLink.card.ts` + `letterSoundLink.boss.ts` · **Domain:** `letterSoundLinkDomain.ts` (items, session gate, ask, key, scene, misses) · **Levers:** `letterSoundLinkLevers.ts` (one lever set) · **Generator:** `service/literacy/gemini-letter-sound-link.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`letter-sound-link`, `...bossEntry(letterSoundLinkCard)`)
+- **Status:** ACTIVE (no open conflicts)
 
 Derived as step 1 of handoff 22 L1 (`qa/live-runtime-handoffs/22-literacy-levers.md:50`), before
 in-item levers are added to `hear_see`. Channel [4] (calibration) not attempted (auth, as for
@@ -35,22 +35,22 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Probe:** `npm test -- gemini-letter-sound-link letterSoundLinkDomain`; eval-test `componentId=letter-sound-link&evalMode=hear_see&grade=K` → every letter in group, exactly 2 options, 1 correct.
 
 ### R2 — Mode identity and answer channel · OBSERVED
-- **Property:** `see_hear` = a printed letter, the child SAYS its sound. `keyword_match` = a printed letter and two pictures, the child SAYS the picture word; nothing is tappable. `hear_see` = the tutor says the sound (`facts.soundToSay`), the child TAPS one of exactly two letter cards; the tap is the commit and is checked in code (`checkResponse`), never by the tutor, and nothing spoken is an answer. No Next / Check / Finish / Skip in any mode. On the workspace the hear_see cards are buttons labelled `Tap the letter <X>` with `data-letter-option`; the harness chooses by the uppercase letter.
+- **Property:** `see_hear` = a printed letter, the child SAYS its sound (card `SPOKEN`). `keyword_match` = a printed letter and two pictures, the child SAYS the picture word; nothing is tappable (card `SPOKEN`). `hear_see` = the tutor says the sound (`facts.soundToSay`), the child TAPS one of exactly two letter cards (card `TAP_ONE`, null key); the tap is the commit and is checked in code (`checkResponse`), never by the tutor, and nothing spoken is an answer. A speaker button asks the tutor for the sound again (`requestHear`, silent, host-authored). No Next / Check / Finish / Skip in any mode (bound-mount test). On the workspace the hear_see cards are buttons labelled `Tap the letter <X>` with `data-letter-option`; the harness chooses by the uppercase letter.
 - **Demanded by:** DI port 7 (letter NAME is a blocked response class); K PRE band; workspace; live harness.
-- **Evidence:** `letterSoundLinkDomain.ts:248-260`; `LetterSoundLinkTeaching.tsx:86-91,141-146,181-196`; `LetterSoundLink.teaching.test.tsx:229-260`; `LetterSoundLink.reader-fit.test.tsx:127-190`.
-- **Probe:** `npm test -- LetterSoundLink`; `run_live_runtime.py --primitive letter-sound-link --mode hear_see --audio` (paid; only when a change can affect tutor behaviour).
+- **Evidence:** `letterSoundLink.card.ts`; `LetterSoundLink.tsx`; `LetterSoundLink.workspace.test.tsx`.
+- **Probe:** `npm run test:primitive -- letter-sound-link`.
 
 ### R3 — Nothing names the answer before credit · OBSERVED
-- **Property:** the keyword anchor (word or picture) is never on the stage before a committed correct attempt on that item, in any mode. `see_hear` reveals its anchor only after credit and the anchor word is absent from its packet. `keyword_match` prints the picture word only under the credited picture. `hear_see` never draws its anchor at all, publishes no `expectedAnswer`, puts both letter cards in one scene group that does not say which is right, and offers no `demonstrate` (every object on its stage is an answer option). Letter colours are by vowel/consonant category only.
+- **Property:** the keyword anchor (word or picture) is never on the stage before a committed correct attempt on that item, in any mode. `see_hear` reveals its anchor only after credit; a held sound's key carries no anchor word (a clipped stop accepts it, so its key does). `keyword_match` prints the picture word only under the credited picture. `hear_see` never draws its anchor at all, has a null key (no `expectedAnswer`), puts both letter cards in one scene group that does not say which is right, and offers no `demonstrate` (every object on its stage is an answer option). Every spoken ask passes the spoken preset's `askLeaks` (no `given`). Each direction's "never say" rule rides the scene as `constraints` (either letter on the hear_see cards; either picture name on keyword_match; a word starting with the sound on see_hear). Letter colours are by vowel/consonant category only.
 - **Demanded by:** every consumer (Pedagogy rule #1); K PRE band; workspace.
-- **Evidence:** `LetterSoundLinkTeaching.tsx:28-36,127-139,209-221`; `letterSoundLinkDomain.ts:543-572`; `LetterSoundLink.teaching.test.tsx:146,207,217`; `liveJourneySpec.ts:869-872` (`data-letter-revealed` counts 0 before a credit).
-- **Probe:** `npm test -- LetterSoundLink.teaching LetterSoundLink.reader-fit`; journey transcript: `data-letter-revealed` = 0 until a committed success.
+- **Evidence:** `letterSoundLinkDomain.ts` (`letterSoundKey`, `workspaceScene`); `LetterSoundLink.workspace.test.tsx`; boss drive probe `reward` (`data-letter-revealed` counts 0 before a credit); boss.test.ts (saved payloads through `askLeaks`).
+- **Probe:** `npm run test:primitive -- letter-sound-link`; journey transcript: `data-letter-revealed` = 0 until a committed success.
 
 ### R4 — Session invariant: a letter is answered once and never returns as the wrong choice · OBSERVED
 - **Property:** across a session no letter is asked twice, and no letter or anchor word that an earlier item has named (answered letter; anchor of a `see-hear`/`keyword-match` item) appears as an option later. `hear-see` does not add its anchor to the named set because it never shows or says it. Enforced at the item-build boundary (`itemsFromChallenges`), so it covers cached and hand-authored payloads; the generator also retargets and excludes spent letters when picking distractors.
 - **Demanded by:** DI port 7 (probe drew 3 of 6 items solvable by elimination); N challenges = N problems.
 - **Evidence:** `letterSoundLinkDomain.ts:334-402`; `gemini-letter-sound-link.ts:419-458,700-773`; `qa/tutor-reports/letter-sound-link-live-di-*-2026-08-16.md`.
-- **Probe:** `npm test -- gemini-letter-sound-link LetterSoundLink.di-script` (session gate cases).
+- **Probe:** `npm test -- gemini-letter-sound-link` (session gate cases; the DI-script suite that also held them is deleted with the script).
 
 ### R5 — hear_see distractor shape · OBSERVED
 - **Property:** exactly two options; the wrong letter is a phonologically confusable in-group letter (`CONFUSABLE_DISTRACTORS`: voicing pairs, short-vowel pairs, m/n, l/r), not already answered, preferring one not already shown as wrong; with no in-group confusable (most of group 1) it falls back to any group letter with a different sound. `c` and `k` are never paired; a `c`/`k` target carries `sharedSoundLetters: ["c","k"]`.
@@ -65,16 +65,16 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Probe:** `npm test -- LetterSoundLink.teaching` ("records the confused letter pair").
 
 ### R7 — Support tier invariants · OBSERVED
-- **Property:** absent tier → nothing stamped, workspace assumes `medium`. On the model path the tier never changes which letter, sound, keyword or correct option is drawn; on the letter-space path (R13) it picks which letters are asked and how near the wrong letter is, never a keyword or a sound. An objective that asks for independent production forces `hard`. On the workspace the tier reaches the tutor only as `facts.supportTier`, plus `facts.coldAsk` on hard for the two spoken modes (never on `hear_see`). The generator still stamps the legacy per-challenge scaffold (`showKeywordAnchor`, `strategyHint`, `protocolHint`, `showSharedSoundHint`, `auditionBeforeCommit`) and `maxAttempts` (3/3/2); **no render path reads the five scaffold fields** — they are typed on `LetterSoundLinkChallenge` as INERT and `itemFromChallenge` does not carry them.
+- **Property:** absent tier → nothing stamped, workspace assumes `medium`. On the model path the tier never changes which letter, sound, keyword or correct option is drawn; on the letter-space path (R13) it picks which letters are asked and how near the wrong letter is, never a keyword or a sound. An objective that asks for independent production forces `hard`. On the workspace the tier reaches the tutor only as the lever set's `support` fact (`supportFact`: easy models another letter before a try, medium after a miss, hard models nothing and never says this letter's sound, or on hear_see which letter makes it); the hand-written `supportTier`/`coldAsk` facts are gone (re-based 2026-10-20). The generator still stamps the legacy per-challenge scaffold (`showKeywordAnchor`, `strategyHint`, `protocolHint`, `showSharedSoundHint`, `auditionBeforeCommit`) and `maxAttempts` (3/3/2); **no render path reads the five scaffold fields** — they are typed on `LetterSoundLinkChallenge` as INERT and `itemFromChallenge` does not carry them.
 - **Demanded by:** support-tier campaign; adaptive difficulty; workspace.
 - **Evidence:** `gemini-letter-sound-link.ts:29-133,510-517,844-858`; `LetterSoundLink.tsx:101-110`; `letterSoundLinkDomain.ts:563-570`.
 - **Probe:** eval-test `evalMode=hear_see&difficulty=easy|hard|none` → same letter scope, scaffold fields stamped/absent; `npm test -- LetterSoundLink.teaching` (coldAsk only on spoken hard).
 
-### R8 — Two mount paths and one evaluation · OBSERVED
-- **Property:** `withTeachingWorkspace` mounts `LetterSoundLinkTeaching` inside a live runtime and the scripted DISTAR drill otherwise (the scripted path is not deleted; unlike cvc-speller there is no workspace-only gate). Bound sessions send `tutoring: null`, so the catalog `tutoring` block does not reach the tutor; the tutor's instruction is `teachingWorkspace.guidance` (1854/2000 chars at adoption). The workspace mode comes from the mount pin. One evaluation per session with `LetterSoundLinkMetrics` (`phonemeToGraphemeAccuracy` = hear-see items; keyword-match counts toward neither direction).
+### R8 — One mount path and one evaluation · OBSERVED (re-based 2026-10-20)
+- **Property:** `withWorkspaceOnly` mounts the surface inside a live runtime; anything else shows the shared "needs the tutor" card (the scripted DISTAR drill, its script and the catalog `tutoring` block are deleted). The tutor's instruction is the boss guidance built from the card (`boss-card.mjs letter-sound-link`, ~2970/4000). The workspace mode comes from the mount pin. One evaluation per session with `LetterSoundLinkMetrics` (`phonemeToGraphemeAccuracy` = hear-see items; keyword-match counts toward neither direction).
 - **Demanded by:** workspace (LA-14); IRT/mastery.
-- **Evidence:** `LetterSoundLink.tsx:593-599`; `LetterSoundLinkTeaching.tsx:97-123`; `LetterSoundLink.teaching.test.tsx:414`; adoption report.
-- **Probe:** `npm test -- LetterSoundLink.teaching lessonWorkspacePlan`.
+- **Evidence:** `LetterSoundLink.tsx`; `LetterSoundLink.workspace.test.tsx` (metrics, one submission).
+- **Probe:** `npm run test:primitive -- letter-sound-link`.
 
 ### R9 — The tutor never names a letter on the hear_see stage · OBSERVED
 - **Property:** on `hear_see` the tutor says the sound (`soundToSay`, code-owned utterable spelling from `spokenSoundFor`: stretched for held sounds, slash notation for stops) and stops; it never says, spells or points out either letter on screen, and judges nothing it hears. On the spoken modes a letter NAME is named in the assignment as the miss, not accepted.
@@ -82,11 +82,11 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Evidence:** `letterSoundLinkDomain.ts:492-522`; `host-text-source-2026-09-21.md:40` (hear_see 3/3); `LetterSoundLink.teaching.test.tsx:182`.
 - **Probe:** live journey transcript on `hear_see`: no letter name of either option before the tap.
 
-### R10 — Pre-reader chrome, scripted path · OBSERVED
-- **Property:** on the scripted drill at grade K the group/mode badges are hidden; the challenge counter is dots only. (The workspace card shows "Letter group N" and a mode badge at every grade — not covered by RF-1/RF-2, which predate it.)
+### R10 — Pre-reader chrome · OBSERVED (re-based onto the workspace 2026-10-20)
+- **Property:** at grade K (the default) the "Letter group N" line and the mode badge are hidden; the challenge counter is dots only. A reader grade keeps them.
 - **Demanded by:** K PRE band (RF-2).
-- **Evidence:** `LetterSoundLink.tsx:192-193,542-550`; `LetterSoundLink.reader-fit.test.tsx:192-205`.
-- **Probe:** `npm test -- LetterSoundLink.reader-fit` chrome gate.
+- **Evidence:** `LetterSoundLink.tsx` (`isPreReader`); `LetterSoundLink.workspace.test.tsx` chrome case.
+- **Probe:** `npm test -- LetterSoundLink.workspace`.
 
 ### R11 — Misconception remediation · OBSERVED
 - **Property:** a `remediationFocus` stamps a per-mode private `remediationMove` (`contrast_sound` / `contrast_letter` / `contrast_keyword`) and steers the wrong option toward the diagnosed confusion; `hear_see` claims it only when both named letters are in the group. Without a focus the output is untagged. The move is never rendered.
@@ -98,6 +98,7 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Property:** `hear_see` declares up to three levers (`letterSoundLinkLevers.ts`), none on the spoken modes. `keyword_under_both` draws a keyword picture under BOTH cards alike, only when both pictures read as their word and neither letter nor keyword comes up in a later item (R4); the scene says "under each card" and never which picture is where. It is the one exception to "the anchor is drawn only after credit" (R3), since it marks neither card. `voice_feel_model` appears only on a voicing-pair item: pictures of another pair (snake sss / bee zzz, or wind fff / race car vvv), no letters. `pair_model` (help, added 2026-10-09) draws two OTHER letter cards with their keyword pictures beside the item, of the same sound kinds as the item's two cards (so it marks neither), using no session letter, keyword or picture (`pairModelLeak`); on a group-1 session that uses all six letters it comes from outside the group, as `letter_model` does. `far_letter_pair` (simplify) opens an ungraded practice item with a new sound whose letters the session never uses, against a foil of the other kind. A pull is a synchronous commit; the next attempt records the lever. `demonstrate` stays refused (R9).
 - **Demanded by:** handoff 22 L1; trigger ladder (handoff 21 S2).
 - **Evidence:** `qa/eval-reports/letter-sound-link-levers-2026-09-28.md`.
+- **Lever set (2026-10-20):** one `leverSet` (`LETTER_SOUND_LEVERS`): `keyword_under_both` is `legend`, `pair_model`, `voice_feel_model` and `letter_model` are `model` (so the set carries `support`), `far_letter_pair` is `easier`. The pulled lever's scene fact is `onScreen` (was `levers_on_screen`).
 - **Probe:** `npm test -- letterSoundLinkLevers LetterSoundLink.levers.workspace`.
 
 ### R13 — Letter space: with a support tier, code picks the letters · OBSERVED 2026-10-13
@@ -110,12 +111,12 @@ None open.
 
 ## Catalog projection
 
-- **description:** stale. Still the DI clock ("the tutor asks, waits, judges the answer and its own affirmation moves the lesson on", "Requires a microphone"). Proposed: keep the three-direction split; replace the DI sentence with "the tutor teaches in its own words; Find the Letter is checked by the tap". Not applied (catalog edits re-route lessons).
-- **constraints:** stale on one point: "Say the Sound can only target letters whose sound can be HELD" — clipped stops t p c k h d g b are askable since the 2026-09-05 ruling (R1). Rest faithful.
-- **evalModes:** not re-read this run.
-- **tutoring:** stale DI block (`[LSL_TAP]`, scripted correction lines); bound workspace sessions send `tutoring: null` (R8). Removal is an `/add-live-tutor-tools` cleanup.
+- **description / constraints / see_hear description:** corrected 2026-10-20 (boss migration): the DI-clock sentence replaced ("the tutor asks and teaches in its own words ... the activity checks the tap"), and Say the Sound now names the clipped stops (R1).
+- **evalModes:** keyword_match gained its per-mode `affordances` (`answers: ['spoken']`), matching the card.
+- **tutoring:** deleted (the boss guidance replaces it).
 
 ## Changelog
+- 2026-10-20 — **boss migration** (wave 2, bucket D). One `spokenBoss`: see_hear and keyword_match `SPOKEN` with a `SpokenKey` (`letterSoundKey`), hear_see `TAP_ONE` with a null key played through `show`. Deleted: `letterSoundLinkScript.ts` (DISTAR cues), `LetterSoundLinkTeaching.tsx` (merged into `LetterSoundLink.tsx`), the scripted drill, `adapters/letterSoundLinkLive.ts`, the `DI_PORTS` row, `letterSoundLinkPipPose` and both Pip surface tests, the catalog `tutoring` block and guidance prose, the DI-script and reader-fit suites (still-true assertions moved to `LetterSoundLink.workspace.test.tsx`). Re-based: R2, R3, R7 (support fact), R8, R10 (chrome now gated on the workspace), R12 (lever set). Guidance prose dropped because the shared doctrine says it: "judge nothing you hear" (activity judge), "demonstrate takes ids", "you cannot change the letter... or answer for the child"; "talk about the picture that does NOT start with it" dropped (the doctrine forbids ruling a choice out).
 - 2026-10-13 — **R13 letter space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/letter-sound-link/before.txt`): the group's letters in the same order with the same wrong letters at every tier. After: see_hear group 1 easy p t s n → hard a i n s; hear_see group 2 easy m/t, d/k → hard m/n, e/a; keyword_match group 3 easy bat vs run → hard up vs octopus. R7 narrowed to the model path. `LETTER_GROUPS` now comes from `letterGroups.ts`.
 
 - 2026-10-09 — J12 per-item gaps: `pair_model` (help) on hear_see answers `other_letter` / `other_short_vowel` on items where `keyword_under_both` is refused (a later item uses a card letter, or a card is `i`) and `far_letter_pair` has no free pair (group 1). R3/R4 hold: no session letter or picture, kinds symmetric. The tutor says the two model sounds only (not the picture words, which the two-pictures guidance line forbids naming on keyword-match). Journey row rebuilds `~simpler` items with `fartherPair`. `npm test -- letterSoundLinkLevers LetterSoundLink.levers.workspace` 46/46.

@@ -4,12 +4,11 @@
  * the data at "I'm done!"; there is no answer key, only the rule.
  *
  * Pure: the component, the workspace scene, the generator and the tests read the same rule, check and levers.
- * Levers start bare (keeping the bars straight IS the task) and come on a miss:
+ * Levers (declared in `BAR_LEVERS`, barModelLevers.ts) start bare (keeping the bars straight IS the task) and come on a miss:
  * - `level_line` (help): a dashed line across the graph at the top of the bar the ask compares against.
  * - `bar_counts` (help): how many pictures the learner has put in each bar, above it. Never a number the ask needs.
  * - `two_bars` (simplify): an ungraded practice graph with only two bars and the same ask, then the full graph.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { BarModelChallenge } from './BarModel';
 
 export type GraphRuleKind = 'most' | 'fewest' | 'same' | 'more_than';
@@ -117,33 +116,4 @@ export function twoBarPractice(c: BarModelChallenge): BarModelChallenge | null {
   const values = keep.map(i => ({ ...c.values[i], value: 0 }));
   const rule: GraphRule = { ...r, a: keep.indexOf(r.a), ...(r.b != null ? { b: keep.indexOf(r.b) } : {}) };
   return { ...c, id: `${c.id}${TWO_BARS}`, values, graphRule: rule, prompt: makeGraphAsk(values.map(v => v.label), rule) };
-}
-
-export function makeGraphLevers(c: BarModelChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  const r = c?.graphRule;
-  if (!c || !r || c.evalMode !== 'make_graph') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: MakeGraphMiss[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const a = c.values[r.a]?.label ?? 'the named', b = c.values[r.b ?? -1]?.label ?? 'the other';
-  const extreme = r.kind === 'fewest' ? 'shortest' : 'tallest';
-  const line = r.kind === 'more_than'
-    ? lever(LINE_LEVER, 'help', 'shown', ['reversed', 'short_by_more', 'over_by_more'],
-      `The learner puts in far too many or too few extra ${a}, or makes ${b} the taller bar.`,
-      `Draws a dashed line across the graph at the top of the ${b} bar; the ${a} pictures above the line are the extra ones. It moves as the learner puts pictures in or takes them out.`)
-    : r.kind === 'same'
-      ? lever(LINE_LEVER, 'help', 'shown', ['not_same'], `The learner makes the ${a} and ${b} bars different heights.`,
-        `Draws a dashed line across the graph at the top of the ${a} bar, so the learner can see where the ${b} bar reaches against it. It moves as the learner puts pictures in or takes them out.`)
-      : lever(LINE_LEVER, 'help', 'shown', ['reversed', 'tied', 'other_row'],
-        `The learner cannot see which bar is ${extreme}, or makes another bar as ${r.kind === 'most' ? 'tall' : 'short'} as the ${a} bar.`,
-        `Draws a dashed line across the graph at the top of the ${a} bar, so each bar shows whether it reaches past it. It moves as the learner puts pictures in or takes them out.`);
-  const counts = lever(COUNTS_LEVER, 'help', 'both',
-    r.kind === 'more_than' ? ['one_short', 'one_over'] : r.kind === 'same' ? ['not_same', 'left_empty'] : ['tied'],
-    r.kind === 'more_than' ? `The learner puts in one too many or one too few extra ${a}.`
-      : r.kind === 'same' ? `The learner cannot tell whether the ${a} and ${b} bars hold the same number of pictures.`
-        : 'The learner makes two bars the same height without seeing it.',
-    'Shows above each bar how many pictures the learner has put in it so far. Never a number the ask needs.');
-  const practice = twoBarPractice(c);
-  return [line, counts, ...(practice || pulled.includes(TWO_BARS_LEVER) ? [lever(TWO_BARS_LEVER, 'simplify', 'shown',
-    [...MAKE_GRAPH_MISSES], 'The learner cannot keep every bar straight while they put pictures in.',
-    `Opens an easier graph to make first with only the ${practice?.values.map(v => v.label).join(' and ') ?? 'two'} bars and the same ask, all empty. It is not graded; the full graph comes back after it.`)] : [])];
 }

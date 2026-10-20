@@ -15,7 +15,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromChallenges } from './pictureVocabularyScript';
+import { itemsFromChallenges } from './pictureVocabularyDomain';
 import { practiceItemFor } from './pictureVocabularyLevers';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -41,7 +41,7 @@ it('receptive_match: miss named, clue card, two-card practice ungraded, full ite
 
   const receipt = h.dispatch('pull_lever', { lever: 'function_cue' });
   expect(q(h, '[data-lever="clue-card"]')[0].textContent).toContain(item.clue!);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toContain(item.clue!);
+  expect(String(receipt.state.task!.demand.onScreen)).toContain(item.clue!);
   expect(h.view.container.textContent).not.toMatch(new RegExp(`\\b${item.word}\\b`, 'i'));
 
   h.dispatch('pull_lever', { lever: 'two_cards_far' });
@@ -89,7 +89,7 @@ it.each([['opposite', 'opposite_model'], ['association', 'goes_with_model'], ['g
   expect(shown.length).toBeGreaterThan(0);
   const used = new Set(items.flatMap(i => [i.word, i.baseWord ?? '', ...(i.scaleWords ?? [])]).map(w => w.toLowerCase()));
   for (const w of shown) expect(used.has(w)).toBe(false);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(shown[0]));
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(new RegExp(shown[0]));
   h.say(items[0].word); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: [lever] });
   h.close();

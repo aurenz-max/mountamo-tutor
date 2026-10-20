@@ -14,7 +14,7 @@ import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { FALLBACK_PAIR, challengesFromPair } from '../../../service/literacy/gemini-story-bridge';
-import { itemsFromChallenges } from './storyBridgeScript';
+import { itemsFromChallenges } from './storyBridgeDomain';
 import type { StoryBridgeChallengeType } from './StoryBridge';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -41,8 +41,8 @@ it('match_character: the anchor card alone shows its event picture; the right ta
   const marks = q(h, '[data-lever="anchor-action"]');
   expect(marks).toHaveLength(1);
   expect(marks[0].closest('button')!.getAttribute('aria-label')).toMatch(new RegExp(`^${item.anchor.name}, the friend to compare`));
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toContain(item.anchor.sentence);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toContain(item.target.sentence);
+  expect(String(receipt.state.task!.demand.onScreen)).toContain(item.anchor.sentence);
+  expect(String(receipt.state.task!.demand.onScreen)).not.toContain(item.target.sentence);
   h.touch(`choice-${item.correctChoiceId}`);
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['anchor_action'] });
   h.close();
@@ -81,7 +81,7 @@ it('sequence_two: story one in order with the asked event lit; story two stays m
 
 const levers = (h: WorkspaceHarness) => h.state().task!.workspace!.levers?.map(l => [l.id, l.pulled]);
 const attempts = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts;
-const onScreen = (h: WorkspaceHarness) => String(h.state().task!.demand.levers_on_screen ?? '');
+const onScreen = (h: WorkspaceHarness) => String(h.state().task!.demand.onScreen ?? '');
 
 it('say_alike: friend_events puts each named friend\'s event picture on its card in one commit; a second pull changes nothing; the next answer records it', () => {
   const { h, items: [item] } = mount('say_alike');
@@ -94,9 +94,9 @@ it('say_alike: friend_events puts each named friend\'s event picture on its card
   expect(marks.map(m => m.textContent).sort()).toEqual([item.anchor.eventEmoji, item.target.eventEmoji].sort());
   expect(marks.map(m => m.closest('button')!.textContent)).toEqual(expect.arrayContaining(
     [expect.stringContaining(item.anchor.name), expect.stringContaining(item.target.name)]));
-  const fact = String(receipt.state.task!.demand.levers_on_screen);
-  expect(fact).toContain(item.anchor.sentence);
-  expect(fact).toContain(item.target.sentence);
+  const fact = String(receipt.state.task!.demand.onScreen);
+  expect(fact).toContain(`the sentence about ${item.anchor.name}`);
+  expect(fact).toContain(`the sentence about ${item.target.name}`);
   expect(fact).not.toContain(item.comparisonSummary);
   expect(levers(h)).toEqual([['friend_events', true], ['ask_sign', false]]);
   // A refused pull: the screen, the levers and the attempts are unchanged (the runtime revision may still move).

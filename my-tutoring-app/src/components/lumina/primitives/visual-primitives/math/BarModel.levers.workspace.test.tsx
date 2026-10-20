@@ -70,17 +70,17 @@ it('read_one_to_one: the easier graph is ungraded, keeps itself on Try again, an
   expect(levers(h)).toEqual([]);
   expect(q(h, '[data-practice-graph]')).toHaveLength(1);
   // Two rows: blocks (4 pictures) and bears; the easier graph's choices are its own.
-  expect(q(h, '[data-pip-object^="row-"]')).toHaveLength(2);
+  expect(q(h, '[data-graph-row]')).toHaveLength(2);
   h.press('5');
   expect(last(h)).toMatchObject({ itemId: 'g1~simpler', correct: false });
   h.dispatch('retry');
   expect(h.state().task!.itemId).toBe('g1~simpler');
-  expect(q(h, '[data-pip-object^="row-"]')).toHaveLength(2);
+  expect(q(h, '[data-graph-row]')).toHaveLength(2);
   h.press('4');
   expect(last(h)).toMatchObject({ itemId: 'g1~simpler', correct: true });
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('g1');
-  expect(q(h, '[data-pip-object^="row-"]')).toHaveLength(3);
+  expect(q(h, '[data-graph-row]')).toHaveLength(3);
   expect(q(h, '[data-practice-graph]')).toHaveLength(0);
   expect(h.view.container.textContent).not.toContain("That's correct.");
   h.press('8');
@@ -108,7 +108,7 @@ it('build_one_to_one: sort_pile sorts the pile in place; the two-kind practice c
   h.dispatch('retry');
   h.dispatch('pull_lever', { lever: 'simpler_graph' });
   expect(h.state().task!.itemId).toBe('g1~simpler');
-  expect(q(h, '[data-pip-object^="row-"]')).toHaveLength(2);
+  expect(q(h, '[data-graph-row]')).toHaveLength(2);
   expect(q(h, '[data-pile-line]')).toHaveLength(0);
   for (const _ of [1, 2, 3]) h.press('Blocks row');
   for (const _ of [1, 2]) h.press('Bears row');
@@ -123,14 +123,15 @@ it('build_one_to_one: sort_pile sorts the pile in place; the two-kind practice c
   h.close();
 });
 
-it('build_graph: step_marks is refused before a bar is set and changes nothing; then it counts marks to the learner\'s tallest bar', () => {
+it('build_graph: step_marks is not offered before a bar is set and a pull changes nothing; then it counts marks to the learner\'s tallest bar', () => {
   const h = mount('build_graph', { id: 'g1', evalMode: 'build_graph', graphStyle: 'scaled_bar', scale: { step: 2, max: 20 },
     prompt: 'Build the graph: Lions=12, Zebras=8.', values: [{ label: 'Lions', value: 0 }, { label: 'Zebras', value: 0 }],
     expectedDataset: [{ label: 'Lions', value: 12 }, { label: 'Zebras', value: 8 }], expectedScaleStep: 2, availableScaleSteps: [1, 2, 5] });
   const before = h.view.container.innerHTML;
   expect(h.dispatch('pull_lever', { lever: 'step_marks' }).status).toBe('blocked');
   expect(h.view.container.innerHTML).toBe(before);
-  expect(levers(h).find(l => l.id === 'step_marks')!.pulled).toBe(false);
+  // Not offered until a bar is set: there is nothing to count marks to.
+  expect(levers(h).map(l => l.id)).not.toContain('step_marks');
   for (let i = 0; i < 10; i++) h.press('Increase Lions');
   const receipt = h.dispatch('pull_lever', { lever: 'step_marks' });
   expect(receipt.status).toBe('committed');
@@ -165,7 +166,7 @@ it('match_to_bar: pile_row draws the group as a row in the graph\'s columns, unm
   expect(g.view.container.textContent).toContain('Afternoon');
   const paired = g.dispatch('pull_lever', { lever: 'pair_rows' });
   expect(q(g, '[data-lever="pair-rows"]')).toHaveLength(1);
-  expect(Array.from(q(g, '[data-pip-object^="row-"]')).map(r => r.textContent!.replace(/[^A-Za-z: ]/g, '').trim())).toEqual(
+  expect(Array.from(q(g, '[data-graph-row]')).map(r => r.textContent!.replace(/[^A-Za-z: ]/g, '').trim())).toEqual(
     ['Blocks: Morning', 'Blocks: Afternoon', 'Bears: Morning', 'Bears: Afternoon']);
   expect(String(paired.state.task!.demand.onScreen)).toMatch(/Morning above Afternoon/);
   g.dispatch('pull_lever', { lever: 'word_model' });

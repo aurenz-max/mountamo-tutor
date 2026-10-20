@@ -155,7 +155,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     const scene = wordProblemScene(current, { familyShown });
     const levers = practiceSteps ? [] : WORD_PROBLEM_LEVERS.declare(sessionItem, null, pulled);
     const onScreen = practiceSteps ? '' : WORD_PROBLEM_LEVERS.onScreen(sessionItem, null, pulled);
-    workspace.current = { ...leverScene(scene, { support: WORD_PROBLEM_LEVERS.support(current), onScreen }),
+    workspace.current = { ...leverScene(scene, { support: WORD_PROBLEM_LEVERS.support(current, null), onScreen }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the page changes before this returns.
       pullLever: (id: string) => {

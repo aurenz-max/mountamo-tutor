@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 /**
- * ph-explorer on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
- * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
- * Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the spoken
- * expectedAnswer, nothing on screen states it before credit, a wrong tap names its miss, and every miss has a lever.
+ * ph-explorer on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set, mounted the way a lesson mounts
+ * it. Every item is a code-keyed closed choice, tapped and checked or said aloud: the key is published only as the
+ * spoken key (`phKey`), nothing on screen states it before credit, a wrong tap names its miss, and every miss has a lever.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -18,11 +17,14 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { PhExplorerData, Substance } from './PhExplorer';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
 import {
-  bandOf, cupsToNeutral, keyChoice, mixedPH, phHarnessAnswers, phItems, phMiss, PH_MISSES, testSubstances, workspaceAssignment,
+  askOf, bandOf, cupsToNeutral, keyChoice, mixedPH, phGiven, phHarnessAnswers, phItems, phKey, phMiss, testSubstances,
   type PhItem, type PhMode,
 } from './phExplorerWorkspace';
-import { CHART_LEVER, FEWER_LEVER, fewerChoices, LITMUS_LEVER, METER_LEVER, phLevers, stepLines, stepsLeak, STEPS_LEVER } from './phExplorerLevers';
+import { CHART_LEVER, FEWER_LEVER, fewerChoices, LITMUS_LEVER, METER_LEVER, PH_LEVERS, stepLines, stepsLeak, STEPS_LEVER } from './phExplorerLevers';
+import { PH_MISSES } from './phExplorer.card';
+import { phExplorerBoss } from './phExplorer.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -54,10 +56,13 @@ it.each(MODES)('%s binds as a spoken-or-tapped choice whose key stays out of the
   expect(getComponentById('ph-explorer')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(phExplorerBoss.assignment(item).task);
+  expect(phExplorerBoss.assignment(item)).toMatchObject({ response: 'speech', acceptsGesture: true });
   const ws = h.state().task!.workspace!;
   expect(demand(h).response).toBe('speech');
   expect(ws.expectedAnswer).toContain(item.mode === 'test' ? keyChoice(item).toLowerCase() : keyChoice(item));
+  // The scene's rule is this item's fact, never how the learner answers (the card's moves).
+  expect(String(demand(h).constraints)).not.toMatch(/tap|Check Answer/i);
   const facts = JSON.stringify(demand(h));
   expect(facts).not.toMatch(/fact line|answer is|correct/i);
   // No description, no real-world line, no Next, no meter before a mix.
@@ -150,14 +155,17 @@ it('indicator: color_chart draws the chart and names no band; fewer_choices open
 it('neutralize: the meter is refused before a mix, a wrong mix shows only its colour, then ph_meter reads it; steps never name an amount', () => {
   const h = mount('neutralize');
   const item = current(h, 'neutralize');
-  expect(levers(h).map(([id]) => id)).toEqual([STEPS_LEVER, METER_LEVER, FEWER_LEVER]);
+  // The meter is offered only once there is a mix to read.
+  expect(levers(h).map(([id]) => id)).toEqual([STEPS_LEVER, FEWER_LEVER]);
   expect(h.dispatch('pull_lever', { lever: METER_LEVER }).status).toBe('blocked');
   const wrong = phHarnessAnswers(item).plainWrong;
   answer(h, wrong);
   expect(PH_MISSES.neutralize).toContain(last(h)!.miss);
   expect(String(demand(h).mixed)).toMatch(/^The learner mixed in .*; the beaker turned \w+\.$/);
   expect(h.view.container.querySelector('[data-lever="ph-meter"]')).toBeNull();
+  expect(levers(h).map(([id]) => id)).toEqual([STEPS_LEVER, METER_LEVER, FEWER_LEVER]);
   expect(h.dispatch('pull_lever', { lever: METER_LEVER }).status).toBe('committed');
+  expect(String(demand(h).onScreen)).toMatch(/^A pH meter beside the beaker reads \d+\.\d for the last mix\.$/);
   expect(h.view.container.querySelector('[data-lever="ph-meter"]')!.textContent).toMatch(/^pH \d+\.\d$/);
   expect(h.dispatch('pull_lever', { lever: STEPS_LEVER }).status).toBe('committed');
   for (const line of stepLines(item)) expect(stepsLeak(line), line).toBe(false);
@@ -184,7 +192,7 @@ describe('the pure rules', () => {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...PH_MISSES[mode]].sort());
       for (const item of items(mode)) {
         for (const c of item.choices) expect(!!phMiss(item, c), `${item.id} ${c}`).toBe(c !== keyChoice(item));
-        const ls = phLevers(item, [], SUBS, items(mode));
+        const ls = PH_LEVERS.declare(item, { substances: SUBS, items: items(mode), meterPH: null }, []);
         for (const miss of PH_MISSES[mode]) {
           expect(ls.find(l => l.id === nextLever(ls, miss))!.kind).toBe('help');
         }
@@ -192,6 +200,21 @@ describe('the pure rules', () => {
       }
     }
     expect(entry.teachingWorkspace!.levers).toBe(true);
+  });
+
+  it('no ask says its spoken key, and the key takes the ways a learner says the choice', () => {
+    for (const mode of MODES) {
+      for (const item of items(mode)) expect(askLeaks(askOf(item), phKey(item), phGiven(item)), item.id).toEqual([]);
+    }
+    const test = items('test').find(i => keyChoice(i) === 'Base')!;
+    expect(phKey(test)).toMatchObject({ answer: 'base', menu: ['acid', 'base', 'neutral'] });
+    expect(phKey(test).alsoAccept).toContain('alkaline');
+    const lemon = items('indicator').find(i => i.mode === 'indicator' && i.substance.id === 'lemon')!;
+    expect(phKey(lemon)).toMatchObject({ answer: 'pH 0-2', acceptRule: 'One whole number from 0 to 2 counts too.' });
+    // The 1 cup of acid is said by design, and 1 cup can be the answer.
+    const equal = items('neutralize').find(i => keyChoice(i) === '1 cup')!;
+    expect(askLeaks(askOf(equal), phKey(equal))).not.toEqual([]);
+    expect(phKey(equal).alsoAccept).toContain('one cup');
   });
 
   it('indicator misses: the other side of purple, the next band, a far band', () => {
@@ -222,7 +245,7 @@ describe('the pure rules', () => {
         expect(simpler.choices).toContain(keyChoice(simpler));
         expect(JSON.stringify({ ...simpler, id: '' })).not.toBe(JSON.stringify({ ...item, id: '' }));
         expect(fewerChoices(simpler, SUBS, items(mode))).toBeNull();
-        expect(phLevers(simpler, [], SUBS, items(mode))).toEqual([]);
+        expect(PH_LEVERS.simpler(simpler, { substances: SUBS, items: items(mode), meterPH: null }, FEWER_LEVER)).toBeNull();
       }
     }
     expect(fewerChoices(items('test')[0], SUBS)).toBeNull();

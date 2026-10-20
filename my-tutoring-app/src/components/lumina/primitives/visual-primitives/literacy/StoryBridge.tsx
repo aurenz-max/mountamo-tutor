@@ -6,10 +6,10 @@
  * verdict the stage shows only accessible picture references and names; after
  * the verdict it places one evidence excerpt from each story side by side.
  *
- * It runs only on the shared tutor/JEV teaching workspace (workspace rollout C3; the
- * scripted runner was retired, LA-14, user ruling 09-23: one path). Taps are checked by
- * the activity; spoken comparisons are judged by the observer; the runtime owns
- * progression. An unbound mount shows the shared "needs the tutor" card.
+ * Taught on the shared teaching workspace only (the boss: `storyBridge.card.ts` +
+ * `storyBridge.boss.ts`). Taps are checked by the activity; spoken comparisons are judged
+ * by the tutor against a meaning key; the runtime owns progression. A mount with no tutor
+ * shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -20,24 +20,23 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryBridgeMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyBridgeScript';
 import {
-  describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeMiss, storyBridgeScene,
-} from './storyBridgeWorkspace';
+  describeStoryBridgeTap, evidenceFor, hearStoriesRequest, storyBridgeMiss, storyBridgeScene, type StoryBridgeItem,
+} from './storyBridgeDomain';
+import { storyBridgeBoss, storyBridgeItems } from './storyBridge.boss';
 import {
-  ANCHOR_LEVER, ASK_SIGN_LEVER, FRIENDS_LEVER, SETTING_LEVER, TIMELINE_LEVER, TWO_IDEAS_LEVER, TWO_QUESTIONS_LEVER, askSign,
-  leversOnScreen, storyBridgeLevers,
+  ANCHOR_LEVER, ASK_SIGN_LEVER, FRIENDS_LEVER, SETTING_LEVER, STORY_BRIDGE_LEVERS, TIMELINE_LEVER, TWO_IDEAS_LEVER,
+  TWO_QUESTIONS_LEVER, askSign,
 } from './storyBridgeLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
 
 export type StoryBridgeChallengeType =
   | 'match_character'
@@ -150,11 +149,10 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
     title, stories = [], challenges = [], instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `story-bridge-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const items = useMemo(() => itemsFromChallenges(challenges, stories), [challenges, stories]);
+  const items = useMemo(() => storyBridgeItems({ challenges, stories }), [challenges, stories]);
   const [tappedChoice, setTappedChoice] = useState<string | null>(null);
   const [choiceOrder, setChoiceOrder] = useState<string[]>([]);
   const tapLogRef = useRef<Record<string, string[]>>({});
@@ -202,7 +200,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
 
   const runner = useWorkspaceRunner<StoryBridgeItem>({
     primitiveId: 'story-bridge',
-    assignment: storyBridgeAssignment,
+    assignment: storyBridgeBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -217,7 +215,6 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
     onCorrectionRetry: (item) => {
       setTappedChoice(null);
       setChoiceOrder(shuffle(item.choiceIds));
-      pip.clear();
     },
   });
 
@@ -227,15 +224,14 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
   const pulledLevers = leverState.item === currentItem?.id ? leverState.pulled : [];
   const pulled = (id: string) => !revealed && pulledLevers.includes(id);
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the on-screen fact.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    const levers = storyBridgeLevers(currentItem, pulledLevers);
-    const scene = storyBridgeScene(currentItem);
-    const onScreen = leversOnScreen(currentItem, pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}) },
+    const levers = STORY_BRIDGE_LEVERS.declare(currentItem, undefined, pulledLevers);
+    workspace.current = {
+      ...leverScene(storyBridgeScene(currentItem), {
+        support: STORY_BRIDGE_LEVERS.support(currentItem, undefined),
+        onScreen: STORY_BRIDGE_LEVERS.onScreen(currentItem, undefined, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -249,41 +245,20 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
   });
 
   /** Asks the tutor to read both stories again: a silent host request, never the answer. */
+  const { requestHear } = runner;
   const hearStories = useCallback(() => {
-    if (!currentItem) return;
-    ctx.sendText(hearStoriesRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase, the marked question side, and the
-  // child's own tap; Pip never answers, taps, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = storyBridgePipPose({
-      mode: currentItem.mode, gesture: currentItem.answerKind === 'gesture',
-      anchorFirst: currentItem.anchorStory.id === currentItem.storyA.id,
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Story bridge', dock: pip.dock.current, targets, pose };
-  });
+    if (currentItem) requestHear(hearStoriesRequest(currentItem));
+  }, [requestHear, currentItem]);
 
   const handleTap = useCallback((choiceId: string) => {
     const item = runner.currentItem;
     if (!item || item.answerKind !== 'gesture') return;
     if (!runner.canAttempt || showSummary || runner.isAwaitingGesture()) return;
-    pip.look(`choice-${choiceId}`);
     setTappedChoice(choiceId);
     (tapLogRef.current[item.id] ??= []).push(choiceId);
     commitGesture(runner, { response: describeStoryBridgeTap(item, choiceId), correct: choiceId === item.correctChoiceId,
       cue: () => describeStoryBridgeTap(item, choiceId), miss: storyBridgeMiss(item, choiceId) });
-  }, [runner, showSummary, pip]);
+  }, [runner, showSummary]);
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!runner.practiceSummary) return [];
@@ -306,7 +281,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
     const pipId = role === 'choice' ? `choice-${character.id}` : role === 'anchor' && character.id === currentItem?.anchor.id ? 'anchor' : null;
     return (
       <button key={character.id} type="button" onClick={() => handleTap(character.id)}
-        ref={pipId ? pip.ref(pipId) : undefined} data-pip-object={pipId ?? undefined}
+        data-pip-object={pipId ?? undefined}
         disabled={!tappable || !runner.canAttempt || showSummary}
         aria-label={role === 'anchor' ? `${character.name}, the friend to compare` : character.name}
         className={`flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl border-2 px-3 py-3 transition-all ${answerStateClass(state)} ${role === 'anchor' ? 'ring-2 ring-cyan-300/70 shadow-lg shadow-cyan-400/20 scale-105' : ''} ${tappable ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}>
@@ -377,7 +352,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
             if (!event) return null;
             return (
               <button key={id} type="button" onClick={() => handleTap(id)} disabled={!runner.canAttempt || revealed}
-                ref={pip.ref(`choice-${id}`)} data-pip-object={`choice-${id}`}
+                data-pip-object={`choice-${id}`}
                 className={`rounded-2xl border-2 p-4 text-center transition-all ${answerStateClass(choiceState(id))}`}>
                 <span className="block text-4xl" role="img" aria-hidden>{event.emoji}{event.eventEmoji}</span>
                 <span className="mt-1 block text-xs text-slate-300">Story two event</span>
@@ -398,7 +373,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
       <div className={`grid gap-2 ${currentItem.mode === 'match_setting' ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {(choiceOrder.length ? choiceOrder : currentItem.choiceIds).map((id) => (
           <button key={id} type="button" onClick={() => handleTap(id)} disabled={!runner.canAttempt || revealed}
-            ref={pip.ref(`choice-${id}`)} data-pip-object={`choice-${id}`}
+            data-pip-object={`choice-${id}`}
             className={`rounded-2xl border-2 p-4 text-center transition-all ${answerStateClass(choiceState(id))}`}>
             <span className="block text-3xl" role="img" aria-hidden>{labels[id]?.icon}</span>
             <span className="mt-1 block text-xs font-semibold text-slate-100">{labels[id]?.label}</span>
@@ -438,11 +413,10 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
                 aria-label="Hear both stories again"><span className="text-xl">🔁</span></button>
               <LuminaReadAloudGlyph size={32} speaking={runner.tutorSpeaking} />
             </div>
-            {/* Pip's dock sits above both stories: every marked question side
-                is below it, and the choices sit below those. */}
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-            <div ref={pip.ref('stories')} data-pip-object="stories" className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
+            {/* Pip's dock sits above both stories; the stories and the choices are the workspace it watches. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+            <div data-pip-object="stories" className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
               {renderStoryPanel(currentItem.storyA)}
               <div className={`flex items-center justify-center rounded-2xl px-3 py-2 md:min-w-[4.5rem] bg-gradient-to-b from-sky-500/10 via-sky-500/25 to-sky-500/10 border border-sky-400/20 transition-all duration-500 ${revealed ? 'shadow-lg shadow-cyan-400/20' : ''}`} aria-hidden>
                 {/* Help (say alike / different): the two friends' faces with the ask's sign between them. */}
@@ -459,7 +433,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
               {renderStoryPanel(currentItem.storyB)}
             </div>
             {currentItem.mode === 'venn_place' && !revealed && (
-              <div ref={pip.ref('detail')} data-pip-object="detail" className="mx-auto max-w-md rounded-full border-2 border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-center text-sm font-semibold text-slate-100">💬 {currentItem.vennDetail}</div>
+              <div data-pip-object="detail" className="mx-auto max-w-md rounded-full border-2 border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-center text-sm font-semibold text-slate-100">💬 {currentItem.vennDetail}</div>
             )}
             {/* Help: one question per friend, two empty checks. Code never fills them. */}
             {currentItem.mode === 'venn_place' && pulled(TWO_QUESTIONS_LEVER) && (
@@ -472,7 +446,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
               </div>
             )}
             {currentItem.mode === 'sequence_two' && !revealed && (
-              <div ref={pip.ref('event')} data-pip-object="event" className="mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-3">
+              <div data-pip-object="event" className="mx-auto flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-3">
                 <span className="text-xs uppercase tracking-wide text-slate-400">Story one event</span>
                 <span className="text-4xl" role="img" aria-hidden>{currentItem.anchor.emoji}{currentItem.anchor.eventEmoji}</span>
               </div>
@@ -493,6 +467,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
               </div>
             )}
             {renderSimpleChoices()}
+            </PipWorkspace>
             {revealed && evidence && (
               <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 p-4 space-y-3">
                 <p className="text-center text-base font-semibold text-emerald-200">{evidence.summary}</p>

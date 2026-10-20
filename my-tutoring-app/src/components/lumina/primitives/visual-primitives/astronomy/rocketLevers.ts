@@ -1,21 +1,22 @@
 /**
- * The in-item levers on rocket-builder (`/add-support-tiers`; report qa/eval-reports/rocket-builder-levers-2026-10-16.md).
- * No real-learner evidence: the misses are what `rocketMiss` observes. Every lever starts released; `config.difficulty`
- * changes the items, not the levers.
+ * The in-item levers on rocket-builder, as one lever set (`bossLevers.ts`; `/add-support-tiers`, report
+ * qa/eval-reports/rocket-builder-levers-2026-10-16.md). No real-learner evidence: the misses are what `optionMiss`
+ * observes. Every lever starts released; `config.difficulty` changes the items, not the levers.
  *
- * - `count_marks` (help; every mode): writes each part's own number beside its weight blocks, push arrows and coins.
+ * - `count_marks` (marks; every mode): writes each part's own number beside its weight blocks, push arrows and coins.
  *   Never a total, never push and weight side by side.
- * - `lift_card` (help; can_it_lift, add_to_lift, on_budget): a card with two boxes outside the item, one whose push is
+ * - `lift_card` (clue; can_it_lift, add_to_lift, on_budget): a card with two boxes outside the item, one whose push is
  *   more than its weight (it rises) and one whose push equals its weight (it stays), and the rule in one line.
- * - `own_weight` (help; add_to_lift): outlines the weight blocks of every part that could be added, with the note that
+ * - `own_weight` (marks; add_to_lift): outlines the weight blocks of every part that could be added, with the note that
  *   each part adds its own weight. Marks every option the same way.
- * - `fuel_card` (help; reach_target): a card with the rules about fuel, weight and dropping empty tanks. Names no rocket.
- * - `drop_one` (simplify; on the item, user ruling 09-27: a removed choice is assisted work): greys out one wrong part
- *   or rocket that is easy to rule out, while at least two untried ones remain. Not on can_it_lift (two choices).
+ * - `fuel_card` (clue; reach_target): a card with the rules about fuel, weight and dropping empty tanks. Names no rocket.
+ * - `drop_one` (custom; not can_it_lift, user ruling 09-27: a removed choice is assisted work): greys out one wrong part
+ *   or rocket that is easy to rule out, while at least two untried ones remain.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { ROCKET_MISSES } from './rocketBuilder.card';
 import {
-  costOf, flightOf, keyOf, optionCount, optionLabel, optionMiss, ROCKET_MISSES, type RocketItem, type RocketMiss,
+  costOf, flightOf, keyOf, optionCount, optionLabel, optionMiss, type RocketItem, type RocketMiss,
 } from './rocketWorkspace';
 
 export const COUNT_LEVER = 'count_marks';
@@ -54,41 +55,6 @@ export function dropTarget(item: RocketItem, s: RocketLeverState): number | null
   return [...foils].sort((a, b) => distance(b) - distance(a) || b - a)[0];
 }
 
-const lever = (id: string, kind: WorkspaceLever['kind'], s: RocketLeverState, answers: readonly RocketMiss[], when: string, does: string): WorkspaceLever =>
-  ({ id, kind, carrier: 'shown', pulled: s.pulled.includes(id), answers, when, does });
-
-/** The levers this item declares, with their state. One that cannot be pulled now and was not pulled is left out. */
-export function rocketLevers(item: RocketItem | undefined, s: RocketLeverState): WorkspaceLever[] {
-  if (!item) return [];
-  const on = (id: string) => s.pulled.includes(id);
-  const all = ROCKET_MISSES[item.mode];
-  const out: WorkspaceLever[] = [];
-  const countAnswers: Record<RocketItem['mode'], readonly RocketMiss[]> = {
-    can_it_lift: ['said_lifts', 'said_stays'], add_to_lift: ['too_weak'], on_budget: ['over_budget', 'fails_both'], reach_target: [],
-  };
-  out.push(lever(COUNT_LEVER, 'help', s, countAnswers[item.mode],
-    'The learner loses count of the blocks, arrows or coins.',
-    `Writes each part's own number beside its weight blocks and push arrows${item.mode === 'on_budget' ? ' and coins' : ''}. No total is shown.`));
-  if (item.mode === 'add_to_lift') {
-    out.push(lever(OWN_WEIGHT_LEVER, 'help', s, ['heavy_engine', 'added_no_push'],
-      'The learner forgets that a new part adds its own weight, or picks the biggest push or a part with no engine.',
-      'Outlines the weight blocks of every part that could be added, the same way on each, with the note "Every part adds its own weight too."'));
-  }
-  if (item.mode !== 'reach_target') {
-    out.push(lever(LIFT_CARD_LEVER, 'help', s, item.mode === 'on_budget' ? ['no_lift', 'fails_both'] : all,
-      'The learner does not use the rule for lifting off: push must be more than weight.',
-      'Shows a card with two boxes that are not rockets on this screen: one with more push than weight rises, one with push equal to its weight stays down, and the rule in one line.'));
-  } else {
-    out.push(lever(FUEL_CARD_LEVER, 'help', s, all,
-      'The learner thinks more fuel or a bigger rocket always flies higher, or ignores weight and empty tanks.',
-      'Shows a card with the rules: more fuel lets the engine push for longer, fuel is heavy, a rocket too heavy for its engine never lifts off, and dropping empty tanks makes a rocket lighter. It names no rocket.'));
-  }
-  if (item.mode !== 'can_it_lift' && (on(DROP_LEVER) || dropTarget(item, s) !== null)) out.push(lever(DROP_LEVER, 'simplify', s, all,
-    'The learner still picks wrong after help, or is stuck with too many to choose from.',
-    `Greys out one ${item.mode === 'add_to_lift' ? 'part' : 'rocket'} that is easy to rule out, so fewer remain. The next answer counts as helped.`));
-  return out;
-}
-
 export const LIFT_CARD_LINE = 'A rocket lifts off only when its push is more than its weight.';
 export const FUEL_CARD_LINES = [
   'More fuel lets the engine push for longer.',
@@ -98,17 +64,56 @@ export const FUEL_CARD_LINES = [
 ];
 export const OWN_WEIGHT_LINE = 'Every part adds its own weight too.';
 
-/** What the pulled levers put on screen, for the tutor and JEV. Never the key. */
-export function leverFacts(item: RocketItem, s: RocketLeverState): string | null {
-  const parts: string[] = [];
-  const on = (id: string) => s.pulled.includes(id);
-  if (on(COUNT_LEVER)) parts.push(`each part now shows its own number of weight blocks and push arrows${item.mode === 'on_budget' ? ' and coins' : ''}; no total is shown`);
-  if (on(OWN_WEIGHT_LEVER)) parts.push(`the weight blocks of every part that could be added are outlined, with the note "${OWN_WEIGHT_LINE}"`);
-  if (on(LIFT_CARD_LEVER)) parts.push(`a card shows a box with 5 push arrows and 3 weight blocks rising and a box with 4 push arrows and 4 weight blocks staying down: "${LIFT_CARD_LINE}"`);
-  if (on(FUEL_CARD_LEVER)) parts.push(`a card says: "${FUEL_CARD_LINES.join(' ')}"`);
-  for (const i of s.dropped) if (i < optionCount(item)) parts.push(`the ${optionLabel(item, i).toLowerCase()} is greyed out and is not the answer`);
-  return parts.length ? parts.join('; ') : null;
-}
+/** The misses counting answers, by mode: a lost count of blocks, arrows or coins. */
+const COUNT_ANSWERS: Record<RocketItem['mode'], readonly RocketMiss[]> = {
+  can_it_lift: ['said_lifts', 'said_stays'], add_to_lift: ['too_weak'], on_budget: ['over_budget', 'fails_both'], reach_target: [],
+};
+const withCoins = (item: RocketItem) => (item.mode === 'on_budget' ? ' and coins' : '');
+
+/** The lesson's lever state for the item on screen. */
+export interface RocketLeverContext { state: RocketLeverState }
+
+export const ROCKET_LEVERS = leverSet<RocketItem, RocketLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => ROCKET_MISSES[mode as RocketItem['mode']] ?? [],
+  // A card's words never name a choice: the key's label, or the colour that names it.
+  answersOf: item => {
+    const label = optionLabel(item, keyOf(item));
+    return [label, ...(/ (rocket|engine)$/.test(label) ? [label.split(' ')[0]] : [])];
+  },
+  specs: [
+    { id: COUNT_LEVER, type: 'marks', answers: Array.from(new Set(Object.values(COUNT_ANSWERS).flat())),
+      answersOn: item => COUNT_ANSWERS[item.mode],
+      when: 'The learner loses count of the blocks, arrows or coins.',
+      does: item => `Writes each part's own number beside its weight blocks and push arrows${withCoins(item)}. No total is shown.`,
+      fact: (_on: unknown, item) => `Each part now shows its own number of weight blocks and push arrows${withCoins(item)}; no total is shown.` },
+    { id: OWN_WEIGHT_LEVER, type: 'marks', modes: ['add_to_lift'], answers: ['heavy_engine', 'added_no_push'],
+      when: 'The learner forgets that a new part adds its own weight, or picks the biggest push or a part with no engine.',
+      does: `Outlines the weight blocks of every part that could be added, the same way on each, with the note "${OWN_WEIGHT_LINE}"`,
+      fact: `The weight blocks of every part that could be added are outlined, with the note "${OWN_WEIGHT_LINE}"` },
+    { id: LIFT_CARD_LEVER, type: 'clue', modes: ['can_it_lift', 'add_to_lift', 'on_budget'], answers: 'all',
+      answersOn: item => (item.mode === 'on_budget' ? ['no_lift', 'fails_both'] : ROCKET_MISSES[item.mode]),
+      when: 'The learner does not use the rule for lifting off: push must be more than weight.',
+      does: 'Shows a card with two boxes that are not rockets on this screen: one with more push than weight rises, one with '
+        + 'push equal to its weight stays down, and the rule in one line.',
+      fact: 'A card shows a box with 5 push arrows and 3 weight blocks rising and a box with 4 push arrows and 4 weight blocks '
+        + `staying down: "${LIFT_CARD_LINE}"` },
+    { id: FUEL_CARD_LEVER, type: 'clue', modes: ['reach_target'], answers: 'all',
+      when: 'The learner thinks more fuel or a bigger rocket always flies higher, or ignores weight and empty tanks.',
+      does: 'Shows a card with the rules: more fuel lets the engine push for longer, fuel is heavy, a rocket too heavy for its '
+        + 'engine never lifts off, and dropping empty tanks makes a rocket lighter. It names no rocket.',
+      fact: `A card says: "${FUEL_CARD_LINES.join(' ')}"` },
+    { id: DROP_LEVER, type: 'custom', modes: ['add_to_lift', 'on_budget', 'reach_target'], answers: 'all', carrier: 'shown',
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks wrong after help, or is stuck with too many to choose from.',
+      does: item => `Greys out one ${item.mode === 'add_to_lift' ? 'part' : 'rocket'} that is easy to rule out, so fewer remain. `
+        + 'The next answer counts as helped.',
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (item, { state }) => (state.pulled.includes(DROP_LEVER) || dropTarget(item, state) !== null ? state.dropped : null),
+      fact: (dropped: readonly number[], item) => dropped.filter(i => i < optionCount(item))
+        .map(i => `The ${optionLabel(item, i).toLowerCase()} is greyed out and is not the answer.`).join(' ') },
+  ],
+});
 
 /** For tests: every miss an item's wrong answers can show. */
 export function possibleMisses(item: RocketItem): RocketMiss[] {

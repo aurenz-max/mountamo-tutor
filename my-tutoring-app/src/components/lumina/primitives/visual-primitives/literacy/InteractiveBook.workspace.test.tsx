@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Interactive book on the teaching workspace: what is its own, plus its Pip surface. The generic
- * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Interactive book on the teaching workspace (the boss: interactiveBook.card.ts + interactiveBook.boss.ts): what is its
+ * own. The generic W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance;
+ * pip/WorkspacePip.surface.test.tsx covers Pip.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -15,7 +16,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -46,7 +46,7 @@ it.each([['read-focus-word', READ], ['find-feature', FIND]] as const)('%s binds;
   const h = mountWorkspace({ primitiveId: 'interactive-book', evalMode: mode, data: d });
   const task = h.state().task!;
   if (mode === 'read-focus-word') {
-    expect(task.workspace!.expectedAnswer).toMatch(/^frog/);
+    expect(task.workspace!.expectedAnswer).toMatch(/^"frog"/);
     expect(task.task).toContain('The green');
     expect(task.task).not.toMatch(/frog/);
   } else {
@@ -81,16 +81,6 @@ it('the speaker asks for the question silently, as the host, never the word', ()
   expect(text).toContain('The green');
   expect(text).not.toMatch(/frog/);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip points at the glowing word and celebrates the credited read', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('book');
-  const h = mountWorkspace({ primitiveId: 'interactive-book', evalMode: 'read-focus-word', data: data(READ),
-    instanceId: 'book', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toContain('glow');
-  h.say('frog'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a book with an item that cannot be asked', () => {

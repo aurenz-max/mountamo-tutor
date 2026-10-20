@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { lexWord } from './lexicon';
 import { mulberry32, tierPick } from './pick';
 import { isListedNonsense, workoutSpace, type WorkoutSpaceMode } from './wordWorkoutSpaces';
-import { challengeAskable, isRealCvcWord, itemsFromChallenge } from '../../primitives/visual-primitives/literacy/wordWorkoutScript';
+import { challengeAskable, isRealCvcWord, itemsFromChallenge } from '../../primitives/visual-primitives/literacy/wordWorkoutDomain';
 import type { SupportTier } from '../generation/generationContext';
 
 const TIERS: SupportTier[] = ['easy', 'medium', 'hard'];

@@ -16,7 +16,7 @@ import {
   challengeAskable,
   MAX_SENTENCE_WORDS,
   MIN_SENTENCE_WORDS,
-} from "../../primitives/visual-primitives/literacy/wordWorkoutScript";
+} from "../../primitives/visual-primitives/literacy/wordWorkoutDomain";
 import {
   EARLY_CONTEXT_TRIALS,
   EARLY_EXTENDED_WORDS,
@@ -728,14 +728,12 @@ function hydrateEarlyDecodingChallenges(
 // in CODE post-parse from `ctx.supportTier`, which resolveGenerationContext
 // already normalized to 'easy' | 'medium' | 'hard'.
 //
-// ONE LEVER SURVIVES THE DI PORT (2026-08-14), and it now drives TWO channels:
+// ONE LEVER SURVIVES THE DI PORT (2026-08-14):
 //
 //   #1 chainCueLevel (word-chains)  full → highlight-only → none
-//        on screen: the amber changed-letter highlight + the "b → c" delta chip
-//        in the ask:  whether the chain CORRECTION names what changed at all
-//                     (wordWorkoutScript.correctionFor) — at 'none', noticing
-//                     the change is the task, so the tutor must not hand back
-//                     the scaffold the tier removed.
+//        on screen: the amber changed-letter highlight + the "b → c" delta chip.
+//        At 'none', noticing the change is the task; the tutor's
+//        `changed_letter` lever can light it back (wordWorkoutLevers.ts).
 //
 // The other three levers died with the affordances they withdrew, because the
 // judged loop deleted those affordances outright:

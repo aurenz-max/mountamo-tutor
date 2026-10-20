@@ -1,5 +1,6 @@
 /**
- * stoichiometry-lab on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C27).
+ * stoichiometry-lab's items, keys, misses and scene: the pure half of its boss (`stoichiometryLab.boss.ts`, a spoken
+ * preset with a conversion-chain board and two SAY_OR_SHOW modes).
  *
  * Every item is built and keyed by code from one balanced reaction (a code library; the generator only picks which
  * reaction fits the topic and writes the title). Molar masses come from the formulas, never from the model.
@@ -14,11 +15,12 @@
  * limiting reactant has the larger mass; then it has more moles too, so only dividing by the coefficient finds it;
  * yield also asks for a product whose coefficient differs from the limiting reactant's).
  *
- * Pure: the component, the adapter, the journey row, the generator and the tests read the same items, checks, misses
- * and scene.
+ * Pure: the component, the boss, the levers, the generator and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { STOICH_MISSES } from './stoichiometryLab.card';
 import type { StoichChallenge, StoichiometryLabData, StoichReaction } from './StoichiometryLab';
 
 export type StoichMode = 'convert' | 'limiting' | 'yield';
@@ -266,12 +268,6 @@ export type LimitingMiss = 'fewer_moles' | 'smaller_mass' | 'missed_both' | 'sai
 export type YieldMiss = 'from_excess' | 'skipped_ratio' | 'upside_down_ratio' | 'mass_sum' | 'other_amount';
 export type StoichiometryMiss = ConvertMiss | LimitingMiss | YieldMiss;
 
-export const STOICH_MISSES: Record<StoichMode, readonly StoichiometryMiss[]> = {
-  convert: ['stopped_short', 'extra_step', 'upside_down_molar_mass', 'upside_down_ratio', 'skipped_ratio', 'out_of_order', 'other_substance', 'wrong_card'],
-  limiting: ['fewer_moles', 'smaller_mass', 'missed_both', 'said_both', 'other_reactant'],
-  yield: ['from_excess', 'skipped_ratio', 'upside_down_ratio', 'mass_sum', 'other_amount'],
-};
-
 export function convertMiss(item: ConvertItem, chain: readonly string[]): ConvertMiss | undefined {
   if (!chain.length || chainMatches(item, chain)) return undefined;
   const key = convertKey(item);
@@ -352,25 +348,28 @@ export function askOf(item: StoichItem): string {
   return `${mix} How many grams of ${item.product} (${subOf(rx, item.product)?.name}) can form?`;
 }
 
-const HOW: Record<StoichMode, string> = {
-  convert: 'The learner taps factor cards into the chain in order and presses Check chain.',
-  limiting: 'The learner answers by saying it, or tapping a choice and pressing Check Answer.',
-  yield: 'The learner answers by saying the number of grams, or typing it and pressing Check Answer.',
-};
+export const stoichMode = (item: StoichItem): StoichMode => item.mode;
 
-export function stoichExpectedAnswer(item: LimitingItem | YieldItem): string {
+/**
+ * The key a spoken answer is judged against. limiting: a menu key, the two reactants and "both", all said in the ask.
+ * yield: the grams, said any way. A convert item has no key: the learner places the cards and the activity checks them.
+ */
+export function stoichKey(item: StoichItem): SpokenKey | null {
   const rx = item.rx;
+  if (item.mode === 'convert') return null;
   if (item.mode === 'limiting') {
-    const key = limitingOf(rx, item.a, item.b);
-    if (key === BOTH) return `Both run out together: "both", "both at the same time", "they run out together" or "neither is left over" counts. `
-      + `Naming ${item.a.formula} or ${item.b.formula} alone is wrong.`;
+    const key = limitingOf(rx, item.a, item.b), menu = [item.a.formula, item.b.formula, 'both'];
+    if (key === BOTH) return { answer: 'both', menu, alsoAccept: ['both at the same time', 'they run out together', 'neither is left over'],
+      signatureError: `Naming ${item.a.formula} or ${item.b.formula} alone is wrong.` };
     const s = subOf(rx, key)!, other = key === item.a.formula ? item.b.formula : item.a.formula;
-    return `${key} (${s.name}) runs out first: "${key}", "${s.name}", "the ${s.name}" or "${s.name} is the limiting reactant" counts. `
-      + `${other} (${subOf(rx, other)!.name}) is wrong, and so is "both together" or naming both.`;
+    return { answer: key, menu,
+      alsoAccept: [s.name, `the ${s.name}`, `${s.name} is the limiting reactant`].filter(a => a !== key),
+      signatureError: `${other} (${subOf(rx, other)!.name}) is wrong, and so is "both together" or naming both.` };
   }
-  const key = yieldOf(item);
-  return `${fmt(key)} grams of ${item.product}: "${fmt(key)}", "${fmt(key)} grams" or "${fmt(key)} g" counts (a number within 1% of ${fmt(key)}, from rounding, also counts). `
-    + 'Any other number is wrong, and so is giving two numbers or hedging between them.';
+  const k = fmt(yieldOf(item));
+  return { answer: k, alsoAccept: [`${k} grams`, `${k} g`],
+    acceptRule: `A number within 1% of ${k}, from rounding, also counts.`,
+    signatureError: 'Any other number is wrong, and so is giving two numbers or hedging between them.' };
 }
 
 export function stoichSpokenMisses(item: StoichItem): KnownMiss[] {
@@ -399,14 +398,6 @@ export function stoichSpokenMisses(item: StoichItem): KnownMiss[] {
     examples: [fmt(d.grams), `${fmt(d.grams)} grams`] }));
 }
 
-export function workspaceAssignment(item: StoichItem): TeachingAssignment {
-  const task = `${askOf(item)} ${HOW[item.mode]}`;
-  if (item.mode === 'convert') return { id: item.id, task, response: 'gesture' };
-  const misses = stoichSpokenMisses(item);
-  return { id: item.id, task, response: 'speech', acceptsGesture: true, expectedAnswer: stoichExpectedAnswer(item),
-    ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export function describeStoichWork(item: StoichItem | undefined, work: StoichWork): string {
@@ -417,10 +408,18 @@ export function describeStoichWork(item: StoichItem | undefined, work: StoichWor
   return work.typed.trim() ? `Typed ${work.typed.trim()} g` : 'Nothing typed yet';
 }
 
+/** What the learner works out is the question: never said for them. How they answer is the card's `moves`. */
+const PAIR_RULE = 'Never name the reactant that runs out first, say that one is in excess or left over, give a number of '
+  + 'moles, runs or grams the screen does not show, or say that the lighter reactant runs out first; ask the learner to '
+  + 'turn each mass into moles and compare them using the coefficients. With the mole counts or the recipe card on '
+  + 'screen, never compare the two jars for the learner (which has more, which lasts longer); ask the learner to compare.';
 const CONSTRAINTS: Record<StoichMode, string> = {
-  convert: 'The activity checks the chain when the learner presses Check chain. You cannot place, remove or check cards for the learner.',
-  limiting: 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. You cannot tap or check for the learner.',
-  yield: 'The learner answers by saying the number, or by typing it and checking it; the activity judges the typed number. You cannot type or check for the learner.',
+  convert: 'Never say or ask which unit belongs on the top or the bottom of a card (that is the step the item checks), '
+    + 'which card goes next, that a card should be flipped or swapped, how many cards the chain needs, or what the chain '
+    + 'has reached; ask what unit the start card is in and what unit the goal needs, and, with the unit tracker on '
+    + 'screen, what it says under each card. The start card is one amount, with no top or bottom.',
+  limiting: PAIR_RULE,
+  yield: PAIR_RULE,
 };
 
 export const molarMassLine = (rx: Rx) => rx.subs.map(s => `${s.formula} (${s.name}) ${fmt(s.M)} g/mol`).join('; ');

@@ -1,5 +1,6 @@
 /**
- * energy-of-reactions on the shared tutor/JEV teaching workspace (W1, plain shape; ROLLOUT C27).
+ * energy-of-reactions' items, keys, misses and scene: the pure half of its boss (`energyOfReactions.boss.ts`, a
+ * SAY_OR_SHOW card on the spoken preset).
  *
  * Every item is built and keyed by code; the generator only picks which library reactions the lesson runs and writes
  * the title. Each mode is one closed choice the learner taps and checks, or says (J14):
@@ -10,10 +11,12 @@
  * - bond_energy: a table of the bonds broken and formed (count and energy per bond, no totals); choose the energy change.
  *   Key: energy in (breaking) minus energy out (forming), from a code table of average bond energies.
  *
- * Pure: the component, the adapter, the journey row and the tests read the same items, checks, misses and scene.
+ * Pure: the component, the boss, the levers and the tests read the same items, checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { ENERGY_MISSES } from './energyOfReactions.card';
 
 export type EnergyMode = 'classify' | 'diagram' | 'bond_energy';
 export const ENERGY_MODES: EnergyMode[] = ['classify', 'diagram', 'bond_energy'];
@@ -280,13 +283,6 @@ export type DiagramMiss = 'direction_reversed' | 'sign_flipped' | 'read_level' |
 export type BondMiss = 'subtracted_backwards' | 'ignored_counts' | 'added_totals';
 export type EnergyMiss = ClassifyMiss | DiagramMiss | BondMiss;
 
-export const ENERGY_MISSES: Record<EnergyMode, readonly EnergyMiss[]> = {
-  classify: ['cooling_called_release', 'warming_called_absorb'],
-  diagram: ['direction_reversed', 'sign_flipped', 'read_level', 'read_activation', 'read_peak_height', 'read_delta_h',
-    'from_products', 'catalysed_ea', 'full_ea'],
-  bond_energy: ['subtracted_backwards', 'ignored_counts', 'added_totals'],
-};
-
 export function energyMiss(item: EnergyItem | undefined, choice: string | null): EnergyMiss | undefined {
   if (!item || choice === null || energyCorrect(item, choice) || !item.choices.includes(choice)) return undefined;
   if (item.mode === 'classify') return releases(item.reaction) ? 'warming_called_absorb' : 'cooling_called_release';
@@ -297,7 +293,9 @@ export function energyMiss(item: EnergyItem | undefined, choice: string | null):
   return bondCandidates(item.reaction).find(([v]) => v === choiceValue(choice))?.[1] ?? undefined;
 }
 
-// ── Assignment, spoken answers ───────────────────────────────────────────────────────────
+// ── The ask and the spoken key ───────────────────────────────────────────────────────────
+
+export const energyMode = (item: EnergyItem): EnergyMode => item.mode;
 
 export const equationOf = (item: ClassifyItem) => (item.band === '7-8' ? item.reaction.formula : item.reaction.words);
 
@@ -309,19 +307,33 @@ export function askOf(item: EnergyItem): string {
 
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
-/** The answer a spoken reply is judged against, with the ways a learner says it. */
-export function energyExpectedAnswer(item: EnergyItem): string {
+const SAY_DIRECTION: Record<string, { word: string; said: string[] }> = {
+  [RELEASE]: { word: 'release', said: ['releases energy', 'gives off energy', 'gives off heat', 'exothermic'] },
+  [ABSORB]: { word: 'absorb', said: ['absorbs energy', 'takes in energy', 'takes in heat', 'endothermic'] },
+};
+
+/**
+ * The key a spoken reply is judged against. A direction item is a menu key (its ask says "release energy or absorb
+ * energy"); a value is the number said any way, with its sign where the sign is the question. Each also takes the
+ * choice's place in the list. The bare number is a rule, not an accepted answer.
+ */
+export function energyKey(item: EnergyItem): SpokenKey {
   const key = keyChoice(item), at = item.choices.indexOf(key);
-  const place = `its place in the list ("the ${ORDINAL[at]} one")`;
+  const place = `the ${ORDINAL[at] ?? 'last'} one`;
   const others = item.choices.filter(c => c !== key).map(c => `"${c}"`).join(', ');
-  if (key === RELEASE || key === ABSORB) {
-    const said = key === RELEASE ? '"releases energy", "gives off energy or heat", "exothermic"' : '"absorbs energy", "takes in energy or heat", "endothermic"';
-    return `${key}: ${said} or ${place} count. ${others} is wrong, and so is naming both or hedging.`;
+  const direction = SAY_DIRECTION[key];
+  if (direction) {
+    return { answer: direction.word, menu: ['release', 'absorb'], alsoAccept: [...direction.said, place],
+      signatureError: `${others} is wrong, and so is naming both or hedging between them.` };
   }
-  const v = choiceValue(key);
-  const sign = item.mode === 'bond_energy' || (item.mode === 'diagram' && item.kind === 'delta_h');
-  const signNote = sign ? ` The sign counts: ${v < 0 ? '"minus", "negative" or "released"' : '"plus", "positive" or "absorbed"'} with ${Math.abs(v)}; ${Math.abs(v)} with the other sign is wrong.` : '';
-  return `"${key}": ${Math.abs(v)} kilojoules said any way, or ${place}, counts.${signNote} ${others} are wrong.`;
+  const v = choiceValue(key), n = Math.abs(v);
+  const signed = item.mode === 'bond_energy' || (item.mode === 'diagram' && item.kind === 'delta_h');
+  const sign = !signed ? '' : v < 0
+    ? ` The sign counts: "minus", "negative" or "released" with ${n}; ${n} with the other sign is wrong.`
+    : ` The sign counts: "plus", "positive" or "absorbed" with ${n}; ${n} with the other sign is wrong.`;
+  return { answer: key, alsoAccept: [place],
+    acceptRule: `The number ${n} said any way, with or without "kJ" or "kilojoules", counts.${sign}`,
+    signatureError: `${others} are wrong.` };
 }
 
 const quoted = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(', ');
@@ -355,18 +367,6 @@ export function energySpokenMisses(item: EnergyItem): KnownMiss[] {
     pattern: `${fact} The learner's answer ${MISS_WORDS[m]}: ${quoted(groups.get(m)!)}.`, examples: groups.get(m)!.slice(0, 6) }));
 }
 
-const HOW: Record<EnergyMode, string> = {
-  classify: 'The learner presses Run the reaction, then answers by saying it, or tapping one choice and pressing Check Answer.',
-  diagram: 'The learner answers by saying it, or tapping one choice and pressing Check Answer.',
-  bond_energy: 'The learner answers by saying it, or tapping one value and pressing Check Answer.',
-};
-
-export function workspaceAssignment(item: EnergyItem): TeachingAssignment {
-  const misses = energySpokenMisses(item);
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'speech', acceptsGesture: true,
-    expectedAnswer: energyExpectedAnswer(item), ...(misses.length ? { misses } : {}) };
-}
-
 // ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 export interface EnergyView {
@@ -380,8 +380,29 @@ export interface EnergyView {
 export const describeEnergyWork = (item: EnergyItem | undefined, view: Pick<EnergyView, 'choice'>) =>
   item && view.choice ? `Chose "${view.choice}"` : 'Nothing chosen yet';
 
-const CONSTRAINTS = 'The learner answers by saying it, or by tapping one choice and checking it; the activity judges the tap. '
-  + 'You cannot tap, check or run the reaction for the learner.';
+/**
+ * What the learner reads and works out is the question: never said for them. How they answer is the card's `moves`.
+ * classify: the change in the reading and what it means; diagram and bond_energy: the comparison, the arithmetic,
+ * and after a miss which part of the wrong value was right.
+ */
+const NO_CLOSENESS = 'Never say how close a choice is; after a wrong answer, never say that its number or its sign was right.';
+function constraintsOf(item: EnergyItem): string {
+  if (item.mode === 'classify') {
+    return 'Never say the reading went up or down or that the water warmed or cooled, what that means (that colder water '
+      + 'means the reaction took energy in), or whether the reaction releases or absorbs energy; ask what the thermometer '
+      + 'read before and after and what that tells the learner. Never say which side is energy in or energy out unless the '
+      + 'heat-flow card is on screen. Never call the reaction hot, cold, warming or cooling as a clue, and never mention '
+      + 'what it is used for (a cold pack, a hand warmer).';
+  }
+  if (item.mode === 'diagram') {
+    return 'Never say the products are higher or lower than the reactants or what that means, whether the reaction releases '
+      + 'or absorbs energy, and never work out a climb, a drop or a change for the learner; ask which line they read from '
+      + `and what it tells them. ${NO_CLOSENESS}`;
+  }
+  return 'Never say which total is larger or which sign the answer has, and never add up a row or the totals or take one '
+    + 'from the other for the learner; ask which bonds are broken and which are formed, how many of each, and which side '
+    + `costs energy. ${NO_CLOSENESS}`;
+}
 
 export const bondRowsText = (rows: BondRow[]) => rows.map(b => `${b.count} × ${b.bond} at ${BOND_ENERGY[b.bond]} kJ each`).join('; ');
 
@@ -393,7 +414,7 @@ export function workspaceScene(item: EnergyItem, view: EnergyView): WorkspaceSce
     facts.shown = `A beaker of water with a thermometer, and the reaction ${r.name.toLowerCase()} (${equationOf(item)}).`;
     facts.thermometer = view.ran
       ? `After the reaction runs in the water, the thermometer reads ${r.end} °C; it read ${r.start} °C before.`
-      : `The thermometer reads ${r.start} °C. Not run yet: the learner presses "Run the reaction" to see the reading change.`;
+      : `The thermometer reads ${r.start} °C. Not run yet.`;
   } else if (item.mode === 'diagram') {
     const l = item.levels;
     facts.shown = `An energy diagram for ${item.label}: energy in kJ up the side, 0 to ${AXIS_MAX} with a line every ${GRID} kJ, `
@@ -407,11 +428,11 @@ export function workspaceScene(item: EnergyItem, view: EnergyView): WorkspaceSce
       + 'No totals are shown.';
   }
   facts.learnerWork = describeEnergyWork(item, view);
-  facts.constraints = CONSTRAINTS;
+  facts.constraints = constraintsOf(item);
   return { objects: [], facts };
 }
 
-// ── The journey's learner (liveJourneySpec row, the dry sweep) ───────────────────────────
+// ── The journey's learner (the boss's harness, the dry sweep) ────────────────────────────
 
 /** The journey's answers: the key, and the wrong choice that shows the most telling miss. */
 export function energyHarnessAnswers(item: EnergyItem): { correct: string; plainWrong: string } {

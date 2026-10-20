@@ -8,14 +8,17 @@ import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { chunkBreak } from '../../../ui/printSupport';
 import { PRACTICE_LINES, printedSet, wordsOf } from './decodablePracticeLines';
 import { EARLY_EXTENDED_WORDS } from './wordWorkoutEarlyDecoding';
-import { itemsFromChallenges, type WordWorkoutItem } from './wordWorkoutScript';
+import { itemsFromChallenges, type WordWorkoutItem } from './wordWorkoutDomain';
 import {
-  WORD_WORKOUT_SPOKEN_MISSES, easierEnding, lessonVowels, printedBySession, questionIcon, shortChain, spokenPracticeLeak,
-  threeWordSentence, wordWorkoutEvalMode, wordWorkoutLevers,
+  WORD_WORKOUT_LEVERS, WORD_WORKOUT_SPOKEN_MISSES, easierEnding, lessonVowels, printedBySession, questionIcon, shortChain,
+  spokenPracticeLeak, threeWordSentence, wordWorkoutEvalMode,
 } from './wordWorkoutLevers';
 
-const ids = (item: WordWorkoutItem, items: readonly WordWorkoutItem[], pulled: string[] = []) =>
-  wordWorkoutLevers(item, pulled, items, lessonVowels([], items)).map(l => l.id);
+/** The levers an item declares; `missed` is the item that has had a wrong answer (the chunk divider waits for one). */
+const levers = (item: WordWorkoutItem, items: readonly WordWorkoutItem[], pulled: string[] = [], vowels = lessonVowels([], items), missed?: string) =>
+  WORD_WORKOUT_LEVERS.declare(item, { items, vowels, missed }, pulled);
+const ids = (item: WordWorkoutItem, items: readonly WordWorkoutItem[], pulled: string[] = [], missed?: string) =>
+  levers(item, items, pulled, undefined, missed).map(l => l.id);
 
 const CHAIN = itemsFromChallenges([{ id: 'c', mode: 'word-chains', chain: ['cat', 'hat', 'hot'], chainCueLevel: 'none' }]);
 const SENTENCE = itemsFromChallenges([{ id: 's', mode: 'sentence-reading', sentence: 'The cat sat on the mat.', cvcWords: ['cat', 'sat', 'mat'],
@@ -85,16 +88,17 @@ describe('levers per item kind, and the miss each answers', () => {
     expect(ids(CHAIN[0], CHAIN)).toEqual(['sound_dots', 'short_chain']);
     expect(ids(CHAIN[1], CHAIN)).toEqual(['changed_letter', 'sound_dots', 'short_chain']);
     expect(ids({ ...CHAIN[1], chainCueLevel: 'full' }, CHAIN)).toEqual(['sound_dots', 'short_chain']);
-    expect(nextLever(wordWorkoutLevers(CHAIN[1], [], CHAIN, ['a', 'o']), 'previous_word')).toBe('changed_letter');
-    expect(nextLever(wordWorkoutLevers(CHAIN[1], ['changed_letter', 'sound_dots'], CHAIN, ['a', 'o']), 'previous_word')).toBe('short_chain');
+    expect(nextLever(levers(CHAIN[1], CHAIN, [], ['a', 'o']), 'previous_word')).toBe('changed_letter');
+    expect(nextLever(levers(CHAIN[1], CHAIN, ['changed_letter', 'sound_dots'], ['a', 'o']), 'previous_word')).toBe('short_chain');
   });
 
-  it('inflected: the divider, then an easier ending; compound: the divider only', () => {
+  it('inflected: the divider after a first try, then an easier ending; compound: the divider only', () => {
     const ing = inflected('jumping');
-    expect(ids(ing[0], ing)).toEqual(['chunk_divider', 'easier_ending']);
+    expect(ids(ing[0], ing)).toEqual(['easier_ending']);
+    expect(ids(ing[0], ing, [], ing[0].id)).toEqual(['chunk_divider', 'easier_ending']);
     const compound = itemsFromChallenges([{ id: 'k', mode: 'compound-word', targetWord: 'sunset' }]);
-    expect(ids(compound[0], compound)).toEqual(['chunk_divider']);
-    expect(nextLever(wordWorkoutLevers(ing[0], [], ing, ['a', 'e', 'i', 'o', 'u']), 'base_only')).toBe('chunk_divider');
+    expect(ids(compound[0], compound, [], compound[0].id)).toEqual(['chunk_divider']);
+    expect(nextLever(levers(ing[0], ing, [], ['a', 'e', 'i', 'o', 'u'], ing[0].id), 'base_only')).toBe('chunk_divider');
   });
 
   it('sentence reading: the underline and the short sentence; the question gets a kind-of-answer icon', () => {
@@ -104,20 +108,19 @@ describe('levers per item kind, and the miss each answers', () => {
     expect(questionIcon({ ...SENTENCE[1], question: 'Why did it sit?' })).toBeNull();
   });
 
-  it('every lever is shown (no audio of unread print), says nothing is read, and answers only catalog misses', () => {
+  it('every help lever is shown (no audio of unread print), says nothing is read, and answers only catalog misses', () => {
     const entry = LITERACY_CATALOG.find(c => c.id === 'word-workout')!.teachingWorkspace!;
     const all = [...REAL, ...CHAIN, ...SENTENCE, ...inflected('jumping')];
     for (const item of all) {
-      for (const l of wordWorkoutLevers(item, [], all, ['a', 'e', 'i', 'o', 'u'])) {
-        expect(l.carrier).toBe('shown');
+      for (const l of levers(item, all, [], ['a', 'e', 'i', 'o', 'u'], item.id)) {
+        if (l.kind === 'help') expect(l.carrier).toBe('shown');
         if (l.kind === 'help' && l.id !== 'question_word_icon') expect(l.does).toMatch(/Nothing is said/);
         for (const miss of l.answers ?? []) expect(entry.misses![wordWorkoutEvalMode(item)]).toContain(miss);
       }
     }
-    for (const [mode, misses] of Object.entries(WORD_WORKOUT_SPOKEN_MISSES)) {
-      expect(entry.misses![mode]).toEqual(misses);
-      expect(entry.unanswered![mode]).toEqual(misses);
-    }
+    for (const [mode, misses] of Object.entries(WORD_WORKOUT_SPOKEN_MISSES)) expect(entry.misses![mode]).toEqual(misses);
+    // Only what no lever answers, by decision: a compound's misread second part, and the fit of a near word.
+    expect(entry.unanswered).toEqual({ read_compound: ['other_word'], choose_in_context: ['wrong_fit'] });
     expect(entry.levers).toBe(true);
   });
 });

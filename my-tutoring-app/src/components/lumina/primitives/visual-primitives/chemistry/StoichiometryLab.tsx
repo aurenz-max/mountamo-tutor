@@ -8,21 +8,20 @@
  *
  * Every item is built and keyed by code from the reaction (`stoichiometryLabWorkspace.ts`); molar masses come from the
  * formulas. Nothing on screen computes the answer before credit: no mole counts, no running units, no "run the
- * reaction" panel, and the jars are the same size whatever they hold. Two paths, chosen by `withWorkspaceController`:
- * the scripted path (tester, no tutor) has its own Next and two tries before the worked answer; the workspace path (W1,
- * plain shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer on limiting
- * and yield, and lets the runtime move on. The levers live in `stoichiometryLabLevers.ts`.
+ * reaction" panel, and the jars are the same size whatever they hold. Taught only on the shared tutor/JEV workspace
+ * (`withWorkspaceOnly`; its wiring is `stoichiometryLab.card.ts` + `stoichiometryLab.boss.ts`, the spoken preset: a
+ * conversion-chain board and two SAY_OR_SHOW modes). Every check commits through `progress.commitCheck` with a named
+ * miss, a spoken answer on limiting and yield is judged by the tutor, and the levers are one lever set
+ * (`stoichiometryLabLevers.ts`) published with the scene. No Next: the runtime moves the item.
  */
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoichiometryLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   LuminaActionButton,
   LuminaAnswerChoice,
-  LuminaButton,
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
@@ -36,18 +35,18 @@ import {
 } from '../../../ui';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   askOf, BOTH, cardLabel, convertKey, convertValue, describeStoichWork, factorOf, fmt, limitingOf, NO_WORK, parseGrams,
-  runningUnits, stoichCorrect, stoichItems, stoichMiss, subOf, workspaceAssignment, workspaceScene, yieldOf,
+  runningUnits, stoichCorrect, stoichMiss, subOf, workspaceScene, yieldOf,
   type Amount, type Qty, type Rx, type StoichItem, type StoichMode, type StoichTier, type StoichWork,
 } from './stoichiometryLabWorkspace';
 import {
-  EASIER_LEVER, easierItem, leverFact, MAP_LEVER, mapStations, moleLine, MOLES_LEVER, RECIPE_LEVER, revealLine,
-  stoichLevers, UNITS_LEVER,
+  MAP_LEVER, mapStations, moleLine, MOLES_LEVER, RECIPE_LEVER, revealLine, STOICH_LEVERS, UNITS_LEVER,
 } from './stoichiometryLabLevers';
+import { stoichiometryLabBoss } from './stoichiometryLab.boss';
 
 // ============================================================================
 // Data Types (single source of truth; the generator imports them)
@@ -218,47 +217,45 @@ const RecipeCard = ({ rx }: { rx: Rx }) => {
 // Component
 // ============================================================================
 
-const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  StoichiometryLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<StoichItem>) => Progress }) => {
-  const workspace = useRef<TeachingWorkspace | null>(null);
-  const { title, gradeBand = '9-10', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+const useStoichProgress = useWorkspaceProgressFor('stoichiometry-lab');
 
-  const items = useMemo(() => stoichItems(data),
+const StoichiometryLabSurface = ({ data, className, runtimePlanItemId }: StoichiometryLabProps) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => [...stoichiometryLabBoss.items(data)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.reaction, data.challenges, data.challengeTypes, data.gradeBand, data.supportTier, data.title]);
   const stableInstanceId = useRef(instanceId || `stoichiometry-lab-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  // ── Progress: the runtime moves the index (callbacks bound below) ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
   /** Bound below; an answer the observer credited on the simplify lever's practice item. */
   const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useStoichProgress({
     challenges: items,
     getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: stoichiometryLabBoss.assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
     onPracticeSolved: (_id, source) => practiceAloud.current(source),
     onFinished: result => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionItem: StoichItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
   const [practice, setPractice] = useState<StoichItem | null>(null);
   const item = practice ?? sessionItem;
 
   const [work, setWork] = useState<StoichWork>(NO_WORK);
-  /** Workspace path: the wrong answer just checked stays on screen, marked, until Try again. */
+  /** The wrong answer just checked stays on screen, marked, until Try again. */
   const [wrongShown, setWrongShown] = useState(false);
-  /** Scripted path: wrong tries on the current item, and whether its answer has been shown after two. */
-  const [scriptedWrongs, setScriptedWrongs] = useState(0);
-  const [scriptedReveal, setScriptedReveal] = useState(false);
   const [practiceSolved, setPracticeSolved] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
@@ -268,8 +265,7 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
   const leverOn = (id: string) => pulled.includes(id);
-  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
-  const revealed = solvedNow || scriptedReveal;
+  const revealed = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
 
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation<StoichiometryLabMetrics>({
     primitiveType: 'stoichiometry-lab',
@@ -278,23 +274,9 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
-  const aiPrimitiveData = useMemo(() => ({
-    gradeBand, mode: item?.mode ?? 'convert', equation: item?.rx.equation ?? '', itemIndex: currentIndex + 1, totalItems: items.length,
-    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
-  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'stoichiometry-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '8' ? 'Grade 8' : gradeBand === '9-10' ? 'Grade 9-10' : 'Grade 11-12', enabled: !tutorOwned,
-  });
-  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+  const clearItem = () => { setWork(NO_WORK); setWrongShown(false); setFeedback(null); setPracticeSolved(false); };
 
-  const clearItem = () => {
-    setWork(NO_WORK); setWrongShown(false); setFeedback(null);
-    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
-  };
-
-  // Workspace path: a fresh item (or the full item back after practice) and Try again both open blank.
+  // A fresh item (or the full item back after practice) and Try again both open blank.
   openItem.current = (_index, retry) => {
     if (retry) { setWork(NO_WORK); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
     setPractice(null); clearItem();
@@ -336,23 +318,11 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (correct) {
       SoundManager.playCorrect();
       if (practice) setPracticeSolved(true); else checkedCorrect.current = item.id;
-      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} Praise briefly.`);
       return;
     }
     SoundManager.playIncorrect();
-    if (tutorOwned) { setWrongShown(true); return; }
-    const wrongs = scriptedWrongs + 1;
-    setScriptedWrongs(wrongs);
-    if (wrongs >= 2) {
-      setScriptedReveal(true);
-      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
-      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The worked answer is now on screen; explain it plainly.`);
-      return;
-    }
-    setWork(NO_WORK);
-    setFeedback('Not quite. Look again and try once more.');
-    say(`[ANSWER_INCORRECT] The learner's try (${describeStoichWork(item, work)}) is wrong for: ${askOf(item)} You are not told the answer: `
-      + 'ask what the units, the moles and the coefficients tell them, without naming a card, a reactant or an amount.');
+    // The tutor and the runtime take it from here: the wrong answer stays marked until Try again.
+    setWrongShown(true);
   };
 
   const metrics = (): StoichiometryLabMetrics => {
@@ -368,17 +338,7 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   };
 
-  /** Scripted path: Next, and on the last item the session report. */
-  const next = () => {
-    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
-    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
-    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
-    setSubmitted(true);
-    submitResult(score >= 50, score, metrics(), { challengeResults: results });
-    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
     setSubmitted(true);
@@ -388,28 +348,29 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
       undefined, result.diagnosisEvidence);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render. A practice item offers no lever. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || isComplete) return;
+    if (!item || !sessionItem || isComplete) return;
     const scene = workspaceScene(item, work);
-    const levers = practice ? [] : stoichLevers(sessionItem, pulled, items);
-    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    const ctx = { items };
+    const levers = practice ? [] : STOICH_LEVERS.declare(sessionItem, ctx, pulled);
+    const published = leverScene(scene, { support: practice ? '' : STOICH_LEVERS.support(sessionItem, ctx),
+      onScreen: practice ? '' : STOICH_LEVERS.onScreen(sessionItem, ctx, pulled) });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
-        ...(onScreen ? { onScreen } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}) },
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
         const l = levers.find(x => x.id === id);
-        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (practice || !l) return `No lever ${id} on this item.`;
         if (l.pulled) return `${id} is already on screen.`;
         const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
         if (l.kind === 'simplify') {
-          const simpler = easierItem(sessionItem, items);
+          const simpler = STOICH_LEVERS.simpler(sessionItem, ctx, id);
           if (!simpler) return 'There is no simpler item to practise on here; try a help lever.';
           setLeverState(nextState); clearItem(); setPractice(simpler);
-          return { practice: workspaceAssignment(simpler) };
+          return { practice: stoichiometryLabBoss.assignment(simpler) };
         }
         setLeverState(nextState);
         return true;
@@ -418,16 +379,8 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
     };
   });
 
-  // ── Pip shared surface: the item's check state, the tutor's speech on it, and the child's touches ──
-  // The workspace path ends when the runtime completes the lesson, not at the last credit (its worked result stays up).
-  const done = hasSubmitted || submitted || (tutorOwned && !!progress.practiceSummary);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: done || !item ? null : item.id,
-    label: 'The stoichiometry lab and your answer',
-    solved: revealed,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  // The lesson ends when the runtime completes it, not at the last credit (its worked result stays up).
+  const done = hasSubmitted || submitted || !!progress.practiceSummary;
 
   if (!items.length || !item) {
     return (
@@ -565,11 +518,12 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
             <LuminaPrompt accent="purple" {...(practice ? { 'data-practice': 'easier-item' } : {})}>{askOf(item)}</LuminaPrompt>
             <EquationStrip rx={rx} />
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the lab and the answer as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {renderConvert()}
               {renderPair()}
-            </div>
+            </PipWorkspace>
 
             {!revealed && (
               <div className="flex justify-center">
@@ -580,18 +534,13 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
             )}
 
             {revealed && (
-              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+              <LuminaFeedbackCard status="correct">
                 {revealText()}
               </LuminaFeedbackCard>
             )}
             {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">Not quite.</LuminaFeedbackCard>}
             {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-            {!tutorOwned && revealed && !practice && (
-              <div className="flex justify-end">
-                <LuminaButton onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaButton>
-              </div>
-            )}
           </>
         )}
       </LuminaCardContent>
@@ -599,8 +548,6 @@ const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwne
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const StoichiometryLab = withWorkspaceController<StoichiometryLabProps, ProgressOptions<StoichItem>, Progress>(
-  'stoichiometry-lab', StoichiometryLabSurface, useScriptedProgress, useWorkspaceProgressFor('stoichiometry-lab'));
+const StoichiometryLab = withWorkspaceOnly<StoichiometryLabProps>('stoichiometry-lab', StoichiometryLabSurface, props => props.data.title);
 
 export default StoichiometryLab;

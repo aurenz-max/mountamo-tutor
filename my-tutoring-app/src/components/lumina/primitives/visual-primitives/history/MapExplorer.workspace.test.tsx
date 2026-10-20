@@ -37,6 +37,7 @@ vi.mock('./map/LiveMap', () => ({
   },
 }));
 import MapExplorer, { type MapExplorerData } from './MapExplorer';
+import { COMPASS_LEVER } from './mapExplorerLevers';
 import { NATIONAL_MALL, buildSession, buildTownChallenges, buildWorldChallenges, flyRoute, type MapTask } from './map/mapModel';
 
 beforeEach(() => { vi.clearAllMocks(); seam.evaluationContext = null; });
@@ -57,13 +58,13 @@ function mount(data: MapExplorerData, pin: string = data.challengeType) {
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
   const state = () => runtime.getSnapshot();
   let lastCommand = '';
-  const dispatch = (name: string) => {
+  const dispatch = (name: string, input?: Record<string, unknown>) => {
     const s = state();
     const a = s.affordances.find(x => x.action.type === name || x.action.type === 'workspace' && (x.action as { operation?: string }).operation === name);
     expect(a, `missing action ${name}`).toBeTruthy();
     lastCommand = crypto.randomUUID();
     act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId: lastCommand, instanceId: 'map', itemId: s.task!.itemId,
-      expectedRevision: s.revision, action: a!.action }); });
+      expectedRevision: s.revision, action: { ...a!.action, ...(input ? { input } : {}) } as never }); });
   };
   const touch = (id: string) => act(() => {
     const el = document.querySelector(`[data-pip-object="${id}"]`);
@@ -83,8 +84,8 @@ it.each(['find_by_direction', 'name_direction', 'build_route'] as const)('%s bin
   const c = data.challenges[0];
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).toContain(c.instruction);
-  // "Which way?" is one sayable word: spoken (the observer judges it) with the arm tap beside it. The rest stay gesture.
-  if (task === 'name_direction') expect(h.state().task!.workspace!.expectedAnswer).toBe(c.direction);
+  // "Which way?" is one sayable word: spoken (the tutor judges it against the key) with the arm tap beside it. The rest stay gesture.
+  if (task === 'name_direction') expect(h.state().task!.workspace!.expectedAnswer).toMatch(new RegExp(`^"${c.direction}"`));
   else expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   const demand = JSON.stringify(h.state().task!.demand);
   expect(demand).not.toMatch(/targetId|"direction"/);
@@ -177,4 +178,22 @@ it('unbound (no runtime) renders the needs-the-tutor card, never the map', () =>
   const { container } = render(<MapExplorer data={cityData('find_by_direction')} runtimeEvalMode="find_by_direction" />);
   expect(container.querySelector('[data-workspace-unbound="map-explorer"]')).not.toBeNull();
   expect(container.querySelector('[data-live-map]')).toBeNull();
+});
+
+const glowing = () => document.querySelector('circle[stroke="rgba(250,204,21,0.75)"]');
+
+it('compass_glow: offered where the compass does not already glow; a pull draws the glow and tells the tutor', () => {
+  const h = mount(cityData('name_direction'));
+  const levers = () => h.state().task!.workspace!.levers ?? [];
+  expect(levers().map(l => [l.id, l.pulled])).toEqual([[COMPASS_LEVER, false]]);
+  expect(glowing()).toBeNull();
+  h.dispatch('pull_lever', { lever: COMPASS_LEVER });
+  expect(levers().map(l => [l.id, l.pulled])).toEqual([[COMPASS_LEVER, true]]);
+  expect(glowing()).not.toBeNull();
+  expect(JSON.stringify(h.state().task!.demand)).toContain('read N on it first');
+  cleanup();
+  // Easy starts glowing (the tier's compassGlow): the lever would add nothing.
+  const easy = mount(cityData('find_by_direction', 'easy'));
+  expect(easy.state().task!.workspace!.levers ?? []).toEqual([]);
+  expect(glowing()).not.toBeNull();
 });

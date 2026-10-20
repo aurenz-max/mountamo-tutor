@@ -76,11 +76,8 @@ describe('mission-planner: catalog', () => {
   it('the workspace binds grades 2-5 only; K-1 is described as an ungraded story', () => {
     expect(entry.teachingWorkspace!.grades).toEqual(['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5']);
     expect(entry.constraints).toMatch(/Kindergarten and Grade 1 MAY be routed here only as an ungraded story/);
-    expect(entry.tutoring!.aiDirectives!.map(d => d.instruction).join(' ')).not.toMatch(/NO wrong destination/);
   });
-  it('every contextKey referenced in the task description is declared', () => {
-    const keys = entry.tutoring!.contextKeys ?? [];
-    const referenced = (entry.tutoring!.taskDescription.match(/\{\{\w+\}\}/g) ?? []).map(m => m.slice(2, -2));
-    for (const k of referenced) expect(keys).toContain(k);
+  it('is taught on its boss (missionPlanner.card.ts): no scripted tutoring block', () => {
+    expect(entry.tutoring).toBeUndefined();
   });
 });

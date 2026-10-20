@@ -26,7 +26,7 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 import BarModel, { type BarModelChallenge, type BarModelData, type BarModelEvalMode } from './BarModel';
-import { validateBarModelData } from '../../../components/live-activity/adapters/barModelLive';
+import { validateBarModelData } from './barModel.boss';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { classifyEvidenceTier } from '../../../evaluation/diagnosis/types';
 

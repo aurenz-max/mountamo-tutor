@@ -1,23 +1,24 @@
 /**
- * spatial-path's in-item levers on `choose_route` (/add-support-tiers; report
+ * spatial-path's in-item levers on `choose_route`, as one lever set (`bossLevers.ts`; /add-support-tiers, report
  * qa/eval-reports/spatial-path-levers-2026-10-09.md). The misses are what `routeMiss` observes (the movement the
  * chosen route made instead of the asked one); no real-learner evidence.
  *
  * Which route goes the asked way IS the answer, so no lever marks, numbers apart, or describes one route of the item.
- * - `word_picture` (help): beside the map, a small picture of a ball going the asked way past a plain object (a box,
- *   a table, a hoop, a tree, a plank over water). A model outside the item: its path is none of the map's routes, it
+ * - `word_picture` (model): beside the map, a small picture of a ball going the asked way past a plain object (a box,
+ *   a table, a hoop, a tree, a plank over water): a different item, solved. Its path is none of the map's routes, it
  *   carries no route number, and it sits outside the map. Answers every miss (the learner does not yet know the word).
- * - `watch_each` (help): a dot in each route's own colour walks every numbered route in turn, 1 to N, so what each
+ *   When it comes is the lesson's support tier (`support`; medium when the lesson has none).
+ * - `watch_each` (marks): a dot in each route's own colour walks every numbered route in turn, 1 to N, so what each
  *   path does at the landmark is seen moving, not read off overlapping dashes. Every route the same way; none singled
  *   out. Answers every miss.
- * - `three_routes` (simplify): an ungraded challenge first, three routes instead of five, in a different scene, asking
+ * - `three_routes` (easier): an ungraded challenge first, three routes instead of five, in a different scene, asking
  *   the movement most often confused with the item's (over/under, through/around, across/through). The item's own
  *   asked route is not drawn in it. Then the full item, blank.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { SpatialPathChallenge, SpatialPathRelation } from './SpatialPath';
+import { ROUTE_MISSES } from './spatialPath.card';
 import { RELATIONS, SCENES, routeContrast, routeFor, routeInstruction, validateSpatialPathChallenge } from './spatialPathRoutes';
-import { ROUTE_MISSES } from './spatialPathWorkspace';
 
 export const WORD_LEVER = 'word_picture';
 export const WATCH_LEVER = 'watch_each';
@@ -77,30 +78,38 @@ export function threeRoutes(c: SpatialPathChallenge): SpatialPathChallenge | nul
   return practiceLeaks(c, practice) ? null : practice;
 }
 
-export function spatialPathLevers(c: SpatialPathChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeRoute(c)) return [];
-  const all = [...ROUTE_MISSES];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier, pulled: pulled.includes(id), answers: all, when, does });
+/** The word picture for an item, or null on a practice map or when it would copy one of the item's routes. */
+export function wordPicture(c: SpatialPathChallenge): WordModel | null {
   const model = WORD_MODELS[c.requestedRelation];
-  return [
-    ...(!wordModelLeaks(c, model) ? [lever(WORD_LEVER, 'help', 'both', 'The learner does not yet know what the movement word means.',
-      `Shows a small picture beside the map: a ball going ${c.requestedRelation} a ${model.object}. Say the word with it. `
-      + 'It is not on the map and matches no route: never say which route is like it.')] : []),
-    lever(WATCH_LEVER, 'help', 'shown', 'The learner picks by where a route ends, or cannot follow the dashed lines.',
-      'A dot walks every numbered route in turn, one to the last, each the same way. It singles out no route.'),
-    ...(threeRoutes(c) ? [lever(THREE_LEVER, 'simplify', 'both', 'Five routes are too many to compare yet.',
-      'Opens an easier map first: three routes in a new scene, asking a different movement word. It is not graded; the '
-      + 'full item comes back after it.')] : []),
-  ];
+  return isPracticeRoute(c) || wordModelLeaks(c, model) ? null : model;
 }
 
-/** What the pulled levers put on screen, as a scene fact. Never which route goes which way. */
-export function leverFacts(c: SpatialPathChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeRoute(c)) return '';
-  const model = WORD_MODELS[c.requestedRelation];
-  return [
-    pulled.includes(WORD_LEVER) && `Beside the map, a small picture shows a ball going ${c.requestedRelation} a ${model.object}.`,
-    pulled.includes(WATCH_LEVER) && `A dot walks each of the ${c.routes.length} routes in turn, in number order.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The lever set: every lever once, by type. A practice map declares none and shows none. */
+export const ROUTE_LEVERS = leverSet<SpatialPathChallenge, null>({
+  missesOf: () => ROUTE_MISSES,
+  // The word picture is a ball going the asked way past another object, solved; when it comes is the tier's.
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: 'a small picture of a ball going that way past another object',
+    own: 'which route on this map goes that way',
+  },
+  specs: [
+    { id: WORD_LEVER, type: 'model', answers: 'all',
+      when: 'The learner does not yet know what the movement word means.',
+      does: c => `Shows a small picture beside the map: a ball going ${c.requestedRelation} a `
+        + `${WORD_MODELS[c.requestedRelation].object}. Say the word with it. It is not on the map and matches no route: `
+        + 'never say which route is like it.',
+      content: wordPicture,
+      fact: (m: WordModel) => `Beside the map, a small picture shows a ball going ${m.relation} a ${m.object}.` },
+    { id: WATCH_LEVER, type: 'marks', answers: 'all',
+      when: 'The learner picks by where a route ends, or cannot follow the dashed lines.',
+      does: 'A dot walks every numbered route in turn, one to the last, each the same way. It singles out no route.',
+      content: c => (isPracticeRoute(c) ? null : true),
+      fact: (_: unknown, c) => `A dot walks each of the ${c.routes.length} routes in turn, in number order.` },
+    { id: THREE_LEVER, type: 'easier', answers: 'all',
+      when: 'Five routes are too many to compare yet.',
+      does: 'Opens an easier map first: three routes in a new scene, asking a different movement word. It is not graded; '
+        + 'the full item comes back after it.',
+      content: c => threeRoutes(c) },
+  ],
+});

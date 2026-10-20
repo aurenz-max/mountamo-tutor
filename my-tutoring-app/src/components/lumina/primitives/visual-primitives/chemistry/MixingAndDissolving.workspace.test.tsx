@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * W1 binding, plain shape: the real MixingAndDissolving on the shared teaching workspace, mounted the way a lesson
- * mounts it. One tapped choice and Submit Answer commits a checked gesture with its named miss, or a spoken answer is
- * judged; Try again clears the choice; the runtime owns progression; the key is published only as the spoken
- * expectedAnswer, never in the scene. Nothing on screen states the answer while a challenge is open. Levers change the
+ * mixing-and-dissolving on its boss (a SAY_OR_SHOW card on the spoken preset) and its lever set, mounted the way a
+ * lesson mounts it. One tapped choice and Submit Answer commits a checked gesture with its named miss, or a spoken
+ * answer is judged; Try again clears the choice; the runtime owns progression; the key is published only as the spoken
+ * key (`dissolvingKey`), never in the scene. Nothing on screen states the answer while a challenge is open. Levers change the
  * screen in the same commit and never draw the answer.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -22,6 +22,7 @@ import {
   buildClassifyItems, buildSortItems, dissolvingHarnessAnswers, dissolvingMiss, shuffledChallenge,
 } from './mixingAndDissolvingWorkspace';
 import { farChoice, modelsFor, modelsLeak, NO_LEVERS } from './mixingAndDissolvingLevers';
+import { mixingAndDissolvingBoss } from './mixingAndDissolving.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
@@ -113,7 +114,8 @@ it.each(MODES)('%s: a spoken-or-tapped question whose key stays out of the scene
   expect(h.state().task!.task).toContain(ch.instruction);
   expect(demand(h).response).toBe('speech');
   const ws = h.state().task!.workspace!;
-  expect(ws.expectedAnswer).toMatch(new RegExp(`^"${ch.options[ch.correctOptionIndex].replace(/[.']/g, '.')}" \\(choice`));
+  expect(mixingAndDissolvingBoss.assignment(ch)).toMatchObject({ response: 'speech', acceptsGesture: true });
+  expect(ws.expectedAnswer).toMatch(new RegExp(`^"${ch.options[ch.correctOptionIndex].replace(/[.']/g, '.')}" \\(also accept "the `));
   expect(String(demand(h).choices)).toBe(ch.options.map((o, i) => `${i + 1}) ${o}`).join('  '));
   // Nothing on screen or in the scene names the rule or what a substance did.
   h.press('Add Table Salt'); h.press('Add Sand'); h.settle();
@@ -186,7 +188,7 @@ it('particle_view opens the learner\'s own beaker view, refused while empty; dro
   expect(view.textContent).not.toMatch(/spread|dissolv/i);
   expect(h.dispatch('pull_lever', { lever: 'drop_far_choice' }).status).toBe('committed');
   expect(h.view.container.querySelector('button[aria-label="They sank to the bottom"]')!.getAttribute('data-dropped')).toBe('true');
-  expect(String(demand(h).onScreen)).toMatch(/choice 3, "They sank to the bottom", is greyed out and is not the answer/);
+  expect(String(demand(h).onScreen)).toMatch(/Choice 3, "They sank to the bottom", is greyed out and is not the answer/);
   answer(h, 'They spread out among the water particles');
   expect(attempts(h).at(-1)).toMatchObject({ correct: true, levers: ['particle_view', 'drop_far_choice'] });
   h.close();

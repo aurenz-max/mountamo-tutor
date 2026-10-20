@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Fact file on the teaching workspace: what is its own (modes, the reading phase, the closed file, levers, misses,
- * the pre-reader screen) and the generator's pick. The generic W1 contract (runtime/workspaceContract.test.tsx)
+ * Fact file on the teaching workspace (its boss: `factFile.boss.ts`): what is its own (modes, the reading phase, the
+ * closed file, levers, misses, the pre-reader screen) and the generator's pick. The generic W1 contract (runtime/workspaceContract.test.tsx)
  * covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -15,13 +15,14 @@ import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, resetSeams, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
-import { LIVE_JOURNEYS } from '../../../components/live-activity/liveJourneySpec';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { pickSelfChecks, checkDefect } from '../../../service/core/gemini-fact-file';
 import type { FactFileCheck, FactFileData } from './FactFile';
-import { factFileMiss, factFileSpokenMisses, fileText, workspaceScene } from './factFileWorkspace';
-import { NO_LEVERS, factFileLevers } from './factFileLevers';
+import { SECTION_LABEL, factFileHarnessAnswers, factFileMiss, factFileSpokenMisses, fileTabs, fileText, workspaceScene }
+  from './factFileWorkspace';
+import { FACT_FILE_LEVERS, NO_LEVERS } from './factFileLevers';
+import { factFileBoss } from './factFile.boss';
 
 beforeEach(() => { resetSeams(); vi.clearAllMocks(); installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -53,16 +54,22 @@ const data = (checks: FactFileCheck[], extra: Partial<FactFileData> = {}) => ({ 
 const TABS = ['Quick Facts', 'Deep Dive', 'Records', 'Did You Know?'];
 const html = (h: WorkspaceHarness) => h.view.container.textContent ?? '';
 
-/** The journey row's own inputs, through the real buttons. */
-function perform(h: WorkspaceHarness, d: Record<string, unknown>, intent: 'warmup' | 'wrong' | 'correct') {
-  const task = h.state().task!;
-  const inputs = LIVE_JOURNEYS['fact-file'].inputsFor(intent, { itemId: task.itemId, data: d, demand: task.demand } as never);
-  for (const input of inputs) if (input.type === 'choose') h.press(input.label);
+/** A tap on the harness's right or wrong choice (the boss's `show` move), through the real button. */
+function perform(h: WorkspaceHarness, d: Record<string, unknown>, intent: 'wrong' | 'correct') {
+  const item = factFileBoss.items(d as never).find(i => i.id === h.state().task!.itemId)!;
+  const { correct, wrong } = factFileHarnessAnswers(item, item.fileText);
+  h.press(intent === 'correct' ? correct : wrong);
+}
+/** While the file is being read (recall, apply): open every tab and press Start questions, as the boss's harness does. */
+function readFile(h: WorkspaceHarness, d: Record<string, unknown>) {
+  if (!String(h.state().task!.demand.phase ?? '').startsWith('reading')) return;
+  for (const t of fileTabs(d as never)) h.press(SECTION_LABEL[t]);
+  h.press('Start questions');
 }
 const mount = (mode: string, d: Record<string, unknown>) => {
   seam.evaluationContext = { lesson: 'test' };
   const h = mountWorkspace({ primitiveId: 'fact-file', evalMode: mode, instanceId: 'fact-file', data: d });
-  perform(h, d, 'warmup');
+  readFile(h, d);
   return h;
 };
 
@@ -78,7 +85,7 @@ it.each(Object.keys(CHECKS))('%s: one checked tap; a wrong one names its miss an
     const task = h.state().task!;
     expect(task.task).toContain(c.question);
     // Every choice can be said, so the item also takes it spoken: the observer judges against the key.
-    expect(task.workspace!.expectedAnswer).toBe(c.options[c.correctIndex]);
+    expect(task.workspace!.expectedAnswer).toContain(`"${c.options[c.correctIndex]}"`);
     expect(task.demand.response).toBe('speech');
     expect(JSON.stringify(task.demand)).not.toMatch(/Because of|relatedSection|Mauna Kea in Hawaii|magma\./i);
     expect(task.demand).toMatchObject({ choices: c.options.join(' | '), learnerWork: 'No choice tapped yet' });
@@ -201,7 +208,7 @@ describe('levers', () => {
   it('every miss a check names is answered by a lever, help first', () => {
     for (const c of Object.values(CHECKS)) {
       const text = fileText(FILE);
-      const ls = factFileLevers(c, NO_LEVERS, text);
+      const ls = FACT_FILE_LEVERS.declare({ ...c, id: c.id!, fileText: text }, { state: NO_LEVERS, preReader: false }, []);
       for (const miss of ['other_file_fact', 'not_in_file']) expect(nextLever(ls, miss)).toBe('point_to_section');
     }
   });
@@ -223,6 +230,7 @@ describe('misses', () => {
   it('picture choices with an emoji only stay a tap', () => {
     const c = check('p', 'Which is hot?', ['🔥', '🧊', '❄️'], 0);
     expect(factFileSpokenMisses(c, text)).toEqual([]);
+    expect(factFileBoss.assignment({ ...c, id: 'p', fileText: text })).toEqual({ id: 'p', task: 'Which is hot?', response: 'gesture' });
   });
 });
 
