@@ -87,7 +87,9 @@ export const LEVERS = leverSet<Item, Ctx>({
 ```
 
 - `type` is one of `model` (a DIFFERENT item, solved), `easier` (simplify; `content` IS the practice item),
-  `clue`, `meaning` (both leak-checked against `answersOf`), `marks`, `layout`, `custom` (needs `why` and `carrier`).
+  `clue`, `meaning` (both leak-checked against `answersOf`), `marks`, `layout`, `legend` (a key or reference naming
+  EVERY choice alike, none marked: a litmus key, the timeline already read; not leak-checked), `custom` (needs `why` and
+  `carrier`).
   The type sets help vs simplify and the default carrier.
 - Offered when `content` is non-null and `offer` holds. `fact` is the scene fact while pulled.
 - The set gives `declare`, `onScreen`, `simpler` and `bind(ctx)`; the component calls those and never re-switches on
@@ -101,7 +103,8 @@ export const LEVERS = leverSet<Item, Ctx>({
   item first, medium after a miss, hard never before a try) and names the item's model lever. Enforced three ways:
   `leverSet` throws at import without `support`; a scene function returns `SceneOf`, whose type forbids `support`
   and `onScreen`; `leverScene` (the one merge `DiTeachingStage` and a bespoke mount use) throws on a scene that
-  writes either. No family writes the tier sentence.
+  writes either. No family writes the tier sentence. A mount calls `support(item, ctx)` with the ctx it gives
+  `declare` (or `bind(ctx).support`): only a model lever offered on the item counts, so the fact is '' when none is.
 - What a type means for the tutor is written once in `LEVER_TYPE_DOCTRINE` (`adapterContract.ts`), added to the
   guidance of every boss whose set uses that type (`model`: a DIFFERENT item; never model the learner's own).
 
