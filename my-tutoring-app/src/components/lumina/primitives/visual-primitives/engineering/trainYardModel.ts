@@ -289,13 +289,22 @@ export function buildTrainYardChallenge(story: TrainJobStory, options: {
   const probe = (grade: number) => fewestEngines({ ...base, grade, id: options.id, type, instruction: '' });
   const target = options.targetEngines;
   // A short train cannot need two engines on any hill here, so the car count is redrawn until some hill
-  // needs the target; after 12 draws any hill is taken.
+  // needs the target. After 12 random draws, every car count is tried longest first; if none reaches the
+  // target, the steepest hill on the longest train is the closest job (never a one-engine hill by chance).
   let fits: number[] = [];
   for (let draw = 0; draw < 12; draw++) {
     base.amount = loadFor(lo + Math.floor(rng() * (hi - lo + 1)));
     fits = GRADES.filter(g => target === undefined || probe(g) === target);
     if (fits.length) break;
   }
-  base.grade = fits.length ? pick(fits, rng) : pick(GRADES, rng);
+  for (let cars = hi; !fits.length && cars >= lo; cars--) {
+    base.amount = loadFor(cars);
+    fits = GRADES.filter(g => probe(g) === target);
+  }
+  if (!fits.length) {
+    base.amount = loadFor(hi);
+    fits = [GRADES.reduce((best, g) => (probe(g) > probe(best) ? g : best))];
+  }
+  base.grade = pick(fits, rng);
   return { ...base, id: options.id, type, instruction: instructionFor({ ...base, type }) };
 }
