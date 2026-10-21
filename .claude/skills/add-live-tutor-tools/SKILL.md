@@ -194,7 +194,9 @@ records the named one. Gate: the sweep with `SPOKEN_MISS_OUT=<f>` (J8) and `scri
 catalog-declared, so a test that needs "a family the catalog does not declare" uses a non-live
 catalog id such as `concept-card-grid` (display-only, held back).
 
-**Plain shape (P).** The lever is `useChallengeProgress`, which most plain primitives call.
+**Plain shape (P).** Historical since wave 3 (2026-10-20): the examples below are now workspace-only on bosses
+(step 3), with no `useController`/`tutorOwned` split. Read them for the `useWorkspaceProgressFor` + `commitCheck` wiring.
+The lever is `useChallengeProgress`, which most plain primitives call.
 `runtime/useWorkspaceProgress.ts` returns the same shape backed by the workspace. Examples:
 `NumberLine.tsx` (one Check), `ComparisonBuilder.tsx` (four check functions, taps without a Check),
 `NumberTracer.tsx` (async check), each beside its `<x>Workspace.ts` and `<X>.workspace.test.tsx`.

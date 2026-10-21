@@ -8,10 +8,8 @@ entry points. Preserve unfinished work and outstanding findings.
 
 ## Maintain one owner
 
-Inspect `useNumberLineRuntime.ts` for a component-checked, tutor-led adapter and
-`useTenFrameRuntime.ts` for existing runner-control compatibility (both under
-`my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/`). Inspect
-actual call sites: a runner-shaped type import alone does not prove an executing
+The old references (`useNumberLineRuntime.ts`, `useTenFrameRuntime.ts`) were deleted when those families moved
+onto bosses; read `git log` for them if you need the pattern. Inspect actual call sites: a runner-shaped type import alone does not prove an executing
 runner. Do not copy a reference's ownership, mode gates or assertions blindly.
 
 Where a runner still owns progression, do not offer a competing tutor `advance`.
