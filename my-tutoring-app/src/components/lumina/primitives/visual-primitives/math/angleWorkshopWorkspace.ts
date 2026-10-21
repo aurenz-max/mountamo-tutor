@@ -2,7 +2,7 @@
  * Angle workshop on the shared tutor/JEV teaching workspace: W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md), plus the open build `make_angle` (`/add-eval-modes` references/build-mode.md).
  *
- * Pure: the component, the live adapter, the journey row and the probes read the same assignment, scene and check.
+ * Pure: the component, the boss (`angleWorkshop.boss.ts`) and the probes read the same scene and check.
  * Every challenge is answered on the screen and checked by the activity, so the tutor is never handed
  * `expectedAnswer`, `expectedRelationship` or a passing opening.
  *
@@ -13,8 +13,11 @@
  * - acute: MIN_OPEN..86; obtuse: 94..176. Below MIN_OPEN (5) the ray still lies on the fixed ray: no angle yet.
  * - a degree range ("between 40° and 60°") is inclusive at both ends, no tolerance: the numbers are the ask.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { AngleTargetKind, AngleWorkshopChallenge, AnglePairRelationship } from './AngleWorkshop';
+import type { MakeAngleMiss } from './angleWorkshop.card';
+
+export { CLASSIC_MISSES, MAKE_ANGLE_MISSES, ANGLE_MISSES_BY_MODE, type AngleMiss, type MakeAngleMiss } from './angleWorkshop.card';
 
 /** The miss for a total other than the figure's (ids are words: the catalog's miss ids take no digits). */
 const TOTAL_MISS = { 90: 'total_ninety', 180: 'total_one_eighty', 360: 'total_three_sixty' } as const;
@@ -57,14 +60,6 @@ export function fitsTarget(c: Pick<AngleWorkshopChallenge, 'targetKind' | 'targe
   }
 }
 
-/**
- * What a missed build shows: the kind of angle the learner MADE (never a guessed cause), or, on a degree range,
- * which side of it. `not_opened`: the ray never left the fixed ray.
- */
-export type MakeAngleMiss = 'not_opened' | 'made_acute' | 'made_right' | 'made_obtuse' | 'made_straight' | 'below_range' | 'above_range';
-export const MAKE_ANGLE_MISSES: readonly MakeAngleMiss[] =
-  ['not_opened', 'made_acute', 'made_right', 'made_obtuse', 'made_straight', 'below_range', 'above_range'];
-
 export function makeAngleMiss(c: AngleWorkshopChallenge, deg: number): MakeAngleMiss | undefined {
   if (fitsTarget(c, deg)) return undefined;
   const band = bandOf(deg);
@@ -74,27 +69,6 @@ export function makeAngleMiss(c: AngleWorkshopChallenge, deg: number): MakeAngle
 }
 
 // ── The classic modes' misses: what a wrong typed or tapped answer shows ──────
-
-/**
- * The pattern a wrong answer shows on a classic mode, named for the value typed (never a guessed cause). Each id is the
- * total or given the learner's number matches, checked in this order; `near` / `far` are the rest.
- * - measure: `other_scale` (the reading from the other end of the scale, 180 − the angle).
- * - classify_pairs: `chose_<relationship>` (the relationship tapped).
- * - solve_unknown: `total_ninety` / `total_one_eighty` / `total_three_sixty` (a total other than the figure's minus the labeled angles),
- *   `copied_known` (a labeled angle), `one_known_left` (360 minus one labeled angle only, around a point).
- * - solve_algebraic: `typed_an_angle` (the value of one labeled expression, not x), `total_ninety` / `total_one_eighty` (x for a
- *   sum to the other total, or to a total on equal angles).
- * - transversal: `supplement_given` (180 − the marked angle), `copied_given` (a labeled angle), `added_givens` (the two
- *   labeled angles added, on a triangle), `one_given_left` (180 minus one labeled angle only), `found_interior` (the
- *   triangle's own corner where the exterior angle is, 180 − both labeled angles).
- */
-export const CLASSIC_MISSES = {
-  measure: ['other_scale', 'near', 'far'],
-  classify_pairs: ['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
-  solve_unknown: ['total_ninety', 'total_one_eighty', 'total_three_sixty', 'copied_known', 'one_known_left', 'near', 'far'],
-  solve_algebraic: ['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
-  transversal: ['supplement_given', 'copied_given', 'added_givens', 'one_given_left', 'found_interior', 'near', 'far'],
-} as const;
 
 /** A typed answer within this many degrees (or 2 for x) of the key, missed, is `near`. */
 const NEAR_DEG = 10;
@@ -190,10 +164,6 @@ export function makeAngleMissWords(c: AngleWorkshopChallenge, miss: MakeAngleMis
 
 // ── The workspace binding (every mode) ──────────────────────────────────────
 
-export function workspaceAssignment(challenge: AngleWorkshopChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
-
 export interface AngleView {
   answerInput: string;
   relationship: AnglePairRelationship | null;
@@ -228,18 +198,15 @@ function figure(c: AngleWorkshopChallenge): string {
   }
 }
 
-/** What is drawn and asked. make_angle publishes the opening as a number so `workHistory` records how it moved. */
-export function workspaceScene(c: AngleWorkshopChallenge, view: AngleView): WorkspaceScene {
+/** What is drawn and asked. make_angle publishes the opening as a number so `workHistory` records how it moved. How the
+ *  learner answers is the card's `moves`; only what is this item's own is said here. */
+export function workspaceScene(c: AngleWorkshopChallenge, view: AngleView): SceneOf {
   const facts: Record<string, string | number> = { kind: c.type, figure: figure(c) };
   if (c.type === 'measure') facts.protractor = view.protractorShown ? 'placed' : 'not placed';
   if (c.type === 'classify_pairs') facts.choices = (c.choices ?? RELATIONS).join(' | ');
   if (c.type === 'make_angle') facts.openingDegrees = view.opening;
   facts.learnerWork = describeAngleWork(c, view);
-  facts.constraints = c.type === 'make_angle'
-    ? 'The learner turns the second ray (drag it, or press Open wider / Close in) and presses I\'m done!; the activity '
-      + 'checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner.'
-    : 'The learner answers on the screen (types a number or taps a relationship, then presses Check); the activity '
-      + 'checks it itself. You cannot type or tap for the learner.';
+  if (c.type === 'make_angle') facts.constraints = 'The opening in degrees is for following the work: the screen does not show it.';
   return { objects: [], facts };
 }
 

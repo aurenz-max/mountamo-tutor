@@ -1,26 +1,28 @@
 'use client';
 
 /**
- * paragraph-architect writing modes on the teaching workspace (rules in `writingStages.ts`). One sentence per step,
- * typed; "I'm done!" runs the code checks, then the shared writing judge. An accepted sentence joins the paragraph
- * above and the next step opens; Try again keeps the draft.
+ * The writing steps on the teaching workspace (rules in `writingStages.ts`), for paragraph-architect's writing modes and
+ * opinion-builder's OREO and CER. One sentence per step, typed; "I'm done!" runs the code checks, then the shared
+ * writing judge. An accepted sentence joins the paragraph above and the next step opens; Try again keeps the draft.
+ * The host passes its boss's assignment and lever set (paragraph-architect's, opinion-builder's).
+ * Pip comes from the runner (`<PipDock />`, `<PipWorkspace>`).
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle, LuminaChallengeCounter,
   LuminaFeedbackCard, LuminaPanel, LuminaPrompt,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingAssignment, TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene, type LeverSet } from '../../../components/live-activity/bossLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { WordBuildVerdict } from '../../../service/build-layer/wordBuildDecision';
 import {
-  BLANK_LEVER, MODEL_LEVER, MODEL_STEPS, STARTERS_LEVER, stagesFor, writingAssignment, writingJudgeRequest, writingLevers,
+  MODEL_LEVER, STARTERS_LEVER, blankStarter, modelStep, stagesFor, writingJudgeRequest,
   writingMissWords, writingScene, writingShapeMiss, type WritingPayload, type WritingMiss, type WritingStage,
 } from './writingStages';
 
@@ -38,23 +40,22 @@ async function askJudge(body: ReturnType<typeof writingJudgeRequest>): Promise<W
 export interface WritingStagesData extends WritingPayload {
   title: string;
   gradeLevel?: string;
-  /** The tier only sets where the levers start: easy opens with the sentence starters on screen (not offered). */
+  /** Sets when the model lever comes (`supportFact`); easy also opens with the sentence starters on screen. */
   supportTier?: 'easy' | 'medium' | 'hard';
   instanceId?: string; skillId?: string; subskillId?: string; objectiveId?: string; exhibitId?: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<never>) => void;
 }
 type Phase = 'writing' | 'checking' | 'checked';
 
-/** The blank practice: a starter with a blank (___ or a trailing ...), and only the blank typed. */
-const blankStarter = (stage: WritingStage) => {
-  const s = stage.starters.find(x => /_{2,}|\.\.\.|…/.test(x));
-  return s ? s.replace(/\.\.\.|…/, ' ___') : null;
-};
+/** The lever set a host passes: one over writing steps, or a wider one (paragraph-architect's) that includes them. */
+export type WritingLevers = Pick<LeverSet<WritingStage, null>, 'declare' | 'onScreen' | 'support'>
+  & { simpler: (item: WritingStage, ctx: null, lever: string) => unknown };
 
-export default function WritingStagesSurface({ data, className, runtimePlanItemId, primitiveId = 'paragraph-architect' }: {
-    data: WritingStagesData; className?: string; runtimePlanItemId?: string; runtimeEvalMode?: string; primitiveId?: string }) {
+export default function WritingStagesSurface({ data, className, runtimePlanItemId, primitiveId = 'paragraph-architect',
+  assignment, levers }: {
+    data: WritingStagesData; className?: string; runtimePlanItemId?: string; runtimeEvalMode?: string; primitiveId?: string;
+    assignment: (stage: WritingStage) => TeachingAssignment; levers: WritingLevers }) {
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableId = useRef(instanceId || `${primitiveId}-${Date.now()}`);
   const useProgress = progressFor(primitiveId);
@@ -73,7 +74,7 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
   const progress = useProgress<WritingStage>({
     challenges: stages, getChallengeId: s => s.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: writingAssignment,
+    workspace, assignment,
     onItemOpened: (_index, retry) => {
       openCount.current += 1;
       setPhase('writing'); setNotice('');
@@ -86,12 +87,14 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
   const sessionStage = stages[currentIndex] ?? null;
   const current = practice ?? sessionStage;
   const text = draft.item === current?.id ? draft.text : '';
+  // Easy opens each step with the starters on screen.
   const starting = !practice && data.supportTier === 'easy' && (sessionStage?.starters.length ?? 0) > 0 ? [STARTERS_LEVER] : [];
   const pulled = !practice && leverState.item === sessionStage?.id ? [...starting, ...leverState.pulled] : starting;
   const blocked = progress.canAttempt === false || phase === 'checking';
   const blank = practice ? blankStarter(practice) : null;
   /** On the blank practice the typed words fill the starter's blank. */
   const sentence = blank ? blank.replace(/_{2,}/, text.trim()) : text;
+  const model = current && pulled.includes(MODEL_LEVER) ? modelStep(current) : null;
 
   const phaseResults = usePhaseResults({ challenges: stages, results, isComplete: allDone, getChallengeType: () => 'write', phaseConfig: PHASES });
   const { submitResult, hasSubmitted, submittedResult, elapsedMs } = usePrimitiveEvaluation<never>({
@@ -146,33 +149,29 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
       stepsTotal: total, accuracy, attemptsCount: results.reduce((s, r) => s + r.attempts, 0) } as never, { challengeResults: results });
   }, [allDone, hasSubmitted, stages.length, results, submitResult, progress.recordsEvaluation, data.paragraphType]);
 
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId, scopeId: allDone || hasSubmitted || !current ? null : current.id, label: 'The writing box',
-    solved: phase === 'checked' && !!verdict?.met, checking: phase === 'checking', handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   useLayoutEffect(() => {
     if (!current || !sessionStage) return;
     const scene = writingScene(current, sentence, paragraph, phase === 'checked' && verdict ? verdict.words : undefined);
-    const levers = practice ? [] : writingLevers(sessionStage, pulled);
+    const offered = practice ? [] : levers.declare(sessionStage, null, pulled);
+    const published = leverScene(scene, {
+      support: practice ? '' : levers.support(sessionStage, null),
+      onScreen: practice ? '' : levers.onScreen(sessionStage, null, pulled),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts,
-        ...(pulled.includes(STARTERS_LEVER) ? { onScreen: `Sentence starters are shown: ${current.starters.join(' | ')}` } : {}),
-        ...(pulled.includes(MODEL_LEVER) ? { model: `A sentence for this step about another topic: ${MODEL_STEPS[current.job]}` } : {}),
+      ...published,
+      facts: { ...published.facts,
         ...(practice ? { practice: `Fill the blank in: ${blankStarter(practice)}. Ungraded; the full step comes back after it.` } : {}) },
-      levers,
+      levers: offered,
       pullLever: (id: string) => {
-        const lever = levers.find(l => l.id === id);
+        const lever = offered.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this step.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        const next = { item: sessionStage.id, pulled: [...pulled, id] };
+        const next = { item: sessionStage.id, pulled: [...(leverState.item === sessionStage.id ? leverState.pulled : []), id] };
         if (lever.kind === 'simplify') {
-          if (!blankStarter(sessionStage)) return 'There is no starter with a blank for this step.';
-          const easier = { ...sessionStage, id: `${sessionStage.id}~blank` };
+          const easier = levers.simpler(sessionStage, null, id) as WritingStage | null;
+          if (!easier) return `No lever ${id} on this step.`;
           setLeverState(next); setVerdict(null); setPhase('writing'); setPractice(easier);
-          return { practice: writingAssignment(easier) };
+          return { practice: assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -208,14 +207,17 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
               {paragraph.length ? paragraph.join(' ') : <span className="text-sm text-slate-500">Your paragraph will grow here.</span>}
             </LuminaPanel>
             <LuminaPrompt accent="emerald">
-              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Topic: {current.topic}</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Topic: {current.topic}</span>
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+              </div>
               <div className="text-lg leading-snug">{current.ask}</div>
               {practice && blank && <div className="mt-1 text-sm text-amber-300">Practice: finish this starter: {blank}</div>}
             </LuminaPrompt>
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
-              {pulled.includes(MODEL_LEVER) && (
-                <LuminaPanel data-lever="model-step" className="p-2 text-center text-cyan-100">Another topic: {MODEL_STEPS[current.job]}</LuminaPanel>
+            <PipDock />
+            <PipWorkspace className="space-y-3">
+              {model && (
+                <LuminaPanel data-lever="model-step" className="p-2 text-center text-cyan-100">Another topic: {model}</LuminaPanel>
               )}
               <textarea aria-label="Your sentence" value={text} disabled={blocked} rows={2} onChange={e => type(e.target.value)}
                 placeholder={blank ? 'Type the missing words' : 'Type your sentence'}
@@ -235,7 +237,7 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
                 </LuminaButton>
               </div>
               {verdict && <LuminaFeedbackCard status={verdict.met ? 'correct' : 'incorrect'}><p className="text-base font-semibold">{verdict.words}</p></LuminaFeedbackCard>}
-            </div>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

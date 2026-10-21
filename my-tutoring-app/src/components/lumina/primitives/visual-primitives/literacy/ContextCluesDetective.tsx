@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -21,23 +21,22 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ContextCluesDetectiveMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  CHECK_LABEL, CLUE_TYPE_LABEL, MEANING_INPUT_LABEL, clueAssignment, clueMiss, clueScene, clueSteps, describeClueWork,
-  findCorrect, scriptedScore, sentenceLabel, stepAnswered, stepCorrect, stepId, type ClueStep, type ClueView, type CluePhase,
+  CHECK_LABEL, CLUE_TYPE_LABEL, MEANING_INPUT_LABEL, clueMiss, clueScene, clueSteps, describeClueWork,
+  sentenceLabel, stepAnswered, stepCorrect, stepId, type ClueStep, type ClueView, type CluePhase,
 } from './contextCluesWorkspace';
 import {
-  CROSS_OUT_LEVER, SENTENCE_LIST_LEVER, SIGNAL_WORDS, SIGNAL_WORDS_LEVER, STRATEGY_BY_TYPE, STRATEGY_LEVER,
-  TRY_IN_PLACE_LEVER, TYPE_DESCRIPTIONS_LEVER, clueLeverFacts, clueLevers, crossOutLeaks, ruledOutBy, tryInPlace,
-  type ClueLeverContext,
+  CLUE_LEVERS, CROSS_OUT_LEVER, SENTENCE_LIST_LEVER, SIGNAL_WORDS, SIGNAL_WORDS_LEVER, STRATEGY_BY_TYPE, STRATEGY_LEVER,
+  TRY_IN_PLACE_LEVER, TYPE_DESCRIPTIONS_LEVER, ruledOutBy, tierShown, tryInPlace, type ClueLeverContext,
 } from './contextCluesLevers';
+import { contextCluesBoss } from './contextClues.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -145,8 +144,9 @@ const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
 // Component
 // ============================================================================
 
-const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ContextCluesDetectiveProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ClueStep>) => Progress }) => {
+const useClueProgress = useWorkspaceProgressFor('context-clues-detective');
+
+const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId }: ContextCluesDetectiveProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -164,25 +164,24 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
   const stableInstanceIdRef = useRef(instanceId || `context-clues-detective-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Progress: one checked step per phase of each word (find, classify, define). On the workspace path the
-  //    runtime moves the index; on the scripted path this component does, after each check. ──
+  // ── Progress: one checked step per phase of each word (find, classify, define). The runtime moves the index. ──
   const steps = useMemo(() => clueSteps(challenges), [challenges]);
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useClueProgress({
     challenges: steps,
     getChallengeId: (s) => s.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: clueAssignment,
+    workspace, assignment: contextCluesBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
   });
   const latestProgress = useRef(progress);
   latestProgress.current = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
 
   const step: ClueStep | undefined = steps[progress.currentIndex];
@@ -200,34 +199,23 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
   const [selectedMeaning, setSelectedMeaning] = useState('');
   const [typedMeaning, setTypedMeaning] = useState('');
 
-  // Results tracking per challenge (scripted path; the workspace path scores from the teaching record)
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    clueCorrect: boolean;
-    typeCorrect: boolean;
-    meaningCorrect: boolean;
-  }>>([]);
-
   // Feedback
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [showDictionary, setShowDictionary] = useState(false);
 
-  // Levers (`contextCluesLevers.ts`), keyed by the step they were pulled on; the sentences a wrong find showed hold no
-  // clue, keyed the same way. The tier's starting positions (the list, the descriptions, the strategy) are not pulls.
+  // Levers (`CLUE_LEVERS`), keyed by the step they were pulled on; the sentences a wrong find showed hold no clue,
+  // keyed the same way. The tier's starting positions (`tierShown`: the list, the descriptions, the strategy) are on
+  // screen and read as pulled, but are never recorded as help.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [ruledOutState, setRuledOutState] = useState<{ item: string; ids: string[] }>({ item: '', ids: [] });
   const pulledLevers = leverState.item === step?.id ? leverState.pulled : [];
   const leverOn = (id: string) => pulledLevers.includes(id);
+  const shownLevers = Array.from(new Set([...tierShown(step ?? null), ...pulledLevers]));
   const ruledOut = ruledOutState.item === step?.id ? ruledOutState.ids : [];
-  const leverCtx: ClueLeverContext = {
-    listShown: !!currentChallenge?.showClueHints,
-    descriptionsShown: currentChallenge?.showClueTypeDescriptions !== false,
-    strategyShown: !!currentChallenge?.strategyHint,
-    ruledOut,
-  };
-  const listOn = currentPhase === 'find' && (leverCtx.listShown || leverOn(SENTENCE_LIST_LEVER));
+  const listOn = currentPhase === 'find' && shownLevers.includes(SENTENCE_LIST_LEVER);
   const crossed = currentPhase === 'find' && leverOn(CROSS_OUT_LEVER) ? ruledOut : [];
-  const descriptionsOn = leverCtx.descriptionsShown || leverOn(TYPE_DESCRIPTIONS_LEVER);
+  const descriptionsOn = currentChallenge?.showClueTypeDescriptions !== false || leverOn(TYPE_DESCRIPTIONS_LEVER);
   const signalsOn = currentPhase === 'classify' && leverOn(SIGNAL_WORDS_LEVER);
   const strategyText = currentChallenge?.strategyHint
     ?? (leverOn(STRATEGY_LEVER) && currentChallenge ? STRATEGY_BY_TYPE[currentChallenge.clueType] : undefined);
@@ -256,59 +244,10 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
   const viewRef = useRef(view);
   viewRef.current = view;
 
-  // ---------------------------------------------------------------------------
-  // AI Tutoring Integration (scripted path) — the AI tutor coaches the detective work. It never
-  // reveals the meaning/clue; it nudges the strategy (find the clue, name the
-  // clue type, infer the meaning) per the catalog tutoring scaffold.
-  // ---------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    gradeLevel,
-    targetWord: currentChallenge?.targetWord ?? '',
-    currentPhase,
-    clueType: currentChallenge?.clueType ?? '',
-    itemIndex: currentChallengeIndex + 1,
-    totalItems: challenges.length,
-    selectedClueType,
-    highlightCount: highlightedSentenceIds.size,
-  }), [
-    gradeLevel, currentChallenge, currentPhase,
-    currentChallengeIndex, challenges.length,
-    selectedClueType, highlightedSentenceIds,
-  ]);
-
-  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'context-clues-detective',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction — fire once when the AI tutor connects
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    sendText(
-      `[ACTIVITY_START] This is a context-clues detective activity for Grade ${gradeLevel}. `
-      + `There are ${challenges.length} words to investigate. `
-      + `The first mystery word is "${currentChallenge.targetWord}". `
-      + `Introduce the activity warmly: we are detectives figuring out word meanings from clues in the passage. `
-      + `Tell the student to start by clicking the sentence that gives a clue about the word. `
-      + `Do NOT reveal the meaning or which sentence is the clue. Keep it brief and enthusiastic — 2-3 sentences max.`,
-      { silent: true }
-    );
-  }, [tutorOwned, isConnected, currentChallenge, gradeLevel, challenges.length, sendText]);
-
   const clearFeedback = () => { setFeedback(''); setFeedbackType(''); };
 
   // A fresh step opens empty for its own input (a new word clears everything); Try again clears the step's input
-  // and the feedback. Both paths: the scripted path calls it from its own advance.
+  // and the feedback.
   openItem.current = (index, retry) => {
     const s = steps[index];
     clearFeedback();
@@ -339,35 +278,21 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
     setFeedbackType('');
   }, [hasSubmittedEvaluation, currentPhase, feedbackType]);
 
-  /** Scripted path: the next step of the same word opens after a short beat. */
-  const advanceStepSoon = () => {
-    setTimeout(() => {
-      const p = latestProgress.current;
-      if (p.advance()) openItem.current(p.currentIndex + 1, false);
-    }, 1000);
-  };
-
-  // The one check: the current step's own rule, committed as the workspace's checked gesture on both paths.
+  // The one check: the current step's own rule, committed as the workspace's checked gesture.
   const handleCheck = () => {
     if (!step || !currentChallenge || learnerBlocked() || feedbackType === 'success' || showDictionary) return;
     const work = viewRef.current;
     if (!stepAnswered(step, work)) return;
     const correct = stepCorrect(step, work);
     const miss = correct ? undefined : clueMiss(step, work);
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // Counts the attempt and records a correct result: the workspace's checked gesture.
     progress.commitCheck(describeClueWork(step, work), correct, miss);
     if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
-    const word = currentChallenge.targetWord;
-    const n = `word ${currentChallengeIndex + 1} of ${challenges.length}`;
 
     if (step.phase === 'find') {
       if (correct) {
         setFeedback('Great detective work! You found a context clue!');
         setFeedbackType('success');
-        sendText(`[FIND_CORRECT] The student found a context-clue sentence for "${word}" (${n}). `
-          + (step.phases.includes('classify') ? `Briefly congratulate the detective and tell them to figure out what TYPE of clue it is. One sentence. Do not name the clue type.` : `Briefly congratulate the detective and tell them to use the clue to work out what the word means. One sentence. Do not state the meaning.`),
-          { silent: true });
-        if (!tutorOwned) advanceStepSoon();
       } else {
         // What this check showed holds no clue, for the cross_out lever (never a clue sentence).
         const out = ruledOutBy(currentChallenge, work.picked, miss);
@@ -377,9 +302,6 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
           ? 'Not every sentence you picked is a clue. Keep only the sentences that help explain the highlighted word.'
           : 'That sentence doesn\'t contain a clue. Look for a sentence that helps explain the highlighted word.');
         setFeedbackType('error');
-        sendText(`[FIND_INCORRECT] The student highlighted a sentence that is NOT a context clue for "${word}" (${n}). `
-          + `Give a brief hint about what a context clue does, without pointing to the exact sentence or revealing the meaning. One sentence.`,
-          { silent: true });
       }
       return;
     }
@@ -388,119 +310,26 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
       if (correct) {
         setFeedback('Correct! You identified the clue type!');
         setFeedbackType('success');
-        sendText(`[CLASSIFY_CORRECT] The student correctly named the clue type for "${word}". `
-          + `Briefly affirm and tell them to now use that clue to figure out what the word means. One sentence. Do not state the meaning.`,
-          { silent: true });
-        if (!tutorOwned) advanceStepSoon();
       } else {
-        setFeedback(tutorOwned
-          ? 'Not that type. Look again at what the green clue sentence does for the word.'
-          : 'Not quite. Think about what the clue sentence does — does it define, give a synonym, show an opposite, provide an example, or require inference?');
+        setFeedback('Not that type. Look again at what the green clue sentence does for the word.');
         setFeedbackType('error');
-        sendText(`[CLASSIFY_INCORRECT] The student chose the clue type "${work.clueType}" for "${word}", which is not right. `
-          + `Help them reason about what the clue sentence actually does (defines / gives a synonym / shows an opposite / gives an example / requires inference) without naming the correct type. One sentence.`,
-          { silent: true });
       }
       return;
     }
 
-    // Define. The scripted path closes the word on any answer and shows the meaning; the workspace path keeps the
-    // meaning hidden after a miss (Try again reopens the step) and shows the dictionary only once it is credited.
-    if (!tutorOwned) {
-      setChallengeResults(prev => [...prev, {
-        clueCorrect: findCorrect(currentChallenge, currentChallenge.passage.sentences.map(s => s.id).filter(id => highlightedSentenceIds.has(id))),
-        // A single-type session has no classify step: the type is not asked, and `scriptedScore` gives it no weight.
-        typeCorrect: step.phases.includes('classify') && selectedClueType === currentChallenge.clueType,
-        meaningCorrect: correct,
-      }]);
-    }
+    // Define. A miss keeps the meaning hidden (Try again reopens the step); the dictionary shows once it is credited.
     if (correct) {
       setFeedback('Excellent! You figured out the meaning from context!');
       setFeedbackType('success');
       setShowDictionary(true);
-      sendText(`[DEFINE_CORRECT] The student correctly worked out the meaning of "${word}" from the context clues (${n}). `
-        + `Celebrate the detective work briefly and mention they can compare it to the dictionary definition shown. One or two sentences.`,
-        { silent: true });
-    } else if (tutorOwned) {
+    } else {
       setFeedback('Not that meaning. Read the clue sentence again and try the word in its place.');
       setFeedbackType('error');
-    } else {
-      setFeedback(`The meaning is: "${currentChallenge.correctMeaning}"`);
-      setFeedbackType('info');
-      setShowDictionary(true);
-      sendText(`[DEFINE_INCORRECT] The student's meaning for "${word}" was not correct (${n}). `
-        + `The dictionary definition is now shown on screen. Encourage them warmly to read it and the clue together so they can connect the clue to the meaning. One or two sentences. Stay supportive.`,
-        { silent: true });
     }
   };
 
-  // Submit final evaluation (scripted path)
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const results = challengeResults;
-    const clueCorrectCount = results.filter(r => r.clueCorrect).length;
-    const typeCorrectCount = results.filter(r => r.typeCorrect).length;
-    const meaningCorrectCount = results.filter(r => r.meaningCorrect).length;
-    const total = results.length;
-
-    // Weighted over the steps built: find 30 + type 30 + meaning 40, or find and meaning rescaled when there is no type step.
-    const score = scriptedScore(results, steps.some(s => s.phase === 'classify'));
-
-    const lastClueType = currentChallenge?.clueType || 'inference';
-
-    const metrics: ContextCluesDetectiveMetrics = {
-      type: 'context-clues-detective',
-      gradeLevel,
-      clueHighlightedCorrectly: clueCorrectCount > 0,
-      clueTypeIdentified: typeCorrectCount > 0,
-      meaningCorrect: meaningCorrectCount > 0,
-      clueType: lastClueType,
-      dictionaryComparisonViewed: showDictionary,
-      attemptsCount: total,
-      totalChallenges: challenges.length,
-      challengesCorrect: meaningCorrectCount,
-    };
-
-    submitEvaluation(
-      score >= 50,
-      score,
-      metrics,
-      {
-        challengeResults: results,
-      }
-    );
-  }, [
-    hasSubmittedEvaluation,
-    challengeResults,
-    currentChallenge,
-    gradeLevel,
-    showDictionary,
-    challenges.length,
-    submitEvaluation,
-    steps,
-  ]);
-
-  // Move to next word or finish (scripted path; hidden on the workspace path)
-  const handleNext = () => {
-    if (progress.advance()) {
-      openItem.current(progress.currentIndex + 1, false);
-      const nextChallenge = challenges[currentChallengeIndex + 1];
-      if (nextChallenge) {
-        sendText(
-          `[NEXT_WORD] The student is moving to mystery word ${currentChallengeIndex + 2} of ${challenges.length}: "${nextChallenge.targetWord}". `
-          + `Briefly introduce the new word and tell them to find the clue sentence. One sentence. Do not reveal the meaning or the clue location.`,
-          { silent: true }
-        );
-      }
-    } else {
-      submitFinalEvaluation();
-    }
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss. A step counts for its phase when it was
-  // right on the first try.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss. A step counts for its phase when it was right on the first try.
   finish.current = (result) => {
     if (hasSubmittedEvaluation) return;
     const firstTry = (id: string) => latestProgress.current.results.some(r => r.challengeId === id && r.correct && r.attempts === 1);
@@ -523,24 +352,22 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
       undefined, result.diagnosisEvidence);
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
-  // Every step declares levers (`contextCluesLevers.ts`), all help; a pull changes the screen in the same commit.
+  // What the tutor and the observer are shown, republished every render. W1 offers no demonstration targets and no
+  // presentation. Every step declares help levers (`CLUE_LEVERS`); a pull changes the screen in the same commit.
   useLayoutEffect(() => {
-    if (!tutorOwned || !step) return;
-    const scene = clueScene(step, { ...viewRef.current, total: challenges.length, typeDescriptionsShown: descriptionsOn });
-    const levers = clueLevers(step, pulledLevers, leverCtx);
-    const onScreen = clueLeverFacts(step, pulledLevers, { ...leverCtx, meaning: viewRef.current.meaning });
+    if (!step) return;
+    const ctx: ClueLeverContext = { ruledOut, meaning: viewRef.current.meaning };
+    const levers = CLUE_LEVERS.declare(step, ctx, shownLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(clueScene(step, { ...viewRef.current, total: challenges.length }), {
+        support: CLUE_LEVERS.support(step, ctx),
+        onScreen: CLUE_LEVERS.onScreen(step, ctx, shownLevers),
+      }),
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this step.`;
         if (lever.pulled) return `${id} is already on screen.`;
-        if (id === CROSS_OUT_LEVER && (!ruledOut.length || crossOutLeaks(step.challenge, ruledOut)))
-          return 'No checked sentence to grey out yet: the learner taps a sentence and presses Check Clue first.';
         setLeverState({ item: step.id, pulled: [...pulledLevers, id] });
         return true;
       },
@@ -548,9 +375,8 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
   });
 
   const finished = hasSubmittedEvaluation || !!progress.practiceSummary;
-  const solvedSteps = (phase: CluePhase) => tutorOwned
-    ? challenges.filter(c => progress.results.some(r => r.challengeId === stepId(c.id, phase) && r.correct)).length
-    : challengeResults.filter(r => phase === 'find' ? r.clueCorrect : phase === 'classify' ? r.typeCorrect : r.meaningCorrect).length;
+  const solvedSteps = (phase: CluePhase) =>
+    challenges.filter(c => progress.results.some(r => r.challengeId === stepId(c.id, phase) && r.correct)).length;
 
   // ============================================================================
   // Render Helpers
@@ -683,7 +509,7 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
       </LuminaFeedbackCard>
     ) : null;
 
-  const checkClosed = (tutorOwned && progress.canAttempt === false) || feedbackType === 'success';
+  const checkClosed = progress.canAttempt === false || feedbackType === 'success';
 
   // Find phase
   const renderFindPhase = () => (
@@ -843,9 +669,9 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
         </LuminaCallout>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-end gap-2">
-        {!showDictionary ? (
+      {/* Actions: the shell's Next challenge moves on once the meaning is credited. */}
+      {!showDictionary && (
+        <div className="flex justify-end gap-2">
           <LuminaActionButton
             action="check"
             onClick={handleCheck}
@@ -853,12 +679,8 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
           >
             {CHECK_LABEL.define}
           </LuminaActionButton>
-        ) : tutorOwned ? null : (
-          <LuminaActionButton action="next" onClick={handleNext}>
-            {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-          </LuminaActionButton>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Final results */}
       {finished && (
@@ -879,18 +701,6 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
   // ============================================================================
   // Main Render
   // ============================================================================
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: finished || !currentChallenge ? null : `${currentChallenge.id}:${currentPhase}`,
-    label: 'The passage and the clue questions',
-    solved: feedbackType === 'success',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   if (!currentChallenge) {
     return (
@@ -935,21 +745,20 @@ const ContextCluesDetectiveSurface = ({ data, className, runtimePlanItemId, tuto
       <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !finished && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {currentPhase === 'find' && renderFindPhase()}
-        {currentPhase === 'classify' && renderClassifyPhase()}
-        {currentPhase === 'define' && renderDefinePhase()}
-        </div>
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workspace it outlines. */}
+        {!finished && <PipDock />}
+        <PipWorkspace className="space-y-4">
+          {currentPhase === 'find' && renderFindPhase()}
+          {currentPhase === 'classify' && renderClassifyPhase()}
+          {currentPhase === 'define' && renderDefinePhase()}
+        </PipWorkspace>
 
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ContextCluesDetective = withWorkspaceController<ContextCluesDetectiveProps, ProgressOptions<ClueStep>, Progress>(
-  'context-clues-detective', ContextCluesDetectiveSurface, useScriptedProgress, useWorkspaceProgressFor('context-clues-detective'));
+const ContextCluesDetective = withWorkspaceOnly<ContextCluesDetectiveProps>('context-clues-detective',
+  ContextCluesDetectiveSurface, props => props.data?.title);
 
 export default ContextCluesDetective;

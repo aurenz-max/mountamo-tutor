@@ -1,14 +1,15 @@
 /**
- * Systems of equations on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C20).
+ * Systems of equations' domain: the activity's check and its misses, the scene the tutor reads, and the harness's
+ * pair. The boss (`systemsEquations.boss.ts`) builds the assignment.
  *
  * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item: the learner
  * types x and y and presses Check, and the activity's own check (`solutionCorrect`, within 0.01 of the item's
  * `expectedX`/`expectedY`) is the judge. The tutor is never handed the solution: not the pair, not either coordinate,
  * not a step's result.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { SystemEquation, SystemsEquationsChallenge } from './SystemsEquationsVisualizer';
+import type { SystemsMiss } from './systemsEquations.card';
 
 export type SystemsMode = SystemsEquationsChallenge['type'];
 export interface SolutionPoint { x: number; y: number }
@@ -56,28 +57,7 @@ export function describeSystemsWork(work: SystemsWork): string {
 
 // ── misses ───────────────────────────────────────────────────────────────
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the pair entered against the key and the two
- * lines, drawn from the catalog's commonStruggles (reading the crossing wrong, forgetting to back-substitute, signs not
- * lined up), most specific first:
- * - `swapped` (y, x); `both_signs` (-x, -y); `x_sign` (-x, y); `y_sign` (x, -y);
- * - `intercept_point` a line's y-axis crossing (0, b): the start of one line, not where the two meet (graph and
- *   substitution, whose equations print b);
- * - `one_line_only` a point on one line and not the other: it solves one equation only;
- * - `off_by_one` one grid step from the solution;
- * - `x_only` x right, y wrong (the back-substitution); `y_only` y right, x wrong;
- * - `wrong_point` anything else.
- */
-export type SystemsMiss = 'swapped' | 'both_signs' | 'x_sign' | 'y_sign' | 'intercept_point' | 'one_line_only'
-  | 'off_by_one' | 'x_only' | 'y_only' | 'wrong_point';
-
-const ALL: readonly SystemsMiss[] = ['swapped', 'both_signs', 'x_sign', 'y_sign', 'intercept_point', 'one_line_only',
-  'off_by_one', 'x_only', 'y_only', 'wrong_point'];
-export const SYSTEMS_MISSES_BY_MODE: Record<SystemsMode, readonly SystemsMiss[]> = {
-  graph: ALL,
-  substitution: ALL,
-  elimination: ALL.filter(m => m !== 'intercept_point'),
-};
+export { SYSTEMS_MISSES_BY_MODE, type SystemsMiss } from './systemsEquations.card';
 
 export function systemsMiss(c: SystemsEquationsChallenge, p: SolutionPoint): SystemsMiss | undefined {
   const k = keyOf(c);
@@ -99,10 +79,6 @@ export function systemsMiss(c: SystemsEquationsChallenge, p: SolutionPoint): Sys
 
 // ── what the tutor is told ───────────────────────────────────────────────
 
-export function workspaceAssignment(c: SystemsEquationsChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
-
 /** The method's steps in words, never a number: what the easy tier opens and the method_steps lever shows. */
 export function methodSteps(type: SystemsMode): string {
   switch (type) {
@@ -115,17 +91,17 @@ export function methodSteps(type: SystemsMode): string {
   }
 }
 
+// The mode in a phrase; how the learner answers is the card's `moves`, and the hidden graph is its own fact below.
 const KIND: Record<SystemsMode, string> = {
-  graph: 'graphing: two lines are drawn on a grid, and the learner types the x and y of the one point where they cross',
-  substitution: 'substitution: two equations each solved for y; the learner sets them equal, solves for x, then finds y, '
-    + 'and types both. The graph stays hidden until the answer is right',
-  elimination: 'elimination: two equations in a·x + b·y = c form; the learner adds or scales them so one variable cancels, '
-    + 'solves, and types x and y. The graph stays hidden until the answer is right',
+  graph: 'graphing: two lines are drawn on a grid; the solution is the one point where they cross',
+  substitution: 'substitution: two equations each solved for y; set them equal, solve for x, then put x back in to find y',
+  elimination: 'elimination: two equations in a·x + b·y = c form; add or scale them so one variable cancels, solve, then '
+    + 'put that value back in to find the other',
 };
 
 /** What is drawn and asked: the two equations as printed, the grid and its aids. The solution never. */
 export function workspaceScene(c: SystemsEquationsChallenge,
-  view: { xRange: [number, number]; yRange: [number, number]; work: SystemsWork; linesShown: boolean }): WorkspaceScene {
+  view: { xRange: [number, number]; yRange: [number, number]; work: SystemsWork; linesShown: boolean }): SceneOf {
   const facts: Record<string, string> = {
     kind: KIND[c.type],
     equations: `line A: ${c.equationA.display}; line B: ${c.equationB.display}`,
@@ -140,8 +116,9 @@ export function workspaceScene(c: SystemsEquationsChallenge,
   }
   if (c.showStepHint && c.stepHint) facts.methodSteps = `shown on screen: ${c.stepHint}`;
   facts.learnerWork = describeSystemsWork(view.work);
-  facts.constraints = 'The learner types x and y into the two boxes and presses Check; the activity checks it itself. '
-    + 'You cannot type or press Check.';
+  // How the learner answers is the card's `moves`; only what is this activity's own is said here.
+  facts.constraints = 'A pair within 0.01 of the solution counts; a Check with an empty box is not graded. The result '
+    + "of a step (the x that setting equal or eliminating gives, the y it leads to) is the learner's to work out.";
   return { objects: [], facts };
 }
 

@@ -7,8 +7,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { MultiplicationExplorerChallenge } from './MultiplicationExplorer';
 import {
-  BREAK_APART_LEVER, SHOW_MODEL_LEVER, SKIP_LINE_LEVER, SKIP_STRIP_LEVER, SMALLER_FACT_LEVER, isPracticeFact, leverFacts,
-  leverNumbers, multiplicationLevers, practiceLeaks, practiceParent, smallerFact,
+  BREAK_APART_LEVER, MULTIPLICATION_LEVERS, SHOW_MODEL_LEVER, SKIP_LINE_LEVER, SKIP_STRIP_LEVER, SMALLER_FACT_LEVER,
+  isPracticeFact, leverNumbers, practiceLeaks, practiceParent, smallerFact, type ExplorerLeverContext,
 } from './multiplicationExplorerLevers';
 import { askedSlot, expectedAnswer, multiplicationAnswerCorrect, numbersIn, resolveChallengeFact, type ExplorerFactValue } from './multiplicationExplorerWorkspace';
 import buildP from '../../../components/live-activity/runtime/testing/w1-payloads/multiplication-explorer.build.json';
@@ -21,6 +21,10 @@ import fluencyP from '../../../components/live-activity/runtime/testing/w1-paylo
 type Mode = MultiplicationExplorerChallenge['type'];
 const MODES: Mode[] = ['build', 'connect', 'commutative', 'distributive', 'missing_factor', 'fluency'];
 const NONE: ExplorerFactValue = { factor1: 0, factor2: 0, product: 0 };
+const CTX: ExplorerLeverContext = { breakdownShown: false };
+const multiplicationLevers = (c: MultiplicationExplorerChallenge | null, pulled: readonly string[], ctx = CTX) =>
+  MULTIPLICATION_LEVERS.declare(c, ctx, pulled);
+const leverFacts = (c: MultiplicationExplorerChallenge, pulled: readonly string[]) => MULTIPLICATION_LEVERS.onScreen(c, CTX, pulled);
 const item = (id: string, type: Mode, a: number, b: number, hiddenValue: MultiplicationExplorerChallenge['hiddenValue']): MultiplicationExplorerChallenge =>
   ({ id, type, instruction: '', targetFact: `${a} × ${b} = ${a * b}`, fact: { factor1: a, factor2: b }, hiddenValue, timeLimit: null,
     hint: '', narration: '' });
@@ -47,28 +51,28 @@ describe('leak rules', () => {
   it.each(MODES)('%s: no lever prints or states the answer, and its words carry no number', mode => {
     for (const c of all(mode)) {
       const f = factOf(c), key = expectedAnswer(c, f);
-      const levers = multiplicationLevers(c, NONE, []);
+      const levers = multiplicationLevers(c, []);
       const help = levers.filter(l => l.kind === 'help').map(l => l.id);
       if (!givens(c).includes(key)) {
         for (const id of help) expect(leverNumbers(c, f, id), `${c.id} ${id}`).not.toContain(key);
-        expect(numbersIn(leverFacts(c, f, help)), c.id).not.toContain(key);
+        expect(numbersIn(leverFacts(c, help)), c.id).not.toContain(key);
       }
       for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/\d/);
     }
   });
 
   it('each mode gets its own help levers', () => {
-    const ids = (c: MultiplicationExplorerChallenge) => multiplicationLevers(c, NONE, []).map(l => l.id);
+    const ids = (c: MultiplicationExplorerChallenge) => multiplicationLevers(c, []).map(l => l.id);
     expect(ids(item('b', 'build', 3, 4, 'product'))).toEqual([SKIP_STRIP_LEVER, SMALLER_FACT_LEVER]);
     expect(ids(item('q', 'fluency', 3, 4, 'product'))).toEqual([SKIP_STRIP_LEVER, SHOW_MODEL_LEVER, SMALLER_FACT_LEVER]);
     expect(ids(item('d', 'distributive', 7, 6, 'product'))).toEqual([SKIP_STRIP_LEVER, BREAK_APART_LEVER, SMALLER_FACT_LEVER]);
-    expect(multiplicationLevers(item('d', 'distributive', 7, 6, 'product'), NONE, [], { breakdownShown: true }).map(l => l.id))
+    expect(multiplicationLevers(item('d', 'distributive', 7, 6, 'product'), [], { breakdownShown: true }).map(l => l.id))
       .toEqual([SKIP_STRIP_LEVER, SMALLER_FACT_LEVER]);
     expect(ids(item('f', 'missing_factor', 5, 4, 'factor1'))).toEqual([SKIP_LINE_LEVER, SMALLER_FACT_LEVER]);
     // The plainest facts have no smaller one; an easier item has no levers.
     expect(ids(item('t', 'build', 2, 2, 'product'))).toEqual([SKIP_STRIP_LEVER]);
     expect(ids(item('t', 'missing_factor', 3, 2, 'factor1'))).toEqual([SKIP_LINE_LEVER]);
-    expect(multiplicationLevers(smallerFact(item('b', 'build', 3, 4, 'product'), NONE), NONE, [])).toEqual([]);
+    expect(multiplicationLevers(smallerFact(item('b', 'build', 3, 4, 'product'), NONE), [])).toEqual([]);
   });
 
   it('the skip strip stops one group short, and the skip line labels only 0 and the product', () => {
@@ -76,7 +80,7 @@ describe('leak rules', () => {
     expect(leverNumbers(b, factOf(b), SKIP_STRIP_LEVER)).toEqual([4, 4, 8]);
     const m = item('f', 'missing_factor', 5, 4, 'factor1');
     expect(leverNumbers(m, factOf(m), SKIP_LINE_LEVER)).toEqual([0, 4, 20]);
-    expect(leverFacts(m, factOf(m), [SKIP_LINE_LEVER])).toBe('Under the equation: a number line with jumps of 4 from 0 running past 20; only 0 and 20 are labelled.');
+    expect(leverFacts(m, [SKIP_LINE_LEVER])).toBe('Under the equation: a number line with jumps of 4 from 0 running past 20; only 0 and 20 are labelled.');
   });
 });
 
@@ -119,13 +123,13 @@ describe('this wrong answer, then this lever', () => {
     [b, 'added_factors', SKIP_STRIP_LEVER], [b, 'one_group_short', SKIP_STRIP_LEVER], [d, 'one_part_only', SKIP_STRIP_LEVER],
     [q, 'other_product', SKIP_STRIP_LEVER], [m, 'gave_product', SKIP_LINE_LEVER], [m, 'one_jump_off', SKIP_LINE_LEVER],
   ] as const)('%#: %s → %s', (c, miss, lever) => {
-    expect(nextLever(multiplicationLevers(c, NONE, []), miss)).toBe(lever);
+    expect(nextLever(multiplicationLevers(c, []), miss)).toBe(lever);
   });
   it('after the first help lever, the next one, then the smaller fact', () => {
-    expect(nextLever(multiplicationLevers(d, NONE, [SKIP_STRIP_LEVER]), 'one_part_only')).toBe(BREAK_APART_LEVER);
-    expect(nextLever(multiplicationLevers(q, NONE, [SKIP_STRIP_LEVER]), 'other_product')).toBe(SHOW_MODEL_LEVER);
-    expect(nextLever(multiplicationLevers(b, NONE, [SKIP_STRIP_LEVER]), 'added_factors')).toBe(SMALLER_FACT_LEVER);
-    expect(nextLever(multiplicationLevers(m, NONE, [SKIP_LINE_LEVER]), 'gave_product')).toBe(SMALLER_FACT_LEVER);
+    expect(nextLever(multiplicationLevers(d, [SKIP_STRIP_LEVER]), 'one_part_only')).toBe(BREAK_APART_LEVER);
+    expect(nextLever(multiplicationLevers(q, [SKIP_STRIP_LEVER]), 'other_product')).toBe(SHOW_MODEL_LEVER);
+    expect(nextLever(multiplicationLevers(b, [SKIP_STRIP_LEVER]), 'added_factors')).toBe(SMALLER_FACT_LEVER);
+    expect(nextLever(multiplicationLevers(m, [SKIP_LINE_LEVER]), 'gave_product')).toBe(SMALLER_FACT_LEVER);
   });
 });
 
@@ -133,7 +137,7 @@ it('every catalog miss is answered by a lever on every item, generated and saved
   const tw = getComponentById('multiplication-explorer')!.teachingWorkspace!;
   expect(tw.levers).toBe(true);
   for (const mode of MODES) for (const c of all(mode)) {
-    const levers = multiplicationLevers(c, NONE, []);
+    const levers = multiplicationLevers(c, []);
     for (const miss of tw.misses![mode]) expect(levers.some(l => l.answers?.includes(miss)), `${mode} ${c.id} ${miss}`).toBe(true);
   }
 });

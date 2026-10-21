@@ -1,16 +1,17 @@
 /**
- * Slope triangle on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C20).
+ * Slope triangle's domain: the activity's check and its misses, and the scene the tutor reads. The boss
+ * (`slopeTriangle.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
+ * Pure: the component and any probe read the same scene. Every mode is a gesture item checked by the
  * activity's own check: identify_slope by the rise and run typed, calculate by the slope typed (a number or a
  * fraction, compared by value, so 4/6 and 2/3 both count), draw_triangle by the triangle the learner built (its rise over
  * its run is the line's slope, so its top corner lands back on the line; any such run counts). The tutor is never
  * handed the answer: not the rise, the run or the slope, and a build has no target on screen. The line's label is drawn with its slope masked on the
  * two modes that ask for it (`lineLabel`).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { SlopeTriangleChallenge } from './SlopeTriangle';
+import type { SlopeTriangleMiss } from './slopeTriangle.card';
 
 export type SlopeTriangleMode = SlopeTriangleChallenge['type'];
 
@@ -107,28 +108,7 @@ export function describeSlopeWork(c: SlopeTriangleChallenge, w: SlopeWork): stri
 
 // ── misses ───────────────────────────────────────────────────────────────
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), drawn from the catalog's commonStruggles (rise and run
- * confused, the sign of a falling line, slope versus one triangle's legs, the ratio turned over):
- * - identify_slope: `swapped` rise and run exchanged; `rise_sign` the rise's sign lost (a falling line's rise typed
- *   positive, or the reverse); `run_sign` the run typed negative; `same_ratio` a pair with the line's slope but not this
- *   triangle's legs (the slope read as rise over one); `rise_off` the run right and the rise one off; `run_off` the
- *   rise right and the run one off; `wrong_legs` anything else;
- * - calculate: `opposite_sign` -m; `reciprocal` run over rise; `negative_reciprocal` -run over rise; `rise_only` the
- *   rise alone; `run_only` the run alone; `wrong_slope` anything else;
- * - draw_triangle: `flat` checked with the top corner never raised or lowered; `wrong_sign` the rise the line needs
- *   for that run, the other way; `swapped` the run over the rise (rise/run is the slope turned over); `rise_off` one
- *   step from the rise the run needs; `wrong_ratio` anything else.
- */
-export type SlopeTriangleMiss = 'swapped' | 'rise_sign' | 'run_sign' | 'same_ratio' | 'rise_off' | 'run_off' | 'wrong_legs'
-  | 'opposite_sign' | 'reciprocal' | 'negative_reciprocal' | 'rise_only' | 'run_only' | 'wrong_slope'
-  | 'flat' | 'wrong_sign' | 'rise_off' | 'wrong_ratio';
-
-export const SLOPE_TRIANGLE_MISSES_BY_MODE: Record<SlopeTriangleMode, readonly SlopeTriangleMiss[]> = {
-  identify_slope: ['swapped', 'rise_sign', 'run_sign', 'same_ratio', 'rise_off', 'run_off', 'wrong_legs'],
-  calculate: ['opposite_sign', 'reciprocal', 'negative_reciprocal', 'rise_only', 'run_only', 'wrong_slope'],
-  draw_triangle: ['flat', 'wrong_sign', 'swapped', 'rise_off', 'wrong_ratio'],
-};
+export { SLOPE_TRIANGLE_MISSES_BY_MODE, type SlopeTriangleMiss } from './slopeTriangle.card';
 
 /** The miss a typed rise and run show against the drawn triangle's legs. */
 export function legsMiss(c: SlopeTriangleChallenge, rise: number, run: number): SlopeTriangleMiss | undefined {
@@ -186,10 +166,6 @@ export function askOf(c: SlopeTriangleChallenge): string {
   return c.instruction;
 }
 
-export function workspaceAssignment(c: SlopeTriangleChallenge): TeachingAssignment {
-  return { id: c.id, task: askOf(c), response: 'gesture' };
-}
-
 const KIND: Record<SlopeTriangleMode, string> = {
   identify_slope: 'read a slope triangle: a right triangle is drawn on the line, and the learner types its rise (the up-or-down leg) and its run (the across leg)',
   calculate: 'calculate a slope: a right triangle is drawn on the line, and the learner types the line\'s slope as a number or a fraction',
@@ -202,7 +178,7 @@ const direction = (c: SlopeTriangleChallenge) => {
 };
 
 /** What is drawn and asked. Numbers only where the card prints them; the rise, run and slope never otherwise. */
-export function workspaceScene(c: SlopeTriangleChallenge, view: { work: SlopeWork }): WorkspaceScene {
+export function workspaceScene(c: SlopeTriangleChallenge, view: { work: SlopeWork }): SceneOf {
   const t = c.triangle;
   const delta = t.notation === 'deltaNotation';
   const labels = t.showRiseRunLabels ?? t.showMeasurements;
@@ -225,9 +201,8 @@ export function workspaceScene(c: SlopeTriangleChallenge, view: { work: SlopeWor
   ].filter((s): s is string => !!s);
   facts.aids = aids.length ? aids.join('; ') : 'no counting ticks and no formula badge';
   facts.learnerWork = describeSlopeWork(c, view.work);
-  facts.constraints = c.type === 'draw_triangle'
-    ? 'The learner drags the triangle\'s corners or presses Move left, Move right, Shorter run, Longer run, Lower rise and Higher rise, then Check; the activity checks it itself. You cannot move the triangle or press Check.'
-    : 'The learner types into the boxes and presses Check; the activity checks it itself. You cannot type or press Check.';
+  // How the learner answers is the card's `moves`; only what is this item's own is said here.
+  if (c.type === 'calculate') facts.constraints = 'Any fraction equal to the slope counts, reduced or not.';
   return { objects: [], facts };
 }
 

@@ -81,7 +81,9 @@ const outputState = (h: WorkspaceHarness) => h.view.container.querySelector('[da
 it('every catalog mode binds, with its miss list', () => {
   const entry = getComponentById('parameter-explorer')!;
   expect((entry.evalModes ?? []).map(m => m.evalMode).sort()).toEqual(CASES.map(c => c.mode).sort());
-  expect(entry.teachingWorkspace!.misses).toEqual(PARAMETER_MISSES_BY_MODE);
+  // explore credits every move and names no miss, so the catalog lists none for it.
+  const { explore: _none, ...checked } = PARAMETER_MISSES_BY_MODE;
+  expect(entry.teachingWorkspace!.misses).toEqual(checked);
   for (const { mode, data } of CASES) {
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'parameter-explorer', pin: mode, objectiveIds: ['o'],
       data: data as unknown as Record<string, unknown> }), mode).not.toBeNull();

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { askFor, frameVerdictCue, itemsFromChallenges } from './tenFrameScript';
-import { frameMiss, tenFrameLevers } from './tenFrameLevers';
-import { workspaceAssignment } from './tenFrameWorkspace';
+import { TEN_FRAME_LEVERS } from './tenFrameLevers';
+import { frameMiss } from './tenFrameWorkspace';
+import { tenFrameBoss } from './tenFrame.boss';
 import { pairTotals } from '../../../service/math/gemini-ten-frame';
 
 const items = (totals: number[]) => itemsFromChallenges(
@@ -16,7 +17,7 @@ describe('ten-frame build_pair (open build)', () => {
     expect(askFor(a)).toBe('Make five with red and yellow counters. Your turn — use both colours.');
     expect(askFor(b)).toMatch(/DIFFERENT way/);
     expect(items([1, 11])).toHaveLength(0);
-    expect(workspaceAssignment(a)).toMatchObject({ response: 'gesture' });
+    expect(tenFrameBoss.assignment(a)).toMatchObject({ response: 'gesture' });
   });
 
   it('names the misses: one over, one under, one colour, the same pair again', () => {
@@ -36,7 +37,7 @@ describe('ten-frame build_pair (open build)', () => {
     const miss = frameVerdictCue(item, 5, { yellow: 0 });
     expect(miss).toMatch(/both colours/);
     expect(miss.split('Say exactly:')[1]).not.toMatch(/\b(one|two|three|four)\b/);
-    const levers = tenFrameLevers(item, [], 'K', { session: [item] });
+    const levers = TEN_FRAME_LEVERS.declare(item, { band: 'K', session: [item] }, []);
     expect(levers.map(l => l.id)).toEqual(['running_count', 'split_model', 'smaller_total']);
     expect(levers.every(l => !l.pulled)).toBe(true);
     expect(levers.find(l => l.id === 'split_model')!.does).toMatch(/Never a pair for this number/);

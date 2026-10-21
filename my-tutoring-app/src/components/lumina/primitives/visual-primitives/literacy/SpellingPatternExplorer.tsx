@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * Spelling Pattern Explorer. Two shapes, one mount:
- *   - The classic modes (short_vowel ... morphological): look at the pattern words, write the rule, spell the dictation
- *     words. Bound to the teaching workspace (W1, plain shape): each dictation word is one item the tutor says and the
- *     learner types; the spelling is checked in code. Outside a live runtime the scripted flow is unchanged.
+ * Spelling Pattern Explorer, taught on the shared teaching workspace only (the boss: `spellingPatternExplorer.card.ts`
+ * + `spellingPatternExplorer.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card
+ * (`withWorkspaceOnly`). Two shapes, one mount:
+ *   - The classic modes (short_vowel ... morphological): look at the pattern words, write the rule, then spell one
+ *     dictation word at a time: the tutor says the word, the learner types it and presses Check spelling; the spelling
+ *     is checked in code.
  *   - `pattern_build` (open build, `task: 'letter_build'`): make a word with a named spelling pattern on the shared
- *     letter build surface (`LetterBuildSurface.tsx`, `pattern` ask in `spellingPatternBuild.ts`). Workspace only.
+ *     letter build surface (`LetterBuildSurface.tsx`, `pattern` ask in `spellingPatternBuild.ts`), wired from this boss.
  */
 import React, { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
@@ -21,7 +23,6 @@ import {
   LuminaStat,
   LuminaFeedbackCard,
   LuminaChallengeCounter,
-  answerStateClasses,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -30,22 +31,21 @@ import {
 } from '../../../evaluation';
 import type { SpellingPatternExplorerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import {
-  useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions,
-} from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { withWorkspaceController, withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
+import { spellingPatternExplorerBoss, spellingSession } from './spellingPatternExplorer.boss';
 import {
-  describeTyped, dictationAssignment, dictationItems, spellingMatches, spellingMiss, spellingMissWords, spellingScene,
-  type DictationItem,
+  describeTyped, spellingMatches, spellingMiss, spellingMissWords, spellingScene, spellingWords, type SpellingWord,
 } from './spellingPatternExplorerWorkspace';
 import {
-  BOXES_LEVER, PATTERN_WORDS_LEVER, leverFacts, letterBoxes, markPattern, practiceItem, shownPatternWords, spellingLevers,
-  type SpellingSession,
+  BOXES_LEVER, PATTERN_WORDS_LEVER, SPELLING_LEVERS, letterBoxes, markPattern, patternBuildLevers, patternWordsStartShown,
+  shownPatternWords,
 } from './spellingPatternLevers';
 
 // ============================================================================
@@ -103,12 +103,6 @@ interface SpellingPatternExplorerProps {
   runtimeEvalMode?: string;
 }
 
-type Controller = (options: ProgressOptions<DictationItem>) => Progress;
-
-// ============================================================================
-// Types
-// ============================================================================
-
 type SpellingPhase = 'observe' | 'rule' | 'apply' | 'review';
 
 const PATTERN_ACCENTS: Record<PatternType, LuminaAccent> = {
@@ -122,72 +116,65 @@ const PATTERN_ACCENTS: Record<PatternType, LuminaAccent> = {
 
 const itemScore = (attempts: number) => Math.max(20, 100 - 20 * (attempts - 1));
 
+const useSpellingProgress = useWorkspaceProgressFor('spelling-pattern-explorer');
+const PRACTICE_NOTE = 'An ungraded practice word, shorter, with the same spelling pattern; then the full word comes back.';
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { tutorOwned: boolean; useController: Controller }> = ({
-  data, className, runtimePlanItemId, tutorOwned, useController,
-}) => {
+const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps> = ({ data, className, runtimePlanItemId }) => {
   const {
     title, gradeLevel, patternType, patternWords, highlightPattern,
-    ruleTemplate, dictationWords, dictationHints, supportTier,
+    ruleTemplate, supportTier,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
 
-  // ── Support-tier render gates (absent ⇒ full-support legacy) ──────────────
-  // 100% display withdrawal: no gate below ever touches content or the checker.
-  // The per-word hint button is the ONLY stimulus identifying which word to
-  // spell (no TTS exists), so it is NEVER tier-gated at any tier.
+  // ── Support-tier render gates (absent ⇒ full support) ─────────────────────
   // L1: explicit pattern-reveal panel — withdrawn at medium/hard.
   const showPatternPanel = !supportTier || supportTier === 'easy';
-  // L2: word-tile pattern highlights — all (legacy/easy) → first 3 worked
-  // examples (medium) → none (hard: the student induces the pattern).
+  // L2: word-tile pattern highlights — all (legacy/easy) → first 3 worked examples (medium) → none (hard: the student
+  // induces the pattern).
   const highlightLimit =
     !supportTier || supportTier === 'easy' ? Number.POSITIVE_INFINITY
     : supportTier === 'medium' ? 3
     : 0;
   // L3: fill-in-the-blank ruleTemplate — withdrawn at hard.
   const showRuleTemplate = supportTier !== 'hard';
-  // L4: live correct-glow on dictation inputs — neutral until Review at hard
-  // (closes the letter-by-letter brute-force channel).
-  const liveCorrectGlow = supportTier !== 'hard';
-  // L5: "show" reveal button — withdrawn at hard (the hint stays available).
-  const showRevealButton = supportTier !== 'hard';
 
   const [currentPhase, setCurrentPhase] = useState<SpellingPhase>('observe');
   const [patternIdentified, setPatternIdentified] = useState(false);
   const [studentRule, setStudentRule] = useState('');
-  const [spellings, setSpellings] = useState<string[]>(Array(dictationWords.length).fill(''));
   const [showHints, setShowHints] = useState<Set<number>>(new Set());
-  const [revealedWords, setRevealedWords] = useState<Set<number>>(new Set());
 
-  // ── Teaching workspace (tutorOwned): one dictation word per item ─────────
+  // ── Teaching workspace: one dictation word per item ─────────────────────
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableId = useRef(instanceId || `spelling-pattern-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableId.current;
-  const items = useMemo(() => dictationItems(dictationWords, dictationHints), [dictationWords, dictationHints]);
+  const items = useMemo(() => spellingWords(data), [data]);
+  const session = useMemo(() => spellingSession(data), [data]);
   const [typed, setTyped] = useState('');
   const [verdict, setVerdict] = useState<{ correct: boolean; words: string } | null>(null);
-  // Levers (`spellingPatternLevers.ts`): this word's runtime pulls, and the ungraded shorter word a simplify pull opens.
+  // Levers (`SPELLING_LEVERS`): this word's runtime pulls, and the ungraded shorter word a simplify pull opens.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<DictationItem | null>(null);
-  const session = useMemo<SpellingSession>(() => ({ patternWords: patternWords ?? [], highlightPattern, items, supportTier }),
-    [patternWords, highlightPattern, items, supportTier]);
-  const progress = useController({
+  const [practice, setPractice] = useState<SpellingWord | null>(null);
+  const progress = useSpellingProgress<SpellingWord>({
     challenges: items, getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: dictationAssignment,
+    workspace, assignment: spellingPatternExplorerBoss.assignment!,
     // A fresh word opens empty; Try again keeps the typing and the verdict words until the next check.
     // A retry on the practice word keeps it; only endPractice brings the full word back.
     onItemOpened: (_index, retry) => { if (!retry) { setTyped(''); setVerdict(null); setPractice(null); } },
   });
-  const allDone = tutorOwned && (progress.isComplete || !!progress.practiceSummary);
+  const allDone = progress.isComplete || !!progress.practiceSummary;
   const sessionItem = items[progress.currentIndex] ?? null;
   /** The word being spelled now: the practice word while one is open, else the session's word. */
   const item = practice ?? sessionItem;
-  const pulled = !practice && sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
-  const leversOn = tutorOwned && !practice && sessionItem ? spellingLevers(sessionItem, session, pulled).filter(l => l.pulled).map(l => l.id) : [];
+  const runtimePulls = sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
+  // Easy starts with the pattern words shown: a starting position, not a pull.
+  const pulled = useMemo(() => Array.from(new Set([...(patternWordsStartShown(session) ? [PATTERN_WORDS_LEVER] : []), ...runtimePulls])),
+    [session, runtimePulls]);
+  const leverOn = (id: string) => !practice && pulled.includes(id);
   const blocked = progress.canAttempt === false;
 
   const {
@@ -219,16 +206,8 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
     }
   };
 
-  // Check spelling
-  const checkSpelling = useCallback((index: number) => {
-    return spellings[index]?.trim().toLowerCase() === dictationWords[index]?.toLowerCase();
-  }, [spellings, dictationWords]);
-
-  // Count correct (scripted: the typed list; workspace: the committed results)
-  const wordsCorrect = tutorOwned
-    ? progress.results.filter(r => r.correct).length
-    : spellings.filter((s, i) => s.trim().toLowerCase() === dictationWords[i]?.toLowerCase()).length;
-  const wordsTotal = tutorOwned ? items.length : dictationWords.length;
+  const wordsCorrect = progress.results.filter(r => r.correct).length;
+  const wordsTotal = items.length;
 
   // Highlight pattern in word
   const highlightWordPattern = (word: string) => {
@@ -250,9 +229,8 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
     if (hasSubmittedEvaluation) return;
 
     const ruleOk = studentRule.trim().length > 10;
-    const dictationAccuracy = tutorOwned
-      ? (items.length > 0 ? Math.round(progress.results.reduce((s, r) => s + (r.correct ? itemScore(r.attempts) : 0), 0) / items.length) : 100)
-      : (dictationWords.length > 0 ? Math.round((wordsCorrect / dictationWords.length) * 100) : 100);
+    const dictationAccuracy = items.length > 0
+      ? Math.round(progress.results.reduce((s, r) => s + (r.correct ? itemScore(r.attempts) : 0), 0) / items.length) : 100;
 
     // Score: pattern ID (15%) + rule (30%) + dictation (55%)
     const patternScore = patternIdentified ? 15 : 0;
@@ -268,16 +246,14 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
       wordsTotal,
       patternType,
       dictationAccuracy,
-      attemptsCount: tutorOwned ? Math.max(1, progress.results.reduce((s, r) => s + r.attempts, 0)) : 1,
+      attemptsCount: Math.max(1, progress.results.reduce((s, r) => s + r.attempts, 0)),
     };
 
-    submitEvaluation(score >= 50, score, metrics, tutorOwned
-      ? { studentRule, challengeResults: progress.results }
-      : { studentRule, spellings });
-  }, [hasSubmittedEvaluation, patternIdentified, studentRule, wordsCorrect, wordsTotal, dictationWords, patternType, submitEvaluation,
-    spellings, tutorOwned, items.length, progress.results]);
+    submitEvaluation(score >= 50, score, metrics, { studentRule, challengeResults: progress.results });
+  }, [hasSubmittedEvaluation, patternIdentified, studentRule, wordsCorrect, wordsTotal, patternType, submitEvaluation,
+    items.length, progress.results]);
 
-  // Workspace: the evaluation goes out once every word is done, and only under a lesson's evaluation provider.
+  // The evaluation goes out once every word is done, and only under a lesson's evaluation provider.
   useEffect(() => {
     if (!allDone || hasSubmittedEvaluation || !progress.recordsEvaluation) return;
     submitFinalEvaluation();
@@ -298,31 +274,34 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
 
   // The scene the tutor reads: the phase, what is on screen, the learner's typing. Never the spelling.
   useLayoutEffect(() => {
-    if (!tutorOwned || !item || !sessionItem) return;
+    if (!item || !sessionItem) return;
     const hintShown = currentPhase === 'apply' && !practice && showHints.has(progress.currentIndex) ? item.hint : undefined;
-    const scene = spellingScene(item, { phase: allDone ? 'review' : currentPhase, typed, patternWords,
+    const scene = spellingScene({ phase: allDone ? 'review' : currentPhase, typed, patternWords,
       patternShown: currentPhase === 'observe' && showPatternPanel ? highlightPattern : undefined,
       ruleWritten: !!studentRule.trim(), hintShown });
     // Levers only while the learner spells a session word; none on the practice word.
     const spelling = currentPhase === 'apply' && !allDone;
-    const levers = spelling && !practice ? spellingLevers(sessionItem, session, pulled) : [];
-    const onScreen = spelling && !practice ? leverFacts(sessionItem, session, pulled) : undefined;
+    const live = spelling && !practice;
+    const levers = live ? SPELLING_LEVERS.declare(sessionItem, session, pulled) : [];
+    const published = leverScene(scene, {
+      support: live ? SPELLING_LEVERS.support(sessionItem, session) : '',
+      onScreen: live ? SPELLING_LEVERS.onScreen(sessionItem, session, pulled) : '',
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An ungraded practice word, shorter, with the same spelling pattern; then the full word comes back.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       readyForResponse: spelling,
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this word now.`;
         if (lever.pulled) return `${id} is already on screen.`;
-        const next = { item: sessionItem.id, pulled: [...pulled, id] };
+        const next = { item: sessionItem.id, pulled: [...runtimePulls, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, session);
+          const easier = SPELLING_LEVERS.simpler(sessionItem, session, id) as SpellingWord | null;
           if (!easier) return 'There is no shorter pattern word for this word.';
           setLeverState(next); setTyped(''); setVerdict(null); setPractice(easier);
-          return { practice: dictationAssignment(easier) };
+          return { practice: spellingPatternExplorerBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -359,20 +338,6 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
   };
 
   const accuracyPct = wordsTotal > 0 ? Math.round((wordsCorrect / wordsTotal) * 100) : 0;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: instanceId || 'spelling-pattern-explorer',
-    scopeId: hasSubmittedEvaluation || allDone ? null : tutorOwned && currentPhase === 'apply' ? item?.id ?? currentPhase : currentPhase,
-    label: 'The pattern words and your spellings',
-    solved: tutorOwned
-      ? currentPhase === 'apply' && !!verdict?.correct
-      : currentPhase === 'apply' && liveCorrectGlow && dictationWords.length > 0 && wordsCorrect === dictationWords.length,
-    tutorSpeaking: false,
-  });
 
   const observe = (
     <div className="space-y-3">
@@ -433,15 +398,15 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
     </div>
   );
 
-  // Workspace apply: one word at a time. No live glow and no "show" (the check is the commit); the hint stays.
-  const tutorApply = item && (
+  // Apply: one word at a time. No live glow and no "show" (the check is the commit); the hint stays.
+  const apply = item && (
     <div className="space-y-3">
-      <div className="flex justify-center">
+      <div className="flex justify-center items-center gap-2">
         <LuminaChallengeCounter current={Math.min(progress.currentIndex + 1, items.length)} total={items.length} variant="dots" />
+        {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
       </div>
-      {practice && <p className="text-xs text-amber-300">Practice word</p>}
       <p className="text-xs text-slate-500">Listen to the word, then spell it using the pattern rule:</p>
-      {leversOn.includes(PATTERN_WORDS_LEVER) && (
+      {leverOn(PATTERN_WORDS_LEVER) && (
         <LuminaPanel data-lever="pattern-words" className="p-2 flex flex-wrap gap-2">
           {shownPatternWords(session).map(w => {
             const parts = markPattern(w, highlightPattern);
@@ -472,7 +437,7 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
           <span className="text-xs text-amber-300">{item.hint}</span>
         )}
       </div>
-      {leversOn.includes(BOXES_LEVER) && (() => {
+      {leverOn(BOXES_LEVER) && (() => {
         const { boxes, extra } = letterBoxes(item, typed);
         return (
           <div data-lever="letter-boxes" className="flex items-center gap-1" aria-label={`${boxes.length} letter boxes`}>
@@ -516,22 +481,9 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
         <p className="text-sm text-slate-300">{studentRule}</p>
       </LuminaPanel>
 
-      {tutorOwned ? (
-        <LuminaFeedbackCard status="correct" label="Spelling Practice Complete!">
-          {wordsCorrect}/{wordsTotal} words spelled
-        </LuminaFeedbackCard>
-      ) : !hasSubmittedEvaluation ? (
-        <div className="flex justify-between">
-          <LuminaButton tone="subtle" onClick={prevPhase}>Edit</LuminaButton>
-          <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
-            Submit
-          </LuminaActionButton>
-        </div>
-      ) : (
-        <LuminaFeedbackCard status="correct" label="Spelling Practice Complete!">
-          {wordsCorrect}/{dictationWords.length} words correct ({accuracyPct}%)
-        </LuminaFeedbackCard>
-      )}
+      <LuminaFeedbackCard status="correct" label="Spelling Practice Complete!">
+        {wordsCorrect}/{wordsTotal} words spelled
+      </LuminaFeedbackCard>
     </div>
   );
 
@@ -554,84 +506,19 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
       <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
-        <div {...pip.workspace} data-testid="spe-board" className="space-y-4">
-        {allDone ? review : (
-          <>
-            {currentPhase === 'observe' && observe}
-            {currentPhase === 'rule' && rule}
-
-            {/* Phase 3: Apply (Dictation) */}
-            {currentPhase === 'apply' && tutorOwned && tutorApply}
-            {currentPhase === 'apply' && !tutorOwned && (
-              <div className="space-y-3">
-                <p className="text-xs text-slate-500">Spell each word using the pattern rule:</p>
-                {dictationWords.map((word, i) => {
-                  const isCorrect = checkSpelling(i);
-                  const isRevealed = revealedWords.has(i);
-                  const hasHint = dictationHints && dictationHints[i];
-                  return (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 w-6">{i + 1}.</span>
-                      {/* Interaction surface: spelling-entry box (graded via answerStateClasses).
-                          L4 tier gate: the live correct-glow is suppressed at hard — the input
-                          stays neutral until Review, closing letter-by-letter brute force.
-                          The checker itself is untouched at every tier. */}
-                      <input
-                        value={spellings[i] || ''}
-                        onChange={e => {
-                          const next = [...spellings];
-                          next[i] = e.target.value;
-                          setSpellings(next);
-                        }}
-                        placeholder="Type the word..."
-                        disabled={isRevealed}
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                          isRevealed ? answerStateClasses.correct
-                          : liveCorrectGlow && spellings[i] && isCorrect ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-200'
-                          : 'bg-white/5 border-white/10 text-slate-200 focus:border-blue-500/40'
-                        }`}
-                      />
-                      {/* Keep-true: the hint button is the ONLY stimulus identifying which
-                          word to spell (no TTS exists) — NEVER tier-gated, at any tier. */}
-                      {hasHint && !showHints.has(i) && (
-                        <button onClick={() => setShowHints(prev => new Set(Array.from(prev).concat(i)))}
-                          className="text-xs text-slate-500 hover:text-slate-400">hint</button>
-                      )}
-                      {showHints.has(i) && hasHint && (
-                        <span className="text-xs text-amber-300">{dictationHints![i]}</span>
-                      )}
-                      {/* L5 tier gate: the free answer reveal is withdrawn at hard. */}
-                      {showRevealButton && spellings[i] && !isCorrect && (
-                        <button onClick={() => setRevealedWords(prev => new Set(Array.from(prev).concat(i)))}
-                          className="text-xs text-slate-500 hover:text-slate-400">show</button>
-                      )}
-                      {isRevealed && (
-                        <span className="text-xs text-emerald-300 font-mono">{word}</span>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="flex justify-between">
-                  <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
-                  <LuminaActionButton
-                    action="next"
-                    onClick={nextPhase}
-                    disabled={!spellings.some(s => s.trim())}
-                  >
-                    Review
-                  </LuminaActionButton>
-                </div>
-              </div>
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workspace as a region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
+          <div data-testid="spe-board" className="space-y-4">
+            {allDone ? review : (
+              <>
+                {currentPhase === 'observe' && observe}
+                {currentPhase === 'rule' && rule}
+                {currentPhase === 'apply' && apply}
+              </>
             )}
-
-            {/* Phase 4: Review (scripted path only; the workspace path reviews once every word is done) */}
-            {currentPhase === 'review' && !tutorOwned && review}
-          </>
-        )}
-        </div>
-
+          </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );
@@ -644,22 +531,24 @@ const patternBuildMetrics = (data: SpellingPatternExplorerData) => (s: LetterBui
   dictationAccuracy: s.accuracy, attemptsCount: s.attemptsCount,
 });
 
-/** The open build runs only on the teaching workspace (an unbound mount shows the needs-the-tutor card). */
+/** The open build (`pattern_build`) on the shared letter build surface, wired from this boss. */
 const PatternBuild: React.FC<SpellingPatternExplorerProps> = ({ data, className, runtimePlanItemId }) => {
   const metrics = useMemo(() => patternBuildMetrics(data), [data]);
+  const boss = useMemo(() => {
+    const levers = patternBuildLevers(data.supportTier);
+    return { assignment: (item: LetterBuildItem) => spellingPatternExplorerBoss.assignment!({ ...item, mode: 'pattern_build',
+      supportTier: data.supportTier ?? 'medium' }), levers };
+  }, [data.supportTier]);
   return <LetterBuildSurface primitiveId="spelling-pattern-explorer" className={className} runtimePlanItemId={runtimePlanItemId}
-    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={metrics} />;
+    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={metrics} boss={boss} />;
 };
-const BoundPatternBuild = withWorkspaceOnly<SpellingPatternExplorerProps>('spelling-pattern-explorer', PatternBuild,
-  props => props.data.title);
-
-/** The classic modes: the workspace inside a live runtime, the scripted flow everywhere else. */
-const ClassicSpellingPatternExplorer = withWorkspaceController<SpellingPatternExplorerProps, ProgressOptions<DictationItem>, Progress>(
-  'spelling-pattern-explorer', SpellingPatternExplorerSurface, useScriptedProgress,
-  useWorkspaceProgressFor('spelling-pattern-explorer'));
 
 /** One mount, one shape: `pattern_build` is the letter build; the five classic modes keep the explorer. */
-const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = props =>
-  props.data.task === 'letter_build' ? <BoundPatternBuild {...props} /> : <ClassicSpellingPatternExplorer {...props} />;
+const SpellingPatternExplorerHost: React.FC<SpellingPatternExplorerProps> = props =>
+  props.data.task === 'letter_build' ? <PatternBuild {...props} /> : <SpellingPatternExplorerSurface {...props} />;
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+const SpellingPatternExplorer = withWorkspaceOnly<SpellingPatternExplorerProps>('spelling-pattern-explorer',
+  SpellingPatternExplorerHost, props => props.data.title);
 
 export default SpellingPatternExplorer;

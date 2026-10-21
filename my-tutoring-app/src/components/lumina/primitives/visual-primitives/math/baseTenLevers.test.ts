@@ -7,9 +7,19 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, PLAINER_READ_LEVER, PRACTICE_SUFFIX, SIMPLER_OP_LEVER, SMALLER_LEVER, TEN_MODEL_LEVER,
-  TOTAL_LEVER, TRADE_MARK_LEVER, baseTenLevers, bracketColumns, leverFacts, operateShape, plainerNumber, practiceFromId, practiceItem,
-  simplerOperation, startLevers, tradeColumns } from './baseTenLevers';
+  TOTAL_LEVER, TRADE_MARK_LEVER, BASE_TEN_LEVERS, baseTenLeverContext, bracketColumns, operateShape, plainerNumber, practiceFromId,
+  practiceItem, simplerOperation, startLevers, tradeColumns } from './baseTenLevers';
+import type { BaseTenClickItem } from './baseTenWorkspace';
 import { buildAdditionOperands, buildSubtractionOperands } from './baseTenOperands';
+
+/** The lever set on one click-mat item, as the click mat calls it (`BASE_TEN_LEVERS.declare`). */
+type ClickLike = { type: string; targetNumber: number; secondNumber?: number };
+const clickItem = (ch: ClickLike) => ({ id: `${ch.type}-0`, instruction: '', hint: '', ...ch }) as BaseTenClickItem;
+const clickLevers = (ch: ClickLike, pulled: readonly string[] = [], columns: Record<string, number> = {}) =>
+  BASE_TEN_LEVERS.declare(clickItem(ch), baseTenLeverContext({ columns }), pulled);
+/** The scene fact of the pulled levers, the tier's starting levers left out. */
+const clickFacts = (ch: ClickLike, pulled: readonly string[], started: readonly string[] = []) =>
+  BASE_TEN_LEVERS.onScreen(clickItem(ch), baseTenLeverContext({ started }), pulled);
 
 const build = (targetNumber: number) => ({ type: 'build_number', targetNumber });
 const reversed = (n: number) => Number(String(n).split('').reverse().join(''));
@@ -19,31 +29,31 @@ describe('which lever answers which miss', () => {
     ['one_short', COUNTS_LEVER], ['one_over', COUNTS_LEVER], ['one_ten_off', COUNTS_LEVER], ['digits_swapped', COUNTS_LEVER],
     ['short_by_more', TOTAL_LEVER], ['over_by_more', TOTAL_LEVER], ['not_traded_up', BRACKET_LEVER],
   ])('nothing pulled, fourteen ones on the mat, after %s: %s', (miss, lever) => {
-    expect(nextLever(baseTenLevers(build(24), [], { tens: 1, ones: 14 }), miss)).toBe(lever);
+    expect(nextLever(clickLevers(build(24), [], { tens: 1, ones: 14 }), miss)).toBe(lever);
   });
   it("ten_bracket is offered only while a column of the learner's holds ten or more", () => {
-    expect(baseTenLevers(build(24), [], { tens: 2, ones: 5 }).map(l => l.id)).not.toContain(BRACKET_LEVER);
-    expect(baseTenLevers(build(24), [], { tens: 1, ones: 14 }).map(l => l.id)).toContain(BRACKET_LEVER);
+    expect(clickLevers(build(24), [], { tens: 2, ones: 5 }).map(l => l.id)).not.toContain(BRACKET_LEVER);
+    expect(clickLevers(build(24), [], { tens: 1, ones: 14 }).map(l => l.id)).toContain(BRACKET_LEVER);
   });
   it('the untiered start (counts and total on): far off gets the plainer build', () => {
     const start = startLevers('build_number', {});
     expect(start).toEqual([COUNTS_LEVER, TOTAL_LEVER]);
-    expect(nextLever(baseTenLevers(build(24), start), 'short_by_more')).toBe(PLAINER_LEVER);
-    expect(nextLever(baseTenLevers(build(24), start, { tens: 1, ones: 14 }), 'not_traded_up', 'help')).toBe(BRACKET_LEVER);
+    expect(nextLever(clickLevers(build(24), start), 'short_by_more')).toBe(PLAINER_LEVER);
+    expect(nextLever(clickLevers(build(24), start, { tens: 1, ones: 14 }), 'not_traded_up', 'help')).toBe(BRACKET_LEVER);
     // No full column and both counting aids on: help has nothing open, so the ladder's help rung pulls nothing.
-    expect(nextLever(baseTenLevers(build(24), start, { tens: 2, ones: 5 }), 'one_over', 'help')).toBeNull();
+    expect(nextLever(clickLevers(build(24), start, { tens: 2, ones: 5 }), 'one_over', 'help')).toBeNull();
   });
   it.each([
     ['read_blocks', 'one_ten_off', TEN_MODEL_LEVER], ['read_blocks', 'digits_swapped', TEN_MODEL_LEVER],
     ['read_blocks', 'one_short', PLAINER_READ_LEVER], ['read_blocks', 'over_by_more', PLAINER_READ_LEVER],
     ['regroup', 'no_trade', TEN_MODEL_LEVER], ['regroup', 'value_changed', TEN_MODEL_LEVER],
   ])("the click mat's %s (a mixed payload), after %s: %s", (type, miss, lever) => {
-    expect(nextLever(baseTenLevers({ type, targetNumber: 215 }, startLevers(type, {})), miss)).toBe(lever);
+    expect(nextLever(clickLevers({ type, targetNumber: 215 }, startLevers(type, {})), miss)).toBe(lever);
   });
   it('click-mat read_blocks and regroup start bare; regroup has no simplify (one trade is the smallest)', () => {
     expect(startLevers('read_blocks', {})).toEqual([]);
     expect(startLevers('regroup', {})).toEqual([]);
-    expect(baseTenLevers({ type: 'regroup', targetNumber: 321 }, []).map(l => [l.id, l.kind])).toEqual([[TEN_MODEL_LEVER, 'help']]);
+    expect(clickLevers({ type: 'regroup', targetNumber: 321 }, []).map(l => [l.id, l.kind])).toEqual([[TEN_MODEL_LEVER, 'help']]);
   });
   it('on the saved mixed payload every checked miss of the read and trade items has a lever on that item (J12)', () => {
     const data = JSON.parse(readFileSync(join(process.cwd(),
@@ -51,7 +61,7 @@ describe('which lever answers which miss', () => {
     const misses: Record<string, string[]> = { read_blocks: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
       regroup: ['no_trade', 'value_changed'] };
     for (const ch of data.challenges.filter((c: any) => misses[c.type])) {
-      const levers = baseTenLevers(ch, startLevers(ch.type, ch));
+      const levers = clickLevers(ch, startLevers(ch.type, ch));
       for (const miss of misses[ch.type]) expect(levers.some(l => l.answers?.includes(miss)), `${ch.type} ${miss}`).toBe(true);
     }
   });
@@ -63,21 +73,21 @@ describe('operate: which lever answers which miss', () => {
   it('the total is never a lever, and the counts start where the tier puts them', () => {
     expect(startLevers('add_with_blocks', {})).toEqual([COUNTS_LEVER]);
     expect(startLevers('subtract_with_blocks', { showColumnCounts: false, showBlocksTotal: true })).toEqual([]);
-    expect(baseTenLevers(add(148, 76), []).map(l => l.id)).not.toContain(TOTAL_LEVER);
+    expect(clickLevers(add(148, 76), []).map(l => l.id)).not.toContain(TOTAL_LEVER);
   });
   it.each([
     ['one_short', COUNTS_LEVER], ['one_over', COUNTS_LEVER], ['one_ten_off', BRACKET_LEVER],
     ['short_by_more', SIMPLER_OP_LEVER], ['over_by_more', SIMPLER_OP_LEVER],
   ])('148 + 76 modelled untraded (a column of fourteen), nothing pulled, after %s: %s', (miss, lever) => {
-    expect(nextLever(baseTenLevers(add(148, 76), [], { hundreds: 1, tens: 11, ones: 14 }), miss)).toBe(lever);
+    expect(nextLever(clickLevers(add(148, 76), [], { hundreds: 1, tens: 11, ones: 14 }), miss)).toBe(lever);
   });
   it('a lost carry with no full column on the mat gets the trade marks, then the simpler operation', () => {
     const start = startLevers('add_with_blocks', {});
-    expect(nextLever(baseTenLevers(add(148, 76), start), 'one_ten_off')).toBe(TRADE_MARK_LEVER);
-    expect(nextLever(baseTenLevers(add(148, 76), [...start, TRADE_MARK_LEVER]), 'one_ten_off')).toBe(SIMPLER_OP_LEVER);
+    expect(nextLever(clickLevers(add(148, 76), start), 'one_ten_off')).toBe(TRADE_MARK_LEVER);
+    expect(nextLever(clickLevers(add(148, 76), [...start, TRADE_MARK_LEVER]), 'one_ten_off')).toBe(SIMPLER_OP_LEVER);
   });
   it('a lost borrow on a one-trade subtraction, nothing modelled, gets the trade marks', () => {
-    expect(nextLever(baseTenLevers(sub(73, 28), startLevers('subtract_with_blocks', {})), 'one_ten_off')).toBe(TRADE_MARK_LEVER);
+    expect(nextLever(clickLevers(sub(73, 28), startLevers('subtract_with_blocks', {})), 'one_ten_off')).toBe(TRADE_MARK_LEVER);
   });
   it.each([
     [add(37, 25), ['ones']], [add(148, 76), ['ones', 'tens']], [sub(73, 28), ['ones']], [sub(412, 145), ['ones', 'tens']],
@@ -88,7 +98,7 @@ describe('operate: which lever answers which miss', () => {
   it('an item with one trade offers no simpler operation (floor one)', () => {
     expect(simplerOperation(add(37, 25))).toBeNull();
     expect(simplerOperation(sub(73, 28))).toBeNull();
-    expect(baseTenLevers(add(37, 25), []).map(l => l.id)).toEqual([COUNTS_LEVER, TRADE_MARK_LEVER]);
+    expect(clickLevers(add(37, 25), []).map(l => l.id)).toEqual([COUNTS_LEVER, TRADE_MARK_LEVER]);
   });
 });
 
@@ -131,16 +141,16 @@ describe('operate leak rules', () => {
     const data = JSON.parse(readFileSync(join(process.cwd(),
       'src/components/lumina/components/live-activity/runtime/testing/w1-payloads/base-ten-blocks.operate.json'), 'utf-8')).data;
     for (const ch of data.challenges)
-      expect(baseTenLevers(ch, startLevers(ch.type, ch)).some(l => !l.pulled && l.answers?.includes('one_ten_off')), ch.instruction).toBe(true);
+      expect(clickLevers(ch, startLevers(ch.type, ch)).some(l => !l.pulled && l.answers?.includes('one_ten_off')), ch.instruction).toBe(true);
   });
   it('no operate lever text carries a number', () => {
-    for (const l of baseTenLevers({ type: 'add_with_blocks', targetNumber: 224, secondNumber: 76 }, [], { ones: 14 }))
+    for (const l of clickLevers({ type: 'add_with_blocks', targetNumber: 224, secondNumber: 76 }, [], { ones: 14 }))
       expect(`${l.when} ${l.does}`).not.toMatch(/\d|\b(one|two|three|four|five|six|seven|eight|nine)\b/i);
   });
   it('on the saved operate payload: the two-trade items offer the simpler operation', () => {
     const data = JSON.parse(readFileSync(join(process.cwd(),
       'src/components/lumina/components/live-activity/runtime/testing/w1-payloads/base-ten-blocks.operate.json'), 'utf-8')).data;
-    const offers = data.challenges.map((ch: any) => baseTenLevers(ch, startLevers(ch.type, ch)).some(l => l.id === SIMPLER_OP_LEVER));
+    const offers = data.challenges.map((ch: any) => clickLevers(ch, startLevers(ch.type, ch)).some(l => l.id === SIMPLER_OP_LEVER));
     expect(offers).toEqual(data.challenges.map((ch: any) => operateShape(ch)!.regroups >= 2));
     expect(offers.some(Boolean)).toBe(true);
   });
@@ -166,19 +176,23 @@ describe('leak rules', () => {
   });
 
   it('no lever text or scene fact carries a number', () => {
-    for (const l of baseTenLevers(build(87), [], { ones: 12 })) expect(`${l.when} ${l.does}`).not.toMatch(/\d|\b(one|two|three|four|five|six|seven|eight|nine)\b/i);
-    for (const type of ['read_blocks', 'regroup']) for (const l of baseTenLevers({ type, targetNumber: 215 }, []))
+    for (const l of clickLevers(build(87), [], { ones: 12 })) expect(`${l.when} ${l.does}`).not.toMatch(/\d|\b(one|two|three|four|five|six|seven|eight|nine)\b/i);
+    for (const type of ['read_blocks', 'regroup']) for (const l of clickLevers({ type, targetNumber: 215 }, []))
       expect(`${l.when} ${l.does}`).not.toMatch(/\d|\b(one|two|three|four|five|six|seven|eight|nine)\b/i);
-    const facts = leverFacts([COUNTS_LEVER, TOTAL_LEVER, BRACKET_LEVER, TEN_MODEL_LEVER, TRADE_MARK_LEVER], []);
-    expect(facts).not.toMatch(/\d/);
-    expect(leverFacts([COUNTS_LEVER, TOTAL_LEVER], [COUNTS_LEVER, TOTAL_LEVER])).toBe('');
+    const facts = [clickFacts(build(87), [COUNTS_LEVER, TOTAL_LEVER, BRACKET_LEVER]),
+      clickFacts({ type: 'add_with_blocks', targetNumber: 224, secondNumber: 76 }, [TRADE_MARK_LEVER]),
+      clickFacts({ type: 'build_two_ways', targetNumber: 34 }, [TEN_MODEL_LEVER])];
+    for (const fact of facts) expect(fact).toMatch(/\w/);
+    expect(facts.join(' ')).not.toMatch(/\d/);
+    // The tier's starting position is not news: no fact for a lever it started pulled.
+    expect(clickFacts(build(87), [COUNTS_LEVER, TOTAL_LEVER], [COUNTS_LEVER, TOTAL_LEVER])).toBe('');
   });
 
   it('on the saved build_number payload every item offers the plainer build, and a help lever once a ten is left untraded', () => {
     const data = JSON.parse(readFileSync(join(process.cwd(),
       'src/components/lumina/components/live-activity/runtime/testing/w1-payloads/base-ten-blocks.build_number.json'), 'utf-8')).data;
     for (const ch of data.challenges) {
-      const levers = baseTenLevers(ch, startLevers(ch.type, ch), { tens: 0, ones: 12 });
+      const levers = clickLevers(ch, startLevers(ch.type, ch), { tens: 0, ones: 12 });
       expect(levers.some(l => l.id === PLAINER_LEVER), String(ch.targetNumber)).toBe(true);
       expect(levers.some(l => l.kind === 'help' && !l.pulled)).toBe(true);
     }

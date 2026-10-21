@@ -1,13 +1,13 @@
 /**
- * histogram levers: the leak rules per mode, the simplify builder over many item shapes, and "this wrong answer,
- * then this lever" as code.
+ * histogram levers (`HISTOGRAM_LEVERS`): the leak rules per mode, the simplify builder over many item shapes, when a
+ * model comes by tier, and "this wrong answer, then this lever" as code.
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { HistogramChallenge, HistogramChallengeType, HistogramShapeKind } from './Histogram';
 import {
-  BALANCE_MODEL_LEVER, COUNT_LABELS_LEVER, SIMPLER_LEVER, histogramLevers, leverFacts, leverTextLeaks, peakModel,
+  BALANCE_MODEL_LEVER, COUNT_LABELS_LEVER, HISTOGRAM_LEVERS, SIMPLER_LEVER, leverTextLeaks, peakModel,
   practiceLeaks, simplerHistogram, tailModel,
 } from './histogramLevers';
 import { HISTOGRAM_MISSES_BY_MODE, SHAPE_LABEL, computeBins, histogramCorrect, histogramHarnessInput } from './histogramWorkspace';
@@ -78,9 +78,9 @@ describe('simplify builder', () => {
 describe('leak rules', () => {
   it.each(MODES)('%s: no lever text or fact carries a digit or the item\'s shape name', (mode) => {
     for (const c of items(mode)) {
-      const levers = histogramLevers(c, [], { countLabelsShown: false });
+      const levers = HISTOGRAM_LEVERS.declare(c, { countLabelsShown: false }, []);
       for (const l of levers) expect(leverTextLeaks(c, l.when + ' ' + l.does), `${c.id} ${l.id}`).toBe(false);
-      expect(leverTextLeaks(c, leverFacts(c, levers.map(l => l.id))), c.id).toBe(false);
+      expect(leverTextLeaks(c, HISTOGRAM_LEVERS.onScreen(c, { countLabelsShown: false }, levers.map(l => l.id))), c.id).toBe(false);
     }
   });
 
@@ -94,8 +94,19 @@ describe('leak rules', () => {
 
   it('count_labels is offered only where the session withdrew the labels', () => {
     const c = items('estimate_center')[0];
-    expect(histogramLevers(c, [], { countLabelsShown: true }).map(l => l.id)).not.toContain(COUNT_LABELS_LEVER);
-    expect(histogramLevers(c, [], { countLabelsShown: false }).map(l => l.id)).toContain(COUNT_LABELS_LEVER);
+    expect(HISTOGRAM_LEVERS.declare(c, { countLabelsShown: true }, []).map(l => l.id)).not.toContain(COUNT_LABELS_LEVER);
+    expect(HISTOGRAM_LEVERS.declare(c, { countLabelsShown: false }, []).map(l => l.id)).toContain(COUNT_LABELS_LEVER);
+  });
+});
+
+describe('when a model comes', () => {
+  it('follows the item\'s own tier, and names the model lever only where it is the mode\'s one', () => {
+    const e = items('estimate_center')[0], i = items('identify_shape')[0], ctx = { countLabelsShown: true };
+    expect(HISTOGRAM_LEVERS.support({ ...e, supportTier: 'easy' }, ctx)).toMatch(/before the learner tries.*\(balance_model\)/);
+    expect(HISTOGRAM_LEVERS.support(e, ctx)).toMatch(/^the learner tries first/);
+    expect(HISTOGRAM_LEVERS.support({ ...i, supportTier: 'hard' }, ctx)).toMatch(/^answer it cold.*this graph's shape/);
+    expect(HISTOGRAM_LEVERS.support({ ...i, supportTier: 'easy' }, ctx)).not.toMatch(/\(tail_model|\(peak_model/);
+    expect(HISTOGRAM_LEVERS.support(items('read_frequency')[0], ctx)).toBe('');
   });
 });
 
@@ -103,7 +114,7 @@ describe('this wrong answer, then this lever', () => {
   it('the catalog declares levers and every miss is answered by a help lever on every item', () => {
     expect(getComponentById('histogram')!.teachingWorkspace!.levers).toBe(true);
     for (const mode of MODES) for (const c of items(mode)) {
-      const levers = histogramLevers(c, [], { countLabelsShown: true });
+      const levers = HISTOGRAM_LEVERS.declare(c, { countLabelsShown: true }, []);
       for (const miss of HISTOGRAM_MISSES_BY_MODE[mode]) {
         expect(levers.some(l => l.kind === 'help' && l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
       }
@@ -122,12 +133,12 @@ describe('this wrong answer, then this lever', () => {
     ['estimate_center', 'tallest_bar', BALANCE_MODEL_LEVER],
     ['estimate_center', 'axis_middle', COUNT_LABELS_LEVER],
   ] as const)('%s %s → %s', (mode, miss, lever) => {
-    expect(nextLever(histogramLevers(items(mode)[0], [], { countLabelsShown: false }), miss)).toBe(lever);
+    expect(nextLever(HISTOGRAM_LEVERS.declare(items(mode)[0], { countLabelsShown: false }, []), miss)).toBe(lever);
   });
 
   it('a pulled lever is skipped for the next one that answers the miss', () => {
     const c = items('identify_shape')[0];
-    expect(nextLever(histogramLevers(c, ['outline_tops'], { countLabelsShown: true }), 'skew_reversed')).toBe('tail_model');
-    expect(nextLever(histogramLevers(c, ['outline_tops'], { countLabelsShown: true }), 'flat_vs_peaked')).toBe('peak_model');
+    expect(nextLever(HISTOGRAM_LEVERS.declare(c, { countLabelsShown: true }, ['outline_tops']), 'skew_reversed')).toBe('tail_model');
+    expect(nextLever(HISTOGRAM_LEVERS.declare(c, { countLabelsShown: true }, ['outline_tops']), 'flat_vs_peaked')).toBe('peak_model');
   });
 });

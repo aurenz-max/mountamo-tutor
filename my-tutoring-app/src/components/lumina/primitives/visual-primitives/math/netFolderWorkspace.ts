@@ -1,13 +1,14 @@
 /**
- * Net folder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape (ROLLOUT C18).
+ * Net folder on the shared tutor/JEV teaching workspace; its boss is `netFolder.boss.ts`.
  *
- * Pure: the component, the adapter and any probe read the same assignment, scene and check. Every mode is a gesture
+ * Pure: the component, the boss and any probe read the same scene and check. Every mode is a gesture
  * item checked by the activity's own Check: counts typed into three boxes, a solid or a face tapped, valid or invalid
  * tapped, a surface area typed. The tutor is never handed the counts, the solid's name on an identify item, the face
  * the yellow square folds to, the verdict on a net, or the total.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { NetFolderChallenge, NetFolderSolid } from './NetFolder';
+import type { NetFolderMiss } from './netFolder.card';
 import { foldCubeCells, oppositeFace, solidCounts, solidModel, type Cell } from './netFolderGeometry';
 
 export type NetFolderMode = NetFolderChallenge['type'];
@@ -111,33 +112,7 @@ export function describeNetWork(ch: NetFolderChallenge, work: NetWork): string {
   return 'nothing yet';
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the item and what was typed or tapped, drawn
- * from the catalog's commonStruggles (faces and edges confused, net faces not matched to the solid, surface area
- * miscounted, an invalid net taken as valid):
- * - count: `swapped_counts` two counts in each other's boxes; `faces_off` / `edges_off` / `vertices_off` one count
- *   wrong; `several_off` more than one;
- * - identify: `prism_pyramid` a prism taken for a pyramid or back; `base_shape` the right family, the wrong base;
- *   `curved_solid` a solid with a curved surface;
- * - match: `opposite_face` the face opposite the right one; `adjacent_face` a face beside it;
- * - valid: `missed_overlap` valid said of six squares two of which land on one face; `missed_count` valid said of a net
- *   that is not six squares; `rejected_valid` invalid said of a net that folds;
- * - surface: `half_the_faces` one face of each pair; `missed_a_face` a face left out; `extra_face` a face counted
- *   twice; `one_face` one face's area; `volume` length times width times height; `other_total` anything else.
- */
-export type NetFolderMiss = 'swapped_counts' | 'faces_off' | 'edges_off' | 'vertices_off' | 'several_off'
-  | 'prism_pyramid' | 'base_shape' | 'curved_solid'
-  | 'opposite_face' | 'adjacent_face'
-  | 'missed_overlap' | 'missed_count' | 'rejected_valid'
-  | 'half_the_faces' | 'missed_a_face' | 'extra_face' | 'one_face' | 'volume' | 'other_total';
-
-export const NET_MISSES_BY_MODE: Record<NetFolderMode, readonly NetFolderMiss[]> = {
-  count_faces_edges_vertices: ['swapped_counts', 'faces_off', 'edges_off', 'vertices_off', 'several_off'],
-  identify_solid: ['prism_pyramid', 'base_shape', 'curved_solid'],
-  match_faces: ['opposite_face', 'adjacent_face'],
-  valid_net: ['missed_overlap', 'missed_count', 'rejected_valid'],
-  surface_area: ['half_the_faces', 'missed_a_face', 'extra_face', 'one_face', 'volume', 'other_total'],
-};
+export { NET_MISSES_BY_MODE, type NetFolderMiss } from './netFolder.card';
 
 export const solidFamily = (id: string): 'prism' | 'pyramid' | 'curved' => {
   const s = normSolid(id);
@@ -182,10 +157,6 @@ export function netFolderMiss(ch: NetFolderChallenge, solid: NetFolderSolid, wor
   return undefined;
 }
 
-export function workspaceAssignment(ch: NetFolderChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.instruction, response: 'gesture' };
-}
-
 export interface NetFolderView extends NetWork {
   /** The solid drawn for this item. */
   solid: NetFolderSolid;
@@ -204,7 +175,7 @@ const MODE_WORDS: Record<NetFolderMode, string> = {
 };
 
 /** What is drawn and asked. Never a count, the identify item's solid, the yellow square's face, the verdict, the total. */
-export function workspaceScene(ch: NetFolderChallenge, view: NetFolderView): WorkspaceScene {
+export function workspaceScene(ch: NetFolderChallenge, view: NetFolderView): SceneOf {
   const facts: Record<string, string> = { kind: MODE_WORDS[ch.type] ?? ch.type, ask: ch.instruction };
   const solidName = view.solid.name || FRIENDLY[view.solid.type] || solidWords(view.solid.type);
   facts.solid = ch.type === 'identify_solid'
@@ -239,11 +210,6 @@ export function workspaceScene(ch: NetFolderChallenge, view: NetFolderView): Wor
   if (ch.type === 'match_faces' || ch.type === 'valid_net' || view.netShown)
     facts.foldLines = view.foldGuides ? 'dashed fold lines mark where the net hinges' : 'no fold lines are drawn';
   facts.learnerWork = describeNetWork(ch, view);
-  facts.constraints = ch.type === 'count_faces_edges_vertices' || ch.type === 'surface_area'
-    ? 'The learner types into the boxes and presses Check; the activity checks the numbers itself. The learner can drag the '
-      + 'solid to turn it. You cannot type, turn the solid, or press Check.'
-    : 'The learner taps one answer and presses Check; the activity checks it itself. The learner can drag the solid to turn '
-      + 'it. You cannot choose, turn the solid, or press Check.';
   return { objects: [], facts };
 }
 

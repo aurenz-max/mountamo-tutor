@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { EquationBuilderChallenge } from './EquationBuilder';
 import { equationBuilderHarnessInputs, equationBuilderMatches, evaluateEquation, makeNMiss, referenceWays, sameWay, sentenceValue,
   type EquationBuilderView } from './equationBuilderWorkspace';
-import { DOTS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MATCH_LEVER, PRINTED_DOTS_LEVER, REWRITE_MODEL_LEVER, SMALLER_LEVER,
-  SMALLER_NUMBERS_LEVER, equationBuilderLevers, equationFrame, equationLeverFacts, factText, familyForms, frameLeaks, makeNLevers,
-  matchMarked, practiceItem, practiceParent, printedDots, printedTokens, repeatsItem, rewriteModel, rewriteModelLeaks, smallerMakeN,
+import { DOTS_LEVER, EQUATION_BUILDER_LEVERS, EQ_FRAME_LEVER, FRAME_LEVER, MATCH_LEVER, PRINTED_DOTS_LEVER, REWRITE_MODEL_LEVER,
+  SMALLER_LEVER, SMALLER_NUMBERS_LEVER, equationFrame, factText, familyForms, frameLeaks, matchMarked, practiceItem, practiceParent,
+  printedDots, printedTokens, repeatsItem, rewriteModel, rewriteModelLeaks, smallerMakeN, startingLevers,
   type Fact } from './equationBuilderLevers';
+import { equationBuilderMode } from './equationBuilderWorkspace';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 
@@ -13,6 +14,8 @@ const bank = [...Array.from({ length: 12 }, (_, i) => String(i + 1)), '+', '-'];
 const make = (target: number, ways = 1): EquationBuilderChallenge => ({ id: `m${target}`, type: 'make-n', target, ways,
   availableTiles: bank, instruction: `Make a number sentence that equals ${target}.` });
 const row = (s: string) => s.split(' ');
+/** The levers declared on an item, given what is already shown. */
+const leversOn = (c: EquationBuilderChallenge, shown: readonly string[] = []) => EQUATION_BUILDER_LEVERS.declare(c, null, shown);
 
 describe('make-n check', () => {
   it('reads number (sign number)+ left to right, and nothing else', () => {
@@ -50,7 +53,7 @@ describe('make-n check', () => {
 
 describe('make-n levers', () => {
   it('help on a miss, simplify to about half with + only; each lever names the build and never a total', () => {
-    const levers = makeNLevers(make(10), []);
+    const levers = leversOn(make(10));
     expect(levers.map(l => [l.id, l.kind])).toEqual([[DOTS_LEVER, 'help'], [FRAME_LEVER, 'help'], [SMALLER_LEVER, 'simplify']]);
     const answered = new Set(levers.flatMap(l => l.answers ?? []));
     for (const miss of ['bare_number', 'unfinished_sentence', 'one_short', 'one_over', 'short_by_more', 'over_by_more']) {
@@ -61,8 +64,8 @@ describe('make-n levers', () => {
       expect(l.does, l.id).not.toMatch(/hands? over|choose|pick/i);
     }
     expect(levers[0].does).toMatch(/Never the amount the sentence makes/);
-    expect(makeNLevers(make(10), [DOTS_LEVER]).find(l => l.id === DOTS_LEVER)?.pulled).toBe(true);
-    expect(makeNLevers({ ...make(10), type: 'build' }, [])).toEqual([]);
+    expect(leversOn(make(10), [DOTS_LEVER]).find(l => l.id === DOTS_LEVER)?.pulled).toBe(true);
+    expect(EQUATION_BUILDER_LEVERS.idsFor('make-n')).toEqual([DOTS_LEVER, FRAME_LEVER, SMALLER_LEVER]);
   });
 
   it('the easier item is half the total, one way, with only + and the numbers up to it', () => {
@@ -71,7 +74,7 @@ describe('make-n levers', () => {
     expect(smallerMakeN(make(3))).toMatchObject({ target: 2, availableTiles: ['1', '2', '+'] });
     expect(smallerMakeN(make(2))).toBeNull();
     // No simplify lever where there is no smaller item.
-    expect(makeNLevers(make(2), []).map(l => l.id)).not.toContain(SMALLER_LEVER);
+    expect(leversOn(make(2)).map(l => l.id)).not.toContain(SMALLER_LEVER);
   });
 });
 
@@ -147,7 +150,7 @@ describe('six-mode levers', () => {
     const tiny: EquationBuilderChallenge = { id: 'x', type: 'missing-value', instruction: '', equation: '1 + 1 = ?', missingPosition: 4,
       correctValue: 2, options: [1, 2] };
     expect(practiceItem(tiny)).toBeNull();
-    expect(equationBuilderLevers(tiny, []).map(l => l.id)).toEqual([PRINTED_DOTS_LEVER]);
+    expect(leversOn(tiny).map(l => l.id)).toEqual([PRINTED_DOTS_LEVER]);
     // The only smaller fact would show the item's own missing number.
     expect(practiceItem({ ...tiny, equation: '? + 3 = 4', missingPosition: 0, correctValue: 1 })).toBeNull();
   });
@@ -181,7 +184,7 @@ describe('six-mode levers', () => {
     ['true-false', 'said_true', [], PRINTED_DOTS_LEVER], ['true-false', 'said_false', [PRINTED_DOTS_LEVER], SMALLER_NUMBERS_LEVER],
     ['balance', 'other_side_total', [], PRINTED_DOTS_LEVER], ['balance', 'short_by_more', [PRINTED_DOTS_LEVER], SMALLER_NUMBERS_LEVER],
   ] as const)('%s: after %s with %j pulled, the next lever is %s', (type, miss, pulled, want) => {
-    expect(nextLever(equationBuilderLevers(at(type), [...pulled]), miss)).toBe(want);
+    expect(nextLever(leversOn(at(type), [...pulled]), miss)).toBe(want);
   });
 
   it('every catalog miss of the six modes is answered by a lever on a typical item; texts name no number', () => {
@@ -189,7 +192,7 @@ describe('six-mode levers', () => {
     const byMode: Record<string, EquationBuilderChallenge> = { 'build-simple': at('build'), 'missing-result': at('missing-value'),
       'missing-operand': at('missing-value'), 'true-false': at('true-false'), 'balance-both-sides': at('balance'), rewrite: at('rewrite') };
     for (const [mode, c] of Object.entries(byMode)) {
-      const levers = equationBuilderLevers(c, []);
+      const levers = leversOn(c);
       const answered = new Set(levers.flatMap(l => l.answers ?? []));
       for (const m of misses[mode] ?? []) expect(answered.has(m), `${mode} ${m}`).toBe(true);
       for (const l of levers) expect(`${l.when} ${l.does}`, l.id).not.toMatch(/\d/);
@@ -197,18 +200,29 @@ describe('six-mode levers', () => {
   });
 
   it('easy starts the dots shown, and only the dots; make-n starts bare', () => {
-    expect(equationBuilderLevers(at('true-false'), [], 'easy').filter(l => l.pulled).map(l => l.id)).toEqual([PRINTED_DOTS_LEVER]);
-    expect(equationBuilderLevers(at('build'), [], 'easy').filter(l => l.pulled).map(l => l.id)).toEqual([DOTS_LEVER]);
-    expect(equationBuilderLevers(at('build'), [], 'hard').filter(l => l.pulled)).toEqual([]);
-    expect(equationBuilderLevers(make(10), [], 'easy').filter(l => l.pulled)).toEqual([]);
+    const easy = (c: EquationBuilderChallenge, tier: 'easy' | 'hard' = 'easy') => leversOn(c, startingLevers(c, tier));
+    expect(easy(at('true-false')).filter(l => l.pulled).map(l => l.id)).toEqual([PRINTED_DOTS_LEVER]);
+    expect(easy(at('build')).filter(l => l.pulled).map(l => l.id)).toEqual([DOTS_LEVER]);
+    expect(easy(at('build'), 'hard').filter(l => l.pulled)).toEqual([]);
+    expect(easy(make(10)).filter(l => l.pulled)).toEqual([]);
   });
 
   it('the scene fact says what is drawn: the model in its own numbers, never one of the item\'s forms', () => {
     const c = at('rewrite');
-    const facts = equationLeverFacts(c, equationBuilderLevers(c, [REWRITE_MODEL_LEVER, MATCH_LEVER]))!;
+    const facts = EQUATION_BUILDER_LEVERS.onScreen(c, null, [REWRITE_MODEL_LEVER, MATCH_LEVER]);
     const m = rewriteModel(c)!;
     expect(facts).toContain(`${m.from} written as ${m.to}`);
     for (const form of c.acceptedForms!) expect(facts).not.toContain(form);
+  });
+
+  it('the item names its mode, and only a rewrite item\'s tier says when the model comes', () => {
+    const blankAt = (equation: string) => equationBuilderMode({ id: 'x', type: 'missing-value', instruction: '', equation });
+    expect(['4 + 3 = ?', '? = 4 + 3'].map(blankAt)).toEqual(['missing-result', 'missing-result']);
+    expect(['4 + ? = 7', '? + 3 = 7', '7 = ? + 3'].map(blankAt)).toEqual(['missing-operand', 'missing-operand', 'missing-operand']);
+    const r = at('rewrite');
+    expect(EQUATION_BUILDER_LEVERS.support({ ...r, supportTier: 'easy' }, null)).toMatch(/before the learner tries, pull the model lever \(rewrite_model\)/);
+    expect(EQUATION_BUILDER_LEVERS.support({ ...r, supportTier: 'hard' }, null)).toMatch(/model nothing before the learner tries/);
+    expect(EQUATION_BUILDER_LEVERS.support({ ...at('build'), supportTier: 'easy' }, null)).toBe('');
   });
 
   it('a practice id leads back to its parent', () => {

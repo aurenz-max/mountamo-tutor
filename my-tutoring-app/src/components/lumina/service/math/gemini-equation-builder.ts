@@ -1611,6 +1611,8 @@ Return the complete equation builder configuration.
     data.challenges = fillMakeN(data.challenges, { ceiling, named: named?.made ? Math.max(3, ceiling) : undefined,
       takeAway: data.gradeBand !== 'K', twoWays: supportTier !== 'easy' });
   }
+  // Each item carries the tier: it sets when the rewrite model comes (the lever set's `support`).
+  if (supportTier) data.challenges = (data.challenges as EquationBuilderData["challenges"]).map(c => ({ ...c, supportTier }));
 
   // Apply explicit config overrides
   if (config?.maxNumber !== undefined) {

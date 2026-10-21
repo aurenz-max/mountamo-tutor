@@ -1,7 +1,7 @@
 # Contract: parameter-explorer
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C20) for the workspace and lever requirements only. A full `/primitive-contract parameter-explorer` derivation (consumers per skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/ParameterExplorer.tsx` · **Workspace:** `parameterExplorerWorkspace.ts` · **Levers:** `parameterExplorerLevers.ts` · **Generator:** `service/math/gemini-parameter-explorer.ts` · **Adapter:** `components/live-activity/adapters/parameterExplorerLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`parameter-explorer`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/ParameterExplorer.tsx` · **Workspace:** `parameterExplorerWorkspace.ts` · **Levers:** `parameterExplorerLevers.ts` · **Generator:** `service/math/gemini-parameter-explorer.ts` · **Boss:** `parameterExplorer.card.ts` + `parameterExplorer.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`parameter-explorer`)
 
 ## Requirements
 
@@ -11,7 +11,7 @@
 - **Evidence:** `ParameterExplorer.workspace.test.tsx` 10; sweep J1-J13 on 4 payloads, 0 findings, 8/8 misses named (`qa/tutor-reports/parameter-explorer-w1-2026-10-09.md`).
 - **Probe:** `ParameterExplorer.workspace.test.tsx`; `journeySweep -t parameter-explorer`.
 
-### R2 — the keys and the asks come from the formula, both paths · OBSERVED (2026-10-09)
+### R2 — the keys and the asks come from the formula · OBSERVED (2026-10-09)
 - **Property:** the generator's direction word, value and leading parameter are not keys. `settleChallenge` moves a direction item to a setting on the slider that gives the generator's word (or drops it), recomputes the value, keys identify by doubling and drops an item with no clear leader, and the generator keeps one identify item per lesson (one formula has one leader). The predict and identify asks are built from the data (`promptFor`), so the text and the key cannot disagree. In the predict modes the output readout is hidden until the item is over at every tier (it is the answer); observation cards show on explore only (they narrate relationships).
 - **Probe:** `ParameterExplorer.workspace.test.tsx` ("the keys come from the formula"); `scripts/parameter-explorer-probe.mjs <modes>` (real generation).
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C20).
+- 2026-10-20 — moved onto a boss (wave 3): `parameterExplorer.card.ts` + `parameterExplorer.boss.ts` (bespoke defineBoss), levers declared once as `PARAMETER_LEVERS`; adapter and scripted path deleted; R1-R3 unchanged.

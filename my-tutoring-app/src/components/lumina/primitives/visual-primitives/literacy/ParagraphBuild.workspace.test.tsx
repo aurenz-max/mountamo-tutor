@@ -22,10 +22,11 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { ge
 import ParagraphArchitect, { type ParagraphArchitectData } from './ParagraphArchitect';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/paragraph-architect.build_paragraph.json';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { validateParagraphArchitectData } from '../../../components/live-activity/adapters/paragraphArchitectLive';
+import { validateParagraphArchitectData } from './paragraphArchitect.boss';
+import { PARAGRAPH_LEVERS } from './paragraphArchitectLevers';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import {
-  askableParagraph, boardOrder, fewerCardsFor, paragraphLevers, paragraphMiss, paragraphsFrom, type ParagraphItem,
+  askableParagraph, boardOrder, fewerCardsFor, paragraphMiss, paragraphsFrom, type ParagraphItem,
 } from './paragraphBuild';
 
 const data = (payload as unknown as { data: ParagraphArchitectData }).data;
@@ -65,8 +66,11 @@ describe('build_paragraph rules (pure)', () => {
     expect(workspaceBinding({ instanceId: 'w', primitiveId: 'paragraph-architect', pin: 'informational', objectiveIds: ['o'], data: writing })).not.toBeNull();
     expect(workspaceBinding({ instanceId: 'b', primitiveId: 'paragraph-architect', pin: 'build_paragraph', objectiveIds: ['o'], data })).not.toBeNull();
     const tw = getComponentById('paragraph-architect')!.teachingWorkspace!;
-    const answered = new Set(paragraphLevers(p, []).flatMap(l => l.answers ?? []));
+    const answered = new Set(PARAGRAPH_LEVERS.declare(p, null, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.build_paragraph) expect(answered.has(m), m).toBe(true);
+    // The frog model is not offered on a lesson about frogs; the practice set offers no smaller set.
+    expect(PARAGRAPH_LEVERS.declare({ ...p, topic: 'frogs' }, null, []).map(l => l.id)).not.toContain('model_paragraph');
+    expect(PARAGRAPH_LEVERS.declare(fewerCardsFor(p)!, null, []).map(l => l.id)).not.toContain('fewer_cards');
   });
 });
 

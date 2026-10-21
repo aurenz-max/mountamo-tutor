@@ -43,7 +43,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateGearTrainBuilder } = await loader.import('/src/components/lumina/service/engineering/gemini-gear-train.ts');
   const { gearTrainBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/gear-train-builder.ts');
-  const { validateGearTrainBuilderData } = await loader.import('/src/components/lumina/components/live-activity/adapters/gearTrainBuilderLive.ts');
+  const { validateGearTrainBuilderData } = await loader.import('/src/components/lumina/primitives/visual-primitives/engineering/gearTrainBuilder.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/engineering/gearWorkspace.ts');
   /** Replay the journey's inputs (tray taps add a gear), then the real check. */
   const replay = (c, wrong) => {

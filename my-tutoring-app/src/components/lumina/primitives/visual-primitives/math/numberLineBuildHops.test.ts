@@ -6,9 +6,9 @@ vi.mock('../../../service/geminiClient', () => ({ ai: { models: { generateConten
 import { selectBuildHopsTasks } from '../../../service/math/gemini-number-line';
 import { numberLineOracle } from '../../../service/qa/oracles/number-line';
 import type { NumberLineChallenge } from './NumberLine';
-import { HOPS_LEVER, SIMPLER_LEVER } from './numberLineLevers';
+import { HOPS_LEVER, NUMBER_LINE_LEVERS, SIMPLER_LEVER } from './numberLineLevers';
 import {
-  WAYS_LEVER, buildHopsFeedback, buildHopsInstruction, buildHopsLevers, buildHopsMiss, hopsHarnessBuilds, hopsTaskOf,
+  WAYS_LEVER, buildHopsFeedback, buildHopsInstruction, buildHopsMiss, hopsHarnessBuilds, hopsTaskOf,
   simplerHops, waysFor, waysModel,
 } from './numberLineBuildHops';
 
@@ -17,6 +17,9 @@ const item = (target: number, start = 0, hopCount = 2): NumberLineChallenge => (
   hint: '', startValue: start, targetValues: [target], hopCount,
 });
 const line = { min: 0, max: 20 };
+/** The levers the lever set declares on a build, with these hops on the line. */
+const buildHopsLevers = (ch: NumberLineChallenge, pulled: string[], range: { min: number; max: number }, hops: number[]) =>
+  NUMBER_LINE_LEVERS.declare(ch, { range, settled: null, pulled, points: [], endpoints: [], tried: null, hops }, pulled);
 
 describe('buildHopsMiss', () => {
   const twelve = item(12);
@@ -115,10 +118,10 @@ describe('the easier build and the levers', () => {
     }
   });
   it('starts bare (nothing pulled), and declares numbered hops once a hop is on', () => {
-    const bare = buildHopsLevers(item(12), [], line, [], null);
+    const bare = buildHopsLevers(item(12), [], line, []);
     expect(bare.map(l => l.id)).toEqual([WAYS_LEVER, SIMPLER_LEVER]);
     expect(bare.some(l => l.pulled)).toBe(false);
-    const levers = buildHopsLevers(item(12), [], line, [5], [5, 7]);
+    const levers = buildHopsLevers(item(12), [], line, [5]);
     expect(levers.map(l => l.id)).toEqual([HOPS_LEVER, WAYS_LEVER, SIMPLER_LEVER]);
     // Each lever's text names the build, never the jump mode's "place the landing".
     for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/place|landing value/i);

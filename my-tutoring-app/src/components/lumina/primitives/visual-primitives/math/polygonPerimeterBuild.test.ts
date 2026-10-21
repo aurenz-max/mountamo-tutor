@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPerimeterAsk, buildPerimeterLevers, buildPerimeterMiss, buildPerimeterVerdict, holesIn, perimeterOf, smallerPerimeter,
-  type Cell,
+  buildPerimeterAsk, buildPerimeterMiss, buildPerimeterVerdict, holesIn, perimeterOf, smallerPerimeter, type Cell,
 } from './polygonAreaBuild';
+import { POLYGON_LEVERS } from './polygonAreaLevers';
 import { polygonAreaBuilderOracle } from '../../../service/qa/oracles/polygon-area-builder';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
 
@@ -64,7 +64,7 @@ describe('build_perimeter check', () => {
     expect(smallerPerimeter(smallerPerimeter(ch)!)).toBeNull();
     expect(smallerPerimeter({ ...ch, targetPerimeter: 10, expectedArea: 10 })).toBeNull();
     // Every lever names the build, never the perimeter asked for.
-    const levers = buildPerimeterLevers(ch, []);
+    const levers = POLYGON_LEVERS.declare(ch, { leftOut: null, rearranged: false, firstShape: true }, []);
     expect(levers.map(l => l.id)).toEqual(['edge_marks', 'piece_colors', 'turned_first', 'smaller_perimeter']);
     for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/\b18\b|type|hand|drag/i);
   });

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { itemFromChallenge } from './tenFrameScript';
-import { tenFrameSpokenMisses, workspaceAssignment } from './tenFrameWorkspace';
+import { tenFrameSpokenMisses } from './tenFrameWorkspace';
+import { tenFrameBoss } from './tenFrame.boss';
 
 const item = (ch: Record<string, unknown>, band: 'K' | 'G1' = 'G1') =>
   itemFromChallenge({ id: 'i', ...ch } as never, { capacity: 10, band: band as never })!;
@@ -17,5 +18,5 @@ it.each([
 ] as const)('%#: spoken misses', (it_, ids) => {
   const misses = tenFrameSpokenMisses(it_);
   expect(misses.map(m => m.id)).toEqual(ids);
-  expect(workspaceAssignment(it_).misses?.map(m => m.id) ?? []).toEqual(ids);
+  expect(tenFrameBoss.assignment(it_).misses?.map(m => m.id) ?? []).toEqual(ids);
 });

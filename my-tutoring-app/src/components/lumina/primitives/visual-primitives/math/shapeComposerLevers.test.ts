@@ -12,7 +12,7 @@ import { buildRecipes, judgeShapeBuild, type BoardPiece } from './shapeComposerB
 import {
   EMPTY_SPACE_LEVER, EMPTY_SPOTS_LEVER, FEWER_PIECES_LEVER, IN_PLACE_LEVER, JOIN_MARKS_LEVER, LIST_MATCH_LEVER,
   PARTS_MODEL_LEVER, PIECES_MODEL_LEVER, SMALLER_BUILD_LEVER, SMALLER_PICTURE_LEVER, SMALLER_RECIPE_LEVER, SPLIT_LINES_LEVER,
-  TWO_PARTS_LEVER, joinStates, leverFacts, leverTextLeaks, listMatch, partsModelFor, piecesModelFor, shapeComposerLevers,
+  SHAPE_COMPOSER_LEVERS, TWO_PARTS_LEVER, joinStates, leverTextLeaks, listMatch, partsModelFor, piecesModelFor,
   simplerLeaks, simplerShape, smallerRecipe,
 } from './shapeComposerLevers';
 import { shapeComposerMatches, shapeComposerMiss, type ShapeView } from './shapeComposerWorkspace';
@@ -20,6 +20,9 @@ import { shapeComposerMatches, shapeComposerMiss, type ShapeView } from './shape
 type Mode = ShapeComposerChallenge['type'];
 const MODES: Mode[] = ['compose-match', 'compose-picture', 'decompose', 'how-many-ways', 'free-create'];
 const SHAPES = ['triangle', 'square', 'rectangle', 'circle'];
+/** A board with the learner's shapes on it: a ring on their pieces is offered only then. */
+const CTX = { onBoard: 1 };
+const declare = (c: ShapeComposerChallenge, pulled: readonly string[] = []) => SHAPE_COMPOSER_LEVERS.declare(c, CTX, pulled);
 
 /** Item shapes per mode, as the generator draws them (two to four pieces, parts or spots). */
 function items(mode: Mode): ShapeComposerChallenge[] {
@@ -115,10 +118,10 @@ describe('leak rules on the help levers', () => {
   it.each(MODES)('%s: no lever text or scene fact carries a digit; decompose names none of its parts', mode => {
     for (const c of [...items(mode), ...saved().filter(x => x.type === mode)]) for (const showSeams of [true, false]) {
       const item = { ...c, showSeams };
-      const levers = shapeComposerLevers(item, []);
+      const levers = declare(item);
       expect(levers.length, c.id).toBeGreaterThan(0);
       for (const l of levers) expect(leverTextLeaks(item, `${l.when} ${l.does}`), `${c.id} ${l.id}`).toBe(false);
-      const facts = leverFacts(item, levers.map(l => l.id));
+      const facts = SHAPE_COMPOSER_LEVERS.onScreen(item, CTX, levers.map(l => l.id));
       expect(facts.length, c.id).toBeGreaterThan(0);
       expect(leverTextLeaks(item, facts), c.id).toBe(false);
     }
@@ -135,11 +138,20 @@ describe('leak rules on the help levers', () => {
       expect(c.targetForComposition!.split('-')).not.toContain(m.name);
     }
   });
-  it('split lines only where the session hides them; an older free-create payload has none', () => {
+  it('split lines only where the session hides them; an older free-create payload has none; no ring on an empty board', () => {
     const d = items('decompose')[0];
-    expect(shapeComposerLevers({ ...d, showSeams: false }, []).map(l => l.id)).toEqual([SPLIT_LINES_LEVER, PARTS_MODEL_LEVER]);
-    expect(shapeComposerLevers(d, []).map(l => l.id)).toEqual([PARTS_MODEL_LEVER]);
-    expect(shapeComposerLevers({ id: 'old', type: 'free-create', instruction: 'Build anything!' }, [])).toEqual([]);
+    expect(declare({ ...d, showSeams: false }).map(l => l.id)).toEqual([SPLIT_LINES_LEVER, PARTS_MODEL_LEVER]);
+    expect(declare(d).map(l => l.id)).toEqual([PARTS_MODEL_LEVER]);
+    expect(declare({ id: 'old', type: 'free-create', instruction: 'Build anything!' })).toEqual([]);
+    const build: ShapeComposerChallenge = { id: 'b', type: 'free-create', instruction: 'Make it.',
+      recipe: [{ shape: 'triangle', count: 2 }, { shape: 'square', count: 1 }] };
+    expect(SHAPE_COMPOSER_LEVERS.declare(build, { onBoard: 0 }, []).map(l => l.id)).toEqual([SMALLER_RECIPE_LEVER]);
+    expect(declare(build).map(l => l.id)).toEqual([LIST_MATCH_LEVER, JOIN_MARKS_LEVER, SMALLER_RECIPE_LEVER]);
+  });
+  it('the two pictures outside the item are model levers, timed by the tier of the item', () => {
+    const d = items('decompose')[0];
+    expect(SHAPE_COMPOSER_LEVERS.support({ ...d, supportTier: 'easy' }, CTX)).toMatch(/parts_model/);
+    expect(SHAPE_COMPOSER_LEVERS.support(items('compose-match')[0], CTX)).toBe('');
   });
 });
 
@@ -177,8 +189,8 @@ describe('this wrong answer, then this lever', () => {
   ] as const)('%s → %s, then %s', (_n, c, work, miss, first, second) => {
     expect(shapeComposerMiss(c, work)).toBe(miss);
     if (c.type === 'free-create') expect(judgeShapeBuild(c.recipe!, work.placed).miss).toBe(miss);
-    expect(nextLever(shapeComposerLevers(c, []), miss)).toBe(first);
-    const after = nextLever(shapeComposerLevers(c, [first]), miss);
+    expect(nextLever(declare(c), miss)).toBe(first);
+    const after = nextLever(declare(c, [first]), miss);
     if (second) expect(after).toBe(second);
   });
   it('every catalog miss is answered by a lever on every item and every saved payload item, seams shown or not (J9/J12)', () => {
@@ -186,7 +198,7 @@ describe('this wrong answer, then this lever', () => {
     expect(tw.levers).toBe(true);
     expect(tw.unanswered).toEqual({ 'free-create': ['too_few_shapes'] });
     for (const mode of MODES) for (const c of [...items(mode), ...saved().filter(x => x.type === mode)]) for (const showSeams of [true, false]) {
-      const levers = shapeComposerLevers({ ...c, showSeams }, []);
+      const levers = declare({ ...c, showSeams });
       for (const m of tw.misses![mode].filter(x => !tw.unanswered![mode]?.includes(x))) {
         expect(levers.some(l => l.answers?.includes(m)), `${mode} ${c.id} ${m}`).toBe(true);
       }

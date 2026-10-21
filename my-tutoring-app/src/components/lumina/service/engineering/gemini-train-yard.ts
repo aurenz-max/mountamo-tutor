@@ -300,7 +300,9 @@ export const generateTrainYard = async (ctx: GenerationContext): Promise<TrainYa
       targetEngines: lightTrain(story) ? 1
         : jobTasks[i] === "enough_pull" ? Math.max(2, targets[freight++ % targets.length])
         : targets[freight++ % targets.length],
-    }));
+    }))
+    // Each job carries the tier, so its model levers come when the tier says (`TRAIN_LEVERS.support`).
+    .map(c => (ctx.supportTier ? { ...c, supportTier: ctx.supportTier } : c));
 
   console.log(
     `[TrainYard] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join("+")} (${resolution.source})` : "mixed"}`

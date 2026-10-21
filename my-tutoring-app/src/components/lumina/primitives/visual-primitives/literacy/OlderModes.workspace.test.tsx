@@ -27,8 +27,10 @@ import complexPayload from '../../../components/live-activity/runtime/testing/w1
 import compoundPayload from '../../../components/live-activity/runtime/testing/w1-payloads/sentence-builder.compound.json';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { stagesFor, writingLevers, writingShapeMiss } from './writingStages';
-import { bankOrder, orderLevers, orderText, orderVerdict, ordersFrom, shorterFor } from './sentenceOrder';
+import { stagesFor, writingShapeMiss } from './writingStages';
+import { PARAGRAPH_LEVERS } from './paragraphArchitectLevers';
+import { bankOrder, orderScene, orderText, orderVerdict, ordersFrom, shorterFor } from './sentenceOrder';
+import { SENTENCE_LEVERS } from './sentenceBuilderLevers';
 
 const writing = (writingPayload as unknown as { data: ParagraphArchitectData }).data;
 const compound = (compoundPayload as unknown as { data: SentenceBuilderData }).data;
@@ -76,7 +78,7 @@ describe('paragraph-architect writing modes (rules)', () => {
       expect(workspaceBinding({ instanceId: 'w', primitiveId: 'paragraph-architect', pin: mode, objectiveIds: ['o'],
         data: { ...writing, paragraphType: mode } }), mode).not.toBeNull();
     const tw = getComponentById('paragraph-architect')!.teachingWorkspace!;
-    const answered = new Set(writingLevers(stagesFor(writing)[0], []).flatMap(l => l.answers ?? []));
+    const answered = new Set(PARAGRAPH_LEVERS.declare(stagesFor(writing)[0], null, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.informational) if (!tw.unanswered!.informational.includes(m)) expect(answered.has(m), m).toBe(true);
   });
 });
@@ -122,8 +124,21 @@ describe('sentence-builder tile modes', () => {
     const long = items.find(i => shorterFor(i)) ?? ordersFrom((complexPayload as unknown as { data: SentenceBuilderData }).data.challenges).find(i => shorterFor(i))!;
     expect(shorterFor(long)!.tiles.length).toBeLessThan(long.tiles.length);
     const tw = getComponentById('sentence-builder')!.teachingWorkspace!;
-    const answered = new Set(orderLevers(c, []).flatMap(l => l.answers ?? []));
+    const answered = new Set(SENTENCE_LEVERS.declare({ ...c, mode: 'compound' }, null, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.compound) expect(answered.has(m), m).toBe(true);
+  });
+
+  it('the bank and the scene never list the tiles in an answer order, nor three together as the answer has them', () => {
+    const all = [...items, ...ordersFrom((complexPayload as unknown as { data: SentenceBuilderData }).data.challenges)];
+    for (const c of all) {
+      const bank = bankOrder(c).map(t => t.text.toLowerCase());
+      const runs = c.validArrangements.flatMap(a => {
+        const words = a.map(id => c.tiles.find(t => t.id === id)!.text.toLowerCase());
+        return words.slice(0, -2).map((_, i) => words.slice(i, i + 3).join(' '));
+      });
+      for (let i = 0; i + 3 <= bank.length; i++) expect(runs, c.id).not.toContain(bank.slice(i, i + 3).join(' '));
+      expect(orderScene(c, []).facts.tiles).toBe(bankOrder(c).map(t => t.text).join(' | '));
+    }
   });
 
   it('on the workspace: the sentence is never printed first; tiles left miss; the listed order passes with no judge call', async () => {

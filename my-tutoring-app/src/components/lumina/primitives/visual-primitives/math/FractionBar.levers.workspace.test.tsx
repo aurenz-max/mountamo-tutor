@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * fraction-bar three-step levers (`fractionBarLevers.ts`: identify, build, larger_denominators, add_subtract), mounted the way a
+ * fraction-bar three-step levers (`FRACTION_BAR_LEVERS`: identify, build, larger_denominators, add_subtract), mounted the way a
  * lesson mounts it. The model is a different fraction; the counting levers show the learner's own bar; the practice
  * fraction is ungraded and gives the full item back from step one; only the full item's answer is credited, with the
  * levers recorded.
@@ -17,10 +17,10 @@ import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever, observerLever } from '../../../components/live-activity/runtime/observerLever';
 import type { FractionBarChallenge, FractionBarChallengeType, FractionBarData } from './FractionBar';
-import { fractionBarMiss, type FractionBarPhase } from './fractionBarWorkspace';
+import { fractionBarMiss, type FractionBarItem, type FractionBarPhase } from './fractionBarWorkspace';
 import {
-  MODEL_LEVER, NUMBER_PARTS_LEVER, SMALLER_FRACTION_LEVER, STEP_COUNT_LEVER, modelFraction, modelLeaks, practiceLeaks,
-  smallerFraction, stepLeverFacts, stepLevers,
+  FRACTION_BAR_LEVERS, MODEL_LEVER, NUMBER_PARTS_LEVER, SMALLER_FRACTION_LEVER, STEP_COUNT_LEVER, modelFraction, modelLeaks,
+  practiceLeaks, smallerFraction, startLevers,
 } from './fractionBarLevers';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -39,6 +39,10 @@ const PLAINEST: Record<Step, number> = { identify: 2, build: 3, larger_denominat
 const make = (id: string, n: number, d: number): FractionBarChallenge => ({ id, numerator: n, denominator: d,
   numeratorChoices: [n, d, d + 1, d + 2], denominatorChoices: [d, n, d + 1, d + 2] });
 const OFF = { readout: false, numerals: false };
+const typed = (type: FractionBarChallengeType, ch: FractionBarChallenge): FractionBarItem => ({ ...ch, type });
+/** The levers on a session item at a step, with the tier's starts and the runtime's pulls (what the component passes). */
+const stepLevers = (type: FractionBarChallengeType, ch: FractionBarChallenge, phase: FractionBarPhase, pulled: string[],
+  tier = OFF) => FRACTION_BAR_LEVERS.declare(typed(type, ch), { phase }, [...startLevers(type, tier), ...pulled]);
 
 describe('the lever rules', () => {
   it.each(Object.keys(WINDOWS) as Step[])('%s: every fraction gets a model that shares no number with it', mode => {
@@ -60,7 +64,7 @@ describe('the lever rules', () => {
     const window = WINDOWS[mode];
     for (const [n, d] of window) {
       const item = make('c', n, d);
-      const p = smallerFraction(mode, item);
+      const p = smallerFraction(typed(mode, item));
       if (d === PLAINEST[mode]) { expect(p, `${n}/${d}`).toBeNull(); continue; }
       expect(p, `${n}/${d}`).toBeTruthy();
       expect(p!.id).toBe('c~smaller');
@@ -99,15 +103,23 @@ describe('the lever rules', () => {
   });
   it('the tier starts the counting levers pulled; the pick steps have no counting levers', () => {
     const shade = stepLevers('build', make('c', 3, 5), 'build-fraction', [], { readout: true, numerals: true });
+    expect(shade.map(l => l.kind)).toEqual(['help', 'help', 'help', 'simplify']);
     expect(shade.filter(l => l.pulled).map(l => l.id)).toEqual([STEP_COUNT_LEVER, NUMBER_PARTS_LEVER]);
     expect(stepLevers('build', make('c', 3, 5), 'identify-numerator', [], OFF).map(l => l.id)).toEqual([MODEL_LEVER, SMALLER_FRACTION_LEVER]);
-    expect(stepLevers('build_equal', make('c', 3, 5), 'build-fraction', [], OFF)).toEqual([]);
+    expect(stepLevers('compare', make('c', 3, 5), 'compare', [], OFF)).toEqual([]);
   });
   it('the facts say what is drawn: the model\'s own numbers, never the item\'s', () => {
-    const [fact] = stepLeverFacts('build', make('c', 3, 5), 'identify-numerator', [MODEL_LEVER]);
+    const fact = FRACTION_BAR_LEVERS.onScreen(typed('build', make('c', 3, 5)), { phase: 'identify-numerator' }, [MODEL_LEVER]);
     expect(fact).toMatch(/4\/7/);
     expect(fact).not.toMatch(/\b3\b|\b5\b/);
-    expect(stepLeverFacts('build', make('c', 3, 5), 'identify-numerator', [STEP_COUNT_LEVER])).toEqual([]);
+    // The counting levers draw on the bar, which is on screen only at the shade step.
+    expect(FRACTION_BAR_LEVERS.onScreen(typed('build', make('c', 3, 5)), { phase: 'identify-numerator' }, [STEP_COUNT_LEVER])).toBe('');
+  });
+  it('the model comes by the item\'s tier: medium after a miss, hard never before a try; compare has no model', () => {
+    const item = typed('build', make('c', 3, 5));
+    expect(FRACTION_BAR_LEVERS.support(item, { phase: 'identify-numerator' })).toMatch(/after a miss.*model_fraction/);
+    expect(FRACTION_BAR_LEVERS.support({ ...item, supportTier: 'hard' }, { phase: 'identify-numerator' })).toMatch(/answer it cold/);
+    expect(FRACTION_BAR_LEVERS.support(typed('compare', make('c', 3, 5)), { phase: 'compare' })).toBe('');
   });
 });
 

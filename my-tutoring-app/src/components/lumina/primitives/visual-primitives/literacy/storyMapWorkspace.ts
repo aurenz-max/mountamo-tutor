@@ -1,25 +1,38 @@
 /**
- * Story map on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C13).
+ * Story map on the shared tutor/JEV teaching workspace: the domain its boss (`storyMap.boss.ts`) and component read.
  *
- * One generated story is two or three checked items, the activity's own phases: `identify` (pick every character
+ * One generated story is two or three checked items, the activity's own steps: `identify` (pick every character
  * and the setting), `sequence` (put every event card in its part of the story arc) and, at Grade 4 and up when the
  * story has a conflict, `analyze` (name the kind of conflict). The activity's own check is the judge, so the tutor
  * is never told which printed names are characters, which setting is right, where an event goes, or the conflict type.
  *
- * Pure: the component, the adapter and the journey row read the same items, choice orders, assignment and scene.
+ * Pure: the component, the boss and the journey read the same items, choice orders, ask and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import type { StoryMapData } from './StoryMap';
+import type { StoryMapMiss } from './storyMap.card';
+
+export { ANALYZE_MISSES, IDENTIFY_MISSES, SEQUENCE_MISSES, type StoryMapMiss } from './storyMap.card';
 
 export type StoryPhase = 'identify' | 'sequence' | 'analyze';
 export type ArcPosition = StoryMapData['events'][number]['arcPosition'];
 export type ConflictType = NonNullable<StoryMapData['elements']['conflict']>['type'];
 
-/** One checked item: a phase of the story map. */
-export interface StoryMapItem { id: StoryPhase }
+/** A practice story: the session's shape with a pool story's content, and (analyze) fewer conflict choices. */
+export type PracticeStory = StoryMapData & { conflictChoices?: readonly ConflictType[] };
+
+/**
+ * One checked item: a step of the story map. `id` is the step on the session story, or `<step>~simpler` on the
+ * practice story a simplify lever opens (`story`), which is then on screen in place of the session's.
+ */
+export interface StoryMapItem {
+  id: string;
+  phase: StoryPhase;
+  structureType: StoryMapData['structureType'];
+  story?: PracticeStory;
+}
 
 export const ARC_LABELS_BME: { key: ArcPosition; label: string }[] = [
   { key: 'beginning', label: 'Beginning' },
@@ -55,8 +68,9 @@ export function asksConflict(data: Pick<StoryMapData, 'gradeLevel' | 'elements'>
   return grade >= 4 && !!data.elements?.conflict;
 }
 
-export function storyMapItems(data: Pick<StoryMapData, 'gradeLevel' | 'elements'>): StoryMapItem[] {
-  return [{ id: 'identify' }, { id: 'sequence' }, ...(asksConflict(data) ? [{ id: 'analyze' as const }] : [])];
+export function storyMapItems(data: Pick<StoryMapData, 'gradeLevel' | 'elements' | 'structureType'>): StoryMapItem[] {
+  const phases: StoryPhase[] = ['identify', 'sequence', ...(asksConflict(data) ? ['analyze' as const] : [])];
+  return phases.map(phase => ({ id: phase, phase, structureType: data.structureType }));
 }
 
 const seedOf = (data: StoryMapData) => `${data.passage?.title ?? ''}|${data.events.map(e => e.id).join('|')}`;
@@ -110,14 +124,14 @@ export function eventBank(data: StoryMapData): StoryMapData['events'] {
   return sorted && events.length > 1 ? [...events.slice(1), events[0]] : events;
 }
 
-export function workspaceAssignment(item: StoryMapItem, data: StoryMapData): TeachingAssignment {
-  const parts = arcLabels(data).map(z => z.label).join(', ');
-  const task = item.id === 'identify'
+/** What the learner is asked on one step; a practice story says it is one. */
+export function storyMapAsk(item: StoryMapItem): string {
+  const ask = item.phase === 'identify'
     ? 'Read the story. Pick every character in it, and pick where and when it takes place.'
-    : item.id === 'sequence'
-      ? `Put each event card in its part of the story: ${parts}.`
+    : item.phase === 'sequence'
+      ? `Put each event card in its part of the story: ${arcLabels(item).map(z => z.label).join(', ')}.`
       : 'What kind of conflict does the main character face? Pick one.';
-  return { id: item.id, task, response: 'gesture' };
+  return item.story ? `Practice story: ${ask}` : ask;
 }
 
 /** What the learner has done on the open phase. */
@@ -136,13 +150,13 @@ export const EMPTY_VIEW: StoryMapView = { selectedCharacters: [], selectedSettin
 const eventText = (data: StoryMapData, id: string) => data.events.find(e => e.id === id)?.text ?? id;
 
 /** The learner's work in their own terms, never the key. */
-export function describeStoryWork(item: StoryMapItem, data: StoryMapData, view: StoryMapView): string {
-  if (item.id === 'identify') {
+export function describeStoryWork(item: Pick<StoryMapItem, 'phase'>, data: StoryMapData, view: StoryMapView): string {
+  if (item.phase === 'identify') {
     const setting = settingChoices(data).find(s => s.id === view.selectedSetting)?.text;
     const chars = view.selectedCharacters.length ? `Picked characters: ${view.selectedCharacters.join(', ')}` : 'No character picked yet';
     return `${chars}. ${setting ? `Picked setting: "${setting}"` : 'No setting picked yet'}.`;
   }
-  if (item.id === 'sequence') {
+  if (item.phase === 'sequence') {
     const parts = arcLabels(data).map(z => {
       const here = Object.entries(view.placed).filter(([, at]) => at === z.key).map(([id]) => `"${eventText(data, id)}"`);
       return `${z.label}: ${here.length ? here.join(', ') : 'empty'}`;
@@ -171,37 +185,21 @@ export function analyzeCorrect(data: StoryMapData, picked: string | null): boole
   return !!picked && picked === data.elements.conflict?.type;
 }
 
-export function storyMapCorrect(item: StoryMapItem, data: StoryMapData, view: StoryMapView): boolean {
-  return item.id === 'identify' ? identifyCorrect(data, view)
-    : item.id === 'sequence' ? sequenceCorrect(data, view.placed) : analyzeCorrect(data, view.selectedConflict);
+export function storyMapCorrect(item: Pick<StoryMapItem, 'phase'>, data: StoryMapData, view: StoryMapView): boolean {
+  return item.phase === 'identify' ? identifyCorrect(data, view)
+    : item.phase === 'sequence' ? sequenceCorrect(data, view.placed) : analyzeCorrect(data, view.selectedConflict);
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads. Drawn from the
- * catalog's commonStruggles ("confusing parts", "missing elements", "wrong sequence"):
- * - identify, first that applies: `picked_not_in_story` (a printed name that is not in the story), `missed_character`
- *   (left out a character), `wrong_setting` (a setting that is not the story's);
- * - sequence: `one_part` (every card in one part), `reversed` (each wrong card in the mirror part: a beginning event
- *   at the end), `next_part` (each wrong card one part away), `far_part` (a card two or more parts away);
- * - analyze: `inside_outside` (a conflict inside the character for one outside it, or the reverse), `other_outside`
- *   (another outside force: a person, nature or society).
- */
-export type StoryMapMiss = 'picked_not_in_story' | 'missed_character' | 'wrong_setting'
-  | 'one_part' | 'reversed' | 'next_part' | 'far_part'
-  | 'inside_outside' | 'other_outside';
-export const IDENTIFY_MISSES: readonly StoryMapMiss[] = ['picked_not_in_story', 'missed_character', 'wrong_setting'];
-export const SEQUENCE_MISSES: readonly StoryMapMiss[] = ['one_part', 'reversed', 'next_part', 'far_part'];
-export const ANALYZE_MISSES: readonly StoryMapMiss[] = ['inside_outside', 'other_outside'];
-
-export function storyMapMiss(item: StoryMapItem | null | undefined, data: StoryMapData, view: StoryMapView): StoryMapMiss | undefined {
+/** What a wrong check shows (`TeachingAttempt.miss`); the misses are listed on the card (`storyMap.card.ts`). */
+export function storyMapMiss(item: Pick<StoryMapItem, 'phase'> | null | undefined, data: StoryMapData, view: StoryMapView): StoryMapMiss | undefined {
   if (!item || storyMapCorrect(item, data, view)) return undefined;
-  if (item.id === 'identify') {
+  if (item.phase === 'identify') {
     const real = new Set(data.elements.characters.map(c => c.name));
     if (view.selectedCharacters.some(n => !real.has(n))) return 'picked_not_in_story';
     if (real.size !== view.selectedCharacters.length) return 'missed_character';
     return view.selectedSetting !== 'correct' ? 'wrong_setting' : undefined;
   }
-  if (item.id === 'sequence') {
+  if (item.phase === 'sequence') {
     const zones = arcLabels(data).map(z => z.key);
     const at = (p: ArcPosition) => zones.indexOf(p);
     const placedAt = data.events.map(e => view.placed[e.id]);
@@ -221,21 +219,18 @@ export function storyMapMiss(item: StoryMapItem | null | undefined, data: StoryM
 
 // ── scene ──────────────────────────────────────────────────────────────────
 
-/** What is drawn and asked. Choices are listed in screen order and never marked right. */
-export function workspaceScene(item: StoryMapItem, data: StoryMapData, view: StoryMapView): WorkspaceScene {
+/** What is drawn and asked. Choices are listed in screen order and never marked right. `kind` names the step. */
+export function workspaceScene(item: Pick<StoryMapItem, 'phase'>, data: StoryMapData, view: StoryMapView): SceneOf {
   const facts: Record<string, string> = {
-    phase: item.id === 'identify' ? 'Identify characters and setting'
-      : item.id === 'sequence' ? 'Place events on the story arc' : 'Identify the conflict',
+    kind: item.phase,
     storyTitle: data.passage.title,
     ...textFacts('story', data.passage.text),
   };
-  if (item.id === 'identify') {
-    facts.characterChoices = `Printed names (pick all that are characters in the story): ${characterChoices(data).map(c => c.name).join(', ')}`;
-    facts.settingChoices = `Printed settings (pick one): ${settingChoices(data).map(s => `"${s.text}"`).join('; ')}`;
-    facts.constraints = 'The learner taps every name that is a character in the story and one setting, then presses Check '
-      + 'Answers; the activity checks it. Some printed names may not be in the story. You cannot pick for the learner.';
-  } else if (item.id === 'sequence') {
-    facts.parts = `Story arc parts, in order: ${arcLabels(data).map(z => z.label).join(', ')}`;
+  if (item.phase === 'identify') {
+    facts.characterChoices = `Printed names (some may not be in the story): ${characterChoices(data).map(c => c.name).join(', ')}`;
+    facts.settingChoices = `Printed settings: ${settingChoices(data).map(s => `"${s.text}"`).join('; ')}`;
+  } else if (item.phase === 'sequence') {
+    facts.parts = `Story arc parts, in order: ${arcLabels(data).map(z => z.label).join(', ')}. More than one card can go in a part.`;
     eventBank(data).forEach((e, i) => { facts[`card${i + 1}`] = e.text; });
     facts.cards = 'The event cards above are listed in the bank\'s mixed-up order, not in story order.';
     if (view.marked) {
@@ -243,14 +238,9 @@ export function workspaceScene(item: StoryMapItem, data: StoryMapData, view: Sto
         + `${view.marked.wrong.length} wrong (red)${view.marked.wrong.length
           ? `: ${view.marked.wrong.map(id => `"${eventText(data, id)}"`).join(', ')}` : ''}`;
     }
-    facts.constraints = 'The learner taps an event card, then taps a part of the story arc to place it (a placed card can '
-      + 'be moved or taken off); with every card placed they press Check Sequence and the activity checks it. More than '
-      + 'one card can go in a part. You cannot place cards for the learner.';
   } else {
     if (data.elements.conflict?.description) facts.conflictShown = data.elements.conflict.description;
     facts.conflictChoices = `Printed choices: ${conflictOptions(data).map(t => CONFLICT_LABELS[t]).join(', ')}`;
-    facts.constraints = 'The learner taps one kind of conflict, then presses Check Answer; the activity checks it. You '
-      + 'cannot pick for the learner.';
   }
   facts.learnerWork = describeStoryWork(item, data, view);
   return { objects: [], facts };

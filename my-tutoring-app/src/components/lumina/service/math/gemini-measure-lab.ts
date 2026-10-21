@@ -420,8 +420,11 @@ export const generateMeasureLab = async (ctx: GenerationContext): Promise<Measur
     if (isRenderable(ch)) challenges.push(ch);
   }
 
-  // Index-derived ids AFTER selection — parallel-safe and stable as React keys.
-  const finalChallenges = challenges.map((ch, i) => ({ ...ch, id: `ml-${i + 1}` }));
+  // Index-derived ids AFTER selection — parallel-safe and stable as React keys. The support tier
+  // (`config.difficulty`) rides on each item: it says when the model lever comes (`MEASURE_LEVERS.support`).
+  const tier = config.difficulty?.toLowerCase().trim();
+  const supportTier: MeasureLabChallenge['supportTier'] = tier === 'easy' || tier === 'medium' || tier === 'hard' ? tier : undefined;
+  const finalChallenges: MeasureLabChallenge[] = challenges.map((ch, i) => ({ ...ch, id: `ml-${i + 1}`, ...(supportTier ? { supportTier } : {}) }));
 
   console.log(
     `[MeasureLab] ${challengeType}: ${finalChallenges.length} challenge(s)`

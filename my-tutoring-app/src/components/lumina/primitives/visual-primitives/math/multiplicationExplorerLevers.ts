@@ -3,23 +3,25 @@
  * The misses are what `multiplicationMiss` observes; the failure evidence is documented (catalog commonStruggles) and
  * synthetic (the journey's wrong answers), none real.
  *
+ * Declared once as a lever set (`MULTIPLICATION_LEVERS`, `bossLevers.ts`).
  * Product modes (build, connect, commutative, distributive, fluency): the typed product is the answer, so no lever may
  * print it.
- * - `skip_strip` (help): under the fact, one box per group holding the group size, with the running total under every
+ * - `skip_strip` (layout): under the fact, one box per group holding the group size, with the running total under every
  *   box but the last, which shows `?`. The count stops one group short of the answer.
- * - `show_model` (help, fluency only): the fact's array under the bare fact, rows and columns, no total.
- * - `break_apart` (help, distributive only): the break-apart with both partial products and the sum as `?`.
- * - `smaller_fact` (simplify): the same mode on a smaller fact (one factor halved), ungraded, then the full item back blank.
+ * - `show_model` (layout, fluency only): the fact's array under the bare fact, rows and columns, no total.
+ * - `break_apart` (layout, distributive only; not while the Strategy break-apart is open): the break-apart with both
+ *   partial products and the sum as `?`.
+ * - `smaller_fact` (easier): the same mode on a smaller fact (one factor halved), ungraded, then the full item back blank.
  * missing_factor: the hidden factor is the answer.
- * - `skip_line` (help): a number line with jumps of the known factor from 0, running two jumps past the product; only 0
+ * - `skip_line` (layout): a number line with jumps of the known factor from 0, running two jumps past the product; only 0
  *   and the product are labelled. The learner counts the jumps to the product.
- * - `smaller_fact` (simplify): the same known factor, a smaller hidden one.
+ * - `smaller_fact` (easier): the same known factor, a smaller hidden one.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { MultiplicationExplorerChallenge } from './MultiplicationExplorer';
 import {
-  askedSlot, codeAsk, distributiveSplit, expectedAnswer, numbersIn, resolveChallengeFact,
-  type ExplorerFactValue, type MultiplicationMiss,
+  MULTIPLICATION_MISSES_BY_MODE, NO_FACT, askedSlot, codeAsk, distributiveSplit, expectedAnswer, numbersIn,
+  resolveChallengeFact, type ExplorerFactValue,
 } from './multiplicationExplorerWorkspace';
 
 export const SKIP_STRIP_LEVER = 'skip_strip';
@@ -62,7 +64,7 @@ export function leverNumbers(c: MultiplicationExplorerChallenge, fact: ExplorerF
  * known factor and its skip count). Never the item, its turnaround, its product or its answer; no square on a missing
  * factor. Null on a 2 × 2 item and on a practice item.
  */
-export function smallerFact(c: MultiplicationExplorerChallenge, sessionFact: ExplorerFactValue): MultiplicationExplorerChallenge | null {
+export function smallerFact(c: MultiplicationExplorerChallenge, sessionFact: ExplorerFactValue = NO_FACT): MultiplicationExplorerChallenge | null {
   if (isPracticeFact(c)) return null;
   const f = resolveChallengeFact(c, sessionFact), slot = askedSlot(c);
   const halve = (n: number, avoid?: number) => {
@@ -89,7 +91,7 @@ export function smallerFact(c: MultiplicationExplorerChallenge, sessionFact: Exp
 }
 
 /** Leak rule for an easier item: never the learner's item, its turnaround, its product or its answer. */
-export function practiceLeaks(parent: MultiplicationExplorerChallenge, simpler: MultiplicationExplorerChallenge, sessionFact: ExplorerFactValue): boolean {
+export function practiceLeaks(parent: MultiplicationExplorerChallenge, simpler: MultiplicationExplorerChallenge, sessionFact: ExplorerFactValue = NO_FACT): boolean {
   const p = resolveChallengeFact(parent, sessionFact), s = resolveChallengeFact(simpler, sessionFact);
   return simpler.id === parent.id || s.product === p.product
     || (s.factor1 === p.factor1 && s.factor2 === p.factor2) || (s.factor1 === p.factor2 && s.factor2 === p.factor1)
@@ -98,60 +100,59 @@ export function practiceLeaks(parent: MultiplicationExplorerChallenge, simpler: 
     || (askedSlot(simpler) !== 'product' && s.factor1 === s.factor2);
 }
 
+// ── the lever set ────────────────────────────────────────────────────────
+
 /** What the session already shows: the break-apart open on screen takes that lever away. */
 export interface ExplorerLeverContext { breakdownShown: boolean }
 
-export function multiplicationLevers(c: MultiplicationExplorerChallenge | null, sessionFact: ExplorerFactValue, pulled: readonly string[],
-  ctx: ExplorerLeverContext = { breakdownShown: false }): WorkspaceLever[] {
-  if (!c || isPracticeFact(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly MultiplicationMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const simpler = smallerFact(c, sessionFact);
-  if (askedSlot(c) !== 'product') {
-    return [
-      lever(SKIP_LINE_LEVER, 'help', ['gave_product', 'gave_known_factor', 'subtracted', 'one_jump_off', 'other_factor'],
-        'The learner types the product or the factor already shown, or subtracts, or is one off.',
-        'Draws a number line under the equation with equal jumps of the factor that is shown, starting at zero and running past '
-          + 'the product. Only zero and the product are labelled; the learner counts the jumps it takes to reach the product.'),
-      ...(simpler ? [lever(SMALLER_FACT_LEVER, 'simplify', ['other_factor', 'gave_product', 'subtracted'],
-        'The learner cannot find a missing factor this big yet.',
-        'Opens an easier missing factor first, with the same factor shown and a smaller product. It is not graded; the '
-          + 'full item comes back after it, blank.')] : []),
-    ];
-  }
-  const groupMisses: MultiplicationMiss[] = ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'];
-  return [
-    lever(SKIP_STRIP_LEVER, 'help', c.type === 'distributive' ? [...groupMisses, 'one_part_only'] : groupMisses,
-      'The learner adds the factors, loses a group, or miscounts the total.',
-      'Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under '
-        + 'every box except the last, which shows a question mark. The learner adds the last group.'),
-    ...(c.type === 'fluency' ? [lever(SHOW_MODEL_LEVER, 'help', groupMisses,
-      'The learner cannot recall the fact and has nothing to count.',
-      'Draws the fact as an array of rows and columns under the bare fact. No total is shown.')] : []),
-    ...(c.type === 'distributive' && !ctx.breakdownShown ? [lever(BREAK_APART_LEVER, 'help',
-      ['one_part_only', 'added_factors', 'off_by_one', 'other_product'],
-      'The learner gives one part, or cannot break the fact into easier ones.',
-      'Opens the break-apart under the picture: the fact split into two easier facts with each part worked out, and the '
-        + 'total left as a question mark.')] : []),
-    ...(simpler ? [lever(SMALLER_FACT_LEVER, 'simplify', ['other_product', 'added_factors', 'one_group_short', 'one_group_over'],
-      'The learner cannot work out a fact this big yet.',
-      'Opens a smaller fact of the same kind first, one factor about half as big. It is not graded; the full item comes '
-        + 'back after it, blank.')] : []),
-  ];
-}
+const PRODUCT_MODES = ['build', 'connect', 'commutative', 'distributive', 'fluency'];
+const notPractice = (c: MultiplicationExplorerChallenge) => !isPracticeFact(c);
+/** The item's own fact: items are stamped with it (`explorerItems`), and an easier item carries its own. */
+const factOf = (c: MultiplicationExplorerChallenge) => resolveChallengeFact(c, NO_FACT);
 
-/** What the pulled help levers put on screen, for the tutor. Printed numbers only, never the answer. */
-export function leverFacts(c: MultiplicationExplorerChallenge | null, fact: ExplorerFactValue, pulled: readonly string[]): string {
-  if (!c) return '';
-  const [x, y] = distributiveSplit(fact);
-  const line = skipLine(c, fact);
-  return [
-    pulled.includes(SKIP_STRIP_LEVER) && `Under the fact: ${fact.factor1} boxes of ${fact.factor2}, with the running total under every box `
-      + 'except the last, which shows ?.',
-    pulled.includes(SHOW_MODEL_LEVER) && `Under the fact: an array of ${fact.factor1} rows and ${fact.factor2} columns, with no total.`,
-    pulled.includes(BREAK_APART_LEVER) && `The break-apart is open: ${x} × ${fact.factor2} + ${y} × ${fact.factor2} = `
-      + `${x * fact.factor2} + ${y * fact.factor2} = ?.`,
-    pulled.includes(SKIP_LINE_LEVER) && `Under the equation: a number line with jumps of ${line.step} from 0 running past ${line.product}; `
-      + `only 0 and ${line.product} are labelled.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on an easier item: the component declares nothing
+ * while one is on screen, and every spec refuses a practice item besides.
+ */
+export const MULTIPLICATION_LEVERS = leverSet<MultiplicationExplorerChallenge, ExplorerLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => MULTIPLICATION_MISSES_BY_MODE[mode as MultiplicationExplorerChallenge['type']] ?? [],
+  specs: [
+    { id: SKIP_STRIP_LEVER, type: 'layout', modes: PRODUCT_MODES, answers: 'all', offer: notPractice,
+      when: 'The learner adds the factors, loses a group, or miscounts the total.',
+      does: 'Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under '
+        + 'every box except the last, which shows a question mark. The learner adds the last group.',
+      fact: (_c: unknown, c) => { const f = factOf(c);
+        return `Under the fact: ${f.factor1} boxes of ${f.factor2}, with the running total under every box except the last, which shows ?.`; } },
+    { id: SHOW_MODEL_LEVER, type: 'layout', modes: ['fluency'], answers: 'all', offer: notPractice,
+      when: 'The learner cannot recall the fact and has nothing to count.',
+      does: 'Draws the fact as an array of rows and columns under the bare fact. No total is shown.',
+      fact: (_c: unknown, c) => { const f = factOf(c);
+        return `Under the fact: an array of ${f.factor1} rows and ${f.factor2} columns, with no total.`; } },
+    { id: BREAK_APART_LEVER, type: 'layout', modes: ['distributive'],
+      answers: ['one_part_only', 'added_factors', 'off_by_one', 'other_product'],
+      offer: (c, ctx) => notPractice(c) && !ctx.breakdownShown,
+      when: 'The learner gives one part, or cannot break the fact into easier ones.',
+      does: 'Opens the break-apart under the picture: the fact split into two easier facts with each part worked out, and the '
+        + 'total left as a question mark.',
+      fact: (_c: unknown, c) => { const f = factOf(c), [x, y] = distributiveSplit(f);
+        return `The break-apart is open: ${x} × ${f.factor2} + ${y} × ${f.factor2} = ${x * f.factor2} + ${y * f.factor2} = ?.`; } },
+    { id: SKIP_LINE_LEVER, type: 'layout', modes: ['missing_factor'], answers: 'all', offer: notPractice,
+      when: 'The learner types the product or the factor already shown, or subtracts, or is one off.',
+      does: 'Draws a number line under the equation with equal jumps of the factor that is shown, starting at zero and running past '
+        + 'the product. Only zero and the product are labelled; the learner counts the jumps it takes to reach the product.',
+      fact: (_c: unknown, c) => { const l = skipLine(c, factOf(c));
+        return `Under the equation: a number line with jumps of ${l.step} from 0 running past ${l.product}; only 0 and ${l.product} are labelled.`; } },
+    { id: SMALLER_FACT_LEVER, type: 'easier', modes: PRODUCT_MODES,
+      answers: ['other_product', 'added_factors', 'one_group_short', 'one_group_over'],
+      when: 'The learner cannot work out a fact this big yet.',
+      does: 'Opens a smaller fact of the same kind first, one factor about half as big. It is not graded; the full item comes '
+        + 'back after it, blank.',
+      content: c => smallerFact(c) },
+    { id: SMALLER_FACT_LEVER, type: 'easier', modes: ['missing_factor'], answers: ['other_factor', 'gave_product', 'subtracted'],
+      when: 'The learner cannot find a missing factor this big yet.',
+      does: 'Opens an easier missing factor first, with the same factor shown and a smaller product. It is not graded; the '
+        + 'full item comes back after it, blank.',
+      content: c => smallerFact(c) },
+  ],
+});

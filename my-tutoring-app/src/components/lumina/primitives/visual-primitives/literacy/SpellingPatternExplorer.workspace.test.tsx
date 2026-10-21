@@ -25,14 +25,15 @@ vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>su
 import SpellingPatternExplorer, { type SpellingPatternExplorerData } from './SpellingPatternExplorer';
 import buildPayload from '../../../components/live-activity/runtime/testing/w1-payloads/spelling-pattern-explorer.pattern_build.json';
 import classicPayload from '../../../components/live-activity/runtime/testing/w1-payloads/spelling-pattern-explorer.long_vowel.json';
-import { validateSpellingPatternExplorerData } from '../../../components/live-activity/adapters/spellingPatternExplorerLive';
+import { validateSpellingPatternExplorerData } from './spellingPatternExplorer.boss';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { spellingPatternExplorerOracle } from '../../../service/qa/oracles/spelling-pattern-explorer';
 import {
-  askableLetterItem, letterBuildLevers, letterItemsFrom, letterShapeMiss, rowReady, smallBankFor, startRow, type LetterBuildItem,
+  askableLetterItem, letterItemsFrom, letterShapeMiss, rowReady, smallBankFor, startRow, type LetterBuildItem,
 } from './letterBuild';
 import { PATTERNS, makePatternItems, patternsNamed, sessionPatterns, type PatternId } from './spellingPatternBuild';
-import { dictationItems, spellingMiss, spellingHarnessAnswers } from './spellingPatternExplorerWorkspace';
+import { dictationItems, patternBuilds, spellingMiss, spellingHarnessAnswers } from './spellingPatternExplorerWorkspace';
+import { SPELLING_LEVERS } from './spellingPatternLevers';
 
 const build = (buildPayload as unknown as { data: SpellingPatternExplorerData }).data;
 const classic = (classicPayload as unknown as { data: SpellingPatternExplorerData }).data;
@@ -124,6 +125,10 @@ describe('pattern rules (pure)', () => {
       expect(it1.examples.length, p).toBeGreaterThanOrEqual(3);
       expect(it1.bank.length, p).toBeLessThanOrEqual(14);
       expect(smallBankFor(it1)!.bank.length, p).toBeLessThan(it1.bank.length);
+      // The pattern card is a leak-checked clue: no pattern's card names a word that answers its ask.
+      const levers = SPELLING_LEVERS.declare(patternBuilds({ title: 't', task: 'letter_build', buildItems: [it1] })[0],
+        { patternWords: [], highlightPattern: '', items: [] }, []).map(l => l.id);
+      expect(levers, p).toContain('pattern_card');
     }
     for (const g of ['1', '2', '3', '5']) {
       const data = { title: 't', task: 'letter_build', buildItems: makePatternItems(sessionPatterns([], g), 4) };
@@ -144,7 +149,8 @@ describe('pattern rules (pure)', () => {
     expect(() => validateSpellingPatternExplorerData(build)).not.toThrow();
     expect(() => validateSpellingPatternExplorerData(classic)).not.toThrow();
     const tw = getComponentById('spelling-pattern-explorer')!.teachingWorkspace!;
-    const answered = new Set(letterItemsFrom(build.buildItems!).flatMap(i => letterBuildLevers(i, []).flatMap(l => l.answers ?? [])));
+    const ctx = { patternWords: [], highlightPattern: '', items: [] };
+    const answered = new Set(patternBuilds(build).flatMap(i => SPELLING_LEVERS.declare(i, ctx, []).flatMap(l => l.answers ?? [])));
     for (const m of tw.misses!.pattern_build) if (!tw.unanswered!.pattern_build.includes(m)) expect(answered.has(m), m).toBe(true);
     const mode = getComponentById('spelling-pattern-explorer')!.evalModes!.find(m => m.evalMode === 'pattern_build')!;
     expect(mode.affordances).toEqual({ answers: ['build'] });
@@ -262,12 +268,9 @@ describe('classic modes on the workspace', () => {
     expect((screen.getByLabelText('Your spelling') as HTMLInputElement).value).toBe('');
   });
 
-  it('outside a live runtime the scripted flow is unchanged (all words at once, Review, Submit)', () => {
+  it('outside a live runtime it shows the needs-the-tutor card, not a scripted flow', () => {
     render(<SpellingPatternExplorer data={{ ...classic, instanceId: 'spe' }} />);
-    fireEvent.click(screen.getByRole('button', { name: /I see the pattern/ }));
-    fireEvent.change(screen.getByLabelText('Your spelling rule'), { target: { value: 'A rule I found.' } });
-    fireEvent.click(screen.getByRole('button', { name: /Next: Apply the Rule/ }));
-    expect(screen.getAllByPlaceholderText('Type the word...')).toHaveLength(classic.dictationWords.length);
-    expect(screen.queryByRole('button', { name: 'Check spelling' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /I see the pattern/ })).toBeNull();
+    expect(screen.queryByPlaceholderText('Type the word...')).toBeNull();
   });
 });

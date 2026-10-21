@@ -34,7 +34,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generatePatternBuilder } = await loader.import('/src/components/lumina/service/math/gemini-pattern-builder.ts');
   const { createInstruction, tokensNeeded } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/patternBuilderWorkspace.ts');
-  const { validatePatternBuilderData } = await loader.import('/src/components/lumina/components/live-activity/adapters/patternBuilderLive.ts');
+  const { validatePatternBuilderData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/patternBuilder.boss.ts');
   const cases = [
     ['k', 'Kindergarten', undefined, 'Create your own AB and ABB color patterns', ['AB', 'ABB', 'AAB']],
     ['g2', 'Grade 2', undefined, 'Make repeating patterns of your own with shapes', ['AB', 'ABB', 'AAB', 'ABC', 'AABB']],

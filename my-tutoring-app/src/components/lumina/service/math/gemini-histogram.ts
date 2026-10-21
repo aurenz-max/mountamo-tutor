@@ -873,6 +873,9 @@ Return only the session wrapper.
     for (const ch of challenges) delete ch.hint;
   }
 
+  // Each item carries the tier: the lever set reads it to say when a model graph comes (`HISTOGRAM_LEVERS.support`).
+  if (supportTier) for (const ch of challenges) ch.supportTier = supportTier;
+
   if (supportTier) {
     console.log(
       `[Histogram] Support tier "${supportTier}" applied (mode ${challengeType}): ` +

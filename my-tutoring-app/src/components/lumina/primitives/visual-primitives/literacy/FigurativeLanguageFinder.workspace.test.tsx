@@ -25,7 +25,8 @@ import idiomPayload from '../../../components/live-activity/runtime/testing/w1-p
 import buildPayload from '../../../components/live-activity/runtime/testing/w1-payloads/figurative-language-finder.build_figurative.json';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { figItems, figLevers, findVerdict, sentenceOf, sentencesOf, typeChoices, writtenJudgeRequest, writtenShapeMiss } from './figurativeSteps';
+import { figItems, findVerdict, sentenceOf, sentencesOf, typeChoices, writtenJudgeRequest, writtenShapeMiss } from './figurativeSteps';
+import { FIG_LEVERS } from './figurativeLanguageFinderLevers';
 
 const comparison = (comparisonPayload as unknown as { data: FigurativeLanguageFinderData }).data;
 const idiom = (idiomPayload as unknown as { data: FigurativeLanguageFinderData }).data;
@@ -66,7 +67,7 @@ describe('figurative rules (pure)', () => {
     const tw = getComponentById('figurative-language-finder')!.teachingWorkspace!;
     for (const [mode, data] of MODES) {
       expect(workspaceBinding({ instanceId: mode, primitiveId: 'figurative-language-finder', pin: mode, objectiveIds: ['o'], data }), mode).not.toBeNull();
-      const answered = new Set(figItems(data).flatMap(i => figLevers(i, [])).flatMap(l => l.answers ?? []));
+      const answered = new Set(figItems(data).flatMap(i => FIG_LEVERS.declare(i, { chips: typeChoices(data) }, [])).flatMap(l => l.answers ?? []));
       const unanswered = new Set(tw.unanswered?.[mode] ?? []);
       for (const m of tw.misses![mode]) expect(answered.has(m) || unanswered.has(m), `${mode} ${m}`).toBe(true);
     }

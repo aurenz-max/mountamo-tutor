@@ -1,5 +1,5 @@
 import type { JudgedRunOutcome, JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
-import { numberWordFor } from './countingBoardScript';
+import { numberWordFor } from './countingBoardDomain';
 import {
   BOND_TEN,
   bondEquationFaultOf,
@@ -8,9 +8,9 @@ import {
   parseBondEquation,
   type BondFamilyForm,
   type BondModelAction,
-  type NumberBondCueOptions,
   type NumberBondItem,
-} from './numberBondScript';
+} from './numberBondDomain';
+import type { BondMiss } from './numberBond.card';
 import {
   expandSplitAndSay,
   hasPair,
@@ -229,81 +229,6 @@ export const relatedQuestion = (item: NumberBondItem, counters: BondCounters) =>
   };
 };
 
-const WAIT = 'Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait.';
-
-export const numberBondInteractionCue = (
-  item: NumberBondItem,
-  opts: NumberBondCueOptions,
-  counters: BondCounters,
-): string => {
-  const opening = opts.opening ? 'Let us use one bond in different ways. ' : '';
-  if (item.interactionPhase === 'related-join') {
-    return `[NB_MODEL] Say exactly: "${opening}Slide the two groups together." The child answers with their hands. Stay silent while they work. ${WAIT}`;
-  }
-  if (item.interactionPhase === 'related-separate') {
-    return `[NB_MODEL] Say exactly: "Now move the group you just found out of the whole." The child answers with their hands. Stay silent while they work. ${WAIT}`;
-  }
-  if (item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder') {
-    const safeCounters = item.bondAction && bondActionOf(counters, groupsForBond(item)) !== item.bondAction
-      ? countersForAction(item, item.bondAction)
-      : counters;
-    const question = relatedQuestion(item, safeCounters);
-    const answer = numberWordFor(question.answer);
-    return `[NB_RELATION] Say exactly: "${question.ask}" Private expected number: ${question.answer}. `
-      + `Judge only fresh speech for this turn. Accept "${answer}" or a short sentence ending in "${answer}". `
-      + 'Reject negated answers, conflicting guesses, and counting without a final answer. Silence and help questions are not wrong answers. '
-      + `If correct say exactly "Yes, ${answer}." If incorrect say exactly "My turn: the highlighted group has ${answer}. Your turn. ${question.ask}" ${WAIT}`;
-  }
-  if (item.interactionPhase === 'equation-model') {
-    return `[NB_MODEL] Say exactly: "${opening}Choose an action. Join the groups, or take one group away." The child answers with their hands. Stay silent while they work. ${WAIT}`;
-  }
-  if (item.interactionPhase === 'equation-build') {
-    return `[NB_EQUATION_ITEM] Say exactly: "Build an equation that shows what you did." The equation is the assessed response; do not ask for a spoken number. Stay silent while the child builds. ${WAIT}`;
-  }
-  if (item.interactionPhase === 'family-model') {
-    const line = item.bondAction === 'join'
-      ? 'Join the first group, then the second group.'
-      : item.bondAction === 'swap'
-        ? 'Swap the two groups so the other part comes first.'
-        : item.bondAction === 'separate-left'
-          ? 'Start with the whole, then move the first group away.'
-          : 'Start with the whole, then move the other group away.';
-    return `[NB_FAMILY_MODEL] Say exactly: "${opening}${line}" The child answers with their hands. Stay silent while they work. ${WAIT}`;
-  }
-  if (item.interactionPhase === 'family-build') {
-    return `[NB_FAMILY_ITEM] Say exactly: "Build the equation that shows this move." Do not fill it in or read a prior equation as the answer. Stay silent while the child builds. ${WAIT}`;
-  }
-  return '';
-};
-
-export const modeActionVerdictCue = (
-  item: NumberBondItem,
-  counters: BondCounters,
-): { cue: string; committed: BondModelAction | null; matched: boolean } => {
-  const committed = bondActionOf(counters, groupsForBond(item));
-  const expected = item.interactionPhase === 'equation-model' ? null : item.bondAction ?? null;
-  const matched = !!committed && (item.interactionPhase === 'equation-model'
-    ? committed !== 'swap'
-    : !expected || committed === expected);
-  const correction = item.interactionPhase === 'related-join'
-    ? 'My turn: keep each colored group together and slide both groups into the whole.'
-    : item.interactionPhase === 'related-separate'
-      ? 'My turn: move the group you just found out of the whole, and leave the other group there.'
-      : item.interactionPhase === 'equation-model'
-        ? 'My turn: choose one of the offered actions. Join the groups, or take one group away.'
-        : expected === 'swap'
-        ? 'My turn: keep each group together and swap their positions.'
-        : expected === 'separate-left' || expected === 'separate-right'
-          ? 'My turn: start with the whole and move the named group away.'
-          : 'My turn: keep each group together and complete the action.';
-  const line = matched ? 'Yes, the model is ready.' : correction;
-  return {
-    committed,
-    matched,
-    cue: `[NB_MODEL_RESULT] Code-computed action=${committed ?? 'incomplete'}; expected=${expected ?? 'meaningful-choice'}; matched=${matched}. Say exactly: "${line}" Never read bracket tags aloud.`,
-  };
-};
-
 export type FamilyEquationFault = 'match' | 'incomplete' | 'arithmetic' | 'numbers' | 'form';
 
 export const familyEquationFaultOf = (item: NumberBondItem, equation: string): FamilyEquationFault => {
@@ -315,18 +240,9 @@ export const familyEquationFaultOf = (item: NumberBondItem, equation: string): F
   return 'match';
 };
 
-/**
- * What a wrong split, move or equation shows (`TeachingAttempt.miss`, handoff 20), from the same work the
- * check reads:
- * - split: `not_all_placed` (counters left in the whole), `same_way_again` (a decompose pair already made),
- *   `ten_one_off` (ten_and_ones: a part of nine or eleven), `no_full_ten` (neither part is ten, nor one off);
- * - move: `other_move` (a complete whole-group move, not the one asked for);
- * - equation: `unfinished_equation`, `false_equation` (does not add up), `other_numbers` (numbers not from
- *   this bond), `other_fact` (a true fact of this bond that does not record the move made).
- * Undefined for right work and for the spoken phases.
- */
-export type BondMiss = 'not_all_placed' | 'same_way_again' | 'ten_one_off' | 'no_full_ten' | 'other_move'
-  | 'unfinished_equation' | 'false_equation' | 'other_numbers' | 'other_fact';
+/** What a wrong split, move or equation shows (`bondMiss`): the card names them (`BondMiss`). Undefined for right
+ * work and for the spoken phases. */
+export type { BondMiss } from './numberBond.card';
 
 export type BondWork =
   | { split: { left: number; right: number; unplaced: number }; found: readonly BondPair[] }
@@ -352,24 +268,6 @@ export function bondMiss(item: NumberBondItem | null, work: BondWork): BondMiss 
   }
   return hasPair(work.found, [Math.min(left, right), Math.max(left, right)]) ? 'same_way_again' : undefined;
 }
-
-export const familyEquationVerdictCue =(item: NumberBondItem, tiles: readonly string[]): string => {
-  const equation = tiles.join('');
-  const fault = familyEquationFaultOf(item, equation);
-  const expected = item.familyForm
-    ? familyFormKeyFor(item.familyForm, item.whole, item.knownPart, item.otherPart)
-    : '';
-  const line = fault === 'match'
-    ? 'Yes, that equation records this move.'
-    : fault === 'arithmetic'
-      ? 'My turn: check the arithmetic, then build the equation for this move again.'
-      : fault === 'numbers'
-        ? 'My turn: use only the whole and the two parts from this bond.'
-        : fault === 'form'
-          ? 'My turn: that is a true fact from this bond, but it does not record this move. Build the matching form.'
-          : 'My turn: finish the whole equation, then stop.';
-  return `[NB_FAMILY_RESULT] Built="${equation || 'nothing'}"; required=${expected}; fault=${fault}. Say exactly: "${line}" Never read bracket tags aloud.`;
-};
 
 const outcomeFor = (summary: JudgedRunSummary, id: string) => summary.outcomes.find((outcome) => outcome.id === id);
 const secondsTotal = (outcomes: Array<JudgedRunOutcome | undefined>): number | null => {

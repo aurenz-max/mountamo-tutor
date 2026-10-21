@@ -6,8 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import { OPEN_BUILDER_MISSES, type OpenBuilderMiss } from '../../../primitives/visual-primitives/creation/openBuilderWorkspace';
-import { missLists } from './missLists';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { openBuilderCard } from '../../../primitives/visual-primitives/creation/openBuilder.card';
 
 export const CREATION_CATALOG: ComponentDefinition[] = [
   {
@@ -26,17 +26,6 @@ export const CREATION_CATALOG: ComponentDefinition[] = [
         description: 'Build freely with blocks so the build does the job the goal names; a building buddy looks at a picture of it',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The check is a building buddy who looks at a picture of the board when the learner presses "I\'m done!". '
-        + 'Many different builds meet a goal, so never describe one particular build, never say where blocks go, and '
-        + 'never place or name blocks for the learner. The tutor may ask what the goal needs the build to do, talk about '
-        + 'what the learner already built, and help them use what the buddy asked.',
-      levers: true,
-      // The buddy's verdict names the miss (`openBuilderModel.ts`).
-      misses: missLists<OpenBuilderMiss>({
-        build_to_goal: [...OPEN_BUILDER_MISSES],
-      }),
-    },
+    ...bossEntry(openBuilderCard),
   },
 ];

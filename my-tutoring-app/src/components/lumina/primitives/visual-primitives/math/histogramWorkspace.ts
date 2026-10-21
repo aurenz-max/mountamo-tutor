@@ -1,14 +1,17 @@
 /**
- * Histogram on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C19).
+ * Histogram's pure workspace module: the bars, the activity's check and miss, the scene the tutor reads, and the
+ * harness input. The live wiring is the boss (`histogram.card.ts`, `histogram.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
- * activity's own Check: a shape chip (identify shape), a tapped bar (find modal bin), or a typed number (read
+ * Pure: the component, the boss and any probe read the same check and scene. Every mode is a gesture item checked by
+ * the activity's own Check: a shape chip (identify shape), a tapped bar (find modal bin), or a typed number (read
  * frequency exactly; estimate center within the item's tolerance). The tutor is never handed the answer: not the
  * shape, not which bar is tallest, not the asked bin's count, not the mean or median.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { HistogramChallenge, HistogramChallengeType, HistogramShapeKind } from './Histogram';
+import type { HistogramMiss } from './histogram.card';
+
+export { HISTOGRAM_MISSES_BY_MODE, type HistogramMiss } from './histogram.card';
 
 export interface Bin {
   start: number;
@@ -137,34 +140,6 @@ export function describeHistogramWork(ch: HistogramChallenge, work: HistogramWor
   return t ? `typed ${t}` : 'nothing typed yet';
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), drawn from the catalog's commonStruggles (bin edges
- * misread, skew direction misread) and the mode's task:
- * - identify shape: `skew_reversed` the other skew chosen; `missed_skew` a skewed graph called symmetric, bimodal or
- *   uniform; `called_skewed` a skew chosen for a graph that is not skewed; `peak_count` one peak and two confused;
- *   `flat_vs_peaked` symmetric and uniform confused;
- * - find modal bin: `neighbor_bar` a bar next to the tallest; `runner_up` the second-tallest height elsewhere;
- *   `shorter_bar` any other bar;
- * - read frequency: `bin_edge` an edge of the asked bin typed; `neighbor_bar` the count of a bar next to it;
- *   `total_count` the number of values in the whole graph; `off_by_one` one away; else `too_high` / `too_low`;
- * - estimate center: `off_axis` a number off the x-axis (a count, not a value); `tallest_bar` a value inside the
- *   tallest bar, when that is not within the tolerance; `axis_middle` the middle of the axis, ignoring the heights;
- *   else `too_high` / `too_low`.
- */
-export type HistogramMiss =
-  | 'skew_reversed' | 'missed_skew' | 'called_skewed' | 'peak_count' | 'flat_vs_peaked'
-  | 'neighbor_bar' | 'runner_up' | 'shorter_bar'
-  | 'bin_edge' | 'total_count' | 'off_by_one'
-  | 'off_axis' | 'tallest_bar' | 'axis_middle'
-  | 'too_high' | 'too_low';
-
-export const HISTOGRAM_MISSES_BY_MODE: Record<HistogramChallengeType, readonly HistogramMiss[]> = {
-  identify_shape: ['skew_reversed', 'missed_skew', 'called_skewed', 'peak_count', 'flat_vs_peaked'],
-  find_modal_bin: ['neighbor_bar', 'runner_up', 'shorter_bar'],
-  read_frequency: ['bin_edge', 'neighbor_bar', 'total_count', 'off_by_one', 'too_high', 'too_low'],
-  estimate_center: ['off_axis', 'tallest_bar', 'axis_middle', 'too_high', 'too_low'],
-};
-
 const SKEWED = (s: HistogramShapeKind) => s === 'right-skewed' || s === 'left-skewed';
 
 function shapeMiss(expected: HistogramShapeKind, chosen: HistogramShapeKind): HistogramMiss {
@@ -196,6 +171,7 @@ export function frequencySignatures(ch: HistogramChallenge, bins: Bin[]): Array<
   ];
 }
 
+/** What a wrong check shows (`HistogramMiss`, listed by mode in the card); undefined on a right or uncheckable one. */
 export function histogramMiss(ch: HistogramChallenge, work: HistogramWork, bins: Bin[]): HistogramMiss | undefined {
   if (!workIsCheckable(ch, work, bins) || histogramCorrect(ch, work, bins)) return undefined;
   if (ch.challengeType === 'identify_shape') return shapeMiss(ch.expectedShape ?? 'symmetric', work.shape!);
@@ -219,10 +195,6 @@ export function histogramMiss(ch: HistogramChallenge, work: HistogramWork, bins:
   return value > key ? 'too_high' : 'too_low';
 }
 
-export function workspaceAssignment(ch: HistogramChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.prompt, response: 'gesture' };
-}
-
 /** What the session draws beside the bars (its support tier's starting position) and the learner's work. */
 export interface HistogramView extends HistogramWork {
   showFrequencyLabels: boolean;
@@ -230,16 +202,16 @@ export interface HistogramView extends HistogramWork {
 }
 
 const KIND: Record<HistogramChallengeType, string> = {
-  identify_shape: 'identify the shape: choose the word that describes the whole distribution',
-  find_modal_bin: 'find the modal bin: tap the bar with the most values',
+  identify_shape: 'identify the shape: the word that describes the whole distribution',
+  find_modal_bin: 'find the modal bin: the bar with the most values',
   read_frequency: 'read a frequency: how many values fall in the outlined bin, read from the bar\'s height',
-  estimate_center: 'estimate the center: type an estimate of the mean or median from the bars',
+  estimate_center: 'estimate the center: the mean or median, estimated from the bars',
 };
 
 const fmt = (n: number) => String(Math.round(n * 100) / 100);
 
 /** What is drawn and asked. The shape, the tallest bar, the asked count and the center are never named. */
-export function workspaceScene(ch: HistogramChallenge, view: HistogramView): WorkspaceScene {
+export function workspaceScene(ch: HistogramChallenge, view: HistogramView): SceneOf {
   const bins = computeBins(ch.data, ch.binWidth, ch.binStart);
   const axis = frequencyAxis(Math.max(0, ...bins.map(b => b.count)));
   const facts: Record<string, string> = {
@@ -266,11 +238,6 @@ export function workspaceScene(ch: HistogramChallenge, view: HistogramView): Wor
     facts.accepted = `the activity accepts an estimate within ${fmt(ch.tolerance ?? 0)} (one bar width) of the true ${ch.targetStatistic ?? 'center'}`;
   }
   facts.learnerWork = describeHistogramWork(ch, view, bins);
-  facts.constraints = ch.challengeType === 'identify_shape'
-    ? 'The learner taps one shape word and presses Check. The activity checks it itself. You cannot choose or press Check.'
-    : ch.challengeType === 'find_modal_bin'
-      ? 'The learner taps a bar and presses Check. The activity checks it itself. You cannot tap a bar or press Check.'
-      : 'The learner types a number in the answer box and presses Check. The activity checks it itself. You cannot type, or press Check.';
   return { objects: [], facts };
 }
 

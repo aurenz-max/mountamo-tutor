@@ -13,7 +13,7 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { moleculeLevers, simplerMolecule } from './moleculeConstructorLevers';
+import { MOLECULE_LEVERS, simplerMolecule } from './moleculeConstructorLevers';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), legacy: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -209,6 +209,8 @@ it('the simplify lever opens an ungraded smaller ask on an empty board, then the
   expect(h.state().task!.itemId).toBe('m2');
   expect(h.atoms()).toBe(0);
 });
+
+const moleculeLevers = (c: MoleculeConstructorChallenge, pulled: string[]) => MOLECULE_LEVERS.declare(c, { atoms: 3, joinable: 2 }, pulled);
 
 it('lever text, misses and catalog wiring for the build', () => {
   const levers = moleculeLevers(MAKE, []);

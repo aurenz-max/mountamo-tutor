@@ -31,6 +31,8 @@ interface RampChallengeBase {
   brief: string;
   hint: string;
   explainOnSolve: string;
+  /** The lesson's support tier, stamped on each item by the generator (when the model lever comes); absent on old payloads. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface CompareConditionsChallenge extends RampChallengeBase {

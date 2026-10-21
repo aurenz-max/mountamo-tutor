@@ -15,29 +15,30 @@
  * deliberately set to a fact NO challenge uses, so anything still reading it shows
  * up immediately.
  */
-import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: vi.fn(), isAudioPlaying: false, isConnected: true }),
-}));
-vi.mock('../../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    resetAttempt: vi.fn(),
-    elapsedMs: 0,
-  }),
-  useEvaluationContext: () => null,
-}));
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { screen, cleanup } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace, type WorkspaceHarness } from '../../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { MultiplicationExplorerData } from '../MultiplicationExplorer';
 
-import MultiplicationExplorer, {
-  type MultiplicationExplorerData,
-} from '../MultiplicationExplorer';
+beforeEach(() => { installRuntimeTimers(); });
+const mounted: WorkspaceHarness[] = [];
+afterEach(() => { mounted.splice(0).forEach(h => h.close()); cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
 /** A fact no challenge uses — a canary for anything still reading data.fact. */
 const CANARY = { factor1: 9, factor2: 9, product: 81 };
+
+/** Mounted the way a lesson mounts it: on the teaching workspace. */
+const mount = (data: MultiplicationExplorerData) => {
+  const h = mountWorkspace({ primitiveId: 'multiplication-explorer', evalMode: 'build', instanceId: 'multiply', data: data as never });
+  mounted.push(h);
+  return h;
+};
 
 const makeData = (
   overrides: Partial<MultiplicationExplorerData> = {},
@@ -75,11 +76,9 @@ const makeData = (
   ...overrides,
 });
 
-beforeEach(() => cleanup());
-
 describe('representations follow the ACTIVE challenge, not the session fact', () => {
   it('draws the first challenge\'s fact — not data.fact', () => {
-    render(<MultiplicationExplorer data={makeData()} />);
+    mount(makeData());
     // The array panel labels itself "R rows × C columns".
     expect(screen.getByText(/3 rows/i)).toBeTruthy();
     expect(screen.getByText(/4 columns/i)).toBeTruthy();
@@ -88,13 +87,13 @@ describe('representations follow the ACTIVE challenge, not the session fact', ()
   });
 
   it('renders the headline equation for the active challenge', () => {
-    const { container } = render(<MultiplicationExplorer data={makeData()} />);
+    const { container } = mount(makeData()).view;
     expect(container.textContent).toContain('3 × 4');
     expect(container.textContent).not.toContain('9 × 9');
   });
 
   it('honors the per-challenge modality — an array challenge opens on the array tab', () => {
-    render(<MultiplicationExplorer data={makeData()} />);
+    mount(makeData());
     // The array panel's own label is present because that tab is selected.
     expect(screen.getByText(/3 rows/i)).toBeTruthy();
   });
@@ -103,7 +102,7 @@ describe('representations follow the ACTIVE challenge, not the session fact', ()
     const data = makeData();
     // Old-shape challenge: targetFact prose only, no structured fact.
     delete (data.challenges[0] as { fact?: unknown }).fact;
-    render(<MultiplicationExplorer data={data} />);
+    mount(data);
     expect(screen.getByText(/3 rows/i)).toBeTruthy();
     expect(screen.queryByText(/9 rows/i)).toBeNull();
   });
@@ -112,7 +111,7 @@ describe('representations follow the ACTIVE challenge, not the session fact', ()
     const data = makeData();
     delete (data.challenges[0] as { fact?: unknown }).fact;
     data.challenges[0].targetFact = '';
-    render(<MultiplicationExplorer data={data} />);
+    mount(data);
     // Now — and only now — the session fact is the honest source.
     expect(screen.getByText(/9 rows/i)).toBeTruthy();
   });

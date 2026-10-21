@@ -7,8 +7,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { MatrixChallengeType, MatrixDisplayChallenge } from './MatrixDisplay';
 import {
-  DIAGONALS_LEVER, LETTERS_LEVER, MODEL_LEVER, POSITION_LEVER, ROW_BANDS_LEVER, ROW_COLUMN_LEVER, SIGNS_LEVER, SIMPLER_LEVER,
-  TERMS_LEVER, keySizes, leverFacts, leverTextLeaks, matrixLevers, matrixModel, modelNumbers, practiceLeaks, simplerMatrix,
+  DIAGONALS_LEVER, FIRST_BOX, LETTERS_LEVER, MATRIX_LEVERS, MODEL_LEVER, POSITION_LEVER, ROW_BANDS_LEVER, ROW_COLUMN_LEVER,
+  SIGNS_LEVER, SIMPLER_LEVER, TERMS_LEVER, keySizes, leverTextLeaks, matrixModel, modelNumbers, practiceLeaks, simplerMatrix,
 } from './matrixDisplayLevers';
 import {
   MATRIX_MISSES_BY_MODE, MATRIX_MISSES_BY_TYPE, MATRIX_MODE_TYPES, addOf, determinantOf, inverseOf, matrixCorrect, matrixMiss,
@@ -113,11 +113,11 @@ describe('declarations', () => {
   it.each(Object.entries(MATRIX_MODE_TYPES))('%s: every catalog miss of each type is answered by a help lever on every item; no lever text or fact carries a digit; the model shows no answer number', (mode, types) => {
     expect(getComponentById('matrix-display')!.teachingWorkspace!.misses![mode]).toEqual(MATRIX_MISSES_BY_MODE[mode]);
     for (const type of types) for (const c of items(type)) {
-      const levers = matrixLevers(c, []);
+      const levers = MATRIX_LEVERS.declare(c, FIRST_BOX, []);
       const help = levers.filter(l => l.kind === 'help');
       for (const miss of MATRIX_MISSES_BY_TYPE[type]) expect(help.some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id), [1, 0]))).toBe(false);
+      expect(leverTextLeaks(MATRIX_LEVERS.onScreen(c, { active: [1, 0] }, levers.map(l => l.id)))).toBe(false);
       const model = matrixModel(c);
       expect(model, c.id).not.toBeNull();
       const taken = keySizes(c);
@@ -125,8 +125,8 @@ describe('declarations', () => {
     }
   });
 
-  it('each type gets its own picture levers; a practice problem has none', () => {
-    const ids = (c: MatrixDisplayChallenge) => matrixLevers(c, []).map(l => l.id);
+  it('each type gets its own picture levers; a practice problem has no easier version', () => {
+    const ids = (c: MatrixDisplayChallenge) => MATRIX_LEVERS.declare(c, FIRST_BOX, []).map(l => l.id);
     const big = (type: MatrixChallengeType) => items(type).find(c => simplerMatrix(c))!;
     expect(ids(big('transpose'))).toEqual([ROW_BANDS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
     expect(ids(big('add'))).toEqual([POSITION_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
@@ -134,7 +134,7 @@ describe('declarations', () => {
     expect(ids(items('determinant').find(c => c.values.length === 2 && simplerMatrix(c))!)).toEqual([DIAGONALS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
     expect(ids(items('determinant').find(c => c.values.length === 3)!)).toEqual([SIGNS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
     expect(ids(big('inverse'))).toEqual([LETTERS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
-    expect(matrixLevers(simplerMatrix(big('multiply'))!, [])).toEqual([]);
+    expect(ids(simplerMatrix(big('multiply'))!)).not.toContain(SIMPLER_LEVER);
   });
 
   // "This wrong answer, then this lever": the typed grid or number, the miss, the first open lever.
@@ -151,11 +151,11 @@ describe('declarations', () => {
     [det, { scalar: '40', cells: [] as string[][] }, 'too_high', DIAGONALS_LEVER],
   ] as const)('%#: %s', (c, work, miss, lever) => {
     expect(matrixMiss(c, work as MatrixWork)).toBe(miss);
-    expect(nextLever(matrixLevers(c, []), miss)).toBe(lever);
+    expect(nextLever(MATRIX_LEVERS.declare(c, FIRST_BOX, []), miss)).toBe(lever);
   });
 
   it('with the first lever pulled, the next one for the same miss comes up', () => {
-    expect(nextLever(matrixLevers(multiply, [ROW_COLUMN_LEVER]), 'entrywise')).toBe(TERMS_LEVER);
-    expect(nextLever(matrixLevers(multiply, [ROW_COLUMN_LEVER, TERMS_LEVER]), 'entrywise')).toBe(MODEL_LEVER);
+    expect(nextLever(MATRIX_LEVERS.declare(multiply, FIRST_BOX, [ROW_COLUMN_LEVER]), 'entrywise')).toBe(TERMS_LEVER);
+    expect(nextLever(MATRIX_LEVERS.declare(multiply, FIRST_BOX, [ROW_COLUMN_LEVER, TERMS_LEVER]), 'entrywise')).toBe(MODEL_LEVER);
   });
 });

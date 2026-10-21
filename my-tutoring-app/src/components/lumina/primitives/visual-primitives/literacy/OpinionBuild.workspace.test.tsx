@@ -24,7 +24,8 @@ import buildPayload from '../../../components/live-activity/runtime/testing/w1-p
 import oreoPayload from '../../../components/live-activity/runtime/testing/w1-payloads/opinion-builder.oreo.json';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { askableOpinion, boardOrder, oneSideFor, opinionLevers, opinionMiss, opinionsFrom, type OpinionItem } from './opinionBuild';
+import { askableOpinion, boardOrder, oneSideFor, opinionMiss, opinionsFrom, type OpinionItem } from './opinionBuild';
+import { OPINION_LEVERS } from './opinionBuilderLevers';
 import { stagesFor } from './writingStages';
 
 const build = (buildPayload as unknown as { data: OpinionBuilderData }).data;
@@ -61,10 +62,18 @@ describe('build_opinion rules (pure)', () => {
     expect(workspaceBinding({ instanceId: 'b', primitiveId: 'opinion-builder', pin: 'build_opinion', objectiveIds: ['o'], data: build })).not.toBeNull();
     expect(workspaceBinding({ instanceId: 'w', primitiveId: 'opinion-builder', pin: 'oreo', objectiveIds: ['o'], data: oreo })).not.toBeNull();
     const tw = getComponentById('opinion-builder')!.teachingWorkspace!;
-    const answered = new Set(opinionLevers(items[0], []).flatMap(l => l.answers ?? []));
+    const answered = new Set(OPINION_LEVERS.declare(items[0], null, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.build_opinion) expect(answered.has(m), m).toBe(true);
     expect(stagesFor(opinionWritingPayload(oreo)).map(s => s.job)).toEqual(['opinion', 'reason', 'example', 'restate']);
     expect(stagesFor({ ...opinionWritingPayload(oreo), paragraphType: 'cer' }).map(s => s.job)).toEqual(['claim', 'evidence', 'reasoning', 'conclusion']);
+  });
+
+  it('one lever set: build levers on a question, writing levers on a step; the model is never on its own subject', () => {
+    expect(OPINION_LEVERS.declare(items[0], null, []).map(l => l.id)).toEqual(['oreo_frame', 'model_opinion', 'one_side']);
+    expect(OPINION_LEVERS.declare({ ...items[0], question: 'Should our class get a pet hamster?' }, null, []).map(l => l.id)).not.toContain('model_opinion');
+    const step = stagesFor(opinionWritingPayload({ ...oreo, supportTier: 'easy' }))[0];
+    expect(OPINION_LEVERS.declare(step, null, []).map(l => l.id)).toContain('sentence_starters');
+    expect(OPINION_LEVERS.support(step, null)).toContain('model_step');
   });
 });
 

@@ -1,34 +1,34 @@
 /**
- * story-map's in-item levers (/add-support-tiers; report qa/eval-reports/story-map-levers-2026-10-09.md).
- * No real-learner evidence: the misses are what `storyMapMiss` observes; the catalog's commonStruggles name
- * "confusing parts", "missing elements" and "wrong sequence". Every phase's answer is a fact about THIS story (who is
- * in it, where an event goes, the conflict), so no lever marks a name, places or orders an event, or points at a
- * choice: help levers draw what a part of a story or a kind of conflict IS, the same on every story, and simplify
- * levers open a different, shorter story.
+ * story-map's in-item levers (/add-support-tiers; report qa/eval-reports/story-map-levers-2026-10-09.md), declared
+ * once as a lever set (`STORY_MAP_LEVERS`, `bossLevers.ts`). No real-learner evidence: the misses are what
+ * `storyMapMiss` observes. Every step's answer is a fact about THIS story (who is in it, where an event goes, the
+ * conflict), so no lever marks a name, places or orders an event, or points at a choice: help levers draw what a part
+ * of a story or a kind of conflict IS, the same on every story, and simplify levers open a different, shorter story.
  *
  * identify (`picked_not_in_story`, `missed_character`, `wrong_setting`):
- * - `character_count` (help) a row of empty person spaces, one per character in the story, filled one per pick. It
- *   counts picks, never marks which. Declared only when some printed name is not a character (`countLeaks`), which
- *   `characterChoices` now guarantees at every tier; the rule stays so the count never says "pick them all".
- * - `easier_story` (simplify) an ungraded practice story from a code pool: short sentences, two characters, one name
+ * - `character_count` (clue) a row of empty person spaces, one per character in the story, filled one per pick. It
+ *   counts picks, never marks which. Offered only when some printed name is not a character (`countLeaks`), which
+ *   `characterChoices` guarantees at every tier; the rule stays so the count never says "pick them all".
+ * - `easier_story` (easier) an ungraded practice story from a code pool: short sentences, two characters, one name
  *   not in it. None of its names, events or words is the session's (`practiceLeaks`).
  * sequence (`one_part`, `reversed`, `next_part`, `far_part`):
- * - `part_pictures` (help) under each arc part, a picture and what that part of a story does ("the problem grows").
- * - `arc_arrow` (help) an arrow along the parts, from where a story starts to where it ends.
- * - `easier_story` (simplify) the same arc on a practice story, one short event per part.
+ * - `part_pictures` (legend) under each arc part, a picture and what that part of a story does ("the problem grows").
+ * - `arc_arrow` (marks) an arrow along the parts, from where a story starts to where it ends.
+ * - `easier_story` (easier) the same arc on a practice story, one short event per part.
  * analyze (`inside_outside`, `other_outside`):
- * - `conflict_pictures` (help) a picture on every conflict choice (a thought bubble, two people, a storm, a crowd and
- *   a rule sign), the same on every story, so no choice is marked.
- * - `easier_conflict` (simplify) a one-sentence practice story with three choices: its own kind, one across inside
+ * - `conflict_pictures` (meaning) a picture on every conflict choice (a thought bubble, two people, a storm, a crowd
+ *   and a rule sign), the same on every story, so no choice is marked.
+ * - `easier_conflict` (easier) a one-sentence practice story with three choices: its own kind, one across inside
  *   and outside, and one other.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { StoryMapData } from './StoryMap';
 import {
-  CONFLICT_ORDER, arcLabels, characterChoices, conflictOptions, type ArcPosition, type ConflictType, type StoryMapItem, type StoryMapMiss,
-  type StoryPhase,
+  ANALYZE_MISSES, CONFLICT_LABELS, CONFLICT_ORDER, IDENTIFY_MISSES, SEQUENCE_MISSES, arcLabels, characterChoices, conflictOptions,
+  type ArcPosition, type ConflictType, type PracticeStory, type StoryMapItem, type StoryMapMiss, type StoryPhase,
 } from './storyMapWorkspace';
+
+export type { PracticeStory } from './storyMapWorkspace';
 
 export const COUNT_LEVER = 'character_count';
 export const STORY_LEVER = 'easier_story';
@@ -38,9 +38,6 @@ export const CONFLICT_PICTURES_LEVER = 'conflict_pictures';
 export const CONFLICT_STORY_LEVER = 'easier_conflict';
 export const PRACTICE_SUFFIX = '~simpler';
 export const PRACTICE_NOTE = 'A shorter practice story, ungraded; the full story comes back after it.';
-
-/** A practice story: the session's shape with a pool story's content, and (analyze) fewer conflict choices. */
-export type PracticeStory = StoryMapData & { conflictChoices?: readonly ConflictType[] };
 
 const norm = (s: string) => s.trim().toLowerCase();
 export const practiceId = (phase: StoryPhase) => `${phase}${PRACTICE_SUFFIX}`;
@@ -211,83 +208,75 @@ export function practiceConflict(data: StoryMapData): PracticeStory | null {
 }
 
 
-export function practiceFor(item: StoryMapItem, data: StoryMapData): PracticeStory | null {
-  return item.id === 'analyze' ? practiceConflict(data) : practiceStory(data);
+export function practiceFor(item: Pick<StoryMapItem, 'phase'>, data: StoryMapData): PracticeStory | null {
+  return item.phase === 'analyze' ? practiceConflict(data) : practiceStory(data);
 }
 
-export function practiceAssignment(item: StoryMapItem, p: PracticeStory): TeachingAssignment {
-  const task = item.id === 'identify'
-    ? 'Practice story: pick every character in it, and where and when it takes place.'
-    : item.id === 'sequence'
-      ? `Practice story: put each event card in its part: ${arcLabels(p).map(z => z.label).join(', ')}.`
-      : 'Practice story: what kind of conflict is it? Pick one.';
-  return { id: practiceId(item.id), task, response: 'gesture' };
+/** The practice item a simplify lever opens on a session step: the same step on a shorter story. */
+export function practiceItem(item: StoryMapItem, data: StoryMapData): StoryMapItem | null {
+  if (item.story) return null;
+  const story = practiceFor(item, data);
+  return story ? { id: practiceId(item.phase), phase: item.phase, structureType: item.structureType, story } : null;
 }
 
-// ── declarations ───────────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
-const IDENTIFY: readonly StoryMapMiss[] = ['picked_not_in_story', 'missed_character', 'wrong_setting'];
-const SEQUENCE: readonly StoryMapMiss[] = ['one_part', 'reversed', 'next_part', 'far_part'];
-const ANALYZE: readonly StoryMapMiss[] = ['inside_outside', 'other_outside'];
+const MISSES_OF: Record<StoryPhase, readonly StoryMapMiss[]> = {
+  identify: IDENTIFY_MISSES, sequence: SEQUENCE_MISSES, analyze: ANALYZE_MISSES,
+};
+const at = (...phases: StoryPhase[]) => (item: StoryMapItem) => phases.includes(item.phase);
 
-/** The levers on a session phase. A practice story carries none. */
-export function storyMapLevers(item: StoryMapItem | null | undefined, data: StoryMapData, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly StoryMapMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const story = practiceFor(item, data) ? [lever(item.id === 'analyze' ? CONFLICT_STORY_LEVER : STORY_LEVER, 'simplify',
-    item.id === 'identify' ? IDENTIFY : item.id === 'sequence' ? SEQUENCE : ANALYZE,
-    item.id === 'analyze' ? 'The learner cannot tell the kinds of conflict apart in this story yet.'
-      : 'The learner cannot do this with a story this long yet.',
-    item.id === 'analyze'
-      ? 'Opens a one-sentence practice story with three conflict choices first. It is not graded; this story comes back after it, blank.'
-      : 'Opens a short, familiar practice story (two characters, one short event per part) with the same task first, none of these names or events. '
-        + 'It is not graded; this story comes back after it, blank.')] : [];
-  if (item.id === 'identify') return [
-    ...(countLeaks(data) ? [] : [lever(COUNT_LEVER, 'help', ['picked_not_in_story', 'missed_character'],
-      'The learner leaves out a character or picks a name that is not in the story.',
-      'Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the '
-        + 'picks; it never marks which names are right. You may say how many characters the story has.')]),
-    ...story,
-  ];
-  if (item.id === 'sequence') return [
-    lever(PARTS_LEVER, 'help', ['one_part', 'next_part', 'far_part'],
-      'The learner puts cards in the wrong parts, or all in one part, as if the parts mean nothing yet.',
-      'Puts a picture and a few words under each part of the arc saying what that part of any story does (who and where, '
-        + 'the problem, how it ends). No event is on it; never say which card goes where.'),
-    lever(ARROW_LEVER, 'help', ['reversed', 'far_part'],
-      'The learner puts the start of the story at the end, or seems not to know which way the arc runs.',
-      'Draws an arrow along the parts from where a story starts to where it ends. No event is on it.'),
-    ...story,
-  ];
-  return [
-    lever(CONFLICT_PICTURES_LEVER, 'help', ['inside_outside', 'other_outside'],
-      'The learner mixes up a struggle inside the character with one outside, or picks the wrong outside force.',
-      'Puts a picture and a few words on every conflict choice (a thought bubble, two people, a storm, a crowd with a rule). '
-        + 'Every choice gets one, so none is marked.'),
-    ...story,
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor. Never a name, an event or a choice singled out. */
-export function storyMapLeverFacts(item: StoryMapItem, data: StoryMapData, pulled: readonly string[]): string {
-  const has = (id: string) => pulled.includes(id);
-  if (item.id === 'identify') {
-    return has(COUNT_LEVER) && !countLeaks(data)
-      ? `Under the names: ${data.elements.characters.length} empty person spaces, one for each character in the story, filled one `
-        + 'per name picked. It does not mark which names.' : '';
-  }
-  if (item.id === 'sequence') {
-    return [
-      has(PARTS_LEVER) && `Under each part, a picture and what that part of a story does: ${arcLabels(data)
-        .map(z => { const p = partPicture(data, z.key); return `${z.label} ${p.icon} "${p.words}"`; }).join(', ')}. No event is on it.`,
-      has(ARROW_LEVER) && `An arrow runs along the parts from where a story starts (${arcLabels(data)[0].label}) to where it ends `
-        + `(${arcLabels(data).at(-1)!.label}). No event is on it.`,
-    ].filter((s): s is string => !!s).join(' ');
-  }
-  // The pictures in the printed order, without the choice labels: the scene already lists them, and a label repeated
-  // here would read as singled out.
-  return has(CONFLICT_PICTURES_LEVER)
-    ? `Every conflict choice shows a picture and a few words, in the printed order: ${conflictOptions(data).map(t =>
-      `${CONFLICT_PICTURES[t].icon} "${CONFLICT_PICTURES[t].words}"`).join(', ')}.` : '';
-}
+/**
+ * The levers, declared once (`bossLevers.ts`); the context is the session's story. Each is offered on its own step
+ * only, and none on a practice story: the component declares nothing while one is on screen.
+ */
+export const STORY_MAP_LEVERS = leverSet<StoryMapItem, StoryMapData>({
+  missesOf: () => [...IDENTIFY_MISSES, ...SEQUENCE_MISSES, ...ANALYZE_MISSES],
+  // What a worded lever must never name: the story's characters, or its conflict's printed label.
+  answersOf: (item, data) => (item.phase === 'identify' ? data.elements.characters.map(c => c.name)
+    : item.phase === 'analyze' && data.elements.conflict ? [CONFLICT_LABELS[data.elements.conflict.type]] : []),
+  specs: [
+    { id: COUNT_LEVER, type: 'clue', answers: ['picked_not_in_story', 'missed_character'],
+      when: 'The learner leaves out a character or picks a name that is not in the story.',
+      does: 'Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the '
+        + 'picks; it never marks which names are right. You may say how many characters the story has.',
+      offer: (item, data) => item.phase === 'identify' && !countLeaks(data),
+      content: (_item, data) => data.elements.characters.length,
+      fact: (n: number) => `Under the names: ${n} empty person spaces, one for each character in the story, filled one per name `
+        + 'picked. It does not mark which names.' },
+    { id: PARTS_LEVER, type: 'legend', answers: ['one_part', 'next_part', 'far_part'],
+      when: 'The learner puts cards in the wrong parts, or all in one part, as if the parts mean nothing yet.',
+      does: 'Puts a picture and a few words under each part of the arc saying what that part of any story does (who and where, '
+        + 'the problem, how it ends). No event is on it; never say which card goes where.',
+      offer: at('sequence'),
+      fact: (_c, _item, data) => `Under each part, a picture and what that part of a story does: ${arcLabels(data)
+        .map(z => { const p = partPicture(data, z.key); return `${z.label} ${p.icon} "${p.words}"`; }).join(', ')}. No event is on it.` },
+    { id: ARROW_LEVER, type: 'marks', answers: ['reversed', 'far_part'],
+      when: 'The learner puts the start of the story at the end, or seems not to know which way the arc runs.',
+      does: 'Draws an arrow along the parts from where a story starts to where it ends. No event is on it.',
+      offer: at('sequence'),
+      fact: (_c, _item, data) => `An arrow runs along the parts from where a story starts (${arcLabels(data)[0].label}) to where `
+        + `it ends (${arcLabels(data).at(-1)!.label}). No event is on it.` },
+    { id: STORY_LEVER, type: 'easier', answers: [...IDENTIFY_MISSES, ...SEQUENCE_MISSES], answersOn: item => MISSES_OF[item.phase],
+      when: 'The learner cannot do this with a story this long yet.',
+      does: 'Opens a short, familiar practice story (two characters, one short event per part) with the same task first, none of '
+        + 'these names or events. It is not graded; this story comes back after it, blank.',
+      offer: at('identify', 'sequence'),
+      content: (item, data) => practiceItem(item, data) },
+    // The pictures in the printed order, without the choice labels: the scene already lists them, and a label repeated
+    // here would read as singled out.
+    { id: CONFLICT_PICTURES_LEVER, type: 'meaning', answers: ANALYZE_MISSES,
+      when: 'The learner mixes up a struggle inside the character with one outside, or picks the wrong outside force.',
+      does: 'Puts a picture and a few words on every conflict choice (a thought bubble, two people, a storm, a crowd with a rule). '
+        + 'Every choice gets one, so none is marked.',
+      offer: at('analyze'),
+      fact: (_c, _item, data) => `Every conflict choice shows a picture and a few words, in the printed order: ${conflictOptions(data)
+        .map(t => `${CONFLICT_PICTURES[t].icon} "${CONFLICT_PICTURES[t].words}"`).join(', ')}.` },
+    { id: CONFLICT_STORY_LEVER, type: 'easier', answers: ANALYZE_MISSES,
+      when: 'The learner cannot tell the kinds of conflict apart in this story yet.',
+      does: 'Opens a one-sentence practice story with three conflict choices first. It is not graded; this story comes back after '
+        + 'it, blank.',
+      offer: at('analyze'),
+      content: (item, data) => practiceItem(item, data) },
+  ],
+});

@@ -4,22 +4,25 @@
  * `distributionMiss` observes and the catalog's commonStruggles. Pure: the component draws from these, the workspace
  * publishes them, the tests hold each leak rule. Every easier item has the id `<item>~simpler` and the item's type.
  *
- * - explore: `slider_glow` (help) rings the sliders the prompt names (all of them when it names none). Nothing is said
+ * Declared once as a lever set (`DISTRIBUTION_LEVERS`, `bossLevers.ts`):
+ * - explore: `slider_glow` (marks) rings the sliders the prompt names (all of them when it names none). Nothing is said
  *   about what the chart will do.
- * - identify: the family IS the answer, so no lever marks a choice: `family_facts` (help) puts the same kind of fact
- *   under every choice (what it models, which values it can take); `two_families` (simplify) asks a different, plainer
+ * - identify: the family IS the answer, so no lever marks a choice: `family_facts` (legend) puts the same kind of fact
+ *   under every choice (what it models, which values it can take); `two_families` (easier) asks a different, plainer
  *   scenario with two choices, never the item's family as the asked one.
- * - compute: `event_strip` (help) lists which counts the asked event takes and which it leaves out (no probability);
- *   `worked_model` (help) works the same question through on a model outside the item (other parameter values) to its
- *   number; `simpler_compute` (simplify) asks one step less on the model (a single P(X = k), or the mean of a waiting time).
- * - predict shape: `shape_guide` (help) a card naming the three shape words by what their tails do; `two_shapes`
- *   (simplify) asks the shape of a stated model with two choices, its answer not the item's.
+ * - compute: `event_strip` (clue) lists which counts the asked event takes and which it leaves out (no probability);
+ *   `worked_model` (model; when it comes is the set's `support`) works the same question through on a model outside
+ *   the item (other parameter values) to its number; `simpler_compute` (easier) asks one step less on the model (a single P(X = k), or the mean of a waiting time).
+ * - predict shape: `shape_guide` (legend) a card naming the three shape words by what their tails do; `two_shapes`
+ *   (easier) asks the shape of a stated model with two choices, its answer not the item's.
  */
-import type { WorkspaceLever } from '../../components/live-activity/runtime/contract';
+import { leverSet } from '../../components/live-activity/bossLevers';
 import { FAMILIES } from '../../lib/probability';
-import { distributionChoices, formatValue, type DistributionMiss } from './distributionExplorerWorkspace';
+import {
+  DISTRIBUTION_MISSES_BY_MODE, distributionChoices, distributionCorrect, formatValue, type DistributionMiss,
+} from './distributionExplorerWorkspace';
 import type {
-  ComputeChallenge, DistributionChallenge, DistributionFamily, IdentifyChallenge, PredictShapeChallenge,
+  ComputeChallenge, DistributionChallenge, DistributionEvalMode, DistributionFamily, IdentifyChallenge, PredictShapeChallenge,
 } from './types';
 
 export const SLIDER_GLOW_LEVER = 'slider_glow';
@@ -341,67 +344,81 @@ export function practiceItem(c: DistributionChallenge): DistributionChallenge | 
   return twoFamilies(c) ?? simplerCompute(c) ?? twoShapes(c);
 }
 
-// ── the declarations ───────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
+/** The eval mode an item belongs to: a compute item answers the compute misses in either compute mode. */
+const MODE_OF: Record<DistributionChallenge['type'], DistributionEvalMode> = {
+  guided_exploration: 'explore', identify: 'identify', compute: 'compute_basic', predict_shape: 'compute_advanced',
+};
+const COMPUTE_MODES = ['compute_basic', 'compute_advanced'];
 const COMPUTE: readonly DistributionMiss[] = ['complement', 'reciprocal', 'near_value', 'wrong_value'];
 const SHAPE: readonly DistributionMiss[] = ['reversed_skew', 'said_symmetric', 'wrong_shape'];
+const PRACTICE_THEN = 'It is not graded; the full item comes back after it.';
+export const PRACTICE_NOTE = `An easier practice item is on screen in place of the item. ${PRACTICE_THEN}`;
 
-/** The levers on `c`, with whether each is pulled. A practice item has none. */
-export function distributionLevers(c: DistributionChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPractice(c)) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: 'help' | 'simplify', answers: readonly DistributionMiss[], when: string, does: string) =>
-    levers.push({ id, kind, when, does, carrier: 'shown', pulled: pulled.includes(id), answers });
-  const practice = ' It is not graded; the full item comes back after it.';
-  switch (c.type) {
-    case 'guided_exploration':
-      add(SLIDER_GLOW_LEVER, 'help', ['not_explored'], 'The learner has not moved anything, or does not know where to start.',
-        'Rings the slider the prompt is about (every slider when it names none). Never say what the chart will do.');
-      return levers;
-    case 'identify':
-      add(FAMILY_FACTS_LEVER, 'help', ['discrete_continuous', 'binomial_poisson'],
-        'The learner mixes up counts and waiting times, or the two counting families.',
-        'Puts one line under every choice: what that family models and which values it can take. No choice is marked; '
-          + 'never say which line fits the scenario.');
-      if (twoFamilies(c)) add(TWO_FAMILIES_LEVER, 'simplify', ['discrete_continuous', 'binomial_poisson'],
-        'The learner cannot place this scenario yet.', `Opens an easier ask first: a plainer scenario and two choices.${practice}`);
-      return levers;
-    case 'compute': {
-      const strip = eventStrip(c);
-      if (strip && !stripLeaks(stripText(strip), c)) add(EVENT_STRIP_LEVER, 'help', ['complement', 'near_value'],
-        'The learner takes the complement, or puts a boundary count in or out.',
-        'Shows a strip of the whole counts the asked event takes and the ones it leaves out. No probability; never say '
-          + 'the number.');
-      if (workedModel(c)) add(WORKED_MODEL_LEVER, 'help', COMPUTE,
-        'The learner picks a value from the wrong rule, the complement, the rate for the mean, or a value off by a term.',
-        'Shows the same question worked through on a model with other parameter values, step by step to its number. '
-          + 'The learner does the same steps on the item; never say the item\'s number.');
-      if (simplerCompute(c)) add(SIMPLER_COMPUTE_LEVER, 'simplify', COMPUTE,
-        'The learner cannot do this many steps yet.', `Opens an easier ask first: one step less on a model outside the item.${practice}`);
-      return levers;
-    }
-    case 'predict_shape':
-      add(SHAPE_GUIDE_LEVER, 'help', SHAPE, 'The learner mixes up the shape words, or reads the tail the wrong way.',
-        'Shows a card naming each shape word by where the values sit and which way the long tail runs. It names no '
-          + 'answer; never say which word fits.');
-      if (twoShapes(c)) add(TWO_SHAPES_LEVER, 'simplify', SHAPE, 'The learner cannot read this shape yet.',
-        `Opens an easier ask first: the shape of a stated model, with two choices.${practice}`);
-      return levers;
-  }
-}
+/** The choice labels on screen that are the key: what a worded lever must never say. */
+const keyLabels = (c: DistributionChallenge) => distributionChoices(c)
+  .filter(ch => distributionCorrect(c, { picked: ch.key, explored: false, family: 'binomial', params: {} })).map(ch => ch.label);
 
-/** What the pulled help levers put on screen, for the tutor and JEV. What is drawn, never the key. */
-export function leverFacts(c: DistributionChallenge | null, pulled: readonly string[]): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id);
-  const strip = eventStrip(c), model = workedModel(c), sliders = c.type === 'guided_exploration' ? namedSliders(c.prompt) : [];
-  return [
-    on(SLIDER_GLOW_LEVER) && c.type === 'guided_exploration' && (sliders.length
-      ? `A ring glows around the ${sliders.map(s => (s === 'lambda' ? 'λ' : s)).join(' and ')} slider${sliders.length > 1 ? 's' : ''}.`
-      : 'A ring glows around every slider.'),
-    on(FAMILY_FACTS_LEVER) && c.type === 'identify' && 'Under every choice is one line: what that family models and which values it can take.',
-    on(EVENT_STRIP_LEVER) && strip && `Under the question is a strip of whole counts: ${stripText(strip)}.`,
-    on(WORKED_MODEL_LEVER) && model && `Beside the question is a worked model, not the item: ${model.steps.join('; ')}.`,
-    on(SHAPE_GUIDE_LEVER) && c.type === 'predict_shape' && 'Beside the choices is a card naming each shape word by where the values sit and which way the long tail runs.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+type Strip = NonNullable<ReturnType<typeof eventStrip>>;
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing
+ * while one is on screen. A lever whose content would print the key (a strip, a model) has no content and is not
+ * offered.
+ */
+export const DISTRIBUTION_LEVERS = leverSet<DistributionChallenge, null>({
+  modeOf: c => MODE_OF[c.type],
+  missesOf: mode => DISTRIBUTION_MISSES_BY_MODE[mode as DistributionEvalMode] ?? [],
+  answersOf: c => keyLabels(c),
+  support: { tier: c => c.supportTier ?? 'medium', different: 'the same question worked on other parameter values',
+    own: 'this item\'s value' },
+  specs: [
+    { id: SLIDER_GLOW_LEVER, type: 'marks', modes: ['explore'], answers: ['not_explored'],
+      when: 'The learner has not moved anything, or does not know where to start.',
+      does: 'Rings the slider the prompt is about (every slider when it names none). Never say what the chart will do.',
+      content: c => (c.type === 'guided_exploration' ? namedSliders(c.prompt) : null),
+      fact: (sliders: string[]) => (sliders.length
+        ? `A ring glows around the ${sliders.map(s => (s === 'lambda' ? 'λ' : s)).join(' and ')} slider${sliders.length > 1 ? 's' : ''}.`
+        : 'A ring glows around every slider.') },
+    { id: FAMILY_FACTS_LEVER, type: 'legend', modes: ['identify'], answers: ['discrete_continuous', 'binomial_poisson'],
+      when: 'The learner mixes up counts and waiting times, or the two counting families.',
+      does: 'Puts one line under every choice: what that family models and which values it can take. No choice is marked; '
+        + 'never say which line fits the scenario.',
+      fact: 'Under every choice is one line: what that family models and which values it can take.' },
+    { id: TWO_FAMILIES_LEVER, type: 'easier', modes: ['identify'], answers: ['discrete_continuous', 'binomial_poisson'],
+      when: 'The learner cannot place this scenario yet.',
+      does: `Opens an easier ask first: a plainer scenario and two choices. ${PRACTICE_THEN}`,
+      content: c => twoFamilies(c) },
+    { id: EVENT_STRIP_LEVER, type: 'clue', modes: COMPUTE_MODES, answers: ['complement', 'near_value'],
+      when: 'The learner takes the complement, or puts a boundary count in or out.',
+      does: 'Shows a strip of the whole counts the asked event takes and the ones it leaves out. No probability; never say '
+        + 'the number.',
+      // Not offered when the strip would print a choice on screen.
+      content: c => {
+        const strip = eventStrip(c);
+        return strip && c.type === 'compute' && !stripLeaks(stripText(strip), c) ? strip : null;
+      },
+      fact: (strip: Strip) => `Under the question is a strip of whole counts: ${stripText(strip)}.` },
+    { id: WORKED_MODEL_LEVER, type: 'model', modes: COMPUTE_MODES, answers: COMPUTE,
+      when: 'The learner picks a value from the wrong rule, the complement, the rate for the mean, or a value off by a term.',
+      does: 'Shows the same question worked through on a model with other parameter values, step by step to its number. '
+        + 'The learner does the same steps on the item; never say the item\'s number.',
+      content: c => workedModel(c),
+      fact: (model: { steps: string[] }) => `Beside the question is a worked model, not the item: ${model.steps.join('; ')}.` },
+    { id: SIMPLER_COMPUTE_LEVER, type: 'easier', modes: COMPUTE_MODES, answers: COMPUTE,
+      when: 'The learner cannot do this many steps yet.',
+      does: `Opens an easier ask first: one step less on a model outside the item. ${PRACTICE_THEN}`,
+      content: c => simplerCompute(c) },
+    { id: SHAPE_GUIDE_LEVER, type: 'legend', modes: ['compute_advanced'], answers: SHAPE,
+      when: 'The learner mixes up the shape words, or reads the tail the wrong way.',
+      does: 'Shows a card naming each shape word by where the values sit and which way the long tail runs. It names no '
+        + 'answer; never say which word fits.',
+      content: c => (c.type === 'predict_shape' ? SHAPE_GUIDE : null),
+      fact: 'Beside the choices is a card naming each shape word by where the values sit and which way the long tail runs.' },
+    { id: TWO_SHAPES_LEVER, type: 'easier', modes: ['compute_advanced'], answers: SHAPE,
+      when: 'The learner cannot read this shape yet.',
+      does: `Opens an easier ask first: the shape of a stated model, with two choices. ${PRACTICE_THEN}`,
+      content: c => twoShapes(c) },
+  ],
+});

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fiveFrameIndex, fiveFrameLeaks, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
+import { TEN_FRAME_LEVERS, fiveFrameIndex, fiveFrameLeaks, smallerBuild, type TenFrameLeverContext } from './tenFrameLevers';
+import { frameMiss } from './tenFrameWorkspace';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { itemsFromChallenges } from './tenFrameScript';
+import { itemsFromChallenges, type TenFrameBand, type TenFrameItem } from './tenFrameDomain';
+
+/** The set's levers on one item, in the old call shape: pulled, band, then what a lever reads beyond the item. */
+const tenFrameLevers = (item: TenFrameItem | null, pulled: readonly string[] = [], band: TenFrameBand = 'K',
+  ctx: Partial<TenFrameLeverContext> = {}) => TEN_FRAME_LEVERS.declare(item, { band, session: [], ...ctx }, pulled);
 
 const build = (n: number, id = `b${n}`) => itemsFromChallenges([{ id, type: 'build', targetCount: n }], { capacity: 10, band: 'K' })[0];
 

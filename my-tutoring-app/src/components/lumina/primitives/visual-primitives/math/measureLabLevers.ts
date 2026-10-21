@@ -3,22 +3,23 @@
  * No real-learner evidence: the misses are what `measureMiss` observes. Pure: the component draws from these, the
  * workspace publishes them, the tests hold each leak rule. Every easier item has the id `<item>~smaller`, the same
  * mode, and is built by `practiceItem`. Every lever is a drawing (the learner is a Kindergarten pre-reader).
+ * Declared once as a lever set (`MEASURE_LEVERS`, `bossLevers.ts`); the type of each is in brackets below.
  *
- * - balance_predict: `down_model` (help) a small model balance beside the scale, three blocks on one pan and one on
- *   the other, the three-block pan down. Fixed: it never shows the item's objects. `far_pair` (simplify) an ungraded
+ * - balance_predict: `down_model` (model) a small model balance beside the scale, three blocks on one pan and one on
+ *   the other, the three-block pan down. Fixed: it never shows the item's objects. `far_pair` (easier) an ungraded
  *   pair far apart in everyday weight (a feather and a brick), neither of the item's objects.
- * - capacity_predict: `cup_lines` (help) a shelf under each container; once the test has filled both, one cup picture
- *   per cup it took stands on it. Before the test the shelves are empty. `easy_pair` (simplify) an ungraded pair of
+ * - capacity_predict: `cup_lines` (layout) a shelf under each container; once the test has filled both, one cup picture
+ *   per cup it took stands on it. Before the test the shelves are empty. `easy_pair` (easier) an ungraded pair of
  *   two different shapes where the one drawn much larger holds more, neither of the item's names.
- * - pour_count: `poured_shelf` (help) a shelf under the container where each cup the learner pours stands in a row.
- *   No number. `smaller_pour` (simplify) an ungraded container that takes three cups. None when the item takes three.
- * - order_capacity: `order_steps` (help) three wordless bars growing left to right, the way "least first" runs; they
- *   name no jar. `level_lines` (help) the same even lines across every jar. `far_levels` (simplify) three identical
+ * - pour_count: `poured_shelf` (layout) a shelf under the container where each cup the learner pours stands in a row.
+ *   No number. `smaller_pour` (easier) an ungraded container that takes three cups. None when the item takes three.
+ * - order_capacity: `order_steps` (legend) three wordless bars growing left to right, the way "least first" runs; they
+ *   name no jar. `level_lines` (marks) the same even lines across every jar. `far_levels` (easier) three identical
  *   jars far apart in water, only when two of the item's levels are close.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { MeasureContainer, MeasureLabChallenge } from './MeasureLab';
-import type { MeasureMiss, MeasureView } from './measureLabWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { MeasureContainer, MeasureLabChallenge, MeasureLabChallengeType } from './MeasureLab';
+import { MEASURE_MISSES_BY_MODE, type MeasureView } from './measureLabWorkspace';
 
 export const DOWN_MODEL_LEVER = 'down_model';
 export const FAR_PAIR_LEVER = 'far_pair';
@@ -207,62 +208,60 @@ export function shelfCups(c: MeasureLabChallenge, view: MeasureView): Record<str
   return {};
 }
 
-export function measureLabLevers(c: MeasureLabChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPractice(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly MeasureMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const simpler = practiceItem(c);
-  switch (c.type) {
-    case 'balance_predict': return [
-      lever(DOWN_MODEL_LEVER, 'help', ['picked_lighter'], 'The learner picks the lighter one, or mixes up heavier and lighter.',
-        'Shows a small model balance beside the scale: three blocks on one pan, one block on the other, the pan with more '
-          + 'blocks down. It shows none of the item\'s objects.'),
-      ...(simpler ? [lever(FAR_PAIR_LEVER, 'simplify', ['picked_lighter'], 'The learner cannot yet tell which is heavier.',
-        'Opens an easier pair first: two everyday things far apart in weight. It is not graded; the full item comes back after it.')] : []),
-    ];
-    case 'capacity_predict': return [
-      lever(CUP_LINES_LEVER, 'help', ['tall_means_more', 'picked_less'],
-        'The learner picks by how tall it looks, or cannot read which one took more.',
-        'Puts a shelf under each container. After the test fills both, each shelf holds one cup picture for every cup '
-          + 'that container took, so the longer line is easy to see. Before the test the shelves are empty.'),
-      ...(simpler ? [lever(EASY_PAIR_LEVER, 'simplify', ['tall_means_more', 'picked_less'],
-        'The learner cannot yet compare these two containers.',
-        'Opens an easier pair first: two containers of different shapes, one drawn much bigger. It is not graded; the '
-          + 'full item comes back after it.')] : []),
-    ];
-    case 'pour_count': return [
-      lever(POURED_SHELF_LEVER, 'help', ['one_short', 'one_over', 'too_few', 'too_many'],
-        'The learner loses count of the cups poured.',
-        'Puts a shelf under the container: each cup the learner pours stands on it in a row, to count. No number is shown.'),
-      ...(simpler ? [lever(SMALLER_POUR_LEVER, 'simplify', ['one_short', 'one_over', 'too_few', 'too_many'],
-        'The learner cannot yet count this many cups.',
-        'Opens an easier container first that takes only a few cups. It is not graded; the full item comes back after it.')] : []),
-    ];
-    default: return [
-      lever(ORDER_STEPS_LEVER, 'help', ['most_to_least'], 'The learner starts from the fullest one.',
-        'Shows three wordless bars beside the containers that grow from left to right, the way the order goes. They mark no container.'),
-      lever(LEVEL_LINES_LEVER, 'help', ['two_swapped', 'out_of_order'], 'The learner mixes up two containers whose water is close.',
-        'Draws the same even lines across every container, so each water level can be read against them.'),
-      ...(simpler ? [lever(FAR_LEVELS_LEVER, 'simplify', ['two_swapped', 'out_of_order'],
-        'These water levels are too close to order yet.',
-        'Opens an easier set first: three of the same container with water far apart. It is not graded; the full item comes back after it.')] : []),
-    ];
-  }
-}
+// ── the lever set ───────────────────────────────────────────────────────────
 
-/** What the pulled help levers put on screen, for the tutor. Never a weight, a count, a winner or a jar's place. */
-export function leverFacts(c: MeasureLabChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPractice(c)) return '';
-  return [
-    c.type === 'balance_predict' && pulled.includes(DOWN_MODEL_LEVER)
-      && 'Beside the scale is a small model balance: three blocks on one pan, one block on the other, and the pan with more blocks is down.',
-    c.type === 'capacity_predict' && pulled.includes(CUP_LINES_LEVER)
-      && 'Under each container is a shelf; once both are filled, each shelf holds one cup picture for every cup that container took.',
-    c.type === 'pour_count' && pulled.includes(POURED_SHELF_LEVER)
-      && 'Under the container is a shelf where each cup poured stands in a row, with no number.',
-    c.type === 'order_capacity' && pulled.includes(ORDER_STEPS_LEVER)
-      && 'Beside the containers are three wordless bars that grow from left to right, the way the order goes.',
-    c.type === 'order_capacity' && pulled.includes(LEVEL_LINES_LEVER)
-      && 'The same even lines are drawn across every container.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const PRACTICE_DOES = 'It is not graded; the full item comes back after it.';
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing
+ * while one is on screen. No lever text or fact carries a number or an item's name.
+ */
+export const MEASURE_LEVERS = leverSet<MeasureLabChallenge, null>({
+  modeOf: c => c.type,
+  missesOf: mode => MEASURE_MISSES_BY_MODE[mode as MeasureLabChallengeType] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a model balance, more blocks against fewer',
+    own: 'which of this item\'s two things is heavier' },
+  specs: [
+    { id: DOWN_MODEL_LEVER, type: 'model', modes: ['balance_predict'], answers: ['picked_lighter'],
+      when: 'The learner picks the lighter one, or mixes up heavier and lighter.',
+      does: 'Shows a small model balance beside the scale: three blocks on one pan, one block on the other, the pan with '
+        + 'more blocks down. It shows none of the item\'s objects.',
+      fact: 'Beside the scale is a small model balance: three blocks on one pan, one block on the other, and the pan with '
+        + 'more blocks is down.' },
+    { id: FAR_PAIR_LEVER, type: 'easier', modes: ['balance_predict'], answers: ['picked_lighter'],
+      when: 'The learner cannot yet tell which is heavier.',
+      does: `Opens an easier pair first: two everyday things far apart in weight. ${PRACTICE_DOES}`,
+      content: c => farPair(c) },
+    { id: CUP_LINES_LEVER, type: 'layout', modes: ['capacity_predict'], answers: ['tall_means_more', 'picked_less'],
+      when: 'The learner picks by how tall it looks, or cannot read which one took more.',
+      does: 'Puts a shelf under each container. After the test fills both, each shelf holds one cup picture for every cup '
+        + 'that container took, so the longer line is easy to see. Before the test the shelves are empty.',
+      fact: 'Under each container is a shelf; once both are filled, each shelf holds one cup picture for every cup that '
+        + 'container took.' },
+    { id: EASY_PAIR_LEVER, type: 'easier', modes: ['capacity_predict'], answers: ['tall_means_more', 'picked_less'],
+      when: 'The learner cannot yet compare these two containers.',
+      does: `Opens an easier pair first: two containers of different shapes, one drawn much bigger. ${PRACTICE_DOES}`,
+      content: c => easyPair(c) },
+    { id: POURED_SHELF_LEVER, type: 'layout', modes: ['pour_count'], answers: ['one_short', 'one_over', 'too_few', 'too_many'],
+      when: 'The learner loses count of the cups poured.',
+      does: 'Puts a shelf under the container: each cup the learner pours stands on it in a row, to count. No number is shown.',
+      fact: 'Under the container is a shelf where each cup poured stands in a row, with no number.' },
+    { id: SMALLER_POUR_LEVER, type: 'easier', modes: ['pour_count'], answers: ['one_short', 'one_over', 'too_few', 'too_many'],
+      when: 'The learner cannot yet count this many cups.',
+      does: `Opens an easier container first that takes only a few cups. ${PRACTICE_DOES}`,
+      content: c => smallerPour(c) },
+    { id: ORDER_STEPS_LEVER, type: 'legend', modes: ['order_capacity'], answers: ['most_to_least'],
+      when: 'The learner starts from the fullest one.',
+      does: 'Shows three wordless bars beside the containers that grow from left to right, the way the order goes. They '
+        + 'mark no container.',
+      fact: 'Beside the containers are three wordless bars that grow from left to right, the way the order goes.' },
+    { id: LEVEL_LINES_LEVER, type: 'marks', modes: ['order_capacity'], answers: ['two_swapped', 'out_of_order'],
+      when: 'The learner mixes up two containers whose water is close.',
+      does: 'Draws the same even lines across every container, so each water level can be read against them.',
+      fact: 'The same even lines are drawn across every container.' },
+    { id: FAR_LEVELS_LEVER, type: 'easier', modes: ['order_capacity'], answers: ['two_swapped', 'out_of_order'],
+      when: 'These water levels are too close to order yet.',
+      does: `Opens an easier set first: three of the same container with water far apart. ${PRACTICE_DOES}`,
+      content: c => farLevels(c) },
+  ],
+});

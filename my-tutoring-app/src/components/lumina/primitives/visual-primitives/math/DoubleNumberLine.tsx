@@ -6,7 +6,6 @@ import {
   type DoubleNumberLineMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -18,22 +17,23 @@ import {
   LuminaChallengeCounter,
   LuminaFeedbackCard,
   LuminaActionButton,
+  LuminaBadge,
   answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  answerLabel, describeRatioWork, ratioLineMiss, valuesCorrect, workspaceAssignment, workspaceScene,
+  answerLabel, describeRatioWork, ratioLineMiss, valuesCorrect, workspaceScene,
 } from './doubleNumberLineWorkspace';
 import {
-  GROW_MODEL_CAPTION, GROW_MODEL_LEVER, SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER,
-  jumpsFor, leverFacts, ratioLineLevers, simplerLine, splitFor,
+  GROW_MODEL_CAPTION, GROW_MODEL_LEVER, RATIO_LINE_LEVERS, SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER, jumpsFor, splitFor,
 } from './doubleNumberLineLevers';
+import { doubleNumberLineBoss } from './doubleNumberLine.boss';
 
 /**
  * Double Number Line — Multi-instance proportional reasoning primitive.
@@ -100,7 +100,7 @@ export interface DoubleNumberLineData {
    * always stays). Defaults true. A support-tier scaffold withdrawal.
    */
   showGivenValues?: boolean;
-  /** Active support tier — calibrates the live tutor's reveal policy. */
+  /** Active support tier: the scaffolds above are set from it. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -231,53 +231,25 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 // ---------------------------------------------------------------------------
-// Tutor reveal policy — keep the tutor in sync with the on-screen scaffold.
-// The eval mode here is a STRATEGY (scale / find-the-rate / divide), not the
-// answer, so easy may name it; harder tiers must withhold it, matching what the
-// withdrawn hints/labels show on screen. No-tier → undefined → tutor stays at
-// its default coaching depth.
-// ---------------------------------------------------------------------------
-function tutorRevealClause(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  type: DoubleNumberLineChallengeType | undefined,
-): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    const strat =
-      type === 'unit_rate'
-        ? 'you may name the divide-to-find-the-unit-rate strategy and walk the steps'
-        : type === 'find_missing'
-          ? 'you may name the find-the-unit-rate-then-multiply strategy and walk the steps'
-          : 'you may name the multiply-by-the-unit-rate strategy and walk the steps';
-    return ` SUPPORT TIER easy: ${strat}; the on-screen guides and labels back you up.`;
-  }
-  if (tier === 'medium') {
-    return ' SUPPORT TIER medium: nudge the execution only — point at the unit rate, do not solve it for them.';
-  }
-  // hard
-  return ' SUPPORT TIER hard: the on-screen hints are withheld — do NOT name the strategy or the operation. Ask what the rate per 1 unit is and what they see on the lines; never reveal the answer.';
-}
-
-// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
-const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  DoubleNumberLineProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DoubleNumberLineChallenge>) => Progress }) => {
+const useDoubleNumberLineProgress = useWorkspaceProgressFor('double-number-line');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId }: DoubleNumberLineProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     topLabel,
     bottomLabel,
-    unitRate,
     contextQuestion,
     challenges = [],
     showVerticalGuides = true,
     showUnitRate = true,
     showTickLabels = 'all',
     showGivenValues = true,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -289,21 +261,21 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const stableInstanceIdRef = useRef(instanceId || `double-number-line-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progression: the teaching workspace owns it. ──
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useDoubleNumberLineProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: doubleNumberLineBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
-  const { currentIndex, currentAttempts, results, isComplete, advance } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  const { currentIndex, results, isComplete } = progress;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -349,18 +321,14 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
     () => (currentChallenge?.targetPoints ?? []).map(() => ''),
   );
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [showHint, setShowHint] = useState(false);
 
   const recordedRef = useRef(false);
-  const sessionCompleteFiredRef = useRef(false);
 
-  // Reset per-challenge state when the active challenge changes (both paths), and on the workspace path when an item
-  // opens or Try again reopens it.
+  // Reset per-challenge state when the active challenge changes, and when an item opens or Try again reopens it.
   const resetChallenge = (ch: DoubleNumberLineChallenge | null) => {
     if (!ch) return;
     setStudentValues(ch.targetPoints.map(() => ''));
     setFeedback(null);
-    setShowHint(false);
     recordedRef.current = false;
   };
   useEffect(() => {
@@ -372,137 +340,8 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
     else { setPractice(null); resetChallenge(challenges[index] ?? null); }
   };
 
-  // ── AI tutoring ────────────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    topLabel,
-    bottomLabel,
-    unitRate,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    challengeType: currentChallenge?.challengeType,
-    currentPrompt: currentChallenge?.prompt,
-    targetTopValue: currentChallenge?.targetPoints[0]?.topValue,
-    targetBottomValue: currentChallenge?.targetPoints[0]?.bottomValue,
-    attemptNumber: currentAttempts,
-    supportTier,
-  }), [
-    title, topLabel, bottomLabel, unitRate, currentIndex,
-    challenges.length, currentChallenge, currentAttempts, supportTier,
-  ]);
-
-  // The legacy context carries the target's bottom value; on the workspace path the tutor reads the scene instead.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'double-number-line',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Grade 6',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Session intro — once, on the first challenge
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    if (challenges.length === 0 || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Double number line: ${topLabel} vs ${bottomLabel}. `
-      + `${challenges.length} ratio challenges in this session (mode: ${currentChallenge.challengeType}). `
-      + `${contextQuestion ? `Context: "${contextQuestion}". ` : ''}`
-      + `First challenge: ${currentChallenge.prompt}`
-      + tutorRevealClause(supportTier, currentChallenge.challengeType),
-      { silent: true },
-    );
-  }, [
-    isConnected, challenges.length, currentChallenge, topLabel, bottomLabel,
-    contextQuestion, sendText, supportTier,
-  ]);
-
-  // Per-challenge handoff (skips the first because intro covers it)
-  const lastAnnouncedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge) return;
-    if (!hasIntroducedRef.current) return;
-    if (lastAnnouncedIdRef.current === null) {
-      lastAnnouncedIdRef.current = currentChallenge.id;
-      return;
-    }
-    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
-    lastAnnouncedIdRef.current = currentChallenge.id;
-    sendText(
-      `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. ${currentChallenge.prompt}`,
-      { silent: true },
-    );
-  }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
-
-  // ── Session complete (scripted path): evaluation submit ───────────────────
-  useEffect(() => {
-    if (!isComplete) return;
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned) return;
-    if (sessionCompleteFiredRef.current) return;
-    if (challenges.length === 0) return;
-    sessionCompleteFiredRef.current = true;
-
-    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
-    const hintsViewed = results.filter((r) => r.attempts > 1).length;
-    const perChallengeScore = (r: typeof results[number]) =>
-      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
-    const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
-    );
-    const averageAttemptsPerChallenge =
-      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
-
-    const sessionMode = challenges[0].challengeType;
-    const metrics: DoubleNumberLineMetrics = {
-      type: 'double-number-line',
-      challengeType: sessionMode,
-      totalChallenges: challenges.length,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    const phaseStr = phaseResults
-      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-      .join(', ');
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. `
-      + `Celebrate completion of the ${challenges.length}-challenge ratio session.`,
-      { silent: true },
-    );
-
-    if (!hasSubmittedEvaluation) {
-      const goalMet = correctCount === challenges.length;
-      submitEvaluation(goalMet, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          challengeType: sessionMode,
-          prompts: challenges.map((c) => c.prompt),
-          attemptsPerChallenge: challenges.map((c) => {
-            const r = results.find((rr) => rr.challengeId === c.id);
-            return r?.attempts ?? 0;
-          }),
-        },
-      });
-    }
-  }, [
-    isComplete, results, phaseResults, challenges,
-    sendText, submitEvaluation, hasSubmittedEvaluation, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0) return;
     const metrics: DoubleNumberLineMetrics = {
@@ -532,7 +371,7 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
     // on. Only proceed when the slot count matches.
     if (studentValues.length !== currentChallenge.targetPoints.length) return;
 
-    // The checked gesture: counts the attempt and records the verdict on both paths.
+    // The checked gesture: counts the attempt and records the verdict.
     const allCorrect = valuesCorrect(currentChallenge, studentValues);
     const response = describeRatioWork(currentChallenge, studentValues, bottomLabel, topLabel);
 
@@ -542,32 +381,15 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
       if (!recordedRef.current) {
         recordedRef.current = true;
         progress.commitCheck(response, true);
-        sendText(
-          `[PHASE_COMPLETE] Challenge ${currentIndex + 1}/${challenges.length} solved on attempt ${currentAttempts + 1}.`,
-          { silent: true },
-        );
       }
     } else {
       SoundManager.playIncorrect();
       setFeedback('incorrect');
-      setShowHint(true);
       progress.commitCheck(response, false, ratioLineMiss(currentChallenge, studentValues));
-      sendText(
-        `[WRONG_ANSWER] Challenge ${currentIndex + 1}/${challenges.length} (mode: ${currentChallenge.challengeType}), attempt ${currentAttempts + 1}. `
-        + `The student's bottom value is off. Coach the next step.`
-        + tutorRevealClause(supportTier, currentChallenge.challengeType),
-        { silent: true },
-      );
     }
   }, [
-    currentChallenge, feedback, isComplete, studentValues, bottomLabel, topLabel,
-    progress.commitCheck, currentAttempts,
-    sendText, currentIndex, challenges.length, supportTier,
+    currentChallenge, feedback, isComplete, studentValues, bottomLabel, topLabel, progress.commitCheck,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleAdvance = () => {
-    advance();
-  };
 
   // ── Position helpers (per current challenge's scales) ──────────────────────
   const topScale = currentChallenge?.topScale;
@@ -624,21 +446,23 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
     !!currentChallenge?.givenPoints.some((p) => (showUnitRate || !(Math.abs(p.topValue - 1) < 0.01 && p.label === 'Unit Rate'))
       && Math.abs(Math.round(p.bottomValue * 100) / 100 - value) < 1e-6);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`doubleNumberLineLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. Every mode declares levers
+  // (`RATIO_LINE_LEVERS`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const labels = { topLabel, bottomLabel };
     const scene = workspaceScene(currentChallenge, {
       topLabel, bottomLabel, contextQuestion, values: studentValues,
       showVerticalGuides, showUnitRate, showTickLabels, showGivenValues,
     });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : ratioLineLevers(sessionChallenge, pulledLevers, labels);
+    const levers = practice ? [] : RATIO_LINE_LEVERS.declare(sessionChallenge, labels, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : RATIO_LINE_LEVERS.support(sessionChallenge, labels),
+      onScreen: practice ? '' : RATIO_LINE_LEVERS.onScreen(sessionChallenge, labels, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -646,10 +470,10 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerLine(sessionChallenge, labels);
+          const easier = RATIO_LINE_LEVERS.simpler(sessionChallenge, labels, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetChallenge(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: doubleNumberLineBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -671,18 +495,6 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const allInputsFilled =
     !!currentChallenge && studentValues.every((v) => v !== '' && !isNaN(parseFloat(v)));
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The double number line',
-    solved: feedback === 'correct',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -755,13 +567,17 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
           {/* Per-challenge prompt */}
           {!isComplete && currentChallenge && (
             <LuminaPrompt accent="purple" center className="mb-8 max-w-2xl mx-auto">
-              {currentChallenge.prompt}
+              {practice && (
+                <LuminaBadge accent="amber" className="mb-2 text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+              )}
+              <p>{currentChallenge.prompt}</p>
             </LuminaPrompt>
           )}
 
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && !isComplete && <div {...pip.dock} />}
-          <div {...pip.workspace}>
+          {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the lines and the answer
+              boxes as one region. */}
+          {!isComplete && <PipDock />}
+          <PipWorkspace>
           {/* Double Number Line Visualization */}
           {!isComplete && currentChallenge && topScale && bottomScale && (
             <div className="w-full max-w-3xl mx-auto px-8 py-12 space-y-24">
@@ -1018,20 +834,12 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
                 <LuminaFeedbackCard
                   status={feedback === 'correct' ? 'correct' : 'incorrect'}
                   className="max-w-2xl mx-auto"
-                  teachingNote={
-                    // The generated hint names the operation and the numbers; with the tutor, help is the tutor's.
-                    !tutorOwned && feedback === 'incorrect' && showHint && currentChallenge.hint
-                      ? currentChallenge.hint
-                      : undefined
-                  }
                 >
-                  {feedback === 'correct'
-                    ? tutorOwned ? 'Correct!' : `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
-                    : 'Not quite — check your work and try again.'}
+                  {feedback === 'correct' ? 'Correct!' : 'Not quite — check your work and try again.'}
                 </LuminaFeedbackCard>
               )}
 
-              {/* Action buttons */}
+              {/* Check; the runtime retries and advances. */}
               <div className="flex gap-4 justify-center flex-wrap">
                 {feedback !== 'correct' && (
                   <LuminaActionButton
@@ -1040,17 +848,11 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
                     disabled={!allInputsFilled || blocked}
                   />
                 )}
-                {/* On the workspace path the shell's Try again / Next challenge replace Next. */}
-                {!tutorOwned && feedback === 'correct' && (
-                  <LuminaActionButton action="next" onClick={handleAdvance}>
-                    {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                  </LuminaActionButton>
-                )}
               </div>
             </div>
           )}
 
-          </div>
+          </PipWorkspace>
 
           {/* Session-complete summary panel */}
           {isComplete && phaseResults.length > 0 && (
@@ -1069,8 +871,8 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const DoubleNumberLine = withWorkspaceController<DoubleNumberLineProps, ProgressOptions<DoubleNumberLineChallenge>, Progress>(
-  'double-number-line', DoubleNumberLineSurface, useScriptedProgress, useWorkspaceProgressFor('double-number-line'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const DoubleNumberLine = withWorkspaceOnly<DoubleNumberLineProps>('double-number-line', DoubleNumberLineSurface,
+  props => props.data.title);
 
 export default DoubleNumberLine;

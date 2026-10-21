@@ -1,37 +1,36 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { LuminaButton } from '../../../ui';
+import { LuminaBadge, LuminaButton } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type FractionBarMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { fractionBarDiagnosisEvidence, type FractionBarResponse } from './fractionBarEvidence';
+import { barItems, describeWork, fractionBarMiss, workspaceScene, type FractionBarItem, type FractionBarView } from './fractionBarWorkspace';
 import {
-  COUNT_LEVER, REFERENCE_LEVER, barLevers, describeWork, fractionBarMiss, workspaceAssignment, workspaceScene,
-  type FractionBarView,
-} from './fractionBarWorkspace';
-import { MODEL_LEVER, NUMBER_PARTS_LEVER, STEP_COUNT_LEVER, barPractice, modelFraction, stepLeverFacts, stepLevers }
-  from './fractionBarLevers';
+  FRACTION_BAR_LEVERS, MODEL_LEVER, NUMBER_PARTS_LEVER, REFERENCE_LEVER, STEP_COUNT_LEVER, modelFraction,
+  startLevers,
+} from './fractionBarLevers';
+import { fractionBarBoss } from './fractionBar.boss';
 import { cutInto, cutsFor, equalBuildMiss, halvePiece, makesEqual, readBuild, toggleShade, wholeCircle,
   type EqualBuildMiss, type Piece } from './fractionEqualBuild';
 import { BAR_H, BAR_W, FractionBarEqualScene, barParts } from './FractionBarEqualScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 /**
- * Fraction Bar — multi-challenge interactive fraction model.
+ * Fraction Bar — multi-challenge interactive fraction model, taught only on the shared teaching workspace
+ * (`fractionBar.boss.ts`): the runtime owns progression, the tutor and the levers own help.
  *
  * Each session walks the student through 3-6 distinct fractions in the SAME
  * eval mode. Each fraction runs through a three-phase within-challenge flow:
@@ -40,11 +39,11 @@ import { useBuildWatcher } from '../../build-layer/buildLayer';
  *   Phase 3: Build the Fraction on the bar (shade partitions)
  * except `build_equal`, the open build: the learner splits the bar into equal
  * parts of their choosing and shades some to make a fraction equal to the
- * target, then presses "I'm done!" (`fractionBarWorkspace.ts`).
+ * target, then presses "I'm done!" (`fractionBarWorkspace.ts`), and `compare`,
+ * two shaded bars and a sign to pick between them.
  *
  * The session ends when every challenge has been completed; results aggregate
- * into one PhaseSummaryPanel row per eval mode (PRD §6e pattern). Inside a live
- * runtime with a bound pin the shared teaching workspace owns progression.
+ * into one PhaseSummaryPanel row per eval mode (PRD §6e pattern).
  */
 
 export type FractionBarChallengeType =
@@ -106,7 +105,7 @@ export interface FractionBarData {
    * recall which position is numerator vs denominator.
    */
   showPromptGloss?: boolean;
-  /** Support tier in effect ('easy' | 'medium' | 'hard'), for tutor reveal calibration. */
+  /** Support tier in effect ('easy' | 'medium' | 'hard'): when the model lever comes (`FRACTION_BAR_LEVERS.support`). */
   supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
   /** build_equal: the split buttons offered (`cutsFor`): K-2 halves to fourths, 3-5 up to twelfths. */
@@ -158,65 +157,28 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
-/**
- * Tutor reveal calibration, keyed to the on-screen support tier so the AI tutor
- * never leaks what the tier withheld. `identify` is a RECOGNITION mode — the
- * numerator/denominator IS the answer, so the tutor must never name the values at
- * ANY tier; there the clause only dials coaching depth. The build/compare/operate
- * modes let easy name the count-toward-target strategy; hard withholds it.
- */
-function tutorRevealClause(
-  tier: FractionBarData['supportTier'],
-  challengeType: FractionBarChallengeType,
-): string {
-  if (challengeType === 'identify') {
-    if (tier === 'hard') {
-      return 'TIER hard (recognition): do NOT name which number is the numerator or denominator and do NOT state their values; ask the student where the top vs bottom number sits and let them decide.';
-    }
-    if (tier === 'medium') {
-      return 'TIER medium (recognition): coach which position is which (top vs bottom) but never state the actual numerator or denominator value.';
-    }
-    // easy or no tier
-    return 'TIER easy (recognition): you may explain what the numerator and denominator mean and point to the top/bottom positions, but still never read out the correct value — let the student pick it.';
-  }
-  if (challengeType === 'build_equal') {
-    return 'Open build: never name a number of parts or how many to shade, and never say whether the bar is equal before the student presses I\'m done.';
-  }
-  if (challengeType === 'compare') {
-    return 'Comparison: never say which fraction is greater or whether they are equal, and never read out a symbol before the student checks; ask what they notice about how much of each bar is shaded.';
-  }
-  // build / larger_denominators / add_subtract — the value is the prompt; only the strategy tiers.
-  if (tier === 'hard') {
-    return 'TIER hard: do NOT name the target fraction value or how many parts to shade; ask the student what they see shaded on the bar and let them reason from the fraction alone.';
-  }
-  if (tier === 'medium') {
-    return 'TIER medium: nudge the execution (compare shaded parts to the target) without counting the parts for them.';
-  }
-  // easy or no tier
-  return 'TIER easy: you may name the strategy and walk the student through counting parts toward the target.';
-}
+/** The teaching workspace is fraction-bar's only controller: the runtime owns progression. */
+const useFractionBarProgress = useWorkspaceProgressFor('fraction-bar');
 
-const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }: FractionBarProps
-  & { tutorOwned: boolean; useController: (options: ProgressOptions<FractionBarChallenge>) => Progress }) => {
+const FractionBarSurface = ({ data, className, runtimePlanItemId }: FractionBarProps) => {
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const componentMounted = useRef(true);
   useLayoutEffect(() => { componentMounted.current = true; return () => { componentMounted.current = false; }; }, []);
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
   const learnerBlocked = () => !componentMounted.current || workspaceClosed.current
     || !!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status);
   const {
     title,
     description,
-    challenges = [],
+    challenges: generated = [],
     challengeType: sessionChallengeType,
     showDecimal: dataShowDecimal = true,
     showPartitionNumerals = true,
     showShadedReadout = true,
     showPromptGloss = true,
     supportTier,
-    gradeLevel,
     gradeBand,
     instanceId,
     skillId,
@@ -225,6 +187,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  /** The lesson's items, each carrying the session's mode and tier (`barItems`). */
+  const challenges = useMemo(() => barItems({ challenges: generated, challengeType: sessionChallengeType, supportTier }),
+    [generated, sessionChallengeType, supportTier]);
   /** The open build: no numerator/denominator steps, the learner's own split, and no readout that would judge it. */
   const building = sessionChallengeType === 'build_equal';
   /** compare: two shaded bars and a symbol to pick; no decimal, which would answer it. */
@@ -235,13 +200,13 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const stableInstanceIdRef = useRef(instanceId || `fraction-bar-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress (on the workspace path the runtime moves the index) ──
-  const progress = useController({
+  // ── Challenge progress (the runtime moves the index) ──
+  const progress = useFractionBarProgress<FractionBarItem>({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: ch => workspaceAssignment(ch, sessionChallengeType),
-    // A fresh challenge starts from step one (the reset effect below). Try again keeps the step reached and clears
+    workspace, assignment: fractionBarBoss.assignment!,
+    // A fresh challenge starts from step one (the reset below). Try again keeps the step reached and clears
     // its work; an open build keeps the learner's bar and the verdict's words, to revise. The setters are declared
     // below; this runs only after render.
     onItemOpened: (_index, retry) => {
@@ -257,22 +222,25 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     results,
     isComplete,
     recordResult,
-    advance,
   } = progress;
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
 
   const sessionChallenge = challenges[currentIndex] ?? null;
-  // build_equal levers (`fractionBarWorkspace.ts`), keyed by the session item they were pulled on, and the easier
-  // practice item a simplify lever put on screen in its place.
+  // The levers (`fractionBarLevers.ts`), keyed by the session item they were pulled on, and the easier practice item a
+  // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<FractionBarChallenge | null>(null);
+  const [practice, setPractice] = useState<FractionBarItem | null>(null);
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
-  const leverOn = (id: string) => pulledLevers.includes(id);
-  // The three-step item's levers (`fractionBarLevers.ts`) draw on the session item only, never on a practice item.
-  const stepLeversOn = practice && !building ? [] : pulledLevers;
-  const readoutOn = showShadedReadout || stepLeversOn.includes(STEP_COUNT_LEVER);
-  const numeralsOn = showPartitionNumerals || stepLeversOn.includes(NUMBER_PARTS_LEVER);
-  const model = !building && stepLeversOn.includes(MODEL_LEVER) && sessionChallenge ? modelFraction(sessionChallenge) : null;
+  /** The tier's readout and numerals: starting positions on the three-step item, never pulls. */
+  const startPulled = startLevers(sessionChallengeType, { readout: showShadedReadout, numerals: showPartitionNumerals });
+  /** The levers on the session item, as the lever set reads them: the tier's starts and this item's pulls. */
+  const shownLevers = Array.from(new Set([...startPulled, ...pulledLevers]));
+  /** What is drawn: on a practice item only the tier's starts (the session item's pulls belong to it). */
+  const drawn = practice ? startPulled : shownLevers;
+  const leverOn = (id: string) => drawn.includes(id);
+  const readoutOn = leverOn(STEP_COUNT_LEVER);
+  const numeralsOn = leverOn(NUMBER_PARTS_LEVER);
+  const model = !building && leverOn(MODEL_LEVER) && sessionChallenge ? modelFraction(sessionChallenge) : null;
   /** What is on screen: the easier practice item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const numerator = currentChallenge?.numerator ?? 1;
@@ -304,7 +272,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const buildSvgRef = useRef<SVGSVGElement | null>(null);
   const made = readBuild(pieces);
 
-  const [challengeHintCount, setChallengeHintCount] = useState(0);
   const [challengeDone, setChallengeDone] = useState(false);
 
   const recordedRef = useRef(false);
@@ -333,68 +300,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setBuildAttempts(0);
     setPieces(wholeCircle());
     setKnife(false);
-    setChallengeHintCount(0);
     setChallengeDone(false);
     recordedRef.current = false;
   }
-
-  // ── AI Tutoring (the scripted path only: on the workspace the tutor reads the workspace packet) ──
-  const aiPrimitiveData = useMemo(
-    () => ({
-      numerator,
-      denominator,
-      currentPhase,
-      shadedCount,
-      currentChallengeIndex: currentIndex + 1,
-      totalChallenges: challenges.length,
-      challengeType: sessionChallengeType,
-      supportTier,
-      gradeLevel: gradeLevel || 'Grade 3',
-    }),
-    [
-      numerator,
-      denominator,
-      currentPhase,
-      shadedCount,
-      currentIndex,
-      challenges.length,
-      sessionChallengeType,
-      supportTier,
-      gradeLevel,
-    ],
-  );
-
-  const { sendText: scriptedSendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'fraction-bar',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  /** Its context carries the answers, and its `sendText` still sends when disabled: nothing goes on the workspace path. */
-  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
-    if (!tutorOwned) scriptedSendText(text, options);
-  }, [tutorOwned, scriptedSendText]);
-
-  // Activity start — introduce the session once
-  const activityStartSentRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || tutorOwned) return;
-    if (activityStartSentRef.current) return;
-    if (challenges.length === 0) return;
-    activityStartSentRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Multi-challenge fraction bar activity for ${gradeLevel || 'Grade 3'}. `
-        + `Mode: ${sessionChallengeType}. The student will work through ${challenges.length} different fractions, `
-        + (building
-          ? 'each time splitting the bar their own way to make a fraction equal to the one shown. '
-          : comparing ? 'each a pair of fractions shown as two shaded bars, picking <, = or > between them. '
-          : 'each running through three phases (identify numerator, identify denominator, build on the bar). ')
-        + `Introduce the session warmly and briefly. `
-        + tutorRevealClause(supportTier, sessionChallengeType),
-      { silent: true },
-    );
-  }, [isConnected, tutorOwned, building, comparing, challenges.length, sessionChallengeType, supportTier, gradeLevel, sendText]);
 
   // ── Evaluation hook ──────────────────────────────────────────
   const {
@@ -410,19 +318,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The fraction steps',
-    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   // ── PhaseSummaryPanel: one row, aggregated by eval mode ────────
@@ -467,11 +362,11 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         correct,
         attempts: totalAttempts,
         score,
-        hintsUsed: challengeHintCount,
+        hintsUsed: 0,
         ...extras,
       });
     },
-    [currentChallenge, practice, stateMatchesChallenge, recordResult, challengeHintCount],
+    [currentChallenge, practice, stateMatchesChallenge, recordResult],
   );
 
   // ── Session complete → aggregate metrics + submitEvaluation ────
@@ -539,14 +434,11 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     shaded: building ? made.shaded : shadedCount,
     ...(building ? { parts: made.pieces, equalParts: made.equal } : {}),
     readout: readoutOn,
-    levers: building ? pulledLevers : stepLeversOn,
     practice: !!practice,
     ...over,
-    leverFacts: currentChallenge ? stepLeverFacts(sessionChallengeType, currentChallenge, over.phase ?? currentPhase,
-      [...stepLeversOn, ...(showShadedReadout ? [STEP_COUNT_LEVER] : []), ...(showPartitionNumerals ? [NUMBER_PARTS_LEVER] : [])]) : [],
   });
 
-  /** A step's check, committed on both paths; a right numerator or denominator only moves to the next step. */
+  /** A step's check; a right numerator or denominator only moves to the next step (the runtime, not a timer, owns the pace). */
   const commitStep = (correct: boolean, work: FractionBarView) => {
     if (!currentChallenge) return;
     if (!correct || work.phase === 'build-fraction' || work.phase === 'compare') {
@@ -554,11 +446,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         correct ? undefined : building ? equalBuildMiss(currentChallenge, made) : fractionBarMiss(currentChallenge, work));
     }
   };
-  /** The next step. On the workspace path it opens at once: the runtime, not a timer, owns the pace. */
-  const toPhase = (next: LearningPhase, cue: string) => {
-    const go = () => { setCurrentPhase(next); setFeedback(''); sendText(cue, { silent: true }); };
-    if (tutorOwned) go(); else setTimeout(go, 1500);
-  };
+  const toPhase = (next: LearningPhase) => { setCurrentPhase(next); setFeedback(''); };
 
   // ── Phase 1: Check numerator ─────────────────────────────────
   const handleCheckNumerator = () => {
@@ -574,38 +462,19 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setNumeratorAttempts(nextAttempts);
     if (currentChallenge && !practice) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator,
       phase: 'numerator', expected: numerator, selected: selectedNumerator, attempt: nextAttempts,
-      hintsBefore: challengeHintCount, choices: numeratorChoices });
+      hintsBefore: 0, choices: numeratorChoices });
     const correct = selectedNumerator === numerator;
     commitStep(correct, view({ phase: 'identify-numerator', picked: selectedNumerator }));
 
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback(
-        `Correct! The numerator is ${numerator} — it’s the top number that tells us how many parts are shaded.`,
-      );
-      setFeedbackType('success');
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified the numerator as ${numerator} for ${numerator}/${denominator}. `
-          + `Attempt ${nextAttempts}. Congratulate briefly and explain what the numerator means.`,
-        { silent: true },
-      );
-
-      toPhase('identify-denominator', `[PHASE_TRANSITION] Moving to Phase 2: Identify the Denominator for ${numerator}/${denominator}. `
-        + `Briefly introduce what the denominator means.`);
+      toPhase('identify-denominator');
     } else {
       SoundManager.playIncorrect();
       setFeedback(
         `Not quite. The numerator is the top number in a fraction. In ${numerator}/${denominator}, look at which number is on top.`,
       );
       setFeedbackType('error');
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose ${selectedNumerator} but the correct numerator is ${numerator}. `
-          + `Attempt ${nextAttempts}. Give a gentle hint about what the numerator means without giving the answer. `
-          + tutorRevealClause(supportTier, sessionChallengeType),
-        { silent: true },
-      );
     }
   };
 
@@ -623,38 +492,19 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setDenominatorAttempts(nextAttempts);
     if (currentChallenge && !practice) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator,
       phase: 'denominator', expected: denominator, selected: selectedDenominator, attempt: nextAttempts,
-      hintsBefore: challengeHintCount, choices: denominatorChoices });
+      hintsBefore: 0, choices: denominatorChoices });
     const correct = selectedDenominator === denominator;
     commitStep(correct, view({ phase: 'identify-denominator', picked: selectedDenominator }));
 
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback(
-        `Correct! The denominator is ${denominator} — it’s the bottom number that tells us how many equal parts make up the whole.`,
-      );
-      setFeedbackType('success');
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly identified the denominator as ${denominator} for ${numerator}/${denominator}. `
-          + `Attempt ${nextAttempts}. Congratulate and explain what the denominator means.`,
-        { silent: true },
-      );
-
-      toPhase('build-fraction', `[PHASE_TRANSITION] Moving to Phase 3: Build ${numerator}/${denominator}. `
-        + `The student must shade exactly ${numerator} out of ${denominator} equal parts on the bar.`);
+      toPhase('build-fraction');
     } else {
       SoundManager.playIncorrect();
       setFeedback(
         `Not quite. The denominator is the bottom number in a fraction. In ${numerator}/${denominator}, look at which number is on the bottom.`,
       );
       setFeedbackType('error');
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose ${selectedDenominator} but the correct denominator is ${denominator}. `
-          + `Attempt ${nextAttempts}. Give a gentle hint about what the denominator means without giving the answer. `
-          + tutorRevealClause(supportTier, sessionChallengeType),
-        { silent: true },
-      );
     }
   };
 
@@ -671,7 +521,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setCompareAttempts(nextAttempts);
     if (!practice) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator, phase: 'compare',
       expected: currentChallenge.relation ?? '', selected: selectedRelation, attempt: nextAttempts,
-      hintsBefore: challengeHintCount, compareWith: second });
+      hintsBefore: 0, compareWith: second });
     const correct = selectedRelation === currentChallenge.relation;
     commitStep(correct, view({ phase: 'compare', relation: selectedRelation }));
     const statement = `${numerator}/${denominator} ${selectedRelation} ${second.numerator}/${second.denominator}`;
@@ -679,7 +529,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       SoundManager.playCorrect();
       setFeedback(`Yes! ${statement}.`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student compared correctly: ${statement}. Attempt ${nextAttempts}. Celebrate briefly.`, { silent: true });
       completeCurrentChallenge(true, phaseScore(nextAttempts), nextAttempts, { compareAttempts: nextAttempts });
     } else {
       SoundManager.playIncorrect();
@@ -688,8 +537,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         ? 'Not quite. Look again: do the two bars have the same amount shaded?'
         : 'Not quite. Look again at how much of each bar is shaded.');
       setFeedbackType('error');
-      sendText(`[ANSWER_INCORRECT] Student picked ${statement}, which is not true. Attempt ${nextAttempts}. `
-        + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
     }
   };
 
@@ -711,7 +558,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     const nextBuildAttempts = buildAttempts + 1;
     setBuildAttempts(nextBuildAttempts);
     if (!practice) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator, phase: 'build',
-      expected: numerator, selected: shadedCount, attempt: nextBuildAttempts, hintsBefore: challengeHintCount });
+      expected: numerator, selected: shadedCount, attempt: nextBuildAttempts, hintsBefore: 0 });
 
     const isCorrect = shadedCount === numerator;
     commitStep(isCorrect, view({ phase: 'build-fraction', shaded: shadedCount }));
@@ -724,17 +571,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         `You shaded ${shadedCount} out of ${denominator} parts, making ${selectedFraction}. The target is ${targetFraction}. Try shading exactly ${numerator} part${numerator !== 1 ? 's' : ''}!`,
       );
       setFeedbackType('error');
-
-      sendText(
-        `[BUILD_INCORRECT] Student shaded ${shadedCount}/${denominator} but target is ${numerator}/${denominator}. `
-          + `Attempt ${nextBuildAttempts}. ${
-            shadedCount < numerator
-              ? `They shaded too few parts (${numerator - shadedCount} short). Encourage them to shade more.`
-              : `They shaded too many parts (${shadedCount - numerator} extra). Encourage them to unshade some.`
-          } `
-          + tutorRevealClause(supportTier, sessionChallengeType),
-        { silent: true },
-      );
       return;
     }
 
@@ -749,13 +585,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       `Excellent! You correctly built ${targetFraction} by shading ${numerator} out of ${denominator} equal parts!`,
     );
     setFeedbackType('success');
-
-    sendText(
-      `[BUILD_CORRECT] Student built ${numerator}/${denominator} correctly. `
-        + `Phase scores: numerator ${p1}, denominator ${p2}, build ${p3}, overall ${score}. `
-        + `Briefly celebrate and acknowledge any phase that took multiple attempts.`,
-      { silent: true },
-    );
 
     const totalAttempts = numeratorAttempts + denominatorAttempts + nextBuildAttempts;
     completeCurrentChallenge(true, score, totalAttempts, {
@@ -812,62 +641,15 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       sceneNote: 'A plain bar on a dark rectangle; the child splits it into parts and colors some purple.', numbers: 'never' },
   });
 
-  // ── Hints (the scripted path; on the workspace help is the tutor's and the levers') ──
-  const handleShowHint = useCallback(() => {
-    if (challengeDone) return;
-    setChallengeHintCount((c) => c + 1);
-    setFeedbackType('hint');
-
-    if (comparing) {
-      setFeedback(denominator === second?.denominator
-        ? 'Hint: both bars have the same size parts. Which bar has more of them shaded?'
-        : numerator === second?.numerator
-          ? 'Hint: both bars have the same number of parts shaded. Which bar has the bigger parts?'
-          : 'Hint: both bars are the same whole. Look at where the shading stops on each one. Is it before or after the middle?');
-      sendText(`[HINT_REQUESTED] Student asked for a hint comparing ${numerator}/${denominator} and ${second?.numerator}/${second?.denominator}. `
-        + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
-    } else if (building) {
-      setFeedback(`Hint: split the bar so every part is the same size, then shade the same amount as ${numerator}/${denominator}.`);
-      sendText(`[HINT_REQUESTED] Student asked for a hint on an open build of a fraction equal to ${numerator}/${denominator}. `
-        + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
-    } else if (currentPhase === 'identify-numerator') {
-      setFeedback(
-        `Hint: The numerator is always the top number in a fraction. In ${numerator}/${denominator}, which number is on top?`,
-      );
-      sendText(
-        `[HINT_REQUESTED] Student asked for a hint during Phase 1 (Identify Numerator) for ${numerator}/${denominator}. `
-          + `Give a scaffolded hint about numerators without revealing the answer.`,
-        { silent: true },
-      );
-    } else if (currentPhase === 'identify-denominator') {
-      setFeedback(
-        `Hint: The denominator is always the bottom number in a fraction. It tells us how many equal parts the whole is divided into.`,
-      );
-      sendText(
-        `[HINT_REQUESTED] Student asked for a hint during Phase 2 (Identify Denominator) for ${numerator}/${denominator}. `
-          + `Give a scaffolded hint about denominators without revealing the answer.`,
-        { silent: true },
-      );
-    } else {
-      setFeedback(
-        `Hint: You need to shade exactly ${numerator} parts out of ${denominator}. Click parts from left to right to shade them!`,
-      );
-      sendText(
-        `[HINT_REQUESTED] Student asked for a hint during Phase 3 (Build Fraction). `
-          + `Target is ${numerator}/${denominator}. Guide them on how many parts to shade.`,
-        { silent: true },
-      );
-    }
-  }, [challengeDone, building, comparing, second, currentPhase, numerator, denominator, sendText, supportTier, sessionChallengeType]);
-
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    const levers = practice ? [] : building ? barLevers(sessionChallengeType, sessionChallenge, pulledLevers, gradeBand)
-      : stepLevers(sessionChallengeType, sessionChallenge, currentPhase, pulledLevers,
-        { readout: showShadedReadout, numerals: showPartitionNumerals });
+    if (!currentChallenge) return;
+    const ctx = { band: gradeBand, phase: currentPhase };
+    const levers = practice ? [] : FRACTION_BAR_LEVERS.declare(sessionChallenge, ctx, shownLevers);
     const clear = () => { setPieces(wholeCircle()); setKnife(false); setFeedback(''); setFeedbackType('info'); };
-    workspace.current = { ...workspaceScene(sessionChallengeType, currentChallenge, view()),
+    workspace.current = { ...leverScene(workspaceScene(currentChallenge, view()), {
+      support: practice ? '' : FRACTION_BAR_LEVERS.support(sessionChallenge, ctx),
+      onScreen: FRACTION_BAR_LEVERS.onScreen(currentChallenge, ctx, drawn) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the bar changes before this returns.
       pullLever: id => {
@@ -875,11 +657,11 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         if (lever.kind === 'simplify') {
-          const easier = barPractice(sessionChallengeType, sessionChallenge, gradeBand);
+          const easier = FRACTION_BAR_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'There is no easier item for this one.';
           setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
           setPractice(easier); clear();
-          return { practice: workspaceAssignment(easier, sessionChallengeType) };
+          return { practice: fractionBarBoss.assignment!(easier) };
         }
         setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
         return true;
@@ -887,11 +669,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       endPractice: () => { setPractice(null); clear(); },
     };
   });
-
-  // ── Advance to next challenge ──────────────────────────────────
-  const handleNextChallenge = () => {
-    advance();
-  };
 
   // ── Helpers ──────────────────────────────────────────────────
   const feedbackColors: Record<typeof feedbackType, string> = {
@@ -901,8 +678,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     info: 'bg-white/5 border-white/10 text-slate-300',
   };
 
-  const hasNextChallenge = currentIndex + 1 < challenges.length;
-  const stepOpen = tutorOwned ? progress.canAttempt !== false : true;
+  const stepOpen = progress.canAttempt !== false;
 
   // ── Empty state ────────────────────────────────────────────────
   if (challenges.length === 0) {
@@ -953,6 +729,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-purple-500/20 text-purple-300 border-purple-500/30">
                 FRACTION BAR
               </span>
+              {practice && (
+                <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+              )}
             </div>
             <h2 className="text-3xl font-light text-white mb-3">{title}</h2>
             <p className="text-slate-300 leading-relaxed">{description}</p>
@@ -1026,7 +805,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           {/* ── Within-challenge phase indicator (the three-step item) ── */}
           {!building && !comparing && (
           <div className="flex items-center justify-center gap-3 mb-8">
-            {/* Phase 1 pill */}
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
                 currentPhase === 'identify-numerator'
@@ -1041,7 +819,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             </div>
             <div className="text-slate-600">{'→'}</div>
 
-            {/* Phase 2 pill */}
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
                 currentPhase === 'identify-denominator'
@@ -1060,7 +837,6 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             </div>
             <div className="text-slate-600">{'→'}</div>
 
-            {/* Phase 3 pill */}
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-300 ${
                 currentPhase === 'build-fraction'
@@ -1076,11 +852,13 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           </div>
           )}
 
+          {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the step panels as the
+              workspace — never one button or one part. */}
+          <PipDock />
+          <PipWorkspace>
           {/* ═══════════════════════════════════════════════════
               Phase 1 — Identify the Numerator
              ═══════════════════════════════════════════════════ */}
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace}>
           {!building && currentPhase === 'identify-numerator' && !challengeDone && (
             <div className="glass-panel rounded-2xl border border-purple-500/30 p-6 mb-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
@@ -1196,10 +974,8 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   .
                 </p>
 
-                {/* Current vs target — withdrawn at the hard tier so the student
-                    shades from the fraction alone (the top fraction display, which
-                    IS the prompt, always stays visible above). */}
-                {/* running_count lever (or the tier's readout): the learner's own count, never coloured by the verdict. */}
+                {/* running_count lever (or the tier's readout): the learner's own count, never coloured by the verdict.
+                    Withdrawn at the hard tier so the student shades from the fraction alone. */}
                 {readoutOn && (
                   <div className="flex items-center justify-between mb-4" data-lever="running_count">
                     <div className="text-lg font-mono text-white">
@@ -1347,7 +1123,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   </div>
                 )}
                 {/* running_count lever: the learner's own parts and shading. Never the target, never "equal". */}
-                {leverOn(COUNT_LEVER) && (
+                {leverOn(STEP_COUNT_LEVER) && (
                   <p className="text-slate-300 text-sm" data-lever="running_count">
                     {made.pieces} {made.pieces === 1 ? 'part' : 'parts'}, {made.shaded} shaded
                   </p>
@@ -1364,8 +1140,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               </div>
             </div>
           )}
-
-          </div>
+          </PipWorkspace>
 
           {/* ── Feedback bar ───────────────────────────────── */}
           {feedback && (
@@ -1376,27 +1151,12 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             </div>
           )}
 
-          {/* ── Between-challenge interstitial ──────────────── */}
+          {/* ── Between-challenge interstitial (the runtime advances) ── */}
           {challengeDone && !practice && (
             <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-bold text-emerald-300">
-                  &#x2713; Problem {currentIndex + 1} complete!
-                </h4>
-                {tutorOwned ? null : hasNextChallenge ? (
-                  <Button
-                    variant="ghost"
-                    onClick={handleNextChallenge}
-                    className="bg-purple-500/80 text-white border border-purple-400/30 hover:bg-purple-500"
-                  >
-                    Next Problem →
-                  </Button>
-                ) : (
-                  <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
-                    Last problem
-                  </span>
-                )}
-              </div>
+              <h4 className="text-lg font-bold text-emerald-300 mb-4">
+                &#x2713; Problem {currentIndex + 1} complete!
+              </h4>
               {!building && !comparing && (
                 <p className="text-sm text-slate-300">
                   You correctly built the fraction{' '}
@@ -1408,27 +1168,12 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               )}
             </div>
           )}
-
-          {/* ── Bottom actions (the scripted path's hint; on the workspace help is the tutor's) ── */}
-          {!challengeDone && !tutorOwned && (
-            <div className="flex gap-3 pt-4 border-t border-white/10">
-              <Button
-                variant="ghost"
-                onClick={handleShowHint}
-                className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
-              >
-                Show Hint
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-// The workspace path owns progression; the scripted path keeps the primitive's own Next.
-const FractionBar = withWorkspaceController<FractionBarProps, ProgressOptions<FractionBarChallenge>, Progress>(
-  'fraction-bar', FractionBarSurface, useScriptedProgress, useWorkspaceProgressFor('fraction-bar'));
+const FractionBar = withWorkspaceOnly<FractionBarProps>('fraction-bar', FractionBarSurface, props => props.data.title);
 
 export default FractionBar;

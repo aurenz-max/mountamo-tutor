@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { SCENES, SCENE_IDS, isPracticeScene, placeBlock, presetProjects, type Placed } from './openBuilderModel';
 import {
-  MARKS_LEVER, PARTS_LEVER, SIMPLER_LEVER, goalParts, jobMarks, marksLeak, openBuilderLevers, partsLeak, practiceItem,
-  practiceLeaks, practiceParent,
+  MARKS_LEVER, OPEN_BUILDER_LEVERS, PARTS_LEVER, SIMPLER_LEVER, goalParts, jobMarks, marksLeak, partsLeak, practiceItem,
+  practiceLeaks, practiceParent, startingLevers,
 } from './openBuilderLevers';
+import type { OpenBuilderChallenge } from './openBuilderModel';
 
 const project = (id: (typeof SCENE_IDS)[number]) => presetProjects([id])[0];
+const openBuilderLevers = (c: OpenBuilderChallenge, session: readonly OpenBuilderChallenge[], pulled: readonly string[]) =>
+  OPEN_BUILDER_LEVERS.declare(c, session, [...startingLevers(c), ...pulled]);
 
 describe('open-builder lever rules', () => {
   it('practice scenes are never on the menu the generator and presets choose from', () => {
@@ -75,6 +78,12 @@ describe('open-builder lever rules', () => {
   ] as const)('%s: after %s with %j pulled, the next lever is %s', (id, miss, pulled, want) => {
     const c = project(id);
     expect(nextLever(openBuilderLevers(c, [c], pulled as unknown as string[]), miss)).toBe(want);
+  });
+
+  it("the parts cards are checked against the scene's goal, so a reworded goal keeps them (the clue's answersOf)", () => {
+    const truck = { ...project('truck'), goal: 'Build something that can carry the apples to the farm stand.' };
+    expect(openBuilderLevers(truck, [truck], []).map(l => l.id)).toEqual([PARTS_LEVER]);
+    expect(OPEN_BUILDER_LEVERS.onScreen(truck, [truck], [PARTS_LEVER])).toMatch(/wheels, room for the apples/);
   });
 
   it('easy starts with the help shown; the simplify lever is never shown from the start', () => {

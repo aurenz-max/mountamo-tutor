@@ -1,19 +1,19 @@
 /**
- * Base-ten blocks on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch B1).
+ * Base-ten blocks' domain on the shared tutor/JEV teaching workspace: the items both mats teach, the spoken key, the
+ * known spoken misses, the checks and the scenes. The boss (`baseTenBlocks.boss.ts`) and both components read it.
  *
- * Pure: the components and the journey read the same assignment and scene. The family has
- * two surfaces, chosen by the payload (`usesBaseTenDi`), and each binds on its own:
- *   - the judged mat (`read_blocks`, `regroup`; BaseTenBlocksDi), whose items come from
- *     `itemsFromChallenges` in baseTenScript.ts. Its spoken steps are judged against the
- *     number they ask for; the trade is a tap checked in code, so its key is not published.
- *   - the click-era mat (`build_number`, `operate`, and any mixed payload; BaseTenBlocks),
- *     plain shape: its own Check My Blocks / Check My Trade / keypad stays the judge.
- * The workspace is both surfaces' only teaching path (the scripted path was deleted, LA-14).
+ * Pure. The family has two surfaces, chosen by the payload (`usesBaseTenDi`):
+ *   - the spoken mat (`read_blocks`, `regroup`; BaseTenBlocksDi), whose items are the steps `itemsFromChallenges`
+ *     builds in baseTenScript.ts. Its spoken steps are judged against their key; the trade is a tap checked in code.
+ *   - the click mat (`build_number`, `build_two_ways`, `operate`, and any mixed payload; BaseTenBlocks), whose items
+ *     are the challenges themselves: its own Check My Blocks / Check My Trade / I'm done / keypad is the judge.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss }
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { BaseTenBlocksChallenge } from './BaseTenBlocks';
+import { numberMisses, offByMisses, spokenNumber, type KnownMiss }
   from '../../../components/live-activity/runtime/spokenMissContract';
+import type { BaseTenMiss, BaseTenMode } from './baseTenBlocks.card';
 import type { BaseTenItem } from './baseTenScript';
 import {
   blockNoun,
@@ -22,9 +22,44 @@ import {
   placeValueOf,
   predictedCount,
   readCount,
+  readWorthWord,
+  startingLowerCount,
   tradeSolved,
+  wordFor,
   type BtColumns,
 } from './baseTenModel';
+
+export type { BaseTenMiss, SpokenBaseTenMiss } from './baseTenBlocks.card';
+
+// ── The items ───────────────────────────────────────────────────────────────
+
+/** A click-mat item: a generated challenge with the id the component gives it (`${type}-${index}`). */
+export type BaseTenClickItem = BaseTenBlocksChallenge & { id: string };
+/** One item of either mat: a spoken-mat step, or a click-mat challenge. */
+export type BaseTenBlocksItem = BaseTenItem | BaseTenClickItem;
+
+export const isSpokenItem = (item: BaseTenBlocksItem): item is BaseTenItem => 'step' in item && 'problem' in item;
+export const isOperateType = (type: string | undefined) => type === 'add_with_blocks' || type === 'subtract_with_blocks';
+
+/** The click mat's items: each challenge with its id. */
+export const clickItemsOf = (challenges: readonly BaseTenBlocksChallenge[]): BaseTenClickItem[] =>
+  challenges.map((challenge, i) => ({ ...challenge, id: `${challenge.type}-${i}` }));
+
+/** The item's eval mode. */
+export const baseTenModeOf = (item: BaseTenBlocksItem): BaseTenMode =>
+  (isSpokenItem(item) ? item.problem.mode : isOperateType(item.type) ? 'operate' : item.type as BaseTenMode);
+
+/**
+ * The step an item is, which its scene publishes as `kind` and the card wires: count / worth / predict / trade on the
+ * spoken mat, the mode itself on the click mat. A mixed payload's read_blocks and regroup items on the click mat keep
+ * their type, which names no card step: their scene says how they are answered.
+ */
+export const baseTenStepOf = (item: BaseTenBlocksItem): string =>
+  (isSpokenItem(item) ? item.step : isOperateType(item.type) ? 'operate' : item.type);
+
+/** What the learner is asked: the spoken step's ask, or the challenge's instruction. */
+export const baseTenAsk = (item: BaseTenBlocksItem): string =>
+  (isSpokenItem(item) ? item.actionContract.instruction : item.instruction);
 
 // ── The judged mat (read_blocks, regroup) ───────────────────────────────────
 
@@ -37,16 +72,12 @@ export function spokenAnswer(item: BaseTenItem): number {
   }
 }
 
-/** What a wrong spoken number on the judged mat shows (handoff 20 Part B). */
-export type SpokenBaseTenMiss = OffByMiss | 'said_value' | 'said_count' | 'said_total' | 'other_block_count' | 'one_block_off'
-  | 'said_ten' | 'said_start';
-
 /**
  * A spoken step's known wrong answers, in precedence order, for the `spoken_miss` observer: the numbers on this
  * mat (the value for the count, the count for the value, the ten the trade makes), then the off-by misses.
  */
-export function baseTenSpokenMisses(item: BaseTenItem): KnownMiss[] {
-  if (item.answerKind === 'gesture') return [];
+export function baseTenSpokenMisses(item: BaseTenBlocksItem): KnownMiss[] {
+  if (!isSpokenItem(item) || item.answerKind === 'gesture') return [];
   const { problem } = item, answer = spokenAnswer(item), p = problem.place, count = readCount(problem);
   const many = blockNounPlural(p), unit = placeValueOf(p);
   if (item.step === 'predict') {
@@ -76,13 +107,26 @@ export function baseTenSpokenMisses(item: BaseTenItem): KnownMiss[] {
       examples: near.map(spokenNumber) }] : offByMisses(answer, `the ${answer} ${many} on the mat`))];
 }
 
-/** The step's own ask; a spoken step publishes its number, the trade does not. */
-export function diWorkspaceAssignment(item: BaseTenItem): TeachingAssignment {
-  const task = item.actionContract.instruction;
-  if (item.answerKind === 'gesture') return { id: item.id, task, response: 'gesture' };
-  const misses = baseTenSpokenMisses(item);
-  return { id: item.id, task, response: 'speech', expectedAnswer: String(spokenAnswer(item)), ...(misses.length ? { misses } : {}) };
+/**
+ * A spoken step's key: the number in words, its digits count too, and the step's signature error (the value for
+ * the count, the count for the value, "ten" for the prediction). Null on a trade and on a click-mat item: the mat
+ * checks those, so no key reaches the tutor.
+ */
+export function baseTenKey(item: BaseTenBlocksItem): SpokenKey | null {
+  if (!isSpokenItem(item) || item.answerKind === 'gesture') return null;
+  const { problem } = item, n = spokenAnswer(item);
+  if (item.step === 'count') return { answer: wordFor(n), alsoAccept: [String(n)],
+    signatureError: `"${readWorthWord(problem)}", what the blocks are worth, is wrong: the question is how many blocks.` };
+  if (item.step === 'worth') return { answer: readWorthWord(problem), alsoAccept: [String(n)],
+    signatureError: `"${wordFor(readCount(problem))}" alone, how many blocks there are, is wrong: the question is what they are worth.` };
+  const lower = blockNounPlural(problem.place - 1);
+  return { answer: wordFor(n), alsoAccept: [String(n)],
+    signatureError: `"ten", only the new ${lower}, is wrong: it leaves out the ${startingLowerCount(problem)} already on the mat.` };
 }
+
+/** What a worth ask says by design: the block's name, which holds "ten" on a single ten-stick. */
+export const baseTenGiven = (item: BaseTenBlocksItem): readonly string[] =>
+  (isSpokenItem(item) && item.step === 'worth' ? [blockNoun(item.problem.place, readCount(item.problem))] : []);
 
 /** The mat in the learner's terms, largest block first. */
 export const describeMat = (columns: BtColumns) => {
@@ -94,19 +138,6 @@ export const describeMat = (columns: BtColumns) => {
 /** The trade the learner committed, checked in code with the pack's own rule. */
 export const tradeMatches = (item: BaseTenItem, columns: BtColumns) => tradeSolved(item.problem, columns);
 export const describeTrade = (columns: BtColumns) => `Mat after the taps: ${describeMat(columns)}`;
-
-/**
- * What a wrong answer on either mat shows (`TeachingAttempt.miss`, handoff 20). Only the observable pattern:
- * - a value built or typed: `digits_swapped` (the target's digits in reverse, 21 for 12), `one_short` /
- *   `one_over` (one of the smallest block), `one_ten_off` (ten of the smallest block, either way),
- *   `short_by_more` / `over_by_more`;
- * - build_number: `not_traded_up` (the right value, but a place holds ten or more);
- * - a trade: `no_trade` (checked before any trade), `value_changed` (blocks added or removed as well),
- *   `other_block` (a different size broken down), `traded_twice` (more than one of the asked block broken);
- * - build_two_ways: `same_as_first` (the second way has the right value and the same blocks as the first).
- */
-export type BaseTenMiss = 'digits_swapped' | 'one_short' | 'one_over' | 'one_ten_off' | 'short_by_more' | 'over_by_more'
-  | 'not_traded_up' | 'no_trade' | 'value_changed' | 'other_block' | 'traded_twice' | 'same_as_first';
 
 /** The judged mat's trade: the only wrong commit is a tap on the wrong block, or too many taps. */
 export function tradeMiss(item: BaseTenItem | null, mat: BtColumns): BaseTenMiss | undefined {
@@ -134,32 +165,21 @@ export function plainMiss(type: string, work: { got: number; target: number; uni
   return off < 0 ? 'short_by_more' : 'over_by_more';
 }
 
-export function diWorkspaceScene(item: BaseTenItem, view: { mat: BtColumns }): WorkspaceScene {
+/** The spoken mat's scene. Its `kind` is the step; the mat prints no count, value or total, so the scene names none. */
+export function diWorkspaceScene(item: BaseTenItem, view: { mat: BtColumns }): SceneOf {
   const { problem } = item;
   if (problem.mode === 'read_blocks') {
-    return { objects: [], facts: {
-      kind: 'read_blocks', step: item.step, askedBlocks: blockNounPlural(problem.place),
-      // The counts are the answers, so the mat prints none and this names none.
-      constraints: 'The learner says the answer. The mat shows the blocks with no counts, values or total printed.',
-    } };
+    return { objects: [], facts: { kind: item.step, askedBlocks: blockNounPlural(problem.place),
+      constraints: 'The mat prints no counts, values or total: they are the answers.' } };
   }
   const trade = `one ${blockNoun(problem.place, 1)} for ten ${blockNounPlural(problem.place - 1)}`;
   if (item.step === 'predict') {
-    return { objects: [], facts: { kind: 'regroup', step: 'predict', trade,
-      constraints: 'The learner says a prediction while the mat is still untraded.' } };
+    return { objects: [], facts: { kind: 'predict', trade, constraints: 'The mat is still untraded.' } };
   }
-  return { objects: [], facts: { kind: 'regroup', step: 'trade', trade, matNow: describeMat(view.mat),
-    constraints: 'The learner taps a block to break it into ten of the next size down, and can put the blocks back. '
-      + 'The mat checks the trade itself once the learner stops tapping.' } };
+  return { objects: [], facts: { kind: 'trade', trade, matNow: describeMat(view.mat) } };
 }
 
-// ── The click-era mat (build_number, operate) ───────────────────────────────
-
-export interface PlainBaseTenChallenge { id: string; type: string; instruction: string }
-
-/** Blocks, a trade or the keypad: the primitive's own check is the judge, so no key is published. */
-export const plainWorkspaceAssignment = (challenge: PlainBaseTenChallenge): TeachingAssignment =>
-  ({ id: challenge.id, task: challenge.instruction, response: 'gesture' });
+// ── The click mat (build_number, build_two_ways, operate, and a mixed payload) ──
 
 /** Which control carries the answer (BT-4): the blocks where the value is on screen, else the keypad. */
 export const blocksAreTheAnswer = (type: string) => type === 'build_number' || type === 'regroup' || type === TWO_WAYS;
@@ -172,26 +192,29 @@ export interface PlainBaseTenView {
 }
 
 /** The learner's checked work in their terms, never the key. */
-export function describePlainCheck(challenge: PlainBaseTenChallenge, view: PlainBaseTenView): string {
+export function describePlainCheck(challenge: { type: string }, view: PlainBaseTenView): string {
   if (!blocksAreTheAnswer(challenge.type)) return `Typed ${view.typed || 'nothing'}`;
   return `Checked the blocks: ${view.blocks}${view.trades ? ` after ${view.trades} trade${view.trades === 1 ? '' : 's'}` : ''}`;
 }
 
+/**
+ * What a click-mat item's scene says beyond the card's moves. A mixed payload's read_blocks and regroup items are
+ * answered on the click mat, which no card step wires, so their scene says how.
+ */
 const PLAIN_CONSTRAINTS: Record<string, string> = {
-  build_number: 'The learner adds or removes blocks, can trade ten of one size for one of the next, and presses '
-    + 'Check My Blocks. The mat checks for the number in standard form itself.',
+  build_number: 'The mat accepts only the number with the fewest blocks: the right value with ten or more in a column is not yet a build.',
   regroup: 'The learner makes a trade with the trade buttons and presses Check My Trade. The mat checks it itself.',
   read_blocks: 'The learner types the number the blocks show on the keypad; the activity checks it. The column counts '
     + 'and total are hidden because they are the answer.',
 };
 
-export function plainWorkspaceScene(challenge: PlainBaseTenChallenge, view: PlainBaseTenView): WorkspaceScene {
+export function plainWorkspaceScene(challenge: BaseTenClickItem, view: PlainBaseTenView): SceneOf {
+  const constraints = PLAIN_CONSTRAINTS[challenge.type];
   return { objects: [], facts: {
-    kind: challenge.type,
+    kind: baseTenStepOf(challenge),
     // What the learner built is their work; on read_blocks the mat is the answer and is not described.
     ...(challenge.type === 'read_blocks' ? {} : { learnerBlocks: view.blocks }),
-    constraints: PLAIN_CONSTRAINTS[challenge.type]
-      ?? 'The learner may work with the blocks, then types the result on the keypad; the activity checks it.',
+    ...(constraints ? { constraints } : {}),
   } };
 }
 
@@ -241,14 +264,13 @@ export const describeTwoWaysCheck = (now: WayColumns, first: WayColumns | null, 
  * `workHistory` records where the learner turned back. The mat itself never prints the value.
  */
 export function twoWaysScene(view: { columns: WayColumns; places: readonly string[]; value: number; first: WayColumns | null }):
-  WorkspaceScene {
+  SceneOf {
   const facts: Record<string, string | number> = { kind: TWO_WAYS, way: view.first ? 'second' : 'first', valueMade: view.value };
   for (const p of view.places) facts[`${p}OnMat`] = view.columns[p] ?? 0;
   if (view.first) facts.firstWay = describeWay(view.first, view.places);
   facts.constraints = view.first
-    ? "The first way was checked right and is shown above the mat. The learner changes the blocks on the mat so they "
-      + "make the same number a different way, then presses I'm done. The mat checks the value and that the blocks differ."
-    : "The learner puts blocks on an empty mat, any blocks that make the number, then presses I'm done. The mat checks "
-      + 'the value itself. The mat prints no total.';
+    ? 'The first way was checked right and is shown above the mat; the second way must use different blocks. The mat '
+      + 'prints no total.'
+    : 'The mat prints no total.';
   return { objects: [], facts };
 }

@@ -1,16 +1,19 @@
 /**
- * Equation workspace on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C17).
+ * Equation workspace on the shared tutor/JEV teaching workspace, on a boss (`equationWorkspace.card.ts`,
+ * `equationWorkspace.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. A challenge is one equation to solve for a
+ * Pure: the component, the boss and any probe read the same ask and scene. A challenge is one equation to solve for a
  * target variable by choosing operations from a menu. In a solving mode (guided-solve, solve, multi-step) every tap is
  * checked by the activity against the next step of the solution path: the right step is applied to both sides and
  * stays (not a commit, unless it leaves the variable alone); any other operation is a wrong answer and is committed.
  * Under identify-operation the learner chooses one operation and presses Check. The tutor is never handed the
  * solution path, a line the learner has not reached, or which menu item is right.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { EquationWorkspaceChallenge, EquationWorkspaceOperation } from './EquationWorkspace';
+import type { EquationMiss } from './equationWorkspace.card';
+
+export { EQUATION_MISSES_BY_MODE, type EquationMiss } from './equationWorkspace.card';
 
 /** LaTeX as a tutor can read it aloud: `4 \cdot x + 15 = 47` -> `4 × x + 15 = 47`. Display only, never compared. */
 export function latexToText(latex: string): string {
@@ -37,13 +40,19 @@ export const currentEquation = (c: EquationWorkspaceChallenge, done: number) =>
 const opLabel = (c: EquationWorkspaceChallenge, id: string | null | undefined) =>
   c.availableOperations.find(o => o.id === id)?.label ?? id ?? '';
 
-export function workspaceAssignment(challenge: EquationWorkspaceChallenge): TeachingAssignment {
+/** The item's answers a worded lever must never name: the operation asked for now, and the solved line. */
+export const equationAnswers = (c: EquationWorkspaceChallenge, done: number): string[] => [
+  opLabel(c, expectedOperationId(c, done)), latexToText(c.solutionSteps.at(-1)?.resultLatex ?? ''),
+].filter(Boolean);
+
+/** What the learner is asked on one item (the boss's ask). Never the operation to use or the solved value. */
+export function workspaceTask(challenge: EquationWorkspaceChallenge): string {
   const eq = latexToText(challenge.equation), v = challenge.targetVariable;
   const ask = challenge.type === 'identify-operation'
     ? `Choose the operation to apply next to ${eq} to solve for ${v}, then press Check.`
     : `Solve ${eq} for ${v} by choosing operations from the menu, one step at a time, until ${v} is alone.`;
   const instruction = challenge.instruction?.trim();
-  return { id: challenge.id, task: instruction ? `${instruction} ${ask}` : ask, response: 'gesture' };
+  return instruction ? `${instruction} ${ask}` : ask;
 }
 
 // ── the activity's check ──────────────────────────────────────────────────
@@ -98,22 +107,6 @@ const INVERSE: Record<string, string> = {
   add: 'subtract', subtract: 'add', multiply: 'divide', divide: 'multiply', square: 'sqrt', sqrt: 'square',
 };
 
-/**
- * What a wrong operation shows (`TeachingAttempt.miss`, handoff 20), from the catalog's commonStruggles (wrong order,
- * not the operation that undoes) and the menu's distractors:
- * - `later_step`: an operation the solution does later (undoing an inner layer before the outer one);
- * - `not_inverse`: the same operation as the right step's opposite on the same number (adds 15 where 15 must be
- *   subtracted): it does again what is attached instead of undoing it;
- * - `wrong_number`: the right kind of operation on a number that is not the one attached to the variable;
- * - `other_operation`: any other operation.
- */
-export type EquationMiss = 'later_step' | 'not_inverse' | 'wrong_number' | 'other_operation';
-
-const MISSES: readonly EquationMiss[] = ['later_step', 'not_inverse', 'wrong_number', 'other_operation'];
-export const EQUATION_MISSES_BY_MODE: Record<string, readonly EquationMiss[]> = {
-  'guided-solve': MISSES, 'identify-operation': MISSES, solve: MISSES, 'multi-step': MISSES,
-};
-
 export const operationCorrect = (c: EquationWorkspaceChallenge, done: number, opId: string) =>
   opId === expectedOperationId(c, done);
 
@@ -151,15 +144,13 @@ export interface EquationView {
   lastWrong: string | null;
   /** One menu operation is highlighted as the next step (guided). */
   highlighted: boolean;
-  /** The "undo it with the inverse operation" reminder panel. */
-  inverseReminder: boolean;
   /** The balanced-state badge. */
   balanceShown: boolean;
   solved: boolean;
 }
 
 /** What is drawn and asked: the lines the learner has reached and the menu; never a step to come or the solved value. */
-export function workspaceScene(c: EquationWorkspaceChallenge, view: EquationView): WorkspaceScene {
+export function workspaceScene(c: EquationWorkspaceChallenge, view: EquationView): SceneOf {
   const identify = c.type === 'identify-operation';
   const done = identify ? 0 : view.done;
   const facts: Record<string, string> = {
@@ -171,18 +162,14 @@ export function workspaceScene(c: EquationWorkspaceChallenge, view: EquationView
       stepsApplied: done ? c.solutionSteps.slice(0, done).map(s => s.operation).join('; ') : 'none yet',
       currentEquation: latexToText(currentEquation(c, done)),
     } : {}),
-    ...(view.highlighted && !identify ? { highlight: 'one operation in the menu is highlighted as the next step' } : {}),
-    ...(view.inverseReminder ? { reminder: 'shown: undo what is attached to the variable with the inverse operation, on both sides' } : {}),
+    ...(view.highlighted && !identify ? { highlight: 'one operation in the menu is highlighted as the next step: the '
+      + 'learner may be told to look at the highlight, never what it says' } : {}),
     ...(view.balanceShown ? { balance: 'a Balanced badge says each operation is applied to both sides' } : {}),
     ...(c.knownValues && Object.keys(c.knownValues).length
       ? { knownValues: Object.entries(c.knownValues).map(([k, n]) => `${k} = ${n}`).join(', ') } : {}),
     ...(identify && view.selected ? { selected: `"${opLabel(c, view.selected)}", not yet checked` } : {}),
     learnerWork: describeEquationWork(c, done, view.lastWrong ?? (identify ? view.selected : null), view.solved),
-    constraints: identify
-      ? 'The learner taps one operation and presses Check; the activity checks it against the next step itself. You cannot tap or press Check.'
-      : 'The learner taps an operation in the menu; the activity checks each tap itself: the next step is applied to both '
-        + 'sides and its new line appears, any other operation is not applied. The item is finished when the variable is '
-        + 'alone. You cannot tap an operation.',
+    ...(!identify ? { constraints: 'Try again keeps the steps already applied.' } : {}),
   };
   return { objects: [], facts };
 }

@@ -114,7 +114,7 @@ it('rate: Strong on a weak sentence pulls the strength guide; the practice ratin
   expect(receipt.state.task!.itemId).toBe('rate~simpler');
   expect(receipt.state.task!.workspace!.levers ?? []).toEqual([]);
   expect(receipt.state.task!.demand).toMatchObject({ practice: expect.any(String) });
-  const p = practiceFor({ id: 'rate' }, PASSAGE)!;
+  const p = practiceFor('rate', PASSAGE)!;
   expect(named(h.view.container.textContent ?? '').filter(t => !PASSAGE.claims.some(c => c.text === t))).toEqual([]);
   expect(q(h, '[data-lever]')).toHaveLength(0);
   rate(h, p, s => (s.evidenceStrength === 'weak' ? 'strong' : 'strong'));
@@ -139,7 +139,7 @@ it('find practice: a two-claim practice passage that the same controls answer', 
   expect(attempts(h).at(-1)).toMatchObject({ miss: 'wrong_claim' });
   const receipt = h.dispatch('pull_lever', { lever: 'practice_passage' });
   expect(receipt.state.task!.itemId).toBe('find~simpler');
-  const p = practiceFor({ id: 'find' }, PASSAGE)!;
+  const p = practiceFor('find', PASSAGE)!;
   expect(p.claims).toHaveLength(2);
   find(h, p);
   expect(h.state().task!.evidence.correctness).toBe('correct');

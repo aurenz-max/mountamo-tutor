@@ -1,6 +1,9 @@
 /**
  * transformation-lab's in-item levers (/add-support-tiers; report qa/eval-reports/transformation-lab-levers-2026-10-09.md).
  * The misses are what `transformMiss` observes on the figure or the option tapped; there is no real-learner evidence.
+ * Declared once as a lever set (`TRANSFORM_LEVERS`, `bossLevers.ts`) by type: corner letters, labels, rays and target
+ * labels are `marks`; the model point is `model` (a different point, solved; when it comes is the set's `support`);
+ * the rule card is a `clue`; the motion models are a `legend` (every option alike); the three simplify levers `easier`.
  *
  * - drag modes (translate/reflect, rotate, dilate): `corner_letters` (help) the pre-image's corners lettered A, B, C and
  *   the pink corners A′, B′, C′, so the learner tracks which corner goes where; `model_point` (help) a green point P away
@@ -22,11 +25,11 @@
  * has its own id and narration, keeps the mode, and shares no corner with the item's pre-image or image, nor its
  * transformation (identify) or its flip, turn and slide (compose) (`practiceLeaks`).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { GridPoint, TransformationLabChallenge } from './TransformationLab';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { GridPoint, TransformationLabChallenge, TransformationLabChallengeType } from './TransformationLab';
 import {
-  PALETTE_TURNS, SEQUENCE_PALETTE, applySpec, composeOf, fmtPoint, inGrid, isReflection, mapSpec, polygonsMatch, specFromLabel,
-  specOf, type TransformMiss, type TransformSpec,
+  PALETTE_TURNS, SEQUENCE_PALETTE, TRANSFORM_MISSES_BY_MODE, applySpec, composeOf, fmtPoint, inGrid, isReflection, mapSpec,
+  polygonsMatch, specFromLabel, specOf, type TransformMiss, type TransformSpec,
 } from './transformationLabWorkspace';
 
 export const CORNER_LETTERS_LEVER = 'corner_letters';
@@ -224,106 +227,132 @@ export function practiceLeaks(parent: TransformationLabChallenge, practice: Tran
   return false;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────────────────────────────────────────────
 
 export interface TransformLeverContext {
-  /** The session already labels the pre-image's corners (a starting position, not a pull). */
+  /** The item already labels the pre-image's corners (a starting position, not a pull). */
   preCoordsShown: boolean;
-  /** The session already shows a rule card. */
+  /** The item already shows a rule card. */
   ruleShown: boolean;
 }
 
+/** The context the component gives the lever set: what the item's own tier already puts on screen. */
+export const leverContext = (c: TransformationLabChallenge): TransformLeverContext =>
+  ({ preCoordsShown: c.showPreImageCoords !== false, ruleShown: !!c.ruleNotation });
+
+type Mode = TransformationLabChallengeType;
+const DRAG_MODES: Mode[] = ['apply_translation_reflection', 'apply_rotation', 'dilation_similarity'];
 const SIGNATURE: Record<string, TransformMiss[]> = {
   apply_translation_reflection: ['opposite_shift', 'swapped_shift', 'one_axis_shift', 'wrong_axis'],
   apply_rotation: ['wrong_direction', 'wrong_angle', 'reflected_instead'],
   dilation_similarity: ['added_factor', 'wrong_factor', 'one_axis_scaled'],
 };
+const ALL_SIGNATURES = Object.values(SIGNATURE).flat().filter((m, i, all) => all.indexOf(m) === i);
 const IDENTIFY_MISSES: TransformMiss[] = ['wrong_axis', 'reflection_for_rotation', 'rotation_for_reflection', 'wrong_direction', 'wrong_angle'];
+/** A drag lever's misses: every drag mode's signature misses plus `tail` listed, the item's own mode's kept per item. */
+const signaturePlus = (tail: TransformMiss[]) => ({
+  answers: [...ALL_SIGNATURES, ...tail],
+  answersOn: (c: TransformationLabChallenge) => [...(SIGNATURE[c.type] ?? []), ...tail],
+});
+const PRACTICE_BACK = 'It is not graded; the full item comes back after it.';
 
-export function transformLevers(c: TransformationLabChallenge | null, pulled: readonly string[], ctx: TransformLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeTransform(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly TransformMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerItem(c);
-  if (c.answerKind === 'identify') return [
-    lever(CORNER_LETTERS_LEVER, 'help', 'shown', IDENTIFY_MISSES,
-      'The learner cannot tell which corner went where, so cannot see the motion.',
-      'Letters the cyan pre-image\'s corners A, B, C and the matching amber corners A′, B′, C′. Nothing else changes; no '
-        + 'option is marked.'),
-    lever(MOTION_MODELS_LEVER, 'help', 'shown', IDENTIFY_MISSES,
-      'The learner mixes up the motions: which axis, which way a turn goes, a flip against a turn.',
-      'Shows, beside the grid, a small model flag (not the item\'s figure) moved by each option\'s motion, one picture per '
-        + 'option under its name. None is marked; the learner compares them with the item.'),
-    ...(!ctx.preCoordsShown ? [lever(PRE_COORDS_LEVER, 'help', 'shown', ['wrong_axis', 'wrong_direction', 'wrong_angle'],
-      'The learner cannot compare where a corner was with where it is.',
-      'Labels the cyan pre-image\'s corners with their (x, y); the amber corners are already labelled.')] : []),
-    ...(simpler ? [lever(TWO_CHOICES_LEVER, 'simplify', 'shown', IDENTIFY_MISSES,
-      'Four choices are too many to sort yet.',
-      'Opens an easier identify item first: another figure moved by another motion, with two options, one of each family. '
-        + 'It is not graded; the full item comes back after it.')] : []),
-  ];
-  if (c.answerKind === 'sequence') return [
-    lever(MOTION_MODELS_LEVER, 'help', 'shown', ['orientation_off', 'unmoved'],
-      'The learner slides without matching how the target faces, or does not know what a flip or a turn will do.',
-      'Shows, beside the grid, a small model flag (not the item\'s figure) moved by each flip and turn on the move '
-        + 'buttons, one picture per button under its name. None is marked.'),
-    lever(TARGET_COORDS_LEVER, 'help', 'shown', ['position_off'],
-      'The figure faces the right way but sits off the target.',
-      'Labels the dashed target\'s corners with their (x, y), so the learner can count the squares still to slide.'),
-    lever(CORNER_LETTERS_LEVER, 'help', 'shown', ['orientation_off', 'position_off'],
-      'The learner cannot tell which pink corner has to land on which target corner.',
-      'Letters the pre-image\'s corners A, B, C, the pink figure\'s A′, B′, C′ and the target\'s A″, B″, C″. No move is named.'),
-    ...(simpler ? [lever(SIMPLER_TARGET_LEVER, 'simplify', 'shown', ['orientation_off', 'position_off', 'unmoved'],
-      'This target is too many moves away yet.',
-      'Opens an easier compose item first: a smaller figure that one flip or turn and a one-square slide put on its target. '
-        + 'It is not graded; the full item comes back after it.')] : []),
-  ];
-  const signature = SIGNATURE[c.type] ?? [];
-  const dilation = c.type === 'dilation_similarity';
-  return [
-    ...(dilation ? [lever(ORIGIN_RAYS_LEVER, 'help', 'shown', ['shape_changed', 'one_axis_scaled', 'added_factor', 'misplaced'],
-      'The learner moves corners off the line from the origin, so the shape changes or the figure slides.',
-      'Draws a dashed ray from the origin through each cyan corner, out to the edge of the grid. No point on a ray is marked.')] : []),
-    lever(CORNER_LETTERS_LEVER, 'help', 'shown', ['partly_placed', 'shape_changed'],
-      'Some corners are placed and others are not, or the corners no longer make the figure\'s shape.',
-      'Letters the cyan pre-image\'s corners A, B, C and the pink corners A′, B′, C′, so each pink corner\'s partner is '
-        + 'clear. No place is marked.'),
-    ...(modelPoint(c) ? [lever(MODEL_POINT_LEVER, 'help', 'shown', [...signature, 'unmoved', 'misplaced'],
-      'The learner moves the figure the wrong way, or does not know where to start.',
-      'Draws a green model point P away from the figure and its image P′ under this same transformation, joined by an '
-        + 'arrow. P is not a corner of the figure; the learner does the corners.')] : []),
-    ...(!ctx.preCoordsShown ? [lever(PRE_COORDS_LEVER, 'help', 'shown', ['partly_placed', 'misplaced'],
-      'The learner cannot read the cyan corners\' coordinates off the grid.',
-      'Labels the cyan pre-image\'s corners with their (x, y). The pink corners already show theirs.')] : []),
-    ...(!ctx.ruleShown && ruleFor(c) ? [lever(RULE_CARD_LEVER, 'help', 'shown', [...signature, 'partly_placed', 'misplaced'],
-      'The learner knows the motion\'s name but not what it does to a coordinate.',
-      'Shows the transformation\'s coordinate rule on a card, "(x, y) → …". It gives no corner\'s image.')] : []),
-    ...(simpler ? [lever(SIMPLER_FIGURE_LEVER, 'simplify', 'shown', [...signature, 'partly_placed', 'shape_changed', 'misplaced'],
-      'This figure is too big to move corner by corner yet.',
-      'Opens an easier item first: the same transformation on a smaller triangle. It is not graded; the full item comes back '
-        + 'after it.')] : []),
-  ];
-}
+/** A drag item's image corners as printed, "(6, 0)": what a worded lever must never say. Not the pre-image's own. */
+const imageCorners = (c: TransformationLabChallenge) => (c.answerKind === 'drag'
+  ? c.expectedImage.filter(e => !c.preImage.some(p => same(p, e))).map(fmtPoint) : []);
 
-/** What the pulled help levers put on screen, for the tutor and JEV. Never an image corner of a drag item. */
-export function leverFacts(c: TransformationLabChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeTransform(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const model = on(MODEL_POINT_LEVER) ? modelPoint(c) : null;
-  const rule = on(RULE_CARD_LEVER) ? ruleFor(c) : null;
-  return [
-    on(CORNER_LETTERS_LEVER) && (c.answerKind === 'sequence'
-      ? 'The corners are lettered: A, B, C on the pre-image, A′, B′, C′ on the pink figure, A″, B″, C″ on the target.'
-      : `The corners are lettered A, B, C on the cyan pre-image and A′, B′, C′ on the ${c.answerKind === 'identify' ? 'amber image' : 'pink corners'}.`),
-    model && `A green model point P at ${fmtPoint(model.from)} and its image P′ at ${fmtPoint(model.to)} under this transformation are drawn away from the figure, joined by an arrow.`,
-    on(PRE_COORDS_LEVER) && 'The cyan pre-image\'s corners are labelled with their coordinates.',
-    rule && `A rule card reads ${rule}.`,
-    on(ORIGIN_RAYS_LEVER) && 'A dashed ray runs from the origin through each cyan corner to the edge of the grid; no point on it is marked.',
-    on(MOTION_MODELS_LEVER) && `Beside the grid, a model flag (not the item's figure) is shown moved by each ${c.answerKind === 'identify' ? 'option' : 'flip and turn button'}, one picture per name; none is marked.`,
-    on(TARGET_COORDS_LEVER) && `The dashed target's corners are labelled ${fmtPointsOf(c.expectedImage)}.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
-const fmtPointsOf = (pts: readonly GridPoint[]) => pts.map(fmtPoint).join(', ');
+/**
+ * The levers, declared once (`bossLevers.ts`); the context is what the item's tier already shows. None is offered on a
+ * practice item: the component declares nothing while one is on screen.
+ */
+export const TRANSFORM_LEVERS = leverSet<TransformationLabChallenge, TransformLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => TRANSFORM_MISSES_BY_MODE[mode as Mode] ?? [],
+  answersOf: c => imageCorners(c),
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: 'a different point P moved by this same transformation',
+    own: 'where this figure\'s corners land',
+  },
+  specs: [
+    // ── drag modes ──
+    { id: ORIGIN_RAYS_LEVER, type: 'marks', modes: ['dilation_similarity'],
+      answers: ['shape_changed', 'one_axis_scaled', 'added_factor', 'misplaced'],
+      when: 'The learner moves corners off the line from the origin, so the shape changes or the figure slides.',
+      does: 'Draws a dashed ray from the origin through each cyan corner, out to the edge of the grid. No point on a ray is marked.',
+      fact: 'A dashed ray runs from the origin through each cyan corner to the edge of the grid; no point on it is marked.' },
+    { id: CORNER_LETTERS_LEVER, type: 'marks', modes: DRAG_MODES, answers: ['partly_placed', 'shape_changed'],
+      when: 'Some corners are placed and others are not, or the corners no longer make the figure\'s shape.',
+      does: 'Letters the cyan pre-image\'s corners A, B, C and the pink corners A′, B′, C′, so each pink corner\'s partner is '
+        + 'clear. No place is marked.',
+      fact: 'The corners are lettered A, B, C on the cyan pre-image and A′, B′, C′ on the pink corners.' },
+    { id: MODEL_POINT_LEVER, type: 'model', modes: DRAG_MODES, ...signaturePlus(['unmoved', 'misplaced']),
+      when: 'The learner moves the figure the wrong way, or does not know where to start.',
+      does: 'Draws a green model point P away from the figure and its image P′ under this same transformation, joined by an '
+        + 'arrow. P is not a corner of the figure; the learner does the corners.',
+      content: c => modelPoint(c),
+      fact: (m: { from: GridPoint; to: GridPoint }) => `A green model point P at ${fmtPoint(m.from)} and its image P′ at `
+        + `${fmtPoint(m.to)} under this transformation are drawn away from the figure, joined by an arrow.` },
+    { id: PRE_COORDS_LEVER, type: 'marks', modes: DRAG_MODES, answers: ['partly_placed', 'misplaced'],
+      when: 'The learner cannot read the cyan corners\' coordinates off the grid.',
+      does: 'Labels the cyan pre-image\'s corners with their (x, y). The pink corners already show theirs.',
+      offer: (_c, ctx) => !ctx.preCoordsShown,
+      fact: 'The cyan pre-image\'s corners are labelled with their coordinates.' },
+    { id: RULE_CARD_LEVER, type: 'clue', modes: DRAG_MODES, ...signaturePlus(['partly_placed', 'misplaced']),
+      when: 'The learner knows the motion\'s name but not what it does to a coordinate.',
+      does: 'Shows the transformation\'s coordinate rule on a card, "(x, y) → …". It gives no corner\'s image.',
+      offer: (_c, ctx) => !ctx.ruleShown,
+      content: c => ruleFor(c),
+      fact: (rule: string) => `A rule card reads ${rule}.` },
+    { id: SIMPLER_FIGURE_LEVER, type: 'easier', modes: DRAG_MODES, ...signaturePlus(['partly_placed', 'shape_changed', 'misplaced']),
+      when: 'This figure is too big to move corner by corner yet.',
+      does: `Opens an easier item first: the same transformation on a smaller triangle. ${PRACTICE_BACK}`,
+      content: c => simplerItem(c) },
+
+    // ── identify ──
+    { id: CORNER_LETTERS_LEVER, type: 'marks', modes: ['identify_transformation'], answers: IDENTIFY_MISSES,
+      when: 'The learner cannot tell which corner went where, so cannot see the motion.',
+      does: 'Letters the cyan pre-image\'s corners A, B, C and the matching amber corners A′, B′, C′. Nothing else changes; no '
+        + 'option is marked.',
+      fact: 'The corners are lettered A, B, C on the cyan pre-image and A′, B′, C′ on the amber image.' },
+    { id: MOTION_MODELS_LEVER, type: 'legend', modes: ['identify_transformation'], answers: IDENTIFY_MISSES,
+      when: 'The learner mixes up the motions: which axis, which way a turn goes, a flip against a turn.',
+      does: 'Shows, beside the grid, a small model flag (not the item\'s figure) moved by each option\'s motion, one picture per '
+        + 'option under its name. None is marked; the learner compares them with the item.',
+      fact: 'Beside the grid, a model flag (not the item\'s figure) is shown moved by each option, one picture per name; none is marked.' },
+    { id: PRE_COORDS_LEVER, type: 'marks', modes: ['identify_transformation'], answers: ['wrong_axis', 'wrong_direction', 'wrong_angle'],
+      when: 'The learner cannot compare where a corner was with where it is.',
+      does: 'Labels the cyan pre-image\'s corners with their (x, y); the amber corners are already labelled.',
+      offer: (_c, ctx) => !ctx.preCoordsShown,
+      fact: 'The cyan pre-image\'s corners are labelled with their coordinates.' },
+    { id: TWO_CHOICES_LEVER, type: 'easier', modes: ['identify_transformation'], answers: IDENTIFY_MISSES,
+      when: 'Four choices are too many to sort yet.',
+      does: 'Opens an easier identify item first: another figure moved by another motion, with two options, one of each family. '
+        + PRACTICE_BACK,
+      content: c => simplerItem(c) },
+
+    // ── compose ──
+    { id: MOTION_MODELS_LEVER, type: 'legend', modes: ['compose_sequence'], answers: ['orientation_off', 'unmoved'],
+      when: 'The learner slides without matching how the target faces, or does not know what a flip or a turn will do.',
+      does: 'Shows, beside the grid, a small model flag (not the item\'s figure) moved by each flip and turn on the move '
+        + 'buttons, one picture per button under its name. None is marked.',
+      fact: 'Beside the grid, a model flag (not the item\'s figure) is shown moved by each flip and turn button, one picture per '
+        + 'name; none is marked.' },
+    { id: TARGET_COORDS_LEVER, type: 'marks', modes: ['compose_sequence'], answers: ['position_off'],
+      when: 'The figure faces the right way but sits off the target.',
+      does: 'Labels the dashed target\'s corners with their (x, y), so the learner can count the squares still to slide.',
+      // The target is drawn by design; its coordinates say where, never which moves.
+      fact: (_on: unknown, c: TransformationLabChallenge) => `The dashed target's corners are labelled ${c.expectedImage.map(fmtPoint).join(', ')}.` },
+    { id: CORNER_LETTERS_LEVER, type: 'marks', modes: ['compose_sequence'], answers: ['orientation_off', 'position_off'],
+      when: 'The learner cannot tell which pink corner has to land on which target corner.',
+      does: 'Letters the pre-image\'s corners A, B, C, the pink figure\'s A′, B′, C′ and the target\'s A″, B″, C″. No move is named.',
+      fact: 'The corners are lettered: A, B, C on the pre-image, A′, B′, C′ on the pink figure, A″, B″, C″ on the target.' },
+    { id: SIMPLER_TARGET_LEVER, type: 'easier', modes: ['compose_sequence'], answers: ['orientation_off', 'position_off', 'unmoved'],
+      when: 'This target is too many moves away yet.',
+      does: 'Opens an easier compose item first: a smaller figure that one flip or turn and a one-square slide put on its target. '
+        + PRACTICE_BACK,
+      content: c => simplerItem(c) },
+  ],
+});
 
 /** Leak rule for lever words, captions and facts: no drag item's image corner, and on identify not the right option. */
 export function leverTextLeaks(c: TransformationLabChallenge, text: string): boolean {
@@ -332,5 +361,5 @@ export function leverTextLeaks(c: TransformationLabChallenge, text: string): boo
     return !!answer && text.includes(answer);
   }
   if (c.answerKind === 'sequence') return false;   // the target is drawn by design; its coordinates are not the moves
-  return c.expectedImage.some(e => !c.preImage.some(p => same(p, e)) && text.includes(fmtPoint(e)));
+  return imageCorners(c).some(corner => text.includes(corner));
 }

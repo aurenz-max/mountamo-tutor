@@ -6,10 +6,16 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { buildBondItems, familyFormKeyFor, type BondModelAction, type NumberBondItem } from './numberBondScript';
+import { buildBondItems, familyFormKeyFor, type BondModelAction, type NumberBondItem } from './numberBondDomain';
 import { expandNumberBondInteractions } from './numberBondModes';
-import { EQ_FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, STRIP_LEVER, leverFacts, moveStrip, numberBondLevers,
+import { EQ_FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, STRIP_LEVER, moveStrip, NUMBER_BOND_LEVERS, type NumberBondLeverContext,
   smallerBond } from './numberBondLevers';
+
+/** The lever set's offer and scene fact, with the lesson's lever state (`NumberBondLeverContext`). */
+const numberBondLevers = (item: NumberBondItem, pulled: readonly string[], view: Partial<NumberBondLeverContext>) =>
+  NUMBER_BOND_LEVERS.declare(item, { pairsMade: 0, countersOpen: false, ...view }, pulled);
+const leverFacts = (item: NumberBondItem, pulled: readonly string[]) =>
+  NUMBER_BOND_LEVERS.onScreen(item, { pairsMade: 1, countersOpen: false }, pulled);
 
 const items = (challenges: object[]) =>
   expandNumberBondInteractions(buildBondItems(challenges as never, { band: '1', maxNumber: 10 }).items);

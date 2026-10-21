@@ -6,14 +6,23 @@
  * Judged in code from each card's role and side (the generator writes them; `askableOpinion` keeps a set only when both
  * sides are complete).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
+import type { OpinionMiss } from './opinionBuilder.card';
 import type { WritingPayload } from './writingStages';
+
+export { OPINION_MISSES, type OpinionMiss } from './opinionBuilder.card';
 
 export type OpinionRole = 'opinion' | 'reason' | 'example' | 'restate' | 'off_topic';
 export type Side = 'yes' | 'no';
 export interface OpinionCard { id: string; text: string; role: OpinionRole; side?: Side }
-export interface OpinionItem { id: string; question: string; cards: OpinionCard[] }
+export interface OpinionItem {
+  id: string;
+  question: string;
+  cards: OpinionCard[];
+  /** The lesson's support tier, stamped on each question (when the model lever comes). */
+  supportTier?: SupportTier;
+}
 
 export interface OpinionBuildData {
   title: string;
@@ -23,8 +32,6 @@ export interface OpinionBuildData {
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
-export type OpinionMiss = 'opinion_not_first' | 'restate_not_last' | 'no_reason' | 'no_example' | 'other_side' | 'off_topic' | 'out_of_order';
-export const OPINION_MISSES: readonly OpinionMiss[] = ['opinion_not_first', 'restate_not_last', 'no_reason', 'no_example', 'other_side', 'off_topic', 'out_of_order'];
 export const MAX_CARD_CHARS = 120;
 
 const cardOf = (item: OpinionItem, id: string) => item.cards.find(c => c.id === id);
@@ -63,6 +70,10 @@ export function askableOpinion(item: OpinionItem): OpinionItem | null {
 export const opinionsFrom = (items: readonly OpinionItem[]) =>
   items.map(askableOpinion).filter((i): i is OpinionItem => !!i).map((i, n) => ({ ...i, id: i.id || `o${n + 1}` }));
 
+/** A lesson's askable questions, each stamped with the lesson's support tier. */
+export const opinionItemsOf = (d: { opinions?: readonly OpinionItem[]; supportTier?: SupportTier }) =>
+  opinionsFrom(d.opinions ?? []).map(o => (d.supportTier ? { ...o, supportTier: d.supportTier } : o));
+
 /** Stable per item and never opening on an opinion card with its restatement last. */
 export function boardOrder(item: OpinionItem): OpinionCard[] {
   let h = 0;
@@ -75,12 +86,14 @@ export function boardOrder(item: OpinionItem): OpinionCard[] {
 export const askFor = (item: OpinionItem) =>
   `${item.question} Pick a side and build your answer: your opinion first, a reason and an example for it, then your opinion again.`;
 
-export const opinionAssignment = (item: OpinionItem): TeachingAssignment => ({ id: item.id, task: askFor(item), response: 'gesture' });
-
 export const describeOpinion = (item: OpinionItem, order: readonly string[]) =>
   order.length ? `Built: ${order.map(id => cardOf(item, id)?.text ?? '').join(' ')}` : 'Built nothing';
 
-export function opinionScene(item: OpinionItem, order: readonly string[], inspectorSaid?: string): WorkspaceScene {
+/**
+ * What the tutor is told: the question, the two opinions (one per side, so no order), and the learner's answer as text.
+ * The cards are never listed, so no passing order is. The moves are the card's; this says what the builder checks.
+ */
+export function opinionScene(item: OpinionItem, order: readonly string[], inspectorSaid?: string): SceneOf {
   return { objects: [], facts: {
     question: item.question,
     sides: item.cards.filter(c => c.role === 'opinion').map(c => c.text).join(' | '),
@@ -88,9 +101,8 @@ export function opinionScene(item: OpinionItem, order: readonly string[], inspec
     answer: order.length ? order.map(id => cardOf(item, id)?.text ?? '').join(' ') : 'empty',
     cardsPlaced: order.length,
     ...(inspectorSaid ? { inspectorSaid } : {}),
-    constraints: 'The learner picks either side. They tap cards into their answer in order (tap one in the answer to take it '
-      + 'back) and press "I\'m done!". The builder checks the order and that every card supports the same side. Many '
-      + 'answers pass, on either side. You cannot move a card.',
+    constraints: 'The learner picks either side. The builder checks the order and that every card supports the same side. '
+      + 'Many answers pass, on either side.',
   } };
 }
 
@@ -107,40 +119,18 @@ export const MODEL_OPINION = {
     ['Example', 'Our class fed our fish every morning.'], ['Opinion again', 'That is why every class should have a pet.']] as const,
 };
 
+/** The model answer is not offered on a question about pets: it would be the learner's own question. */
+export const modelOpinionFor = (item: OpinionItem) => (/\bpets?\b/i.test(item.question) ? null : MODEL_OPINION);
+
+const SIDE = '~side';
 /** The easier practice set: one side only (the side of the first opinion card), plus one off-topic card. */
 export function oneSideFor(item: OpinionItem): OpinionItem | null {
+  if (item.id.endsWith(SIDE)) return null;
   const side = item.cards.find(c => c.role === 'opinion')?.side;
-  const cards = item.cards.filter(c => c.side === side || c.role === 'off_topic').slice(0);
-  return cards.length < item.cards.length ? { id: `${item.id}~side`, question: item.question, cards } : null;
+  const cards = item.cards.filter(c => c.side === side || c.role === 'off_topic');
+  return cards.length < item.cards.length ? { id: `${item.id}${SIDE}`, question: item.question, cards } : null;
 }
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly OpinionMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function opinionLevers(item: OpinionItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  return [
-    lever(FRAME_LEVER, 'help', ['opinion_not_first', 'restate_not_last', 'no_reason', 'no_example', 'out_of_order'],
-      'The learner leaves out a part or puts the parts in the wrong order.',
-      'Shows labelled spaces above the answer: Opinion, Reason, Example, Opinion again. No card is placed or named.', pulled),
-    lever(MODEL_LEVER, 'help', ['other_side', 'off_topic', 'out_of_order'],
-      'The learner mixes the two sides, or keeps a card about something else.',
-      'Shows a finished OREO answer to a different question (a class pet), each part labelled, so the learner sees one side all the way through.',
-      pulled),
-    ...(oneSideFor(item) ? [lever(FEWER_LEVER, 'simplify', ['other_side', 'off_topic'],
-      'The learner cannot keep the two sides apart on a full board.',
-      'Opens a practice set with one side\'s cards only, plus one card about something else, ungraded. The full set comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function opinionLeverFacts(pulled: readonly string[]): string | undefined {
-  const notes = [
-    pulled.includes(FRAME_LEVER) && 'Labelled spaces above the answer: Opinion, Reason, Example, Opinion again.',
-    pulled.includes(MODEL_LEVER) && `A finished answer to "${MODEL_OPINION.question}" is shown with its parts labelled.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
-}
+export const sideParent = (id: string) => id.replace(/~side$/, '');
 
 export function opinionMissWords(miss: OpinionMiss | undefined): string {
   switch (miss) {
@@ -156,10 +146,11 @@ export function opinionMissWords(miss: OpinionMiss | undefined): string {
 }
 
 /** OREO/CER writing reads the question as the topic and the scaffold's starters per step. Lives here, not in the
- *  component, so the live adapter imports no React tree. */
-export const opinionWritingPayload = (d: { framework: 'oreo' | 'cer'; prompt: string;
+ *  component, so the boss imports no React tree. */
+export const opinionWritingPayload = (d: { framework: 'oreo' | 'cer'; prompt: string; supportTier?: SupportTier;
     scaffold?: { claimStarters?: string[]; reasonStarters?: string[]; conclusionStarters?: string[] } }): WritingPayload => ({
   paragraphType: d.framework === 'cer' ? 'cer' : 'oreo', topic: d.prompt,
   topicSentenceFrames: d.scaffold?.claimStarters ?? [], detailSentenceFrames: d.scaffold?.reasonStarters ?? [],
   concludingSentenceFrames: d.scaffold?.conclusionStarters ?? [],
+  ...(d.supportTier ? { supportTier: d.supportTier } : {}),
 });

@@ -1,15 +1,16 @@
 'use client';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaChallengeCounter } from '../../../ui';
+import { LuminaBadge, LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaChallengeCounter } from '../../../ui';
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
 import type { FractionCirclesData } from './FractionCircles';
-import { buildFractionTouchItems, describeTouch, touchAssignment, touchLevers, touchMatches, touchMiss, touchScene, twoPictureItem,
+import { buildFractionTouchItems, describeTouch, touchMatches, touchMiss, touchScene,
   type FractionPicture, type FractionTouchItem } from './fractionCirclesWorkspace';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { stimulusPipPose } from '../../../pip/stimulusPipPose';
-import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
+import { FRACTION_CIRCLES_LEVERS } from './fractionCirclesLevers';
+import { fractionCirclesBoss } from './fractionCircles.boss';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
@@ -59,13 +60,13 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
       teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance,
     }, undefined, summary.diagnosisEvidence);
   }, [evaluation, items]);
-  const resetTap = () => { setSelected(null); pip.clear(); };
+  const resetTap = () => setSelected(null);
   // The two_pictures lever (`twoPictureItem`): pulled once per session item, and the easier touch it put
   // on screen in its place. Try again on the easier touch keeps it; a fresh item or endPractice removes it.
   const [pulled, setPulled] = useState<{ item: string; levers: string[] }>({ item: '', levers: [] });
   const [practice, setPractice] = useState<FractionTouchItem | null>(null);
   const runner = useWorkspaceRunner({ items, workspace, instanceId: instance.current, primitiveId: 'fraction-circles',
-    assignment: touchAssignment, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    assignment: fractionCirclesBoss.assignment!, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     onFinished: finished, onItemOpened: () => { setPractice(null); resetTap(); }, onCorrectionRetry: resetTap,
   });
   const sessionItem = runner.currentItem ?? items[0];
@@ -81,38 +82,25 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
     reportedFinish.current = true;
     finishedRef.current?.();
   }, [runner.practiceSummary]);
-  // Pip: every picture is an answer choice, so it outlines the pictures only as
-  // a group and watches the one the child touches; it never touches one itself.
-  const pip = usePipTargets(item?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !item || showSummary) return null;
-    const targets = pip.targets();
-    const pose = stimulusPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      // The workspace judges no speech here: a touch is checked by code at once.
-      judging: false, tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === item.id, gesture: true,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: instance.current, scopeId: item.id, label: 'Fraction pictures', dock: pip.dock.current, targets, pose };
-  });
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation; the pictures show from the start.
   useLayoutEffect(() => {
     if (!item) return;
-    const levers = practice ? [] : touchLevers(sessionItem, pulledLevers);
-    workspace.current = { ...touchScene(item), levers,
+    const ctx = { band: data.gradeBand };
+    const levers = practice ? [] : FRACTION_CIRCLES_LEVERS.declare(sessionItem, ctx, pulledLevers);
+    workspace.current = { ...leverScene(touchScene(item), {
+      support: practice ? '' : FRACTION_CIRCLES_LEVERS.support(sessionItem, ctx),
+      onScreen: practice ? '' : FRACTION_CIRCLES_LEVERS.onScreen(sessionItem, ctx, pulledLevers) }), levers,
       // A synchronous commit: the easier touch replaces the pictures before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        const easier = twoPictureItem(sessionItem);
+        const easier = FRACTION_CIRCLES_LEVERS.simpler(sessionItem, ctx, id) as FractionTouchItem | null;
         if (!easier) return 'There is no easier touch for this item.';
         setPulled({ item: sessionItem.id, levers: [...pulledLevers, id] });
         setPractice(easier); resetTap();
-        return { practice: touchAssignment(easier) };
+        return { practice: fractionCirclesBoss.assignment!(easier) };
       },
       endPractice: () => { setPractice(null); resetTap(); },
     };
@@ -123,28 +111,32 @@ function FractionTouchSurface({ data, className, localOnly = false, runtimePlanI
   const touch = (picture: FractionPicture) => {
     const id = picture.id;
     if (!runner.canAttempt || runner.isAwaitingGesture() || evaluation.hasSubmitted) return;
-    pip.look(pictureObject(picture));
     setSelected(id);
     (taps.current[item.id] ??= []).push(id);
     runner.commitGesture({ response: describeTouch(item, id), correct: touchMatches(item, id), miss: touchMiss(item, id), cue: () => '' });
   };
   return <LuminaCard className={className} surface="elevated">
-    <LuminaCardHeader><LuminaCardTitle>Touch the Fraction</LuminaCardTitle></LuminaCardHeader>
+    <LuminaCardHeader><div className="flex items-center justify-between">
+      <LuminaCardTitle>Touch the Fraction</LuminaCardTitle>
+      {practice && !showSummary && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+    </div></LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
       {showSummary ? <p className="text-center text-lg text-slate-100">You finished your fraction pictures.</p> : <>
         <LuminaChallengeCounter current={runner.currentIndex + 1} total={items.length} variant="dots" />
-        {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
-        <div ref={pip.ref('stimulus')} data-pip-object="stimulus" aria-label="Fraction pictures"
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): it outlines the pictures as one workspace and
+            never singles one out. */}
+        <PipDock />
+        <PipWorkspace><div aria-label="Fraction pictures"
           className={`grid ${item.choices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-5`}>
           {item.choices.map((picture, index) => <button key={picture.id} type="button"
-            ref={pip.ref(pictureObject(picture))} data-pip-object={pictureObject(picture)}
+            data-pip-object={pictureObject(picture)}
             aria-label={`Picture ${index + 1}: ${picture.numerator} of ${picture.denominator} equal parts shaded`}
             aria-pressed={selected === picture.id} onClick={() => touch(picture)}
             disabled={!runner.canAttempt || runner.isAwaitingGesture()}
             className={`flex min-h-28 items-center justify-center rounded-2xl border-2 p-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-200 ${runner.currentSolved && picture.id === item.correctChoiceId ? 'border-emerald-400 bg-emerald-400/15' : selected === picture.id ? 'border-sky-300 bg-sky-300/10' : 'border-white/15 bg-white/5 hover:border-sky-300/60'}`}>
             <FractionTouchPicture picture={picture} />
           </button>)}
-        </div>
+        </div></PipWorkspace>
         <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item} steps={[item]}
           startInstruction="Start the tutor. Listen, then touch the matching picture." />
       </>}

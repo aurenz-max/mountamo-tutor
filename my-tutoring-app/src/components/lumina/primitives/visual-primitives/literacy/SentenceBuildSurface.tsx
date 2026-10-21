@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * sentence-builder `build_sentence` surface (rules in `sentenceBuild.ts`). Word tiles and end marks, a sentence row,
- * "I'm done!". Code checks the shape; a well-shaped sentence goes to the shared literacy judge for sense and topic.
- * Try again keeps the row and the verdict words; a new item opens an empty row. Mounted by SentenceBuilder for a
- * `task: 'sentence_build'` payload, on the teaching workspace only (the tile-order modes keep their own path).
+ * sentence-builder `build_sentence` surface (rules in `sentenceBuild.ts`), wired from the family's boss
+ * (`sentenceBuilder.boss.ts`). Word tiles and end marks, a sentence row, "I'm done!". Code checks the shape; a
+ * well-shaped sentence goes to the shared literacy judge for sense and topic. Try again keeps the row and the verdict
+ * words; a new item opens an empty row. Mounted by SentenceBuilder for a `task: 'sentence_build'` payload. Pip comes
+ * from the runner (`<PipDock />`, `<PipWorkspace>`).
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle, LuminaChallengeCounter,
   LuminaFeedbackCard, LuminaPanel, LuminaPrompt,
@@ -15,19 +15,23 @@ import {
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { WordBuildVerdict } from '../../../service/build-layer/wordBuildDecision';
+import type { SentenceBuilderProps } from './SentenceBuilder';
 import {
-  FRAME_LEVER, MODEL_LEVER, askFor, describeSentence, fewerTilesFor, frameFor, isEndMark, modelFor, sentenceAssignment,
-  sentenceJudgeRequest, sentenceLeverFacts, sentenceLevers, sentenceMissWords, sentenceScene, sentenceShapeMiss, sentenceText,
-  sentencesFrom, type SentenceBuildData, type SentenceItem, type SentenceMiss,
+  FRAME_LEVER, MODEL_LEVER, askFor, bankFor, describeSentence, frameFor, isEndMark, modelFor, sentenceJudgeRequest,
+  sentenceMissWords, sentenceScene, sentenceShapeMiss, sentenceText, type SentenceItem, type SentenceMiss,
 } from './sentenceBuild';
+import { SENTENCE_LEVERS, isBuildItem } from './sentenceBuilderLevers';
+import { sentenceBuilderBoss, sentenceBuilderItems } from './sentenceBuilder.boss';
 
 const PHASES: Record<string, PhaseConfig> = { build_sentence: { label: 'Make a sentence', icon: '🧱', accentColor: 'blue' } };
 const useProgress = useWorkspaceProgressFor('sentence-builder');
+const assignment = sentenceBuilderBoss.assignment!;
 
 async function askJudge(body: ReturnType<typeof sentenceJudgeRequest>): Promise<WordBuildVerdict> {
   const res = await fetch('/api/lumina', {
@@ -41,21 +45,12 @@ async function askJudge(body: ReturnType<typeof sentenceJudgeRequest>): Promise<
 type Phase = 'building' | 'checking' | 'checked';
 interface Work { item: string; row: string[]; made: string[] }
 
-export interface SentenceBuildSurfaceProps {
-  data: SentenceBuildData & { instanceId?: string; skillId?: string; subskillId?: string; objectiveId?: string; exhibitId?: string;
-    onEvaluationSubmit?: (result: PrimitiveEvaluationResult<never>) => void };
-  className?: string;
-  runtimePlanItemId?: string;
-  runtimeEvalMode?: string;
-}
-
-export default function SentenceBuildSurface({ data, className, runtimePlanItemId }: SentenceBuildSurfaceProps) {
+export default function SentenceBuildSurface({ data, className, runtimePlanItemId }: SentenceBuilderProps) {
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableId = useRef(instanceId || `sentence-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableId.current;
-  const items = useMemo(() => sentencesFrom(data.sentences ?? [], data.supportTier), [data.sentences, data.supportTier]);
+  const items = useMemo(() => sentenceBuilderItems(data).filter(isBuildItem), [data]);
 
   const [work, setWork] = useState<Work>({ item: '', row: [], made: [] });
   const [phase, setPhase] = useState<Phase>('building');
@@ -68,7 +63,7 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
   const progress = useProgress<SentenceItem>({
     challenges: items, getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: sentenceAssignment,
+    workspace, assignment,
     onItemOpened: (_index, retry) => {
       openCount.current += 1;
       setPhase('building'); setNotice('');
@@ -83,6 +78,8 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
   const w = work.item === current?.id ? work : { item: current?.id ?? '', row: [] as string[], made: [] as string[] };
   const pulled = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
   const blocked = progress.canAttempt === false || phase === 'checking';
+  // The bank keeps a stable mixed order per item: no three tiles together as one of its sentences has them.
+  const bank = useMemo(() => (current ? bankFor(current) : []), [current]);
 
   const phaseResults = usePhaseResults({
     challenges: items, results, isComplete: allDone, getChallengeType: () => 'build_sentence', phaseConfig: PHASES,
@@ -149,24 +146,17 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
       sentencesTotal: total, accuracy, attemptsCount: results.reduce((s, r) => s + r.attempts, 0) } as never, { challengeResults: results });
   }, [allDone, hasSubmitted, items.length, results, submitResult, progress.recordsEvaluation]);
 
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allDone || hasSubmitted || !current ? null : current.id,
-    label: 'The word tiles',
-    solved: phase === 'checked' && !!verdict?.met,
-    checking: phase === 'checking',
-    handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   useLayoutEffect(() => {
     if (!current || !sessionItem) return;
     const scene = sentenceScene(current, w.row, w.made, phase === 'checked' && verdict ? verdict.words : undefined);
-    const levers = practice ? [] : sentenceLevers(sessionItem, pulled);
-    const onScreen = practice ? undefined : sentenceLeverFacts(pulled, sessionItem);
+    const levers = practice ? [] : SENTENCE_LEVERS.declare(sessionItem, null, pulled);
+    const published = leverScene(scene, {
+      support: practice ? '' : SENTENCE_LEVERS.support(sessionItem, null),
+      onScreen: practice ? '' : SENTENCE_LEVERS.onScreen(sessionItem, null, pulled),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+      ...published,
+      facts: { ...published.facts,
         ...(practice ? { practice: 'The same ask with only the tiles one sentence needs, ungraded. The full set comes back after it.' } : {}) },
       levers,
       pullLever: (id: string) => {
@@ -175,10 +165,10 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
         if (lever.pulled) return `${id} is already pulled.`;
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = fewerTilesFor(sessionItem);
-          if (!easier) return 'There is no smaller set for this item.';
+          const easier = SENTENCE_LEVERS.simpler(sessionItem, null, id) as SentenceItem | null;
+          if (!easier) return `No lever ${id} on this item.`;
           setLeverState(next); setVerdict(null); setPhase('building'); setPractice(easier);
-          return { practice: sentenceAssignment(easier) };
+          return { practice: assignment(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -212,11 +202,16 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
             <LuminaPrompt accent="blue">
               <div className="text-lg leading-snug">{askFor(current)}</div>
               {current.ways === 2 && <div className="text-sm text-slate-300">Then make a different one.</div>}
-              {practice && <div className="text-xs text-amber-300">Practice with fewer tiles</div>}
+              {practice && (
+                <div className="mt-1 flex items-center gap-2 text-xs text-amber-300">
+                  <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+                  Fewer tiles
+                </div>
+              )}
             </LuminaPrompt>
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {w.made.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-2 text-sm" data-testid="sb-made">
                   {w.made.map(m => <span key={m} className="rounded-full bg-emerald-500/15 px-3 py-1 text-emerald-200">{m}</span>)}
@@ -243,7 +238,7 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
               </div>
 
               <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Word tiles">
-                {current.bank.map(t => (
+                {bank.map(t => (
                   <button key={t} type="button" aria-label={`tile ${t}`} disabled={blocked} onClick={() => add(t)}
                     className={`rounded-lg border px-3 py-2 text-lg transition hover:brightness-125 disabled:opacity-40 ${isEndMark(t)
                       ? 'min-w-10 border-amber-300/40 bg-amber-500/15 font-bold text-amber-100' : 'border-white/15 bg-white/5 text-slate-100'}`}>
@@ -266,7 +261,7 @@ export default function SentenceBuildSurface({ data, className, runtimePlanItemI
                   <p className="text-base font-semibold">{verdict.words}</p>
                 </LuminaFeedbackCard>
               )}
-            </div>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

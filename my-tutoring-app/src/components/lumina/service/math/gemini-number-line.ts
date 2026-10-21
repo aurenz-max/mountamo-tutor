@@ -1948,6 +1948,8 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     let anchorTotal = 0;
     for (const ch of data.challenges) {
       const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      // Each item carries its tier: the lever set reads it for when the build's model lever comes (`supportFact`).
+      ch.supportTier = supportTier;
       // show_jump worked-arc lever (per challenge, per operation).
       if (ch.type === 'show_jump' && ch.operations?.length) {
         // Only the FIRST op may ever show the worked arc; chained (hard) ops never do.

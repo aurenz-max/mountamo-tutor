@@ -1,18 +1,19 @@
 /**
- * The in-item levers on a number-line jump (`/add-support-tiers`, pilot: handoff 18); plot, identify, order and
- * between follow below (2026-10-08).
+ * The in-item levers on a number line (`/add-support-tiers`: jump, handoff 18; plot, identify, order and between,
+ * 2026-10-08; build_hops, numberLineBuildHops.ts), declared once as a lever set (`NUMBER_LINE_LEVERS`, below).
  *
- * Pure: the component draws from these, the workspace publishes them, and the tests hold each
- * leak rule. Two levers, from the jump failure inventory
- * (qa/eval-reports/number-line-levers-2026-09-27.md):
- * - `numbered_hops` (help): the learner's own jump is drawn as numbered unit hops, and hop 1 from
+ * Pure: the component draws from these, the lever set publishes them, and the tests hold each leak rule. From the
+ * jump failure inventory (qa/eval-reports/number-line-levers-2026-09-27.md):
+ * - `numbered_hops` (marks): the learner's own jump is drawn as numbered unit hops, and hop 1 from
  *   the start is drawn as a model. Answers "counts the start as hop 1" and "loses count".
  *   Leak rule: a hop the learner did not place never reaches or passes the landing.
- * - `simpler_jump` (simplify): an easier practice jump first — one jump instead of two, or a
+ * - `simpler_jump` (easier): an easier practice jump first — one jump instead of two, or a
  *   shorter jump — built here from the current item. Leak rule: never the learner's own start,
  *   and neither its start nor its landing is a landing of the full item.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { NUMBER_LINE_MISSES_BY_MODE, type NumberLineMode } from './numberLine.card';
+import { hopsTaskOf, simplerHops, waysModel } from './numberLineBuildHops';
 import type { NumberLineChallenge, NumberLineData, NumberLineOperation } from './NumberLine';
 
 export const HOPS_LEVER = 'numbered_hops';
@@ -121,41 +122,6 @@ export function jumpMiss(ch: NumberLineChallenge | null, placed: readonly number
   if (moved === 0 || Math.sign(moved) !== dir) return 'wrong_direction';
   const past = (Math.round(placed[at]) - landing) * dir;
   return past === -1 ? 'one_short' : past === 1 ? 'one_past' : 'off_by_more';
-}
-
-/**
- * The levers this jump item declares, with their state. Empty for any other item. A lever is declared
- * only when pulling it would change the screen: numbered hops need a model hop (a jump of 2 or more) or
- * a jump the learner placed away from the start (`endpoints`).
- */
-export function jumpLevers(ch: NumberLineChallenge | null, pulled: readonly string[], range: { min: number; max: number },
-  endpoints: readonly number[] = []): WorkspaceLever[] {
-  const ops = ch?.operations ?? [];
-  if (!ch || ch.type !== 'show_jump' || !ops.length || !integral(...ops.flatMap(o => [o.startValue, o.changeValue]))) return [];
-  const drawable = pulled.includes(HOPS_LEVER) || !!modelHop(ops[0])
-    || endpoints.some((e, i) => learnerHops(i === 0 ? ops[0].startValue : endpoints[i - 1], e).length > 0);
-  const way = wayArrow(ops[0]);
-  const levers: WorkspaceLever[] = way ? [{
-    id: WAY_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(WAY_LEVER), answers: ['wrong_direction', 'no_landing'],
-    when: 'On a jump of 1: the learner stays on the start, jumps the wrong way, or does not know which way to go.',
-    does: `Draws a short arrow at the start pointing ${way.dir}, the way this jump goes. It is shorter than one hop and reaches no other number.`,
-  }] : [];
-  if (drawable) levers.push({
-    id: HOPS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(HOPS_LEVER),
-    // A learner who checks with no landing placed does not know how to begin: the model hop from the start shows it.
-    answers: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'no_landing'],
-    when: 'The learner lands one hop off, counts the start as a hop, loses count, or does not know where to begin.',
-    does: "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.",
-  });
-  if (simplerJump(ch, range)) levers.push({
-    id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-    // Losing track across two jumps is what one jump instead of two answers; help (hops) comes first otherwise.
-    answers: ops.length > 1 ? ['second_jump_off', 'off_by_more'] : ['off_by_more'],
-    when: ops.length > 1 ? 'The learner cannot keep track across two jumps.' : 'The learner cannot manage a jump this long yet.',
-    does: `Opens an easier practice jump first, ${ops.length > 1 ? 'one jump instead of two' : 'a shorter jump'} from a different start. `
-      + 'It is not graded; the full item comes back after it.',
-  });
-  return levers;
 }
 
 // ============================================================================
@@ -350,74 +316,171 @@ export function lastTry(ch: NumberLineChallenge | null, view: SettledLine, tried
 
 export const lastTryLeak = (ch: NumberLineChallenge, ring: number) => ch.targetValues.some(t => Math.abs(t - ring) < 1e-6);
 
-const COUNT_ANSWERS: Record<string, string[]> = { plot_point: ['one_short', 'one_past', 'off_by_more'], find_between: ['on_end', 'outside'] };
-
-/**
- * The levers on a plot, identify, order or between item, with their state. A help lever is declared only when
- * pulling it would change the screen; a simplify lever only when its builder has an item.
- */
-export function lineLevers(ch: NumberLineChallenge | null, pulled: readonly string[], view: SettledLine,
-  range: { min: number; max: number }, points: readonly number[] = [], tried: number | null = null): WorkspaceLever[] {
-  if (!ch || (ch.type !== 'plot_point' && ch.type !== 'order_values' && ch.type !== 'find_between')) return [];
-  const levers: WorkspaceLever[] = [];
-  const target = countTarget(ch), start = target === null ? null : countStart(target, view.labels);
-  if (target !== null && start !== null && (pulled.includes(COUNT_LEVER) || countModelHop(start, target)
-      || (points.length > 0 && learnerHops(start, points[points.length - 1]).length > 0))) levers.push({
-    id: COUNT_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(COUNT_LEVER), answers: COUNT_ANSWERS[ch.type],
-    when: 'The learner places the point one or more spaces off, or does not know where to start counting.',
-    does: `Draws hops counted from the labelled number ${start}: every hop from ${start} to the learner's point, numbered 1, 2, 3..., `
-      + `and before they place it, hop 1 from ${start} as a model. No hop the learner did not make is drawn past hop 1.`,
-  });
-  const ring = lastTry(ch, view, tried);
-  if (ring !== null) levers.push({
-    id: LAST_TRY_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(LAST_TRY_LEVER), answers: ['one_short', 'one_past', 'off_by_more'],
-    when: 'The learner placed the point on the wrong number, and the line has no labelled number to count from below it.',
-    does: `Draws a dashed ring on ${ring}, where the learner's last checked point was. It stays after Try again and marks no other number.`,
-  });
-  if (ch.type === 'order_values') levers.push({
-    id: ARROW_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(ARROW_LEVER), answers: ['reversed', 'out_of_order'],
-    when: 'The learner puts the numbers in reverse or in another wrong order.',
-    does: 'Draws an arrow under the line pointing right, with "smaller" written at its left end and "bigger" at its right end. '
-      + 'It marks no number.',
-  });
-  if (endMarks(ch)) levers.push({
-    id: ENDS_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(ENDS_LEVER), answers: ['on_end', 'outside'],
-    when: 'The learner places the point on one of the two numbers, or outside them.',
-    does: 'Marks the two given numbers as rings on the line, each with its number above it. Nothing is drawn between them.',
-  });
-  const simpler = simplerItem(ch, { range }, view);
-  if (simpler) {
-    const id = ch.type === 'plot_point' ? NEARER_LEVER : ch.type === 'order_values' ? FEWER_LEVER : WIDER_LEVER;
-    levers.push({
-      id, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(id),
-      answers: ch.type === 'plot_point' ? ['off_by_more'] : ch.type === 'order_values' ? ['out_of_order', 'reversed'] : ['outside', 'on_end'],
-      when: ch.type === 'plot_point' ? 'The learner cannot count that far from a labelled number yet.'
-        : ch.type === 'order_values' ? 'The learner cannot order this many numbers yet.' : 'The learner cannot find a number between two close numbers yet.',
-      does: (ch.type === 'plot_point' ? 'Opens an easier practice point first, nearer a labelled number.'
-        : ch.type === 'order_values' ? `Opens an easier practice set first: ${simpler.targetValues.length} numbers instead of ${ch.targetValues.length}, spread apart, none from this item.`
-        : 'Opens an easier practice pair first: two numbers farther apart.') + ' It is not graded; the full item comes back after it.',
-    });
-  }
-  return levers;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV: what is drawn, never where the answer is. */
-export function leverFact(ch: NumberLineChallenge, pulled: readonly string[], view: SettledLine, tried: number | null = null): string | undefined {
-  const facts: string[] = [];
-  const target = countTarget(ch), start = target === null ? null : countStart(target, view.labels);
-  if (pulled.includes(COUNT_LEVER) && start !== null) facts.push(`Numbered hops counted from ${start}: each hop from ${start} to the `
-    + `learner's point is drawn and numbered; before they place it, hop 1 from ${start} is drawn as a model.`);
-  if (pulled.includes(ARROW_LEVER) && ch.type === 'order_values') facts.push('An arrow under the line points right: "smaller" is written at its left end, "bigger" at its right end.');
-  const ends = endMarks(ch);
-  if (pulled.includes(ENDS_LEVER) && ends) facts.push(`Rings mark ${ends[0]} and ${ends[1]} on the line, each with its number above it.`);
-  const ring = pulled.includes(LAST_TRY_LEVER) ? lastTry(ch, view, tried) : null;
-  if (ring !== null) facts.push(`A dashed ring marks ${ring}, where the learner's last checked point was.`);
-  return facts.length ? facts.join(' ') : undefined;
-}
-
 /** Easy starts with the item's help lever shown (the line's self-check); a starting position is not a pull. */
 export function helpStartsShown(tier: string | undefined, ch: NumberLineChallenge | null): string[] {
   if (tier !== 'easy' || !ch || ch.type === 'show_jump') return [];
   if (ch.type === 'order_values') return [ARROW_LEVER];
   return ch.type === 'plot_point' ? [COUNT_LEVER] : ch.type !== 'find_between' ? [] : endMarks(ch) ? [ENDS_LEVER] : [COUNT_LEVER];
 }
+
+// ============================================================================
+// The lever set (boss framework, 2026-10-20): every lever of every mode, declared once by type.
+// ============================================================================
+
+/** build_hops help for a repeated way: a worked pair of ways on a small example that is never the item's. */
+export const WAYS_LEVER = 'ways_model';
+
+/** Each item's eval mode, from its type. identify and plot are both `plot_point` and share every lever. */
+const MODE_OF: Record<NumberLineChallenge['type'], NumberLineMode> = {
+  plot_point: 'plot', show_jump: 'jump', order_values: 'order', find_between: 'between', build_hops: 'build_hops',
+};
+
+/** What a lever reads beyond the item: the line, and the learner's work on it now. */
+export interface NumberLineLeverContext {
+  range: { min: number; max: number };
+  /** The line this item settles on (`settledView`); null on a fraction or decimal line, which has no point levers. */
+  settled: SettledLine | null;
+  /** Levers on screen on the session item (pulled, or shown from the start on easy). */
+  pulled: readonly string[];
+  /** Placed points, jump landings, the last checked wrong point (plot), and build hops. */
+  points: readonly number[];
+  endpoints: readonly number[];
+  tried: number | null;
+  hops: readonly number[];
+}
+
+/** A jump's operations when every start and change is whole; null otherwise (no jump lever then). */
+const jumpOps = (c: NumberLineChallenge) => {
+  const ops = c.type === 'show_jump' ? c.operations ?? [] : [];
+  return ops.length && integral(...ops.flatMap(o => [o.startValue, o.changeValue])) ? ops : null;
+};
+const multiJump = (c: NumberLineChallenge) => (c.operations?.length ?? 0) > 1;
+/** The labelled number counting starts from, on an integer line. */
+const countFrom = (c: NumberLineChallenge, ctx: NumberLineLeverContext) => {
+  const target = countTarget(c);
+  return target === null || !ctx.settled ? null : countStart(target, ctx.settled.labels);
+};
+const COUNT_ANSWERS: Record<string, readonly string[]> = {
+  plot_point: ['one_short', 'one_past', 'off_by_more'], find_between: ['on_end', 'outside'],
+};
+const BACK = 'It is not graded; the full item comes back after it.';
+
+export const NUMBER_LINE_LEVERS = leverSet<NumberLineChallenge, NumberLineLeverContext>({
+  modeOf: c => MODE_OF[c.type],
+  missesOf: mode => NUMBER_LINE_MISSES_BY_MODE[mode as NumberLineMode] ?? [],
+  // Only build_hops has a model (`ways_model`); the generator stamps each item's tier.
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: 'two ways to land on a small other number',
+    own: 'a hop size to use or where the hops land',
+  },
+  specs: [
+    // jump
+    { id: WAY_LEVER, type: 'marks', carrier: 'both', modes: ['jump'], answers: ['wrong_direction', 'no_landing'],
+      when: 'On a jump of 1: the learner stays on the start, jumps the wrong way, or does not know which way to go.',
+      does: c => `Draws a short arrow at the start pointing ${wayArrow(c.operations?.[0])?.dir}, the way this jump goes. `
+        + 'It is shorter than one hop and reaches no other number.',
+      content: c => {
+        const op = jumpOps(c)?.[0], way = wayArrow(op);
+        return op && way && !wayArrowLeak(op, way) ? way : null;
+      },
+      fact: (way: WayArrow) => `A short arrow at ${way.from} points ${way.dir}, the way this jump goes; it is shorter than one hop.` },
+    { id: HOPS_LEVER, type: 'marks', carrier: 'both', modes: ['jump'],
+      // A learner who checks with no landing placed does not know how to begin: the model hop from the start shows it.
+      answers: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'no_landing'],
+      when: 'The learner lands one hop off, counts the start as a hop, loses count, or does not know where to begin.',
+      does: "Numbers every hop of the learner's own jump on the line (1, 2, 3...) and draws hop 1 from the start as a model.",
+      // Offered when pulling changes the screen: a model hop that stops short of the landing (a jump of 2 or more), or
+      // a jump the learner placed away from the start.
+      content: (c, ctx) => {
+        const ops = jumpOps(c);
+        if (!ops) return null;
+        if (ctx.pulled.includes(HOPS_LEVER)) return true;
+        const model = modelHop(ops[0]);
+        if (model) return hopsLeak(ops[0], [model]) ? null : true;
+        return ctx.endpoints.some((e, i) => learnerHops(i === 0 ? ops[0].startValue : ctx.endpoints[i - 1], e).length > 0) || null;
+      },
+      fact: "Numbered hops: each hop of the learner's jump is drawn and numbered from the start; before they place it, "
+        + 'the first hop from the start is drawn as a model.' },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['jump'],
+      // Losing track across two jumps is what one jump instead of two answers; help (hops) comes first otherwise.
+      answers: ['second_jump_off', 'off_by_more'],
+      answersOn: c => (multiJump(c) ? ['second_jump_off', 'off_by_more'] : ['off_by_more']),
+      when: c => (multiJump(c) ? 'The learner cannot keep track across two jumps.' : 'The learner cannot manage a jump this long yet.'),
+      does: c => `Opens an easier practice jump first, ${multiJump(c) ? 'one jump instead of two' : 'a shorter jump'} from a `
+        + `different start. ${BACK}`,
+      content: (c, ctx) => (jumpOps(c) ? simplerJump(c, ctx.range) : null) },
+    // identify, plot, between (an exact missing number)
+    { id: COUNT_LEVER, type: 'marks', carrier: 'both', modes: ['identify', 'plot', 'between'],
+      answers: ['one_short', 'one_past', 'off_by_more', 'on_end', 'outside'], answersOn: c => COUNT_ANSWERS[c.type] ?? [],
+      when: 'The learner places the point one or more spaces off, or does not know where to start counting.',
+      does: (c, ctx) => {
+        const start = countFrom(c, ctx);
+        return `Draws hops counted from the labelled number ${start}: every hop from ${start} to the learner's point, numbered `
+          + `1, 2, 3..., and before they place it, hop 1 from ${start} as a model. No hop the learner did not make is drawn past hop 1.`;
+      },
+      // Offered when pulling changes the screen: a model hop that stops short of the target, or the learner's point
+      // away from the count start. A model hop that reached the target is never offered.
+      content: (c, ctx) => {
+        const target = countTarget(c), start = countFrom(c, ctx);
+        if (target === null || start === null) return null;
+        const model = countModelHop(start, target);
+        if (model && countHopsLeak(start, target, [model])) return null;
+        const last = ctx.points[ctx.points.length - 1];
+        return ctx.pulled.includes(COUNT_LEVER) || model || (last !== undefined && learnerHops(start, last).length > 0) ? start : null;
+      },
+      fact: (start: number) => `Numbered hops counted from ${start}: each hop from ${start} to the learner's point is drawn `
+        + `and numbered; before they place it, hop 1 from ${start} is drawn as a model.` },
+    { id: LAST_TRY_LEVER, type: 'marks', carrier: 'both', modes: ['identify', 'plot'], answers: ['one_short', 'one_past', 'off_by_more'],
+      when: 'The learner placed the point on the wrong number, and the line has no labelled number to count from below it.',
+      does: (c, ctx) => `Draws a dashed ring on ${ctx.settled ? lastTry(c, ctx.settled, ctx.tried) : ''}, where the learner's last `
+        + 'checked point was. It stays after Try again and marks no other number.',
+      content: (c, ctx) => (ctx.settled ? lastTry(c, ctx.settled, ctx.tried) : null),
+      fact: (ring: number) => `A dashed ring marks ${ring}, where the learner's last checked point was.` },
+    // order
+    { id: ARROW_LEVER, type: 'legend', carrier: 'both', modes: ['order'], answers: ['reversed', 'out_of_order'],
+      when: 'The learner puts the numbers in reverse or in another wrong order.',
+      does: 'Draws an arrow under the line pointing right, with "smaller" written at its left end and "bigger" at its right end. '
+        + 'It marks no number.',
+      content: (_c, ctx) => (ctx.settled ? true : null),
+      fact: 'An arrow under the line points right: "smaller" is written at its left end, "bigger" at its right end.' },
+    // between (two given numbers, any point inside)
+    { id: ENDS_LEVER, type: 'marks', modes: ['between'], answers: ['on_end', 'outside'],
+      when: 'The learner places the point on one of the two numbers, or outside them.',
+      does: 'Marks the two given numbers as rings on the line, each with its number above it. Nothing is drawn between them.',
+      content: (c, ctx) => (ctx.settled ? endMarks(c) : null),
+      fact: ([lo, hi]: [number, number]) => `Rings mark ${lo} and ${hi} on the line, each with its number above it.` },
+    // simplify: identify and plot, order, between
+    { id: NEARER_LEVER, type: 'easier', carrier: 'shown', modes: ['identify', 'plot'], answers: ['off_by_more'],
+      when: 'The learner cannot count that far from a labelled number yet.',
+      does: `Opens an easier practice point first, nearer a labelled number. ${BACK}`,
+      content: (c, ctx) => (ctx.settled ? simplerPlot(c, ctx.settled) : null) },
+    { id: FEWER_LEVER, type: 'easier', carrier: 'shown', modes: ['order'], answers: ['out_of_order', 'reversed'],
+      when: 'The learner cannot order this many numbers yet.',
+      does: c => `Opens an easier practice set first: ${c.targetValues.length - 1} numbers instead of ${c.targetValues.length}, `
+        + `spread apart, none from this item. ${BACK}`,
+      content: (c, ctx) => (ctx.settled ? fewerNumbers(c, ctx.settled, ctx.range) : null) },
+    { id: WIDER_LEVER, type: 'easier', carrier: 'shown', modes: ['between'], answers: ['outside', 'on_end'],
+      when: 'The learner cannot find a number between two close numbers yet.',
+      does: `Opens an easier practice pair first: two numbers farther apart. ${BACK}`,
+      content: (c, ctx) => (ctx.settled ? widerGap(c, ctx.settled, ctx.range) : null) },
+    // build_hops: bare at the start (keeping track of the hops is the task)
+    { id: HOPS_LEVER, type: 'marks', carrier: 'both', modes: ['build_hops'], answers: ['one_short', 'one_past', 'off_by_more'],
+      when: "The learner's hops land one off or further from the number, or they lose count of how far a hop goes.",
+      does: 'Numbers the spaces inside each hop the learner puts on the line (1, 2, 3...), so they can count how far each of their hops goes.',
+      // Declared once a hop is on.
+      content: (c, ctx) => (hopsTaskOf(c) && (ctx.hops.length || ctx.pulled.includes(HOPS_LEVER)) ? true : null),
+      fact: "Numbered hops: the spaces inside each of the learner's hops are numbered 1, 2, 3..." },
+    { id: WAYS_LEVER, type: 'model', modes: ['build_hops'], answers: ['same_way_again'],
+      when: 'The learner makes the same hops again and cannot find a different way, or does not know how to start.',
+      does: 'Beside the line, shows two different ways to land on a small other number (a longer first hop and a shorter '
+        + "second hop). Never the learner's number.",
+      content: c => { const task = hopsTaskOf(c); return task ? waysModel(task) : null; },
+      fact: (m: ReturnType<typeof waysModel>) => `Beside the line, a worked example: two ways to land on ${m.target} from 0, `
+        + `${m.ways.map(w => w.join(' then ')).join(', or ')}.` },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['build_hops'], answers: ['off_by_more'],
+      when: "The learner's hops land far from the number, again and again.",
+      does: `Opens an easier practice build first: the same number of hops to a smaller number. ${BACK}`,
+      content: (c, ctx) => simplerHops(c, ctx.range) },
+  ],
+});

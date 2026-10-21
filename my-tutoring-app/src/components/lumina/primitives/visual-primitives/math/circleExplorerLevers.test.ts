@@ -9,8 +9,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { CircleCompositeShape, CircleExplorerChallenge, CircleExplorerChallengeType } from './CircleExplorer';
 import {
-  FIGURE_LEVERS, FORMULA_LEVER, LEVER_CAPTIONS, SIMPLER_LEVER,
-  circleLevers, discoverTrack, leverFacts, leverTextLeaks, pictureLeaks, practiceLeaks, ratioFrame, simplerCircle, undoChain, otherLengthLabel,
+  FIGURE_LEVERS, FORMULA_LEVER, LEVER_CAPTIONS, SIMPLER_LEVER, TENTHS_LEVER,
+  CIRCLE_LEVERS, discoverTrack, leverTextLeaks, pictureLeaks, practiceLeaks, ratioFrame, simplerCircle, undoChain, otherLengthLabel,
 } from './circleExplorerLevers';
 import { CIRCLE_MISSES_BY_MODE, PI_APPROX, circleCorrect, circleMiss, fmt, signatureValues } from './circleExplorerWorkspace';
 
@@ -53,17 +53,19 @@ function items(type: CircleExplorerChallengeType): CircleExplorerChallenge[] {
   return out;
 }
 const MODES = Object.keys(CIRCLE_MISSES_BY_MODE) as CircleExplorerChallengeType[];
+/** The screen with the circumference unrolled: every lever's offer holds. */
+const ON = { unrolled: true };
 
 describe('leak rules', () => {
   it.each(MODES)('%s: no lever text or fact carries a digit; no picture carries the answer', (mode) => {
     for (const c of items(mode)) {
-      const levers = circleLevers(c, []);
+      const levers = CIRCLE_LEVERS.declare(c, ON, []);
       expect(levers.length, c.id).toBeGreaterThan(0);
       for (const l of levers) {
         expect(leverTextLeaks(l.when), `${c.id} ${l.id} when`).toBe(false);
         expect(leverTextLeaks(l.does), `${c.id} ${l.id} does`).toBe(false);
       }
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id))), c.id).toBe(false);
+      expect(leverTextLeaks(CIRCLE_LEVERS.onScreen(c, ON, levers.map(l => l.id))), c.id).toBe(false);
       const pictures = [...[FORMULA_LEVER, ...FIGURE_LEVERS].map(id => LEVER_CAPTIONS[id](c)), otherLengthLabel(c),
         mode === 'discover_pi' ? ratioFrame(c) : '', mode === 'reverse' ? `${undoChain(c).forward} ${undoChain(c).back}` : ''];
       for (const text of pictures) expect(pictureLeaks(c, text), `${c.id}: ${text}`).toBe(false);
@@ -71,10 +73,16 @@ describe('leak rules', () => {
     }
   });
 
+  it('the tenths ruler is offered only once the circumference is unrolled', () => {
+    const c = items('discover_pi')[0];
+    expect(CIRCLE_LEVERS.declare(c, { unrolled: false }, []).map(l => l.id)).not.toContain(TENTHS_LEVER);
+    expect(CIRCLE_LEVERS.declare(c, ON, []).map(l => l.id)).toContain(TENTHS_LEVER);
+  });
+
   it('the formula lever is offered only where the tier withheld the labels', () => {
     const [on, off] = [items('area').find(c => c.showFormulaReveal === undefined)!, items('area').find(c => c.showFormulaReveal === false)!];
-    expect(circleLevers(on, []).map(l => l.id)).not.toContain(FORMULA_LEVER);
-    expect(circleLevers(off, []).map(l => l.id)).toContain(FORMULA_LEVER);
+    expect(CIRCLE_LEVERS.declare(on, ON, []).map(l => l.id)).not.toContain(FORMULA_LEVER);
+    expect(CIRCLE_LEVERS.declare(off, ON, []).map(l => l.id)).toContain(FORMULA_LEVER);
   });
 
   it('the picture leak rule finds the answer as a number, not inside another one', () => {
@@ -141,7 +149,7 @@ describe('a wrong answer, then the lever that answers it', () => {
 
   it.each(MODES)('%s: every miss of the mode is answered by a help lever on every item', (mode) => {
     for (const c of items(mode)) {
-      const help = circleLevers(c, []).filter(l => l.kind === 'help');
+      const help = CIRCLE_LEVERS.declare(c, ON, []).filter(l => l.kind === 'help');
       for (const miss of CIRCLE_MISSES_BY_MODE[mode]) {
         // A composite item's misses belong to its own figure; the other figures' misses never fire on it.
         const fires = mode !== 'composite' || signatureValues(c).some(([m]) => m === miss) || ['near_miss', 'too_high', 'too_low'].includes(miss);
@@ -163,10 +171,10 @@ describe('a wrong answer, then the lever that answers it', () => {
       && (mode !== 'composite' || x.compositeShape === 'semicircle_area') && (mode !== 'reverse' || x.reverseGiven === 'circumference')
       && (mode !== 'circumference' || x.given === 'radius') && (mode !== 'discover_pi' || true))!;
     expect(circleMiss(c, { typed: String(typed), unrolled: true, sliced: false })).toBe(miss);
-    expect(nextLever(circleLevers(c, []), miss)).toBe(lever);
+    expect(nextLever(CIRCLE_LEVERS.declare(c, ON, []), miss)).toBe(lever);
     // The lever is not offered twice; the simplify lever is the last one left.
-    const pulled = circleLevers(c, []).filter(l => l.kind === 'help').map(l => l.id);
-    const left = circleLevers(c, pulled);
+    const pulled = CIRCLE_LEVERS.declare(c, ON, []).filter(l => l.kind === 'help').map(l => l.id);
+    const left = CIRCLE_LEVERS.declare(c, ON, pulled);
     expect(nextLever(left, miss)).toBe(left.some(l => l.id === SIMPLER_LEVER) ? SIMPLER_LEVER : null);
   });
 });

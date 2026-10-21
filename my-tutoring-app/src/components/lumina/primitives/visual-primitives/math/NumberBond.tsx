@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * Number Bond uses the shared DI runner. Decompose and ten-and-ones expand
- * each source split into a reversible hand construction and one spoken count.
- * Incomplete placements remain exploration; full placements settle into a
- * code-checked attempt, including duplicates and incorrect teen splits.
- * Part numerals/equations are withheld until the spoken interpretation.
- * The remaining modes transform stable counter groups before a spoken or
- * symbolic response. numberBondScript owns source gates and arithmetic
- * contracts; numberBondSplit and numberBondModes own state-dependent phases
- * and logical-outcome aggregation.
+ * Number Bond — taught on the shared tutor/JEV workspace (`numberBond.boss.ts`); a mount with no tutor shows the shared
+ * "needs the tutor" card (`withWorkspaceOnly`).
+ *
+ * Each challenge expands into steps on one persistent counter model (`numberBondModes`, `numberBondSplit`):
+ *  - decompose / ten-and-ones: the learner SPLITS the counters into two parts, then SAYS how many are in the
+ *    highlighted part of the split they built (the say step carries that split as `askedSplit`).
+ *  - missing-part: the learner SAYS the covered part; counters are optional support.
+ *  - related-fact: the learner joins the groups and says the missing addend, then moves that group out and says the
+ *    remainder.
+ *  - build-equation / fact-family: the learner makes a move with the groups, then BUILDS the number sentence for it.
+ * Incomplete placements are exploration; a full split, a whole-group move or an equation settles on stillness into a
+ * code-checked attempt. Part numerals and equations stay off screen until the step is checked right (`revealHeld`).
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -30,66 +33,43 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { NumberBondMetrics } from '../../../evaluation/types';
-import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-  type JudgedScriptRunnerOptions,
-} from '../../../hooks/useJudgedScriptRunner';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type TeachingEvaluationResult, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { evalModeForKind, workspaceAssignment, workspaceScene, type NumberBondView } from './numberBondWorkspace';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   bondEquationFaultOf,
-  bondEquationVerdictCue,
-  buildBondItems,
   factFamilyForms,
   familyHelperExample,
-  numberBondPackBase,
   parseBondEquation,
-  splitVerdictCue,
-  tenAndOnesFaultOf,
-  tenAndOnesVerdictCue,
-  BOND_TEN,
   type BondModelAction,
   type NumberBondItem,
-} from './numberBondScript';
-import { numberWordFor } from './countingBoardScript';
+} from './numberBondDomain';
+import { workspaceScene, type NumberBondView } from './numberBondWorkspace';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
-import { COUNTERS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, SMALLER_LEVER, STRIP_LEVER, WAYS_LEVER,
-  equationMove, isEquationBuild, isRelatedSay, leverFacts, madeWaysOrder, moveStrip, numberBondLevers, smallerBond, smallerTeen,
+import { COUNTERS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MOVE_LEVER, NUMBER_BOND_LEVERS, STRIP_LEVER, WAYS_LEVER,
+  equationMove, isEquationBuild, isRelatedSay, madeWaysOrder, moveStrip, type NumberBondLeverContext,
   type StripFrame } from './numberBondLevers';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { numberBondPipPose } from '../../../pip/numberBondPipPose';
-import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
-  splitAndSayVerdict, splitCounts, splitQuestion, validSplit, wholeCounters,
+import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitCounts, splitQuestion, validSplit, wholeCounters,
   type BondCounters, type BondPlace } from './numberBondSplit';
 import {
   bondActionOf,
   bondMiss,
   countersForAction,
   equationEvidenceFor,
-  expandNumberBondInteractions,
   familyEquationFaultOf,
-  familyEquationVerdictCue,
   groupsForBond,
   initialCountersForInteraction,
-  modeActionVerdictCue,
-  numberBondInteractionCue,
   numberBondInteractionSummary,
-  relatedQuestion,
   type BondActionEvidence,
   type BondEquationEvidence,
 } from './numberBondModes';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
-import { useNumberBondRuntime } from './useNumberBondRuntime';
+import { numberBondBoss, numberBondItems } from './numberBond.boss';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 
 // ============================================================================
@@ -120,7 +100,7 @@ export interface NumberBondData {
   /**
    * Whether the fact-family worked-example helper is shown. Defaults to true
    * when omitted so the no-tier path is unchanged. The hard support tier hides
-   * it. (Render-side tier lever — survives the judged loop.)
+   * it. (Render-side tier lever.)
    */
   showFactFamilyHelper?: boolean;
   /** Per-component support tier from the manifest ('easy' | 'medium' | 'hard'). */
@@ -149,34 +129,14 @@ const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   'build-equation': { label: 'Build Equation', icon: '🧩' },
 };
 
-const COUNTER_COLORS = {
-  left: { fill: '#ef4444' },
-  right: { fill: '#3b82f6' },
-};
-
-// SVG layout constants
-const BOND_WIDTH = 400;
-const BOND_HEIGHT = 280;
-const WHOLE_CX = BOND_WIDTH / 2;
-const WHOLE_CY = 60;
-const WHOLE_R = 40;
-const PART_R = 35;
-const PART_LEFT_CX = BOND_WIDTH / 2 - 100;
-const PART_RIGHT_CX = BOND_WIDTH / 2 + 100;
-const PART_CY = 200;
-
 /**
  * HOW LONG EACH SHAPE MAY STAY STILL BEFORE IT COMMITS. The window itself is
- * the runner's (`armStillness`, 19c) — these are the per-shape numbers, which
- * genuinely differ: a two-part split is not a four-equation grid.
- * Every one of them is STRUCTURAL, never correctness-gated.
+ * the runner's (`armStillness`) — these are the per-shape numbers, which
+ * genuinely differ: a two-part split is not an equation. Every one of them is
+ * STRUCTURAL, never correctness-gated.
  */
-/** A two-part split, placed one counter at a time. */
-const SPLIT_SETTLE_MS = 3000;
-/** A FULL split (left + right = whole) is a terminal shape; it still waits a
- *  beat rather than committing on the tap — structural, never correctness-
- *  gated (a full DUPLICATE pair commits through this same window and is
- *  corrected). */
+/** A FULL split (left + right = whole) or a complete whole-group move is a
+ *  terminal shape; it still waits a beat rather than committing on the tap. */
 const SPLIT_FULL_SETTLE_MS = 1200;
 /** The tile tray: five deliberate taps, mid-build pauses are normal. */
 const EQUATION_SETTLE_MS = 4500;
@@ -187,150 +147,6 @@ const EQUATION_COMPLETE_SETTLE_MS = 1200;
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-/** The classic number bond diagram (circle + branches). */
-function BondDiagram({
-  whole,
-  leftValue,
-  rightValue,
-  showWhole,
-  showLeft,
-  showRight,
-  highlightLeft,
-  highlightRight,
-  leftCounters,
-  rightCounters,
-  interactive,
-  onDropLeft,
-  onDropRight,
-}: {
-  whole: number;
-  leftValue: number | string;
-  rightValue: number | string;
-  showWhole: boolean;
-  showLeft: boolean;
-  showRight: boolean;
-  highlightLeft?: boolean;
-  highlightRight?: boolean;
-  leftCounters?: number;
-  rightCounters?: number;
-  interactive?: boolean;
-  onDropLeft?: () => void;
-  onDropRight?: () => void;
-}) {
-  return (
-    <svg
-      width={BOND_WIDTH}
-      height={BOND_HEIGHT}
-      viewBox={`0 0 ${BOND_WIDTH} ${BOND_HEIGHT}`}
-      className="max-w-full h-auto"
-    >
-      <line
-        x1={WHOLE_CX} y1={WHOLE_CY + WHOLE_R}
-        x2={PART_LEFT_CX} y2={PART_CY - PART_R}
-        stroke="rgba(255,255,255,0.2)" strokeWidth={2.5}
-      />
-      <line
-        x1={WHOLE_CX} y1={WHOLE_CY + WHOLE_R}
-        x2={PART_RIGHT_CX} y2={PART_CY - PART_R}
-        stroke="rgba(255,255,255,0.2)" strokeWidth={2.5}
-      />
-
-      <circle
-        cx={WHOLE_CX} cy={WHOLE_CY} r={WHOLE_R}
-        fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.5)" strokeWidth={2}
-      />
-      <text
-        x={WHOLE_CX} y={WHOLE_CY}
-        textAnchor="middle" dominantBaseline="central"
-        fill={showWhole ? '#e2e8f0' : 'rgba(148,163,184,0.4)'}
-        fontSize={28} fontWeight="bold"
-        className="select-none"
-      >
-        {showWhole ? whole : '?'}
-      </text>
-
-      <circle
-        cx={PART_LEFT_CX} cy={PART_CY} r={PART_R}
-        fill={highlightLeft ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.08)'}
-        stroke={highlightLeft ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.3)'}
-        strokeWidth={2}
-        className={interactive ? 'cursor-pointer' : ''}
-        onClick={onDropLeft}
-      />
-      <text
-        x={PART_LEFT_CX} y={PART_CY}
-        textAnchor="middle" dominantBaseline="central"
-        fill={showLeft ? '#fca5a5' : 'rgba(148,163,184,0.4)'}
-        fontSize={24} fontWeight="bold"
-        className="select-none"
-        style={{ pointerEvents: 'none' }}
-      >
-        {showLeft ? leftValue : '?'}
-      </text>
-
-      <circle
-        cx={PART_RIGHT_CX} cy={PART_CY} r={PART_R}
-        fill={highlightRight ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.08)'}
-        stroke={highlightRight ? 'rgba(59,130,246,0.6)' : 'rgba(59,130,246,0.3)'}
-        strokeWidth={2}
-        className={interactive ? 'cursor-pointer' : ''}
-        onClick={onDropRight}
-      />
-      <text
-        x={PART_RIGHT_CX} y={PART_CY}
-        textAnchor="middle" dominantBaseline="central"
-        fill={showRight ? '#93c5fd' : 'rgba(148,163,184,0.4)'}
-        fontSize={24} fontWeight="bold"
-        className="select-none"
-        style={{ pointerEvents: 'none' }}
-      >
-        {showRight ? rightValue : '?'}
-      </text>
-
-      {leftCounters !== undefined && leftCounters > 0 && (
-        <CounterPips cx={PART_LEFT_CX} cy={PART_CY} count={leftCounters} color={COUNTER_COLORS.left.fill} r={PART_R} />
-      )}
-      {rightCounters !== undefined && rightCounters > 0 && (
-        <CounterPips cx={PART_RIGHT_CX} cy={PART_CY} count={rightCounters} color={COUNTER_COLORS.right.fill} r={PART_R} />
-      )}
-    </svg>
-  );
-}
-
-/** Small dots arranged inside a part circle to represent counters. */
-function CounterPips({ cx, cy, count, color, r }: {
-  cx: number; cy: number; count: number; color: string; r: number;
-}) {
-  const DOT_R = 4;
-  const positions = useMemo(() => {
-    const pts: { x: number; y: number }[] = [];
-    if (count <= 0) return pts;
-    const cols = Math.min(count, Math.ceil(Math.sqrt(count)));
-    const rows = Math.ceil(count / cols);
-    const spacing = Math.min((r * 1.2) / Math.max(cols, 1), (r * 1.2) / Math.max(rows, 1));
-    const startX = cx - ((cols - 1) * spacing) / 2;
-    const startY = cy - ((rows - 1) * spacing) / 2;
-    for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      pts.push({ x: startX + col * spacing, y: startY + row * spacing });
-    }
-    return pts;
-  }, [cx, cy, count, r]);
-
-  return (
-    <>
-      {positions.map((p, i) => (
-        <circle
-          key={i} cx={p.x} cy={p.y} r={DOT_R}
-          fill={color} opacity={0.7}
-          style={{ pointerEvents: 'none' }}
-        />
-      ))}
-    </>
-  );
-}
 
 /**
  * Fact-family worked example — collapsible conceptual explainer. The triple is
@@ -406,45 +222,15 @@ function seededShuffle<T>(values: T[], seed: number): T[] {
   return out;
 }
 
+const tilesFor = (item: NumberBondItem, seed: number) =>
+  seededShuffle([String(item.whole), String(item.knownPart), String(item.otherPart), '+', '-', '='], seed);
+
 const interactionKeyFor = (item: NumberBondItem): string =>
   `${item.logicalId ?? item.sourceId}${item.familyForm ? `::${item.familyForm}` : ''}`;
 
-// ============================================================================
-// Component
-// ============================================================================
-
-interface NumberBondProps {
-  data: NumberBondData;
-  className?: string;
-  /** The live host opts in only after its correlated mount handoff. */
-  autoStart?: boolean;
-  runtimePlanItemId?: string;
-  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
-  runtimeEvalMode?: string;
-}
-
-/**
- * The scripted runner's options beside the workspace controller's, declared in the one file
- * that hosts both. `frame` feeds the runner-era runtime registration only.
- */
-type NumberBondControllerOptions = Omit<WorkspaceRunOptions<NumberBondItem>, 'primitiveId'>
-  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
-    scriptedEvalMode: string }
-  & Omit<JudgedScriptRunnerOptions<NumberBondItem>, 'instanceId' | 'onItemOpened' | 'onPresentStimulus' | 'onFinished'>
-  & { onFinished: (summary: JudgedRunSummary | TeachingEvaluationResult) => void;
-    frame: Omit<Parameters<typeof useNumberBondRuntime>[0], 'runner' | 'instanceId' | 'objectiveId' | 'planItemId' | 'evalMode'> };
-
-function useScriptedController(options: NumberBondControllerOptions): LiveRun<NumberBondItem> {
-  const runner = useJudgedScriptRunner<NumberBondItem>(options);
-  // The SESSION's mode, never the current item: a mount's identity must not change while the runner owns it.
-  useNumberBondRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, ...options.frame });
-  return runner;
-}
-
-const useWorkspaceController = (options: NumberBondControllerOptions): LiveRun<NumberBondItem> =>
-  useWorkspaceRunner<NumberBondItem>({ ...options, primitiveId: 'number-bond' });
-
+/** A step whose answer is a whole-group move. */
+const isMoveStep = (item: NumberBondItem | null | undefined) => !!item && (item.interactionPhase?.endsWith('model')
+  || item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate');
 
 const STRIP_DOT: Record<'red' | 'blue', string> = { red: 'bg-rose-400', blue: 'bg-sky-400' };
 
@@ -465,17 +251,27 @@ function MoveStrip({ frames }: { frames: StripFrame[] }) {
   </div>;
 }
 
-const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  NumberBondProps & { tutorOwned: boolean; useController: (options: NumberBondControllerOptions) => LiveRun<NumberBondItem> }) => {
-  const runtime = useLiveRuntime();
+// ============================================================================
+// Component
+// ============================================================================
+
+interface NumberBondProps {
+  data: NumberBondData;
+  className?: string;
+  /** Kept for hosts that still pass it; the workspace starts with the lesson. */
+  autoStart?: boolean;
+  runtimePlanItemId?: string;
+  /** The RESOLVED eval mode from the mount; selects the teaching workspace inside a live runtime. */
+  runtimeEvalMode?: string;
+}
+
+const NumberBondSurface = ({ data, className, runtimePlanItemId }: NumberBondProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     challenges = [],
     maxNumber = 10,
-    showCounters = true,
-    showEquation = true,
     showFactFamilyHelper = true,
     supportTier,
     gradeBand = 'K',
@@ -489,7 +285,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
 
   const isPreReader = gradeBand === 'K';
 
-  // ── Stage-payload state (the runner owns progression; this is the page) ───
+  // ── The board (the workspace owns progression) ────────────────────────────
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
   const [foundPairs, setFoundPairs] = useState<[number, number][]>([]);
@@ -498,19 +294,16 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const [revealedMissing, setRevealedMissing] = useState<{ sourceId: string; whole: number; known: number; answer: number } | null>(null);
   const [equationSlots, setEquationSlots] = useState<string[]>([]);
   const [availableTiles, setAvailableTiles] = useState<string[]>([]);
-  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
-   *  that clear and the `onAffirmed` that set it landed in one React batch, so
-   *  the reveal painted on the last item and nowhere else (18b).
-   *  `runner.revealHeld` is the gate now. */
+  /** Post-answer only (answer-leak rule); `runner.revealHeld` gates it. */
   const [reward, setReward] = useState<string | null>(null);
-  /** What the workspace held when it last stopped changing. */
-  const pendingSplitRef = useRef({ left: 0, right: 0 });
+  /** The split each decompose / ten-and-ones say step asks about, fixed when the step opens. */
+  const [askedSplits, setAskedSplits] = useState<Record<string, { left: number; right: number }>>({});
   const pendingTilesRef = useRef<string[]>([]);
   const prevSourceRef = useRef<string | null>(null);
   const [splitCounters, setSplitCounters] = useState<BondCounters>([]);
   const splitCountersRef = useRef<BondCounters>([]);
-  // In-item levers (`numberBondLevers.ts`), keyed by the item they were pulled on, and the easier teen split a
-  // simplify lever put on screen in its place. The refs are what event handlers read.
+  // In-item levers, keyed by the session item they were pulled on, and the easier item a simplify lever put on
+  // screen in its place. The refs are what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<NumberBondItem | null>(null);
   const practiceRef = useRef<NumberBondItem | null>(null);
@@ -529,7 +322,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const publishSplitCounters = (next: BondCounters) => {
     splitCountersRef.current = next; setSplitCounters(next);
     const { left, right } = splitCounts(next);
-    setLeftCount(left); setRightCount(right); pendingSplitRef.current = { left, right };
+    setLeftCount(left); setRightCount(right);
   };
   const bankSplit = (item: NumberBondItem, affirmed: boolean) => {
     const evidence = splitEvidence.current[item.id];
@@ -541,7 +334,6 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       setFoundPairs(foundPairsRef.current);
     }
   };
-
 
   const stableInstanceIdRef = useRef(instanceId || `number-bond-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -556,137 +348,18 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── The pack: generated challenges → judged items + hand-authored script ──
-  // Unaskable items are DROPPED (invalid parts, out-of-range wholes, symbolic
-  // modes at K, consecutive duplicates); decompose expands one challenge into
-  // one judged turn per pair. Nothing is backfilled.
-  const built = useMemo(
-    () => buildBondItems(challenges, { band: gradeBand, maxNumber }),
-    [challenges, gradeBand, maxNumber],
-  );
-  const items = useMemo(() => expandNumberBondInteractions(built.items), [built.items]);
-
-  const pack = useMemo<JudgedScriptPack<NumberBondItem>>(() => ({
-    ...numberBondPackBase(items),
-    itemCue: (item, opts) => item.splitPhase
-      ? splitAndSayCue(item, opts, splitCountersRef.current, foundPairsRef.current)
-      : item.interactionPhase && item.interactionPhase !== 'missing-infer'
-        ? numberBondInteractionCue(item, opts, splitCountersRef.current)
-        : numberBondPackBase(items).itemCue(item, opts),
-    pronounceCue: (item) => item.splitPhase
-      ? '[NS_HEAR] Do not judge anything just heard. ' + splitAndSayCue(item, {}, splitCountersRef.current, foundPairsRef.current)
-      : item.interactionPhase && item.interactionPhase !== 'missing-infer'
-        ? '[NB_HEAR] Do not judge anything just heard. ' + numberBondInteractionCue(item, {}, splitCountersRef.current)
-        : numberBondPackBase(items).pronounceCue!(item),
-    moveOnCue: (item, next, opts) => next?.splitPhase
-      ? splitAndSayCue(next, opts, splitCountersRef.current, foundPairsRef.current, true)
-      : next?.interactionPhase && next.interactionPhase !== 'missing-infer'
-        ? numberBondInteractionCue(next, opts, splitCountersRef.current)
-        : numberBondPackBase(items).moveOnCue(item, next, opts),
-    contextFor: (item) => item.splitPhase ? {
-      challengeType: item.kind,
-      stimulus: item.splitPhase === 'build' ? 'Move the same counters between the whole and its parts.'
-        : 'Say the count in the highlighted part of the split just constructed.',
-    } : item.interactionPhase && item.interactionPhase !== 'missing-infer' ? {
-      challengeType: item.kind,
-      stimulus: item.interactionPhase.includes('say')
-        ? 'Answer from the committed counter model.'
-        : item.interactionPhase.includes('build')
-          ? 'Construct the equation that describes the committed model.'
-          : 'Transform the persistent counter groups as directed.',
-    } : numberBondPackBase(items).contextFor(item),
-
-    // Only what DIFFERS from the runner's defaults.
-    statusLines: {
-      ready: (item) => item.answerKind === 'gesture'
-        ? 'Listen, then show me on the screen.'
-        : 'Listen, then say the missing part out loud.',
-      retry: (item) => item.answerKind === 'gesture'
-        ? 'Have another go — show me again.'
-        : 'Have another go — say your answer.',
-      done: 'Great number bond work today!',
-    },
-    // One factual record per attempt, right or corrected: the bond and the counters as they stand, the ask, and
-    // what was heard, split, moved or built, read before the verdict resets the board. Never the verdict,
-    // because the same text is kept for right answers.
-    observation: (item, { heard: transcript }) => {
-      const heard = transcript ? `Heard "${transcript}".` : 'No transcript was captured.';
-      const counters = splitCounts(splitCountersRef.current);
-      const board = `${counters.whole} counters in the whole, ${counters.left} in the left part, ${counters.right} in the right part`;
-      const bond = `the bond ${item.knownPart} and ${item.otherPart} make ${item.whole}`;
-      const built = pendingTilesRef.current.length ? `Built "${pendingTilesRef.current.join(' ')}".` : 'Built nothing.';
-
-      if (item.splitPhase === 'say') {
-        const question = splitQuestion(item, splitCountersRef.current);
-        return {
-          challenge: `say-your-part: ${item.whole} counters split ${counters.left} and ${counters.right}; asked "${question.ask}"`,
-          expected: String(question.answer),
-          observed: heard,
-        };
-      }
-      if (item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder') {
-        const question = relatedQuestion(item, splitCountersRef.current);
-        return { challenge: `${item.interactionPhase} on ${bond}; ${board}; asked "${question.ask}"`, expected: String(question.answer), observed: heard };
-      }
-      if (item.interactionPhase?.endsWith('model') || item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate') {
-        const moves: Record<BondModelAction, string> = { join: 'join both groups into the whole', swap: 'swap the two groups',
-          'separate-left': 'move the first group out of the whole', 'separate-right': 'move the second group out of the whole' };
-        const action = bondActionOf(splitCountersRef.current, groupsForBond(item));
-        return {
-          challenge: `${item.interactionPhase} on ${bond}: a hands turn with the counters.`,
-          expected: item.interactionPhase === 'equation-model' || !item.bondAction ? 'join the groups or take one group away' : moves[item.bondAction],
-          observed: `${action ? `Made the move "${moves[action]}"` : 'Made no whole-group join, swap or take-away'}; ${board}.`,
-        };
-      }
-
-      switch (item.kind) {
-        case 'missing-part':
-          return {
-            challenge: `missing-part: the whole is ${item.whole}, the shown part is ${item.knownPart}.`,
-            expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: heard,
-          };
-        case 'related-fact':
-          return {
-            challenge: item.pairIndex === 0
-              ? `related-fact turn 1 of 2 (addition): ${item.knownPart} and how many more make ${item.whole}?`
-              : `related-fact turn 2 of 2 (the related subtraction): ${item.whole} take away ${item.knownPart}.`,
-            expected: `${numberWordFor(item.answer)} (${item.answer})`,
-            observed: heard,
-          };
-        case 'ten-and-ones':
-        case 'decompose': {
-          const { left, right } = item.splitPhase ? counters : pendingSplitRef.current;
-          const found = foundPairsRef.current.map(([a, b]) => `${a} and ${b}`).join('; ');
-          return {
-            challenge: item.kind === 'ten-and-ones'
-              ? `ten-and-ones: split ${item.whole} counters into a full ten and the ones left over.`
-              : `decompose: split ${item.whole} counters into two parts${found ? ` (pairs already found: ${found})` : ''}.`,
-            expected: item.kind === 'ten-and-ones' ? `${BOND_TEN} and ${item.otherPart}` : `two parts that make ${item.whole}, not yet found`,
-            observed: `Split ${left} and ${right}${item.splitPhase && counters.whole ? `, with ${counters.whole} still in the whole` : ''}.`,
-          };
-        }
-        case 'fact-family':
-          return {
-            challenge: `fact-family on ${bond}${item.familyForm ? `: build the equation for the ${item.familyForm} form` : ''}.`,
-            expected: `${factFamilyForms(item.knownPart, item.otherPart).length} distinct equation forms over exactly those three numbers`,
-            observed: built,
-          };
-        default:
-          return {
-            challenge: `build-equation for ${bond}.`,
-            expected: `any valid number sentence over exactly those three numbers`,
-            observed: built,
-          };
-      }
-    },
-  }), [items]);
+  // The boss's steps: unaskable challenges are DROPPED (invalid parts, out-of-range wholes, symbolic modes at K,
+  // consecutive duplicates); each challenge expands into its steps. Nothing is backfilled.
+  const items = useMemo(() => numberBondItems({ challenges, gradeBand, maxNumber }), [challenges, gradeBand, maxNumber]);
+  // A say step asks about the split on the board when it opened: the item carries it, so its ask and key read it.
+  const runItems = useMemo(() => items.map(item => (askedSplits[item.id] ? { ...item, askedSplit: askedSplits[item.id] } : item)),
+    [items, askedSplits]);
 
   // ── Per-item reset — every item owns its starting state ───────────────────
   const resetStageFor = useCallback((item: NumberBondItem, index: number) => {
     if (index === 0) {
       prevSourceRef.current = null; previousSplitItem.current = null; foundPairsRef.current = [];
-      splitEvidence.current = {}; splitMoves.current = []; setFoundPairs([]);
+      splitEvidence.current = {}; splitMoves.current = []; setFoundPairs([]); setAskedSplits({});
       actionEvidence.current = []; equationEvidence.current = []; committedActions.current = {};
       assistedEquations.current = new Set(); assistedRelations.current = new Set(); missingEvidence.current = {}; setFamilyRecord([]);
       setRevealedMissing(null);
@@ -704,9 +377,12 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     if (item.splitPhase) {
       let next = changedSource ? wholeCounters(item.whole) : splitCountersRef.current;
       if (item.splitPhase === 'say') {
+        // A capped build leaves an unfinished split: the step shows a made one instead, attributed to the tutor.
         const prepared = prepareSplit(item, next, foundPairsRef.current);
         next = prepared.counters;
         splitEvidence.current[item.id] = { counters: [...next], modeled: prepared.modeled, affirmed: false };
+        const { left, right } = splitCounts(next);
+        setAskedSplits(previous => ({ ...previous, [item.id]: { left, right } }));
       }
       publishSplitCounters(next); splitUndo.current = [];
     } else if (item.interactionPhase === 'missing-infer') {
@@ -714,34 +390,23 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       splitUndo.current = [];
       missingEvidence.current[item.logicalId ?? item.id] ??= { support: 'independent', counterMoves: 0 };
     } else if (item.interactionPhase) {
-      const isActionPhase = item.interactionPhase.endsWith('model')
-        || item.interactionPhase === 'related-join'
-        || item.interactionPhase === 'related-separate';
-      let next = isActionPhase ? initialCountersForInteraction(item) : splitCountersRef.current;
+      const moveStep = isMoveStep(item);
+      let next = moveStep ? initialCountersForInteraction(item) : splitCountersRef.current;
       const key = interactionKeyFor(item);
       let expected = item.bondAction;
       if (item.interactionPhase === 'equation-build') {
         expected = committedActions.current[key] ?? 'join';
         committedActions.current[key] = expected;
       }
-      if (!isActionPhase && expected && bondActionOf(next, groupsForBond(item)) !== expected) {
+      // A say or equation step asks about the move the step before it made: a move never made is shown, as the tutor's.
+      if (!moveStep && expected && bondActionOf(next, groupsForBond(item)) !== expected) {
         const before = [...next];
         next = countersForAction(item, expected);
-        actionEvidence.current.push({
-          itemId: item.id,
-          logicalId: item.logicalId ?? item.sourceId,
-          expected,
-          committed: expected,
-          matched: true,
-          modeled: true,
-          before,
-          after: [...next],
-        });
+        actionEvidence.current.push({ itemId: item.id, logicalId: item.logicalId ?? item.sourceId, expected,
+          committed: expected, matched: true, modeled: true, before, after: [...next] });
       }
       publishSplitCounters(next);
       splitUndo.current = [];
-    } else {
-      setLeftCount(0); setRightCount(0); pendingSplitRef.current = { left: 0, right: 0 };
     }
     previousSplitItem.current = item.splitPhase ? item : null;
     setEquationSlots([]);
@@ -751,20 +416,13 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       prevSourceRef.current = item.sourceId;
       setFoundPairs([]);
     }
-    if (item.interactionPhase === 'equation-build' || item.interactionPhase === 'family-build') {
-      setAvailableTiles(seededShuffle(
-        [String(item.whole), String(item.knownPart), String(item.otherPart), '+', '-', '='],
-        index * 31 + item.whole,
-      ));
-    } else {
-      setAvailableTiles([]);
-    }
+    setAvailableTiles(isEquationBuild(item) ? tilesFor(item, index * 31 + item.whole) : []);
   }, []);
 
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback((finished: JudgedRunSummary | TeachingEvaluationResult) => {
+  // ── The submission, once, from the scored session ─────────────────────────
+  const handleFinished = useCallback((finished: TeachingEvaluationResult) => {
     // The workspace record carries the same outcome and evidence fields the aggregator reads.
-    const rawSummary = finished as JudgedRunSummary;
+    const rawSummary = finished as unknown as JudgedRunSummary;
     const summary = numberBondInteractionSummary(items, rawSummary);
     const itemOf = (id: string) => items.find((i) => i.id === id || i.logicalId === id);
     const solvedOf = (kind: NumberBondItem['kind']) =>
@@ -786,29 +444,22 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
         turnOutcomes: rawSummary.outcomes, splitEvidence: splitEvidence.current, splitMoves: splitMoves.current,
         actionEvidence: actionEvidence.current, equationEvidence: equationEvidence.current,
         missingPartEvidence: missingEvidence.current, assistedRelations: Array.from(assistedRelations.current),
-        ...('teachingAttempts' in finished ? { teachingAttempts: finished.teachingAttempts, assistanceProvenance: finished.assistanceProvenance } : {}) },
+        teachingAttempts: finished.teachingAttempts, assistanceProvenance: finished.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, evaluation]);
 
-  // What the tutor is told about an item reads the board as it stands (a spoken phase asks about the child's own split).
-  const view = (): NumberBondView => ({ counters: splitCountersRef.current, found: foundPairsRef.current, tiles: equationSlots });
-  const runner = useController({
-    items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    scriptedEvalMode: runtimeEvalMode || (items[0] ? evalModeForKind(items[0].kind) : 'default'),
-    assignment: item => workspaceAssignment(item, view()),
-    frame: { leftCount, rightCount, foundPairs, tiles: equationSlots, builtSentences: familyRecord.map(entry => entry.equation) },
-    pack,
-    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
-    // its speech holds never settle, and the completion handoff has nothing to read.
-    runtime,
-    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[NB_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
+  const runner = useWorkspaceRunner<NumberBondItem>({
+    primitiveId: 'number-bond',
+    assignment: numberBondBoss.assignment,
+    items: runItems,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    exhibitId,
     onFinished: handleFinished,
-    // A fresh item never carries an easier split over from the last one.
+    // A fresh item never carries an easier item over from the last one.
     onItemOpened: (item, index) => { practiceRef.current = null; setPractice(null); resetStageFor(item, index); },
     onAffirmed: (item) => {
       setRevealedMissing(null);
@@ -817,20 +468,15 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
           bankSplit(item, true);
           const { left, right } = splitCounts(splitCountersRef.current);
           setReward(`${left} + ${right} = ${item.whole}`);
-        } else setReward(null); // The hand verdict must not speak or print the coming answer.
+        } else setReward(null); // The hand verdict must not print the coming answer.
         return;
       }
-
-      if (item.interactionPhase?.endsWith('model')
-        || item.interactionPhase === 'related-join'
-        || item.interactionPhase === 'related-separate') {
-        const key = interactionKeyFor(item);
+      if (isMoveStep(item)) {
         const committed = bondActionOf(splitCountersRef.current, groupsForBond(item));
-        if (committed) committedActions.current[key] = committed;
+        if (committed) committedActions.current[interactionKeyFor(item)] = committed;
         setReward(null);
         return;
       }
-
       if (item.interactionPhase === 'family-build') {
         const equation = pendingTilesRef.current.join(' ');
         const key = interactionKeyFor(item);
@@ -842,96 +488,57 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
         setReward(equation);
         return;
       }
-
       if (item.interactionPhase === 'equation-build') {
         const key = interactionKeyFor(item);
-        const action = committedActions.current[key];
-        equationEvidence.current.push(equationEvidenceFor(item, pendingTilesRef.current, action, assistedEquations.current.has(key)));
+        equationEvidence.current.push(equationEvidenceFor(item, pendingTilesRef.current, committedActions.current[key],
+          assistedEquations.current.has(key)));
         setReward(pendingTilesRef.current.join(' '));
         return;
       }
-
       // The first moment an answer may appear on screen.
-      if (item.kind === 'decompose') {
-        const { left, right } = pendingSplitRef.current;
-        const pair: [number, number] = [Math.min(left, right), Math.max(left, right)];
-        setFoundPairs((prev) => [...prev, pair]);
-        setReward(`${left} + ${right} = ${item.whole}`);
-        return;
-      }
-      if (item.kind === 'ten-and-ones') {
-        // The place-value sentence the child just built, in the objective's
-        // own form (14 = 10 + 4).
-        setReward(`${item.whole} = ${BOND_TEN} + ${item.otherPart}`);
-        return;
-      }
       if (item.kind === 'missing-part') {
         const key = item.logicalId ?? item.id;
         if (missingEvidence.current[key]?.support !== 'revealed') {
-          missingEvidence.current[key] = {
-            support: missingSupportActive ? 'counters' : 'independent',
-            counterMoves: missingEvidence.current[key]?.counterMoves ?? 0,
-          };
+          missingEvidence.current[key] = { support: trayOpen ? 'counters' : 'independent',
+            counterMoves: missingEvidence.current[key]?.counterMoves ?? 0 };
         }
         setRevealedMissing({ sourceId: item.sourceId, whole: item.whole, known: item.knownPart, answer: item.answer });
         setReward(`${item.knownPart} + ${item.answer} = ${item.whole}`);
         return;
       }
-      // The reward mirrors the FORM the turn asked for, so the two turns of one
-      // bond print the two related facts rather than the same sum twice.
+      // The reward mirrors the FORM the step asked for, so the two say steps of one bond print the two related facts.
       if (item.kind === 'related-fact') {
         setReward(item.pairIndex === 0
           ? `${item.knownPart} + ${item.answer} = ${item.whole}`
           : `${item.whole} − ${item.knownPart} = ${item.answer}`);
-        return;
       }
-      if (item.kind === 'build-equation') {
-        setReward(pendingTilesRef.current.join(' '));
-        return;
-      }
-      setReward(`${item.knownPart} + ${item.otherPart} = ${item.whole} — the whole family!`);
     },
     onCorrectionRetry: (item) => {
-      if (item.splitPhase) return; // Keep the student's split available for repair or counting.
+      if (item.splitPhase) return; // Keep the learner's split available for repair or counting.
       if (item.interactionPhase === 'missing-infer') {
         const key = item.logicalId ?? item.id;
-        missingEvidence.current[key] = {
-          support: 'revealed',
-          counterMoves: missingEvidence.current[key]?.counterMoves ?? 0,
-        };
+        missingEvidence.current[key] = { support: 'revealed', counterMoves: missingEvidence.current[key]?.counterMoves ?? 0 };
         setRevealedMissing({ sourceId: item.sourceId, whole: item.whole, known: item.knownPart, answer: item.answer });
         return;
       }
-      if (item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder') {
+      if (isRelatedSay(item)) {
         assistedRelations.current.add(item.logicalId ?? item.id);
         return; // Keep the exact committed transformation visible.
       }
-      // The tutor's correction re-modeled and re-asked in-band; restore the
-      // working surface for another go. The settle window is re-armed by the
-      // runner on this path.
-      if (item.kind === 'decompose' || item.kind === 'ten-and-ones') {
-        setLeftCount(0);
-        setRightCount(0);
-        pendingSplitRef.current = { left: 0, right: 0 };
-        return;
-      }
-      if (item.interactionPhase === 'equation-build' || item.interactionPhase === 'family-build') {
+      if (isEquationBuild(item)) {
         assistedEquations.current.add(interactionKeyFor(item));
-        // The tray clears: the tiles are indistinguishable, so there is no
-        // "wrong slot" to preserve. A retry on an easier step keeps that step's tiles.
+        // The tray clears: the tiles are indistinguishable, so there is no "wrong slot" to preserve. A retry on an
+        // easier step keeps that step's tiles.
         const shown = practiceRef.current ?? item;
         setEquationSlots([]);
         pendingTilesRef.current = [];
-        setAvailableTiles(seededShuffle(
-          [String(shown.whole), String(shown.knownPart), String(shown.otherPart), '+', '-', '='],
-          shown.whole * 7 + 3,
-        ));
+        setAvailableTiles(tilesFor(shown, shown.whole * 7 + 3));
       }
     },
   });
 
   const sessionItem = runner.currentItem;
-  /** What is on screen: the easier teen split while a simplify lever holds it, else the session item. */
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
   const runtimePulls = leverState.item === sessionItem?.id ? leverState.pulled : [];
@@ -940,102 +547,85 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     ? [...runtimePulls, EQ_FRAME_LEVER] : runtimePulls;
   /** The move this equation step must describe, for the move strip. */
   const committedMove = sessionItem ? committedActions.current[interactionKeyFor(sessionItem)] : undefined;
+  /** missing_part: the counters tray is open, by the learner's button or the lever. */
+  const trayOpen = missingSupportActive || pulledLevers.includes(COUNTERS_LEVER);
+  const leverCtx: NumberBondLeverContext = { pairsMade: foundPairsRef.current.length, countersOpen: missingSupportActive,
+    session: items, committed: committedMove };
   const currentSolved = runner.currentSolved;
-  // The runner cues the session item; its easier stand-in is worked under that cue.
+  // The workspace cues the session item; its easier stand-in is worked under that cue.
   const canSplitMove = currentItem?.splitPhase === 'build' && runner.canAttempt
     && !runner.isAwaitingGesture() && runner.cuedItemId === sessionItem?.id;
-  const isModeAction = !!currentItem && (currentItem.interactionPhase?.endsWith('model')
-    || currentItem.interactionPhase === 'related-join'
-    || currentItem.interactionPhase === 'related-separate');
+  const isModeAction = isMoveStep(currentItem);
   const canModeMove = isModeAction && runner.canAttempt
     && !runner.isAwaitingGesture() && runner.cuedItemId === currentItem?.id;
   const kind = currentItem?.kind;
   const whole = currentItem?.whole ?? 0;
 
+  // Opening the tray is support on a missing-part step, recorded once it opens (button or lever).
+  useEffect(() => {
+    if (!trayOpen || sessionItem?.interactionPhase !== 'missing-infer') return;
+    const key = sessionItem.logicalId ?? sessionItem.id;
+    const was = missingEvidence.current[key];
+    missingEvidence.current[key] = { support: was?.support === 'revealed' ? 'revealed' : 'counters', counterMoves: was?.counterMoves ?? 0 };
+  }, [trayOpen, sessionItem]);
+
   // ── The gesture commits ───────────────────────────────────────────────────
-  // No Check control: nothing on screen may carry the child forward. Each
-  // close describes the committed artifact; the MATCH IS COMPUTED IN CODE.
+  // No Check control: nothing on screen may carry the child forward. Each close describes the committed artifact;
+  // the MATCH IS COMPUTED IN CODE.
   const commitSplit = useCallback(() => {
     const item = displayItemRef.current;
-    if (!item || (item.kind !== 'decompose' && item.kind !== 'ten-and-ones')) return;
-    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
-    if (item.splitPhase) {
-      if (item.splitPhase !== 'build') return;
-      const counters = splitCountersRef.current, found = foundPairsRef.current;
-      const { left, right, whole } = splitCounts(counters);
-      commitGesture(runner, { response: `${left} in one part and ${right} in the other${whole ? `, ${whole} still in the whole` : ''}`,
-        correct: validSplit(item, counters, found), miss: bondMiss(item, { split: { left, right, unplaced: whole }, found }),
-        cue: () => splitAndSayVerdict(item, counters, found) });
-      return;
-    }
-    const { left, right } = pendingSplitRef.current;
-    // One gesture, two accept sets: decompose wants a pair it has not banked
-    // yet, ten-and-ones wants the one pair that contains a full ten.
-    const pair = [Math.min(left, right), Math.max(left, right)];
-    commitGesture(runner, { response: `${left} and ${right}`,
-      correct: item.kind === 'ten-and-ones' ? tenAndOnesFaultOf(item, left, right) === 'match'
-        : left + right === item.whole && !foundPairs.some(p => p[0] === pair[0] && p[1] === pair[1]),
-      miss: bondMiss(item, { split: { left, right, unplaced: 0 }, found: foundPairs }),
-      cue: () => item.kind === 'ten-and-ones' ? tenAndOnesVerdictCue(item, left, right) : splitVerdictCue(item, left, right, foundPairs) });
-  }, [runner, foundPairs]);
+    if (item?.splitPhase !== 'build' || !runner.canAttempt || runner.isAwaitingGesture()) return;
+    const counters = splitCountersRef.current, found = foundPairsRef.current;
+    const { left, right, whole: unplaced } = splitCounts(counters);
+    runner.commitGesture({ response: `${left} in one part and ${right} in the other${unplaced ? `, ${unplaced} still in the whole` : ''}`,
+      correct: validSplit(item, counters, found), miss: bondMiss(item, { split: { left, right, unplaced }, found }), cue: () => '' });
+  }, [runner]);
 
   const commitModeAction = useCallback(() => {
     const item = runner.currentItem;
-    if (!item || !(item.interactionPhase?.endsWith('model')
-      || item.interactionPhase === 'related-join'
-      || item.interactionPhase === 'related-separate')) return;
-    if (!runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
-    const result = modeActionVerdictCue(item, splitCountersRef.current);
-    const key = interactionKeyFor(item);
-    if (result.committed && result.matched) {
-      committedActions.current[key] = result.committed;
-    }
+    if (!isMoveStep(item) || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
+    const committed = bondActionOf(splitCountersRef.current, groupsForBond(item));
+    // build_equation's move is the learner's choice among join and the two take-aways; every other move step names one.
+    const expected = item.interactionPhase === 'equation-model' ? null : item.bondAction ?? null;
+    const matched = !!committed && (item.interactionPhase === 'equation-model' ? committed !== 'swap' : !expected || committed === expected);
+    if (committed && matched) committedActions.current[interactionKeyFor(item)] = committed;
     actionEvidence.current.push({
       itemId: item.id,
       logicalId: item.logicalId ?? item.sourceId,
       expected: item.interactionPhase === 'equation-model' ? 'choice' : item.bondAction ?? 'choice',
-      committed: result.committed,
-      matched: result.matched,
+      committed,
+      matched,
       modeled: false,
       before: splitUndo.current[0] ? [...splitUndo.current[0]] : initialCountersForInteraction(item),
       after: [...splitCountersRef.current],
     });
-    commitGesture(runner, { response: result.committed ? `made the move "${result.committed}"` : 'no complete whole-group move',
-      correct: result.matched, miss: bondMiss(item, { move: result.committed, matched: result.matched }), cue: () => result.cue });
+    runner.commitGesture({ response: committed ? `made the move "${committed}"` : 'no complete whole-group move',
+      correct: matched, miss: bondMiss(item, { move: committed, matched }), cue: () => '' });
   }, [runner]);
 
   const commitEquation = useCallback(() => {
     // The shown item: an easier step a simplify lever opened is checked on its own bond, under the session item's cue.
     const item = practiceRef.current ?? runner.currentItem;
-    if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')) return;
+    if (!isEquationBuild(item)) return;
     if (!runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== runner.currentItem?.id) return;
     if (pendingTilesRef.current.length === 0) return;
     const tiles = pendingTilesRef.current, action = committedActions.current[interactionKeyFor(item)];
-    commitGesture(runner, { response: `built "${tiles.join(' ')}"`,
+    runner.commitGesture({ response: `built "${tiles.join(' ')}"`,
       correct: item.interactionPhase === 'family-build' ? familyEquationFaultOf(item, tiles.join('')) === 'match'
         : bondEquationFaultOf(item, tiles, action) === 'match',
-      miss: bondMiss(item, { tiles, action }),
-      cue: () => item.interactionPhase === 'family-build' ? familyEquationVerdictCue(item, tiles) : bondEquationVerdictCue(item, tiles, action) });
+      miss: bondMiss(item, { tiles, action }), cue: () => '' });
   }, [runner]);
 
-  /** A hands turn closes on stillness; further touches reset the window, and
-   *  the runner cancels it at item open, at a correction, and at the commit. */
+  /** A hands turn closes on stillness; further touches reset the window, and the runner cancels it at item open, at
+   *  a correction, and at the commit. A split commits only once every counter is in a part. */
   const armSplitSettle = useCallback((left: number, right: number) => {
     const shown = displayItemRef.current;
-    if (shown?.splitPhase) {
-      if (shown.splitPhase === 'build' && left + right === shown.whole) {
-        runner.armStillness(commitSplit, SPLIT_FULL_SETTLE_MS);
-      } else runner.clearStillness();
-      return;
-    }
-    const item = runner.currentItem;
-    pendingSplitRef.current = { left, right };
-    const wait = item && left + right === item.whole ? SPLIT_FULL_SETTLE_MS : SPLIT_SETTLE_MS;
-    runner.armStillness(commitSplit, wait);
+    if (shown?.splitPhase === 'build' && left + right === shown.whole) runner.armStillness(commitSplit, SPLIT_FULL_SETTLE_MS);
+    else runner.clearStillness();
   }, [runner, commitSplit]);
 
   const armEquationSettle = useCallback((tiles: string[]) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     pendingTilesRef.current = tiles;
     const complete = !!item
       && parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart) !== null;
@@ -1045,14 +635,13 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const armModeSettle = useCallback((next: BondCounters) => {
     const item = runner.currentItem;
     if (!item) return;
-    const action = bondActionOf(next, groupsForBond(item));
-    if (action) runner.armStillness(commitModeAction, SPLIT_FULL_SETTLE_MS);
+    if (bondActionOf(next, groupsForBond(item))) runner.armStillness(commitModeAction, SPLIT_FULL_SETTLE_MS);
     else runner.clearStillness();
   }, [runner, commitModeAction]);
 
-  // ── Decompose interactions ────────────────────────────────────────────────
+  // ── Counter moves ─────────────────────────────────────────────────────────
   const moveSplitCounter = (index: number, destination: BondPlace) => {
-    if (currentItem?.splitPhase !== 'build' || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== sessionItem?.id) return;
+    if (!canSplitMove || !currentItem) return;
     const next = moveBondCounter(splitCountersRef.current, index, destination);
     if (!next) return;
     splitUndo.current.push(splitCountersRef.current);
@@ -1065,17 +654,15 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   const moveModeCounter = (index: number, destination: BondPlace) => {
     if (!currentItem || !currentItem.interactionPhase || !runner.canAttempt
       || runner.isAwaitingGesture() || runner.cuedItemId !== currentItem.id) return;
-    const isModel = currentItem.interactionPhase.endsWith('model')
-      || currentItem.interactionPhase === 'related-join'
-      || currentItem.interactionPhase === 'related-separate';
-    if (!isModel && currentItem.interactionPhase !== 'missing-infer') return;
-    if (currentItem.interactionPhase === 'missing-infer' && (!missingSupportActive || destination === 'right')) return;
+    const missing = currentItem.interactionPhase === 'missing-infer';
+    if (!isMoveStep(currentItem) && !missing) return;
+    if (missing && (!trayOpen || destination === 'right')) return;
     const next = moveBondCounter(splitCountersRef.current, index, destination);
     if (!next) return;
     splitUndo.current.push([...splitCountersRef.current]);
     splitMoves.current.push({ itemId: currentItem.id, before: [...splitCountersRef.current], after: [...next] });
     publishSplitCounters(next);
-    if (currentItem.interactionPhase === 'missing-infer') {
+    if (missing) {
       const key = currentItem.logicalId ?? currentItem.id;
       missingEvidence.current[key] = {
         support: missingEvidence.current[key]?.support === 'revealed' ? 'revealed' : 'counters',
@@ -1100,33 +687,32 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   };
 
   // ── Shared equation workspace ─────────────────────────────────────────────
+  const canBuild = (item: NumberBondItem | null): item is NumberBondItem => isEquationBuild(item)
+    && runner.canAttempt && !runner.isAwaitingGesture() && runner.cuedItemId === runner.currentItem?.id;
+
   const addTile = useCallback((tile: string, tileIndex: number) => {
-    const item = runner.currentItem;
-    if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')
-      || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
+    if (!canBuild(practiceRef.current ?? runner.currentItem)) return;
     SoundManager.tap();
     setAvailableTiles((prev) => prev.filter((_, i) => i !== tileIndex));
     const next = [...equationSlots, tile];
     setEquationSlots(next);
     armEquationSettle(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runner, equationSlots, armEquationSettle]);
 
   const removeTile = useCallback((slotIndex: number) => {
-    const item = runner.currentItem;
-    if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')
-      || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
+    if (!canBuild(practiceRef.current ?? runner.currentItem)) return;
     SoundManager.tap();
     const tile = equationSlots[slotIndex];
     const next = equationSlots.filter((_, i) => i !== slotIndex);
     setEquationSlots(next);
     setAvailableTiles((prev) => [...prev, tile]);
     armEquationSettle(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runner, equationSlots, armEquationSettle]);
 
   const editEquation = useCallback((value: string) => {
-    const item = runner.currentItem;
-    if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')
-      || !runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
+    if (!canBuild(practiceRef.current ?? runner.currentItem)) return;
     const next = value.match(/\d+|[+\-=−]/g)?.map((token) => token === '−' ? '-' : token) ?? [];
     setEquationSlots(next);
     if (next.length === 0) {
@@ -1135,43 +721,68 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     } else {
       armEquationSettle(next);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runner, armEquationSettle]);
 
-  // ── Live equation bar (render lever, unchanged semantics) ─────────────────
-  const liveEquation = useMemo(() => {
-    if (!currentItem || !showEquation) return null;
-    if (currentItem.splitPhase || currentItem.interactionPhase) return null;
-    if (currentItem.kind === 'decompose' || currentItem.kind === 'ten-and-ones') {
-      return `${leftCount || '?'} + ${rightCount || '?'} = ${currentItem.whole}`;
-    }
-    if (currentItem.kind === 'missing-part') {
-      return `${currentItem.knownPart} + ${currentSolved ? currentItem.answer : '?'} = ${currentItem.whole}`;
-    }
-    if (currentItem.kind === 'related-fact') {
-      return currentItem.pairIndex === 0
-        ? `${currentItem.knownPart} + ${currentSolved ? currentItem.answer : '?'} = ${currentItem.whole}`
-        : `${currentItem.whole} − ${currentItem.knownPart} = ${currentSolved ? currentItem.answer : '?'}`;
-    }
-    return null;
-  }, [currentItem, showEquation, leftCount, rightCount, currentSolved]);
+  // ── The scene and the levers, republished after every render ──────────────
+  const view = (): NumberBondView => ({ counters: splitCountersRef.current, found: foundPairsRef.current, tiles: equationSlots });
+  /** An easier item a simplify lever opened: its own board, its own tiles. */
+  const openPractice = (easier: NumberBondItem) => {
+    practiceRef.current = easier; setPractice(easier);
+    publishSplitCounters(isEquationBuild(easier) && easier.bondAction ? countersForAction(easier, easier.bondAction)
+      : wholeCounters(easier.whole));
+    splitUndo.current = []; runner.clearStillness();
+    setEquationSlots([]); pendingTilesRef.current = [];
+    setAvailableTiles(isEquationBuild(easier) ? tilesFor(easier, easier.whole * 11 + 5) : []);
+  };
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    const levers = practice ? [] : NUMBER_BOND_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    workspace.current = {
+      ...leverScene(workspaceScene(currentItem, view()), {
+        support: practice ? '' : NUMBER_BOND_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : NUMBER_BOND_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...runtimePulls, id] };
+        if (lever.kind === 'simplify') {
+          const easier = NUMBER_BOND_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!easier) return 'There is no easier item for this one.';
+          setLeverState(pulled);
+          openPractice(easier);
+          return { practice: numberBondBoss.assignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      // Back to the full item: its board opens whole again, or with its own move, its own tiles and an empty entry.
+      endPractice: () => {
+        practiceRef.current = null; setPractice(null);
+        if (sessionItem?.splitPhase) { publishSplitCounters(wholeCounters(sessionItem.whole)); splitUndo.current = []; }
+        const move = equationMove(sessionItem, committedMove);
+        if (sessionItem && isEquationBuild(sessionItem) && move) {
+          publishSplitCounters(countersForAction(sessionItem, move)); splitUndo.current = [];
+          setEquationSlots([]); pendingTilesRef.current = [];
+          setAvailableTiles(tilesFor(sessionItem, sessionItem.whole * 7 + 3));
+        }
+      },
+    };
+  });
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   // The workspace shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
-  const finishedSummary = runner.summary ?? (runner.practiceSummary as unknown as JudgedRunSummary | null | undefined) ?? null;
+  const finishedSummary = (runner.practiceSummary as unknown as JudgedRunSummary | null | undefined) ?? null;
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!showSummary) return [];
     const seen = new Set<string>();
     const logicalItems = items.flatMap((item) => {
-      const isResult = item.splitPhase !== 'build'
-        && !(item.interactionPhase?.endsWith('model'))
-        && item.interactionPhase !== 'related-join'
-        && item.interactionPhase !== 'related-separate';
-      if (!isResult) return [];
-      const id = item.interactionPhase === 'family-build' || item.interactionPhase === 'equation-build'
-        || item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder'
-        ? item.logicalId ?? item.id
-        : item.id;
+      if (item.splitPhase === 'build' || isMoveStep(item)) return [];
+      const id = isEquationBuild(item) || isRelatedSay(item) ? item.logicalId ?? item.id : item.id;
       if (seen.has(id)) return [];
       seen.add(id);
       return [{ ...item, id }];
@@ -1189,93 +800,6 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     return 'You built every bond with your own hands!';
   }, [items]);
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase and where the child last worked; Pip
-  // never moves counters, places tiles, or answers.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const labels: Record<string, string> = { board: 'Number bond', covered: 'Covered part', equation: 'Equation slots' };
-    const targets = pip.targets(['board', 'covered', 'equation'], (id) => labels[id]);
-    const pose = numberBondPipPose({
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      answerKind: currentItem.answerKind === 'gesture' ? 'gesture' : 'voice',
-      building: currentItem.interactionPhase === 'equation-build' || currentItem.interactionPhase === 'family-build',
-      covered: currentItem.interactionPhase === 'missing-infer' && revealedMissing?.sourceId !== currentItem.sourceId,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Number bond workspace', dock: pip.dock.current, targets, pose };
-  });
-
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no timed stimulus.
-  useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem) return;
-    const scene = workspaceScene(currentItem, view());
-    const onScreen = leverFacts(currentItem, pulledLevers);
-    const leverView = { pairsMade: foundPairsRef.current.length, countersOpen: missingSupportActive, session: items,
-      committed: committedMove };
-    workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      levers: practice ? [] : numberBondLevers(sessionItem, pulledLevers, leverView),
-      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
-      pullLever: (id) => {
-        const lever = numberBondLevers(sessionItem, pulledLevers, leverView).find(l => l.id === id);
-        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
-        if (lever.pulled) return `${id} is already pulled.`;
-        const pulled = { item: sessionItem.id, pulled: [...runtimePulls, id] };
-        if (id === SMALLER_BOND_LEVER) {
-          const easier = smallerBond(sessionItem, items, committedMove);
-          if (!easier?.bondAction) return 'There is no smaller bond for this step.';
-          setLeverState(pulled);
-          practiceRef.current = easier; setPractice(easier);
-          publishSplitCounters(countersForAction(easier, easier.bondAction)); splitUndo.current = [];
-          setEquationSlots([]); pendingTilesRef.current = []; runner.clearStillness();
-          setAvailableTiles(seededShuffle([String(easier.whole), String(easier.knownPart), String(easier.otherPart), '+', '-', '='],
-            easier.whole * 11 + 5));
-          return { practice: workspaceAssignment(easier, view()) };
-        }
-        if (id === SMALLER_LEVER) {
-          const easier = smallerTeen(sessionItem);
-          if (!easier) return 'There is no easier teen number for this item.';
-          setLeverState(pulled);
-          practiceRef.current = easier; setPractice(easier);
-          publishSplitCounters(wholeCounters(easier.whole)); splitUndo.current = []; runner.clearStillness();
-          return { practice: workspaceAssignment(easier, view()) };
-        }
-        if (id === COUNTERS_LEVER) {
-          const key = sessionItem.logicalId ?? sessionItem.id;
-          missingEvidence.current[key] = { support: missingEvidence.current[key]?.support === 'revealed' ? 'revealed' : 'counters',
-            counterMoves: missingEvidence.current[key]?.counterMoves ?? 0 };
-          setMissingSupportActive(true);
-        }
-        setLeverState(pulled);
-        return true;
-      },
-      // Back to the full item: its board opens whole again.
-      endPractice: () => {
-        practiceRef.current = null; setPractice(null);
-        if (sessionItem?.splitPhase) { publishSplitCounters(wholeCounters(sessionItem.whole)); splitUndo.current = []; }
-        // Back to the full equation step: its own move on the board, its own tiles, an empty entry.
-        const move = equationMove(sessionItem, committedMove);
-        if (sessionItem && isEquationBuild(sessionItem) && move) {
-          publishSplitCounters(countersForAction(sessionItem, move)); splitUndo.current = [];
-          setEquationSlots([]); pendingTilesRef.current = [];
-          setAvailableTiles(seededShuffle([String(sessionItem.whole), String(sessionItem.knownPart), String(sessionItem.otherPart),
-            '+', '-', '='], sessionItem.whole * 7 + 3));
-        }
-      },
-    };
-  });
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
-
   // ============================================================================
   // Render
   // ============================================================================
@@ -1291,14 +815,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   }
 
   const isGestureItem = currentItem?.answerKind === 'gesture';
-
-  const stageWord = runner.stage === 'judging'
-    ? 'let’s see…'
-    : currentSolved
-      ? 'yes!'
-      : runner.running
-        ? (isGestureItem ? 'your turn' : 'say it out loud')
-        : 'get ready';
+  const stageWord = currentSolved ? 'yes!' : runner.running ? (isGestureItem ? 'your turn' : 'say it out loud') : 'get ready';
+  const coveredShown = revealedMissing?.sourceId === currentItem?.sourceId;
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
@@ -1318,9 +836,12 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               </div>
             )}
           </div>
-          <LuminaBadge accent="cyan" className="text-xs">
-            {isGestureItem ? 'Show me' : 'Say it out loud'}
-          </LuminaBadge>
+          <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+            <LuminaBadge accent="cyan" className="text-xs">
+              {isGestureItem ? 'Show me' : 'Say it out loud'}
+            </LuminaBadge>
+          </div>
         </div>
         {!isPreReader && description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
@@ -1340,10 +861,11 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               </div>
             )}
 
-            {/* Bond diagram — the missing part stays "?" until the tutor
-                affirms (reveal-on-affirm; answer-leak rule). */}
-            <div ref={pip.ref('board')} data-pip-object="board" className="flex justify-center"
-              onPointerDownCapture={() => pip.look('board')} onFocusCapture={() => pip.look('board')}>
+            <PipDock />
+            {/* Pip outlines the board and its answer controls as a whole, never one counter. */}
+            <PipWorkspace className="space-y-4">
+            {/* The bond board — the missing part stays covered until the step is checked right (answer-leak rule). */}
+            <div data-pip-object="board" className="flex justify-center">
               {currentItem.splitPhase && <SplitAndSayBoard key={currentItem.sourceId} layoutKey={resolvedInstanceId + '-' + currentItem.sourceId}
                 whole={whole} counters={splitCounters} teen={kind === 'ten-and-ones'}
                 frame={pulledLevers.includes(FRAME_LEVER) && (kind === 'ten-and-ones' || currentItem.splitPhase === 'say')}
@@ -1386,13 +908,9 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                         ))}
                       </div>
                     </div>
-                    <div ref={revealedMissing?.sourceId === currentItem.sourceId ? undefined : pip.ref('covered')}
-                      data-pip-object={revealedMissing?.sourceId === currentItem.sourceId ? undefined : 'covered'}
-                      aria-label={revealedMissing?.sourceId === currentItem.sourceId
-                      ? `${currentItem.answer} covered counters revealed`
-                      : 'Covered part, quantity hidden'}
+                    <div aria-label={coveredShown ? `${currentItem.answer} covered counters revealed` : 'Covered part, quantity hidden'}
                       className="flex min-h-36 items-center justify-center rounded-3xl border-2 border-slate-400/50 bg-slate-800/80 p-4">
-                      {revealedMissing?.sourceId === currentItem.sourceId
+                      {coveredShown
                         ? <div className="flex flex-wrap justify-center gap-1">
                           {Array.from({ length: currentItem.answer }, (_, index) => (
                             <span key={index} aria-hidden="true" className="h-7 w-7 rounded-full bg-sky-300" />
@@ -1403,35 +921,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                   </div>
                 </section>
               )}
-              {(kind === 'missing-part' || kind === 'related-fact') && !currentItem.interactionPhase && (
-                <BondDiagram
-                  whole={whole}
-                  leftValue={currentItem.knownPart}
-                  rightValue={currentSolved ? currentItem.answer : '?'}
-                  showWhole={true}
-                  showLeft={true}
-                  showRight={currentSolved}
-                />
-              )}
-              {(kind === 'fact-family' || kind === 'build-equation') && !currentItem.interactionPhase && (
-                <BondDiagram
-                  whole={whole}
-                  leftValue={currentItem.knownPart}
-                  rightValue={currentItem.otherPart}
-                  showWhole={true}
-                  showLeft={true}
-                  showRight={true}
-                />
-              )}
             </div>
-
-            {liveEquation && (
-              <div className="text-center">
-                <span className="inline-block bg-slate-800/50 border border-white/10 rounded-lg px-4 py-2 text-slate-200 text-lg font-mono tracking-wider">
-                  {liveEquation}
-                </span>
-              </div>
-            )}
 
             {currentItem.splitPhase === 'build' && <div className="flex justify-center gap-3">
               <LuminaButton disabled={!canSplitMove || !splitUndo.current.length}
@@ -1475,16 +965,10 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               && <p className="text-center text-amber-200">Tutor's example</p>}
 
             {currentItem.interactionPhase === 'missing-infer' && <div className="space-y-3">
-              {!missingSupportActive ? <div className="text-center">
-                <LuminaButton disabled={!runner.canAttempt} onClick={() => {
-                  setMissingSupportActive(true);
-                  const key = currentItem.logicalId ?? currentItem.id;
-                  missingEvidence.current[key] = {
-                    support: missingEvidence.current[key]?.support === 'revealed' ? 'revealed' : 'counters',
-                    counterMoves: missingEvidence.current[key]?.counterMoves ?? 0,
-                  };
-                  SoundManager.tap();
-                }}>Use counters</LuminaButton>
+              {!trayOpen ? <div className="text-center">
+                <LuminaButton disabled={!runner.canAttempt} onClick={() => { setMissingSupportActive(true); SoundManager.tap(); }}>
+                  Use counters
+                </LuminaButton>
                 {supportTier === 'easy' && <p className="mt-2 text-sm text-slate-400">You can set aside the known part and inspect what remains.</p>}
               </div> : <SplitAndSayBoard
                 whole={whole}
@@ -1552,9 +1036,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
             )}
 
             {/* === Shared build-equation / fact-family workspace === */}
-            {(currentItem.interactionPhase === 'equation-build' || currentItem.interactionPhase === 'family-build') && !currentSolved && (
-              <div ref={pip.ref('equation')} data-pip-object="equation" className="space-y-3"
-                onPointerDownCapture={() => pip.look('equation')} onFocusCapture={() => pip.look('equation')}>
+            {isEquationBuild(currentItem) && !currentSolved && (
+              <div className="space-y-3">
                 <p className="text-center text-sm text-slate-300">Build the equation for the action shown above.</p>
                 {pulledLevers.includes(STRIP_LEVER) && <MoveStrip frames={moveStrip(currentItem, equationMove(currentItem, practice ? undefined : committedMove))} />}
                 {pulledLevers.includes(EQ_FRAME_LEVER) && (
@@ -1607,11 +1090,10 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                 </div>
               </div>
             )}
+            </PipWorkspace>
 
-            {/* The reward — the first moment an answer may appear. */}
-            {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens
-                the next item in the same dispatch, so by the time this renders
-                the current item is the NEXT one and is not solved (18b). */}
+            {/* The reward — the first moment an answer may appear. Gated on `revealHeld`, never on `currentSolved`:
+                the next item opens in the same dispatch. */}
             {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block font-mono">
@@ -1633,33 +1115,15 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               </LuminaPanel>
             )}
 
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
                 {isGestureItem
-                  ? 'Make the bond match the task — the tutor checks when you stop.'
+                  ? 'Make the bond match the task — the board checks when you stop.'
                   : 'Look at the bond, then say the missing part out loud.'}
               </p>
             )}
-
-            {/* The orb tells the truth about the turn: a hands item is not
-                "I'm listening". */}
-            <JudgedMicPanel
-              run={runner}
-              gestureLabel={
-                kind === 'fact-family'
-                  ? 'Build the matching family equation'
-                  : kind === 'build-equation'
-                    ? 'Build the number sentence'
-                    : kind === 'ten-and-ones'
-                      ? 'Show me the ten and the ones'
-                      : 'Show me your way'
-              }
-            />
           </>
         )}
 
@@ -1678,8 +1142,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   );
 };
 
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const NumberBond = withWorkspaceController<NumberBondProps, NumberBondControllerOptions, LiveRun<NumberBondItem>>(
-  'number-bond', NumberBondSurface, useScriptedController, useWorkspaceController);
+// One path: the tutor teaches on the workspace; a mount with no tutor shows the shared "needs the tutor" card.
+const NumberBond = withWorkspaceOnly<NumberBondProps>('number-bond', NumberBondSurface, props => props.data.title);
 
 export default NumberBond;

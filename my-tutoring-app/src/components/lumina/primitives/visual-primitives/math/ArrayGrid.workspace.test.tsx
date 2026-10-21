@@ -13,18 +13,14 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { arrayMiss, makeArrayMiss, workspaceAssignment, type ArrayGridView } from './arrayGridWorkspace';
-import { arrayGridLevers, smallerArray } from './arrayGridLevers';
+import { arrayAsk, arrayMiss, makeArrayMiss, type ArrayGridView } from './arrayGridWorkspace';
+import { ARRAY_LEVERS, smallerArray } from './arrayGridLevers';
 
-const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), legacy: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
+const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'arrays',
   conversation: [], sendText: seam.send, sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
-  if (o.enabled !== false) seam.legacy('enabled');
-  return { sendText: seam.legacy, isConnected: true, isAudioPlaying: false, activePrimitiveId: 'arrays' };
-} }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
@@ -78,10 +74,9 @@ const ITEM: Record<ArrayGridChallengeType, ArrayGridChallenge> = { build_array: 
 it.each(Object.keys(ITEM) as ArrayGridChallengeType[])('%s mounts under tutor ownership as a gesture item with no published total', mode => {
   const h = mount(mode, [ITEM[mode]]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(workspaceAssignment(ITEM[mode], mode, mode === 'make_array' ? 'square' : 'star').task);
+  expect(h.state().task!.task).toBe(arrayAsk({ ...ITEM[mode], mode, icon: mode === 'make_array' ? 'square' : 'star' }));
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b12\b(?! squares)/);
-  expect(seam.legacy).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: /next/i })).toBeNull();
 });
 
@@ -234,14 +229,15 @@ it('misses, lever text and catalog wiring for the build', () => {
   expect(arrayMiss(DIMS, { ...view, totalAnswer: '13' })).toBe('off_by_one');
   expect(arrayMiss(DIMS, { ...view, totalAnswer: '20' })).toBe('other_total');
 
-  const levers = arrayGridLevers(MAKE, []);
+  const ctx = { labelsShown: true, arrayShown: true };
+  const levers = ARRAY_LEVERS.declare({ ...MAKE, mode: 'make_array', icon: 'square' }, ctx, []);
   // The text names the build (the grid, putting in), never another mode's action or the number asked for.
   for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/type|check|12/i);
   expect(levers.every(l => /grid|row/i.test(l.does))).toBe(true);
   expect(smallerArray(MAKE)).toMatchObject({ id: 'm~smaller', total: 6, ways: 1 });
   expect(smallerArray({ ...MAKE, total: 6 })).toBeNull();
   expect(smallerArray(smallerArray(MAKE)!)).toBeNull();
-  expect(arrayGridLevers(DIMS, [])).toEqual([]);
+  expect(levers.map(l => l.id)).toEqual(['row_counts', 'square_count', 'smaller_array']);
 
   const entry = getComponentById('array-grid')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'make_array')).toMatchObject({ beta: 1.6, challengeTypes: ['make_array'],

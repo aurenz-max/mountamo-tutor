@@ -3,7 +3,10 @@ import { selectBalanceScaleChallenges } from '../../../service/math/gemini-balan
 import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, modelStage, moveWorkshopUnit, placeWorkshopWeight,
   scene, signature, stageSolved, STAGES, workshopAsk, workshopBalance, workshopItems, workshopProblem, WORKSHOP_MODES,
   type WorkshopProblem } from './balanceWorkshopModel';
-import { EXPLAIN_MEANING, workshopAssignment } from './balanceScaleWorkspace';
+import { EXPLAIN_MEANING } from './balanceScaleWorkspace';
+import { balanceScaleBoss } from './balanceScale.boss';
+
+const workshopAssignment = balanceScaleBoss.assignment;
 
 const problem = (mode: WorkshopProblem['mode'], target = 4, known = 3, parcels = 2): WorkshopProblem => ({
   id: 'test', mode, target, known, parcels, total: target * parcels + known, reverse: false,
@@ -89,8 +92,8 @@ describe('workshop asks on the teaching workspace', () => {
       expect(ask.expectedAnswer).toBeUndefined();
     }
     expect(scene(p, initialWorkshopBoard(p))).not.toContain('target');
-    expect(workshopAssignment(items.find((item) => item.step === 'infer')!)).toMatchObject({ response: 'speech', expectedAnswer: '7' });
-    expect(workshopAssignment(items.find((item) => item.step === 'explain')!).expectedAnswer).toBe(EXPLAIN_MEANING);
+    expect(workshopAssignment(items.find((item) => item.step === 'infer')!)).toMatchObject({ response: 'speech', expectedAnswer: '"7".' });
+    expect(workshopAssignment(items.find((item) => item.step === 'explain')!).expectedAnswer).toContain(EXPLAIN_MEANING);
   });
   it('asks reverse rounds to demonstrate the operation without supplying its result', () => {
     const p = { ...problem('two_step', 5, 4, 3), reverse: true };

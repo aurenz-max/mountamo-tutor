@@ -1,7 +1,7 @@
 # Contract: transformation-lab
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C18) for the workspace and lever requirements only. A full `/primitive-contract transformation-lab` derivation (consumers per 8.G skill, tiers) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/TransformationLab.tsx` · **Workspace:** `transformationLabWorkspace.ts` · **Levers:** `transformationLabLevers.ts` · **Generator:** `service/math/gemini-transformation-lab.ts` · **Adapter:** `components/live-activity/adapters/transformationLabLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`transformation-lab`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/TransformationLab.tsx` · **Workspace:** `transformationLabWorkspace.ts` · **Levers:** `transformationLabLevers.ts` · **Generator:** `service/math/gemini-transformation-lab.ts` · **Boss:** `transformationLab.card.ts` + `transformationLab.boss.ts` (adapter, journey and catalog wiring) · **Catalog:** `service/manifest/catalog/math.ts` (`transformation-lab`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C18).
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss` (drag modes and compose `manipulate`, identify `TAP_ONE` with Check); levers declared once as `TRANSFORM_LEVERS` (marks, model, clue, legend, easier); scripted path, legacy cue tags and `transformationLabLive.ts` deleted; compose_sequence affordance stated as manipulate.

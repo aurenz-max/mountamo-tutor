@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * atom-builder on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic W1
+ * atom-builder on the shared teaching workspace (its boss: `atomBuilder.boss.ts`) and its lever set: what is its own. The generic W1
  * contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * Every item is a build on the tray: no target count reaches the tutor, a wrong check names its miss in words with no
  * count, Try again keeps the atom, a right check completes once, and every miss has a lever.
@@ -9,7 +9,6 @@ vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lu
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
 vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
-vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
 vi.mock('@/components/lumina/primitives/build-layer/buildLayer', () => ({ useBuildWatcher: () => '' }));
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,10 +20,11 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { AtomBuilderChallenge, AtomBuilderData } from './AtomBuilder';
 import { atomAskInstruction, judgeAtomBuild, passingBuilds, type AtomAsk } from './atomBuild';
 import {
-  atomHarnessInputs, atomMiss, CLASSIC_ATOM_MISSES, CLASSIC_MISS_WORDS, MAKE_ATOM_MISSES, smallestPassing, workspaceAssignment,
+  atomHarnessInputs, atomMiss, CLASSIC_ATOM_MISSES, CLASSIC_MISS_WORDS, MAKE_ATOM_MISSES, smallestPassing,
 } from './atomBuilderWorkspace';
+import { atomBuilderBoss } from './atomBuilder.boss';
 import {
-  atomLevers, ISOTOPE_COMPARE_LEVER, MASS_METER_LEVER, ONE_PART_FIRST_LEVER, onePartFirst, PAIR_UP_LEVER, practiceFor,
+  ATOM_LEVERS, ISOTOPE_COMPARE_LEVER, MASS_METER_LEVER, ONE_PART_FIRST_LEVER, onePartFirst, PAIR_UP_LEVER, practiceFor,
   RING_COUNTS_LEVER, ringCounts, SIMPLER_ASK_LEVER, simplerAsk, TABLE_KEY_LEVER, tableKey,
 } from './atomBuilderLevers';
 
@@ -65,6 +65,9 @@ const task = (h: WorkspaceHarness) => h.state().task!;
 const last = (h: WorkspaceHarness) => task(h).workspace!.attempts.at(-1);
 const demand = (h: WorkspaceHarness) => task(h).demand as Record<string, unknown>;
 const levers = (h: WorkspaceHarness) => task(h).workspace!.levers ?? [];
+/** A board with particles on it and a kept atom, so every lever with something to draw is offered. */
+const FULL = { atom: { protons: 3, neutrons: 3, electrons: 3 }, kept: { protons: 3, neutrons: 4, electrons: 3 } };
+const atomLevers = (c: AtomBuilderChallenge, pulled: readonly string[]) => ATOM_LEVERS.declare(c, FULL, pulled);
 const q = (h: WorkspaceHarness, sel: string) => Array.from(h.view.container.querySelectorAll(sel));
 const text = (h: WorkspaceHarness) => h.view.container.textContent ?? '';
 
@@ -73,7 +76,7 @@ it.each(MODES)('%s binds as a gesture build with no published key and no scripte
   const h = mount(challenges, mode);
   expect(getComponentById('atom-builder')!.evalModes!.map(m => m.evalMode)).toEqual(['build', 'identify', 'make_atom', 'ion_isotope']);
   expect(h.state().owner).toBe('tutor');
-  expect(task(h).task).toBe(workspaceAssignment(challenges[0]).task);
+  expect(task(h).task).toBe(atomBuilderBoss.assignment!(challenges[0]).task);
   expect(task(h).workspace!.expectedAnswer).toBeUndefined();
   expect(demand(h)).toMatchObject({ protons: 0, neutrons: 0, electrons: 0 });
   // No target count, mass number or passing atom is published beyond what the instruction says.
@@ -216,9 +219,10 @@ describe('levers on the mounted workspace', () => {
     h.close();
   });
 
-  it('ring counts are refused on an empty atom and label the rings once there are electrons', () => {
+  it('ring counts are not offered on an empty atom and label the rings once there are electrons', () => {
     const h = mount([make('v', { kind: 'valence', outer: 3 })], 'make_atom');
     const before = JSON.stringify(demand(h));
+    expect(levers(h).map(l => l.id)).not.toContain(RING_COUNTS_LEVER);
     expect(h.dispatch('pull_lever', { lever: RING_COUNTS_LEVER }).status).toBe('blocked');
     expect(JSON.stringify(demand(h))).toBe(before);
     h.press('Add proton'); h.press('Add electron'); h.press('Add electron'); h.press('Add electron');
@@ -227,9 +231,10 @@ describe('levers on the mounted workspace', () => {
     h.close();
   });
 
-  it('isotope compare needs a kept atom, then shows both nuclei', () => {
+  it('isotope compare is offered once an atom is kept, then shows both nuclei', () => {
     const iso = make('i', { kind: 'isotopes' });
     const h = mount([iso], 'make_atom');
+    expect(levers(h).map(l => l.id)).not.toContain(ISOTOPE_COMPARE_LEVER);
     expect(h.dispatch('pull_lever', { lever: ISOTOPE_COMPARE_LEVER }).status).toBe('blocked');
     play(h, iso, true);
     expect(last(h)).toMatchObject({ correct: false, miss: 'same_neutrons' });

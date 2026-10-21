@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaChallengeCounter, LuminaFeedbackCard, LuminaPanel, LuminaPrompt,
@@ -14,16 +13,18 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   BLOCKS, BLOCK_COLORS, BLOCK_KINDS, COLOR_NAMES, COLS, SCENES, dropRow, placeBlock,
   type BlockColor, type BlockKind, type OpenBuilderChallenge, type OpenBuilderTask, type OpenBuilderVerdict, type Placed,
 } from './openBuilderModel';
-import { describeBuildWork, openBuilderAssignment, openBuilderScene } from './openBuilderWorkspace';
+import { describeBuildWork, openBuilderScene } from './openBuilderWorkspace';
 import { BlockThumb, BuilderBoard } from './OpenBuilderArt';
 import {
-  MARKS_LEVER, PARTS_LEVER, PRACTICE_NOTE, goalParts, jobMarks, openBuilderLevers, partsFact, practiceItem,
+  MARKS_LEVER, OPEN_BUILDER_LEVERS, PARTS_LEVER, PRACTICE_NOTE, goalParts, jobMarks, startingLevers,
 } from './openBuilderLevers';
+import { openBuilderBoss } from './openBuilder.boss';
 import { svgPicture, useBuildWatcher } from '../../build-layer/buildLayer';
 
 export type { OpenBuilderChallenge } from './openBuilderModel';
@@ -82,7 +83,6 @@ type Phase = 'building' | 'checking' | 'checked';
 const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, gradeBand, instanceId, skillId, subskillId, objectiveId, exhibitId,
     onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const boardRef = useRef<SVGSVGElement | null>(null);
   const stableInstanceId = useRef(instanceId || `open-builder-${Date.now()}`);
@@ -111,7 +111,7 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
   const progress = useOpenBuilderProgress<OpenBuilderChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: openBuilderAssignment,
+    workspace, assignment: openBuilderBoss.assignment!,
     // A fresh project starts on an empty board. Try again keeps the build AND the buddy's words on screen,
     // so the learner changes what the buddy pointed at instead of starting over.
     onItemOpened: (_index, retry) => {
@@ -126,8 +126,10 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
   const current = practice ?? sessionChallenge;
   const scene = current ? SCENES[current.sceneId] : null;
   const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
-  // The session item's levers; a help picture shows on the session item only while pulled (or from the start on easy).
-  const itemLevers = sessionChallenge ? openBuilderLevers(sessionChallenge, challenges, pulledLevers) : [];
+  // The session item's levers; a help picture shows on the session item only while pulled (or from the start on easy,
+  // which is not a pull: `startingLevers`).
+  const leversOn = sessionChallenge ? [...startingLevers(sessionChallenge), ...pulledLevers] : pulledLevers;
+  const itemLevers = OPEN_BUILDER_LEVERS.declare(sessionChallenge, challenges, leversOn);
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const shownMarks = sessionChallenge && helpOn(MARKS_LEVER) ? jobMarks(sessionChallenge) : null;
   const shownParts = sessionChallenge && helpOn(PARTS_LEVER) ? goalParts(sessionChallenge) : null;
@@ -221,26 +223,19 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
     submitResult(correctCount === total, accuracy, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmitted, challenges, challengeType, challengeResults, submitResult, progress.recordsEvaluation]);
 
-  // ── Pip: the board as a whole; the build is handed to the buddy ───────────
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: 'The building board',
-    solved: phase === 'checked' && !!verdict?.met,
-    checking: phase === 'checking',
-    handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current || !sessionChallenge) return;
-    const base = openBuilderScene(current, { placed, phase, verdict: phase === 'checking' ? null : verdict, seeing: phase === 'building' ? seeing : '' });
-    const onScreen = [shownMarks?.fact, shownParts && partsFact(shownParts)].filter(Boolean).join('; ');
+    const scene = openBuilderScene(current, { placed, phase, verdict: phase === 'checking' ? null : verdict, seeing: phase === 'building' ? seeing : '' });
+    // Levers belong to the session item; a practice project offers none.
     const levers = practice ? [] : itemLevers;
+    const published = leverScene(scene, {
+      support: practice ? '' : OPEN_BUILDER_LEVERS.support(sessionChallenge, challenges),
+      onScreen: practice ? '' : OPEN_BUILDER_LEVERS.onScreen(sessionChallenge, challenges, leversOn),
+    });
     workspace.current = {
-      ...base,
-      facts: { ...base.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -248,10 +243,10 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const smaller = practiceItem(sessionChallenge, challenges);
+          const smaller = OPEN_BUILDER_LEVERS.simpler(sessionChallenge, challenges, id);
           if (!smaller) return 'This project is already the smallest job of its kind.';
           setLeverState(next); setPractice(smaller); clearBoard();
-          return { practice: openBuilderAssignment(smaller) };
+          return { practice: openBuilderBoss.assignment!(smaller) };
         }
         setLeverState(next);
         return true as const;
@@ -314,7 +309,7 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
               </div>
             </LuminaPrompt>
 
-            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice project</div>}
+            {practice && <div className="flex justify-center" data-practice><LuminaBadge accent="amber">Practice project</LuminaBadge></div>}
             {shownParts && (
               // The help lever `goal_parts`: a card for each part the goal names, never a block, a count or a place.
               <div className="flex flex-wrap items-stretch justify-center gap-2" data-lever="goal-parts" aria-label="What the goal asks for">
@@ -326,8 +321,8 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
                 ))}
               </div>
             )}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-3">
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               <div className="space-y-3">
                   <div role="group" aria-label={`Building board: ${scene.title}`} tabIndex={0} onKeyDown={onBoardKey}
                     className="relative w-full overflow-hidden rounded-2xl border border-white/10 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
@@ -407,7 +402,7 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
                   <img alt="The picture sent to the judge" src={`data:image/png;base64,${picture}`} className="mt-2 w-full max-w-md rounded-lg" />
                 </details>
               )}
-            </div>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

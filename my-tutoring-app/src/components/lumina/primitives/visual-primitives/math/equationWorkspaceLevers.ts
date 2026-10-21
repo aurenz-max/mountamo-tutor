@@ -2,25 +2,26 @@
  * equation-workspace's in-item levers (/add-support-tiers; report qa/eval-reports/equation-workspace-levers-2026-10-09.md).
  * The misses are what `equationMiss` observes in a wrong operation; there is no real-learner evidence.
  *
- * Every mode has the same levers (the modes differ in steps, highlight and whether the learner applies or only names
- * the next step, not in the choice itself):
- * - `inverse_reminder` (help) the panel that says to undo what is attached to the variable with its inverse, on both
- *   sides. In words. The easy tier already draws it (a starting position, declared pulled).
- * - `layer_order` (help) a panel that says the last thing done to the variable comes off first: work from the outside
- *   in. In words.
- * - `sides_marked` (help) the equation on screen split into the variable's side and the other side, in two boxes. It
- *   prints only what the current line already prints.
- * - `worked_model` (help) a worked example on a different equation with the same kinds of steps, every line of it.
- *   Built here, only when every step is an add, subtract, multiply or divide.
- * - `fewer_steps` (simplify) a practice equation with one step fewer, built here with its own menu, same mode.
+ * Declared once as a lever set (`EQUATION_LEVERS`, `bossLevers.ts`). Every mode has the same levers (the modes differ in
+ * steps, highlight and whether the learner applies or only names the next step, not in the choice itself):
+ * - `inverse_reminder` (clue) the panel that says to undo what is attached to the variable with its inverse, on both
+ *   sides. In words. The easy tier already draws it (a starting position: the component declares it pulled).
+ * - `layer_order` (clue) a panel that says the last thing done to the variable comes off first: work from the outside
+ *   in (tidy each side first where the path starts by tidying). In words.
+ * - `sides_marked` (marks) the equation on screen split into the variable's side and the other side, in two boxes. It
+ *   prints only what the current line already prints; offered only while the current line has one such side.
+ * - `worked_model` (model; when it comes is the set's `support`) a worked example on a different equation with the
+ *   same kinds of steps, every line of it. Built here, only when every step is an add, subtract, multiply or divide.
+ * - `fewer_steps` (easier) a practice equation with one step fewer, built here with its own menu, same mode.
  *
- * Leak rules (code): the panels, the lever words and the scene facts for the panels carry no digit; the marked sides
- * are the current line's own two sides; the model and the practice equation share no number with the item (its
- * equation, its lines or its solution) and are never the item's equation.
+ * Leak rules (code): the panels, the lever words and the scene facts for the panels carry no digit, and a clue never
+ * names the operation asked for or the solved line (`answersOf`); the marked sides are the current line's own two
+ * sides; the model and the practice equation share no number with the item (its equation, its lines or its solution)
+ * and are never the item's equation.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { EquationWorkspaceChallenge, EquationWorkspaceOperation, EquationWorkspaceSolutionStep } from './EquationWorkspace';
-import { currentEquation, latexToText, operationParts, type EquationMiss } from './equationWorkspaceDomain';
+import { EQUATION_MISSES_BY_MODE, currentEquation, equationAnswers, latexToText, operationParts } from './equationWorkspaceDomain';
 
 export const INVERSE_LEVER = 'inverse_reminder';
 export const ORDER_LEVER = 'layer_order';
@@ -213,56 +214,57 @@ export function practiceLeaks(parent: EquationWorkspaceChallenge, practice: Equa
 const itemNumbersText = (c: EquationWorkspaceChallenge) =>
   [c.equation, ...c.solutionSteps.map(s => `${s.resultLatex} ${s.operation}`), ...c.availableOperations.map(o => o.label)].join(' ');
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
+/** What a lever reads beside the item: the solution steps applied so far (the marked sides follow the current line). */
 export interface EquationLeverContext {
-  /** The easy tier already draws the inverse reminder: a starting position, declared pulled. */
-  reminderShown: boolean;
-  /** Solution steps applied so far, for the marked sides of the current line. */
   done: number;
 }
 
-export function equationLevers(c: EquationWorkspaceChallenge | null, pulled: readonly string[], ctx: EquationLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeEquation(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly EquationMiss[], when: string, does: string,
-    on = pulled.includes(id)): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: on, answers, when, does });
-  const model = workedModel(c), practice = fewerSteps(c);
-  return [
-    lever(INVERSE_LEVER, 'help', ['not_inverse', 'other_operation'],
-      'The learner applies the operation that is attached again, or an operation that does not undo anything attached.',
-      'Shows a panel under the equation, in words: undo whatever is attached to the variable with the inverse '
+/**
+ * The levers, declared once (`bossLevers.ts`). Help before simplify: the observer's next lever after a miss is the
+ * first open one that answers it. None is offered on a practice equation: the component declares nothing while one
+ * is on screen.
+ */
+export const EQUATION_LEVERS = leverSet<EquationWorkspaceChallenge, EquationLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => EQUATION_MISSES_BY_MODE[mode] ?? [],
+  answersOf: (c, ctx) => equationAnswers(c, c.type === 'identify-operation' ? 0 : ctx.done),
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a different equation, solved',
+    own: "this equation's next step" },
+  specs: [
+    { id: INVERSE_LEVER, type: 'clue', answers: ['not_inverse', 'other_operation'],
+      when: 'The learner applies the operation that is attached again, or an operation that does not undo anything attached.',
+      does: 'Shows a panel under the equation, in words: undo whatever is attached to the variable with the inverse '
         + 'operation (addition and subtraction undo each other, and so do multiplication and division), on both sides. '
-        + 'It names no operation in the menu.', ctx.reminderShown || pulled.includes(INVERSE_LEVER)),
-    lever(ORDER_LEVER, 'help', ['later_step'],
-      'The learner tries to undo an inner layer (a later step) before the outer one.',
-      'Shows a panel under the equation, in words: where the equation has parentheses or like terms, tidy each side '
+        + 'It names no operation in the menu.',
+      fact: 'Under the equation is a reminder in words: undo what is attached to the variable with the inverse operation, on both sides.' },
+    { id: ORDER_LEVER, type: 'clue', answers: ['later_step'],
+      when: 'The learner tries to undo an inner layer (a later step) before the outer one.',
+      does: 'Shows a panel under the equation, in words: where the equation has parentheses or like terms, tidy each side '
         + 'first; then undo in reverse order, the last thing done to the variable comes off first, from the outside in. '
-        + 'It names no operation in the menu.'),
-    lever(SIDES_LEVER, 'help', ['wrong_number', 'other_operation'],
-      'The learner uses a number from the other side of the equation instead of one attached to the variable.',
-      'Splits the current line into two boxes: the side with the variable and the other side. It shows only what the '
-        + 'line already shows.'),
-    ...(model ? [lever(MODEL_LEVER, 'help', ['later_step', 'not_inverse', 'wrong_number', 'other_operation'],
-      'The learner cannot see how the steps go on any equation of this kind.',
-      'Shows a worked example on a different equation with the same kinds of steps and different numbers and variable, '
-        + 'every line of it. It never works the learner\'s equation.')] : []),
-    ...(practice ? [lever(FEWER_LEVER, 'simplify', ['later_step', 'not_inverse', 'wrong_number', 'other_operation'],
-      'This equation has too many layers to hold at once.',
-      'Opens a practice equation first, with one step fewer and different numbers. It is not graded; the full item '
-        + 'comes back after it, blank.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. The panels in words; the model is another equation. */
-export function leverFacts(c: EquationWorkspaceChallenge | null, pulled: readonly string[], ctx: EquationLeverContext): string {
-  if (!c || isPracticeEquation(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const sides = on(SIDES_LEVER) ? markedSides(currentEquation(c, ctx.done), c.targetVariable) : null;
-  const model = on(MODEL_LEVER) ? workedModel(c) : null;
-  return [
-    (ctx.reminderShown || on(INVERSE_LEVER)) && 'Under the equation is a reminder in words: undo what is attached to the variable with the inverse operation, on both sides.',
-    on(ORDER_LEVER) && `Under the equation is a panel in words: ${tidiesFirst(c) ? 'first tidy each side (clear the parentheses, then combine like terms), then ' : ''}undo in reverse order, the last thing done to the variable comes off first.`,
-    sides && `The current line is split into two boxes: the variable's side (${latexToText(sides.variableSide)}) and the other side (${latexToText(sides.otherSide)}).`,
-    model && `A worked example on a different equation is shown: ${modelLines(model).join('; ')}.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+        + 'It names no operation in the menu.',
+      fact: (_on: unknown, c) => `Under the equation is a panel in words: ${tidiesFirst(c)
+        ? 'first tidy each side (clear the parentheses, then combine like terms), then ' : ''}undo in reverse order, the last `
+        + 'thing done to the variable comes off first.' },
+    { id: SIDES_LEVER, type: 'marks', answers: ['wrong_number', 'other_operation'],
+      when: 'The learner uses a number from the other side of the equation instead of one attached to the variable.',
+      does: 'Splits the current line into two boxes: the side with the variable and the other side. It shows only what the '
+        + 'line already shows.',
+      // Offered while the line on screen has one side holding the variable (not `3x + 2 = x + 10`).
+      content: (c, ctx) => markedSides(currentEquation(c, c.type === 'identify-operation' ? 0 : ctx.done), c.targetVariable),
+      fact: (sides: { variableSide: string; otherSide: string }) => `The current line is split into two boxes: the variable's `
+        + `side (${latexToText(sides.variableSide)}) and the other side (${latexToText(sides.otherSide)}).` },
+    { id: MODEL_LEVER, type: 'model', answers: ['later_step', 'not_inverse', 'wrong_number', 'other_operation'],
+      when: 'The learner cannot see how the steps go on any equation of this kind.',
+      does: 'Shows a worked example on a different equation with the same kinds of steps and different numbers and variable, '
+        + 'every line of it. It never works the learner\'s equation.',
+      content: c => workedModel(c),
+      fact: (m: LinearEquation) => `A worked example on a different equation is shown: ${modelLines(m).join('; ')}.` },
+    { id: FEWER_LEVER, type: 'easier', answers: 'all',
+      when: 'This equation has too many layers to hold at once.',
+      does: 'Opens a practice equation first, with one step fewer and different numbers. It is not graded; the full item '
+        + 'comes back after it, blank.',
+      content: c => fewerSteps(c) },
+  ],
+});

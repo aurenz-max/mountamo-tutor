@@ -1,23 +1,28 @@
 /**
  * The in-item levers on a number-tracer item (`/add-support-tiers`, report
- * qa/eval-reports/number-tracer-levers-2026-10-08.md). No real-learner evidence: the misses are what `numberTracerMiss`
- * observes. Pure: the component draws from these, the workspace publishes them, the tests hold each leak rule. Every
- * simpler item has the id `<item>~simpler`, the same mode, and is built here.
+ * qa/eval-reports/number-tracer-levers-2026-10-08.md), declared once as a lever set (`NUMBER_TRACER_LEVERS`,
+ * `bossLevers.ts`). No real-learner evidence: the misses are what `numberTracerMiss` observes. Pure: the component
+ * draws from these, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and
+ * is built here.
  *
- * - trace (the numeral is drawn by design): `ghost_path`, `start_dots`, `stroke_arrows` (help) on the canvas; `trace_part`
- *   (simplify) one stroke of the numeral, or the first half of a one-stroke numeral, checked by geometry alone.
- * - copy (the model is the task): `start_dots` (help) on the canvas, `model_strokes` (help) the model drawn as its strokes
- *   in the model panel, never on the canvas; `one_digit` (simplify) on a two-digit number, its first digit alone.
- * - write (from memory): `start_dots` (help) points only, `first_part` (help) the opening of the first stroke, never more
- *   than a third of the numeral (`firstPartLeaks`); `one_digit` (simplify) as on copy.
- * - sequence (the missing numeral is the answer, so nothing about its shape is drawn, NT-7): `count_dots` (help) a row of
- *   dots under each SHOWN number, none under the gap (`countDotsLeak`); `count_on_run` (simplify) a different run with
+ * - trace (the numeral is drawn by design): `ghost_path`, `start_dots`, `stroke_arrows` (marks) on the canvas;
+ *   `trace_part` (easier) one stroke of the numeral, or the first half of a one-stroke numeral, checked by geometry alone.
+ * - copy (the model is the task): `start_dots` (marks) on the canvas, `model_strokes` (marks) the model drawn as its
+ *   strokes in the model panel, never on the canvas; `one_digit` (easier) on a two-digit number, its first digit alone.
+ * - write (from memory): `start_dots` (marks) points only, `first_part` (marks) the opening of the first stroke, never
+ *   more than a third of the numeral (`firstPartLeaks`); `one_digit` (easier) as on copy.
+ * - sequence (the missing numeral is the answer, so nothing about its shape is drawn, NT-7): `count_dots` (marks) a row
+ *   of dots under each SHOWN number, none under the gap (`countDotsLeak`); `count_on_run` (easier) a different run with
  *   the gap last that never contains this item's answer (`runLeaks`). Formation misses here have no lever.
+ *
+ * A support tier's painted guides (`startingLevers`) are passed to `declare` and `onScreen` as already pulled.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { NumberTracerChallenge, PathPoint } from './NumberTracer';
-import type { NumberTracerMiss } from './numberTracerWorkspace';
+import { NUMBER_TRACER_MISSES, SEQUENCE_UNANSWERED } from './numberTracer.card';
 import { getDigitPaths } from './numberTracerPaths';
+
+export { SEQUENCE_UNANSWERED };
 
 export const GHOST_LEVER = 'ghost_path';
 export const DOTS_LEVER = 'start_dots';
@@ -30,68 +35,9 @@ export const ONE_DIGIT_LEVER = 'one_digit';
 export const COUNT_ON_LEVER = 'count_on_run';
 export const SIMPLER_SUFFIX = '~simpler';
 
-const ALL: readonly NumberTracerMiss[] = ['other_numeral', 'digits_swapped', 'not_readable', 'poorly_formed', 'part_left_out', 'shape_off'];
-/** Sequence misses no lever can answer: any formation guide draws the hidden numeral. */
-export const SEQUENCE_UNANSWERED: readonly NumberTracerMiss[] = ['poorly_formed', 'part_left_out', 'shape_off'];
-
 /** The guide strokes the canvas draws and scores against (the component's own fallback). */
 export const guideOf = (ch: NumberTracerChallenge): PathPoint[][] =>
   ch.strokePaths?.length ? ch.strokePaths : getDigitPaths(ch.digit);
-
-type Decl = Omit<WorkspaceLever, 'pulled'>;
-const DECL: Record<string, Decl> = {
-  [GHOST_LEVER]: { id: GHOST_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the writing does not follow the numeral and no dotted numeral is on the canvas',
-    does: 'Draws the dotted numeral on the canvas to trace over. Say that it is there; do not trace or describe it for the learner.',
-    answers: ['shape_off', 'other_numeral', 'not_readable', 'digits_swapped', 'part_left_out'] },
-  [DOTS_LEVER]: { id: DOTS_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner starts the numeral in the wrong place or draws its parts out of order',
-    does: 'Puts a green dot where each stroke of the numeral starts, numbered in drawing order. Point to dot 1; '
-      + 'do not describe the shape of any stroke.',
-    answers: ['shape_off', 'poorly_formed', 'not_readable', 'other_numeral', 'digits_swapped'] },
-  [ARROWS_LEVER]: { id: ARROWS_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner follows the numeral the wrong way or stops partway along it',
-    does: 'Draws arrows along each stroke of the dotted numeral, showing which way it goes.',
-    answers: ['poorly_formed', 'shape_off', 'part_left_out'] },
-  [FIRST_PART_LEVER]: { id: FIRST_PART_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner cannot begin the numeral from memory, or leaves part of it out',
-    does: 'Draws the opening part of the numeral\'s first stroke dotted on the canvas; the learner writes the rest. '
-      + 'Do not describe the rest of the shape.',
-    answers: ['part_left_out', 'shape_off', 'poorly_formed', 'not_readable', 'other_numeral'] },
-  [MODEL_STROKES_LEVER]: { id: MODEL_STROKES_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner\'s copy does not look like the model',
-    does: 'Draws the model numeral beside the canvas as its strokes, each with a numbered start dot and an arrow. '
-      + 'The canvas stays blank.',
-    answers: ['poorly_formed', 'shape_off', 'part_left_out', 'not_readable', 'other_numeral'] },
-  [COUNT_DOTS_LEVER]: { id: COUNT_DOTS_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner writes a number that does not belong in the gap',
-    does: 'Puts a row of dots under each shown number, as many dots as the number; nothing goes under the gap. '
-      + 'Never say how many dots the gap would need or what number belongs there.',
-    answers: ['other_numeral', 'not_readable'] },
-  [TRACE_PART_LEVER]: { id: TRACE_PART_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'tracing the whole numeral is too much at once',
-    does: 'Opens an easier, ungraded practice: trace one stroke of this numeral (or its first half). Then the whole numeral comes back blank.',
-    answers: ALL },
-  [ONE_DIGIT_LEVER]: { id: ONE_DIGIT_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'a two-digit number is too much at once',
-    does: 'Opens an easier, ungraded practice: the first digit of this number on its own. Then the whole number comes back blank.',
-    answers: ['poorly_formed', 'shape_off', 'part_left_out', 'not_readable', 'digits_swapped', 'other_numeral'] },
-  [COUNT_ON_LEVER]: { id: COUNT_ON_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'finding a gap inside the run is too much at once',
-    does: 'Opens an easier, ungraded practice: a different counting run whose LAST number is missing. '
-      + 'Never say this item\'s missing number. Then this item comes back.',
-    answers: ['other_numeral', 'not_readable', 'digits_swapped'] },
-};
-
-/** The levers an item declares, in the order `nextLever` reads them (help before simplify). */
-export function leverIdsFor(ch: NumberTracerChallenge): string[] {
-  switch (ch.type) {
-    case 'trace': return [GHOST_LEVER, DOTS_LEVER, ARROWS_LEVER, ...(tracePart(ch) ? [TRACE_PART_LEVER] : [])];
-    case 'copy': return [DOTS_LEVER, MODEL_STROKES_LEVER, ...(oneDigit(ch) ? [ONE_DIGIT_LEVER] : [])];
-    case 'write': return [DOTS_LEVER, FIRST_PART_LEVER, ...(oneDigit(ch) ? [ONE_DIGIT_LEVER] : [])];
-    case 'sequence': return [...(countDots(ch) ? [COUNT_DOTS_LEVER] : []), ...(countOnRun(ch) ? [COUNT_ON_LEVER] : [])];
-  }
-}
 
 /** Where an item's guides start (its support tier's painted guides), as lever ids. Not a pull: never recorded. */
 export function startingLevers(ch: NumberTracerChallenge, painted: { ghost: boolean; arrows: boolean; startDot: boolean }): string[] {
@@ -101,27 +47,6 @@ export function startingLevers(ch: NumberTracerChallenge, painted: { ghost: bool
     ...(ch.type !== 'write' && painted.startDot ? [DOTS_LEVER] : []),
     ...(ch.type === 'trace' && painted.arrows ? [ARROWS_LEVER] : []),
   ];
-}
-
-export function numberTracerLevers(ch: NumberTracerChallenge, pulled: readonly string[]): WorkspaceLever[] {
-  return leverIdsFor(ch).map(id => ({ ...DECL[id], pulled: pulled.includes(id) }));
-}
-
-/** What a pulled help lever has put on screen, in words the tutor and JEV read. Never the answer. */
-export function leverFacts(ch: NumberTracerChallenge, pulled: readonly string[]): string | undefined {
-  const strokes = guideOf(ch).length;
-  const facts: Record<string, string> = {
-    [GHOST_LEVER]: 'The dotted numeral is drawn on the canvas to trace over.',
-    [DOTS_LEVER]: strokes > 1
-      ? `A green dot marks where each of the ${strokes} strokes starts, numbered in drawing order.`
-      : 'A green dot marks where the stroke starts.',
-    [ARROWS_LEVER]: 'Arrows along the dotted numeral show which way each stroke goes.',
-    [FIRST_PART_LEVER]: 'The opening part of the first stroke is drawn dotted on the canvas; the rest of the canvas is blank.',
-    [MODEL_STROKES_LEVER]: 'Beside the canvas the model is drawn as its strokes, each with a numbered start dot and an arrow.',
-    [COUNT_DOTS_LEVER]: 'Under each shown number is a row of that many dots; nothing is drawn under the gap.',
-  };
-  const on = leverIdsFor(ch).filter(id => pulled.includes(id) && facts[id]).map(id => facts[id]);
-  return on.length ? on.join(' ') : undefined;
 }
 
 // ── help-lever geometry and leak rules ──────────────────────────────────────
@@ -214,12 +139,70 @@ export function runLeaks(source: NumberTracerChallenge, practice: NumberTracerCh
     || JSON.stringify(practice.sequenceNumbers) === JSON.stringify(source.sequenceNumbers);
 }
 
-/** The easier item a simplify lever opens. */
-export function practiceItem(ch: NumberTracerChallenge, lever: string): NumberTracerChallenge | null {
-  if (lever === TRACE_PART_LEVER) return tracePart(ch);
-  if (lever === ONE_DIGIT_LEVER) return oneDigit(ch);
-  if (lever === COUNT_ON_LEVER) return countOnRun(ch);
-  return null;
-}
+/** The easier item a practice id (`<item>~simpler`) was built as, from its parent: each builder fits one mode. */
+export const practiceFor = (parent: NumberTracerChallenge): NumberTracerChallenge | null =>
+  tracePart(parent) ?? oneDigit(parent) ?? countOnRun(parent);
 
 export const PRACTICE_NOTE = 'An easier practice item, ungraded; the full item comes back blank after it.';
+
+// ── the lever set ────────────────────────────────────────────────────────
+
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
+export const NUMBER_TRACER_LEVERS = leverSet<NumberTracerChallenge, null>({
+  modeOf: ch => ch.type,
+  missesOf: () => NUMBER_TRACER_MISSES,
+  specs: [
+    { id: GHOST_LEVER, type: 'marks', modes: ['trace'],
+      answers: ['shape_off', 'other_numeral', 'not_readable', 'digits_swapped', 'part_left_out'],
+      when: 'the writing does not follow the numeral and no dotted numeral is on the canvas',
+      does: 'Draws the dotted numeral on the canvas to trace over. Say that it is there; do not trace or describe it for the learner.',
+      fact: 'The dotted numeral is drawn on the canvas to trace over.' },
+    { id: DOTS_LEVER, type: 'marks', modes: ['trace', 'copy', 'write'],
+      answers: ['shape_off', 'poorly_formed', 'not_readable', 'other_numeral', 'digits_swapped'],
+      when: 'the learner starts the numeral in the wrong place or draws its parts out of order',
+      does: 'Puts a green dot where each stroke of the numeral starts, numbered in drawing order. Point to dot 1; '
+        + 'do not describe the shape of any stroke.',
+      fact: (_content, ch) => (guideOf(ch).length > 1
+        ? `A green dot marks where each of the ${guideOf(ch).length} strokes starts, numbered in drawing order.`
+        : 'A green dot marks where the stroke starts.') },
+    { id: ARROWS_LEVER, type: 'marks', modes: ['trace'],
+      answers: ['poorly_formed', 'shape_off', 'part_left_out'],
+      when: 'the learner follows the numeral the wrong way or stops partway along it',
+      does: 'Draws arrows along each stroke of the dotted numeral, showing which way it goes.',
+      fact: 'Arrows along the dotted numeral show which way each stroke goes.' },
+    { id: MODEL_STROKES_LEVER, type: 'marks', modes: ['copy'],
+      answers: ['poorly_formed', 'shape_off', 'part_left_out', 'not_readable', 'other_numeral'],
+      when: 'the learner\'s copy does not look like the model',
+      does: 'Draws the model numeral beside the canvas as its strokes, each with a numbered start dot and an arrow. '
+        + 'The canvas stays blank.',
+      fact: 'Beside the canvas the model is drawn as its strokes, each with a numbered start dot and an arrow.' },
+    { id: FIRST_PART_LEVER, type: 'marks', modes: ['write'],
+      answers: ['part_left_out', 'shape_off', 'poorly_formed', 'not_readable', 'other_numeral'],
+      when: 'the learner cannot begin the numeral from memory, or leaves part of it out',
+      does: 'Draws the opening part of the numeral\'s first stroke dotted on the canvas; the learner writes the rest. '
+        + 'Do not describe the rest of the shape.',
+      fact: 'The opening part of the first stroke is drawn dotted on the canvas; the rest of the canvas is blank.' },
+    { id: COUNT_DOTS_LEVER, type: 'marks', modes: ['sequence'],
+      answers: ['other_numeral', 'not_readable'],
+      when: 'the learner writes a number that does not belong in the gap',
+      does: 'Puts a row of dots under each shown number, as many dots as the number; nothing goes under the gap. '
+        + 'Never say how many dots the gap would need or what number belongs there.',
+      content: ch => countDots(ch),
+      fact: 'Under each shown number is a row of that many dots; nothing is drawn under the gap.' },
+    { id: TRACE_PART_LEVER, type: 'easier', modes: ['trace'], answers: 'all',
+      when: 'tracing the whole numeral is too much at once',
+      does: 'Opens an easier, ungraded practice: trace one stroke of this numeral (or its first half). Then the whole numeral comes back blank.',
+      content: ch => tracePart(ch) },
+    { id: ONE_DIGIT_LEVER, type: 'easier', modes: ['copy', 'write'],
+      answers: ['poorly_formed', 'shape_off', 'part_left_out', 'not_readable', 'digits_swapped', 'other_numeral'],
+      when: 'a two-digit number is too much at once',
+      does: 'Opens an easier, ungraded practice: the first digit of this number on its own. Then the whole number comes back blank.',
+      content: ch => oneDigit(ch) },
+    { id: COUNT_ON_LEVER, type: 'easier', modes: ['sequence'],
+      answers: ['other_numeral', 'not_readable', 'digits_swapped'],
+      when: 'finding a gap inside the run is too much at once',
+      does: 'Opens an easier, ungraded practice: a different counting run whose LAST number is missing. '
+        + 'Never say this item\'s missing number. Then this item comes back.',
+      content: ch => countOnRun(ch) },
+  ],
+});

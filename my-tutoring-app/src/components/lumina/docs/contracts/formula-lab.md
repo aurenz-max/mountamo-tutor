@@ -1,7 +1,7 @@
 # Contract: formula-lab
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C17) for the workspace requirements only. A full `/primitive-contract formula-lab` derivation (consumers per formula skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/FormulaLab.tsx` · **Workspace:** `formulaLabWorkspace.ts` · **Math:** `formulaLabMath.ts` · **Generator:** `service/math/gemini-formula-lab.ts` · **Adapter:** `components/live-activity/adapters/formulaLabLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`formula-lab`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/FormulaLab.tsx` · **Workspace:** `formulaLabWorkspace.ts` · **Math:** `formulaLabMath.ts` · **Generator:** `service/math/gemini-formula-lab.ts` · **Boss:** `formulaLab.card.ts` + `formulaLab.boss.ts` (levers `formulaLabLevers.ts`) · **Catalog:** `service/manifest/catalog/math.ts` (`formula-lab`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R2 (W1 plain-shape binding, C17); R3 levers.
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke boss, `FORMULA_LEVERS` lever set (marks, legend, layout, easier), workspace-only component; adapter and scripted path deleted; predict-direction affordance tap → manipulate (the track is dragged).

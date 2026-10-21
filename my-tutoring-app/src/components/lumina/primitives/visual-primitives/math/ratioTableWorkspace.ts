@@ -1,14 +1,15 @@
 /**
- * Ratio table on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C15).
+ * Ratio table's domain: the ratio arithmetic, the activity's check and its misses, and the scene the tutor reads.
+ * The boss (`ratioTable.boss.ts`) builds the assignment.
  *
  * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
  * activity's own Check: a typed number (missing value, multiplier, unit rate) within the item's tolerance, or the
  * slider's multiplier (build ratio) within twice it. The tutor is never handed the answer: not the hidden value, not
  * the multiplier a find or build item asks for, not the unit rate a unit-rate item asks for.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { RatioTableChallenge } from './RatioTable';
+import type { RatioMiss } from './ratioTable.card';
 
 export type RatioType = RatioTableChallenge['type'];
 
@@ -98,31 +99,7 @@ export function describeRatioWork(ch: RatioTableChallenge, work: RatioWork): str
   return t ? `typed ${t}` : 'nothing typed yet';
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the number typed or the slider, drawn from the
- * catalog's commonStruggles (scaling one value only, adding instead of multiplying, no unit rate, multiplier and unit
- * rate confused):
- * - missing value: `added_difference` the known row's change added, not multiplied; `unscaled` the hidden row's base
- *   value copied; `copied_known` the other row's scaled value copied; `unit_rate` the per-1 rate typed;
- *   `multiplier` the multiplier typed;
- * - find multiplier: `difference` a row's scaled value minus its base (adding thinking); `scaled_value` a scaled value
- *   typed; `unit_rate` the per-1 rate typed; `inverse` base ÷ scaled, the multiplier upside down;
- * - unit rate: `inverse_rate` the first quantity ÷ the second; `difference` second minus first; `typed_quantity`
- *   one of the two quantities typed;
- * - build ratio: `one_step_off` the slider one whole step from the multiplier;
- * - every mode: `near_miss` within 10%, else `too_high` / `too_low`.
- */
-export type RatioMiss = 'added_difference' | 'unscaled' | 'copied_known' | 'unit_rate' | 'multiplier'
-  | 'difference' | 'scaled_value' | 'inverse' | 'inverse_rate' | 'typed_quantity' | 'one_step_off'
-  | 'near_miss' | 'too_high' | 'too_low';
-
-const SIZE: readonly RatioMiss[] = ['near_miss', 'too_high', 'too_low'];
-export const RATIO_MISSES_BY_MODE: Record<string, readonly RatioMiss[]> = {
-  build_ratio: ['one_step_off', ...SIZE],
-  missing_value: ['added_difference', 'unscaled', 'copied_known', 'unit_rate', 'multiplier', ...SIZE],
-  find_multiplier: ['difference', 'scaled_value', 'unit_rate', 'inverse', ...SIZE],
-  unit_rate: ['inverse_rate', 'difference', 'typed_quantity', ...SIZE],
-};
+export { RATIO_MISSES_BY_MODE, type RatioMiss } from './ratioTable.card';
 
 /** The values each signature miss stands for on this item, most specific first. Shared by the check and the harness. */
 export function signatureValues(ch: RatioTableChallenge): Array<[RatioMiss, number]> {
@@ -156,10 +133,6 @@ export function ratioMiss(ch: RatioTableChallenge, work: RatioWork): RatioMiss |
   return value > key ? 'too_high' : 'too_low';
 }
 
-export function workspaceAssignment(ch: RatioTableChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.instruction, response: 'gesture' };
-}
-
 /** What the session draws beside the table (its support tier's starting position). */
 export interface RatioTableView extends RatioWork {
   showUnitRate: boolean;
@@ -174,7 +147,7 @@ const KIND: Record<RatioType, string> = {
 };
 
 /** What is drawn and asked. The hidden value, the asked multiplier and the asked unit rate are never named. */
-export function workspaceScene(ch: RatioTableChallenge, view: RatioTableView): WorkspaceScene {
+export function workspaceScene(ch: RatioTableChallenge, view: RatioTableView): SceneOf {
   const [a, b] = ch.baseRatio, [A, B] = ch.rowLabels, k = ch.targetMultiplier;
   const facts: Record<string, string> = {
     kind: KIND[ch.type],
@@ -197,11 +170,10 @@ export function workspaceScene(ch: RatioTableChallenge, view: RatioTableView): W
     view.showBarChart && ch.type !== 'unit-rate' ? 'a bar chart of both columns (a hidden value\'s bar is labelled ?)' : 'no bar chart',
   ].join('; ');
   facts.learnerWork = describeRatioWork(ch, view);
+  // How the learner answers is the card's `moves`; only what is this table's own is said here.
   facts.constraints = ch.type === 'build-ratio'
-    ? 'The learner moves the multiplier slider (or uses the arrow keys) and presses Check. The activity checks it itself. '
-      + 'You cannot move the slider or press Check.'
-    : 'The learner types a number in the answer box and presses Check. The activity checks it itself, within a small '
-      + 'rounding band. You cannot type, or press Check.';
+    ? 'A slider setting within a small band of the key counts.'
+    : 'An answer within a small rounding band of the key counts.';
   return { objects: [], facts };
 }
 

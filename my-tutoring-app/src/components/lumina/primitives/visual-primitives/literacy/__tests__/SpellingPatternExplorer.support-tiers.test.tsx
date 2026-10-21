@@ -1,286 +1,106 @@
 // @vitest-environment jsdom
 /**
- * Within-mode SUPPORT TIER verification for spelling-pattern-explorer.
- *
- * The tier is 100% component display withdrawal — the generator stamps
- * `supportTier` and the content (patternWords, dictationWords, rule) is
- * byte-identical across tiers. Levers:
+ * Within-mode SUPPORT TIER verification for spelling-pattern-explorer, mounted the way a lesson mounts it (the
+ * teaching workspace is the only path). The tier is display withdrawal before spelling starts; content is the same:
  *   L1 pattern-reveal panel      shown (easy/legacy) → HIDDEN (medium/hard)
  *   L2 word-tile highlights      all → first 3 worked examples → none
  *   L3 ruleTemplate display      shown → shown → HIDDEN
- *   L4 live correct-glow         live → live → NEUTRAL until Review
- *   L5 "show" reveal button      available → available → HIDDEN
- *
- * Absolute keep-trues asserted here:
- *   - The per-word hint button is the ONLY stimulus identifying which word to
- *     spell (no TTS exists) — it is NEVER tier-gated, at any tier.
- *   - The "What pattern do they share?" prompt renders at every tier.
- *   - A payload with NO supportTier renders the legacy full-help UI unchanged.
+ * Keep-trues: the "What pattern do they share?" prompt renders at every tier; the word's hint button is never
+ * tier-gated. (The scripted path's live glow and "show" reveal went with that path: the check is the commit.)
  */
-import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/hooks/useLuminaAI', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).legacyAISeam());
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
-vi.mock('../../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-  }),
-}));
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent } from '@testing-library/react';
+import { installRuntimeTimers, restoreRuntimeTimers } from '../../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace, type WorkspaceHarness } from '../../../../components/live-activity/runtime/testing/workspaceHarness';
+import type { SpellingPatternExplorerData } from '../SpellingPatternExplorer';
 
-vi.mock('../../../../utils/SoundManager', () => ({
-  SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-import SpellingPatternExplorer, {
-  type SpellingPatternExplorerData,
-} from '../SpellingPatternExplorer';
+beforeEach(() => { installRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 const RULE_TEMPLATE = 'When a word ends in -ake, the a says ___';
+type Tier = SpellingPatternExplorerData['supportTier'];
 
-/** Base payload = what the generator emits with NO support tier (legacy full help). */
-const makeData = (
-  tierFields: Partial<SpellingPatternExplorerData> = {},
-): SpellingPatternExplorerData => ({
-  title: 'Magic E Lab',
-  gradeLevel: '2',
-  patternType: 'long-vowel',
+const makeData = (supportTier?: Tier): SpellingPatternExplorerData => ({
+  title: 'Magic E Lab', gradeLevel: '2', patternType: 'long-vowel',
   patternWords: ['cake', 'lake', 'bake', 'make', 'take', 'rake'],
-  highlightPattern: 'ake',
-  ruleTemplate: RULE_TEMPLATE,
+  highlightPattern: 'ake', ruleTemplate: RULE_TEMPLATE,
   correctRule: 'The silent e makes the a say its long name.',
   dictationWords: ['snake', 'flake', 'brake', 'shake'],
-  dictationHints: [
-    'a slithering reptile',
-    'one bit of falling snow',
-    'it stops the car',
-    'wiggle quickly side to side',
-  ],
-  ...tierFields,
+  dictationHints: ['a slithering reptile', 'one bit of falling snow', 'it stops the car', 'wiggle quickly side to side'],
+  ...(supportTier ? { supportTier } : {}),
 });
 
-/** Count of highlighted-pattern spans: each highlighted word tile renders a span
- *  whose exact text is the pattern substring ('ake'); the reveal panel adds one more. */
-const highlightedSpanCount = () => screen.queryAllByText('ake').length;
-
-const toRulePhase = () =>
-  fireEvent.click(screen.getByRole('button', { name: /I see the pattern/ }));
-
-const toApplyPhase = () => {
-  toRulePhase();
-  fireEvent.change(
-    screen.getByPlaceholderText('Write the spelling rule in your own words...'),
-    { target: { value: 'The silent e makes the vowel say its name.' } },
-  );
-  fireEvent.click(screen.getByRole('button', { name: /Next: Apply the Rule/ }));
+const mount = (tier?: Tier) =>
+  mountWorkspace({ primitiveId: 'spelling-pattern-explorer', evalMode: 'long_vowel', data: makeData(tier) as never });
+/** Highlighted-pattern spans: each highlighted tile renders a span whose exact text is "ake"; the panel adds one. */
+const highlighted = (h: WorkspaceHarness) => h.view.queryAllByText('ake').length;
+const toRule = (h: WorkspaceHarness) => h.press(/I see the pattern/);
+const toApply = (h: WorkspaceHarness) => {
+  toRule(h);
+  act(() => { fireEvent.change(h.view.getByLabelText('Your spelling rule'), { target: { value: 'The silent e says the name.' } }); });
+  h.press(/Next: Apply the Rule/);
 };
 
-const dictationInputs = () =>
-  screen.getAllByPlaceholderText('Type the word...') as HTMLInputElement[];
-
-const typeSpelling = (index: number, value: string) => {
-  fireEvent.change(dictationInputs()[index], { target: { value } });
-};
-
-// ============================================================================
-// L1 + L2 — observe phase: pattern-reveal panel + word-tile highlights
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · L1 panel + L2 highlights (observe)', () => {
-  afterEach(cleanup);
-
-  it('legacy (no tier) shows the reveal panel and highlights every word', () => {
-    render(<SpellingPatternExplorer data={makeData()} />);
-    expect(screen.getByText(/^Pattern:/)).toBeTruthy();
-    // 6 highlighted word tiles + 1 panel span, all exactly "ake"
-    expect(highlightedSpanCount()).toBe(7);
-  });
-
-  it('easy renders byte-identical to legacy (panel + all highlights)', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'easy' })} />);
-    expect(screen.getByText(/^Pattern:/)).toBeTruthy();
-    expect(highlightedSpanCount()).toBe(7);
+describe('L1 panel + L2 highlights (observe)', () => {
+  it.each([[undefined], ['easy']] as [Tier][])('%s shows the reveal panel and highlights every word', tier => {
+    const h = mount(tier);
+    expect(h.view.getByText(/^Pattern:/)).toBeTruthy();
+    expect(highlighted(h)).toBe(7);
+    h.close();
   });
 
   it('medium HIDES the reveal panel and keeps only the first 3 worked-example highlights', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'medium' })} />);
-    expect(screen.queryByText(/^Pattern:/)).toBeNull();
-    expect(highlightedSpanCount()).toBe(3);
-    // words 3-5 render PLAIN (whole-word text nodes — no highlight split)
-    for (const w of ['make', 'take', 'rake']) {
-      expect(screen.getByText(w)).toBeTruthy();
-    }
-    // words 0-2 are the worked examples: still on screen, split around the highlight
-    for (const prefix of ['c', 'l', 'b']) {
-      expect(screen.getByText(prefix)).toBeTruthy();
-    }
+    const h = mount('medium');
+    expect(h.view.queryByText(/^Pattern:/)).toBeNull();
+    expect(highlighted(h)).toBe(3);
+    for (const w of ['make', 'take', 'rake']) expect(h.view.getByText(w)).toBeTruthy();
+    h.close();
   });
 
-  it('hard HIDES the panel and every highlight — the student induces the pattern', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'hard' })} />);
-    expect(screen.queryByText(/^Pattern:/)).toBeNull();
-    expect(highlightedSpanCount()).toBe(0);
-    for (const w of ['cake', 'lake', 'bake', 'make', 'take', 'rake']) {
-      expect(screen.getByText(w)).toBeTruthy();
-    }
+  it('hard HIDES the panel and every highlight: the student induces the pattern', () => {
+    const h = mount('hard');
+    expect(h.view.queryByText(/^Pattern:/)).toBeNull();
+    expect(highlighted(h)).toBe(0);
+    for (const w of ['cake', 'lake', 'bake', 'make', 'take', 'rake']) expect(h.view.getByText(w)).toBeTruthy();
+    h.close();
   });
 
-  it('keep-true: the "What pattern do they share?" prompt renders at EVERY tier', () => {
-    for (const tier of [undefined, 'easy', 'medium', 'hard'] as const) {
-      cleanup();
-      render(<SpellingPatternExplorer data={makeData(tier ? { supportTier: tier } : {})} />);
-      expect(
-        screen.getByText('Look at these words. What pattern do they share?'),
-      ).toBeTruthy();
-    }
+  it.each([[undefined], ['easy'], ['medium'], ['hard']] as [Tier][])('%s keeps the "What pattern do they share?" prompt', tier => {
+    const h = mount(tier);
+    expect(h.view.getByText('Look at these words. What pattern do they share?')).toBeTruthy();
+    h.close();
   });
 });
 
-// ============================================================================
-// L3 — rule phase: ruleTemplate visibility
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · L3 ruleTemplate (rule phase)', () => {
-  afterEach(cleanup);
-
-  it('legacy shows the fill-in-the-blank template', () => {
-    render(<SpellingPatternExplorer data={makeData()} />);
-    toRulePhase();
-    expect(screen.getByText(RULE_TEMPLATE)).toBeTruthy();
+describe('L3 ruleTemplate (rule phase)', () => {
+  it.each([[undefined], ['easy'], ['medium']] as [Tier][])('%s shows the fill-in-the-blank template', tier => {
+    const h = mount(tier);
+    toRule(h);
+    expect(h.view.getByText(RULE_TEMPLATE)).toBeTruthy();
+    h.close();
   });
 
-  it('easy and medium show the template', () => {
-    for (const tier of ['easy', 'medium'] as const) {
-      cleanup();
-      render(<SpellingPatternExplorer data={makeData({ supportTier: tier })} />);
-      toRulePhase();
-      expect(screen.getByText(RULE_TEMPLATE), tier).toBeTruthy();
-    }
-  });
-
-  it('hard HIDES the template — the student states the rule unaided', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'hard' })} />);
-    toRulePhase();
-    expect(screen.queryByText(RULE_TEMPLATE)).toBeNull();
-    // the textarea (the task surface) is still there
-    expect(
-      screen.getByPlaceholderText('Write the spelling rule in your own words...'),
-    ).toBeTruthy();
+  it('hard HIDES the template: the student states the rule unaided', () => {
+    const h = mount('hard');
+    toRule(h);
+    expect(h.view.queryByText(RULE_TEMPLATE)).toBeNull();
+    expect(h.view.getByPlaceholderText('Write the spelling rule in your own words...')).toBeTruthy();
+    h.close();
   });
 });
 
-// ============================================================================
-// L4 — apply phase: live correct-glow suppression
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · L4 live correct-glow (apply phase)', () => {
-  afterEach(cleanup);
-
-  it('legacy glows emerald the moment the spelling matches', () => {
-    render(<SpellingPatternExplorer data={makeData()} />);
-    toApplyPhase();
-    typeSpelling(0, 'snake');
-    expect(dictationInputs()[0].className).toContain('bg-emerald-500/5');
-  });
-
-  it('easy and medium keep the live glow', () => {
-    for (const tier of ['easy', 'medium'] as const) {
-      cleanup();
-      render(<SpellingPatternExplorer data={makeData({ supportTier: tier })} />);
-      toApplyPhase();
-      typeSpelling(0, 'snake');
-      expect(dictationInputs()[0].className, tier).toContain('bg-emerald-500/5');
-    }
-  });
-
-  it('hard stays NEUTRAL on a correct spelling — no live answer signal', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'hard' })} />);
-    toApplyPhase();
-    typeSpelling(0, 'snake');
-    expect(dictationInputs()[0].className).not.toContain('bg-emerald-500/5');
-    expect(dictationInputs()[0].className).toContain('bg-white/5');
-  });
-});
-
-// ============================================================================
-// L5 — apply phase: "show" reveal availability
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · L5 "show" reveal button (apply phase)', () => {
-  afterEach(cleanup);
-
-  it('legacy offers "show" on a wrong spelling', () => {
-    render(<SpellingPatternExplorer data={makeData()} />);
-    toApplyPhase();
-    typeSpelling(0, 'snak');
-    expect(screen.getByRole('button', { name: 'show' })).toBeTruthy();
-  });
-
-  it('easy and medium keep the "show" reveal', () => {
-    for (const tier of ['easy', 'medium'] as const) {
-      cleanup();
-      render(<SpellingPatternExplorer data={makeData({ supportTier: tier })} />);
-      toApplyPhase();
-      typeSpelling(0, 'snak');
-      expect(screen.getByRole('button', { name: 'show' }), tier).toBeTruthy();
-    }
-  });
-
-  it('hard HIDES "show" — a stuck student still has the hint channel', () => {
-    render(<SpellingPatternExplorer data={makeData({ supportTier: 'hard' })} />);
-    toApplyPhase();
-    typeSpelling(0, 'snak');
-    expect(screen.queryByRole('button', { name: 'show' })).toBeNull();
-    // the hint (the word-identification stimulus) is still offered
-    expect(screen.getAllByRole('button', { name: 'hint' }).length).toBeGreaterThan(0);
-  });
-});
-
-// ============================================================================
-// KEEP-TRUE — the per-word hint button is NEVER tier-gated (it is the stimulus)
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · hint button is the stimulus, never withdrawn', () => {
-  afterEach(cleanup);
-
-  it('renders one hint button per dictation word at EVERY tier, and hints still open', () => {
-    for (const tier of [undefined, 'easy', 'medium', 'hard'] as const) {
-      cleanup();
-      render(<SpellingPatternExplorer data={makeData(tier ? { supportTier: tier } : {})} />);
-      toApplyPhase();
-      const hints = screen.getAllByRole('button', { name: 'hint' });
-      expect(hints.length, String(tier)).toBe(4);
-      fireEvent.click(hints[0]);
-      expect(screen.getByText('a slithering reptile'), String(tier)).toBeTruthy();
-    }
-  });
-});
-
-// ============================================================================
-// LEGACY DEFAULT — absent supportTier renders full help identical to easy
-// ============================================================================
-
-describe('spelling-pattern-explorer tier · legacy default (no supportTier field)', () => {
-  afterEach(cleanup);
-
-  it('renders every full-support surface: panel, all highlights, template, glow, show', () => {
-    render(<SpellingPatternExplorer data={makeData()} />);
-    // observe: panel + all 6 highlights
-    expect(screen.getByText(/^Pattern:/)).toBeTruthy();
-    expect(highlightedSpanCount()).toBe(7);
-    // rule: template shown
-    toRulePhase();
-    expect(screen.getByText(RULE_TEMPLATE)).toBeTruthy();
-    // apply: live glow + show button + hints
-    fireEvent.change(
-      screen.getByPlaceholderText('Write the spelling rule in your own words...'),
-      { target: { value: 'silent e says the name' } },
-    );
-    fireEvent.click(screen.getByRole('button', { name: /Next: Apply the Rule/ }));
-    typeSpelling(0, 'snake');
-    expect(dictationInputs()[0].className).toContain('bg-emerald-500/5');
-    typeSpelling(1, 'flak');
-    expect(screen.getByRole('button', { name: 'show' })).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'hint' }).length).toBe(4); // one per dictation word
+describe('the word\'s hint is never withdrawn', () => {
+  it.each([[undefined], ['easy'], ['medium'], ['hard']] as [Tier][])('%s offers the hint on the word being spelled', tier => {
+    const h = mount(tier);
+    toApply(h);
+    h.press('hint');
+    expect(h.view.getByText('a slithering reptile')).toBeTruthy();
+    h.close();
   });
 });

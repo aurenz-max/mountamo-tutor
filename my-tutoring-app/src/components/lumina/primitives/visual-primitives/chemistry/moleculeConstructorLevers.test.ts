@@ -1,13 +1,13 @@
 /**
- * molecule-constructor `build` mode levers (`moleculeConstructorLevers.ts`): the atom tally's leak rule, the
- * simpler build_target builder, the refusals, and which lever follows each named miss.
+ * molecule-constructor's classic levers (`MOLECULE_LEVERS`, moleculeConstructorLevers.ts): the atom tally's leak rule,
+ * the simpler build_target builder, the offer conditions, the support fact, and which lever follows each named miss.
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { MoleculeConstructorChallenge } from './MoleculeConstructor';
 import {
-  ATOM_TALLY_LEVER, BOND_TALLY_LEVER, FEWER_ATOMS_LEVER, JOIN_RINGS_LEVER, atomTally, atomTallyLeaks,
-  classicRefusal, formulaCounts, leverFacts, moleculeLevers, simplerMolecule, simplerTarget,
+  ATOM_TALLY_LEVER, BOND_TALLY_LEVER, FEWER_ATOMS_LEVER, JOIN_RINGS_LEVER, MOLECULE_LEVERS, atomTally, atomTallyLeaks,
+  formulaCounts, simplerMolecule, simplerTarget, type LeverContext,
   FORMULA_MODEL_LEVER, SHOW_FORMULA_LEVER, drawnMolecule, formulaModel, formulaModelLeaks, showFormulaLeaks, simplerTyped,
 } from './moleculeConstructorLevers';
 import { specForAtoms } from './moleculeConstructorWorkspace';
@@ -23,6 +23,10 @@ const BIG = { availableElements: ['H', 'C', 'N', 'O', 'S', 'Cl'], showValence: t
 /** Targets a generator writes for the build mode (the w1 payload's and the prompt's examples). */
 const SOURCES = ['H2O', 'O2', 'CO2', 'CH4', 'NH3', 'C2H6', 'C2H4', 'C2H5OH', 'CH3OH', 'H2', 'N2', 'HCN', 'H2S', 'HCl', 'C3H8', 'CH2O', 'C2H2'];
 const total = (f: string) => Object.values(formulaCounts(f)).reduce((s, n) => s + n, 0);
+/** The levers offered on an item, with atoms on the canvas unless the context says otherwise. */
+const moleculeLevers = (c: MoleculeConstructorChallenge, pulled: readonly string[], ctx: LeverContext = {}) =>
+  MOLECULE_LEVERS.declare(c, { atoms: 3, joinable: 2, ...ctx }, pulled);
+const leverFacts = (c: MoleculeConstructorChallenge, pulled: readonly string[]) => MOLECULE_LEVERS.onScreen(c, {}, pulled);
 
 describe('the atom tally', () => {
   it('reads subscripts, including unicode ones', () => {
@@ -100,13 +104,13 @@ describe('the levers per miss', () => {
   it('free_build: after no_bonds, the rings', () => {
     expect(nextLever(moleculeLevers(FREE, []), 'no_bonds')).toBe(JOIN_RINGS_LEVER);
   });
-  it('refuses a pull that would draw nothing', () => {
-    expect(classicRefusal(BOND_TALLY_LEVER, 0, 0)).toMatch(/no atoms/i);
-    expect(classicRefusal(BOND_TALLY_LEVER, 1, 1)).toBeNull();
-    expect(classicRefusal(JOIN_RINGS_LEVER, 1, 1)).toMatch(/fewer than two/i);
-    expect(classicRefusal(JOIN_RINGS_LEVER, 3, 1)).toMatch(/fewer than two/i);
-    expect(classicRefusal(JOIN_RINGS_LEVER, 2, 2)).toBeNull();
-    expect(classicRefusal(ATOM_TALLY_LEVER, 0, 0)).toBeNull();
+  it('does not offer a lever that would draw nothing yet', () => {
+    const ids = (c: MoleculeConstructorChallenge, ctx: LeverContext) => moleculeLevers(c, [], { palette: SMALL, ...ctx }).map(l => l.id);
+    expect(ids(water, { atoms: 0, joinable: 0 })).toEqual([ATOM_TALLY_LEVER, FEWER_ATOMS_LEVER]);
+    expect(ids(water, { atoms: 1, joinable: 1 })).toContain(BOND_TALLY_LEVER);
+    expect(ids(FREE, { atoms: 1, joinable: 1 })).toEqual([]);
+    expect(ids(FREE, { atoms: 3, joinable: 1 })).toEqual([]);
+    expect(ids(FREE, { atoms: 2, joinable: 2 })).toEqual([JOIN_RINGS_LEVER]);
   });
   it('lever text and scene facts name no molecule and no count', () => {
     const all = [...moleculeLevers(water, [], { palette: SMALL }), ...moleculeLevers(FREE, [])];
@@ -201,6 +205,12 @@ describe('identify-mode levers per miss', () => {
     [write, 'formula_off', [], FORMULA_MODEL_LEVER], [write, 'formula_off', [FORMULA_MODEL_LEVER], FEWER_ATOMS_LEVER],
   ])('after %#: the next lever', (c, miss, pulled, want) => {
     expect(nextLever(moleculeLevers(c as MoleculeConstructorChallenge, pulled as string[]), miss as string)).toBe(want);
+  });
+  it('the model lever comes by the support tier of the item; no other item states one', () => {
+    expect(MOLECULE_LEVERS.support(write, {})).toMatch(/after a miss, model a different molecule, drawn with its formula with the formula_model lever/);
+    expect(MOLECULE_LEVERS.support({ ...write, supportTier: 'easy' }, {})).toMatch(/^before the learner tries, pull the model lever \(formula_model\)/);
+    expect(MOLECULE_LEVERS.support(name, {})).toBe('');
+    expect(MOLECULE_LEVERS.support(target('w', 'H2O', 'Water'), {})).toBe('');
   });
   it('lever text and scene facts name no molecule, formula or count', () => {
     for (const l of [...moleculeLevers(name, []), ...moleculeLevers(write, [])]) expect(`${l.when} ${l.does}`).not.toMatch(/methane|ethane|water|hydrogen|carbon|\d/i);

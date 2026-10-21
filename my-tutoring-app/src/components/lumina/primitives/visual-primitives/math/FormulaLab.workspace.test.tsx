@@ -17,7 +17,8 @@ import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContrac
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { FormulaLabChallenge, FormulaLabChallengeType, FormulaLabData } from './FormulaLab';
-import { EMPTY_WORK, FORMULA_MISSES_BY_MODE, formulaCheck, formulaMiss } from './formulaLabWorkspace';
+import { EMPTY_WORK, formulaCheck, formulaMiss } from './formulaLabWorkspace';
+import { FORMULA_MISSES_BY_MODE } from './formulaLab.card';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -75,7 +76,10 @@ const perform = (h: WorkspaceHarness, inputs: Input[]) => inputs.forEach(i => ('
 it('every catalog mode binds, with its miss list', () => {
   const entry = getComponentById('formula-lab')!;
   expect((entry.evalModes ?? []).map(m => m.evalMode).sort()).toEqual(CASES.map(c => c.mode).sort());
-  expect(entry.teachingWorkspace!.misses).toEqual(FORMULA_MISSES_BY_MODE);
+  // free-explore credits every finished move and names no miss, so the catalog lists the other four.
+  const { 'free-explore': none, ...named } = FORMULA_MISSES_BY_MODE;
+  expect(none).toEqual([]);
+  expect(entry.teachingWorkspace!.misses).toEqual(named);
   for (const { mode, data } of CASES) {
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'formula-lab', pin: mode, objectiveIds: ['o'],
       data: data as unknown as Record<string, unknown> }), mode).not.toBeNull();
@@ -176,7 +180,7 @@ it('the prediction and transfer misses name the pattern', () => {
   expect(formulaMiss(power, sq, typed('30'))).toBe('power_as_multiply');
 });
 
-it('the adapter refuses a challenge its own check cannot answer', () => {
+it('the boss refuses a challenge its own check cannot answer', () => {
   const validate = LIVE_ADAPTERS['formula-lab'].validate;
   const bad = CASES[4].data.challenges[0];
   expect(() => validate({ ...CASES[4].data, challenges: [{ ...bad, expectedTargetOutput: 99 }] })).toThrow();

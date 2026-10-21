@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -10,7 +10,6 @@ import {
   LuminaPanel,
   LuminaButton,
   LuminaInput,
-  LuminaPrompt,
   LuminaFeedbackCard,
   LuminaChallengeCounter,
   LuminaAnswerChoice,
@@ -20,24 +19,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AngleWorkshopMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   ANSWER_LABEL, CLOSER_LABEL, DONE_LABEL, PROTRACTOR_LABEL, RESET_LABEL, STEP_DEG, WIDER_LABEL,
-  classicMiss, describeAngleWork, makeAngleMiss, makeAngleMissWords, relationshipLabel, workspaceAssignment, workspaceScene,
+  classicMiss, describeAngleWork, makeAngleMiss, makeAngleMissWords, relationshipLabel, workspaceScene,
   type AngleView,
 } from './angleWorkshopWorkspace';
 import {
-  CORNER_LEVER, PRACTICE_NOTE, PROTRACTOR_LEVER, TENS_LEVER, TRY_X_LEVER, angleLeverFacts, angleWorkshopLevers, practiceFor,
-  tryYourX,
+  ANGLE_LEVERS, CORNER_LEVER, PRACTICE_NOTE, PROTRACTOR_LEVER, TENS_LEVER, TRY_X_LEVER, tryYourX,
 } from './angleWorkshopLevers';
+import { angleWorkshopBoss } from './angleWorkshop.boss';
 import { AngleBuildScene } from './AngleBuildScene';
 import { AngleLeverOverlay } from './AngleLeverOverlay';
 
@@ -164,9 +163,8 @@ export interface AngleWorkshopData {
   gradeBand?: '3' | '4' | '5' | '6' | '7' | '8';
   /**
    * Within-mode support tier that was applied ('easy' | 'medium' | 'hard'), set only
-   * for single-mode sessions. Threaded into the live tutor so it calibrates how much
-   * it reveals — at 'hard' the instruction withholds the relationship, so the tutor
-   * must not name it either. Absent in blended sessions (nothing was withheld).
+   * for single-mode sessions; at 'hard' the instruction withholds the relationship.
+   * Absent in blended sessions (nothing was withheld).
    */
   supportTier?: 'easy' | 'medium' | 'hard';
   /** 3-6 challenges per session. Required. Built by the generator's pool service. */
@@ -233,48 +231,6 @@ function fmtExpr(a: number, b: number): string {
   return `(${xPart} ${sign} ${Math.abs(b)})°`;
 }
 
-/**
- * How much the live tutor may reveal, calibrated to the on-screen support tier.
- * Keeps the tutor (a second information channel) consistent with the instruction
- * scaffold (modality #2): at 'hard' the instruction withholds the relationship,
- * so the tutor must not name it either.
- *
- * Mode-aware: in measure / classify_pairs the relationship or reading IS the answer,
- * so the tutor never names it at any tier — there the tier only dials coaching depth.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType: AngleWorkshopChallengeType,
-): string {
-  if (!tier) return '';
-  const common = 'Never state the final answer (the angle measure or the value of x).';
-  const solving =
-    challengeType === 'solve_unknown'
-    || challengeType === 'solve_algebraic'
-    || challengeType === 'transversal';
-
-  if (!solving) {
-    // measure / classify_pairs — the relationship or reading IS the answer; never name it.
-    switch (tier) {
-      case 'easy':
-        return `SUPPORT TIER easy: be explicit about technique and the visual tells (how to place and read the protractor; which corner shapes mean 90°, 180°, or equal) WITHOUT saying which one this figure is. ${common}`;
-      case 'medium':
-        return `SUPPORT TIER medium: hint at the visual tells and let the student decide. ${common}`;
-      default:
-        return `SUPPORT TIER hard: minimal coaching — ask what the student notices and let them judge it unaided. ${common}`;
-    }
-  }
-
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the angle relationship and walk through the setup step by step. ${common}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the relationship is named on screen, but let the student do the setup and arithmetic. Nudge the next step; do not solve it. ${common}`;
-    default:
-      return `SUPPORT TIER hard: the on-screen instruction deliberately does NOT name the relationship — identifying it from the figure is part of the task. Do NOT name the relationship or its rule; ask what the student notices (a right-angle corner, a straight line, crossing lines, parallel marks). ${common}`;
-  }
-}
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -288,14 +244,14 @@ interface AngleWorkshopProps {
   runtimeEvalMode?: string;
 }
 
-const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  AngleWorkshopProps & { tutorOwned: boolean; useController: (options: ProgressOptions<AngleWorkshopChallenge>) => Progress }) => {
+const useAngleProgress = useWorkspaceProgressFor('angle-workshop');
+
+const AngleWorkshopSurface = ({ data, className, runtimePlanItemId }: AngleWorkshopProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     gradeBand = '7',
-    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -306,18 +262,20 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   } = data;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression. On the workspace path the runtime moves the index.
+  // Multi-challenge progression: the teaching workspace moves the index.
   // -------------------------------------------------------------------------
   const stableInstanceIdRef = useRef(instanceId || `angle-workshop-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound below, once the state it clears exists; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
-  const progress = useController({
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useAngleProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: angleWorkshopBoss.assignment!,
     onItemOpened: (_index, retry) => reopen.current(retry),
+    onFinished: (result) => finish.current(result),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -325,10 +283,9 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     results: challengeResults,
     isComplete: allChallengesComplete,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
   // Levers (`angleWorkshopLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
@@ -357,7 +314,6 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const [selectedRelationship, setSelectedRelationship] = useState<AnglePairRelationship | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [showHint, setShowHint] = useState(false);
 
   // Measure mode gates the answer on placing the protractor first (a real
   // measuring action) — mirrors circle-explorer's unroll gate.
@@ -367,8 +323,6 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
   // Refs
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
   const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -385,18 +339,16 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     setSelectedRelationship(null);
     setFeedback('');
     setFeedbackType('');
-    setShowHint(false);
     setProtractorShown(false);
     recordedRef.current = false;
-    hintViewedRef.current = false;
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Workspace path: Try again clears the rejected answer; a make_angle build and its verdict stay to revise. A fresh
+  // Try again clears the rejected answer; a make_angle build and its verdict stay to revise. A fresh
   // item drops any easier practice item and clears in the advance's own render, so the scene adds no revision after
   // it (the reset above then finds nothing to change).
   reopen.current = (retry) => {
     if (retry && currentChallenge?.type === 'make_angle') return;
-    if (!retry) { setPractice(null); setProtractorShown(false); setShowHint(false); }
+    if (!retry) { setPractice(null); setProtractorShown(false); }
     setAnswerInput('');
     setSelectedRelationship(null);
     setFeedback('');
@@ -847,66 +799,13 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    answerKind: currentChallenge?.answerKind ?? 'degrees',
-    relationship: currentChallenge?.relationship ?? null,
-    solveConfig: currentChallenge?.solveConfig ?? null,
-    algConfig: currentChallenge?.algConfig ?? null,
-    transversalShape: currentChallenge?.transversalShape ?? null,
-    transRelation: currentChallenge?.transRelation ?? null,
-    knownAngle: currentChallenge?.knownAngle ?? null,
-    givenAngle: currentChallenge?.givenAngle ?? null,
-    gradeBand,
-    supportTier: supportTier ?? null,
-    attemptNumber: currentAttempts + 1,
-  }), [
-    challengeType,
-    currentChallenge,
-    currentChallengeIndex,
-    challenges.length,
-    gradeBand,
-    supportTier,
-    currentAttempts,
-  ]);
-
-  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'angle-workshop',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: `Grade ${gradeBand}`,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const policy = tutorRevealPolicy(supportTier, challengeType);
-    sendText(
-      `[ACTIVITY_START] Angle session: ${challenges.length} problems, mode "${challengeType}", grade ${gradeBand}. `
-      + `Introduce briefly: angles in a figure are linked by relationships (they add to 90°, 180°, or are equal), and those relationships let us find unknown angles. Then read the first task.`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
   // Every check: the activity's own verdict, committed through the progress controller
   // -------------------------------------------------------------------------
   const view: AngleView = { answerInput, relationship: selectedRelationship, protractorShown: protractorOn, opening };
 
   /**
-   * Counts the attempt and records a correct result on both paths (on the workspace path it is the checked gesture),
-   * then adds this primitive's own score. An easier practice item records nothing.
+   * The checked gesture (counts the attempt, records the verdict), then this primitive's own score on a correct result.
+   * An easier practice item records nothing.
    */
   const commit = (ch: AngleWorkshopChallenge, correct: boolean, miss?: string) => {
     const attempts = currentAttempts + 1;
@@ -919,7 +818,6 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const handleCheck = () => {
     if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
     const ch = currentChallenge;
-    const revealPolicy = tutorRevealPolicy(supportTier, ch.type);
 
     // --- relationship (classify) ---
     if (ch.answerKind === 'relationship') {
@@ -934,22 +832,10 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         SoundManager.playCorrect();
         setFeedback(`Correct — these are ${ch.expectedRelationship} angles.`);
         setFeedbackType('success');
-        sendText(
-          `[ANSWER_CORRECT] Student classified a pair as "${selectedRelationship}" (correct). Celebrate briefly and restate why.`,
-          { silent: true },
-        );
       } else {
         SoundManager.playIncorrect();
         setFeedback('Not quite. Look at how the rays meet — do the outer rays form a straight line, a right angle, or cross?');
         setFeedbackType('error');
-        sendText(
-          `[ANSWER_INCORRECT] Student chose "${selectedRelationship}" but the pair is "${ch.expectedRelationship}". `
-          + `Attempt ${currentAttempts + 1}. Point at what in the figure distinguishes them — do NOT name the answer outright.`
-          + (revealPolicy ? ` ${revealPolicy}` : ''),
-          { silent: true },
-        );
-        // On the workspace path Try again clears the choice.
-        if (!tutorOwned) setSelectedRelationship(null);
       }
       return;
     }
@@ -981,22 +867,10 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setFeedback(`Correct! ${ch.answerKind === 'x_value' ? 'x = ' : ''}${ch.expectedAnswer}${unit}.`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student answered ${parsed} for a ${challengeType} problem. Expected ${ch.expectedAnswer}. `
-        + `Celebrate briefly and reinforce the relationship used.`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Re-check which relationship links the angles, then redo the arithmetic.');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${parsed} but the answer is ${ch.expectedAnswer} (${challengeType}). `
-        + `Attempt ${currentAttempts + 1}. Point at the specific step that needs another look — do NOT give the answer. `
-        + `Common slips: using 90 where 180 is needed, or solving for x but forgetting to substitute back.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
     }
   };
 
@@ -1016,100 +890,62 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setFeedback('Yes! That is the angle asked for.');
       setFeedbackType('success');
-      sendText('[ANSWER_CORRECT] Student made the asked angle. Celebrate briefly; ask how they knew.', { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback(makeAngleMissWords(ch, miss));
       setFeedbackType('error');
-      sendText('[ANSWER_INCORRECT] The student\'s angle is not the kind asked for. Ask them to compare it with a square '
-        + 'corner; do NOT say which way to turn or name the kind they made.', { silent: true });
     }
   };
 
-  const handleShowHint = useCallback(() => {
-    if (showHint) return;
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      hintsViewedRef.current += 1;
-    }
-  }, [showHint]);
-
-  const advanceChallenge = useCallback(() => {
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      const next = challenges[nextIdx];
-      sendText(
-        `[NEXT_ITEM] Problem ${nextIdx + 1} of ${challenges.length} (${next?.type}). `
-        + `Introduce briefly: "Here's the next one — same kind of relationship, new angles."`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Session complete — build metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    // The live host has no evaluation provider; a workspace family submits only under one.
-    if (progress.recordsEvaluation === false) return;
-    if (submittedRef.current) return;
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || submittedRef.current || challenges.length === 0) return;
     submittedRef.current = true;
-
     const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
     const metrics: AngleWorkshopMetrics = {
       type: 'angle-workshop',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'measure') as AngleWorkshopMetrics['challengeType'],
+      challengeType: (challenges[0]?.type ?? 'measure') as AngleWorkshopMetrics['challengeType'],
       totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / total) * 10) / 10,
     };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-    submitEvaluation(correctCount === total, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} angle problems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, relationship-focused summary.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
-
-  // Workspace path: what the tutor and the observer are shown, republished every render, with the session item's levers.
+  // What the tutor and the observer are shown, republished every render, with the session item's levers.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    const onScreen = practice ? undefined : angleLeverFacts(sessionChallenge, pulledLevers, lastWrongValue);
-    const levers = practice ? [] : angleWorkshopLevers(sessionChallenge, pulledLevers, lastWrongValue);
+    const ctx = { lastWrong: lastWrongValue };
+    const levers = practice ? [] : ANGLE_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : ANGLE_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : ANGLE_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
-        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceFor(sessionChallenge);
+          const easier = ANGLE_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(pulled);
           setFeedback(''); setFeedbackType(''); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: angleWorkshopBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true as const;
@@ -1139,18 +975,6 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The angle workshop',
-    solved: isCurrentComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -1213,9 +1037,10 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           })}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the figure and the answer as one
+            region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Open build (make_angle): one fixed ray, one ray the learner turns. Levers start bare. */}
         {challengeType === 'make_angle' && (
           <div className="p-3 bg-slate-800/30 rounded-2xl border border-purple-500/20 space-y-3">
@@ -1339,7 +1164,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           </>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && feedbackType === 'success' && (
@@ -1351,32 +1176,6 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         {feedback && feedbackType === 'info' && (
           <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
         )}
-
-        {/* Hint */}
-        {showHint && (
-          <LuminaPrompt accent="amber">
-            <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-            {currentChallenge.hint}
-          </LuminaPrompt>
-        )}
-
-        {/* Controls */}
-        <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && !tutorOwned && (
-            <LuminaButton
-              tone="primary"
-              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-              onClick={advanceChallenge}
-            >
-              Next Problem →
-            </LuminaButton>
-          )}
-          {!isCurrentComplete && !allChallengesComplete && challengeType !== 'make_angle' && (
-            <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
-              {showHint ? 'Hint shown' : 'Show hint'}
-            </LuminaButton>
-          )}
-        </div>
 
         {/* Phase summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1394,8 +1193,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const AngleWorkshop = withWorkspaceController<AngleWorkshopProps, ProgressOptions<AngleWorkshopChallenge>, Progress>(
-  'angle-workshop', AngleWorkshopSurface, useScriptedProgress, useWorkspaceProgressFor('angle-workshop'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const AngleWorkshop = withWorkspaceOnly<AngleWorkshopProps>('angle-workshop', AngleWorkshopSurface, props => props.data.title);
 
 export default AngleWorkshop;

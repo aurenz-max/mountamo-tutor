@@ -155,14 +155,14 @@ it('storyMapMiss names each phase\'s error', () => {
   const d = BY_MODE.plot_diagram;
   const v = { ...EMPTY_VIEW };
   const placed = (map: Record<string, string>) => ({ ...v, placed: Object.fromEntries(MOUNTAIN_EVENTS.map(e => [e.id, (map[e.id] ?? e.arcPosition) as never])) });
-  expect(storyMapMiss({ id: 'identify' }, d, { ...v, selectedCharacters: ['Pip'], selectedSetting: 'correct' })).toBe('missed_character');
-  expect(storyMapMiss({ id: 'identify' }, d, { ...v, selectedCharacters: ['Pip', 'Nora'], selectedSetting: 'distractor-1' })).toBe('wrong_setting');
-  expect(storyMapMiss({ id: 'identify' }, d, { ...v, selectedCharacters: ['Pip', 'Nora'], selectedSetting: 'correct' })).toBeUndefined();
-  expect(storyMapMiss({ id: 'sequence' }, d, placed({}))).toBeUndefined();
-  expect(storyMapMiss({ id: 'sequence' }, d, placed({ e1: 'climax', e2: 'climax', e4: 'climax', e5: 'climax' }))).toBe('one_part');
-  expect(storyMapMiss({ id: 'sequence' }, d, placed({ e2: 'climax', e3: 'rising-action' }))).toBe('next_part');
-  expect(storyMapMiss({ id: 'sequence' }, d, placed({ e1: 'climax' }))).toBe('far_part');
-  expect(storyMapMiss({ id: 'analyze' }, d, { ...v, selectedConflict: 'person-vs-person' })).toBe('other_outside');
+  expect(storyMapMiss({ phase: 'identify' }, d, { ...v, selectedCharacters: ['Pip'], selectedSetting: 'correct' })).toBe('missed_character');
+  expect(storyMapMiss({ phase: 'identify' }, d, { ...v, selectedCharacters: ['Pip', 'Nora'], selectedSetting: 'distractor-1' })).toBe('wrong_setting');
+  expect(storyMapMiss({ phase: 'identify' }, d, { ...v, selectedCharacters: ['Pip', 'Nora'], selectedSetting: 'correct' })).toBeUndefined();
+  expect(storyMapMiss({ phase: 'sequence' }, d, placed({}))).toBeUndefined();
+  expect(storyMapMiss({ phase: 'sequence' }, d, placed({ e1: 'climax', e2: 'climax', e4: 'climax', e5: 'climax' }))).toBe('one_part');
+  expect(storyMapMiss({ phase: 'sequence' }, d, placed({ e2: 'climax', e3: 'rising-action' }))).toBe('next_part');
+  expect(storyMapMiss({ phase: 'sequence' }, d, placed({ e1: 'climax' }))).toBe('far_part');
+  expect(storyMapMiss({ phase: 'analyze' }, d, { ...v, selectedConflict: 'person-vs-person' })).toBe('other_outside');
   // Stable, and never the story's order.
   for (const t of ['a', 'b', 'c', 'd', 'e']) {
     const s = { ...d, passage: { ...d.passage, title: t } };

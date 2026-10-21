@@ -2,37 +2,30 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallba
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LifeCycleSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
+import { Clock, ArrowRight, CheckCircle2, XCircle, Sparkles, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { bankOrder, cycleCorrect, cycleMiss, describeCycleWork, lifeCycleItem, workspaceAssignment, workspaceScene,
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { bankOrder, cycleCorrect, cycleMiss, describeCycleWork, lifeCycleItem, workspaceScene,
   type LifeCycleItem } from './lifeCycleSequencerWorkspace';
-import { ARROW_LEVER, KEEP_LEVER, PRACTICE_NOTE, cycleLeverFacts, cycleLevers, keptSlots, practiceAssignment, practiceCycle }
+import { ARROW_LEVER, KEEP_LEVER, LIFE_CYCLE_LEVERS, PRACTICE_NOTE, lockedStages, type CycleLeverContext }
   from './lifeCycleSequencerLevers';
+import { lifeCycleSequencerBoss } from './lifeCycleSequencer.boss';
 
 /**
- * Life Cycle Sequencer - Enhanced Interactive Biology Primitive
+ * Life Cycle Sequencer - Interactive Biology Primitive
  *
- * NEW UX IMPROVEMENTS:
- * 1. Two-column layout: scrambled cards → timeline drop zones
- * 2. Enhanced drag feedback with drop zone highlighting
- * 3. Progressive disclosure (collapsible card details)
- * 4. Touch support with tap-to-place
- * 5. Visual timeline with connection lines
- * 6. Animated hints and better onboarding
+ * Two columns: the mixed-up stage cards and the numbered timeline slots. Cards are placed by drag, by tap-then-slot,
+ * or (K-2) by one tap into the next empty slot.
  *
- * Teaching workspace (W1, plain shape): with a live runtime the tutor owns the lesson. The payload is one
- * sequence, so the session has one item (`lifeCycleSequencerWorkspace.ts`); Check Answer commits through
- * `progress.commitCheck` with the named miss, the shell's Try again clears the board, and the Hint, the
- * misconception card, the read-aloud and the scripted sends are off (each can name the order). In-item levers
- * (`lifeCycleSequencerLevers.ts`): an earlier-to-later arrow, locking the stages a check marked right, and an easier
- * practice sequence.
+ * Taught only on the teaching workspace (`lifeCycleSequencer.boss.ts`): the payload is one sequence, so the session
+ * has one item (`lifeCycleSequencerWorkspace.ts`); Check Answer commits through `progress.commitCheck` with the named
+ * miss and the shell's Try again clears the board. In-item levers (`LIFE_CYCLE_LEVERS`): an earlier-to-later arrow,
+ * locking the stages a check marked right, and an easier practice sequence.
  */
 
 // ============================================================================
@@ -96,12 +89,13 @@ const GRADE_BAND_COLORS: Record<string, { primary: string; secondary: string; rg
   '6-8': { primary: '#3b82f6', secondary: '#60a5fa', rgb: '59, 130, 246' },
 };
 
+const useCycleProgress = useWorkspaceProgressFor('life-cycle-sequencer');
+
 // ============================================================================
 // Main Component
 // ============================================================================
 
-const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }:
-  LifeCycleSequencerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<LifeCycleItem>) => Progress }) => {
+const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId }: LifeCycleSequencerProps) => {
   // Defensive check for undefined or invalid data
   if (!data || !data.stages || !Array.isArray(data.stages) || data.stages.length === 0) {
     return (
@@ -110,12 +104,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
         <p className="text-slate-300">
           The life cycle sequencer received invalid data. Please regenerate the content.
         </p>
-        <details className="mt-4 text-xs text-slate-400">
-          <summary className="cursor-pointer hover:text-slate-300">Debug Info</summary>
-          <pre className="mt-2 p-2 bg-slate-900/50 rounded overflow-auto">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </details>
       </div>
     );
   }
@@ -133,13 +121,9 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [isChecked, setIsChecked] = useState(false);
   const [stageResults, setStageResults] = useState<Map<string, boolean>>(new Map());
-  const [showMisconception, setShowMisconception] = useState(false);
-  const [attemptsCount, setAttemptsCount] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(!tutorOwned);
   const [showGradingFlash, setShowGradingFlash] = useState(false);
   const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** The last check's per-stage record and the first check's right count, for the workspace path's submission. */
+  /** The last check's per-stage record and the first check's right count, for the submission. */
   const lastAttempts = useRef<StageAttempt[]>([]);
   const firstCheckCorrect = useRef<number | null>(null);
 
@@ -152,8 +136,8 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   const pulledLevers = !practice && leverState.item === sessionItem.id ? leverState.pulled : [];
   const keptHere: Record<number, string> = !practice && kept.item === sessionItem.id ? kept.slots : {};
   const isKept = (index: number) => keptHere[index] !== undefined;
-  const itemLevers = tutorOwned && !practice ? cycleLevers(sessionItem, pulledLevers) : [];
-  const arrowOn = itemLevers.some(l => l.id === ARROW_LEVER && l.pulled);
+  /** A help lever is drawn on the session item while pulled, never on a practice sequence. */
+  const arrowOn = !practice && pulledLevers.includes(ARROW_LEVER);
   const colors = GRADE_BAND_COLORS[data.gradeBand] || GRADE_BAND_COLORS['3-5'];
 
   // Evaluation hook
@@ -171,11 +155,7 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
     [instanceId],
   );
 
-  const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
-  } = usePrimitiveEvaluation<LifeCycleSequencerMetrics>({
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<LifeCycleSequencerMetrics>({
     primitiveType: 'life-cycle-sequencer',
     instanceId: resolvedInstanceId,
     skillId,
@@ -185,22 +165,21 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
     onSubmit: onEvaluationSubmit,
   });
 
-  // ── Progress. On the workspace path the runtime owns the item; bound below, once the setters exist. ──
+  // ── Progress: the runtime owns the item; bound below, once the setters exist. ──
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useCycleProgress({
     challenges: items,
     getChallengeId: (item) => item.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: lifeCycleSequencerBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
   });
-  /** Workspace path: a checked answer stays closed until Try again on the shell. */
+  /** A checked answer stays closed until Try again on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
-  const learnerBlocked = () => workspaceClosed.current;
-  const locked = () => hasSubmitted || learnerBlocked();
+  workspaceClosed.current = progress.canAttempt === false;
+  const locked = () => hasSubmitted || workspaceClosed.current;
 
   // ============================================================================
   // Reading band
@@ -212,69 +191,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   // tap per card (reader-fit PRE contract rules 1, 2, 7).
   const isPreReader = data.gradeBand === 'K-2';
 
-  const placedCount = timelineStages.filter(Boolean).length;
-
-  const aiPrimitiveData = useMemo(() => ({
-    title: data.title,
-    cycleType: data.cycleType,
-    stageLabels: data.stages.map(s => s.label).join(', '),
-    placedCount,
-    totalStages: data.stages.length,
-    selectedStageLabel: selectedStage?.label ?? 'nothing',
-    gradeBand: data.gradeBand,
-    checked: isChecked,
-  }), [
-    data.title, data.cycleType, data.stages, data.gradeBand,
-    placedCount, selectedStage, isChecked,
-  ]);
-
-  // Scripted path only: on the workspace the tutor reads the task and the scene, and this context carries the stages.
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'life-cycle-sequencer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Read-aloud: silent like every system trigger — `silent` suppresses only the
-  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    SoundManager.tap();
-    sendText(
-      `[CYCLE_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  // ORIENT — fires once so a non-reader learns the task without asking.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[CYCLE_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a life-cycle ordering task: ${data.title}. The pictures are deliberately shuffled. `
-      + `${isPreReader
-        ? 'They tap the pictures in the order things really happen, starting with the very first.'
-        : 'They drag cards into numbered slots in the order things really happen.'} `
-      + `Tell them what to do in child words. NEVER say which one comes first — the order is the answer.`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, data.title]);
-
-  // Dismiss tutorial after 5 seconds
-  useEffect(() => {
-    if (tutorOwned) return;
-    const timer = setTimeout(() => setShowTutorial(false), 5000);
-    return () => clearTimeout(timer);
-  }, [tutorOwned]);
-
   useEffect(
     () => () => {
       if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
@@ -283,12 +199,11 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   );
 
   /** A fresh item, or the same one reopened by Try again: the board starts blank but for stages a lever locked. */
-  const clearBoard = useCallback((item: LifeCycleItem, locked: Readonly<Record<number, string>> = {}) => {
-    setTimelineStages(item.stages.map((_, i) => item.stages.find(s => s.id === locked[i]) ?? null));
+  const clearBoard = useCallback((item: LifeCycleItem, lockedSlots: Readonly<Record<number, string>> = {}) => {
+    setTimelineStages(item.stages.map((_, i) => item.stages.find(s => s.id === lockedSlots[i]) ?? null));
     setSelectedStage(null);
     setIsChecked(false);
     setStageResults(new Map());
-    setShowMisconception(false);
     setShowGradingFlash(false);
   }, []);
   // Try again keeps a practice sequence; a fresh item, or the full item back after practice, drops it.
@@ -323,8 +238,8 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   /**
    * Place a stage into the first empty slot. This is the PRE protocol: tapping
    * a picture IS the placement, so ordering costs one tap per card instead of
-   * select-then-target. Deliberately says nothing about correctness — the order
-   * is the answer and the student has not checked yet.
+   * select-then-target. Says nothing about correctness — the order is the
+   * answer and the student has not checked yet.
    */
   const placeInNextEmptySlot = (stage: LifeCycleStage) => {
     const index = timelineStages.findIndex(s => s === null);
@@ -337,13 +252,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
     setSelectedStage(null);
     setIsChecked(false);
     setStageResults(new Map());
-
-    sendText(
-      `[CYCLE_STAGE_PLACED] The student placed "${stage.label}". `
-      + `Say its name and what is happening in that picture, in ONE short sentence. `
-      + `Do NOT say whether it is in the right place and do NOT hint at the order.`,
-      { silent: true },
-    );
   };
 
   // Touch/Click to select and place
@@ -441,7 +349,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   // ============================================================================
 
   const handleCheckAnswer = () => {
-    // Prevent checking if already submitted
     if (locked()) return;
 
     const attempts: StageAttempt[] = [];
@@ -465,60 +372,25 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
 
     setStageResults(results);
     setIsChecked(true);
-    setAttemptsCount(prev => prev + 1);
     if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
     setShowGradingFlash(true);
     gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
 
     const slots = timelineStages.map(s => s?.id ?? null);
-    const allPlaced = timelineStages.every(s => s !== null);
     const allCorrect = cycleCorrect(currentItem, slots);
     if (!practice) {
       lastAttempts.current = attempts;
       if (firstCheckCorrect.current === null) firstCheckCorrect.current = correctCount;
     }
 
-    // The activity's own check is the workspace's checked gesture (counts the attempt on both paths).
+    // The activity's own check is the workspace's checked gesture (counts the attempt, records the verdict).
     progress.commitCheck(describeCycleWork(currentItem, slots), allCorrect,
       allCorrect ? undefined : cycleMiss(currentItem, slots));
 
     if (allCorrect) SoundManager.playCorrect(); else SoundManager.playIncorrect();
-
-    // The workspace path submits from the finished record (`finish`); the misconception card can state the order.
-    if (tutorOwned) return;
-    if (allCorrect && !hasSubmitted) {
-      setShowMisconception(false);
-      handleSubmit(attempts, correctCount);
-    } else if (allPlaced) {
-      setShowMisconception(true);
-    }
   };
 
-  const handleSubmit = (attempts: StageAttempt[], correctCount: number) => {
-    if (hasSubmitted) return;
-
-    const completionTime = Date.now() - startTime;
-    const allCorrect = correctCount === data.stages.length;
-    const score = (correctCount / data.stages.length) * 100;
-
-    const metrics: LifeCycleSequencerMetrics = {
-      type: 'life-cycle-sequencer',
-      cycleType: data.cycleType,
-      totalStages: data.stages.length,
-      stageAttempts: attempts,
-      totalCorrectFirstAttempt: correctCount,
-      completionTimeMs: completionTime,
-      allStagesCorrect: allCorrect,
-      attemptsBeforeSuccess: attemptsCount,
-    };
-
-    submitResult(allCorrect, score, metrics, {
-      studentWork: { orderedStages: timelineStages.map(s => s?.id || null) },
-    });
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose evidence carries each
-  // wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     const metrics: LifeCycleSequencerMetrics = {
@@ -535,28 +407,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
       { challengeResults: result.outcomes, learningResponses: result.learningResponses,
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
-  };
-
-  const handleReset = () => {
-    setTimelineStages(new Array(data.stages.length).fill(null));
-    setSelectedStage(null);
-    setIsChecked(false);
-    setStageResults(new Map());
-    setShowMisconception(false);
-    setAttemptsCount(0);
-    setShowHint(false);
-    setShowGradingFlash(false);
-    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
-    resetAttempt();
-  };
-
-  const handleShowHint = () => {
-    setShowHint(true);
-    // Find first correct position
-    const firstStage = data.stages.find(s => s.correctPosition === 0);
-    if (firstStage) {
-      setSelectedStage(firstStage);
-    }
   };
 
   // ============================================================================
@@ -786,24 +636,27 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   const correctCount = Array.from(stageResults.values()).filter(v => v).length;
   const progressPct = (timelineStages.filter(s => s !== null).length / currentItem.stages.length) * 100;
   const solved = isChecked && allPlaced && correctCount === currentItem.stages.length;
-  const checkDisabled = hasSubmitted || !allPlaced || isChecked || (tutorOwned && progress.canAttempt === false);
+  const checkDisabled = hasSubmitted || !allPlaced || isChecked || progress.canAttempt === false;
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstrations.
+  // What the tutor and the observer are shown, republished every render, with the session item's levers.
   useLayoutEffect(() => {
-    if (!tutorOwned) return;
     const marked = isChecked
       ? {
         right: timelineStages.flatMap((s, i) => (s && stageResults.get(s.id) === true ? [i] : [])),
         wrong: timelineStages.flatMap((s, i) => (s && stageResults.get(s.id) === false ? [i] : [])),
       }
       : null;
-    const scene = workspaceScene(currentItem, { slots: timelineStages.map(s => s?.id ?? null), marked });
-    const levers = itemLevers;
-    const onScreen = practice ? ''
-      : cycleLeverFacts(sessionItem, levers.filter(l => l.kind === 'help' && l.pulled).map(l => l.id), keptHere);
+    const slots = timelineStages.map(s => s?.id ?? null);
+    const scene = workspaceScene(currentItem, { slots, marked });
+    const ctx: CycleLeverContext = { slots, marked, kept: keptHere };
+    const levers = practice ? [] : LIFE_CYCLE_LEVERS.declare(sessionItem, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : LIFE_CYCLE_LEVERS.support(sessionItem, ctx),
+      onScreen: practice ? '' : LIFE_CYCLE_LEVERS.onScreen(sessionItem, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
@@ -811,17 +664,17 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceCycle(sessionItem);
+          const easier = LIFE_CYCLE_LEVERS.simpler(sessionItem, ctx, id);
           if (!easier) return 'This sequence is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); clearBoard(easier);
-          return { practice: practiceAssignment(easier) };
+          return { practice: lifeCycleSequencerBoss.assignment!(easier) };
         }
         if (id === KEEP_LEVER) {
-          const slots = keptSlots(sessionItem, timelineStages.map(s => s?.id ?? null), marked);
-          if (!slots) return 'Nothing to lock yet: pull this after a check that marks some slots right and some wrong.';
-          setKept({ item: sessionItem.id, slots });
-          // The stages marked wrong go back to the cards now; the marks clear with them.
-          setTimelineStages(timelineStages.map((s, i) => (slots[i] ? s : null)));
+          // Offered only when the check left something to lock (`keptSlots`): lock it, and the stages marked wrong go
+          // back to the cards; the marks clear with them.
+          const lockedSlots = lockedStages(sessionItem, ctx) ?? {};
+          setKept({ item: sessionItem.id, slots: lockedSlots });
+          setTimelineStages(timelineStages.map((s, i) => (lockedSlots[i] ? s : null)));
           setIsChecked(false); setStageResults(new Map()); setShowGradingFlash(false);
         }
         setLeverState(next);
@@ -832,60 +685,12 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
     };
   });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: 'sequence',
-    label: 'The stage cards and your timeline',
-    solved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   return (
     <div className={`relative ${className}`}>
-      {/* Tutorial Overlay */}
-      {showTutorial && !tutorOwned && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-slate-900/95 to-transparent p-6 rounded-xl backdrop-blur-sm">
-          <div className="flex items-start gap-3">
-            <Zap className="w-6 h-6 text-yellow-400 flex-shrink-0" />
-            <div>
-              <h4 className="text-lg font-semibold text-white mb-1">How to Play</h4>
-              <p className="text-sm text-slate-300">
-                <strong>Desktop:</strong> Drag cards from the left to the timeline on the right.
-                <strong className="ml-2">Touch:</strong> Tap a card to select it, then tap a numbered slot to place it.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowTutorial(false)}
-              className="ml-auto text-slate-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-slate-100 mb-2">{data.title}</h3>
-        <div className="flex items-start gap-3 mb-2">
-          <p className="text-slate-400 flex-1">{currentItem.instructions}</p>
-          {/* With the tutor, the learner asks the tutor to read it. */}
-          {!tutorOwned && (
-            <LuminaReadAloud
-              iconOnly
-              size={isPreReader ? 'lg' : 'sm'}
-              accent="cyan"
-              speaking={isAudioPlaying}
-              aria-label="Read the instructions to me"
-              className="flex-shrink-0"
-              onClick={() => readAloud(`${data.title}. ${data.instructions}`)}
-            />
-          )}
-        </div>
+        <p className="text-slate-400 mb-2">{currentItem.instructions}</p>
         <div className="flex items-center gap-4 text-sm text-slate-500">
           {/* scaleContext is prose ("about 4 weeks from egg to butterfly") and
               the band badge is a developer readout — neither belongs in a
@@ -909,11 +714,10 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
         </div>
       </div>
 
-      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-      {pip.store && <div {...pip.dock} />}
-      <div {...pip.workspace}>
-      {/* Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 mb-6">
+      {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the cards and the timeline as
+          one region. */}
+      <PipDock />
+      <PipWorkspace className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 mb-6">
         {/* Left Column - Scrambled Cards */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -922,16 +726,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
             <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
               {isPreReader ? '' : `Available Cards (${shuffledStages.length})`}
             </h4>
-            {/* The Hint selects the first stage: a piece of the answer, so not with the tutor. */}
-            {!tutorOwned && !isChecked && shuffledStages.length > 0 && (
-              <button
-                onClick={handleShowHint}
-                className="text-xs text-slate-500 hover:text-yellow-400 transition-colors flex items-center gap-1"
-              >
-                <HelpCircle className="w-3 h-3" />
-                Hint
-              </button>
-            )}
           </div>
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
             {shuffledStages.length === 0 ? (
@@ -943,20 +737,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
               shuffledStages.map(renderScrambledCard)
             )}
           </div>
-
-          {showHint && !tutorOwned && (
-            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <div className="flex items-start gap-2">
-                <Lightbulb className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs text-yellow-300 font-medium">Hint</p>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Look for the stage that describes the very beginning of the process!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Column - Timeline Drop Zones */}
@@ -983,7 +763,9 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
           </div>
 
           {practice && (
-            <p className="mb-2 text-xs text-amber-300" data-practice>Practice: {practice.title}</p>
+            <p className="mb-2 inline-block rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-amber-300" data-practice>
+              Practice: {practice.title}
+            </p>
           )}
           {/* The help lever `time_arrow`: which way time runs over the slots, drawn on no stage. */}
           {arrowOn && (
@@ -1011,35 +793,7 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
             {timelineStages.map((_, index) => renderDropZone(index))}
           </div>
         </div>
-      </div>
-
-      </div>
-
-      {/* Misconception Trap (scripted path: its correction can state the order) */}
-      {showMisconception && !hasSubmitted && !tutorOwned && (
-        <div
-          className="mb-6 p-4 rounded-xl border-2 animate-slideIn"
-          style={{
-            backgroundColor: 'rgba(251, 191, 36, 0.1)',
-            borderColor: '#fbbf24',
-          }}
-        >
-          <div className="flex items-start gap-3">
-            <Lightbulb className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-1" />
-            <div className="flex-1">
-              <h4 className="text-base font-semibold text-yellow-300 mb-2">
-                Common Misconception
-              </h4>
-              <p className="text-sm text-slate-300 mb-2">
-                <strong>Common Error:</strong> {data.misconceptionTrap.commonError}
-              </p>
-              <p className="text-sm text-slate-300">
-                <strong>Remember:</strong> {data.misconceptionTrap.correction}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      </PipWorkspace>
 
       {/* Actions */}
       <div className="flex items-center justify-between">
@@ -1061,17 +815,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
           >
             {!allPlaced ? 'Place all cards' : isChecked ? 'Checked' : 'Check Answer'}
           </button>
-
-          {/* With the tutor, Try again is on the shell. */}
-          {!tutorOwned && (isChecked || hasSubmitted) && (
-            <button
-              onClick={handleReset}
-              className="px-6 py-3 bg-slate-700 text-slate-300 rounded-lg font-semibold hover:bg-slate-600 transition-all duration-200 flex items-center gap-2"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Try Again
-            </button>
-          )}
         </div>
 
         {/* Score Display */}
@@ -1086,14 +829,14 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
       </div>
 
       {/* Success Message */}
-      {(hasSubmitted || tutorOwned) && solved && (
+      {solved && (
         <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl animate-slideIn">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="w-6 h-6 text-green-400" />
             <div>
               <h4 className="text-lg font-semibold text-green-300">Perfect! 🎉</h4>
               <p className="text-sm text-slate-300">
-                You've mastered the {data.title.toLowerCase()}!
+                You&apos;ve mastered the {data.title.toLowerCase()}!
               </p>
             </div>
           </div>
@@ -1102,11 +845,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
 
       {/* CSS for animations */}
       <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
         @keyframes slideIn {
           from {
             opacity: 0;
@@ -1117,9 +855,6 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
             transform: translateY(0);
           }
         }
-        .animate-shake {
-          animation: shake 0.3s ease-in-out;
-        }
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
         }
@@ -1128,8 +863,7 @@ const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tu
   );
 };
 
-// The workspace path never mounts the scripted progress.
-const LifeCycleSequencer = withWorkspaceController<LifeCycleSequencerProps, ProgressOptions<LifeCycleItem>, Progress>(
-  'life-cycle-sequencer', LifeCycleSequencerSurface, useScriptedProgress, useWorkspaceProgressFor('life-cycle-sequencer'));
+const LifeCycleSequencer = withWorkspaceOnly<LifeCycleSequencerProps>('life-cycle-sequencer', LifeCycleSequencerSurface,
+  props => props.data?.title);
 
 export default LifeCycleSequencer;

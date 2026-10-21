@@ -27,7 +27,9 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateFractionCircles } = await loader.import('/src/components/lumina/service/math/gemini-fraction-circles.ts');
-  const { buildFractionTouchItems, touchAssignment, touchMatches } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionCirclesWorkspace.ts');
+  const { buildFractionTouchItems, touchMatches } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionCirclesWorkspace.ts');
+  const { fractionCirclesBoss } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionCircles.boss.ts');
+  const touchAssignment = fractionCirclesBoss.assignment;
   const cases = [
     ['pinned-easy', 'touch_fraction', 'easy', 'Touch the picture showing the named fraction'],
     ['pinned-hard', 'touch_fraction', 'hard', 'Recognize halves, thirds and fourths'],

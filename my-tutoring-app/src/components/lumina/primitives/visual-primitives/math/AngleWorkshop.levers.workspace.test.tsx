@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * angle-workshop levers on the classic modes (`angleWorkshopLevers.ts`; make_angle's are in AngleWorkshop.workspace.test).
+ * angle-workshop levers on the classic modes (`ANGLE_LEVERS`, `angleWorkshopLevers.ts`; make_angle's are in AngleWorkshop.workspace.test).
  * The misses `classicMiss` names, which lever answers each, every leak rule over generated items, every simpler-item
  * builder over generated lessons at every tier, and per mode, mounted the way a lesson mounts it: a help pull changes the
  * screen and the scene fact in one commit, a refused pull changes nothing, the next attempt records the lever, and the
@@ -24,9 +24,13 @@ import type { AngleWorkshopChallenge, AngleWorkshopChallengeType } from './Angle
 import { CLASSIC_MISSES, algebraicAngles, angleWorkshopHarnessInputs, classicMiss, solveTotal } from './angleWorkshopWorkspace';
 import {
   BENCHMARK_LEVER, CORNERS_LEVER, EXTERIOR_LEVER, SIMPLER_LEVER, SLIDE_LEVER, STRAIGHT_ARCS_LEVER, TENS_LEVER, TRY_X_LEVER,
-  WHOLE_LEVER, angleLeverFacts, angleWorkshopLevers, practiceFor, practiceLeaks, practiceParent, simplerItem, slideLeaks,
+  WHOLE_LEVER, ANGLE_LEVERS, practiceFor, practiceLeaks, practiceParent, simplerItem, slideLeaks,
   tensLabels, tensLeak, tryYourX,
 } from './angleWorkshopLevers';
+
+/** The lever set on a session item, with the learner's last wrong number as its context (try_your_x reads it). */
+const leversOn = (c: AngleWorkshopChallenge, pulled: readonly string[], lastWrong?: number) => ANGLE_LEVERS.declare(c, { lastWrong }, pulled);
+const factsOn = (c: AngleWorkshopChallenge, pulled: readonly string[], lastWrong?: number) => ANGLE_LEVERS.onScreen(c, { lastWrong }, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -120,7 +124,7 @@ describe('which lever answers each miss', () => {
     // Recorded per-item gaps: `near` on a solve_unknown item with no simpler item (vertical, or a known on a ten).
     const VALUES = Array.from({ length: 1601 }, (_, i) => -400 + i / 2);
     for (const c of POOL) {
-      const levers = angleWorkshopLevers(c, [], c.expectedAnswer + 20);
+      const levers = leversOn(c, [], c.expectedAnswer + 20);
       const a = (c.a1 ?? 1) + (c.a2 ?? 1), b = (c.b1 ?? 0) + (c.b2 ?? 0);
       const named = new Set(c.type === 'classify_pairs'
         ? (['complementary', 'supplementary', 'vertical', 'adjacent'] as const).map(r => classicMiss(c, { relationship: r }))
@@ -143,13 +147,13 @@ describe('which lever answers each miss', () => {
     [triangle('t', 'triangle_sum', 50, 60), 'added_givens', [], CORNERS_LEVER], [triangle('t', 'exterior_angle', 50, 60), 'found_interior', [], EXTERIOR_LEVER],
     [triangle('t', 'exterior_angle', 50, 60), 'found_interior', [EXTERIOR_LEVER], SIMPLER_LEVER],
   ] as const)('%#: after %s with %j pulled -> %s', (c, miss, pulled, want) => {
-    expect(nextLever(angleWorkshopLevers(c, pulled as unknown as string[], c.expectedAnswer + 3), miss)).toBe(want);
+    expect(nextLever(leversOn(c, pulled as unknown as string[], c.expectedAnswer + 3), miss)).toBe(want);
   });
   it('try_your_x is offered only once there is a wrong x to put in', () => {
     const a = algebra('a', 'supplementary', 2, 10, 1, 20, 50);
-    expect(angleWorkshopLevers(a, []).map(l => l.id)).toEqual([WHOLE_LEVER, SIMPLER_LEVER]);
-    expect(angleWorkshopLevers(a, [], 50).map(l => l.id)).toEqual([WHOLE_LEVER, SIMPLER_LEVER]);
-    expect(angleWorkshopLevers(a, [], 53).map(l => l.id)).toEqual([WHOLE_LEVER, TRY_X_LEVER, SIMPLER_LEVER]);
+    expect(leversOn(a, []).map(l => l.id)).toEqual([WHOLE_LEVER, SIMPLER_LEVER]);
+    expect(leversOn(a, [], 50).map(l => l.id)).toEqual([WHOLE_LEVER, SIMPLER_LEVER]);
+    expect(leversOn(a, [], 53).map(l => l.id)).toEqual([WHOLE_LEVER, TRY_X_LEVER, SIMPLER_LEVER]);
   });
 });
 
@@ -165,7 +169,7 @@ describe('leak rules', () => {
   it('the slid copy never lands on x: no slide on a corresponding pair, straight arcs there instead', () => {
     expect(slideLeaks('corresponding')).toBe(true);
     for (const rel of ['alternate_interior', 'alternate_exterior', 'co_interior'] as const) expect(slideLeaks(rel)).toBe(false);
-    expect(angleWorkshopLevers(parallel('t', 'corresponding', 70), []).map(l => l.id)).toEqual([STRAIGHT_ARCS_LEVER]);
+    expect(leversOn(parallel('t', 'corresponding', 70), []).map(l => l.id)).toEqual([STRAIGHT_ARCS_LEVER]);
   });
   it('try_your_x writes only the learner\'s own number, never the key', () => {
     const a = algebra('a', 'supplementary', 2, 10, 1, 20, 50);
@@ -175,8 +179,8 @@ describe('leak rules', () => {
   });
   it('over every generated item with every help pulled, the scene fact states no answer and no relationship name', () => {
     for (const c of POOL) {
-      const help = angleWorkshopLevers(c, [], c.expectedAnswer + 20).filter(l => l.kind === 'help').map(l => l.id);
-      const fact = angleLeverFacts(c, help, c.expectedAnswer + 20) ?? '';
+      const help = leversOn(c, [], c.expectedAnswer + 20).filter(l => l.kind === 'help').map(l => l.id);
+      const fact = factsOn(c, help, c.expectedAnswer + 20) ?? '';
       expect(fact.length, `${c.type}`).toBeGreaterThan(0);
       expect(fact).not.toMatch(/complementary|supplementary|vertical|corresponding|alternate|co-interior|adds? to|equal/i);
       const given = [c.givenAngle, c.givenAngle2, c.knownAngle, c.knownAngle2, ...tensLabels(c)].filter(v => v !== undefined);
@@ -220,7 +224,7 @@ describe('simpler items: the builders', () => {
     ['alternate interior', parallel('t', 'alternate_interior', 70)], ['triangle sum', triangle('t', 'triangle_sum', 50, 60)],
   ])('no simpler item on an item already the plainest of its mode: %s', (_, c) => {
     expect(simplerItem(c)).toBeNull();
-    expect(angleWorkshopLevers(c, [], c.expectedAnswer + 20).every(l => l.kind === 'help')).toBe(true);
+    expect(leversOn(c, [], c.expectedAnswer + 20).every(l => l.kind === 'help')).toBe(true);
   });
   it('by mode: an acute ten, a contrast pair, one subtraction, unit coefficients, the next plainer figure', () => {
     expect(simplerItem(measure('m', 125))).toMatchObject({ angleMeasure: 40, expectedAnswer: 40 });

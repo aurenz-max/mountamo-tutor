@@ -10,7 +10,7 @@ import { getComponentById } from '../../service/manifest/catalog';
 import type { ComputeChallenge, DistributionChallenge, DistributionFamily, IdentifyChallenge, PredictShapeChallenge } from './types';
 import { DISTRIBUTION_MISSES_BY_MODE, distributionChoices, distributionCorrect } from './distributionExplorerWorkspace';
 import {
-  askedOf, distributionLevers, printsNumber, eventStrip, familyFactsLeak, leverFacts, simplerCompute, simplerLeaks, stripLeaks, stripText,
+  DISTRIBUTION_LEVERS, askedOf, printsNumber, eventStrip, familyFactsLeak, simplerCompute, simplerLeaks, stripLeaks, stripText,
   twoFamilies, twoFamiliesLeaks, twoShapes, twoShapesLeaks, valueOf, workedModel, workedModelLeaks,
 } from './distributionExplorerLevers';
 
@@ -71,7 +71,7 @@ describe('leak rules', () => {
     expect(printsNumber(model!.steps.join(' '), String(c.correctValue))).toBe(false);
     const strip = eventStrip(c);
     if (strip) expect(stripLeaks(stripText(strip), c)).toBe(false);
-    const facts = leverFacts(c, ['event_strip', 'worked_model']);
+    const facts = DISTRIBUTION_LEVERS.onScreen(c, null, ['event_strip', 'worked_model']);
     const own = `${c.scenario} ${c.prompt}`;
     for (const choice of distributionChoices(c)) {
       if (!printsNumber(own, choice.key)) expect(printsNumber(facts, choice.key) ? choice.label : null).toBeNull();
@@ -107,15 +107,15 @@ describe('this wrong answer, then this lever', () => {
     const mode = c.type === 'guided_exploration' ? 'explore' : c.type === 'identify' ? 'identify' : c.type === 'predict_shape' ? 'compute_advanced' : 'compute_basic';
     const misses = DISTRIBUTION_MISSES_BY_MODE[mode].filter(m => c.type !== 'compute' || !['reversed_skew', 'said_symmetric', 'wrong_shape'].includes(m))
       .filter(m => c.type !== 'predict_shape' || ['reversed_skew', 'said_symmetric', 'wrong_shape'].includes(m));
-    const levers = distributionLevers(c, []);
+    const levers = DISTRIBUTION_LEVERS.declare(c, null, []);
     for (const miss of misses) expect(levers.some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
   });
 
   it('the help comes before the simplify for each miss', () => {
     const c = computes().find(x => /≥/.test(x.prompt))!;
-    expect(nextLever(distributionLevers(c, []), 'complement')).toBe('event_strip');
-    expect(nextLever(distributionLevers(c, []), 'reciprocal')).toBe('worked_model');
-    expect(nextLever(distributionLevers(c, ['event_strip', 'worked_model']), 'complement')).toBe('simpler_compute');
+    expect(nextLever(DISTRIBUTION_LEVERS.declare(c, null, []), 'complement')).toBe('event_strip');
+    expect(nextLever(DISTRIBUTION_LEVERS.declare(c, null, []), 'reciprocal')).toBe('worked_model');
+    expect(nextLever(DISTRIBUTION_LEVERS.declare(c, null, ['event_strip', 'worked_model']), 'complement')).toBe('simpler_compute');
   });
 
   it('the catalog declares levers', () => {

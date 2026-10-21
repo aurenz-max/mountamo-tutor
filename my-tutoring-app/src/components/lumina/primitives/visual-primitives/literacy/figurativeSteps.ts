@@ -9,9 +9,12 @@
  *   - make (`build_figurative`, open build): the learner writes their own simile, metaphor, ... about a subject.
  * No instance is marked before the learner finds it.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
+import type { FigMiss } from './figurativeLanguageFinder.card';
+
+export { FIND_MISSES, MAKE_MISSES, MEANING_MISSES, type FigMiss } from './figurativeLanguageFinder.card';
 
 export type FigType = 'simile' | 'metaphor' | 'personification' | 'hyperbole' | 'idiom' | 'alliteration' | 'onomatopoeia' | 'imagery';
 export interface FigInstance { instanceId: string; text: string; type: FigType; literalMeaning?: string }
@@ -19,12 +22,9 @@ export interface FigMake { id: string; device: FigType; subject: string }
 export interface FigPayload {
   passage?: string; instances?: FigInstance[]; translateInstanceIds?: string[]; availableTypes?: FigType[];
   classifyTypeChoices?: FigType[]; task?: 'figurative_build'; makes?: FigMake[];
+  /** Within-mode support tier, stamped by the generator: when the model lever comes. Old payloads: medium. */
+  supportTier?: SupportTier;
 }
-
-export type FigMiss = 'wrong_type' | 'no_device' | 'already_found' | 'too_short' | 'unchanged' | 'not_sense' | 'wrong_job';
-export const FIND_MISSES: readonly FigMiss[] = ['wrong_type', 'no_device', 'already_found'];
-export const MEANING_MISSES: readonly FigMiss[] = ['too_short', 'unchanged', 'not_sense', 'wrong_job'];
-export const MAKE_MISSES: readonly FigMiss[] = ['too_short', 'not_sense', 'wrong_job'];
 
 /** What each figure is, in a learner's words (the device guide lever, and the judge's criterion). */
 export const CLUE: Record<FigType, string> = {
@@ -38,10 +38,11 @@ export const CLUE: Record<FigType, string> = {
   imagery: 'uses words that help you see, hear, smell, taste or feel something',
 };
 
-export type FigItem =
+/** The kind names the item's step on the card (`find`, `meaning`, `make`). */
+export type FigItem = { supportTier?: SupportTier } & (
   | { id: string; kind: 'find' }
   | { id: string; kind: 'meaning'; phrase: string; type: FigType; sentence: string; key?: string }
-  | { id: string; kind: 'make'; device: FigType; subject: string };
+  | { id: string; kind: 'make'; device: FigType; subject: string });
 
 export const sentencesOf = (passage: string) => (passage.match(/[^.!?]+[.!?]+["')\]]*\s*/g) ?? [passage]).map(s => s.trim()).filter(Boolean);
 const low = (s: string) => s.toLowerCase();
@@ -53,17 +54,18 @@ const MAX_FIND = 4;
 const MAX_MEANING = 3;
 
 export function figItems(p: FigPayload): FigItem[] {
+  const tier = p?.supportTier ? { supportTier: p.supportTier } : {};
   if (p?.task === 'figurative_build') {
     return (p.makes ?? []).filter(m => m && CLUE[m.device] && m.device !== 'idiom' && typeof m.subject === 'string' && m.subject.trim())
-      .slice(0, 5).map((m, i) => ({ id: m.id || `m${i + 1}`, kind: 'make' as const, device: m.device, subject: m.subject.trim() }));
+      .slice(0, 5).map((m, i) => ({ id: m.id || `m${i + 1}`, kind: 'make' as const, device: m.device, subject: m.subject.trim(), ...tier }));
   }
   const sentences = sentencesOf(p?.passage ?? '');
   const located = (p?.instances ?? []).filter(i => i && CLUE[i.type] && typeof i.text === 'string' && sentenceOf(sentences, i.text) >= 0);
   if (located.length < 2) return [];
-  const finds: FigItem[] = located.slice(0, MAX_FIND).map((_, n) => ({ id: `find${n + 1}`, kind: 'find' }));
+  const finds: FigItem[] = located.slice(0, MAX_FIND).map((_, n) => ({ id: `find${n + 1}`, kind: 'find', ...tier }));
   const meanings: FigItem[] = (p.translateInstanceIds ?? []).map(id => located.find(i => i.instanceId === id)).filter((i): i is FigInstance => !!i)
     .slice(0, MAX_MEANING).map(i => ({ id: `mean-${i.instanceId}`, kind: 'meaning', phrase: i.text.trim(), type: i.type,
-      sentence: sentences[sentenceOf(sentences, i.text)], ...(i.type !== 'idiom' && i.literalMeaning ? { key: i.literalMeaning } : {}) }));
+      sentence: sentences[sentenceOf(sentences, i.text)], ...(i.type !== 'idiom' && i.literalMeaning ? { key: i.literalMeaning } : {}), ...tier }));
   return [...finds, ...meanings];
 }
 
@@ -112,8 +114,6 @@ export const askFor = (item: FigItem): string => item.kind === 'find'
   : item.kind === 'meaning' ? `What does "${item.phrase}" really mean here? Write it in plain words.`
     : `Write a sentence with ${item.device === 'onomatopoeia' || item.device === 'alliteration' || item.device === 'imagery' ? '' : 'a '}${item.device} about ${item.subject}.`;
 
-export const figAssignment = (item: FigItem): TeachingAssignment => ({ id: item.id, task: askFor(item), response: 'gesture' });
-
 export function findJudgeRequest(p: FigPayload, sentence: number, type: FigType, grade?: string): WordBuildJudgeRequest {
   return { ask: `Find a ${type} in the passage. (It counts only if this sentence really has a ${type}: something that ${CLUE[type]}.)`,
     made: sentencesOf(p.passage ?? '')[sentence] ?? '', unit: 'writing', context: p.passage, strict: true, ...(grade ? { grade } : {}) };
@@ -133,8 +133,10 @@ export function writtenJudgeRequest(item: FigItem, made: string, passage: string
 
 // ── Scene ────────────────────────────────────────────────────────────────────
 
-export function figScene(item: FigItem, found: readonly Found[], picked: { sentence?: string; type?: FigType; written?: string }, inspectorSaid?: string): WorkspaceScene {
+/** What the tutor reads about the item on screen. The lever set adds `support` and `onScreen` (`leverScene`). */
+export function figScene(item: FigItem, found: readonly Found[], picked: { sentence?: string; type?: FigType; written?: string }, inspectorSaid?: string): SceneOf {
   return { objects: [], facts: {
+    kind: item.kind,
     ask: askFor(item),
     ...(item.kind === 'find'
       ? { sentencePicked: clip(picked.sentence ?? 'none yet'), typePicked: picked.type ?? 'none yet',
@@ -142,10 +144,13 @@ export function figScene(item: FigItem, found: readonly Found[], picked: { sente
       : { ...(item.kind === 'meaning' ? { sentence: clip(item.sentence) } : {}), written: clip(picked.written?.trim() || 'empty') }),
     ...(inspectorSaid ? { inspectorSaid } : {}),
     constraints: item.kind === 'find'
-      ? 'The learner taps a sentence of the passage, chooses a kind of figure of speech and presses "I\'m done!". Any '
-        + 'figure the passage has passes, in any order. You cannot tap for the learner and must not say which sentence holds one.'
-      : 'The learner types and presses "I\'m done!"; the builder checks it does the job and makes sense. Spelling is not '
-        + 'judged and many answers pass. You cannot type for the learner.',
+      ? 'Any figure the passage holds passes, in any order, and a sentence can hold more than one. To find one, the '
+        + 'learner reads one sentence at a time and asks how its words work: comparing, exaggerating, making a sound, or '
+        + 'giving a thing human traits.'
+      : item.kind === 'meaning'
+        ? 'Spelling is not judged and many answers pass. A meaning drops the figure\'s words and says plainly what is '
+          + 'really happening.'
+        : 'Spelling is not judged and many answers pass.',
   } };
 }
 
@@ -166,38 +171,12 @@ export const MODEL_FIGURE: Record<FigType, { sentence: string; phrase: string; m
   onomatopoeia: { sentence: 'The bees buzzed by the window.', phrase: 'buzzed', means: 'The bees made a humming sound.' },
   imagery: { sentence: 'Warm, sticky syrup dripped off the golden pancakes.', phrase: 'warm, sticky syrup', means: 'The syrup was warm and thick.' },
 };
-/** A starter frame per figure for the make item (the simplify lever puts it in the box). */
+/** A starter frame per figure for the make item (the fill_frame lever puts it in the box). */
 export const FRAME: Record<FigType, string> = {
   simile: '___ is as ___ as ___.', metaphor: '___ is a ___.', personification: 'The ___ ___ like a person would.',
   hyperbole: '___ is so ___ that ___.', idiom: '', alliteration: '___ ___ (words that start with the same sound)',
   onomatopoeia: 'The ___ went ___!', imagery: 'The ___ looked / sounded / felt ___.',
 };
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly FigMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function figLevers(item: FigItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  if (item.kind === 'find') return [
-    lever(GUIDE_LEVER, 'help', ['wrong_type', 'no_device'], 'The learner names the wrong kind, or picks a plain sentence.',
-      'Shows what each kind of figure of speech does, next to its button. Never marks a sentence.', pulled),
-    lever(MODEL_LEVER, 'help', ['wrong_type', 'no_device'], 'The learner does not know what a figure looks like in a sentence.',
-      'Shows one sentence that is NOT in this passage with its figure marked and named.', pulled),
-    lever(MARK_LEVER, 'simplify', ['no_device'], 'The learner keeps picking sentences with no figure in them.',
-      'Marks the sentences that still hold a figure, so the learner only has to choose among them and name the kind.', pulled),
-  ];
-  if (item.kind === 'meaning') return [
-    lever(MODEL_LEVER, 'help', ['unchanged', 'not_sense', 'wrong_job'], 'The learner copies the phrase or says what its words say.',
-      `Shows a different ${item.type} with what it really means, before and after.`, pulled),
-  ];
-  return [
-    lever(GUIDE_LEVER, 'help', ['wrong_job'], 'The learner\'s sentence is not this kind of figure.', `Shows what a ${item.device} does.`, pulled),
-    lever(MODEL_LEVER, 'help', ['wrong_job', 'not_sense'], 'The learner does not know how to start.',
-      `Shows one ${item.device} about a DIFFERENT subject.`, pulled),
-    lever(FRAME_LEVER, 'simplify', ['too_short', 'wrong_job'], 'The learner cannot write it from a blank box.',
-      `Puts a ${item.device} frame with blanks in the box for the learner to fill.`, pulled),
-  ];
-}
 
 export function figMissWords(miss: FigMiss | undefined, type?: FigType): string {
   switch (miss) {

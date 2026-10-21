@@ -1,18 +1,18 @@
 # distribution-explorer — primitive contract
 
 Component `primitives/DistributionExplorer.tsx` (with `primitives/distribution-explorer/*`), generator
-`service/distribution-explorer/orchestrator.ts`. Modes: `explore`, `identify`, `compute_basic`, `compute_advanced`
+`service/distribution-explorer/orchestrator.ts`. Boss: `distribution-explorer/distributionExplorer.card.ts` +
+`distribution-explorer/distributionExplorer.boss.ts` (bespoke `defineBoss`; levers `DISTRIBUTION_LEVERS`). Modes: `explore`, `identify`, `compute_basic`, `compute_advanced`
 (compute + predict_shape). First written 2026-10-09 at the workspace binding (W1, batch C19).
 
 ## Requirements
 
 ### R1 — no answer on the workbench while an item is open
 - **identify:** while an identify item is unchecked, the workbench names no family: the plot is titled "Mystery
-  distribution", the family picker and sliders are replaced by a note, the formula and description are hidden (both
-  paths). Before 2026-10-09 the 10-09 payload mounted Binomial with "Binomial PMF", its formula and `n (trials)` on
+  distribution", the family picker and sliders are replaced by a note, the formula and description are hidden. Before 2026-10-09 the 10-09 payload mounted Binomial with "Binomial PMF", its formula and `n (trials)` on
   screen beside "which family models the count of defaults?" (answer: binomial).
 - **compute:** while a compute item is unchecked, the moment readout (mean, variance, sd, skewness) and the chart's hover
-  value readout are hidden (both paths). The 10-09 compute_basic payload mounted Poisson λ = 4 with "Mean μ 4" printed
+  value readout are hidden. The 10-09 compute_basic payload mounted Poisson λ = 4 with "Mean μ 4" printed
   beside "find E[X]".
 - **Probe:** `DistributionExplorer.workspace.test.tsx` "identify hides the family…".
 
@@ -20,8 +20,8 @@ Component `primitives/DistributionExplorer.tsx` (with `primitives/distribution-e
 - The check is `distributionCorrect` (`distributionExplorerWorkspace.ts`); the tutor gets no `correctFamily`,
   `correctValue`, `acceptableAnswers` or rationale. A wrong check shows neither the rationale nor the key and reopens on
   Try again with the pick cleared. Explore's Got it is credited only after a slider moved or the family changed on that
-  prompt (the scripted path still credits Got it as before).
-- Misses: `distributionMiss` → `DISTRIBUTION_MISSES_BY_MODE` (catalog `teachingWorkspace.misses`).
+  prompt.
+- Misses: `distributionMiss` → `DISTRIBUTION_MISSES_BY_MODE` (in the card; catalog `...bossEntry(card)`).
 - **Probe:** `DistributionExplorer.workspace.test.tsx`, journey sweep J1-J13 on `w1-payloads/distribution-explorer.*`.
 
 ### R3 — levers never print the key
@@ -37,8 +37,10 @@ Component `primitives/DistributionExplorer.tsx` (with `primitives/distribution-e
   `/add-eval-modes` work.
 - **G2 — catalog `constraints` says compute is "numeric input with tolerance" and predict_shape "free-text or MCQ";
   both are MCQ.** Left as is (not made false by the binding).
-- **G3 — the scripted path submits no evaluation** (it never did); only the workspace path submits, under a lesson's
-  evaluation provider. Needs a `/student-data-loop` ruling before the scripted path records.
 
 ## History
-- 2026-10-09 — created at W1 + levers (batch C19). R1 added (both paths).
+- 2026-10-09 — created at W1 + levers (batch C19). R1 added.
+- 2026-10-20 — moved onto a boss (wave 3): card + boss beside the levers, one lever set (`DISTRIBUTION_LEVERS`:
+  marks, legend, clue, model, easier), the scripted path and hand-wired Pip deleted (G3 gone with it), the adapter
+  `adapters/distributionExplorerLive.ts` deleted. Generator stamps `supportTier` on each challenge for the model
+  lever's timing. Catalog affordances: compute modes are `tap` (every compute and shape item is a tapped choice).

@@ -1,20 +1,21 @@
 /**
  * formula-lab's in-item levers (/add-support-tiers; report qa/eval-reports/formula-lab-levers-2026-10-09.md).
  * The misses are what `formulaMiss` observes on the locked prediction, the build or the typed output; there is no
- * real-learner evidence.
+ * real-learner evidence. Declared once as a lever set (`FORMULA_LEVERS`, `bossLevers.ts`); its context is the lab
+ * (the formula and its quantities), since every item is read against it.
  *
- * - predict modes: `find_quantity` (help) rings the changed quantity's symbol wherever it sits in the formula;
- *   `model_pair` (help) a picture outside the item: y = k × x and y = k ÷ x, each with x going up, and what y does;
- *   `track_scale` (help, magnitude) word marks on the track: to zero, halves, no change, half as much again, doubles;
- *   `simpler_problem` (simplify) the same mode on a quantity that only multiplies, doubled, when the item's quantity
- *   divides or is raised to a power.
- * - construct-formula: `group_tokens` (help, where the session does not already group them) the tokens sorted into
- *   variables and values, operations, grouping; `value_check` (help) what the learner's build gives at the starting
- *   values beside what the living system gives; `order_card` (help) the order of operations on a and b. No simplify:
- *   every smaller build is a piece of the hidden formula.
- * - transfer-apply: `substitution` (help, where the session does not already show it) the formula with the new inputs
- *   written in; `new_inputs` (help) the living system moved to the new inputs, its output still hidden; `order_card`;
- *   `simpler_problem` (simplify) the same formula on friendlier inputs.
+ * - predict modes: `find_quantity` (marks) rings the changed quantity's symbol wherever it sits in the formula;
+ *   `model_pair` (legend) a picture outside the item: y = k × x and y = k ÷ x, each with x going up, and what y does,
+ *   neither marked as the item's; `track_scale` (legend, magnitude) word marks on the track: to zero, halves, no
+ *   change, half as much again, doubles; `simpler_problem` (easier) the same mode on a quantity that only multiplies,
+ *   doubled, when the item's quantity divides or is raised to a power.
+ * - construct-formula: `group_tokens` (layout, where the item does not already group them) the tokens sorted into
+ *   variables and values, operations, grouping; `value_check` (marks) what the learner's build gives at the starting
+ *   values beside what the living system gives; `order_card` (legend) the order of operations on a and b. No
+ *   simplify: every smaller build is a piece of the hidden formula.
+ * - transfer-apply: `substitution` (layout, where the item does not already show it) the formula with the new inputs
+ *   written in; `new_inputs` (layout) the living system moved to the new inputs, its output still hidden;
+ *   `order_card`; `simpler_problem` (easier) the same formula on friendlier inputs.
  * - free-explore credits every finished move and names no miss, so it has no lever.
  *
  * Leak rules (code): no lever names a direction, an amount of change, a token order or the item's output; the model
@@ -22,10 +23,11 @@
  * substitution is refused when it would print the answer; a practice item has its own id and keeps the mode, and
  * never repeats the item's changed quantity (predict) or its inputs and answer (transfer).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { FormulaLabChallenge, FormulaLabData } from './FormulaLab';
 import { evaluateFormulaExpression } from './formulaLabMath';
-import { formatNumber, observedPosition, tokenizeFormula, valuesToScope, type FormulaLabMiss } from './formulaLabWorkspace';
+import { formatNumber, observedPosition, tokenizeFormula, valuesToScope } from './formulaLabWorkspace';
+import { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from './formulaLab.card';
 
 type Lab = Pick<FormulaLabData, 'expression' | 'variables' | 'outputSymbol' | 'outputName'>;
 
@@ -165,95 +167,86 @@ export const substitutionLeaks = (d: Lab, c: FormulaLabChallenge) =>
 export const DIRECTION_WORDS = /\b(increase|decrease|more|less|bigger|smaller|larger|grow|shrink|up|down|higher|lower|rises?|falls?)\b/i;
 export const leverTextLeaks = (text: string) => DIRECTION_WORDS.test(text);
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ───────────────────────────────────────────────────────
 
-export interface FormulaLeverContext {
-  /** The session already sorts the construct tokens into groups (a starting position). */
-  tokensGrouped: boolean;
-  /** The session already shows the substitution setup on transfer (a starting position). */
-  substitutionShown: boolean;
-}
+const PREDICT = ['predict-direction', 'predict-magnitude'];
+const MISSES = FORMULA_MISSES_BY_MODE as Record<string, readonly FormulaLabMiss[]>;
+/** One lever's misses by mode: the union for the card and the guards, this mode's on each item. */
+const byMode = (answers: Record<string, readonly FormulaLabMiss[]>) => ({
+  answers: Array.from(new Set(Object.values(answers).flat())),
+  answersOn: (c: FormulaLabChallenge) => answers[c.type] ?? [],
+});
+const PRACTICE_THEN = 'It is not graded; the full item comes back after it.';
+export const PRACTICE_NOTE = `An easier practice problem is on screen in place of the item. ${PRACTICE_THEN}`;
 
-export function formulaLevers(d: Lab, c: FormulaLabChallenge | null, pulled: readonly string[], ctx: FormulaLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeFormula(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly FormulaLabMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerFormula(d, c);
-  const order = lever(ORDER_CARD_LEVER, 'help', 'shown',
-    c.type === 'construct-formula' ? ['operation_order', 'inverted', 'not_an_expression', 'incomplete']
-      : ['power_as_multiply', 'near_miss', 'too_high', 'too_low'],
-    'The learner puts operations in the wrong order, or works a power as a multiplication.',
-    'Shows a card outside the item: brackets, then powers, then × and ÷, then + and −; a power belongs to what is right '
-      + 'before ^; a ÷ b is not b ÷ a. It uses letters the item does not use.');
-  switch (c.type) {
-    case 'predict-direction':
-    case 'predict-magnitude': {
-      const magnitude = c.type === 'predict-magnitude';
-      const pair = modelPair(d, c);
-      return [
-        lever(FIND_QUANTITY_LEVER, 'help', 'shown', magnitude ? ['opposite_direction'] : ['opposite_direction', 'missed_change', 'invented_change'],
-          'The learner predicts without looking at where the changed quantity sits in the formula.',
-          'Rings the changed quantity\'s symbol wherever it appears in the formula. Nothing else is written.'),
-        ...(pair ? [lever(MODEL_PAIR_LEVER, 'help', 'both', magnitude ? ['opposite_direction'] : ['opposite_direction', 'missed_change'],
-          'The learner does not yet see how multiplying by a quantity differs from dividing by it.',
-          'Shows a picture outside the item: two small rules, one that multiplies by a letter and one that divides by it, '
-            + 'with the letter going from one number to the next and what each rule gives. It uses none of the item\'s '
-            + 'quantities or numbers; ask which rule the item\'s formula is like.')] : []),
-        ...(magnitude ? [lever(TRACK_SCALE_LEVER, 'help', 'shown', ['too_strong', 'too_weak'],
-          'The learner has the direction but not how far along the track the change sits.',
-          'Labels the track in words: drops to zero at the left end, halves, no change at the centre, half as much again, '
-            + 'doubles at the right end. No number is written.')] : []),
-        ...(simpler ? [lever(SIMPLER_LEVER, 'simplify', 'shown', magnitude ? ['opposite_direction', 'too_strong', 'too_weak']
-          : ['opposite_direction', 'missed_change', 'invented_change'],
-          'The changed quantity divides or is raised to a power, and that is too hard to predict yet.',
-          'Opens an easier prediction of the same kind first, on a quantity of the same formula that only multiplies, '
-            + 'doubled or halved. It is not graded; the full item comes back after it.')] : []),
-      ];
-    }
-    case 'construct-formula':
-      return [
-        ...(!ctx.tokensGrouped ? [lever(GROUP_TOKENS_LEVER, 'help', 'shown', ['incomplete', 'not_an_expression'],
-          'The learner strings tokens together without a plan.',
-          'Sorts the remaining tokens into three groups: variables and values, operations, grouping. The order inside '
-            + 'each group is shuffled.')] : []),
-        lever(VALUE_CHECK_LEVER, 'help', 'shown', ['inverted', 'operation_order', 'not_an_expression', 'incomplete'],
-          'The learner builds a formula that does not behave like the living system.',
-          'Shows, at the starting values, the value the learner\'s own build gives beside the value the living system '
-            + 'gives, updating as they build. It shows no token and no order.'),
-        order,
-      ];
-    case 'transfer-apply':
-      return [
-        ...(!ctx.substitutionShown && !substitutionLeaks(d, c) ? [lever(SUBSTITUTION_LEVER, 'help', 'shown',
-          ['used_starting_inputs', 'near_miss', 'too_high', 'too_low'],
-          'The learner cannot set up the calculation with the new inputs.',
-          'Shows the formula with the new inputs written in place of the letters. It does not work it out.')] : []),
-        lever(NEW_INPUTS_LEVER, 'help', 'shown', ['used_starting_inputs'],
-          'The learner uses the starting values the living system still shows.',
-          'Moves the living system to the new inputs, so the scene and the card agree. The output stays hidden.'),
-        order,
-        ...(simpler ? [lever(SIMPLER_LEVER, 'simplify', 'shown', ['used_starting_inputs', 'power_as_multiply', 'near_miss', 'too_high', 'too_low'],
-          'The new inputs make the arithmetic too heavy to see the method.',
-          'Opens an easier problem of the same kind first: the same formula on small whole inputs, with the setup written '
-            + 'in. It is not graded; the full item comes back after it.')] : []),
-      ];
-    default:
-      return [];
-  }
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No direction, order or answer. */
-export function leverFacts(d: Lab, c: FormulaLabChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeFormula(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(FIND_QUANTITY_LEVER) && 'The changed quantity\'s symbol is ringed wherever it appears in the formula.',
-    on(MODEL_PAIR_LEVER) && 'Beside the track is a picture outside the item: one small rule that multiplies by a letter and one that divides by it, with what each gives as the letter moves.',
-    on(TRACK_SCALE_LEVER) && 'The track is labelled in words: drops to zero, halves, no change, half as much again, doubles.',
-    on(GROUP_TOKENS_LEVER) && 'The remaining tokens are sorted into variables and values, operations, and grouping.',
-    on(VALUE_CHECK_LEVER) && 'A panel shows, at the starting values, what the learner\'s build gives beside what the living system gives.',
-    on(ORDER_CARD_LEVER) && 'A card outside the item shows the order of operations, what a power belongs to, and that division is not reversible, on letters the item does not use.',
-    on(SUBSTITUTION_LEVER) && 'The formula is shown with the new inputs written in; it is not worked out.',
-    on(NEW_INPUTS_LEVER) && 'The living system now shows the new inputs; its output stays hidden.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice problem: the component declares nothing then. */
+export const FORMULA_LEVERS = leverSet<FormulaLabChallenge, Lab>({
+  modeOf: c => c.type,
+  missesOf: mode => MISSES[mode] ?? [],
+  specs: [
+    { id: FIND_QUANTITY_LEVER, type: 'marks', modes: PREDICT,
+      ...byMode({ 'predict-direction': ['opposite_direction', 'missed_change', 'invented_change'], 'predict-magnitude': ['opposite_direction'] }),
+      when: 'The learner predicts without looking at where the changed quantity sits in the formula.',
+      does: 'Rings the changed quantity\'s symbol wherever it appears in the formula. Nothing else is written.',
+      fact: 'The changed quantity\'s symbol is ringed wherever it appears in the formula.' },
+    { id: MODEL_PAIR_LEVER, type: 'legend', modes: PREDICT,
+      ...byMode({ 'predict-direction': ['opposite_direction', 'missed_change'], 'predict-magnitude': ['opposite_direction'] }),
+      when: 'The learner does not yet see how multiplying by a quantity differs from dividing by it.',
+      does: 'Shows a picture outside the item: two small rules, one that multiplies by a letter and one that divides by it, '
+        + 'with the letter going from one number to the next and what each rule gives. It uses none of the item\'s '
+        + 'quantities or numbers; ask which rule the item\'s formula is like.',
+      // Null when every number set collides with the item's: then it is not offered.
+      content: (c, d) => modelPair(d, c),
+      fact: 'Beside the track is a picture outside the item: one small rule that multiplies by a letter and one that '
+        + 'divides by it, with what each gives as the letter moves.' },
+    { id: TRACK_SCALE_LEVER, type: 'legend', modes: ['predict-magnitude'], answers: ['too_strong', 'too_weak'],
+      when: 'The learner has the direction but not how far along the track the change sits.',
+      does: 'Labels the track in words: drops to zero at the left end, halves, no change at the centre, half as much again, '
+        + 'doubles at the right end. No number is written.',
+      fact: 'The track is labelled in words: drops to zero, halves, no change, half as much again, doubles.' },
+    { id: GROUP_TOKENS_LEVER, type: 'layout', modes: ['construct-formula'], answers: ['incomplete', 'not_an_expression'],
+      when: 'The learner strings tokens together without a plan.',
+      does: 'Sorts the remaining tokens into three groups: variables and values, operations, grouping. The order inside '
+        + 'each group is shuffled.',
+      // The item already groups them (a starting position): nothing to pull.
+      offer: c => !c.groupFormulaTokens,
+      fact: 'The remaining tokens are sorted into variables and values, operations, and grouping.' },
+    { id: VALUE_CHECK_LEVER, type: 'marks', modes: ['construct-formula'],
+      answers: ['inverted', 'operation_order', 'not_an_expression', 'incomplete'],
+      when: 'The learner builds a formula that does not behave like the living system.',
+      does: 'Shows, at the starting values, the value the learner\'s own build gives beside the value the living system '
+        + 'gives, updating as they build. It shows no token and no order.',
+      fact: 'A panel shows, at the starting values, what the learner\'s build gives beside what the living system gives.' },
+    { id: SUBSTITUTION_LEVER, type: 'layout', modes: ['transfer-apply'],
+      answers: ['used_starting_inputs', 'near_miss', 'too_high', 'too_low'],
+      when: 'The learner cannot set up the calculation with the new inputs.',
+      does: 'Shows the formula with the new inputs written in place of the letters. It does not work it out.',
+      // The item already shows it (a starting position), or it would print the answer: not offered.
+      offer: (c, d) => !c.showSubstitutionSetup && !substitutionLeaks(d, c),
+      fact: 'The formula is shown with the new inputs written in; it is not worked out.' },
+    { id: NEW_INPUTS_LEVER, type: 'layout', modes: ['transfer-apply'], answers: ['used_starting_inputs'],
+      when: 'The learner uses the starting values the living system still shows.',
+      does: 'Moves the living system to the new inputs, so the scene and the card agree. The output stays hidden.',
+      fact: 'The living system now shows the new inputs; its output stays hidden.' },
+    { id: ORDER_CARD_LEVER, type: 'legend', modes: ['construct-formula', 'transfer-apply'],
+      ...byMode({ 'construct-formula': ['operation_order', 'inverted', 'not_an_expression', 'incomplete'],
+        'transfer-apply': ['power_as_multiply', 'near_miss', 'too_high', 'too_low'] }),
+      when: 'The learner puts operations in the wrong order, or works a power as a multiplication.',
+      does: 'Shows a card outside the item: brackets, then powers, then × and ÷, then + and −; a power belongs to what is right '
+        + 'before ^; a ÷ b is not b ÷ a. It uses letters the item does not use.',
+      fact: 'A card outside the item shows the order of operations, what a power belongs to, and that division is not '
+        + 'reversible, on letters the item does not use.' },
+    { id: SIMPLER_LEVER, type: 'easier', modes: [...PREDICT, 'transfer-apply'],
+      ...byMode({ 'predict-direction': ['opposite_direction', 'missed_change', 'invented_change'],
+        'predict-magnitude': ['opposite_direction', 'too_strong', 'too_weak'],
+        'transfer-apply': ['used_starting_inputs', 'power_as_multiply', 'near_miss', 'too_high', 'too_low'] }),
+      when: c => (c.type === 'transfer-apply' ? 'The new inputs make the arithmetic too heavy to see the method.'
+        : 'The changed quantity divides or is raised to a power, and that is too hard to predict yet.'),
+      does: c => (c.type === 'transfer-apply'
+        ? `Opens an easier problem of the same kind first: the same formula on small whole inputs, with the setup written in. ${PRACTICE_THEN}`
+        : 'Opens an easier prediction of the same kind first, on a quantity of the same formula that only multiplies, '
+          + `doubled or halved. ${PRACTICE_THEN}`),
+      // Null when the item is already the simple shape: then it is not offered.
+      content: (c, d) => simplerFormula(d, c) },
+  ],
+});

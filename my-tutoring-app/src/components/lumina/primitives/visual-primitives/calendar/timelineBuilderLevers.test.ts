@@ -9,7 +9,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimelineBuilderChallenge } from './TimelineBuilder';
 import {
-  ARROW_LEVER, FEWER_LEVER, RULER_LEVER, practiceLeaks, practiceTimeline, rulerLeaks, timeRuler, timelineLeverFacts, timelineLevers,
+  ARROW_LEVER, FEWER_LEVER, RULER_LEVER, TIMELINE_LEVERS, practiceLeaks, practiceTimeline, rulerLeaks, timeRuler,
 } from './timelineBuilderLevers';
 import { timelineMiss } from './timelineBuilderWorkspace';
 
@@ -24,7 +24,8 @@ const make = (id: string, type: TimelineBuilderChallenge['type'], scale: [string
     events: events.map(([label, description], i) => ({ id: `e${i}`, label, description, correctPosition: i })) });
 
 const text = (c: TimelineBuilderChallenge, all: TimelineBuilderChallenge[], pulled: string[]) =>
-  [...timelineLevers(c, all, []).map(l => `${l.when} ${l.does}`), timelineLeverFacts(c, pulled), ...(timeRuler(c) ?? []).map(m => m.label)].join(' ');
+  [...TIMELINE_LEVERS.declare(c, all, []).map(l => `${l.when} ${l.does}`), TIMELINE_LEVERS.onScreen(c, all, pulled),
+    ...(timeRuler(c) ?? []).map(m => m.label)].join(' ');
 
 describe('leak rules, per mode', () => {
   it.each(ITEMS.map(i => [i.mode, i.c.id, i] as const))('%s %s: no lever text, fact or ruler mark names an event', (_m, _id, { c, all }) => {
@@ -101,19 +102,19 @@ describe('this wrong order, then this lever', () => {
     [[2, 0, 4, 1, 3], 'mixed_order', ARROW_LEVER, RULER_LEVER],
   ] as const)('%o → %s → %s, then %s', (ids, miss, first, second) => {
     expect(timelineMiss(C, order(...ids))).toBe(miss);
-    expect(nextLever(timelineLevers(C, [C], []), miss)).toBe(first);
-    expect(nextLever(timelineLevers(C, [C], [first]), miss)).toBe(second);
+    expect(nextLever(TIMELINE_LEVERS.declare(C, [C], []), miss)).toBe(first);
+    expect(nextLever(TIMELINE_LEVERS.declare(C, [C], [first]), miss)).toBe(second);
   });
   it('every catalog miss of every mode is answered by a lever on every payload item (J12)', () => {
     const tw = getComponentById('timeline-builder')!.teachingWorkspace!;
     expect(tw.levers).toBe(true);
     for (const { c, all, mode } of ITEMS) {
-      const levers = timelineLevers(c, all, []);
+      const levers = TIMELINE_LEVERS.declare(c, all, []);
       for (const m of tw.misses![mode]) expect(levers.some(l => l.answers?.includes(m)), `${mode} ${c.id} ${m}`).toBe(true);
     }
   });
   it('a practice timeline declares no levers', () => {
     const p = practiceTimeline(C, [C])!;
-    expect(timelineLevers(p, [C], [])).toEqual([]);
+    expect(TIMELINE_LEVERS.declare(p, [C], [])).toEqual([]);
   });
 });

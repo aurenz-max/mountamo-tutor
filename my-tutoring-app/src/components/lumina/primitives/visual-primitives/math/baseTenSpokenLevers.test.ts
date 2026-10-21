@@ -10,8 +10,14 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import { btProblem, predictedCount, readCount, startingLowerCount, tradeablePlaces, type BtMode, type BtProblem } from './baseTenModel';
 import { baseTenItems, itemsFromChallenges, type BaseTenItem } from './baseTenScript';
 import { baseTenSpokenMisses, spokenAnswer } from './baseTenWorkspace';
-import { DIM_LEVER, FEWER_LEVER, FIVES_LEVER, GLOW_LEVER, MODEL_LEVER, SMALL_START_LEVER, WORTH_LEVER, baseTenSpokenLevers,
-  fewerBlocksProblem, smallStartProblem, spokenLeverFacts, spokenPracticeItem, tradeModel, worthKey } from './baseTenSpokenLevers';
+import { BASE_TEN_LEVERS, DIM_LEVER, FEWER_LEVER, FIVES_LEVER, GLOW_LEVER, MODEL_LEVER, SMALL_START_LEVER, WORTH_LEVER,
+  baseTenLeverContext, fewerBlocksProblem, smallStartProblem, spokenPracticeItem, tradeModel, worthKey } from './baseTenLevers';
+
+/** The lever set on one spoken-mat item, as the spoken mat calls it. */
+const baseTenSpokenLevers = (item: BaseTenItem, pulled: readonly string[], problems: readonly BtProblem[]) =>
+  BASE_TEN_LEVERS.declare(item, baseTenLeverContext({ problems }), pulled);
+const spokenLeverFacts = (item: BaseTenItem, pulled: readonly string[], problems: readonly BtProblem[]) =>
+  BASE_TEN_LEVERS.onScreen(item, baseTenLeverContext({ problems }), pulled);
 
 const payload = (mode: BtMode) => JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/base-ten-blocks.${mode}.json`), 'utf8')).data.challenges;

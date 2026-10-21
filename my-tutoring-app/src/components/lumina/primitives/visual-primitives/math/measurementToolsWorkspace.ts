@@ -1,15 +1,17 @@
 /**
- * Measurement tools on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
+ * Measurement tools on the shared tutor/JEV teaching workspace (the boss is `measurementTools.boss.ts`).
  *
- * Pure: the component and any probe read the same items, assignment and scene. A session is one item per shape (put
+ * Pure: the component, the boss and any probe read the same items, ask and scene. A session is one item per shape (put
  * it on the ruler, read the length, press Check; convert then changes the checked length to the other unit), and on
  * compare one more item after the shapes: tap them shortest to longest. The activity's own check is the judge, so the
  * tutor is never handed a width, a converted length or the order. What the learner has already had checked right (the
  * measured length on the convert step) is on the screen, so it is a scene fact from then on.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { MeasurementToolsChallenge, MeasurementToolsData } from './MeasurementTools';
+import type { MeasurementMiss } from './measurementTools.card';
+
+export { MEASUREMENT_MISSES_BY_MODE, type MeasurementMiss } from './measurementTools.card';
 
 export const INCH_TO_CM = 2.54;
 
@@ -41,10 +43,11 @@ export const conversionMultiplies = (from: string, to: string) => pairOf(from, t
 /** The compare session's last item: order the measured shapes. */
 export const ORDER_ITEM_ID = 'order-shapes';
 
-export type MeasurementItem =
-  | { id: string; kind: 'shape'; challenge: MeasurementToolsChallenge }
+/** One item, with the session it belongs to (its mode, units and shapes), so the ask needs nothing else. */
+export type MeasurementItem = { id: string; lesson: MeasurementLesson } & (
+  | { kind: 'shape'; challenge: MeasurementToolsChallenge }
   /** `shapes`: an easier practice ordering's own shapes (a simplify lever); the session's shapes otherwise. */
-  | { id: string; kind: 'order'; shapes?: MeasurementToolsChallenge[] };
+  | { kind: 'order'; shapes?: MeasurementToolsChallenge[] });
 
 /** The shapes an ordering item asks about. */
 export const orderShapes = (item: MeasurementItem, lesson: MeasurementLesson): MeasurementToolsChallenge[] =>
@@ -72,10 +75,10 @@ export function lessonOf(data: MeasurementToolsData): MeasurementLesson {
 }
 
 /** One item per shape, then the ordering on compare. */
-export function measurementItems(challengeType: MeasurementToolsData['challengeType'],
-  challenges: MeasurementToolsChallenge[]): MeasurementItem[] {
-  const shapes: MeasurementItem[] = challenges.map(challenge => ({ id: challenge.id, kind: 'shape', challenge }));
-  return challengeType === 'compare' && challenges.length > 1 ? [...shapes, { id: ORDER_ITEM_ID, kind: 'order' }] : shapes;
+export function measurementItems(lesson: MeasurementLesson): MeasurementItem[] {
+  const { challengeType, challenges } = lesson;
+  const shapes: MeasurementItem[] = challenges.map(challenge => ({ id: challenge.id, lesson, kind: 'shape', challenge }));
+  return challengeType === 'compare' && challenges.length > 1 ? [...shapes, { id: ORDER_ITEM_ID, lesson, kind: 'order' }] : shapes;
 }
 
 /**
@@ -140,18 +143,19 @@ export const EMPTY_VIEW: MeasurementView = { onRuler: false, measure: null, conv
 const shapeOf = (item: MeasurementItem) => item.kind === 'shape' ? item.challenge : null;
 const labelOf = (shapes: MeasurementToolsChallenge[], id: string) => shapes.find(c => c.id === id)?.label ?? id;
 
-export function workspaceAssignment(item: MeasurementItem, lesson: MeasurementLesson): TeachingAssignment {
+/** The ask for one item. Never a length, a converted length or the order. */
+export function measurementTask(item: MeasurementItem): string {
+  const { lesson } = item;
   const c = shapeOf(item);
-  if (!c) return { id: item.id, response: 'gesture', task: item.kind === 'order' && item.shapes
+  if (!c) return item.kind === 'order' && item.shapes
     ? `Put these ${item.shapes.length} shapes in order from shortest to longest.`
-    : `Put the ${lesson.challenges.length} shapes you measured in order from shortest to longest.` };
+    : `Put the ${lesson.challenges.length} shapes you measured in order from shortest to longest.`;
   const unit = lesson.unit;
-  const task = lesson.challengeType === 'convert'
+  return lesson.challengeType === 'convert'
     ? `Measure the ${c.label} in ${unit}, then change that length to ${lesson.convertToUnit}.`
     : lesson.challengeType === 'estimate'
       ? `Put the ${c.label} on the ruler and find how many ${unit} long it is, to the nearest half ${singular(unit)}.`
       : `Put the ${c.label} on the ruler and find how many ${unit} long it is.`;
-  return { id: item.id, task, response: 'gesture' };
 }
 
 /** The learner's work in their own terms, never the key. */
@@ -169,21 +173,6 @@ export function describeMeasurementWork(item: MeasurementItem, lesson: Measureme
   if (!view.onRuler) return 'Not on the ruler yet';
   return view.measure === null ? 'On the ruler; no length entered yet' : `On the ruler; answered ${view.measure} ${lesson.unit}`;
 }
-
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads:
- * - reading the ruler (every mode's shapes): `one_over` / `one_short` (a whole unit off: the marks counted instead of
- *   the spaces, or a start at 1), `whole_not_half` (estimate only: a whole number half a unit off, the edge read to
- *   the nearest whole mark; no direction, so the miss and the answer do not give the length away), `too_long` /
- *   `too_short` (further off);
- * - converting: `same_number` (the measured number kept, not converted), `wrong_operation` (the other way: divided
- *   for multiply or multiplied for divide), `too_small` / `too_large` (the right way, wrong size);
- * - ordering (compare's last item): `longest_first` (the whole order reversed), `two_swapped` (two side by side
- *   swapped), `out_of_order`.
- */
-export type MeasurementMiss = 'one_over' | 'one_short' | 'whole_not_half' | 'too_long' | 'too_short'
-  | 'same_number' | 'wrong_operation' | 'too_small' | 'too_large'
-  | 'longest_first' | 'two_swapped' | 'out_of_order';
 
 export function measurementMiss(item: MeasurementItem | null, lesson: MeasurementLesson, view: MeasurementView): MeasurementMiss | undefined {
   if (!item) return undefined;
@@ -217,16 +206,17 @@ const RULER_LABELS: Record<MeasurementLesson['rulerLabels'], string> = {
   sparse: 'only the even numbers are written, so the learner counts the marks in between',
 };
 
-/** What is drawn and asked. The shape's length, a converted length and the shortest-to-longest order are never stated. */
-export function workspaceScene(item: MeasurementItem, lesson: MeasurementLesson, view: MeasurementView): WorkspaceScene {
+/**
+ * What is drawn and asked. The shape's length, a converted length and the shortest-to-longest order are never stated.
+ * The moves are the card's; the scene says only what this item draws.
+ */
+export function workspaceScene(item: MeasurementItem, lesson: MeasurementLesson, view: MeasurementView): SceneOf {
   const drawn: Record<string, string | number> = {};
   const c = shapeOf(item);
   if (!c) {
     const shapes = orderShapes(item, lesson);
     drawn.shapes = `${item.kind === 'order' && item.shapes ? `${shapes.length} practice shapes` : `the ${shapes.length} shapes the learner measured`}, `
       + `each drawn to scale, as buttons: ${orderChoices(shapes).map(s => s.label).join(', ')}; their lengths are not written`;
-    drawn.howToAnswer = 'tap the shortest shape first, then the next shortest, until all are tapped, then press Check Order; '
-      + 'Reset Order clears the taps';
   } else if (view.convertStep) {
     drawn.step = 'convert';
     drawn.shape = `the ${c.label}`;
@@ -234,25 +224,17 @@ export function workspaceScene(item: MeasurementItem, lesson: MeasurementLesson,
     drawn.conversion = lesson.showConversionFactor
       ? `the screen shows ${conversionRule(lesson.unit, lesson.convertToUnit)}`
       : `the screen does not show how ${lesson.unit} and ${lesson.convertToUnit} relate (left off on purpose at this level)`;
-    drawn.howToAnswer = `type the length in ${lesson.convertToUnit} or set it with − and +, then press Check Conversion; `
-      + (exactPair(lesson) ? 'the exact whole number is accepted' : 'an answer close to the exact value, to a whole or a half, is accepted');
+    drawn.accepted = exactPair(lesson) ? 'the exact whole number' : 'an answer close to the exact value, to a whole or a half';
   } else {
     const unit = singular(lesson.unit);
     drawn.step = 'measure';
     drawn.shape = `the ${c.label}, a ${c.shapeType}; its length is not written anywhere`;
     drawn.ruler = `a ruler in ${lesson.unit}, with a mark at every ${lesson.precision === 'half' ? `half ${unit}` : unit}; `
-      + RULER_LABELS[lesson.rulerLabels];
+      + RULER_LABELS[lesson.rulerLabels] + '; a shape put on it snaps with its left edge at 0';
     drawn.placed = view.onRuler ? 'on the ruler, its left edge at 0' : 'not on the ruler yet';
-    drawn.howToAnswer = 'press Put it on the ruler (or drag the shape onto the ruler); it snaps with its left edge at 0. '
-      + `Then type the length in ${lesson.unit} or set it with − and +, and press Check Answer`;
   }
   return {
     objects: [],
-    facts: {
-      kind: lesson.challengeType, ...drawn,
-      learnerWork: describeMeasurementWork(item, lesson, view),
-      constraints: 'The learner answers on the screen; the activity checks the answer itself. '
-        + 'You cannot place, type, tap or check for the learner.',
-    },
+    facts: { kind: lesson.challengeType, ...drawn, learnerWork: describeMeasurementWork(item, lesson, view) },
   };
 }

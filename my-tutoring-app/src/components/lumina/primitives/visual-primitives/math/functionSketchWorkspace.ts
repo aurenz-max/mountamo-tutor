@@ -1,20 +1,20 @@
 /**
- * Function sketch on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C20).
+ * Function sketch on the shared tutor/JEV teaching workspace (the boss is `functionSketch.boss.ts`).
  *
- * Pure: the component, the adapter and the journey row read the same check, scene and harness input. Every mode is a
+ * Pure: the component and the boss read the same check, scene and harness input. Every mode is a
  * gesture item checked by the activity's own check: classify-shape by the family chosen (`correctType`),
  * compare-functions by the curve chosen (`correctCurve`), identify-features by the features found with taps on the curve
  * (every one), sketch-match by how close the learner's sketch passes to the item's key features (score 60 or more).
  * The tutor is never handed the answer: not the family, not the curve, not where a feature is, not the key features.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { FunctionSketchChallenge } from './FunctionSketch';
+import type { FunctionSketchMiss, FunctionSketchMode } from './functionSketch.card';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, PADDING, graphToCanvas, type CanvasConfig } from './canvas-2d/coords';
 import { catmullRomSpline, featureDistance } from './canvas-2d/shapes';
 import type { CurvePoint } from './canvas-2d/types';
 
-export type FunctionSketchMode = FunctionSketchChallenge['type'];
+export { FUNCTION_SKETCH_MISSES_BY_MODE, type FunctionSketchMiss, type FunctionSketchMode } from './functionSketch.card';
 
 // ── the drawn axes ───────────────────────────────────────────────────────
 
@@ -132,30 +132,7 @@ export function isStraight(points: readonly CurvePoint[], yRange: number): boole
   return points.every(p => Math.abs(a.y + m * (p.x - a.x) - p.y) <= 0.02 * yRange);
 }
 
-// ── misses ───────────────────────────────────────────────────────────────
-
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), drawn from the catalog's commonStruggles (roots and
- * extrema confused, families confused, points that miss the key features):
- * - classify-shape: `line_for_curve` chose linear for a curve; `curve_for_line` a curved family for a line;
- *   `polynomial_degree` one polynomial for another (quadratic, cubic); `growth_family` exponential or logarithmic
- *   confused with each other or with a polynomial; `periodic_family` periodic confused with anything; `wrong_family`;
- * - compare-functions: `other_curve`;
- * - identify-features: the first feature not found, `missed_root`, `missed_extremum` (a maximum or minimum),
- *   `missed_intercept`, `missed_asymptote`;
- * - sketch-match: `upside_down` the sketch would pass upside down (every y flipped); else the heaviest key feature the
- *   sketch misses, `missed_peak`, `missed_zero`, `missed_intercept`, `missed_trend`.
- */
-export type FunctionSketchMiss = 'line_for_curve' | 'curve_for_line' | 'polynomial_degree' | 'growth_family' | 'periodic_family'
-  | 'wrong_family' | 'other_curve' | 'missed_root' | 'missed_extremum' | 'missed_intercept' | 'missed_asymptote'
-  | 'upside_down' | 'missed_peak' | 'missed_zero' | 'missed_trend';
-
-export const FUNCTION_SKETCH_MISSES_BY_MODE: Record<FunctionSketchMode, readonly FunctionSketchMiss[]> = {
-  'classify-shape': ['line_for_curve', 'curve_for_line', 'polynomial_degree', 'growth_family', 'periodic_family', 'wrong_family'],
-  'compare-functions': ['other_curve'],
-  'identify-features': ['missed_root', 'missed_extremum', 'missed_intercept', 'missed_asymptote'],
-  'sketch-match': ['upside_down', 'missed_peak', 'missed_zero', 'missed_intercept', 'missed_trend'],
-};
+// ── misses (the list is the card's) ──────────────────────────────────────
 
 const POLY: readonly Family[] = ['quadratic', 'cubic', 'polynomial'];
 
@@ -218,20 +195,19 @@ export function describeSketchWork(c: FunctionSketchChallenge, work: SketchWork)
   return `placed ${sorted.length} point${sorted.length === 1 ? '' : 's'}, left to right: ${sorted.map(pt).join(', ')}`;
 }
 
-export function workspaceAssignment(c: FunctionSketchChallenge): TeachingAssignment {
-  const ask = c.type === 'compare-functions' && c.question ? `${c.instruction} ${c.question}` : c.instruction;
-  return { id: c.id, task: ask, response: 'gesture' };
-}
+/** What the learner is asked: the instruction, and on compare-functions the question too. */
+export const sketchAsk = (c: FunctionSketchChallenge) =>
+  (c.type === 'compare-functions' && c.question ? `${c.instruction} ${c.question}` : c.instruction);
 
 const KIND: Record<FunctionSketchMode, string> = {
-  'classify-shape': 'classify a curve: one curve is drawn on the graph, and the learner picks the family it belongs to from the choices',
-  'identify-features': 'identify features: a curve is drawn, and the learner taps each key feature on it (roots, turning points, intercepts, asymptotes)',
-  'compare-functions': 'compare two curves: Curve A (blue) and Curve B (amber) are drawn on the same axes, and the learner picks the one the question describes',
-  'sketch-match': 'sketch a function: the graph is empty, and the learner taps points on it to sketch the described function; a smooth curve joins the points',
+  'classify-shape': 'classify a curve: one curve is drawn on the graph, and each choice names a family',
+  'identify-features': 'identify features: a curve is drawn with key features on it (roots, turning points, intercepts, asymptotes)',
+  'compare-functions': 'compare two curves: Curve A (blue) and Curve B (amber) are drawn on the same axes',
+  'sketch-match': 'sketch a function: the graph starts empty',
 };
 
 /** What is drawn and asked. Names and expressions only where the screen prints them; the key never. */
-export function workspaceScene(c: FunctionSketchChallenge, view: { work: SketchWork }): WorkspaceScene {
+export function workspaceScene(c: FunctionSketchChallenge, view: { work: SketchWork }): SceneOf {
   const a = axesOf(c);
   const facts: Record<string, string> = {
     kind: KIND[c.type],
@@ -245,7 +221,7 @@ export function workspaceScene(c: FunctionSketchChallenge, view: { work: SketchW
       : c.showFeatureLabels !== true
         ? `a ring marks each of the ${n} features on the curve, unnamed`
         : `a ring marks each of the ${n} features on the curve, each named: ${(c.features ?? []).map(f => `"${f.label}"`).join(', ')}`;
-    facts.rule = 'a tap on a feature turns it green; Check credits the item only when every feature is found';
+    facts.rule = 'a tap on a feature turns it green; Check credits the item only when at least 80% of the features are found';
   } else if (c.type === 'classify-shape') {
     facts.choices = `on screen: ${(c.options ?? []).join('; ')}`;
   } else if (c.type === 'compare-functions') {
@@ -254,12 +230,9 @@ export function workspaceScene(c: FunctionSketchChallenge, view: { work: SketchW
   } else {
     if (c.sketchDescription) facts.description = `the description shown: ${c.sketchDescription}`;
     if (c.sketchExpression) facts.expression = `the expression shown: ${c.sketchExpression}`;
-    facts.rule = `at least ${c.minPoints ?? 3} points are needed before Check; the sketch is scored on how close it passes to the function's key features; Clear removes every point`;
+    facts.rule = `at least ${c.minPoints ?? 3} points are needed before Check; the sketch is scored on how close it passes to the function's key features`;
   }
   facts.learnerWork = describeSketchWork(c, view.work);
-  facts.constraints = c.type === 'identify-features' || c.type === 'sketch-match'
-    ? 'The learner taps the graph, then presses Check; the activity checks it itself. You cannot tap the graph or press Check.'
-    : 'The learner taps one choice, then presses Check; the activity checks it itself. You cannot choose or press Check.';
   return { objects: [], facts };
 }
 

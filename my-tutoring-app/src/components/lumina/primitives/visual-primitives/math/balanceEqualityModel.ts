@@ -1,5 +1,6 @@
 import type { BalanceScaleChallenge, BalanceScaleData } from './BalanceScale';
 import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 
 export interface EqualityProblem { id: string; target: number; mode: 'equality' | 'equality_hard' }
 export interface WeightBlock { id: number; value: number }
@@ -57,6 +58,8 @@ export function equalityFeedback(problem: EqualityProblem, board: EqualityBoard)
 export type EqualityStep = 'build' | 'total' | 'infer';
 export interface EqualityItem extends JudgedScriptItem {
   problem: EqualityProblem; step: EqualityStep; actionContract: DiActionContract;
+  /** The lesson's support tier (when the model lever comes), stamped by the session builder. */
+  tier?: SupportTier;
 }
 const ACTIONS: Record<EqualityStep, DiActionContract> = {
   build: { id: 'build', label: 'Balance the weights', icon: '=', answerKind: 'gesture',

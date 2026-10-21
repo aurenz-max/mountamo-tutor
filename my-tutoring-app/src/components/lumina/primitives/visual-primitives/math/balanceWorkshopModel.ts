@@ -1,5 +1,6 @@
 import type { BalanceScaleChallenge, BalanceScaleData, BalanceScaleChallengeType } from './BalanceScale';
 import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 
 export const WORKSHOP_MODES = ['equality_hard', 'one_step', 'one_step_hard', 'two_step_intro', 'two_step'] as const;
 export type WorkshopMode = typeof WORKSHOP_MODES[number];
@@ -131,7 +132,11 @@ export const workshopMode = (mode: BalanceScaleChallengeType): mode is WorkshopM
 
 // ── The session's steps, one per stage of each problem ──
 
-export interface WorkshopItem extends JudgedScriptItem { problem: WorkshopProblem; step: WorkshopStage; actionContract: DiActionContract }
+export interface WorkshopItem extends JudgedScriptItem {
+  problem: WorkshopProblem; step: WorkshopStage; actionContract: DiActionContract;
+  /** The lesson's support tier (when the model lever comes), stamped by the session builder. */
+  tier?: SupportTier;
+}
 const LABELS: Record<WorkshopStage, string> = {
   compose: 'Build a match', sum: 'Add the weights', recompose: 'Another combination', resum: 'Add again',
   complete: 'Complete the load', added: 'Find the added weight', relate: 'Name the missing part',

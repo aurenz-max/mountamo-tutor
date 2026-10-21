@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The real BalanceScale family (all three surfaces the default export routes to) on the shared
+ * The real BalanceScale family (both surfaces the default export routes to) on the shared
  * teaching workspace, its only teaching path, with the real TeachingSession, LiveLessonRuntime,
  * transport and rendering shell. Only the Live context, microphone hardware, evaluation writes and
  * sound are substituted. An unbound mount renders the "needs the tutor" card on every route, never
@@ -107,7 +107,7 @@ it('equality: exploration never commits, a balanced load does, and the spoken st
   expect(seam.send.mock.calls.at(-1)![1]).toMatchObject({ author: 'host' });
   h.next();
   expect(h.state().task!.itemId).toBe('balance-1-total');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('5');
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('"5".');
   h.say('six'); h.feedback('incorrect', 'retry');
   expect(h.state().task!.evidence.correctness).toBe('incorrect');
   expect(h.state().task!.phase).toBe('working');
@@ -126,7 +126,7 @@ it('one_step (workshop): the completed load commits, then the added weight is sp
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.next();
   expect(h.state().task!.itemId).toBe('workshop-1-added');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('5');
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('"5".');
   expect(screen.queryByText('Say that again')).toBeNull();
 });
 
@@ -135,7 +135,7 @@ it('two_step (workshop): separate and share commit through the real controls; th
   h.press('Set aside known 1 weight'); h.press('Unit 1'); h.settle();
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.next();
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('6');
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('"6".');
   h.say('six'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('workshop-1-share');
   h.press('Place unit in group 1'); h.settle();
@@ -150,36 +150,13 @@ it('two_step (workshop): separate and share commit through the real controls; th
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(/one equal group per parcel/);
 });
 
-it('the plain solver (mixed session): a wrong typed x is checked, Try again clears it, and a right one completes once', () => {
-  seam.evaluationContext = { lesson: 'test' };
-  const h = mount('mixed', [ch('one_step', [x(), { value: 3 }], [{ value: 5 }, { value: 3 }], 5), CHALLENGE.equality]);
-  expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.itemId).toBe('bs-1');
-  expect(screen.queryByText(/Show Answer/)).toBeNull();
-  h.press('Start Solving');
-  act(() => { fireEvent.click(screen.getAllByTitle('Click to remove 3 from both sides')[0]); });
-  const typed = () => screen.getByRole('spinbutton', { name: 'Value of x' }) as HTMLInputElement;
-  act(() => { fireEvent.change(typed(), { target: { value: '4' } }); });
-  h.press(/^check$/i);
-  expect(h.state().task!.evidence.correctness).toBe('incorrect');
-  expect(typed().disabled).toBe(true);
-  h.dispatch('retry');
-  expect(typed().value).toBe('');
-  act(() => { fireEvent.change(typed(), { target: { value: '5' } }); });
-  h.press(/^check$/i);
-  expect(h.state().task!.evidence.correctness).toBe('correct');
-  expect(screen.queryByRole('button', { name: /Next Equation/ })).toBeNull();
-  h.next();
-  expect(h.state().task!.itemId).toBe('bs-2');
-});
-
 // ── Unbound mounts ──────────────────────────────────────────────────────────
 
-it.each([['equality', CHALLENGE.equality], ['workshop', CHALLENGE.one_step], ['plain', null]] as const)(
+it.each([['equality', CHALLENGE.equality], ['workshop', CHALLENGE.one_step]] as const)(
   'the %s route, unbound (no runtime, or a pin outside the catalog), renders the needs-the-tutor card', (_route, challenge) => {
-    const challenges = challenge ? [challenge] : [CHALLENGE.one_step, CHALLENGE.equality];
+    const challenges = [challenge];
     const data = { instanceId: 'scale', title: 'Our scale', description: '', leftSide: [], rightSide: [], variableValue: 0, challenges } as BalanceScaleData;
-    const { container } = render(<BalanceScale data={data} runtimeEvalMode={challenge?.type ?? 'mixed'} />);
+    const { container } = render(<BalanceScale data={data} runtimeEvalMode={challenge.type} />);
     expect(container.querySelector('[data-workspace-unbound="balance-scale"]')).not.toBeNull();
     expect(screen.getByText('Our scale')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Add \d weight|Start Solving|Check/ })).toBeNull();

@@ -494,6 +494,7 @@ registerContextGenerator('distribution-explorer', async (ctx) => ({
     gradeContext: ctx.gradeContext,
     ...ctx.raw,
     intent: ctx.intent,
+    supportTier: ctx.supportTier,
   }),
 }));
 

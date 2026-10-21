@@ -23,10 +23,15 @@
  * Leak rules (code): no lever text or scene fact carries a digit; a decompose model never uses or names the item's part
  * shapes; a how-many-ways model is never the item's shape or its number of pieces; a practice item never repeats the
  * learner's item.
+ *
+ * Declared once as a lever set (`SHAPE_COMPOSER_LEVERS`, `bossLevers.ts`) by type: the lit outline, rings, glowing
+ * spots, split lines and list lights are `marks`; the two pictures outside the item are `model` (a different item,
+ * solved; when it comes is the set's `support`, by the item's tier); the five simplify levers are `easier`. Its context
+ * is how many shapes are on the board: a ring on the learner's pieces is offered only once there is one.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ShapeComposerChallenge } from './ShapeComposer';
-import type { ShapeComposerMiss } from './shapeComposerWorkspace';
+import { SHAPE_COMPOSER_MISSES_BY_MODE } from './shapeComposer.card';
 import { hasOverlap, pieceGap, recipeInstruction, TOUCH_GAP, type BoardPiece, type RecipePart } from './shapeComposerBuild';
 
 export const EMPTY_SPACE_LEVER = 'empty_space';
@@ -216,86 +221,95 @@ export function simplerLeaks(parent: ShapeComposerChallenge, simpler: ShapeCompo
 
 // ── declarations ─────────────────────────────────────────────────────────
 
-export function shapeComposerLevers(c: ShapeComposerChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeShape(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly ShapeComposerMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerShape(c);
-  const easier = (id: string, answers: readonly ShapeComposerMiss[], when: string, what: string) => simpler
-    ? [lever(id, 'simplify', 'shown', answers, when, `Opens an easier item first: ${what}. It is not graded; the full item comes back after it.`)]
-    : [];
-  switch (c.type) {
-    case 'compose-match': return [
-      lever(EMPTY_SPACE_LEVER, 'help', 'shown', ['pieces_left', 'piece_off_outline'],
-        'The learner cannot see which part of the outline is still empty.',
-        'Lights the part of the outline that no piece covers yet. It shows no piece’s place.'),
-      lever(IN_PLACE_LEVER, 'help', 'shown', ['piece_off_outline'],
-        'The learner cannot tell which piece is not in its place.',
-        'Rings each piece on the board: green when it sits in a place, amber when it does not. It does not say where a piece goes.'),
-      ...easier(FEWER_PIECES_LEVER, ['pieces_left', 'piece_off_outline'], 'This outline has too many pieces to fit yet.',
-        'a different outline filled by just two pieces'),
-    ];
-    case 'compose-picture': return [
-      lever(EMPTY_SPOTS_LEVER, 'help', 'shown', ['shape_missing', 'shape_off_spot'],
-        'The learner cannot see which parts of the picture still need a shape.',
-        'Makes every picture spot that no shape fills yet glow, with its outline drawn. Filled spots stay plain.'),
-      ...easier(SMALLER_PICTURE_LEVER, ['shape_missing', 'shape_off_spot'], 'This picture has too many shapes to place yet.',
-        'a different picture made of just two shapes'),
-    ];
-    case 'decompose': return [
-      ...(c.showSeams === false ? [lever(SPLIT_LINES_LEVER, 'help', 'shown', ['missed_part', 'extra_part', 'wrong_mix'],
-        'The learner cannot see where the big shape splits.',
-        'Draws the dashed lines inside the big shape where its parts meet. No part is named.')] : []),
-      ...(partsModelFor(c) ? [lever(PARTS_MODEL_LEVER, 'help', 'both', ['not_a_part', 'missed_part', 'extra_part', 'wrong_mix'],
-        'The learner does not yet look for each part and name its shape.',
-        `Shows a picture outside the item: a ${partsModelFor(c)!.name} split into parts, each part tinted and tagged with its shape. `
-          + 'Read the tags aloud while pointing at each part; it uses none of the item’s part shapes.')] : []),
-      ...easier(TWO_PARTS_LEVER, ['missed_part', 'extra_part', 'wrong_mix'], 'This big shape has too many parts yet.',
-        'a big shape of only two parts'),
-    ];
-    case 'how-many-ways': return [
-      ...(piecesModelFor(c) ? [lever(PIECES_MODEL_LEVER, 'help', 'both', ['too_few', 'too_many'],
-        'The learner guesses instead of picturing the pieces inside the shape.',
-        `Shows a picture outside the item: a ${piecesModelFor(c)!.name} built from ${piecesModelFor(c)!.word} squares, each `
-          + 'square outlined. Count its squares aloud with the learner; it is neither the item’s shape nor its number of pieces.')] : []),
-      ...easier(SMALLER_BUILD_LEVER, ['too_few', 'too_many'], 'This shape takes too many pieces to picture yet.',
-        'a smaller shape that takes fewer pieces'),
-    ];
-    case 'free-create':
-      if (!c.recipe?.length) return [];
-      return [
-        lever(LIST_MATCH_LEVER, 'help', 'shown', ['missing_piece', 'extra_piece'],
-          'The learner’s shapes do not match the list.',
-          'Lights each shape icon in the list when a shape of its kind is on the board, and rings any shape on the board that is not on the list.'),
-        lever(JOIN_MARKS_LEVER, 'help', 'shown', ['not_touching', 'overlapping'],
-          'The learner’s shapes are apart, or one sits on another.',
-          'Rings each shape on the board: green when it touches another, amber when it is on its own, red when it sits on top of another.'),
-        ...easier(SMALLER_RECIPE_LEVER, ['missing_piece', 'extra_piece', 'not_touching', 'overlapping'],
-          'Building with this many shapes is too much yet.', 'the same kind of list with one shape fewer'),
-      ];
-    default: return [];
-  }
-}
+/** What the lever set reads beside the item: how many shapes the learner has on the board now. */
+export interface ShapeLeverCtx { onBoard: number }
 
-/** What the pulled help levers put on screen, for the tutor and JEV. Pictures only: no digit, no answer. */
-export function leverFacts(c: ShapeComposerChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeShape(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const parts = partsModelFor(c), pieces = piecesModelFor(c);
-  return [
-    on(EMPTY_SPACE_LEVER) && 'The part of the outline that no piece covers is lit yellow.',
-    on(IN_PLACE_LEVER) && 'Each piece on the board is ringed green when it sits in a place, amber when it does not.',
-    on(EMPTY_SPOTS_LEVER) && 'Every picture spot that no shape fills yet glows with its outline drawn.',
-    on(SPLIT_LINES_LEVER) && 'Dashed lines inside the big shape show where its parts meet.',
-    on(PARTS_MODEL_LEVER) && parts && `Beside the big shape is a picture outside the item: a ${parts.name} split into parts, each `
-      + `tinted and tagged ${parts.part}.`,
-    // The model's own count in words: without it a tutor counted the picture to the item's answer (replay r4).
-    on(PIECES_MODEL_LEVER) && pieces && `Beside the ask is a picture outside the item: a ${pieces.name} built from ${pieces.word} `
-      + 'squares, each square outlined.',
-    on(LIST_MATCH_LEVER) && 'Each shape icon in the list is lit when a shape of its kind is on the board; a shape not on the list is ringed.',
-    on(JOIN_MARKS_LEVER) && 'Each shape on the board is ringed green when it touches another, amber when on its own, red when on top of another.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const FULL_ITEM = 'It is not graded; the full item comes back after it.';
+const onBoard = (_c: ShapeComposerChallenge, ctx: ShapeLeverCtx) => ctx.onBoard > 0;
+const listed = (c: ShapeComposerChallenge) => (c.recipe?.length ? c.recipe : null);
+
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
+export const SHAPE_COMPOSER_LEVERS = leverSet<ShapeComposerChallenge, ShapeLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => SHAPE_COMPOSER_MISSES_BY_MODE[mode] ?? [],
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (c.type === 'how-many-ways' ? 'a different shape built from squares' : 'a different big shape with its parts tagged'),
+    own: c => (c.type === 'how-many-ways' ? 'how many pieces build this shape' : 'the parts of this big shape'),
+  },
+  specs: [
+    // compose-match
+    { id: EMPTY_SPACE_LEVER, type: 'marks', modes: ['compose-match'], answers: ['pieces_left', 'piece_off_outline'],
+      when: 'The learner cannot see which part of the outline is still empty.',
+      does: 'Lights the part of the outline that no piece covers yet. It shows no piece’s place.',
+      fact: 'The part of the outline that no piece covers is lit yellow.' },
+    { id: IN_PLACE_LEVER, type: 'marks', modes: ['compose-match'], answers: ['piece_off_outline'], offer: onBoard,
+      when: 'The learner cannot tell which piece is not in its place.',
+      does: 'Rings each piece on the board: green when it sits in a place, amber when it does not. It does not say where a piece goes.',
+      fact: 'Each piece on the board is ringed green when it sits in a place, amber when it does not.' },
+    { id: FEWER_PIECES_LEVER, type: 'easier', modes: ['compose-match'], answers: ['pieces_left', 'piece_off_outline'],
+      when: 'This outline has too many pieces to fit yet.',
+      does: `Opens an easier item first: a different outline filled by just two pieces. ${FULL_ITEM}`,
+      content: c => simplerShape(c) },
+    // compose-picture
+    { id: EMPTY_SPOTS_LEVER, type: 'marks', modes: ['compose-picture'], answers: ['shape_missing', 'shape_off_spot'],
+      when: 'The learner cannot see which parts of the picture still need a shape.',
+      does: 'Makes every picture spot that no shape fills yet glow, with its outline drawn. Filled spots stay plain.',
+      fact: 'Every picture spot that no shape fills yet glows with its outline drawn.' },
+    { id: SMALLER_PICTURE_LEVER, type: 'easier', modes: ['compose-picture'], answers: ['shape_missing', 'shape_off_spot'],
+      when: 'This picture has too many shapes to place yet.',
+      does: `Opens an easier item first: a different picture made of just two shapes. ${FULL_ITEM}`,
+      content: c => simplerShape(c) },
+    // decompose. Split lines only where the session hides them (they are on screen otherwise).
+    { id: SPLIT_LINES_LEVER, type: 'marks', modes: ['decompose'], answers: ['missed_part', 'extra_part', 'wrong_mix'],
+      offer: c => c.showSeams === false,
+      when: 'The learner cannot see where the big shape splits.',
+      does: 'Draws the dashed lines inside the big shape where its parts meet. No part is named.',
+      fact: 'Dashed lines inside the big shape show where its parts meet.' },
+    { id: PARTS_MODEL_LEVER, type: 'model', modes: ['decompose'], answers: ['not_a_part', 'missed_part', 'extra_part', 'wrong_mix'],
+      content: c => partsModelFor(c),
+      when: 'The learner does not yet look for each part and name its shape.',
+      does: c => `Shows a picture outside the item: a ${partsModelFor(c)?.name ?? 'shape'} split into parts, each part tinted and `
+        + 'tagged with its shape. Read the tags aloud while pointing at each part; it uses none of the item’s part shapes.',
+      fact: (m: PartsModel) => `Beside the big shape is a picture outside the item: a ${m.name} split into parts, each tinted `
+        + `and tagged ${m.part}.` },
+    { id: TWO_PARTS_LEVER, type: 'easier', modes: ['decompose'], answers: ['missed_part', 'extra_part', 'wrong_mix'],
+      when: 'This big shape has too many parts yet.',
+      does: `Opens an easier item first: a big shape of only two parts. ${FULL_ITEM}`,
+      content: c => simplerShape(c) },
+    // how-many-ways
+    { id: PIECES_MODEL_LEVER, type: 'model', modes: ['how-many-ways'], answers: ['too_few', 'too_many'],
+      content: c => piecesModelFor(c),
+      when: 'The learner guesses instead of picturing the pieces inside the shape.',
+      does: c => {
+        const m = piecesModelFor(c);
+        return `Shows a picture outside the item: a ${m?.name ?? 'shape'} built from ${m?.word ?? 'some'} squares, each square `
+          + 'outlined. Count its squares aloud with the learner; it is neither the item’s shape nor its number of pieces.';
+      },
+      // The model's own count in words: without it a tutor counted the picture to the item's answer (replay r4).
+      fact: (m: PiecesModel) => `Beside the ask is a picture outside the item: a ${m.name} built from ${m.word} squares, each square outlined.` },
+    { id: SMALLER_BUILD_LEVER, type: 'easier', modes: ['how-many-ways'], answers: ['too_few', 'too_many'],
+      when: 'This shape takes too many pieces to picture yet.',
+      does: `Opens an easier item first: a smaller shape that takes fewer pieces. ${FULL_ITEM}`,
+      content: c => simplerShape(c) },
+    // free-create, on a payload with a list (an older one has none: `too_few_shapes` is unanswered)
+    { id: LIST_MATCH_LEVER, type: 'marks', modes: ['free-create'], answers: ['missing_piece', 'extra_piece'],
+      content: listed, offer: onBoard,
+      when: 'The learner’s shapes do not match the list.',
+      does: 'Lights each shape icon in the list when a shape of its kind is on the board, and rings any shape on the board that is not on the list.',
+      fact: 'Each shape icon in the list is lit when a shape of its kind is on the board; a shape not on the list is ringed.' },
+    { id: JOIN_MARKS_LEVER, type: 'marks', modes: ['free-create'], answers: ['not_touching', 'overlapping'],
+      content: listed, offer: onBoard,
+      when: 'The learner’s shapes are apart, or one sits on another.',
+      does: 'Rings each shape on the board: green when it touches another, amber when it is on its own, red when it sits on top of another.',
+      fact: 'Each shape on the board is ringed green when it touches another, amber when on its own, red when on top of another.' },
+    { id: SMALLER_RECIPE_LEVER, type: 'easier', modes: ['free-create'],
+      answers: ['missing_piece', 'extra_piece', 'not_touching', 'overlapping'],
+      when: 'Building with this many shapes is too much yet.',
+      does: `Opens an easier item first: the same kind of list with one shape fewer. ${FULL_ITEM}`,
+      content: c => simplerShape(c) },
+  ],
+});
 
 /** Leak rule for the help levers' words: no digit (a count or a number of pieces), and on decompose none of the parts' shapes. */
 export function leverTextLeaks(c: ShapeComposerChallenge, text: string): boolean {

@@ -1,8 +1,7 @@
 /**
- * Levers for polygon area builder's typed-area modes (`/add-support-tiers`).
- *
- * Pure: the component, the scene, the journey row and the tests read the same declarations, leak rule and builders.
- * The misses come from `areaMiss` (polygonAreaWorkspace.ts).
+ * polygon-area-builder's in-item levers (`/add-support-tiers`), declared once as a lever set (`POLYGON_LEVERS`,
+ * `bossLevers.ts`). The misses come from `areaMiss` (polygonAreaWorkspace.ts) and the builds' checks
+ * (polygonAreaBuild.ts); the miss lists are the card's.
  * - find_area_triangle_parallelogram: `unit_grid`, `half_of_rectangle` (triangle), `slide_corner` (parallelogram),
  *   `smaller_figure`.
  * - decompose: `show_slot` (the dashed slot the cut triangle fits, when the tier hid it), `unit_grid`, `smaller_figure`
@@ -11,15 +10,21 @@
  *   upside down against the right side, the parallelogram they make outlined), `smaller_figure` (a smaller right
  *   trapezoid on the grid).
  * - composite_area: `split_pieces` (the rectangle pieces drawn, when the tier showed one outline), `left_out_piece` (the
- *   piece(s) the learner's last area left out, outlined bold), `square_rows` (every other row of squares tinted),
- *   `smaller_figure` (a smaller two-piece L, pieces drawn).
+ *   piece(s) the learner's last area left out, outlined bold, offered once an area was one piece's), `square_rows`
+ *   (every other row of squares tinted), `smaller_figure` (a smaller two-piece L, pieces drawn).
  * - coordinate_polygon: `outside_box` (the rectangle through the outermost corners, the part outside the polygon
  *   tinted), `square_rows` (rectilinear polygons), `rectangle_first` (a rectangle on the grid, for a triangle or an L).
- * No lever prints a number: every drawn label is one of the figure's own givens.
+ * - build_area: `square_numbers`, `piece_colors`, `turned_first` (a two-shape item; it draws once the first shape is
+ *   made), `smaller_area`. build_perimeter: `edge_marks`, `piece_colors`, `turned_first`, `smaller_perimeter`.
+ * No lever prints the item's answer: every drawn label on a figure is one of its own givens.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
-import type { AreaMiss } from './polygonAreaWorkspace';
+import { POLYGON_MISSES_BY_MODE } from './polygonAreaBuilder.card';
+import {
+  EDGES_LEVER, NUMBERS_LEVER, PIECES_LEVER, SMALLER_LEVER, SMALLER_PERIMETER_LEVER, TURNED_LEVER, isGridBuild,
+  isPracticeBuild, smallerArea, smallerPerimeter,
+} from './polygonAreaBuild';
 
 type Pt = { x: number; y: number };
 
@@ -36,9 +41,7 @@ export const LEFT_OUT_LEVER = 'left_out_piece';
 export const ROWS_LEVER = 'square_rows';
 export const OUTSIDE_LEVER = 'outside_box';
 export const RECTANGLE_FIRST_LEVER = 'rectangle_first';
-/** The simplify levers: each puts a `~smaller` practice item built by `smallerFigure` in place of the item. */
-export const SIMPLER_FIGURE_LEVERS: readonly string[] = [SMALLER_FIGURE_LEVER, RECTANGLE_FIRST_LEVER];
-/** The same suffix the open build's easier item uses, so the journey row finds either practice item one way. */
+/** The same suffix the open build's easier item uses, so the boss's harness finds either practice item one way. */
 const SMALLER = '~smaller';
 
 const isFindArea = (c: PolygonAreaChallenge) =>
@@ -232,125 +235,175 @@ export function leftOutPieces(c: PolygonAreaChallenge, typed: number): number[] 
 }
 
 // ---------------------------------------------------------------------------
-// Declarations
+// The lever set
 // ---------------------------------------------------------------------------
 
-export function figureLevers(c: PolygonAreaChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!isTyped(c) || isPractice(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: AreaMiss[], when: string, does: string,
-    on = false): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: on || pulled.includes(id), answers, when, does });
-  const easier = smallerFigure(c);
-  const simplify = (id: string, answers: AreaMiss[], does: string) =>
-    easier || pulled.includes(id) ? [lever(id, 'simplify', answers,
-      `The learner cannot find this ${c.type === 'coordinate_polygon' ? 'polygon' : c.figureType}'s area yet, even with the picture.`,
-      `${does} It is not graded; the full item comes back after it.`)] : [];
-  // A tier that already shows the grid (easy) starts it on screen; that is a starting position, not a pull.
-  const grid = (answers: AreaMiss[]) => lever(GRID_LEVER, 'help', answers,
-    'The learner adds the lengths, or types an area that does not match the figure.',
-    `Draws the unit grid behind the ${c.figureType}, each square one square unit, so the learner can see the area as `
-      + 'the squares the figure covers. No square is numbered or counted.', !!c.showGridOverlay);
-  const rows = squareRows(c) ? [lever(ROWS_LEVER, 'help', ['halved', 'wrong_area'],
-    'The learner types an area that is not the number of squares inside the figure, such as half of it.',
-    'Tints every other row of unit squares inside the figure, so each row of squares reads apart. No row or square is '
-      + 'numbered or counted.')] : [];
-
-  switch (c.type) {
-    case 'decompose':
-      return [
-        lever(SLOT_LEVER, 'help', [], 'The learner cannot find where the cut triangle goes.',
-          'Draws the dashed slot at the far end of the parallelogram where the cut triangle fits. No number is drawn.',
-          c.showDecompositionGuides !== false),
-        grid(['halved', 'added_sides', 'wrong_area']),
-        ...simplify(SMALLER_FIGURE_LEVER, ['halved', 'added_sides', 'wrong_area'],
-          'Opens a smaller parallelogram first, leaning one square, with its slot and the unit grid drawn.'),
-      ];
-    case 'find_area_trapezoid':
-      return [
-        grid(['added_sides', 'wrong_area']),
-        lever(CUT_LEVER, 'help', ['added_sides', 'wrong_area'],
-          'The learner adds the lengths, or cannot see the trapezoid as shapes they know.',
-          'Draws dashed lines straight down from the two top corners to the bottom base, splitting the trapezoid into a '
-            + 'rectangle and side triangles. No length or area is written.', c.showDecompositionGuides === true),
-        lever(TURNED_COPY_LEVER, 'help', ['forgot_half', 'wrong_area'],
-          'The learner multiplies the two bases added together by the height and leaves out the half.',
-          'Draws a copy of the trapezoid turned upside down against its right side and outlines the parallelogram the two '
-            + 'make together, with the same height. No length or area is written.'),
-        ...simplify(SMALLER_FIGURE_LEVER, ['forgot_half', 'added_sides', 'wrong_area'],
-          'Opens a smaller trapezoid first, with one square corner, on the unit grid.'),
-      ];
-    case 'composite_area':
-      return [
-        lever(SPLIT_LEVER, 'help', ['halved', 'wrong_area'],
-          'The learner cannot see the figure as rectangles.',
-          'Draws the figure split into its rectangle pieces, each piece\'s width and height labelled. No area is written.',
-          c.showDecompositionGuides !== false),
-        lever(LEFT_OUT_LEVER, 'help', ['one_piece'],
-          'The learner types the area of one rectangle piece, not the whole figure.',
-          'Outlines in bold the piece or pieces of the figure that the learner\'s last area left out. No area is written.'),
-        ...rows,
-        ...simplify(SMALLER_FIGURE_LEVER, ['one_piece', 'halved', 'wrong_area'],
-          'Opens a smaller figure first, made of two rectangles, with its pieces drawn and labelled.'),
-      ];
-    case 'coordinate_polygon':
-      return [
-        ...(outsideOfBox(c) ? [lever(OUTSIDE_LEVER, 'help', ['bounding_box', 'halved', 'wrong_area'],
-          'The learner types the area of the rectangle around the polygon, or an area that does not match it.',
-          'Draws the dashed rectangle through the polygon\'s outermost corners and tints the part of it that lies outside '
-            + 'the polygon. No length or area is written.')] : []),
-        ...rows,
-        ...simplify(RECTANGLE_FIRST_LEVER, ['bounding_box', 'halved', 'wrong_area'],
-          'Opens a rectangle on the coordinate grid first, its corners labelled.'),
-      ];
-    default: {
-      const triangle = c.figureType === 'triangle';
-      return [
-        grid(['added_sides', 'wrong_area']),
-        triangle
-          ? lever(HALF_LEVER, 'help', ['forgot_half', 'wrong_area'],
-            'The learner multiplies base by height on the triangle and leaves out the half.',
-            'Draws the rectangle with the same base and height around the triangle and tints the two pieces of it outside '
-              + 'the triangle; each matches a piece of the triangle on one side of the dashed height. No area is written.')
-          : lever(SLIDE_LEVER, 'help', ['halved', 'wrong_area'],
-            'The learner takes half of base times height on the parallelogram.',
-            'Tints the corner piece left of the dashed height, draws a copy of it moved to the far end, and outlines the '
-              + 'rectangle the parallelogram becomes, with the same base and height. No area is written.'),
-        ...simplify(SMALLER_FIGURE_LEVER, ['forgot_half', 'halved', 'added_sides', 'wrong_area'],
-          `Opens a smaller ${c.figureType} first, ${triangle ? 'with its height along one side' : 'leaning one square'}, on the unit grid.`),
-      ];
-    }
-  }
+/** What the levers read beside the item: the screen's state that decides whether one is offered. */
+export interface PolygonLeverCtx {
+  /** composite_area: the pieces the learner's last checked area left out, when it was one piece's area. */
+  leftOut: readonly number[] | null;
+  /** decompose: the cut triangle is already in its slot. */
+  rearranged: boolean;
+  /** A two-shape build whose first shape was checked right and is drawn beside the grid. */
+  firstShape: boolean;
 }
 
-/** What each pulled lever put on screen, in terms of what is drawn. Never a number. */
-export function figureLeverFacts(c: PolygonAreaChallenge, pulled: readonly string[]): string {
-  const said: string[] = [];
-  const on = (id: string) => pulled.includes(id);
-  const gridable = c.figureType === 'triangle' || c.figureType === 'parallelogram' || c.figureType === 'trapezoid';
-  if (gridable && (c.showGridOverlay || on(GRID_LEVER))) said.push('a unit grid is drawn behind the figure, each square one square unit');
-  if (c.type === 'decompose' && on(SLOT_LEVER)) said.push('the dashed slot where the cut triangle fits is drawn at the far end');
-  if (c.figureType === 'triangle' && on(HALF_LEVER)) {
-    said.push('a dashed rectangle with the same base and height is drawn around the triangle; its two pieces outside '
-      + 'the triangle are tinted, each matching a piece of the triangle on one side of the dashed height');
-  }
-  if (c.type === FIND_AREA && c.figureType === 'parallelogram' && on(SLIDE_LEVER)) {
-    said.push('the corner piece left of the dashed height is tinted, a copy of it is drawn moved to the far end, and the '
-      + 'rectangle they make is outlined with the same base and height');
-  }
-  if (c.figureType === 'trapezoid' && (c.showDecompositionGuides === true || on(CUT_LEVER))) {
-    said.push('dashed lines run straight down from the two top corners of the trapezoid to the bottom base');
-  }
-  if (c.figureType === 'trapezoid' && on(TURNED_COPY_LEVER)) {
-    said.push('a copy of the trapezoid turned upside down is drawn dashed against its right side, and the parallelogram '
-      + 'the two make together is outlined');
-  }
-  if (c.figureType === 'composite' && on(SPLIT_LEVER)) said.push('the figure is drawn split into its rectangle pieces, each labelled with its width and height');
-  if (c.figureType === 'composite' && on(LEFT_OUT_LEVER)) said.push('the piece or pieces the learner\'s last area left out are outlined in bold');
-  if (on(ROWS_LEVER)) said.push('every other row of unit squares inside the figure is tinted, so each row reads apart');
-  if (c.figureType === 'coordinate' && on(OUTSIDE_LEVER)) {
-    said.push('a dashed rectangle through the polygon\'s outermost corners is drawn, and the part of it outside the polygon is tinted');
-  }
-  return said.length ? `On the figure: ${said.join('; ')}.` : '';
+/** No help or simplify on a practice item: the component declares nothing while one is on screen. */
+const typedItem = (c: PolygonAreaChallenge) => isTyped(c) && !isPractice(c);
+const buildItem = (c: PolygonAreaChallenge) => isGridBuild(c) && !isPracticeBuild(c);
+const figureWord = (c: PolygonAreaChallenge) => (c.type === 'coordinate_polygon' ? 'polygon' : c.figureType);
+
+/**
+ * The levers the support tier already put on screen (the easy grid, the decomposition guides): a starting position,
+ * declared as pulled so the next lever is another, never recorded as a pull.
+ */
+export function tierShown(c: PolygonAreaChallenge): string[] {
+  if (!typedItem(c)) return [];
+  const shown: string[] = [];
+  if (c.showGridOverlay && (c.type === FIND_AREA || c.type === 'decompose' || c.type === 'find_area_trapezoid')) shown.push(GRID_LEVER);
+  if (c.type === 'decompose' && c.showDecompositionGuides !== false) shown.push(SLOT_LEVER);
+  if (c.type === 'find_area_trapezoid' && c.showDecompositionGuides === true) shown.push(CUT_LEVER);
+  if (c.type === 'composite_area' && c.showDecompositionGuides !== false) shown.push(SPLIT_LEVER);
+  return shown;
 }
+
+const SIMPLER_DOES: Partial<Record<PolygonAreaChallenge['type'], (c: PolygonAreaChallenge) => string>> = {
+  decompose: () => 'Opens a smaller parallelogram first, leaning one square, with its slot and the unit grid drawn.',
+  [FIND_AREA]: c => `Opens a smaller ${c.figureType} first, ${c.figureType === 'triangle'
+    ? 'with its height along one side' : 'leaning one square'}, on the unit grid.`,
+  find_area_trapezoid: () => 'Opens a smaller trapezoid first, with one square corner, on the unit grid.',
+  composite_area: () => 'Opens a smaller figure first, made of two rectangles, with its pieces drawn and labelled.',
+};
+const UNGRADED = ' It is not graded; the full item comes back after it.';
+
+/** Every lever of every mode, declared once (`bossLevers.ts`). No lever's words or facts carry a number. */
+export const POLYGON_LEVERS = leverSet<PolygonAreaChallenge, PolygonLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => POLYGON_MISSES_BY_MODE[mode as PolygonAreaChallenge['type']] ?? [],
+  specs: [
+    // ── the typed-area figures ──
+    { id: SLOT_LEVER, type: 'marks', modes: ['decompose'], answers: [],
+      when: 'The learner cannot find where the cut triangle goes.',
+      does: 'Draws the dashed slot at the far end of the parallelogram where the cut triangle fits. No number is drawn.',
+      // Once the triangle is in its slot there is nothing left to show.
+      offer: (c, ctx) => typedItem(c) && !ctx.rearranged,
+      fact: 'The dashed slot where the cut triangle fits is drawn at the far end of the parallelogram.' },
+    { id: GRID_LEVER, type: 'marks', modes: ['decompose', FIND_AREA, 'find_area_trapezoid'],
+      answers: ['halved', 'added_sides', 'wrong_area'],
+      answersOn: c => (c.type === 'decompose' ? ['halved', 'added_sides', 'wrong_area'] : ['added_sides', 'wrong_area']),
+      when: 'The learner adds the lengths, or types an area that does not match the figure.',
+      does: c => `Draws the unit grid behind the ${c.figureType}, each square one square unit, so the learner can see the `
+        + 'area as the squares the figure covers. No square is numbered or counted.',
+      offer: typedItem,
+      fact: 'A unit grid is drawn behind the figure, each square one square unit.' },
+    { id: HALF_LEVER, type: 'marks', modes: [FIND_AREA], answers: ['forgot_half', 'wrong_area'],
+      when: 'The learner multiplies base by height on the triangle and leaves out the half.',
+      does: 'Draws the rectangle with the same base and height around the triangle and tints the two pieces of it outside '
+        + 'the triangle; each matches a piece of the triangle on one side of the dashed height. No area is written.',
+      offer: c => typedItem(c) && c.figureType === 'triangle',
+      fact: 'A dashed rectangle with the same base and height is drawn around the triangle; its two pieces outside the '
+        + 'triangle are tinted, each matching a piece of the triangle on one side of the dashed height.' },
+    { id: SLIDE_LEVER, type: 'marks', modes: [FIND_AREA], answers: ['halved', 'wrong_area'],
+      when: 'The learner takes half of base times height on the parallelogram.',
+      does: 'Tints the corner piece left of the dashed height, draws a copy of it moved to the far end, and outlines the '
+        + 'rectangle the parallelogram becomes, with the same base and height. No area is written.',
+      offer: c => typedItem(c) && c.figureType === 'parallelogram',
+      fact: 'The corner piece left of the dashed height is tinted, a copy of it is drawn moved to the far end, and the '
+        + 'rectangle they make is outlined with the same base and height.' },
+    { id: CUT_LEVER, type: 'marks', modes: ['find_area_trapezoid'], answers: ['added_sides', 'wrong_area'],
+      when: 'The learner adds the lengths, or cannot see the trapezoid as shapes they know.',
+      does: 'Draws dashed lines straight down from the two top corners to the bottom base, splitting the trapezoid into a '
+        + 'rectangle and side triangles. No length or area is written.',
+      offer: typedItem,
+      fact: 'Dashed lines run straight down from the two top corners of the trapezoid to the bottom base.' },
+    { id: TURNED_COPY_LEVER, type: 'marks', modes: ['find_area_trapezoid'], answers: ['forgot_half', 'wrong_area'],
+      when: 'The learner multiplies the two bases added together by the height and leaves out the half.',
+      does: 'Draws a copy of the trapezoid turned upside down against its right side and outlines the parallelogram the two '
+        + 'make together, with the same height. No length or area is written.',
+      offer: typedItem,
+      fact: 'A copy of the trapezoid turned upside down is drawn dashed against its right side, and the parallelogram the '
+        + 'two make together is outlined.' },
+    { id: SPLIT_LEVER, type: 'layout', modes: ['composite_area'], answers: ['halved', 'wrong_area'],
+      when: 'The learner cannot see the figure as rectangles.',
+      does: 'Draws the figure split into its rectangle pieces, each piece\'s width and height labelled. No area is written.',
+      offer: typedItem,
+      fact: 'The figure is drawn split into its rectangle pieces, each labelled with its width and height.' },
+    { id: LEFT_OUT_LEVER, type: 'marks', modes: ['composite_area'], answers: ['one_piece'],
+      when: 'The learner types the area of one rectangle piece, not the whole figure.',
+      does: 'Outlines in bold the piece or pieces of the figure that the learner\'s last area left out. No area is written.',
+      // Offered once the last checked area was one piece's: until then there is no left-out piece to outline.
+      content: (c, ctx) => (ctx.leftOut?.length ? ctx.leftOut : null),
+      offer: typedItem,
+      fact: 'The piece or pieces the learner\'s last area left out are outlined in bold.' },
+    { id: OUTSIDE_LEVER, type: 'marks', modes: ['coordinate_polygon'], answers: ['bounding_box', 'halved', 'wrong_area'],
+      when: 'The learner types the area of the rectangle around the polygon, or an area that does not match it.',
+      does: 'Draws the dashed rectangle through the polygon\'s outermost corners and tints the part of it that lies outside '
+        + 'the polygon. No length or area is written.',
+      content: c => outsideOfBox(c),
+      offer: typedItem,
+      fact: 'A dashed rectangle through the polygon\'s outermost corners is drawn, and the part of it outside the polygon '
+        + 'is tinted.' },
+    { id: ROWS_LEVER, type: 'layout', modes: ['composite_area', 'coordinate_polygon'], answers: ['halved', 'wrong_area'],
+      when: 'The learner types an area that is not the number of squares inside the figure, such as half of it.',
+      does: 'Tints every other row of unit squares inside the figure, so each row of squares reads apart. No row or square '
+        + 'is numbered or counted.',
+      content: c => squareRows(c),
+      offer: typedItem,
+      fact: 'Every other row of unit squares inside the figure is tinted, so each row reads apart.' },
+    { id: SMALLER_FIGURE_LEVER, type: 'easier', carrier: 'shown',
+      modes: ['decompose', FIND_AREA, 'find_area_trapezoid', 'composite_area'], answers: 'all',
+      when: c => `The learner cannot find this ${figureWord(c)}'s area yet, even with the picture.`,
+      does: c => `${SIMPLER_DOES[c.type]?.(c) ?? ''}${UNGRADED}`,
+      content: c => (typedItem(c) ? smallerFigure(c) : null) },
+    { id: RECTANGLE_FIRST_LEVER, type: 'easier', carrier: 'shown', modes: ['coordinate_polygon'], answers: 'all',
+      when: 'The learner cannot find this polygon\'s area yet, even with the picture.',
+      does: `Opens a rectangle on the coordinate grid first, its corners labelled.${UNGRADED}`,
+      content: c => (typedItem(c) ? smallerFigure(c) : null) },
+    // ── the open builds on the grid ──
+    { id: NUMBERS_LEVER, type: 'marks', carrier: 'both', modes: ['build_area'],
+      answers: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      when: 'The learner shades one square too many or too few, or loses count of the squares in the shape.',
+      does: 'Numbers each square the learner has shaded, 1, 2, 3..., in the order they shaded them, so they can count the '
+        + 'squares in their shape. It never shows the area asked for.',
+      offer: buildItem,
+      fact: 'Each shaded square carries a number, in the order the learner shaded it.' },
+    { id: EDGES_LEVER, type: 'marks', modes: ['build_perimeter'],
+      answers: ['two_short', 'two_over', 'short_by_more', 'over_by_more', 'counted_squares', 'has_hole'],
+      when: 'The learner counts the squares instead of the sides around them, skips or double-counts a side at a corner, or '
+        + 'misses the sides around a hole.',
+      does: 'Puts a dot on every side of a shaded square that is on the edge of the shape, the sides around a hole included, '
+        + 'so the learner can count the sides that make the perimeter. No numbers; it never shows the perimeter asked for.',
+      offer: buildItem,
+      fact: 'A dot sits on every side of a shaded square on the edge of the shape.' },
+    { id: PIECES_LEVER, type: 'marks', modes: ['build_area', 'build_perimeter'], answers: ['not_connected'],
+      when: 'The learner\'s squares make more than one separate piece.',
+      does: 'Tints each separate piece of the learner\'s squares a different colour, so they can see which squares do not '
+        + 'touch the rest along a side.',
+      offer: buildItem,
+      fact: 'Each separate piece of shaded squares is tinted its own colour.' },
+    { id: TURNED_LEVER, type: 'marks', modes: ['build_area', 'build_perimeter'], answers: ['same_as_first'],
+      when: 'The learner makes the first shape again, turned or flipped, and thinks it is a new shape.',
+      does: 'Draws the learner\'s first shape beside the grid turned and flipped to line up with the shape on the grid when '
+        + 'the two are the same shape, so the learner can see they match.',
+      // A two-shape item. Its miss comes only once the first shape is made; the picture and the fact wait for it.
+      content: c => (c.shapesAsked === 2 ? true : null),
+      offer: buildItem,
+      fact: (_: unknown, _c: PolygonAreaChallenge, ctx: PolygonLeverCtx) => (ctx.firstShape
+        ? 'The learner\'s first shape is drawn beside the grid, turned to line up with the grid\'s shape when they match.' : '') },
+    { id: SMALLER_LEVER, type: 'easier', carrier: 'shown', modes: ['build_area'],
+      answers: ['short_by_more', 'over_by_more', 'not_connected'],
+      when: 'The learner cannot keep track of this many squares yet.',
+      does: c => `Opens an easier shape to make first, with an area of ${smallerArea(c)?.targetArea ?? 'fewer'} squares, on `
+        + `an empty grid.${UNGRADED}`,
+      content: c => smallerArea(c) },
+    { id: SMALLER_PERIMETER_LEVER, type: 'easier', carrier: 'shown', modes: ['build_perimeter'],
+      answers: ['short_by_more', 'over_by_more', 'counted_squares'],
+      when: 'The learner cannot keep track of this many sides around a shape yet.',
+      does: c => `Opens an easier shape to make first, with a perimeter of ${smallerPerimeter(c)?.targetPerimeter ?? 'fewer'} `
+        + `units, on an empty grid.${UNGRADED}`,
+      content: c => smallerPerimeter(c) },
+  ],
+});
 
 /** The pieces a pulled figure lever draws, in figure units (y up). The component paints them; tests read them. */
 export interface FigureOverlay {

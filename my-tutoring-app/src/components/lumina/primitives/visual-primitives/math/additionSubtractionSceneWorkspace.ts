@@ -1,35 +1,57 @@
 /**
- * Addition-subtraction scene on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C4). Its only teaching path: the scripted runner was
- * retired (LA-14, user ruling 09-23: one path).
+ * Addition-subtraction scene on the shared tutor/JEV teaching workspace (`additionSubtractionScene.boss.ts`, spoken
+ * preset). Pure: the boss, the component and the journey read the same key, scene and checks.
  *
- * Pure: the component and the journey read the same assignment and scene. solve-story and
- * Grade 1 act-out are one spoken number. act-out at K and create-story are enacted on the
- * picture, and build-equation is built from tiles: those commit when the child stops (the
- * stillness window) and the activity checks them. A change group that waits for the story
- * is a stimulus the tutor brings in with `present` (or the learner with Show me).
+ * solve-story and Grade 1 act-out are one spoken number, judged against `additionSubtractionKey`. act-out at K and
+ * create-story are enacted on the picture, and build-equation is built from tiles: those have no key, commit when the
+ * child stops (the stillness window) and the activity checks them. A change group that waits for the story is a
+ * stimulus the tutor brings in with `present` (or the learner with Show me).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { numberMisses, offByMisses, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
-  addSubHarnessAnswers,
   askFor,
   equationFaultOf,
   equationSpoken,
   publicValuesFor,
   type AddSubSceneItem,
-} from './additionSubtractionSceneScript';
-import { numberWordFor } from './countingBoardScript';
+} from './additionSubtractionSceneDomain';
+import { numberWordFor } from './countingBoardDomain';
+import type { AddSubMiss } from './additionSubtractionScene.card';
+import { PRACTICE_NOTE } from './additionSubtractionSceneLevers';
+
+export type { AddSubMiss, SpokenAddSubMiss } from './additionSubtractionScene.card';
 
 /** The pack's own ask, without its "Your turn" hand-over. */
-const ask = (item: AddSubSceneItem) => askFor(item).replace(/\s*Your turn(\.| —)\s*/, ' ').replace(/\s+/g, ' ').trim();
+export const addSubAsk = (item: AddSubSceneItem) =>
+  askFor(item).replace(/\s*Your turn(\.| —)\s*/, ' ').replace(/\s+/g, ' ').trim();
 
 /** Are the items built on the picture (the child brings objects in or sends them away)? */
 export const isEnacted = (item: AddSubSceneItem) =>
   item.kind === 'create-story' || (item.kind === 'act-out' && (item.band === 'K' || item.operation === 'subtraction'));
 
-/** What a wrong spoken story answer shows (handoff 20 Part B). */
-export type SpokenAddSubMiss = OffByMiss | 'said_start' | 'said_change' | 'said_result' | 'other_operation';
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * The key a spoken item is judged against (`spokenKeyText` writes it); null on a picture or a number sentence, which
+ * the activity checks. The scripted pack's judging contract, kept: counting aloud that ends on the answer counts, the
+ * number with the objects named after it counts, and a number the story says out loud is not it.
+ */
+export function additionSubtractionKey(item: AddSubSceneItem): SpokenKey | null {
+  if (item.answerKind === 'gesture') return null;
+  const word = numberWordFor(item.answer);
+  const echoed = Array.from(new Set(publicValuesFor(item))).filter(v => v !== item.answer).map(numberWordFor);
+  return { answer: word, alsoAccept: [],
+    acceptRule: `Counting aloud that ends on ${word} is that answer: the last number said tells the total. `
+      + `${cap(word)} with the ${item.objectType} named after it is ${word} too.`,
+    signatureError: (echoed.length ? `${cap(echoed.join(' or '))}, a number the story says out loud, is not it. ` : '')
+      + 'A different number is not the answer, however close it is.' };
+}
+
+/** What the ask says by design: the story's own numbers, which may be the answer too (four take away two is two). */
+export const additionSubtractionGiven = (item: AddSubSceneItem): string[] =>
+  publicValuesFor(item).flatMap(v => [numberWordFor(v), String(v)]);
 
 /**
  * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer: a number the story says
@@ -53,25 +75,17 @@ export function additionSubtractionSpokenMisses(item: AddSubSceneItem): KnownMis
   ]), ...offByMisses(a, `the ${a} ${obj} the question asks for`)];
 }
 
-export function additionSubtractionAssignment(item: AddSubSceneItem): TeachingAssignment {
-  if (item.answerKind === 'gesture') return { id: item.id, task: ask(item), response: 'gesture' };
-  const echoed = publicValuesFor(item).filter(v => v !== item.answer);
-  const misses = additionSubtractionSpokenMisses(item);
-  return { id: item.id, task: ask(item), response: 'speech',
-    expectedAnswer: `${numberWordFor(item.answer)} (${item.answer}). Counting aloud that ends on ${numberWordFor(item.answer)} `
-      + `counts, and so does the number with the ${item.objectType} named after it.`
-      + (echoed.length ? ` ${echoed.map(v => numberWordFor(v)).join(' or ')}, a number the story says out loud, is not it.` : ''),
-    ...(misses.length ? { misses } : {}) };
-}
-
 export interface AddSubView {
   /** Objects in the picture now, on an enacted item. */
   inPicture: number;
   /** A change group still waiting on the story. */
   changeWaiting: boolean;
+  /** An easier practice story is on screen in place of the session item. */
+  practice?: boolean;
 }
 
-export function additionSubtractionScene(item: AddSubSceneItem, view: AddSubView): WorkspaceScene {
+/** The picture as the tutor reads it. Only this primitive's own facts: how to answer is the card's `moves`. */
+export function additionSubtractionScene(item: AddSubSceneItem, view: AddSubView): SceneOf {
   const facts: Record<string, string | number> = {
     [item.kind === 'create-story' ? 'numberSentence' : 'story']: item.kind === 'create-story' ? equationSpoken(item) : item.situation,
     objects: item.objectType,
@@ -83,13 +97,9 @@ export function additionSubtractionScene(item: AddSubSceneItem, view: AddSubView
       + 'when you use present, after you tell that part of the story. Then, in the same turn, finish the task: '
       + 'the rest of the story and its question.';
   }
-  facts.constraints = item.kind === 'build-equation'
-    ? 'The learner builds the number sentence from tiles; it is checked when they stop. You cannot place tiles.'
-    : item.answerKind === 'gesture'
-      ? `The learner brings ${item.objectType} in with the add button and taps one to send it away; the picture is checked `
-        + 'when they stop. You cannot add or remove objects.'
-      : 'The learner says the number out loud' + (isEnacted(item) ? ' after sending the ones that go away out of the picture.' : '.')
-        + ' The number sentence appears only after credit.';
+  // The number sentence is the reward: it is on screen only after credit.
+  if (item.answerKind !== 'gesture') facts.afterCredit = 'The number sentence appears on screen only after credit.';
+  if (view.practice) facts.practice = PRACTICE_NOTE;
   return { objects: [], facts };
 }
 
@@ -99,21 +109,10 @@ export const describeScene = (item: AddSubSceneItem, placed: number) => `The pic
 export const equationMatches = (item: AddSubSceneItem, tiles: readonly string[]) => equationFaultOf(item, tiles) === 'match';
 export const describeEquation = (tiles: readonly string[]) => `Built the number sentence "${tiles.join(' ').trim() || 'nothing'}".`;
 
-/**
- * What a wrong picture or number sentence shows (`TeachingAttempt.miss`, handoff 20):
- * - a picture (act-out at K, create-story): `no_change` (it ends on the story's start number), `wrong_way`
- *   (objects sent away on a joining story, or brought in on a leaving one, from where the picture started),
- *   then `one_short` / `one_over` / `short_by_more` / `over_by_more` from the answer;
- * - a number sentence: `unfinished_equation`, `false_equation` (it does not add up), `other_operation` (true,
- *   with the other sign), `other_numbers` (true, with numbers the story does not have).
- * The spoken items name none: the tutor judges them.
- */
-export type AddSubMiss = 'no_change' | 'wrong_way' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more'
-  | 'unfinished_equation' | 'false_equation' | 'other_operation' | 'other_numbers';
-
 const EQUATION_MISS = { incomplete: 'unfinished_equation', arithmetic: 'false_equation', operator: 'other_operation',
   numbers: 'other_numbers', match: undefined } as const;
 
+/** What a wrong picture or number sentence shows (`AddSubMiss`). The spoken items name none here: the tutor judges them. */
 export function addSubMiss(item: AddSubSceneItem | null, work: { placed: number } | { tiles: readonly string[] }): AddSubMiss | undefined {
   if (!item || item.answerKind !== 'gesture') return undefined;
   if ('tiles' in work) return EQUATION_MISS[equationFaultOf(item, work.tiles)];
@@ -128,10 +127,4 @@ export function addSubMiss(item: AddSubSceneItem | null, work: { placed: number 
 
 /** What tap-to-hear asks the tutor to say: the story and the question, never the answer. */
 export const hearStoryRequest = (item: AddSubSceneItem) =>
-  `The learner asked to hear the story again. Say only this, once: "${ask(item)}" Never say the answer.`;
-
-/** The journey's answers: a number said, the tiles pressed, or the count the picture must end on. */
-export function additionSubtractionJourneyAnswers(item: AddSubSceneItem) {
-  const { correct, plainWrong, tapped, placed } = addSubHarnessAnswers(item);
-  return { correct, plainWrong, tapped, placed };
-}
+  `The learner asked to hear the story again. Say only this, once: "${addSubAsk(item)}" Never say the answer.`;

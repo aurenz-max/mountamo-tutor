@@ -1,7 +1,7 @@
 # Contract: shape-composer
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C11) for the workspace requirement only. A full `/primitive-contract shape-composer` derivation (consumers per K.G.6 / 1.G.2 skill, tiers, the generator's code-owned templates and recipes) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/ShapeComposer.tsx` · **Workspace:** `shapeComposerWorkspace.ts` · **Open build:** `shapeComposerBuild.ts` · **Adapter:** `components/live-activity/adapters/shapeComposerLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`shape-composer`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/ShapeComposer.tsx` · **Workspace:** `shapeComposerWorkspace.ts` · **Open build:** `shapeComposerBuild.ts` · **Boss:** `shapeComposer.card.ts` + `shapeComposer.boss.ts` (levers: `shapeComposerLevers.ts`) · **Catalog:** `service/manifest/catalog/math.ts` (`shape-composer`)
 
 ## Requirements
 
@@ -21,3 +21,4 @@
 
 - 2026-10-09 — created with R1 (W1 plain-shape binding).
 - 2026-10-09 — R2 (levers, every mode).
+- 2026-10-20 — moved onto a boss (wave 3): card + boss replace the adapter, the catalog teachingWorkspace and tutoring blocks; levers declared once as a lever set (the two pictures outside the item are `model` levers, timed by the item's tier); the scripted path (useLuminaAI cues, Next) and hand-wired Pip removed.

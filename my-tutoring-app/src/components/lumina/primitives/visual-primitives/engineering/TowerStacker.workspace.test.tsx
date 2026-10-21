@@ -11,14 +11,14 @@ import { LiveLessonRuntime } from '../../../components/live-activity/runtime/Liv
 import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
-import { validateTowerStackerData } from '../../../components/live-activity/adapters/towerStackerLive';
+import { validateTowerStackerData } from './towerStacker.boss';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { towerStackerOracle } from '../../../service/qa/oracles/tower-stacker';
 import {
   MIXED_MODES, TOWER_MODES, dropPiece, referenceWindproof, tippingCut, towerChallenges, towerItem, towerMiss, windFor, windLimit,
   type TowerChallenge, type TowerPiece,
 } from './towerWorkspace';
-import { shorterTower, towerLevers } from './towerLevers';
+import { TOWER_LEVERS, shorterTower } from './towerLevers';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -207,24 +207,6 @@ it('the simplify lever opens an ungraded lower tower on an empty area, then the 
   expect(h.placed()).toBe(0);
 });
 
-it('scripted path (the tester, no tutor): a miss keeps the tower, Next tower opens an empty area, the session submits once', () => {
-  const data: TowerStackerData = { title: 'Towers', challengeType: 'build_tall', challenges: [TALL5, TALL6], instanceId: 'tower' };
-  const view = render(<TowerStacker data={data} />);
-  const c = controls(view.container);
-  c.drop('block', [6, 6, 6]);
-  c.press("I'm done!");
-  expect(screen.getByText(/^Not yet\./)).toBeTruthy();
-  c.drop('block', [6, 6]);
-  c.press("I'm done!");
-  c.press(/next tower/i);
-  expect(c.placed()).toBe(0);
-  c.drop('beam', [6, 6, 6, 6, 6, 6]);
-  c.press("I'm done!");
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'tower-stacker', towersBuilt: 2, firstTryCount: 1 });
-  expect(seam.send).not.toHaveBeenCalled();
-});
-
 it('the physics, targets, levers, oracle and catalog wiring', () => {
   const at = (pieces: Array<[string, number, number, number, number]>): TowerPiece[] =>
     pieces.map(([kind, x, y, w, h], i) => ({ id: `q${i}`, kind: kind as TowerPiece['kind'], x, y, w, h }));
@@ -259,9 +241,11 @@ it('the physics, targets, levers, oracle and catalog wiring', () => {
   // The easier ask: a lower line, a wind for its own height.
   expect(shorterTower(WIND6)).toMatchObject({ id: 'w1~shorter', targetHeight: 4, wind: windFor(4) });
   expect(shorterTower(shorterTower(WIND6)!)).toBeNull();
-  expect(towerLevers(FEW8, []).map(l => l.id)).toEqual(['balance_point', 'piece_count', 'shorter_tower']);
+  expect(TOWER_LEVERS.declare(FEW8, null, []).map(l => [l.id, l.answers])).toEqual([['balance_point', ['tips_over']],
+    ['piece_count', ['too_many_pieces']], ['shorter_tower', ['tips_over', 'too_many_pieces']]]);
+  expect(TOWER_LEVERS.declare(shorterTower(WIND6)!, null, []).map(l => l.id)).not.toContain('shorter_tower');
   // Every lever names the build, never another mode's action.
-  for (const l of [...towerLevers(WIND6, []), ...towerLevers(FEW8, [])]) expect(l.does).not.toMatch(/hand|answer|choose/i);
+  for (const l of [...TOWER_LEVERS.declare(WIND6, null, []), ...TOWER_LEVERS.declare(FEW8, null, [])]) expect(l.does).not.toMatch(/hand|answer|choose/i);
 
   const entry = getComponentById('tower-stacker')!;
   expect(entry.evalModes!.map(m => [m.evalMode, m.beta])).toEqual([['build_tall', 2.5], ['build_few', 3.0], ['build_windproof', 3.5]]);

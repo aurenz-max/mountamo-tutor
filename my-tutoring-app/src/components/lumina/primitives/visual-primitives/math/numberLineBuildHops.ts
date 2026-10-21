@@ -10,15 +10,14 @@
  *
  * Pure: the component, the workspace, the generator, the journey driver and the oracle read the same rules.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { NumberLineChallenge } from './NumberLine';
-import { HOPS_LEVER, SIMPLER_LEVER, jumpMiss } from './numberLineLevers';
+import { jumpMiss } from './numberLineLevers';
 
 export const BUILD_HOPS = 'build_hops' as const;
 /** The largest hop button. Two hops reach 20, the K-2 line. */
 export const MAX_HOP = 10;
-/** Help lever for a repeated way: a worked pair of ways on a small example that is never the item's. */
-export const WAYS_LEVER = 'ways_model';
+/** The repeated-way lever lives in the lever set (`numberLineLevers.ts`). */
+export { WAYS_LEVER } from './numberLineLevers';
 
 /**
  * What a wrong build shows (`TeachingAttempt.miss`):
@@ -123,39 +122,6 @@ export function waysModel(task: HopsTask): { target: number; ways: [number[], nu
   const target = [5, 4, 6].find(t => t !== task.target - task.start && t !== task.target) ?? 5;
   const ways = waysFor(target, 2);
   return { target, ways: [ways[0], ways[ways.length - 1]] };
-}
-
-/**
- * The levers on a build_hops item, all bare at the start (keeping track of the hops is the task):
- * - `numbered_hops` (help): numbers the unit spaces inside each of the learner's own hops. Declared once a hop is on.
- * - `ways_model` (help): beside the line, two ways to a small other number. It answers a repeated way, and before
- *   the first way it shows what "in two hops" means without touching the learner's number.
- * - `simpler_jump` (simplify): an ungraded practice build to about half the distance first.
- */
-export function buildHopsLevers(ch: NumberLineChallenge | null, pulled: readonly string[], range: { min: number; max: number },
-  hops: readonly number[], first: readonly number[] | null): WorkspaceLever[] {
-  const task = hopsTaskOf(ch);
-  if (!ch || !task) return [];
-  const levers: WorkspaceLever[] = [];
-  if (hops.length || pulled.includes(HOPS_LEVER)) levers.push({
-    id: HOPS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(HOPS_LEVER),
-    answers: ['one_short', 'one_past', 'off_by_more'],
-    when: 'The learner\'s hops land one off or further from the number, or they lose count of how far a hop goes.',
-    does: "Numbers the spaces inside each hop the learner puts on the line (1, 2, 3...), so they can count how far each of their hops goes.",
-  });
-  levers.push({
-    id: WAYS_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(WAYS_LEVER),
-    answers: ['same_way_again'],
-    when: 'The learner makes the same hops again and cannot find a different way, or does not know how to start.',
-    does: 'Beside the line, shows two different ways to land on a small other number (a longer first hop and a shorter second hop). Never the learner\'s number.',
-  });
-  if (simplerHops(ch, range)) levers.push({
-    id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(SIMPLER_LEVER),
-    answers: ['off_by_more'],
-    when: 'The learner\'s hops land far from the number, again and again.',
-    does: 'Opens an easier practice build first: the same number of hops to a smaller number. It is not graded; the full item comes back after it.',
-  });
-  return levers;
 }
 
 /** Driver and test help: a right first way, a right different second way, and a wrong build one short (`one_short`). */

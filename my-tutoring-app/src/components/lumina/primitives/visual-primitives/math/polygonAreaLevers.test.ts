@@ -1,5 +1,5 @@
 /**
- * find_area_triangle_parallelogram levers (`polygonAreaLevers.ts`): the leak rule, the simpler-figure builder over
+ * find_area_triangle_parallelogram levers (`POLYGON_LEVERS`, `polygonAreaLevers.ts`): the leak rule, the simpler-figure builder over
  * many random items, the overlay geometry, and "this miss, then this lever".
  */
 import { describe, expect, it } from 'vitest';
@@ -7,10 +7,17 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
 import {
-  GRID_LEVER, HALF_LEVER, SLIDE_LEVER, SMALLER_FIGURE_LEVER, doubledArea, figureLeverFacts, figureLeverLeaks, figureLevers,
-  figureOverlay, smallerFigure,
+  GRID_LEVER, HALF_LEVER, POLYGON_LEVERS, SLIDE_LEVER, SMALLER_FIGURE_LEVER, doubledArea, figureLeverLeaks, figureOverlay,
+  smallerFigure, tierShown, type PolygonLeverCtx,
 } from './polygonAreaLevers';
 import { areaMiss } from './polygonAreaWorkspace';
+
+/** The levers the set declares on an item, with the tier's starting guides counted as pulled (as the component does). */
+const NO: PolygonLeverCtx = { leftOut: null, rearranged: false, firstShape: false };
+const figureLevers = (c: PolygonAreaChallenge, pulled: readonly string[], ctx: Partial<PolygonLeverCtx> = {}) =>
+  POLYGON_LEVERS.declare(c, { ...NO, ...ctx }, [...pulled, ...tierShown(c).filter(id => !pulled.includes(id))]);
+const figureLeverFacts = (c: PolygonAreaChallenge, pulled: readonly string[], ctx: Partial<PolygonLeverCtx> = {}) =>
+  POLYGON_LEVERS.onScreen(c, { ...NO, ...ctx }, pulled);
 
 const rand = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const triangle = (id = 't', base = 8, height = 5, apexX = 3): PolygonAreaChallenge => ({ id, type: 'find_area_triangle_parallelogram',
@@ -121,8 +128,9 @@ describe('which lever comes next', () => {
   it('a tier grid is a starting position: shown as pulled, not recorded', () => {
     expect(figureLevers({ ...triangle(), showGridOverlay: true }, []).find(l => l.id === GRID_LEVER)!.pulled).toBe(true);
   });
-  it('no figure levers on the open builds or on a practice item', () => {
-    expect(figureLevers({ ...triangle(), type: 'build_area', figureType: 'grid' }, [])).toEqual([]);
+  it('no figure levers on the open builds, and no lever at all on a practice item', () => {
+    const ids = figureLevers({ ...triangle(), type: 'build_area', figureType: 'grid' }, []).map(l => l.id);
+    for (const id of ALL) expect(ids).not.toContain(id);
     expect(figureLevers(smallerFigure(triangle())!, [])).toEqual([]);
   });
 });

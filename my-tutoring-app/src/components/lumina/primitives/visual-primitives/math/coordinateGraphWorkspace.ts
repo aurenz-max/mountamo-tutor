@@ -1,16 +1,16 @@
 /**
- * Coordinate graph on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C19).
+ * Coordinate graph on the shared tutor/JEV teaching workspace; its boss is `coordinateGraph.boss.ts`.
  *
- * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
- * activity's own check: plot_point by the grid crossing tapped, the other three by the choice tapped (the item's
- * `correctOptionIndex`, which the adapter refuses unless it is the one choice whose value is the key). The tutor is
+ * Pure: the component, the boss and any probe read the same check and scene. Every mode is a gesture item checked by
+ * the activity's own check: plot_point by the grid crossing tapped, the other three by the choice tapped (the item's
+ * `correctOptionIndex`, which the boss refuses unless it is the one choice whose value is the key). The tutor is
  * never handed the answer: not the highlighted point's pair, not the slope, not the y-intercept.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { CoordinateGraphChallenge } from './CoordinateGraph';
+import type { CoordinateGraphMode, CoordinateMiss } from './coordinateGraph.card';
 
-export type CoordinateGraphMode = CoordinateGraphChallenge['type'];
+export { COORDINATE_MISSES_BY_MODE, type CoordinateGraphMode, type CoordinateMiss } from './coordinateGraph.card';
 export interface GridPoint { x: number; y: number }
 
 // ── the drawn plane ──────────────────────────────────────────────────────
@@ -111,30 +111,6 @@ export function describeCoordinateWork(c: CoordinateGraphChallenge, work: Coordi
 
 // ── misses ───────────────────────────────────────────────────────────────
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the point placed or the choice's value, drawn from
- * the catalog's commonStruggles (x and y swapped, negative directions, slope upside down, slope and intercept confused):
- * - plot and read: `swapped` (y, x); `both_signs` (-x, -y); `x_sign` (-x, y); `y_sign` (x, -y); `one_axis` a point on
- *   an axis at one of the two numbers (only one direction moved); `off_by_one` one grid step from the point;
- *   `wrong_point` anything else;
- * - slope: `opposite_sign` -m; `reciprocal` run over rise; `negative_reciprocal` -run over rise; `rise_only` the rise
- *   alone; `run_only` the run alone; `wrong_slope` anything else;
- * - intercept: `opposite_sign` -b; `slope_instead` the slope m; `x_intercept` where the line crosses the x-axis;
- *   `point_y` the y of a marked point (read at the point, not at the crossing); `off_by_one` b plus or minus one;
- *   `wrong_intercept` anything else.
- */
-export type CoordinateMiss = 'swapped' | 'both_signs' | 'x_sign' | 'y_sign' | 'one_axis' | 'off_by_one' | 'wrong_point'
-  | 'opposite_sign' | 'reciprocal' | 'negative_reciprocal' | 'rise_only' | 'run_only' | 'wrong_slope'
-  | 'slope_instead' | 'x_intercept' | 'point_y' | 'wrong_intercept';
-
-const POINT_MISSES: readonly CoordinateMiss[] = ['swapped', 'both_signs', 'x_sign', 'y_sign', 'one_axis', 'off_by_one', 'wrong_point'];
-export const COORDINATE_MISSES_BY_MODE: Record<CoordinateGraphMode, readonly CoordinateMiss[]> = {
-  plot_point: POINT_MISSES,
-  read_point: POINT_MISSES,
-  find_slope: ['opposite_sign', 'reciprocal', 'negative_reciprocal', 'rise_only', 'run_only', 'wrong_slope'],
-  find_intercept: ['opposite_sign', 'slope_instead', 'x_intercept', 'point_y', 'off_by_one', 'wrong_intercept'],
-};
-
 /** The miss a wrong point shows against the key point. */
 export function pointMiss(key: GridPoint, p: GridPoint): CoordinateMiss | undefined {
   if (p.x === key.x && p.y === key.y) return undefined;
@@ -188,10 +164,6 @@ export function coordinateMiss(c: CoordinateGraphChallenge, work: CoordinateWork
 
 // ── what the tutor is told ───────────────────────────────────────────────
 
-export function workspaceAssignment(c: CoordinateGraphChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
-
 /** A slope as an equation's coefficient: "2", "-1/3"; "" for 1, "-" for -1. */
 function coefficient(rise: number, run: number): string {
   if (rise === 0) return '0';
@@ -214,14 +186,14 @@ const direction = (c: CoordinateGraphChallenge) => {
 };
 
 const KIND: Record<CoordinateGraphMode, string> = {
-  plot_point: 'plot a point: tap the grid crossing at the ordered pair the instruction names (x first: across; y second: up or down)',
-  read_point: 'read a point: one highlighted point is drawn, and the learner picks its ordered pair from the choices',
-  find_slope: 'slope: a line through two drawn points, and the learner picks its slope (rise over run) from the choices',
-  find_intercept: 'y-intercept: a line drawn across the grid, and the learner picks the y-value where it crosses the y-axis from the choices',
+  plot_point: 'plot a point: the ordered pair the instruction names, x first (across), y second (up or down)',
+  read_point: 'read a point: one highlighted point is drawn, and the choices are four ordered pairs',
+  find_slope: 'slope: a line through two drawn points, and the choices are four slopes (rise over run)',
+  find_intercept: 'y-intercept: a line drawn across the grid, and the choices are four values of y where it might cross the y-axis',
 };
 
 /** What is drawn and asked. Pairs and numbers only where the plane prints them; the key never. */
-export function workspaceScene(c: CoordinateGraphChallenge, view: { gridMin: number; gridMax: number; work: CoordinateWork }): WorkspaceScene {
+export function workspaceScene(c: CoordinateGraphChallenge, view: { gridMin: number; gridMax: number; work: CoordinateWork }): SceneOf {
   const numbered = c.showAxisLabels !== false;
   const facts: Record<string, string> = {
     kind: KIND[c.type],
@@ -249,9 +221,6 @@ export function workspaceScene(c: CoordinateGraphChallenge, view: { gridMin: num
   }
   if (c.type !== 'plot_point') facts.choices = `on screen, in order: ${optionsOf(c).join('; ')}`;
   facts.learnerWork = describeCoordinateWork(c, view.work);
-  facts.constraints = c.type === 'plot_point'
-    ? 'The learner taps a grid crossing to place the point; the activity checks it itself. You cannot tap the grid.'
-    : 'The learner taps one choice; the activity checks it itself. You cannot choose.';
   return { objects: [], facts };
 }
 

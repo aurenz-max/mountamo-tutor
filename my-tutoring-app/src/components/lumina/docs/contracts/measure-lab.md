@@ -1,7 +1,8 @@
 # Contract: measure-lab
 
 - **Derived:** 2026-10-09 (W1 workspace binding; no earlier contract)
-- **Component:** `primitives/visual-primitives/math/MeasureLab.tsx` · **Domain:** `measureLabWorkspace.ts` ·
+- **Component:** `primitives/visual-primitives/math/MeasureLab.tsx` · **Boss:** `measureLab.card.ts` +
+  `measureLab.boss.ts` (bespoke) · **Domain:** `measureLabWorkspace.ts` · **Levers:** `measureLabLevers.ts` ·
   **Generator:** `service/math/gemini-measure-lab.ts` · **Oracle:** `service/qa/oracles/measure-lab.ts` ·
   **Catalog:** `service/manifest/catalog/math.ts` (`measure-lab`)
 - **Modes:** `balance_predict` · `capacity_predict` · `pour_count` · `order_capacity` (K.MD.A.1, K.MD.A.2)
@@ -16,11 +17,11 @@
 ### R2 — the prediction is the score · OBSERVED
 - **Property:** balance and capacity take a guess first; the test (both on the scale, or Pour) runs only after it, and
   the check grades the guess, after a 900 ms settle owned by `verdictTimerRef`.
-- **Probe:** `MeasureLab.surface.test.tsx`, workspace test (no verdict until the beam settles).
+- **Probe:** `MeasureLab.workspace.test.tsx` (no verdict until the beam settles).
 
 ### R3 — shared teaching workspace (W1, plain shape) · OBSERVED (NEW 2026-10-09)
-- **Property:** under a live runtime the tutor owns every mode. `workspaceAssignment` gives the prompt as the task,
-  gesture response, no `expectedAnswer`. Each verdict commits through `progress.commitCheck` with `measureMiss`
+- **Property:** taught only on the workspace (`withWorkspaceOnly`). `measureLabBoss.assignment` gives the prompt as
+  the task, gesture response, no key, no `expectedAnswer`. Each verdict commits through `progress.commitCheck` with `measureMiss`
   (`picked_lighter`; `tall_means_more`, `picked_less`; `one_short`, `one_over`, `too_few`, `too_many`;
   `most_to_least`, `two_swapped`, `out_of_order`). Try again clears the bench (guess, pans, pours, taps). The scene
   states what the test showed only once it has run (`scale`, `afterPouring`); the pour count is never stated.
@@ -29,8 +30,9 @@
   tutor replay `qa/tutor-reports/replay/measure-lab-2026-10-09.json`.
 
 ### R4 — in-item levers, every mode · OBSERVED (NEW 2026-10-09)
-- **Property:** `measureLabLevers.ts` declares levers per item, all drawn (`carrier: shown`). balance: `down_model`
-  (a fixed model balance, three blocks against one; never the item's objects), `far_pair` (practice: a feather and a
+- **Property:** `MEASURE_LEVERS` (one lever set, `measureLabLevers.ts`) declares levers per item, all drawn. balance: `down_model`
+  (a fixed model balance, three blocks against one; never the item's objects; when it comes is the item's
+  `supportTier`, stamped by the generator, medium when absent), `far_pair` (practice: a feather and a
   brick, neither of the item's objects). capacity: `cup_lines` (shelves under both containers, empty until the test
   has filled both, then one cup picture per cup taken), `easy_pair` (practice: two shapes, the one drawn much larger
   holds more; `MeasureContainer.scale`). pour_count: `poured_shelf` (one cup picture per cup poured, no number),
@@ -39,7 +41,8 @@
   1/4/8 drawn out of order; only when two of the item's levels are under three apart). Leak rules in code
   (`farPairLeaks`, `easyPairLeaks`, `smallerPourLeaks`, `farLevelsLeaks`, `shelfCups`); no lever text or fact
   carries a digit or an item name. Practice items are `<id>~smaller`, ungraded; Try again keeps them; the full item
-  comes back blank. No tier starting positions (the generator has no tier harness).
+  comes back blank. Types: `down_model` model, `cup_lines`/`poured_shelf` layout, `order_steps` legend,
+  `level_lines` marks, the four practice items easier.
 - **Probe:** `measureLabLevers.test.ts`, `MeasureLab.levers.workspace.test.tsx`, journey sweep J9/J12.
 
 ## Gaps
@@ -58,6 +61,10 @@
   `/eval-fix`, then `/oracle-test` adds the check.
 
 ## Changelog
+
+- 2026-10-20 — moved onto a boss (wave 3): `measureLab.card.ts` + `measureLab.boss.ts` replace
+  `adapters/measureLabLive.ts` and the catalog guidance; one lever set; scripted path, legacy cues and hand-wired Pip
+  deleted (`pip/measureLabPipPose.ts`, `pip/MeasureLab.surface.test.tsx`); generator stamps `supportTier`.
 
 - 2026-10-09 — R4 levers on every mode (`/add-support-tiers`). G2 filed.
 

@@ -82,7 +82,7 @@ it('classify: descriptions and signal words appear in the same commit and never 
   expect(h.view.container.textContent).toMatch(/An opposite word shows the contrast/);
   h.dispatch('pull_lever', { lever: 'signal_words' });
   expect(q(h, '[data-lever="signal-word"]').map(e => e.textContent)).toEqual(['Unlike']);
-  expect(onScreen(h)).toBe('Each clue-type button now shows its one-line description. Underlined in the green clue sentence: "unlike".');
+  expect(onScreen(h)).toBe('Each clue-type button shows its one-line description. Underlined in the green clue sentence: "unlike".');
   expect(onScreen(h)).not.toMatch(/antonym/i);
   h.dispatch('retry');
   h.press('Antonym'); h.press('Check Type');

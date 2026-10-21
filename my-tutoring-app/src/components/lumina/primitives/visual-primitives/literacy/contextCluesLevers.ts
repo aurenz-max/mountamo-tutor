@@ -1,31 +1,34 @@
 /**
- * context-clues-detective's in-item levers (/add-support-tiers; report qa/eval-reports/context-clues-detective-levers-2026-10-09.md).
- * The misses are what `clueMiss` observes; no real-learner evidence. Every lever is help: the screen shows more, the
- * word, its passage and its answer stay the same. All three steps exist in every mode, so every mode has every lever.
+ * context-clues-detective's in-item levers (/add-support-tiers; report qa/eval-reports/context-clues-detective-levers-2026-10-09.md),
+ * declared once as a lever set (`CLUE_LEVERS`, `bossLevers.ts`). The misses are what `clueMiss` observes; no
+ * real-learner evidence. Every lever is help: the screen shows more, the word, its passage and its answer stay the
+ * same. Each lever is offered on its own step only.
  *
  * find (tap the clue sentence):
- * - `sentence_list`: the passage one sentence per line, numbered, the word's own sentence tagged "has the word". Every
+ * - `sentence_list` (layout): the passage one sentence per line, numbered, the word's own sentence tagged "has the word". Every
  *   sentence is drawn the same way; nothing marks a clue. The easy and medium tiers start with it on.
- * - `cross_out`: greys out the sentences an earlier check found hold no clue (taps from a `no_clue` or
+ * - `cross_out` (marks): greys out the sentences an earlier check found hold no clue (taps from a `no_clue` or
  *   `target_sentence_only` check, never a clue sentence). Offered once there is one.
- * A tier's starting position (the list, the descriptions, the strategy) reads as pulled; it is never recorded as help.
+ * A tier's starting position (the list, the descriptions, the strategy) reads as pulled (`tierShown`); it is never
+ * recorded as help.
  * classify (name the clue type):
- * - `type_descriptions`: each type button's one-line description. The easy tier starts with it on.
- * - `signal_words`: underlines the signal words ("means", "or", "unlike", "such as" ...) inside the clue sentences,
+ * - `type_descriptions` (legend): each type button's one-line description. The easy tier starts with it on.
+ * - `signal_words` (marks): underlines the signal words ("means", "or", "unlike", "such as" ...) inside the clue sentences,
  *   which the find step already shaded green. Never a type's name. Offered only where a clue sentence has one.
  * define (tap the meaning):
- * - `strategy`: prints the reading strategy for the clue type the learner named in the classify step. The easy tier
+ * - `strategy` (clue): prints the reading strategy for the word's clue type (named in the classify step, or the only one). The easy tier
  *   starts with it on.
- * - `try_in_place`: under the meanings, the word's sentence printed with the learner's picked meaning in the word's
+ * - `try_in_place` (custom): under the meanings, the word's sentence printed with the learner's picked meaning in the word's
  *   place (a blank until they pick). Only the learner's own pick fills it; nothing marks which one reads right.
  *
  * No simplify lever (decision): an easier ask on this word (a shorter passage, fewer types or fewer meanings) hands
  * back its answer when the full item returns, and in a pinned mode every word has the same clue type, so an easier
  * type item shows the classify answer. The session has no spare word to practise on.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ContextClueChallenge } from './ContextCluesDetective';
-import type { ClueStep, ClueType, ContextClueMiss } from './contextCluesWorkspace';
+import { CONTEXT_CLUE_MISSES_BY_MODE, type ContextClueMiss } from './contextClues.card';
+import type { CluePhase, ClueStep, ClueType } from './contextCluesWorkspace';
 
 export const SENTENCE_LIST_LEVER = 'sentence_list';
 export const CROSS_OUT_LEVER = 'cross_out';
@@ -79,73 +82,91 @@ export function tryInPlace(c: ContextClueChallenge, meaning: string): string | n
   return sentence.replace(word, meaning.trim() ? `[${meaning.trim()}]` : '___');
 }
 
-/** What the session already shows on this item (tier starting positions) and what an earlier check ruled out. */
+/** What an earlier check ruled out on this step, and the learner's current meaning (the try-it sentence). */
 export interface ClueLeverContext {
-  listShown: boolean;
-  descriptionsShown: boolean;
-  strategyShown: boolean;
   ruledOut: readonly string[];
+  meaning: string;
 }
 
-export function clueLevers(step: ClueStep | null, pulled: readonly string[], ctx: ClueLeverContext): WorkspaceLever[] {
+/** The levers the item's support tier starts on: they read as pulled and are never recorded as help. */
+export function tierShown(step: ClueStep | null): string[] {
   if (!step) return [];
   const c = step.challenge;
-  // A tier's starting position reads as pulled (its change is already on screen) but is never recorded as help.
-  const lever = (id: string, answers: readonly ContextClueMiss[], when: string, does: string, shown = false): WorkspaceLever =>
-    ({ id, kind: 'help', carrier: 'shown', pulled: shown || pulled.includes(id), answers, when, does });
-  switch (step.phase) {
-    case 'find': return [
-      lever(SENTENCE_LIST_LEVER, ['no_clue', 'extra_sentence', 'target_sentence_only'],
-        'The learner taps sentences that do not tell about the word, or loses track of the sentences.',
-        'Lists the passage one sentence per line, numbered, and tags the word\'s own sentence "has the word". Every sentence looks the same otherwise; no clue is marked.',
-        ctx.listShown),
-      ...(ctx.ruledOut.length ? [lever(CROSS_OUT_LEVER, ['no_clue', 'target_sentence_only'],
-        'After a check found no clue in the sentences the learner tapped.',
-        'Greys out the sentences an earlier check found hold no clue, so the learner searches the rest. It never greys a clue sentence.')] : []),
-    ];
-    case 'classify': return [
-      lever(TYPE_DESCRIPTIONS_LEVER,
-        ['similar_opposite', 'definition_synonym', 'said_inference', 'stated_for_inference', 'other_type'],
-        'The learner does not know what each clue type means, or mixes two of them up.',
-        'Prints under each clue-type button its one-line description (what that kind of clue does). The same five descriptions on every word.',
-        ctx.descriptionsShown),
-      ...(clueSignalWords(c).length ? [lever(SIGNAL_WORDS_LEVER, ['similar_opposite', 'definition_synonym', 'said_inference', 'other_type'],
-        'The learner names a type without looking at how the clue sentence connects to the word.',
-        'Underlines the signal words (such as "means", "or", "unlike", "such as") in the green clue sentence. It never names a type.')] : []),
-    ];
-    case 'define': return [
-      lever(STRATEGY_LEVER, ['other_meaning'],
-        'The learner picks a meaning without using the clue.',
-        'Prints under the question how to read this kind of clue (the clue type of this word, already named or the only one in the lesson). It never states a meaning.',
-        ctx.strategyShown),
-      ...(tryInPlace(c, '') !== null ? [lever(TRY_IN_PLACE_LEVER, ['other_meaning'],
-        'The learner cannot tell which meaning fits the sentence.',
-        'Prints the word\'s sentence under the meanings with the learner\'s picked meaning in the word\'s place, so they can read whether it makes sense. Nothing marks which meaning is right.')] : []),
-    ];
-  }
+  return [
+    ...(step.phase === 'find' && c.showClueHints ? [SENTENCE_LIST_LEVER] : []),
+    ...(step.phase === 'classify' && c.showClueTypeDescriptions !== false ? [TYPE_DESCRIPTIONS_LEVER] : []),
+    ...(step.phase === 'define' && c.strategyHint ? [STRATEGY_LEVER] : []),
+  ];
 }
 
-/** What the pulled levers (and the tier's starting positions) put on screen, for the tutor. Never a meaning or a type. */
-export function clueLeverFacts(step: ClueStep | null, pulled: readonly string[], ctx: ClueLeverContext & { meaning: string }): string {
-  if (!step) return '';
-  const c = step.challenge;
-  const n = (id: string) => c.passage.sentences.findIndex(s => s.id === id) + 1;
-  const on = (id: string) => pulled.includes(id);
-  switch (step.phase) {
-    case 'find': return [
-      (ctx.listShown || on(SENTENCE_LIST_LEVER)) && 'The passage is listed one sentence per line, numbered; the word\'s own sentence is tagged "has the word".',
-      on(CROSS_OUT_LEVER) && ctx.ruledOut.length
-        && `Greyed out as checked, no clue there: sentence${ctx.ruledOut.length > 1 ? 's' : ''} ${ctx.ruledOut.map(n).sort((a, b) => a - b).join(', ')}.`,
-    ].filter((s): s is string => !!s).join(' ');
-    case 'classify': return [
-      on(TYPE_DESCRIPTIONS_LEVER) && 'Each clue-type button now shows its one-line description.',
-      on(SIGNAL_WORDS_LEVER) && `Underlined in the green clue sentence: ${clueSignalWords(c).map(w => `"${w}"`).join(', ')}.`,
-    ].filter((s): s is string => !!s).join(' ');
-    case 'define': return [
-      on(STRATEGY_LEVER) && `Printed under the question: "${STRATEGY_BY_TYPE[c.clueType]}"`,
-      on(TRY_IN_PLACE_LEVER) && (ctx.meaning.trim()
-        ? `Under the meanings, the word's sentence with the learner's pick in its place: "${tryInPlace(c, ctx.meaning)}"`
-        : 'Under the meanings, the word\'s sentence with a blank in the word\'s place; it fills with the meaning the learner taps.'),
-    ].filter((s): s is string => !!s).join(' ');
-  }
-}
+const at = (...phases: CluePhase[]) => (step: ClueStep) => phases.includes(step.phase);
+const sentenceNo = (c: ContextClueChallenge, id: string) => c.passage.sentences.findIndex(s => s.id === id) + 1;
+const ALL_MISSES = Array.from(new Set(Object.values(CONTEXT_CLUE_MISSES_BY_MODE).flat()));
+const TYPE_MISSES: readonly ContextClueMiss[] = ['similar_opposite', 'definition_synonym', 'said_inference', 'other_type'];
+
+/**
+ * The card mode a step belongs to: a session that builds the classify step is synonym_antonym (the only mode with
+ * one); otherwise the word's clue type names it (a synonym or antonym word is synonym_antonym).
+ */
+export const clueMode = (step: ClueStep): string => (step.phases.includes('classify') ? 'synonym_antonym'
+  : step.challenge.clueType === 'synonym' || step.challenge.clueType === 'antonym' ? 'synonym_antonym' : step.challenge.clueType);
+
+/**
+ * The levers, declared once (`bossLevers.ts`); the context is what a check ruled out and the learner's meaning. Pass
+ * `[...tierShown(step), ...pulled]` as pulled: a tier's starting position is on screen and its fact is published, but
+ * only a pull is recorded as help.
+ */
+export const CLUE_LEVERS = leverSet<ClueStep, ClueLeverContext>({
+  modeOf: clueMode,
+  missesOf: () => ALL_MISSES,
+  // The strategy must never name the meaning; the other worded facts sit on steps whose key is not a meaning.
+  answersOf: step => (step.phase === 'define'
+    ? [step.challenge.correctMeaning, ...(step.challenge.acceptableMeanings ?? [])].filter(m => m.trim()) : []),
+  specs: [
+    { id: SENTENCE_LIST_LEVER, type: 'layout', answers: ['no_clue', 'extra_sentence', 'target_sentence_only'],
+      when: 'The learner taps sentences that do not tell about the word, or loses track of the sentences.',
+      does: 'Lists the passage one sentence per line, numbered, and tags the word\'s own sentence "has the word". Every '
+        + 'sentence looks the same otherwise; no clue is marked.',
+      offer: at('find'),
+      fact: 'The passage is listed one sentence per line, numbered; the word\'s own sentence is tagged "has the word".' },
+    // Offered once a check ruled a sentence out, and never when one of them is a clue (`crossOutLeaks`).
+    { id: CROSS_OUT_LEVER, type: 'marks', answers: ['no_clue', 'target_sentence_only'],
+      when: 'After a check found no clue in the sentences the learner tapped.',
+      does: 'Greys out the sentences an earlier check found hold no clue, so the learner searches the rest. It never greys a '
+        + 'clue sentence.',
+      offer: (step, ctx) => step.phase === 'find' && !crossOutLeaks(step.challenge, ctx.ruledOut),
+      content: (_step, ctx) => (ctx.ruledOut.length ? ctx.ruledOut : null),
+      fact: (ids: readonly string[], step) => `Greyed out as checked, no clue there: sentence${ids.length > 1 ? 's' : ''} `
+        + `${ids.map(id => sentenceNo(step.challenge, id)).sort((a, b) => a - b).join(', ')}.` },
+    { id: TYPE_DESCRIPTIONS_LEVER, type: 'legend', modes: ['synonym_antonym'], answers: TYPE_MISSES,
+      when: 'The learner does not know what each clue type means, or mixes two of them up.',
+      does: 'Prints under each clue-type button its one-line description (what that kind of clue does). The same five '
+        + 'descriptions on every word.',
+      offer: at('classify'),
+      fact: 'Each clue-type button shows its one-line description.' },
+    { id: SIGNAL_WORDS_LEVER, type: 'marks', modes: ['synonym_antonym'], answers: TYPE_MISSES,
+      when: 'The learner names a type without looking at how the clue sentence connects to the word.',
+      does: 'Underlines the signal words (such as "means", "or", "unlike", "such as") in the green clue sentence. It never '
+        + 'names a type.',
+      offer: at('classify'),
+      content: step => { const words = clueSignalWords(step.challenge); return words.length ? words : null; },
+      fact: (words: string[]) => `Underlined in the green clue sentence: ${words.map(w => `"${w}"`).join(', ')}.` },
+    { id: STRATEGY_LEVER, type: 'clue', answers: ['other_meaning'],
+      when: 'The learner picks a meaning without using the clue.',
+      does: 'Prints under the question how to read this kind of clue (the clue type of this word, already named or the only '
+        + 'one in the lesson). It never states a meaning.',
+      offer: at('define'),
+      fact: (_c, step) => `Printed under the question: "${step.challenge.strategyHint ?? STRATEGY_BY_TYPE[step.challenge.clueType]}"` },
+    { id: TRY_IN_PLACE_LEVER, type: 'custom', carrier: 'shown', answers: ['other_meaning'],
+      why: 'It prints the learner\'s own pick in the word\'s place in its sentence: no stock type shows the learner\'s '
+        + 'answer in context, and no other choice is drawn, so none is marked.',
+      when: 'The learner cannot tell which meaning fits the sentence.',
+      does: 'Prints the word\'s sentence under the meanings with the learner\'s picked meaning in the word\'s place, so they '
+        + 'can read whether it makes sense. Nothing marks which meaning is right.',
+      offer: at('define'),
+      content: step => (tryInPlace(step.challenge, '') !== null ? true : null),
+      fact: (_c, step, ctx) => (ctx.meaning.trim()
+        ? `Under the meanings, the word's sentence with the learner's pick in its place: "${tryInPlace(step.challenge, ctx.meaning)}"`
+        : 'Under the meanings, the word\'s sentence with a blank in the word\'s place; it fills with the meaning the learner taps.') },
+  ],
+});

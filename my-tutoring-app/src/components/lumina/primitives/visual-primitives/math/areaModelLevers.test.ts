@@ -1,5 +1,5 @@
 /**
- * area-model levers: each leak rule per mode, the easier-item builder over many items shaped like the generator's,
+ * area-model levers (`AREA_LEVERS`): each leak rule per mode, the easier-item builder over many items shaped like the generator's,
  * "this wrong answer, then this lever" as code, and per-item coverage (J12) over the saved payloads.
  */
 import { describe, expect, it } from 'vitest';
@@ -7,11 +7,12 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { AreaModelChallenge, AreaModelChallengeType } from './AreaModel';
 import {
-  ALL_SIDES_LEVER, CELL_DOTS_LEVER, CELL_LABELS_LEVER, EASIER_GRID_LEVER, EASIER_MODEL_LEVER, SHARED_PARTS_LEVER, SIDE_SUM_LEVER,
-  SMALLER_RECT_LEVER, STACK_LEVER, START_CELL_LEVER, TENS_SPLIT_LEVER, areaModelLevers, isPractice, leverFacts, practiceItem,
-  practiceLeaks, practiceParent, tensSplit, tensSplits, textLeaks,
+  ALL_SIDES_LEVER, AREA_LEVERS, CELL_DOTS_LEVER, CELL_LABELS_LEVER, EASIER_GRID_LEVER, EASIER_MODEL_LEVER, SHARED_PARTS_LEVER,
+  SIDE_SUM_LEVER, SMALLER_RECT_LEVER, STACK_LEVER, START_CELL_LEVER, TENS_SPLIT_LEVER, isPractice, practiceItem, practiceLeaks,
+  practiceParent, tensSplit, tensSplits, textLeaks, tierAids,
 } from './areaModelLevers';
-import { areaCheckCorrect, cellProducts } from './areaModelWorkspace';
+import { SUM_MISSES } from './areaModel.card';
+import { areaCheckCorrect, cellProducts, type AreaItem } from './areaModelWorkspace';
 import buildP from '../../../components/live-activity/runtime/testing/w1-payloads/area-model.build_model.json';
 import findP from '../../../components/live-activity/runtime/testing/w1-payloads/area-model.find_area.json';
 import multiplyP from '../../../components/live-activity/runtime/testing/w1-payloads/area-model.multiply.json';
@@ -40,7 +41,11 @@ const SAVED: Record<AreaModelChallengeType, AreaModelChallenge[]> = {
   factor: factorP.data.challenges as AreaModelChallenge[],
 };
 const MODES = Object.keys(GENERATED) as AreaModelChallengeType[];
-const ctx = (mode: AreaModelChallengeType, tierOn = false) => ({ mode, cellsLabelled: tierOn, sideSumShown: tierOn, startCellShown: tierOn });
+/** The levers declared on `c` in `mode`: `tierOn` puts every tier aid on screen (pulled), `cellsRight` opens the sum step. */
+const declare = (c: AreaModelChallenge, mode: AreaModelChallengeType, pulled: string[] = [], tierOn = false, cellsRight = false) => {
+  const it: AreaItem = { ...c, mode, showCellEquations: tierOn, showPerimeterExpansion: tierOn, highlightCell: tierOn ? [0, 0] : null };
+  return AREA_LEVERS.declare(it, { cellsRight }, [...pulled, ...tierAids(it)]);
+};
 const keysOf = (c: AreaModelChallenge) => {
   const w = c.factor1Parts.reduce((s, v) => s + v, 0), h = c.factor2Parts.reduce((s, v) => s + v, 0);
   return [...cellProducts(c).flat(), w * h, 2 * (w + h)];
@@ -49,9 +54,9 @@ const keysOf = (c: AreaModelChallenge) => {
 describe('leak rules', () => {
   it.each(MODES)('%s: no pulled lever\'s fact names a number', mode => {
     for (const c of [...GENERATED[mode], ...SAVED[mode]]) {
-      const all = areaModelLevers(c, [], ctx(mode)).map(l => l.id);
-      expect(leverFacts(c, all, mode)).not.toMatch(/\d/);
-      for (const l of areaModelLevers(c, [], ctx(mode))) expect(`${l.when} ${l.does}`.replace(/3 × 4 × 10 × 10|1 to 3|5 or less|10 or less/g, '')).not.toMatch(/\d/);
+      const all = declare(c, mode, [], false, true).map(l => l.id);
+      expect(AREA_LEVERS.onScreen({ ...c, mode }, { cellsRight: true }, all)).not.toMatch(/\d/);
+      for (const l of declare(c, mode, [], false, true)) expect(`${l.when} ${l.does}`.replace(/3 × 4 × 10 × 10|1 to 3|5 or less|10 or less/g, '')).not.toMatch(/\d/);
     }
   });
 
@@ -121,24 +126,32 @@ describe('this wrong answer, then this lever', () => {
     ['one_group_off', CELL_LABELS_LEVER], ['wrong_product', CELL_LABELS_LEVER], ['left_out_part', STACK_LEVER],
     ['carry_slip', STACK_LEVER], ['sum_off', STACK_LEVER],
   ])('find_area at the hard tier: %s → %s', (miss, lever) => {
-    expect(nextLever(areaModelLevers(find, [], ctx('find_area')), miss)).toBe(lever);
+    // A sum miss happens only at the sum step, once every cell is right.
+    expect(nextLever(declare(find, 'find_area', [], false, SUM_MISSES.includes(miss as never)), miss)).toBe(lever);
   });
   it('with the cells labelled by the tier, one group off goes to the dots, then the easier model', () => {
-    expect(nextLever(areaModelLevers(find, [], ctx('find_area', true)), 'one_group_off')).toBe(CELL_DOTS_LEVER);
-    expect(nextLever(areaModelLevers(find, [CELL_DOTS_LEVER], ctx('find_area', true)), 'one_group_off')).toBe(EASIER_MODEL_LEVER);
+    expect(nextLever(declare(find, 'find_area', [], true), 'one_group_off')).toBe(CELL_DOTS_LEVER);
+    expect(nextLever(declare(find, 'find_area', [CELL_DOTS_LEVER], true), 'one_group_off')).toBe(EASIER_MODEL_LEVER);
   });
   it('perimeter and factor', () => {
     const per = item('p', [12], [7]), fac = item('x', [20, 5], [30, 6]);
-    expect(nextLever(areaModelLevers(per, [], ctx('perimeter')), 'two_sides_only')).toBe(ALL_SIDES_LEVER);
-    expect(nextLever(areaModelLevers(per, [ALL_SIDES_LEVER], ctx('perimeter')), 'two_sides_only')).toBe(SIDE_SUM_LEVER);
-    expect(nextLever(areaModelLevers(per, [], ctx('perimeter', true)), 'perimeter_off')).toBe(SMALLER_RECT_LEVER);
-    expect(nextLever(areaModelLevers(fac, [], ctx('factor')), 'swapped')).toBe(SHARED_PARTS_LEVER);
-    expect(nextLever(areaModelLevers(fac, [], ctx('factor')), 'parts_wrong')).toBe(START_CELL_LEVER);
-    expect(nextLever(areaModelLevers(fac, [START_CELL_LEVER, SHARED_PARTS_LEVER], ctx('factor')), 'parts_wrong')).toBe(EASIER_GRID_LEVER);
+    expect(nextLever(declare(per, 'perimeter'), 'two_sides_only')).toBe(ALL_SIDES_LEVER);
+    expect(nextLever(declare(per, 'perimeter', [ALL_SIDES_LEVER]), 'two_sides_only')).toBe(SIDE_SUM_LEVER);
+    expect(nextLever(declare(per, 'perimeter', [], true), 'perimeter_off')).toBe(SMALLER_RECT_LEVER);
+    expect(nextLever(declare(fac, 'factor'), 'swapped')).toBe(SHARED_PARTS_LEVER);
+    expect(nextLever(declare(fac, 'factor'), 'parts_wrong')).toBe(START_CELL_LEVER);
+    expect(nextLever(declare(fac, 'factor', [START_CELL_LEVER, SHARED_PARTS_LEVER]), 'parts_wrong')).toBe(EASIER_GRID_LEVER);
   });
-  it('a tier aid on screen is a lever already pulled; a practice item has none', () => {
-    expect(areaModelLevers(find, [], ctx('find_area', true)).find(l => l.id === CELL_LABELS_LEVER)?.pulled).toBe(true);
-    expect(areaModelLevers(practiceItem(find, 'find_area'), [], ctx('find_area'))).toEqual([]);
+  it('a tier aid on screen is a lever already pulled; the stack is offered only once every cell is right', () => {
+    expect(declare(find, 'find_area', [], true).find(l => l.id === CELL_LABELS_LEVER)?.pulled).toBe(true);
+    expect(declare(find, 'find_area').map(l => l.id)).not.toContain(STACK_LEVER);
+    expect(declare(find, 'find_area', [], false, true).map(l => l.id)).toContain(STACK_LEVER);
+  });
+  it('a simplify pull opens the easier item in the same mode; a practice item has no easier one', () => {
+    const it = { ...find, mode: 'find_area' as const };
+    const easier = AREA_LEVERS.simpler(it, { cellsRight: false }, EASIER_MODEL_LEVER)!;
+    expect(easier).toMatchObject({ id: 'f~easier', mode: 'find_area' });
+    expect(AREA_LEVERS.simpler(easier, { cellsRight: false }, EASIER_MODEL_LEVER)).toBeNull();
   });
 });
 
@@ -146,7 +159,11 @@ it('every catalog miss is answered by a lever on every item, generated and saved
   const tw = getComponentById('area-model')!.teachingWorkspace!;
   expect(tw.levers).toBe(true);
   for (const mode of MODES) for (const c of [...GENERATED[mode], ...SAVED[mode]]) for (const tierOn of [false, true]) {
-    const levers = areaModelLevers(c, [], ctx(mode, tierOn));
-    for (const m of tw.misses![mode]) expect(levers.some(l => l.answers?.includes(m)), `${mode} ${c.id} ${m}`).toBe(true);
+    for (const cellsRight of [false, true]) {
+      const levers = declare(c, mode, [], tierOn, cellsRight);
+      // A sum miss can only be made at the sum step, which opens once every cell is right.
+      const reachable = tw.misses![mode].filter(m => cellsRight || !SUM_MISSES.includes(m as never));
+      for (const m of reachable) expect(levers.some(l => l.answers?.includes(m)), `${mode} ${c.id} ${m}`).toBe(true);
+    }
   }
 });

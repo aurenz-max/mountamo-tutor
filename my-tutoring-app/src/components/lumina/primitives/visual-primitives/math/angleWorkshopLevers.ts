@@ -1,41 +1,42 @@
 /**
  * The in-item levers on angle-workshop (`/add-support-tiers`; reports qa/eval-reports/angle-workshop-levers-2026-10-08.md).
- * No real-learner evidence: the misses are what `makeAngleMiss` / `classicMiss` observe. Pure: the component draws from
- * these, the workspace publishes them, the tests hold each leak rule. Every lever starts released at every tier (the
+ * No real-learner evidence: the misses are what `makeAngleMiss` / `classicMiss` observe. Declared once as a lever set
+ * (`ANGLE_LEVERS`, `bossLevers.ts`); the component draws the pulled pictures, the tests hold each leak rule. Every lever starts released at every tier (the
  * generator's tier scaffolds, the reading cue, the perception marks and the named relationship, are the starting
  * positions and stay as they are).
  *
  * make_angle (open build; judging the opening by eye IS the task):
- * - `corner_marker` (help): a dashed square corner and straight line at the vertex. Leak rule: the benchmarks only.
- * - `protractor` (help): a degree scale behind the rays, nothing marked.
- * - `coarser_class` (simplify): an ask on one side of a right angle only (`<item>~coarser`); none on a right angle.
+ * - `corner_marker` (marks): a dashed square corner and straight line at the vertex. Leak rule: the benchmarks only.
+ * - `protractor` (marks): a degree scale behind the rays, nothing marked.
+ * - `coarser_class` (easier): an ask on one side of a right angle only (`<item>~coarser`); none on a right angle.
  *   `not_opened` has no lever: the screen already says to open the ray.
  * measure:
- * - `tens_labels` (help): places the protractor and numbers its scale every 10° from 0 up to the last ten at least 5°
+ * - `tens_labels` (marks): places the protractor and numbers its scale every 10° from 0 up to the last ten at least 5°
  *   short of the second ray (`tensLabels`, `tensLeak`): the learner counts the last step.
- * - `simpler_item`: an acute angle on a ten, away from the item's reading and its other-scale reading.
+ * - `simpler_item` (easier, every classic mode): an acute angle on a ten, away from the item's reading and its other-scale reading.
  * classify_pairs (the relationship is the answer, so the help is the same on every item):
- * - `benchmarks` (help): dashed rays at a square corner and a straight line from the vertex along the bottom ray.
+ * - `benchmarks` (marks): dashed rays at a square corner and a straight line from the vertex along the bottom ray.
  * - `simpler_item`: a pair of ANOTHER relationship with two choices, neither of them the item's answer.
  * solve_unknown / solve_algebraic:
- * - `whole_angle` (help): a dashed arc over the whole the angles fill (two on vertical angles: each straight line through
+ * - `whole_angle` (marks): a dashed arc over the whole the angles fill (two on vertical angles: each straight line through
  *   the unlabeled neighbour), no number (`wholeArcs`).
- * - `try_your_x` (help, solve_algebraic, after a wrong answer): the learner's own last x put into each label
+ * - `try_your_x` (custom, solve_algebraic, after a wrong answer): the learner's own last x put into each label
  *   (`tryYourX`); never the key.
  * - `simpler_item`: one subtraction instead of two (around a point), a known on a ten, unit coefficients, or 2x and x.
  * transversal:
- * - `slide_copy` (help, parallel lines except corresponding): a dashed copy of the marked angle at the other crossing,
+ * - `slide_copy` (marks, parallel lines except corresponding): a dashed copy of the marked angle at the other crossing,
  *   never on x (`slideLeaks`). `straight_arcs` (corresponding): a dashed half-circle under the line at each crossing.
- *   `corners_on_line` (triangle sum): the two labeled corners side by side on a straight line, the rest blank.
+ *   `corners_on_line` (layout, triangle sum): the two labeled corners side by side on a straight line, the rest blank.
  *   `straight_at_corner` (exterior angle): a dashed half-circle over the base at x's corner, the triangle's corner there
  *   outlined.
  * - `simpler_item`: exterior angle → triangle sum; co-interior → corresponding. None on the plainest shapes.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet, type LeverSpec } from '../../../components/live-activity/bossLevers';
 import type {
   AnglePairRelationship, AngleTargetKind, AngleWorkshopChallenge, TransversalRelation,
 } from './AngleWorkshop';
-import { algebraicAngles, makeAngleAsk, solveTotal } from './angleWorkshopWorkspace';
+import { ANGLE_MISSES_BY_MODE, algebraicAngles, makeAngleAsk, solveTotal } from './angleWorkshopWorkspace';
+import type { AngleMiss } from './angleWorkshop.card';
 
 export const CORNER_LEVER = 'corner_marker';
 export const PROTRACTOR_LEVER = 'protractor';
@@ -71,37 +72,6 @@ export function coarserMakeAngle(c: AngleWorkshopChallenge): AngleWorkshopChalle
   const kind = coarserKind(c);
   if (!kind) return null;
   return { ...c, id: `${c.id}${COARSER_SUFFIX}`, targetKind: kind, targetMin: undefined, targetMax: undefined, instruction: makeAngleAsk(kind) };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-/** The levers on a make_angle session item (none on another type, or while the easier practice item is up). */
-export function makeAngleLevers(c: AngleWorkshopChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (c?.type !== 'make_angle') return [];
-  return [
-    lever(CORNER_LEVER, 'help', ['made_acute', 'made_right', 'made_obtuse', 'made_straight'],
-      'The learner\'s angle is a different kind from the one asked for.',
-      'Draws a dashed square corner and a dashed straight line at the vertex, to compare the angle with. The learner\'s ray stays where it is; no measure is written.',
-      pulled),
-    lever(PROTRACTOR_LEVER, 'help', ['below_range', 'above_range'],
-      'The learner\'s angle is outside the degrees asked for, or they cannot judge its size.',
-      'Puts a protractor scale behind the rays for the learner to read. No reading is marked.',
-      pulled),
-    ...(coarserMakeAngle(c) ? [lever(COARSER_LEVER, 'simplify', ['made_acute', 'made_obtuse', 'made_straight', 'below_range', 'above_range'],
-      'The learner keeps making the wrong kind of angle, or cannot start.',
-      'Opens an easier ask first: an angle on one side of a right angle only (bigger than, or smaller than, a right angle). It is not graded; the full item comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-/** What the pulled make_angle levers put on screen, for the tutor's `onScreen` fact. */
-export function makeAngleLeverFacts(pulled: readonly string[]): string | undefined {
-  const notes = [
-    pulled.includes(CORNER_LEVER) && 'A dashed square corner and a dashed straight line are drawn at the vertex.',
-    pulled.includes(PROTRACTOR_LEVER) && 'A protractor scale is behind the rays.',
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 // ── measure: the tens labels ─────────────────────────────────────────────────
@@ -329,106 +299,126 @@ export function practiceLeaks(p: AngleWorkshopChallenge, c: AngleWorkshopChallen
   return Math.abs(p.expectedAnswer - c.expectedAnswer) <= c.tolerance;
 }
 
-// ── the levers on a classic item ───────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
+
+/** The lesson state a lever reads beyond the item: the learner's last checked wrong number on it (try_your_x). */
+export interface AngleLeverCtx { lastWrong?: number }
 
 const back = 'It is not graded; the full item comes back blank after it.';
+const SIMPLER_WHEN = 'The learner cannot do this item even with the help on screen: a simpler one of the same kind first.';
 
-/** The levers on a session item of any mode. `pulled` holds this item's runtime pulls; `lastWrong` the learner's last
- *  checked wrong number on it (try_your_x is offered only once there is one). */
-export function angleWorkshopLevers(c: AngleWorkshopChallenge | null, pulled: readonly string[], lastWrong?: number):
-  WorkspaceLever[] {
-  if (!c) return [];
-  if (c.type === 'make_angle') return makeAngleLevers(c, pulled);
-  const levers: WorkspaceLever[] = [];
-  const help = (id: string, answers: readonly string[], when: string, does: string) => levers.push(lever(id, 'help', answers, when, does, pulled));
-  const simpler = simplerItem(c);
-  const simplify = (answers: readonly string[], does: string) => {
-    if (simpler) levers.push(lever(SIMPLER_LEVER, 'simplify', answers,
-      'The learner cannot do this item even with the help on screen: a simpler one of the same kind first.', `${does} ${back}`, pulled));
-  };
-  switch (c.type) {
-    case 'measure':
-      help(TENS_LEVER, ['other_scale', 'near', 'far'],
-        'The learner reads the wrong number off the scale, or does not know where to start counting.',
-        'Places the protractor and numbers its scale every 10° from 0 at the bottom ray, stopping short of the second ray. '
-          + 'You may point to the 0 and to the numbers; never say the reading.');
-      simplify(['other_scale', 'far'], 'Opens a practice angle to read that lands on a ten and is smaller than a square corner.');
-      break;
-    case 'classify_pairs':
-      help(BENCHMARK_LEVER, ['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
-        'The learner taps a relationship that does not fit the figure.',
-        'Draws a dashed ray at a square corner and a dashed ray making a straight line, both from the vertex along the bottom '
-          + 'ray, the same on every figure. You may ask how the outer rays compare with them; never name the relationship.');
-      simplify(['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
-        'Opens a practice pair of a different relationship with only two choices.');
-      break;
-    case 'solve_unknown':
-      help(WHOLE_LEVER, ['total_ninety', 'total_one_eighty', 'total_three_sixty', 'copied_known', 'one_known_left', 'far'],
-        'The learner uses the wrong total, copies a labeled angle, or leaves an angle out.',
-        'Draws a dashed arc over the whole the angles fill together (on crossing lines, over each straight line through the '
-          + 'unlabeled angle between them). No number is written; never say the total or x.');
-      simplify(c.solveConfig === 'around_point' ? ['one_known_left', 'total_ninety', 'total_one_eighty', 'near', 'far'] : ['near'],
-        c.solveConfig === 'around_point' ? 'Opens a practice figure of two angles on a straight line: one subtraction.'
-          : 'Opens a practice figure of the same kind with a rounder labeled angle.');
-      break;
-    case 'solve_algebraic':
-      help(WHOLE_LEVER, ['total_ninety', 'total_one_eighty'],
-        'The learner sets the expressions to the wrong total, or adds angles that are equal.',
-        'Draws a dashed arc over the whole the labeled angles fill (on crossing lines, over each straight line through the '
-          + 'unlabeled angle between them). No number is written; never say the equation or x.');
-      if (tryYourX(c, lastWrong)) help(TRY_X_LEVER, ['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
-        'The learner\'s x is wrong: let them see what it makes the angles.',
-        'Writes under the figure the learner\'s own last x put into each label, and the angle each makes. You may ask '
-          + 'whether those angles fit the figure; never say the right x.');
-      simplify(['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
-        c.algConfig === 'vertical' ? 'Opens a practice pair labeled 2x + b and x + b′: the plainest equal pair.'
-          : 'Opens a practice pair whose labels both have x alone (no number in front of x).');
-      break;
-    case 'transversal': {
-      const id = TRANSVERSAL_HELP(c)!;
-      if (id === SLIDE_LEVER) help(SLIDE_LEVER, ['supplement_given', 'copied_given', 'near', 'far'],
-        'The learner does not see how the angle at one crossing matches an angle at the other.',
-        'Draws a dashed copy of the marked angle at the lower crossing, in the same place against the lines as the marked '
-          + 'angle at the upper crossing. It is not on x and has no number; never say how it relates to x.');
-      if (id === STRAIGHT_ARCS_LEVER) help(STRAIGHT_ARCS_LEVER, ['supplement_given', 'copied_given', 'near', 'far'],
-        'The learner subtracts from 180 or cannot see how the two crossings match.',
-        'Draws a dashed half-circle under the parallel line at each crossing, across the marked angle (upper crossing) or '
-          + 'x (lower crossing) and the angle beside it. No number is written; never say x.');
-      if (id === CORNERS_LEVER) help(CORNERS_LEVER, ['added_givens', 'one_given_left', 'copied_given', 'near', 'far'],
-        'The learner adds the two labeled angles, or leaves one out.',
-        'Draws, below the triangle, a straight line with copies of the two labeled corners side by side on it; the rest of '
-          + 'the straight line is blank. No other number is written; never say x.');
-      if (id === EXTERIOR_LEVER) help(EXTERIOR_LEVER, ['found_interior', 'copied_given', 'near', 'far'],
-        'The learner finds the triangle\'s own corner instead of the outside angle, or copies a labeled angle.',
-        'Draws a dashed half-circle over the straight base line at x\'s corner, across x and the triangle\'s own corner '
-          + 'there, and outlines that corner dashed. No number is written; never say x.');
-      simplify(c.transversalShape === 'exterior_angle' ? ['found_interior', 'copied_given', 'far']
-        : ['copied_given', 'supplement_given', 'far'],
-      c.transversalShape === 'exterior_angle' ? 'Opens a practice triangle: find its third angle.'
-        : 'Opens a practice pair of corresponding angles on the same parallel lines.');
-      break;
-    }
-  }
-  return levers;
-}
+/** The simpler item, one spec per mode: its words and the misses it answers differ by mode (and by figure inside one). */
+const simplerIn = (mode: string, answers: readonly AngleMiss[], does: (c: AngleWorkshopChallenge) => string,
+  answersOn?: (c: AngleWorkshopChallenge) => readonly AngleMiss[]): LeverSpec<AngleWorkshopChallenge, AngleLeverCtx> => ({
+  id: SIMPLER_LEVER, type: 'easier', modes: [mode], answers, ...(answersOn ? { answersOn } : {}),
+  when: SIMPLER_WHEN, does: c => `${does(c)} ${back}`, content: c => simplerItem(c),
+});
+const around = (c: AngleWorkshopChallenge) => c.solveConfig === 'around_point';
+const exterior = (c: AngleWorkshopChallenge) => c.transversalShape === 'exterior_angle';
+/** A transversal figure's one help picture: offered only on the figure it is drawn for. */
+const transversalHelp = (id: string) => (c: AngleWorkshopChallenge) => (TRANSVERSAL_HELP(c) === id ? true : null);
 
-/** What the pulled levers put on screen, for the tutor's `onScreen` fact. Says what is drawn, never the key. */
-export function angleLeverFacts(c: AngleWorkshopChallenge | null, pulled: readonly string[], lastWrong?: number): string | undefined {
-  if (!c) return undefined;
-  if (c.type === 'make_angle') return makeAngleLeverFacts(pulled);
-  const on = (id: string) => pulled.includes(id);
-  const notes: string[] = [];
-  if (on(TENS_LEVER)) {
-    const labels = tensLabels(c);
-    notes.push(`The protractor is placed, its scale numbered every 10° from 0 at the bottom ray up to ${labels.at(-1)}°; past that only its usual numbers.`);
-  }
-  if (on(BENCHMARK_LEVER)) notes.push('A dashed ray at a square corner and a dashed ray making a straight line are drawn from the vertex, along the bottom ray.');
-  if (on(WHOLE_LEVER)) notes.push(wholeFact(c));
-  const tried = on(TRY_X_LEVER) ? tryYourX(c, lastWrong) : null;
-  if (tried) notes.push(`Under the figure: ${tried}.`);
-  if (on(SLIDE_LEVER)) notes.push('A dashed copy of the marked angle, with no number, is at the lower crossing in the same place against the lines as the marked angle at the upper crossing.');
-  if (on(STRAIGHT_ARCS_LEVER)) notes.push('At each crossing a dashed half-circle is drawn under the parallel line, across the marked angle (upper) or x (lower) and the angle beside it. No number is written.');
-  if (on(CORNERS_LEVER)) notes.push(`Below the triangle: a straight line with copies of the ${c.givenAngle}° and ${c.givenAngle2}° corners side by side on it; the rest of the straight line is blank, with no number.`);
-  if (on(EXTERIOR_LEVER)) notes.push('At x\'s corner: a dashed half-circle over the straight base line, across x and the triangle\'s own corner there; that corner is outlined, with no number.');
-  return notes.length ? notes.join(' ') : undefined;
-}
+/**
+ * The levers on every mode, declared once (`bossLevers.ts`). None is offered on a practice item: the component
+ * declares nothing while one is on screen.
+ */
+export const ANGLE_LEVERS = leverSet<AngleWorkshopChallenge, AngleLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => ANGLE_MISSES_BY_MODE[mode as AngleWorkshopChallenge['type']] ?? [],
+  specs: [
+    // ── make_angle ──
+    { id: CORNER_LEVER, type: 'marks', modes: ['make_angle'], answers: ['made_acute', 'made_right', 'made_obtuse', 'made_straight'],
+      when: 'The learner\'s angle is a different kind from the one asked for.',
+      does: 'Draws a dashed square corner and a dashed straight line at the vertex, to compare the angle with. The learner\'s '
+        + 'ray stays where it is; no measure is written.',
+      fact: 'A dashed square corner and a dashed straight line are drawn at the vertex.' },
+    { id: PROTRACTOR_LEVER, type: 'marks', modes: ['make_angle'], answers: ['below_range', 'above_range'],
+      when: 'The learner\'s angle is outside the degrees asked for, or they cannot judge its size.',
+      does: 'Puts a protractor scale behind the rays for the learner to read. No reading is marked.',
+      fact: 'A protractor scale is behind the rays.' },
+    { id: COARSER_LEVER, type: 'easier', modes: ['make_angle'],
+      answers: ['made_acute', 'made_obtuse', 'made_straight', 'below_range', 'above_range'],
+      when: 'The learner keeps making the wrong kind of angle, or cannot start.',
+      does: 'Opens an easier ask first: an angle on one side of a right angle only (bigger than, or smaller than, a right '
+        + 'angle). It is not graded; the full item comes back after it.',
+      content: c => coarserMakeAngle(c) },
+    // ── measure ──
+    { id: TENS_LEVER, type: 'marks', modes: ['measure'], answers: ['other_scale', 'near', 'far'],
+      when: 'The learner reads the wrong number off the scale, or does not know where to start counting.',
+      does: 'Places the protractor and numbers its scale every 10° from 0 at the bottom ray, stopping short of the second '
+        + 'ray. You may point to the 0 and to the numbers; never say the reading.',
+      content: c => tensLabels(c),
+      fact: (labels: number[]) => `The protractor is placed, its scale numbered every 10° from 0 at the bottom ray up to ${labels.at(-1)}°; past that only its usual numbers.` },
+    simplerIn('measure', ['other_scale', 'far'],
+      () => 'Opens a practice angle to read that lands on a ten and is smaller than a square corner.'),
+    // ── classify_pairs (the relationship is the answer, so the help is the same on every item) ──
+    { id: BENCHMARK_LEVER, type: 'marks', modes: ['classify_pairs'],
+      answers: ['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
+      when: 'The learner taps a relationship that does not fit the figure.',
+      does: 'Draws a dashed ray at a square corner and a dashed ray making a straight line, both from the vertex along the '
+        + 'bottom ray, the same on every figure. You may ask how the outer rays compare with them; never name the relationship.',
+      fact: 'A dashed ray at a square corner and a dashed ray making a straight line are drawn from the vertex, along the bottom ray.' },
+    simplerIn('classify_pairs', ['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
+      () => 'Opens a practice pair of a different relationship with only two choices.'),
+    // ── solve_unknown / solve_algebraic ──
+    { id: WHOLE_LEVER, type: 'marks', modes: ['solve_unknown', 'solve_algebraic'],
+      answers: ['total_ninety', 'total_one_eighty', 'total_three_sixty', 'copied_known', 'one_known_left', 'far'],
+      answersOn: c => (c.type === 'solve_algebraic' ? ['total_ninety', 'total_one_eighty']
+        : ['total_ninety', 'total_one_eighty', 'total_three_sixty', 'copied_known', 'one_known_left', 'far']),
+      when: c => (c.type === 'solve_algebraic'
+        ? 'The learner sets the expressions to the wrong total, or adds angles that are equal.'
+        : 'The learner uses the wrong total, copies a labeled angle, or leaves an angle out.'),
+      does: c => (c.type === 'solve_algebraic'
+        ? 'Draws a dashed arc over the whole the labeled angles fill (on crossing lines, over each straight line through the '
+          + 'unlabeled angle between them). No number is written; never say the equation or x.'
+        : 'Draws a dashed arc over the whole the angles fill together (on crossing lines, over each straight line through the '
+          + 'unlabeled angle between them). No number is written; never say the total or x.'),
+      fact: (_: unknown, c: AngleWorkshopChallenge) => wholeFact(c) },
+    { id: TRY_X_LEVER, type: 'custom', modes: ['solve_algebraic'], carrier: 'shown',
+      why: 'It writes the learner\'s own wrong x into the figure\'s labels: no stock type puts the learner\'s answer back '
+        + 'on screen, and a clue\'s leak check would match the labels\' own constants. tryYourX returns nothing on the key.',
+      answers: ['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
+      when: 'The learner\'s x is wrong: let them see what it makes the angles.',
+      does: 'Writes under the figure the learner\'s own last x put into each label, and the angle each makes. You may ask '
+        + 'whether those angles fit the figure; never say the right x.',
+      // Offered once there is a wrong x to put in.
+      content: (c, ctx) => tryYourX(c, ctx.lastWrong),
+      fact: (tried: string) => `Under the figure: ${tried}.` },
+    simplerIn('solve_unknown', ['one_known_left', 'total_ninety', 'total_one_eighty', 'near', 'far'],
+      c => (around(c) ? 'Opens a practice figure of two angles on a straight line: one subtraction.'
+        : 'Opens a practice figure of the same kind with a rounder labeled angle.'),
+      c => (around(c) ? ['one_known_left', 'total_ninety', 'total_one_eighty', 'near', 'far'] : ['near'])),
+    simplerIn('solve_algebraic', ['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
+      c => (c.algConfig === 'vertical' ? 'Opens a practice pair labeled 2x + b and x + b′: the plainest equal pair.'
+        : 'Opens a practice pair whose labels both have x alone (no number in front of x).')),
+    // ── transversal: one help picture per figure ──
+    { id: SLIDE_LEVER, type: 'marks', modes: ['transversal'], answers: ['supplement_given', 'copied_given', 'near', 'far'],
+      when: 'The learner does not see how the angle at one crossing matches an angle at the other.',
+      does: 'Draws a dashed copy of the marked angle at the lower crossing, in the same place against the lines as the marked '
+        + 'angle at the upper crossing. It is not on x and has no number; never say how it relates to x.',
+      content: transversalHelp(SLIDE_LEVER),
+      fact: 'A dashed copy of the marked angle, with no number, is at the lower crossing in the same place against the lines as the marked angle at the upper crossing.' },
+    { id: STRAIGHT_ARCS_LEVER, type: 'marks', modes: ['transversal'], answers: ['supplement_given', 'copied_given', 'near', 'far'],
+      when: 'The learner subtracts from 180 or cannot see how the two crossings match.',
+      does: 'Draws a dashed half-circle under the parallel line at each crossing, across the marked angle (upper crossing) or '
+        + 'x (lower crossing) and the angle beside it. No number is written; never say x.',
+      content: transversalHelp(STRAIGHT_ARCS_LEVER),
+      fact: 'At each crossing a dashed half-circle is drawn under the parallel line, across the marked angle (upper) or x (lower) and the angle beside it. No number is written.' },
+    { id: CORNERS_LEVER, type: 'layout', modes: ['transversal'], answers: ['added_givens', 'one_given_left', 'copied_given', 'near', 'far'],
+      when: 'The learner adds the two labeled angles, or leaves one out.',
+      does: 'Draws, below the triangle, a straight line with copies of the two labeled corners side by side on it; the rest of '
+        + 'the straight line is blank. No other number is written; never say x.',
+      content: transversalHelp(CORNERS_LEVER),
+      fact: (_: unknown, c: AngleWorkshopChallenge) => `Below the triangle: a straight line with copies of the ${c.givenAngle}° and ${c.givenAngle2}° corners side by side on it; the rest of the straight line is blank, with no number.` },
+    { id: EXTERIOR_LEVER, type: 'marks', modes: ['transversal'], answers: ['found_interior', 'copied_given', 'near', 'far'],
+      when: 'The learner finds the triangle\'s own corner instead of the outside angle, or copies a labeled angle.',
+      does: 'Draws a dashed half-circle over the straight base line at x\'s corner, across x and the triangle\'s own corner '
+        + 'there, and outlines that corner dashed. No number is written; never say x.',
+      content: transversalHelp(EXTERIOR_LEVER),
+      fact: 'At x\'s corner: a dashed half-circle over the straight base line, across x and the triangle\'s own corner there; that corner is outlined, with no number.' },
+    simplerIn('transversal', ['found_interior', 'copied_given', 'supplement_given', 'far'],
+      c => (exterior(c) ? 'Opens a practice triangle: find its third angle.'
+        : 'Opens a practice pair of corresponding angles on the same parallel lines.'),
+      c => (exterior(c) ? ['found_interior', 'copied_given', 'far'] : ['copied_given', 'supplement_given', 'far'])),
+  ],
+});

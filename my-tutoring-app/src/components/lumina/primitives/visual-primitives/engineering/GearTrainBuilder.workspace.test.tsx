@@ -11,13 +11,13 @@ import { LiveLessonRuntime } from '../../../components/live-activity/runtime/Liv
 import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
-import { validateGearTrainBuilderData } from '../../../components/live-activity/adapters/gearTrainBuilderLive';
+import { validateGearTrainBuilderData } from './gearTrainBuilder.boss';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { gearTrainBuilderOracle } from '../../../service/qa/oracles/gear-train-builder';
 import {
   GEAR_MODES, MIXED_MODES, gearAsk, gearChallenges, gearMiss, referenceTrain, type GearChallenge,
 } from './gearWorkspace';
-import { gearLevers, simplerTrain } from './gearLevers';
+import { GEAR_LEVERS, simplerTrain } from './gearLevers';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -177,24 +177,6 @@ it('the simplify lever opens an ungraded train without the way, then the full it
   expect(h.gears()).toBe(0);
 });
 
-it('scripted path (the tester, no tutor): a miss keeps the train, Next train opens an empty track, the session submits once', () => {
-  const data: GearTrainBuilderData = { title: 'Gears', challengeType: 'build_direction', challenges: [SAME3, OPP4], instanceId: 'gears' };
-  const view = render(<GearTrainBuilder data={data} />);
-  const c = controls(view.container);
-  c.add(16, 16);
-  c.press("I'm done!");
-  expect(screen.getByText(/^Not yet\./)).toBeTruthy();
-  c.add(16);
-  c.press("I'm done!");
-  c.press(/next train/i);
-  expect(c.gears()).toBe(0);
-  c.add(8, 12, 16, 24);
-  c.press("I'm done!");
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0][2]).toMatchObject({ type: 'gear-train-builder', trainsBuilt: 2, firstTryCount: 1 });
-  expect(seam.send).not.toHaveBeenCalled();
-});
-
 it('the check, targets, levers, oracle and catalog wiring', () => {
   const train = (...teeth: number[]) => teeth.map((t, i) => ({ id: `x${i}`, teeth: t }));
   expect(gearMiss(SAME3, train(32, 8, 12))).toBeUndefined();
@@ -222,7 +204,12 @@ it('the check, targets, levers, oracle and catalog wiring', () => {
   }
   expect(simplerTrain(SAME3)).toBeNull();
   expect(simplerTrain(OPP4)).toMatchObject({ minGears: 2, way: 'opposite' });
-  expect(gearLevers(SAME3, []).map(l => l.id)).toEqual(['direction_arrows', 'try_spin']);
+  expect(GEAR_LEVERS.declare(SAME3, null, []).map(l => l.id)).toEqual(['direction_arrows', 'try_spin']);
+  // A way-free speed train: the easier train answers only the speed misses; a practice train offers no easier one.
+  expect(GEAR_LEVERS.declare(FASTER, null, []).map(l => [l.id, l.answers])).toEqual([['direction_arrows', ['wrong_direction']],
+    ['try_spin', ['not_faster', 'not_slower', 'wrong_direction']]]);
+  expect(GEAR_LEVERS.declare(TWICE_SAME, null, []).find(l => l.id === 'simpler_train')!.answers).toEqual(['too_fast', 'too_slow', 'wrong_direction']);
+  expect(GEAR_LEVERS.declare(simplerTrain(TWICE_SAME)!, null, []).map(l => l.id)).not.toContain('simpler_train');
   const entry = getComponentById('gear-train-builder')!;
   expect(entry.evalModes!.map(m => [m.evalMode, m.beta])).toEqual([['build_direction', 2.0], ['build_speed', 2.8], ['build_ratio', 3.6]]);
   expect(entry.teachingWorkspace!.misses).toMatchObject({ build_ratio: ['too_few_gears', 'too_fast', 'too_slow', 'wrong_direction'] });

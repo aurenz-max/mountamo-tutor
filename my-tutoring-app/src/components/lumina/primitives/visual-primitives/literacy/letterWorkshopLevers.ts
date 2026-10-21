@@ -1,22 +1,26 @@
 /**
  * The in-item levers on a letter-workshop item (`/add-support-tiers`, report
- * qa/eval-reports/letter-workshop-levers-2026-10-09.md). No real-learner evidence: the misses are what
- * `letterWorkshopMiss` observes and the catalog's documented struggles. Pure: the component draws from these, the
- * workspace publishes them, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode.
+ * qa/eval-reports/letter-workshop-levers-2026-10-09.md), declared once as a lever set (`LETTER_WORKSHOP_LEVERS`,
+ * `bossLevers.ts`). No real-learner evidence: the misses are what `letterWorkshopMiss` observes. Pure: the component
+ * draws from these, the tests hold each leak rule. Every simpler item has the id `<item>~simpler`, the same mode. The
+ * set's context is the session's items, which the write simplify lever must not ask for.
  *
  * - trace (the letter is drawn by design): `start_dots`, `stroke_arrows` on the dotted path (the tiers' own guides,
- *   now pullable), `writing_lines`; `trace_part` (simplify) its first stroke, or the first half of a one-stroke letter.
+ *   now pullable), `writing_lines` (marks); `trace_part` (easier) its first stroke, or the first half of a one-stroke letter.
  * - copy (the model is the task): `model_strokes` the model drawn with numbered starts and arrows, never on the paper;
- *   `start_dots` points on the paper; `writing_lines`; `copy_part` (simplify) as trace_part.
+ *   `start_dots` points on the paper; `writing_lines` (marks); `copy_part` (easier) as trace_part.
  * - write (the shape is the answer): `start_dots` points only, `first_part` the opening of the first stroke, never
- *   more than a third of the letter (`firstPartLeaks`), `writing_lines`; `simpler_letter` (simplify) a different letter
- *   of the same case, one complexity step down, never this letter, its mirror or another item's letter.
+ *   more than a third of the letter (`firstPartLeaks`), `writing_lines` (marks); `simpler_letter` (easier) a different
+ *   letter of the same case, one complexity step down, never this letter, its mirror or another item's letter.
+ *
+ * A support tier's starting guides (`startingLevers`) are passed to `declare` and `onScreen` as already pulled.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { LetterWorkshopChallenge } from './LetterWorkshop';
 import { getLetterTemplate, LETTER_TEMPLATES, type LetterTemplate } from './letterWorkshopGeometry';
 import { letterStructure } from './letterWorkshopDifficulty';
-import { pathLength, strokePrefix, type LetterWorkshopMiss } from './letterWorkshopWorkspace';
+import { pathLength, strokePrefix } from './letterWorkshopWorkspace';
+import { LETTER_WORKSHOP_MISSES_BY_MODE } from './letterWorkshop.card';
 
 export const DOTS_LEVER = 'start_dots';
 export const ARROWS_LEVER = 'stroke_arrows';
@@ -28,62 +32,6 @@ export const COPY_PART_LEVER = 'copy_part';
 export const SIMPLER_LETTER_LEVER = 'simpler_letter';
 export const SIMPLER_SUFFIX = '~simpler';
 
-const ALL: readonly LetterWorkshopMiss[] = ['other_letter', 'reversed', 'wrong_case', 'stroke_count', 'start_or_order',
-  'part_left_out', 'extra_ink', 'direction_or_shape'];
-
-type Decl = Omit<WorkspaceLever, 'pulled'>;
-const DECL: Record<string, Decl> = {
-  [DOTS_LEVER]: { id: DOTS_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner starts a stroke in the wrong place, draws the strokes out of order, or uses the wrong number of strokes',
-    does: 'Puts a numbered dot on the paper where each stroke of the letter starts. Point to dot 1; do not describe the shape of any stroke.',
-    answers: ['start_or_order', 'stroke_count', 'reversed'] },
-  [ARROWS_LEVER]: { id: ARROWS_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner follows the path the wrong way or stops partway along it',
-    does: 'Draws an arrow at the start of each stroke of the dotted letter, showing which way it goes.',
-    answers: ['direction_or_shape', 'start_or_order', 'part_left_out'] },
-  [LINES_LEVER]: { id: LINES_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the letter is the wrong size for its lines, the wrong case, or has marks off the letter',
-    does: 'Labels the writing lines top, middle and base and shades the space between the middle and base lines. '
-      + 'Say which lines the letter touches only if the letter is on the screen.',
-    answers: ['wrong_case', 'extra_ink', 'part_left_out', 'direction_or_shape'] },
-  [MODEL_STROKES_LEVER]: { id: MODEL_STROKES_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner\'s copy does not look like the model, or its strokes are out of order',
-    does: 'Draws a numbered dot and an arrow at the start of each stroke on the model beside the paper. The paper stays blank.',
-    answers: ['stroke_count', 'start_or_order', 'direction_or_shape', 'part_left_out', 'other_letter', 'reversed'] },
-  [FIRST_PART_LEVER]: { id: FIRST_PART_LEVER, kind: 'help', carrier: 'shown',
-    when: 'the learner cannot begin the letter from memory, writes another letter, or leaves part of it out',
-    does: 'Draws the opening part of the letter\'s first stroke dotted on the paper; the learner writes the rest. '
-      + 'Do not describe the rest of the shape.',
-    answers: ['other_letter', 'reversed', 'part_left_out', 'direction_or_shape', 'start_or_order'] },
-  [TRACE_PART_LEVER]: { id: TRACE_PART_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'tracing the whole letter is too much at once',
-    does: 'Opens an easier, ungraded practice: trace only the first part of this letter. Then the whole letter comes back blank.',
-    answers: ALL },
-  [COPY_PART_LEVER]: { id: COPY_PART_LEVER, kind: 'simplify', carrier: 'shown',
-    when: 'copying the whole letter is too much at once',
-    does: 'Opens an easier, ungraded practice: copy only the first part of this letter beside its model. Then the whole letter comes back blank.',
-    answers: ALL },
-  [SIMPLER_LETTER_LEVER]: { id: SIMPLER_LETTER_LEVER, kind: 'simplify', carrier: 'voiced',
-    when: 'writing this letter from memory is too much at once',
-    does: 'Opens an easier, ungraded practice: write a different, simpler letter of the same case, which you name as its task says. '
-      + 'Then this letter comes back blank.',
-    answers: ALL },
-};
-
-/** The simplify lever a mode has, if it has one. */
-export const simplifyLeverOf = (mode: LetterWorkshopChallenge['type']) =>
-  mode === 'trace' ? TRACE_PART_LEVER : mode === 'copy' ? COPY_PART_LEVER : SIMPLER_LETTER_LEVER;
-
-/** The levers an item declares, in the order `nextLever` reads them (help before simplify). `others`: the session's other items. */
-export function leverIdsFor(ch: LetterWorkshopChallenge, others: readonly LetterWorkshopChallenge[] = []): string[] {
-  const simplify = practiceItem(ch, others) ? [simplifyLeverOf(ch.type)] : [];
-  switch (ch.type) {
-    case 'trace': return [DOTS_LEVER, ARROWS_LEVER, LINES_LEVER, ...simplify];
-    case 'copy': return [MODEL_STROKES_LEVER, DOTS_LEVER, LINES_LEVER, ...simplify];
-    case 'write': return [DOTS_LEVER, FIRST_PART_LEVER, LINES_LEVER, ...simplify];
-  }
-}
-
 /** Where an item's guides start (its support tier's), as lever ids. Not a pull: never recorded. */
 export function startingLevers(ch: LetterWorkshopChallenge, support: { showStarts: boolean; showArrows: boolean; showLineLabels: boolean }): string[] {
   return [
@@ -91,25 +39,6 @@ export function startingLevers(ch: LetterWorkshopChallenge, support: { showStart
     ...(ch.type === 'trace' && support.showArrows ? [ARROWS_LEVER] : []),
     ...(support.showLineLabels ? [LINES_LEVER] : []),
   ];
-}
-
-export function letterWorkshopLevers(ch: LetterWorkshopChallenge, pulled: readonly string[],
-  others: readonly LetterWorkshopChallenge[] = []): WorkspaceLever[] {
-  return leverIdsFor(ch, others).map(id => ({ ...DECL[id], pulled: pulled.includes(id) }));
-}
-
-/** What the help levers in force have put on screen, in words the tutor and JEV read. Never the letter or its shape. */
-export function leverFacts(ch: LetterWorkshopChallenge, on: readonly string[]): string | undefined {
-  const n = getLetterTemplate(ch.templateId).strokes.length;
-  const facts: Record<string, string> = {
-    [DOTS_LEVER]: n > 1 ? `A numbered dot on the paper marks where each of the ${n} strokes starts.` : 'A dot on the paper marks where the stroke starts.',
-    [ARROWS_LEVER]: 'An arrow at the start of each stroke of the dotted letter shows which way it goes.',
-    [LINES_LEVER]: 'The writing lines are labelled top, middle and base, and the space between the middle and base lines is shaded.',
-    [MODEL_STROKES_LEVER]: 'The model beside the paper has a numbered dot and an arrow where each of its strokes starts.',
-    [FIRST_PART_LEVER]: 'The opening part of the first stroke is drawn dotted on the paper; the rest of the paper is blank.',
-  };
-  const shown = leverIdsFor(ch).filter(id => on.includes(id) && facts[id]).map(id => facts[id]);
-  return shown.length ? shown.join(' ') : undefined;
 }
 
 // ── help-lever geometry and leak rules ──────────────────────────────────────
@@ -190,3 +119,58 @@ export const practiceParent = (challenges: readonly LetterWorkshopChallenge[], i
   id?.endsWith(SIMPLER_SUFFIX) ? challenges.find(c => `${c.id}${SIMPLER_SUFFIX}` === id) ?? null : null;
 
 export const PRACTICE_NOTE = 'An easier practice item, ungraded; the full item comes back blank after it.';
+
+// ── the lever set ────────────────────────────────────────────────────────
+
+/** A lever offered in several modes answers only the misses its item's mode can show. */
+const inItemMode = (ch: LetterWorkshopChallenge) => LETTER_WORKSHOP_MISSES_BY_MODE[ch.type];
+const PRACTICE_THEN = 'Then the whole letter comes back blank.';
+
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
+export const LETTER_WORKSHOP_LEVERS = leverSet<LetterWorkshopChallenge, readonly LetterWorkshopChallenge[]>({
+  modeOf: ch => ch.type,
+  missesOf: mode => LETTER_WORKSHOP_MISSES_BY_MODE[mode as LetterWorkshopChallenge['type']] ?? [],
+  specs: [
+    { id: MODEL_STROKES_LEVER, type: 'marks', modes: ['copy'],
+      answers: ['stroke_count', 'start_or_order', 'direction_or_shape', 'part_left_out', 'other_letter', 'reversed'],
+      when: 'the learner\'s copy does not look like the model, or its strokes are out of order',
+      does: 'Draws a numbered dot and an arrow at the start of each stroke on the model beside the paper. The paper stays blank.',
+      fact: 'The model beside the paper has a numbered dot and an arrow where each of its strokes starts.' },
+    { id: DOTS_LEVER, type: 'marks', answers: ['start_or_order', 'stroke_count', 'reversed'], answersOn: inItemMode,
+      when: 'the learner starts a stroke in the wrong place, draws the strokes out of order, or uses the wrong number of strokes',
+      does: 'Puts a numbered dot on the paper where each stroke of the letter starts. Point to dot 1; do not describe the shape of any stroke.',
+      fact: (_content, ch) => {
+        const n = getLetterTemplate(ch.templateId).strokes.length;
+        return n > 1 ? `A numbered dot on the paper marks where each of the ${n} strokes starts.` : 'A dot on the paper marks where the stroke starts.';
+      } },
+    { id: ARROWS_LEVER, type: 'marks', modes: ['trace'], answers: ['direction_or_shape', 'start_or_order', 'part_left_out'],
+      when: 'the learner follows the path the wrong way or stops partway along it',
+      does: 'Draws an arrow at the start of each stroke of the dotted letter, showing which way it goes.',
+      fact: 'An arrow at the start of each stroke of the dotted letter shows which way it goes.' },
+    { id: FIRST_PART_LEVER, type: 'marks', modes: ['write'],
+      answers: ['other_letter', 'reversed', 'part_left_out', 'direction_or_shape', 'start_or_order'],
+      when: 'the learner cannot begin the letter from memory, writes another letter, or leaves part of it out',
+      does: 'Draws the opening part of the letter\'s first stroke dotted on the paper; the learner writes the rest. '
+        + 'Do not describe the rest of the shape.',
+      fact: 'The opening part of the first stroke is drawn dotted on the paper; the rest of the paper is blank.' },
+    { id: LINES_LEVER, type: 'marks', answers: ['wrong_case', 'extra_ink', 'part_left_out', 'direction_or_shape'], answersOn: inItemMode,
+      when: 'the letter is the wrong size for its lines, the wrong case, or has marks off the letter',
+      does: 'Labels the writing lines top, middle and base and shades the space between the middle and base lines. '
+        + 'Say which lines the letter touches only if the letter is on the screen.',
+      fact: 'The writing lines are labelled top, middle and base, and the space between the middle and base lines is shaded.' },
+    { id: TRACE_PART_LEVER, type: 'easier', modes: ['trace'], answers: 'all',
+      when: 'tracing the whole letter is too much at once',
+      does: `Opens an easier, ungraded practice: trace only the first part of this letter. ${PRACTICE_THEN}`,
+      content: ch => letterPart(ch) },
+    { id: COPY_PART_LEVER, type: 'easier', modes: ['copy'], answers: 'all',
+      when: 'copying the whole letter is too much at once',
+      does: `Opens an easier, ungraded practice: copy only the first part of this letter beside its model. ${PRACTICE_THEN}`,
+      content: ch => letterPart(ch) },
+    // The tutor names the practice letter as its task says: the screen never shows a write item's letter.
+    { id: SIMPLER_LETTER_LEVER, type: 'easier', modes: ['write'], carrier: 'voiced', answers: 'all',
+      when: 'writing this letter from memory is too much at once',
+      does: 'Opens an easier, ungraded practice: write a different, simpler letter of the same case, which you name as its task says. '
+        + 'Then this letter comes back blank.',
+      content: (ch, others) => simplerLetter(ch, others) },
+  ],
+});

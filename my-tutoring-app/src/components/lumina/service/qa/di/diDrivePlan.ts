@@ -39,7 +39,6 @@ import type { NumberSequencerChallenge } from '../../../primitives/visual-primit
  * contract they mirror.
  */
 
-import { rampLabAdapter } from './rampLabAdapter';
 import {
   spokenSpansOf,
   type JudgedCueSurface,
@@ -55,61 +54,6 @@ import {
   tapVerdictCue as kcTapVerdictCue,
   type KnowledgeCheckItem,
 } from '@/components/lumina/primitives/knowledgeCheckScript';
-import {
-  frameVerdictCue,
-  itemsFromChallenges as tenFrameItems,
-  tenFrameHarnessAnswers,
-  tenFramePackBase,
-  type TenFrameBand,
-  type TenFrameChallengeLike,
-  type TenFrameItem,
-} from '@/components/lumina/primitives/visual-primitives/math/tenFrameScript';
-import {
-  addSubHarnessAnswers,
-  additionSubtractionScenePackBase,
-  equationVerdictCue,
-  itemsFromChallenges as addSubItems,
-  sceneVerdictCue,
-  type AddSubBand,
-  type AddSubChallengeLike,
-  type AddSubSceneItem,
-} from '@/components/lumina/primitives/visual-primitives/math/additionSubtractionSceneScript';
-import {
-  bondEquationVerdictCue,
-  bondVerdictCueForPlaced,
-  buildBondItems,
-  familyFormKeyFor,
-  numberBondHarnessAnswers,
-  numberBondPackBase,
-  type BondBand,
-  type NumberBondChallengeLike,
-  type NumberBondItem,
-} from '@/components/lumina/primitives/visual-primitives/math/numberBondScript';
-import {
-  countersForAction,
-  expandNumberBondInteractions,
-  familyEquationVerdictCue,
-  initialCountersForInteraction,
-  modeActionVerdictCue,
-  numberBondInteractionCue,
-} from '@/components/lumina/primitives/visual-primitives/math/numberBondModes';
-import {
-  prepareSplit,
-  splitAndSayCue,
-  splitQuestion,
-  splitAndSayVerdict,
-  wholeCounters,
-} from '@/components/lumina/primitives/visual-primitives/math/numberBondSplit';
-import {
-  buildVerdictCue as placeValueBuildVerdictCue,
-  digitAtPlace as pvDigitAtPlace,
-  itemsFromChallenges as placeValueItems,
-  placeValueHarnessAnswers,
-  placeValuePackBase,
-  type PlaceValueChallengeLike,
-  type PlaceValueItem,
-  type PlaceValueMode,
-} from '@/components/lumina/primitives/visual-primitives/math/placeValueScript';
 import type { OpenSetProbe } from './openSetWordBench';
 import { numberWordFor } from '@/components/lumina/primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 import {
@@ -128,13 +72,6 @@ import {
   type WordBuilderItem,
   type WordPartLike as WordBuilderPartLike,
 } from '@/components/lumina/primitives/visual-primitives/literacy/wordBuilderScript';
-import {
-  itemsFromChallenges as syllableClapperItems,
-  syllableClapperHarnessAnswers,
-  syllableClapperPackBase,
-  type SyllableChallengeLike,
-  type SyllableClapperItem,
-} from '@/components/lumina/primitives/visual-primitives/literacy/syllableClapperScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -332,111 +269,6 @@ const numberSequencerAdapter: DiPortAdapter<SequencerItem> = {
   gestureVerdictCue: (item, gesture) => sequencerOrderCue(item, String(gesture).split(',').map(Number)),
 };
 
-const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as TenFrameChallengeLike[];
-    const band = ((data.gradeBand as TenFrameBand) ?? 'K') as TenFrameBand;
-    const capacity = data.mode === 'double' ? 20 : 10;
-    // `itemsFromChallenges`, not a per-challenge map: it is the one producer of
-    // `splitOrdinal`, so the harness drives the same "show me a DIFFERENT way"
-    // ask the stage does instead of asking every split item as if it were the
-    // first one on its total.
-    const items = tenFrameItems(challenges, { capacity, band });
-    return { items, dropped: challenges.length - items.length, surface: tenFramePackBase(items) };
-  },
-  answersFor: tenFrameHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    frameVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
-const numberBondHarnessCounters = (item: NumberBondItem) => {
-  if (item.splitPhase) {
-    if (item.kind === 'ten-and-ones') {
-      return Array.from({ length: item.whole }, (_, index) => index < 10 ? 'left' as const : 'right' as const);
-    }
-    const left = Math.min(item.pairIndex, item.whole);
-    return Array.from({ length: item.whole }, (_, index) => index < left ? 'left' as const : 'right' as const);
-  }
-  if (item.interactionPhase && item.bondAction) return countersForAction(item, item.bondAction);
-  return initialCountersForInteraction(item);
-};
-
-const isNumberBondActionItem = (item: NumberBondItem) => item.interactionPhase?.endsWith('model')
-  || item.interactionPhase === 'related-join'
-  || item.interactionPhase === 'related-separate';
-
-/** Number Bond's headless plan consumes the same runtime expansion and phase
- * cues as the mounted component. Gesture payload 1 selects the expected model;
- * equation payloads carry the actual symbolic draft. */
-const numberBondAdapter: DiPortAdapter<NumberBondItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as NumberBondChallengeLike[];
-    const band: BondBand = data.gradeBand === '1' ? '1' : 'K';
-    const maxNumber = typeof data.maxNumber === 'number' ? data.maxNumber : band === 'K' ? 5 : 10;
-    const built = buildBondItems(challenges, { band, maxNumber });
-    const items = expandNumberBondInteractions(built.items);
-    const base = numberBondPackBase(items);
-    const cueFor = (item: NumberBondItem, opts: { opening: boolean; howToPlay: boolean }) => item.splitPhase
-      ? splitAndSayCue(item, opts, numberBondHarnessCounters(item), [])
-      : item.interactionPhase && item.interactionPhase !== 'missing-infer'
-        ? numberBondInteractionCue(item, opts, numberBondHarnessCounters(item))
-        : base.itemCue(item, opts);
-    return {
-      items,
-      dropped: built.droppedChallenges,
-      surface: {
-        ...base,
-        itemCue: cueFor,
-        pronounceCue: (item) => `[NB_HEAR] ${cueFor(item, { opening: false, howToPlay: false })}`,
-        moveOnCue: (_item, next, opts) => next ? cueFor(next, opts) : base.completeCue(),
-        contextFor: (item) => ({
-          challengeType: item.kind,
-          stimulus: item.interactionPhase ? 'the current persistent number-bond model phase' : base.contextFor(item).stimulus,
-        }),
-      },
-    };
-  },
-  answersFor: (item) => {
-    if (item.splitPhase === 'say') {
-      const question = splitQuestion(item, numberBondHarnessCounters(item));
-      return { correct: numberWordFor(question.answer), plainWrong: numberWordFor(question.answer === 1 ? 2 : 1), leakTokens: [numberWordFor(question.answer)] };
-    }
-    if (isNumberBondActionItem(item)) {
-      return { correct: 'completed the model', plainWrong: 'left an incomplete model', placed: { correct: 1, wrong: 0 }, leakTokens: [] };
-    }
-    if (item.interactionPhase === 'family-build' && item.familyForm) {
-      const correct = familyFormKeyFor(item.familyForm, item.whole, item.knownPart, item.otherPart);
-      return { correct, plainWrong: `${item.knownPart}+${item.otherPart}=${item.whole}`, tapped: { correct, wrong: `${item.whole}+${item.knownPart}=${item.otherPart}` }, leakTokens: [] };
-    }
-    if (item.interactionPhase === 'equation-build') {
-      const correct = `${item.knownPart}+${item.otherPart}=${item.whole}`;
-      const wrong = `${item.whole}-${item.knownPart}=${item.otherPart}`;
-      return { correct, plainWrong: wrong, tapped: { correct, wrong }, leakTokens: [] };
-    }
-    return numberBondHarnessAnswers(item);
-  },
-  gestureVerdictCue: (item, gesture) => {
-    if (isNumberBondActionItem(item)) {
-      const action = item.bondAction ?? 'join';
-      const counters = Number(gesture) === 1
-        ? countersForAction(item, action)
-        : initialCountersForInteraction(item);
-      return modeActionVerdictCue(item, counters).cue;
-    }
-    if (item.interactionPhase === 'family-build') {
-      return familyEquationVerdictCue(item, String(gesture).match(/\d+|[+\-=]/g) ?? []);
-    }
-    if (item.interactionPhase === 'equation-build') {
-      return bondEquationVerdictCue(item, String(gesture).match(/\d+|[+\-=]/g) ?? [], 'join');
-    }
-    if (item.splitPhase === 'build') {
-      const counters = Number(gesture) === 0 ? wholeCounters(item.whole) : numberBondHarnessCounters(item);
-      return splitAndSayVerdict(item, counters, []);
-    }
-    return bondVerdictCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0);
-  },
-};
-
 /**
  * story-talk (fifteenth literacy port). ALL-VOICE — the picture menu is deleted,
  * so there is no `gestureVerdictCue` and every item is judged from the answer
@@ -452,88 +284,6 @@ const storyTalkAdapter: DiPortAdapter<StoryTalkItem> = {
     return { items, dropped: challenges.length - items.length, surface: storyTalkPackBase(items) };
   },
   answersFor: storyTalkHarnessAnswers,
-};
-
-/**
- * addition-subtraction-scene (fifth math port, 19h-i-b port 2). FIRST adapter
- * whose port has TWO gesture commit shapes at once: `act-out`/`create-story`
- * commit a COUNT of objects on the scene, `build-equation` commits TILES. The
- * wire carries either as `number | string`, so the tile list rides space-joined
- * and is split back here — the same "encoding internal to the script module"
- * arrangement number-bond uses for its packed pair.
- *
- * Its signature wrong is the sharpest in the family so far, because the pack
- * has two different ones: a voice item echoes an operand THE STORY SAID ALOUD
- * (the `discriminationFor` echo clause), and `build-equation` builds the same
- * three numbers into an arithmetically VALID sentence with the story's
- * direction reversed — a miss a judge that never read the story cannot catch.
- */
-const additionSubtractionSceneAdapter: DiPortAdapter<AddSubSceneItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as AddSubChallengeLike[];
-    const band: AddSubBand = data.gradeBand === '1' ? '1' : 'K';
-    const items = addSubItems(challenges, { band });
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: additionSubtractionScenePackBase(items),
-    };
-  },
-  answersFor: addSubHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    item.kind === 'build-equation'
-      ? equationVerdictCue(item, String(gesture).trim().split(/\s+/).filter(Boolean))
-      : sceneVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
-/**
- * syllable-clapper (the DI port, 2026-08-16; three acts 2026-09-11). ALL-VOICE
- * and now THREE ACTIONS — `blend_syllables`, `count_parts` and
- * `delete_compound` — with no gesture commit anywhere. The click era's `Clap!`
- * button was a tally widget wearing a manipulative's costume; the clapping now
- * happens with the child's own hands, off screen, and only the spoken count
- * crosses the wire.
- *
- * What is different about its answer material, twice over:
- *
- *  1. **The signature wrong is manufactured BY the accept clause, more sharply
- *     than anywhere else in the family.** A five-year-old counts out loud, so
- *     "one, two, three" must be accepted for a three-part word — which makes
- *     "one, two, three, four" an utterance that contains the correct answer,
- *     spoken fluently in a natural counting rhythm, and is wrong. Only reading
- *     the LANDING separates them. It is the same shape phoneme-explorer's
- *     `segment` and counting-board's counted modes drive, and it matters most
- *     here: over-counting (an extra beat on the last syllable) is this
- *     primitive's own documented commonest error.
- *  2. **The leak oracle is FLAT on `count_parts` and SPAN-EXEMPT on the other
- *     two, for a reason that is structural rather than incidental.** Counting's
- *     ask carries no number at all, so the oracle stays live over every word of
- *     it. Blending's ask IS the answer's own parts and deletion's ask says a
- *     word that CONTAINS its residue, so each subtracts exactly its stimulus and
- *     nothing else — the greeting, the how-to-play, the question and the
- *     hand-over all stay governed.
- *  3. **The counting how-to-play says a number and is still clean.** The
- *     how-to-play works a practice word ("Watch me first: pencil. Pen … cil.
- *     That is two parts.") and `pickModelWord` guarantees that count is never
- *     the item's own — so no `leakExemptSpan` is issued and the oracle stays
- *     live over the greeting, the worked example, the ask and the hand-over. A
- *     model that substitutes its own practice word is caught by it.
- *
- * ⚠️ Its `--di-cap` drill is a SINGLE contract shape: `moveOnCue` is
- * mode-invariant (one action) and every item is voice, so one cap drive covers
- * the port.
- */
-const syllableClapperAdapter: DiPortAdapter<SyllableClapperItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as SyllableChallengeLike[];
-    const items = syllableClapperItems(challenges);
-    return {
-      items,
-      dropped: challenges.length - items.length,
-      surface: syllableClapperPackBase(items),
-    };
-  },
-  answersFor: syllableClapperHarnessAnswers,
 };
 
 /**
@@ -590,42 +340,6 @@ const wordBuilderAdapter: DiPortAdapter<WordBuilderItem> = {
  * closures keep their concrete type internally.
  */
 /**
- * place-value-chart (eighth math port) — THE FIRST PORT PAST THE ≤20 BENCH,
- * riding the `place_value_word` build-ahead class (user ruling 2026-08-19,
- * acceptance on #63). MIXED: two spoken kinds (a place name, a value word) and
- * one gesture (a number WRITTEN from dictation), where the gesture payload is
- * the whole committed number and `buildVerdictCue` re-derives the columns.
- *
- * Its drives are where the class earns its keep: `discriminationFor` claims
- * the judge refuses the digit's VALUE where its PLACE was asked, the BARE
- * DIGIT where its worth was asked ("four" for "forty" — the confusion the
- * mode exists to undo), and the place-shifted value ("four hundred" for
- * "forty" — the click era's own distractor design, now spoken). The wrong
- * build is the zero-trap/transposition (406 written as 460).
- */
-const placeValueChartAdapter: DiPortAdapter<PlaceValueItem> = {
-  build: (data) => {
-    const challenges = (data.challenges ?? []) as PlaceValueChallengeLike[];
-    const rawMode = String(data.challengeType ?? 'compare');
-    const mode: PlaceValueMode =
-      (['identify', 'build', 'compare', 'expanded_form'] as const).includes(
-        rawMode as PlaceValueMode,
-      )
-        ? (rawMode as PlaceValueMode)
-        : 'compare';
-    const tier = (data.supportTier as 'easy' | 'medium' | 'hard' | undefined) ?? 'medium';
-    const { items, droppedChallenges } = placeValueItems(challenges, { mode, tier });
-    return { items, dropped: droppedChallenges, surface: placeValuePackBase(items) };
-  },
-  answersFor: placeValueHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => {
-    const n = typeof gesture === 'number' ? gesture : Number(gesture) || 0;
-    const written = item.chartPlaces.map((p) => pvDigitAtPlace(n, p));
-    return placeValueBuildVerdictCue(item, written);
-  },
-};
-
-/**
  * knowledge-check (item 23 slice 2) — the first CROSS-CUTTING port: not a
  * subject primitive but the closing assessment carrier, so one payload mixes
  * up to five judged kinds (true_false / choice / choice_tap / blank / match /
@@ -660,17 +374,10 @@ const knowledgeCheckAdapter: DiPortAdapter<KnowledgeCheckItem> = {
 };
 
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
-  'ramp-lab': rampLabAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'addition-subtraction-scene':
-    additionSubtractionSceneAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'syllable-clapper': syllableClapperAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-sequencer': numberSequencerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'place-value-chart': placeValueChartAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

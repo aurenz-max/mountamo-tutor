@@ -9,9 +9,9 @@ import type { PercentBarChallenge, PercentBarChallengeType } from './PercentBar'
 import { percentOfChallenge } from '../../../service/math/gemini-percent-bar';
 import { percentItems } from '../../../service/itemSpace/percentOf';
 import {
-  ADDED_MODEL_LEVER, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, SIMPLER_LEVER, TENTHS_LEVER,
-  VALUE_BAR_LEVER,
-  leverFacts, leverTextLeaks, percentLevers, practiceLeaks, simplerPercent,
+  ADDED_MODEL_LEVER, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, PERCENT_LEVERS, SIMPLER_LEVER,
+  TENTHS_LEVER, VALUE_BAR_LEVER,
+  leverTextLeaks, practiceLeaks, simplerPercent, type PercentLeverContext,
 } from './percentBarLevers';
 import { PERCENT_MISSES_BY_MODE, amountTarget, challengeSteps, percentMiss, stepCorrect } from './percentBarWorkspace';
 
@@ -108,25 +108,37 @@ describe('simplify builder', () => {
   });
 });
 
+const declare = (c: PercentBarChallenge, ctx: PercentLeverContext, pulled: string[] = []) => PERCENT_LEVERS.declare(c, ctx, pulled);
+const FIRST: PercentLeverContext = { valueBarShown: false, step: 'place' };
+
 describe('declarations', () => {
   it.each(MODES)('%s: every catalog miss is answered by a help lever on every item; no lever text or fact carries a digit', (mode, type) => {
     const misses = getComponentById('percent-bar')!.teachingWorkspace!.misses![mode];
     expect(misses).toEqual(PERCENT_MISSES_BY_MODE[mode]);
     for (const c of items(type)) for (const valueBarShown of [false, true]) {
-      const levers = percentLevers(c, [], { valueBarShown });
+      const ctx = { valueBarShown, step: 'place' as const };
+      const levers = declare(c, ctx);
       const help = levers.filter(l => l.kind === 'help');
       for (const miss of misses) expect(help.some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id)))).toBe(false);
+      expect(leverTextLeaks(PERCENT_LEVERS.onScreen(c, ctx, levers.map(l => l.id)))).toBe(false);
     }
   });
 
   it('the value bar is offered only where the session does not draw it; a practice problem has no levers', () => {
     const c = items('subtraction')[0];
-    expect(percentLevers(c, [], { valueBarShown: false }).map(l => l.id))
+    expect(declare(c, FIRST).map(l => l.id))
       .toEqual([VALUE_BAR_LEVER, TENTHS_LEVER, FILL_NAMES_LEVER, DISCOUNT_MODEL_LEVER, SIMPLER_LEVER]);
-    expect(percentLevers(c, [], { valueBarShown: true }).map(l => l.id)).not.toContain(VALUE_BAR_LEVER);
-    expect(percentLevers(simplerPercent(c)!, [], { valueBarShown: false })).toEqual([]);
+    expect(declare(c, { ...FIRST, valueBarShown: true }).map(l => l.id)).not.toContain(VALUE_BAR_LEVER);
+    expect(declare(simplerPercent(c)!, FIRST)).toEqual([]);
+  });
+
+  it('a choice step shows no bar, so no bar lever is offered there; part_copies is offered from the first step', () => {
+    const c = items('comparison')[0];
+    expect(declare(c, { valueBarShown: false, step: 'choice' }).map(l => l.id)).toEqual([DISCOUNT_MODEL_LEVER, COMPARE_MODEL_LEVER]);
+    const w = items('whole_of')[0];
+    expect(declare(w, FIRST).map(l => l.id)).toContain(PART_COPIES_LEVER);
+    expect(PERCENT_LEVERS.support(c, FIRST)).toBe('');
   });
 
   // "This wrong answer, then this lever": where the bar was set (or the option tapped), the miss, the first open lever.
@@ -156,12 +168,12 @@ describe('declarations', () => {
       && it.unknown === (type === 'part_of' ? 'part' : 'whole'))!, id);
     const amountStep = challengeSteps(c)[stepIndex]?.kind === 'amount';
     expect(percentMiss(c, amountStep ? { stepIndex, percent, selected: null, amount: selected ?? '' } : { stepIndex, percent, selected })).toBe(miss);
-    const levers = percentLevers(c, [], { valueBarShown: false });
-    expect(nextLever(levers, miss)).toBe(lever);
+    const step = challengeSteps(c)[stepIndex]?.kind;
+    expect(nextLever(declare(c, { valueBarShown: false, step }), miss)).toBe(lever);
   });
 
   it('with the first lever pulled, the next one for the same miss comes up', () => {
     const c = byId('subtraction', 's-20-40');
-    expect(nextLever(percentLevers(c, [FILL_NAMES_LEVER], { valueBarShown: false }), 'placed_discount')).toBe(DISCOUNT_MODEL_LEVER);
+    expect(nextLever(declare(c, FIRST, [FILL_NAMES_LEVER]), 'placed_discount')).toBe(DISCOUNT_MODEL_LEVER);
   });
 });

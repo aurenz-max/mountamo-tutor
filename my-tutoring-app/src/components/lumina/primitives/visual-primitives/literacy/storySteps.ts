@@ -1,5 +1,6 @@
 /**
- * story-planner on the teaching workspace (OB-7L, following R12). The learner MAKES a story plan:
+ * story-planner on the teaching workspace (OB-7L, following R12), wired from its boss (`storyPlanner.boss.ts`). The
+ * learner MAKES a story plan; the item's kind is its step on the card:
  *   - plan (K-1, picture choices): one picture per card. Every choice is a fair creative pick, so the item passes when
  *     each card has one; it is the setup, not a quiz.
  *   - write (grade 2+): one typed card per element (character, setting, problem, ...). Code catches a short line or a
@@ -7,21 +8,28 @@
  *   - order (K-1 `arcEvents`): the learner puts the story's events in order, checked in code against the generated
  *     order, which is the answer and never the board order.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
 import { isStoryPlannerPictureBand } from '../../../service/literacy/storyPlannerBand';
+import type { StoryMiss } from './storyPlanner.card';
+
+export type { StoryMiss } from './storyPlanner.card';
 
 export interface StoryElementIn { elementId: string; label: string; prompt: string; required?: boolean; choices?: string[] }
-export interface StoryPayload { writingPrompt: string; elements: StoryElementIn[]; storyArcLabels?: string[]; arcEvents?: string[] }
+export interface StoryPayload {
+  writingPrompt: string; elements: StoryElementIn[]; storyArcLabels?: string[]; arcEvents?: string[];
+  /** The lesson's support tier (`config.difficulty`), stamped by the generator; old payloads fall back to medium. */
+  supportTier?: SupportTier;
+}
 
-export type StoryMiss = 'too_short' | 'repeat' | 'not_sense' | 'wrong_job' | 'wrong_order';
-export const STORY_MISSES: readonly StoryMiss[] = ['too_short', 'repeat', 'not_sense', 'wrong_job', 'wrong_order'];
-
-export type StoryItem =
+type Tier = { supportTier?: SupportTier };
+export type StoryItem = Tier & (
   | { id: 'plan'; kind: 'plan'; cards: { id: string; label: string; prompt: string; choices: string[] }[] }
   | { id: string; kind: 'write'; label: string; prompt: string; part: StoryPart }
-  | { id: 'arc'; kind: 'order'; events: { id: string; text: string }[] };
+  | { id: 'arc'; kind: 'order'; events: { id: string; text: string }[] });
+export type OrderItem = Extract<StoryItem, { kind: 'order' }>;
+export type WriteItem = Extract<StoryItem, { kind: 'write' }>;
 
 export type StoryPart = 'character' | 'setting' | 'problem' | 'events' | 'solution' | 'theme' | 'other';
 export const partOf = (label: string): StoryPart => {
@@ -40,15 +48,16 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+
 const clip = (s: string, n = 300) => (s.length > n ? `${s.slice(0, n - 3)}...` : s);
 
 export function storyItems(p: StoryPayload): StoryItem[] {
+  const tier: Tier = p?.supportTier ? { supportTier: p.supportTier } : {};
   const els = (p?.elements ?? []).filter(e => e && typeof e.label === 'string' && typeof e.prompt === 'string' && e.prompt.trim());
   const picks = els.filter(e => Array.isArray(e.choices) && e.choices.filter(c => typeof c === 'string' && c.trim()).length >= 2);
   const items: StoryItem[] = [];
-  if (picks.length) items.push({ id: 'plan', kind: 'plan', cards: picks.slice(0, 4).map(e => ({ id: e.elementId, label: e.label, prompt: e.prompt.trim(), choices: e.choices!.filter(c => c.trim()) })) });
-  else for (const e of els.slice(0, 6)) items.push({ id: `write-${e.elementId}`, kind: 'write', label: e.label, prompt: e.prompt.trim(), part: partOf(e.label) });
+  if (picks.length) items.push({ id: 'plan', kind: 'plan', cards: picks.slice(0, 4).map(e => ({ id: e.elementId, label: e.label, prompt: e.prompt.trim(), choices: e.choices!.filter(c => c.trim()) })), ...tier });
+  else for (const e of els.slice(0, 6)) items.push({ id: `write-${e.elementId}`, kind: 'write', label: e.label, prompt: e.prompt.trim(), part: partOf(e.label), ...tier });
   const events = (p?.arcEvents ?? []).filter(e => typeof e === 'string' && e.trim());
   // The generated arc labels ("Rising Action") are adult chrome a K-1 child cannot read: slots are numbered.
   if (events.length >= 2 && new Set(events.map(norm)).size === events.length) {
-    items.push({ id: 'arc', kind: 'order', events: events.map((text, i) => ({ id: `e${i + 1}`, text: text.trim() })) });
+    items.push({ id: 'arc', kind: 'order', events: events.map((text, i) => ({ id: `e${i + 1}`, text: text.trim() })), ...tier });
   }
   return items;
 }
@@ -74,16 +83,39 @@ export function splitPictureOption(raw: string): { emoji: string; label: string;
 export const isPictureStory = (items: readonly StoryItem[], gradeLevel?: string) =>
   isStoryPlannerPictureBand(gradeLevel) || items.some(i => i.kind === 'plan');
 
-const hashString = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
-/** The arc tray: a content-seeded rotation by 1..n-1, so no card starts in its own slot and the board never reshuffles. */
+/** The longest set of positions listed in story order (a subsequence, not only neighbours). */
+function longestInOrder(ranks: readonly number[]): number {
+  const best = ranks.map(() => 1);
+  for (let i = 0; i < ranks.length; i++) for (let j = 0; j < i; j++) if (ranks[j] < ranks[i]) best[i] = Math.max(best[i], best[j] + 1);
+  return Math.max(0, ...best);
+}
+
+/**
+ * The arc tray: a stable mixed order (the same on every render) that is never the story's order and never lists more
+ * than two events in story order, even apart (read top to bottom, three in order would tell the story). Two events are
+ * always swapped. The plain reverse is kept only when no salt finds another such order.
+ */
 export function shuffleArcEvents<T>(events: readonly T[], key: string): T[] {
   const n = events.length;
   if (n < 2) return events.slice();
-  const shift = (hashString(key) % (n - 1)) + 1;
-  return events.map((_, i) => events[(i + shift) % n]);
+  const score = (ranks: number[]) => {
+    if (ranks.every((r, i) => r === i)) return Infinity;
+    const run = longestInOrder(ranks);
+    if (run > 2) return run;
+    return n >= 3 && ranks.every((r, i) => r === n - 1 - i) ? 1 : 0;
+  };
+  let best = events.map((_, i) => n - 1 - i), bestScore = score(best);
+  for (let salt = 0; salt < 256 && bestScore > 0; salt++) {
+    let h = salt;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    const ranks = events.map((_, i) => ({ i, k: ((h ^ (i * 2654435761)) >>> 0) % 997 })).sort((a, b) => a.k - b.k || a.i - b.i).map(x => x.i);
+    const s = score(ranks);
+    if (s < bestScore) { best = ranks; bestScore = s; }
+  }
+  return best.map(i => events[i]);
 }
-export const boardOf = (item: Extract<StoryItem, { kind: 'order' }>) => shuffleArcEvents(item.events, item.events.map(e => e.text).join('|'));
-export const orderMiss = (item: Extract<StoryItem, { kind: 'order' }>, order: readonly string[]): StoryMiss | undefined =>
+export const boardOf = (item: OrderItem) => shuffleArcEvents(item.events, item.events.map(e => e.text).join('|'));
+export const orderMiss = (item: OrderItem, order: readonly string[]): StoryMiss | undefined =>
   order.length === item.events.length && order.every((id, i) => id === item.events[i].id) ? undefined : 'wrong_order';
 
 export function writeShapeMiss(made: string, earlier: readonly string[]): StoryMiss | undefined {
@@ -95,15 +127,21 @@ export function writeShapeMiss(made: string, earlier: readonly string[]): StoryM
 export const askFor = (item: StoryItem): string => item.kind === 'plan' ? 'Plan your story: pick a picture for each card.'
   : item.kind === 'order' ? 'Put the story events in order: what happens first, next and last?' : `${item.label}: ${item.prompt}`;
 
-export const storyAssignment = (item: StoryItem): TeachingAssignment => ({ id: item.id, task: askFor(item), response: 'gesture' });
-
-export function writeJudgeRequest(item: Extract<StoryItem, { kind: 'write' }>, made: string, writingPrompt: string, planSoFar: string, grade?: string): WordBuildJudgeRequest {
+export function writeJudgeRequest(item: WriteItem, made: string, writingPrompt: string, planSoFar: string, grade?: string): WordBuildJudgeRequest {
   const ask = `${item.label} card: ${clip(item.prompt, 110)} Story: ${clip(writingPrompt, 110)} (It answers the card's question for this story.)`;
   return { ask: clip(ask, 300), made: made.trim(), unit: 'writing', context: planSoFar || writingPrompt, ...(grade ? { grade } : {}) };
 }
 
-export function storyScene(item: StoryItem, writingPrompt: string, state: { written?: string; plan?: string; picked?: string; card?: number }, inspectorSaid?: string): WorkspaceScene {
+/**
+ * What the tutor is told: the step (`kind`), the story idea, and the step's own state. The arc board is listed in tray
+ * order (`boardOf`), never the story's order. Only this primitive's facts: the moves are on the card.
+ */
+export function storyScene(item: StoryItem, writingPrompt: string,
+  state: { written?: string; plan?: string; picked?: string; card?: number; picture?: boolean }, inspectorSaid?: string): SceneOf {
+  const readAloud = state.picture
+    ? 'The learner cannot read yet: read the story idea, the question and the words under every picture aloud.' : '';
   return { objects: [], facts: {
+    kind: item.kind,
     ask: askFor(item),
     storyPrompt: clip(writingPrompt),
     ...(item.kind === 'write' ? { card: item.label, written: clip(state.written?.trim() || 'empty') } : {}),
@@ -114,19 +152,16 @@ export function storyScene(item: StoryItem, writingPrompt: string, state: { writ
     ...(state.plan ? { planSoFar: clip(state.plan) } : {}),
     ...(inspectorSaid ? { inspectorSaid } : {}),
     constraints: item.kind === 'write'
-      ? 'The learner types this card and presses "I\'m done!". The builder checks it answers the card\'s question for this '
-        + 'story and makes sense; spelling is not judged. Any idea that fits passes. You cannot type for the learner.'
-      : item.kind === 'order'
-        ? 'The learner taps the events into order and presses "I\'m done!". You may read an event aloud when asked. You '
-          + 'cannot move an event and must not say which comes first.'
-        : 'The learner cannot read yet. Read the story idea, the question and the words under every picture aloud. One tap picks a '
-          + 'picture and moves to the next card; every picture is a fine choice.',
+      ? 'The builder checks the card answers its question for this story and makes sense; spelling is not judged. Any '
+        + 'idea that fits passes.'
+      : item.kind === 'order' ? `${readAloud} The board lists the events in tray order, never the story's order.`.trim()
+        : `${readAloud} Every picture is a fine choice.`.trim(),
   } };
 }
 
 export const readRequest = (text: string) => `The learner asked to hear this. Read only this, once: "${splitPictureOption(text).label}"`;
 
-// ── Levers ───────────────────────────────────────────────────────────────────
+// ── Lever content (the lever set is `storyPlannerLevers.ts`) ─────────────────
 export const MODEL_LEVER = 'model_card';
 export const STARTER_LEVER = 'card_starter';
 export const FIRST_LEVER = 'place_first';
@@ -147,25 +182,6 @@ export const STARTER: Record<StoryPart, string> = {
   theme: 'This story shows that ___.', other: '___',
 };
 export const MODEL_ORDER = ['🌱 Mia plants a seed.', '💧 Mia waters it every day.', '🌻 A big flower grows.'];
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly StoryMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function storyLevers(item: StoryItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || item.kind === 'plan') return [];
-  if (item.kind === 'order') return [
-    lever(MODEL_LEVER, 'help', ['wrong_order'], 'The learner\'s order does not make sense.',
-      'Shows a DIFFERENT three-step story in order, so the learner sees first, next, last.', pulled),
-    lever(FIRST_LEVER, 'simplify', ['wrong_order'], 'The learner cannot find where the story starts.',
-      'Places the first event, so the learner orders the rest.', pulled),
-  ];
-  return [
-    lever(MODEL_LEVER, 'help', ['wrong_job', 'not_sense'], 'The card does not answer its question.',
-      `Shows a ${item.label.toLowerCase()} card from a DIFFERENT story.`, pulled),
-    lever(STARTER_LEVER, 'simplify', ['too_short', 'wrong_job'], 'The learner cannot start from a blank box.',
-      'Puts a sentence starter with blanks in the box for the learner to fill.', pulled),
-  ];
-}
 
 export function storyMissWords(miss: StoryMiss | undefined): string {
   switch (miss) {

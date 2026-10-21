@@ -596,6 +596,8 @@ Return the complete ratio table configuration.
       data.showBarChart = showBarChart;
       // Persist the tier so the tutor's reveal policy matches the on-screen scaffold.
       data.supportTier = supportTier;
+      // Each item carries it too: the lever set reads it to say when the model lever comes (`RATIO_LEVERS.support`).
+      for (const c of data.challenges as RatioTableChallenge[]) c.supportTier = supportTier;
       console.log(
         `[RatioTable] Support tier "${supportTier}" applied (${pinnedType ? `single-mode ${pinnedType}` : `blended [${challengeTypes.join(', ')}]`}) → showUnitRate=${showUnitRate}, showBarChart=${showBarChart}`,
       );

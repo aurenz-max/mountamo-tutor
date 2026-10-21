@@ -3,7 +3,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { ParameterExplorerChallenge, ParameterExplorerData } from './ParameterExplorer';
 import { PARAMETER_MISSES_BY_MODE, askedOutput, formatOutput, formulaDirection } from './parameterExplorerWorkspace';
 import {
-  doubleMarks, doublingModel, leverFacts, leverTextLeaks, modelPair, parameterLevers, practiceLeaks, scalingModel,
+  PARAMETER_LEVERS, doubleMarks, doublingModel, leverTextLeaks, modelPair, practiceLeaks, scalingModel,
   simplerParameter, substitutionLeaks, substitutionText,
 } from './parameterExplorerLevers';
 
@@ -29,7 +29,9 @@ const val = (d: ParameterExplorerData, vary: string, newValue: number): Paramete
   return { ...c, prediction: { ...c.prediction!, correctValue: askedOutput(d, c)! } };
 };
 const idf = (): ParameterExplorerChallenge => ({ id: 'i1', type: 'identify-relationship', instruction: '', correctParameter: 'v' });
-const ON = { outputShown: true };
+/** The levers the set offers on an item, as the component declares them (the lab is the context). */
+const parameterLevers = (d: ParameterExplorerData, c: ParameterExplorerChallenge, pulled: string[]) =>
+  PARAMETER_LEVERS.declare(c, d, pulled);
 const ids = (levers: { id: string }[]) => levers.map(l => l.id);
 
 const ITEMS: Array<[ParameterExplorerData, ParameterExplorerChallenge]> = [
@@ -41,38 +43,38 @@ const ITEMS: Array<[ParameterExplorerData, ParameterExplorerChallenge]> = [
 describe('declarations', () => {
   it('every checked mode answers every miss on its items with a help lever; explore has none', () => {
     for (const [d, c] of ITEMS) {
-      const levers = parameterLevers(d, c, [], ON);
+      const levers = parameterLevers(d, c, []);
       for (const miss of PARAMETER_MISSES_BY_MODE[c.type]) {
         expect(levers.filter(l => l.kind === 'help').some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
         expect(nextLever(levers, miss), `${c.id} ${miss}`).toBeTruthy();
       }
     }
-    expect(parameterLevers(motion, { id: 'e', type: 'explore', instruction: 'Move it.' }, [], ON)).toEqual([]);
+    expect(parameterLevers(motion, { id: 'e', type: 'explore', instruction: 'Move it.' }, [])).toEqual([]);
   });
 
   it('predict-direction: a divisor gets the ring, the model pair and the simpler problem; a multiplier has nothing simpler', () => {
-    expect(ids(parameterLevers(motion, dir(motion, 'm', 10), [], ON))).toEqual(['find_parameter', 'model_pair', 'simpler_problem']);
-    expect(ids(parameterLevers(motion, dir(motion, 'F', 40), [], ON))).toEqual(['find_parameter', 'model_pair']);
-    expect(nextLever(parameterLevers(motion, dir(motion, 'm', 10), [], ON), 'opposite_direction')).toBe('find_parameter');
-    expect(nextLever(parameterLevers(motion, dir(motion, 'm', 10), ['find_parameter'], ON), 'opposite_direction')).toBe('model_pair');
+    expect(ids(parameterLevers(motion, dir(motion, 'm', 10), []))).toEqual(['find_parameter', 'model_pair', 'simpler_problem']);
+    expect(ids(parameterLevers(motion, dir(motion, 'F', 40), []))).toEqual(['find_parameter', 'model_pair']);
+    expect(nextLever(parameterLevers(motion, dir(motion, 'm', 10), []), 'opposite_direction')).toBe('find_parameter');
+    expect(nextLever(parameterLevers(motion, dir(motion, 'm', 10), ['find_parameter']), 'opposite_direction')).toBe('model_pair');
   });
 
   it('predict-value and identify pull the lever made for each miss', () => {
-    expect(nextLever(parameterLevers(energy, val(energy, 'v', 10), [], ON), 'assumed_proportional')).toBe('substitution');
-    expect(nextLever(parameterLevers(energy, val(energy, 'v', 10), ['substitution'], ON), 'assumed_proportional')).toBe('scaling_model');
-    expect(nextLever(parameterLevers(energy, idf(), [], ON), 'largest_value')).toBe('double_marks');
-    expect(nextLever(parameterLevers(energy, idf(), ['double_marks'], ON), 'largest_value')).toBe('doubling_model');
+    expect(nextLever(parameterLevers(energy, val(energy, 'v', 10), []), 'assumed_proportional')).toBe('substitution');
+    expect(nextLever(parameterLevers(energy, val(energy, 'v', 10), ['substitution']), 'assumed_proportional')).toBe('scaling_model');
+    expect(nextLever(parameterLevers(energy, idf(), []), 'largest_value')).toBe('double_marks');
+    expect(nextLever(parameterLevers(energy, idf(), ['double_marks']), 'largest_value')).toBe('doubling_model');
     // With the output hidden (hard tier) there is nothing to test against: no marks.
-    expect(ids(parameterLevers(energy, idf(), [], { outputShown: false }))).toEqual(['doubling_model']);
+    expect(ids(parameterLevers(energy, { ...idf(), showOutputReadout: false }, []))).toEqual(['doubling_model']);
   });
 });
 
 describe('leak rules', () => {
   it('no lever text or fact names a direction', () => {
     for (const [d, c] of ITEMS) {
-      const levers = parameterLevers(d, c, [], ON);
+      const levers = parameterLevers(d, c, []);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), `${c.id} ${l.id}`).toBe(false);
-      expect(leverTextLeaks(leverFacts(d, c, ids(levers))), c.id).toBe(false);
+      expect(leverTextLeaks(PARAMETER_LEVERS.onScreen(c, d, ids(levers))), c.id).toBe(false);
     }
   });
 
@@ -97,7 +99,7 @@ describe('leak rules', () => {
     // k + 3t with t = 0 prints "10 + 3 × 0": the answer 10 is one of its numbers, so it is not offered.
     const leaky = val(sum, 't', 0);
     expect(substitutionLeaks(sum, leaky)).toBe(true);
-    expect(ids(parameterLevers(sum, leaky, [], ON))).not.toContain('substitution');
+    expect(ids(parameterLevers(sum, leaky, []))).not.toContain('substitution');
   });
 
   it('the doubling marks sit at each start and its double, only where the double fits', () => {

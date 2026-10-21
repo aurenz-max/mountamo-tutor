@@ -3,25 +3,25 @@
  * qa/eval-reports/systems-equations-visualizer-levers-2026-10-09.md). The misses are what `systemsMiss` observes in the
  * pair checked; there is no real-learner evidence.
  *
- * Help:
- * - `check_both` (every mode, after a check): the learner's last checked pair put into each equation, marked works or
+ * Declared once as a lever set (`SYSTEMS_LEVERS`, `bossLevers.ts`). Help:
+ * - `check_both` (marks, every mode, offered after a check): the learner's last checked pair put into each equation, marked works or
  *   does not work. Only the learner's own numbers; no computed value.
- * - `method_steps` (every mode, where the tier did not open them): the method's steps in words. No digit.
- * - `axis_guide` (graph): how a crossing is read, x across first, then y up or down, with the signs. No digit.
- * - `every_line` (graph, where the hard tier hid the axis numbers): numbers the axes again.
- * - `set_equal` (substitution): the first step written under the equations, the two right-hand sides set equal. No
+ * - `method_steps` (clue, every mode, where the tier did not open them): the method's steps in words. No digit.
+ * - `axis_guide` (clue, graph): how a crossing is read, x across first, then y up or down, with the signs. No digit.
+ * - `every_line` (marks, graph, where the hard tier hid the axis numbers): numbers the axes again.
+ * - `set_equal` (clue, substitution): the first step written under the equations, the two right-hand sides set equal. No
  *   solving.
- * - `line_up` (elimination): the two equations stacked in x, y and constant columns, opposite coefficients named.
- * - `worked_example` (every mode): a different system of the same kind, solved: two other lines with their crossing
+ * - `line_up` (layout, elimination): the two equations stacked in x, y and constant columns, opposite coefficients named.
+ * - `worked_example` (model, every mode; when it comes is the set's `support`): a different system of the same kind, solved: two other lines with their crossing
  *   marked (graph), or each step written out (substitution, elimination).
- * Simplify: `simpler_item` (every mode): the same method on a system of slopes one and minus one (graph, substitution)
+ * Simplify: `simpler_item` (easier, every mode): the same method on a system of slopes one and minus one (graph, substitution)
  * or of x + y and x - y (elimination), with a small solution, built here; ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` carries a digit; a worked example shares neither coordinate with the key,
  * never prints the key's pair and is not the item's system; `check_both` prints only the learner's pair; `set_equal` and
  * `line_up` state no solved value; a practice item has its own id, ask, equations and answer, and keeps the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { SystemEquation, SystemsEquationsChallenge } from './SystemsEquationsVisualizer';
 import {
   SYSTEMS_MISSES_BY_MODE, keyOf, methodSteps, onLine, pairText, type SolutionPoint, type SystemsMiss, type SystemsMode,
@@ -231,84 +231,87 @@ export function practiceLeaks(parent: SystemsEquationsChallenge, practice: Syste
     || flat(practice.instruction).includes(flat(pairText(keyOf(parent))));
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
-export function systemsLevers(c: SystemsEquationsChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeItem(c)) return [];
-  const t: SystemsMode = c.type;
-  const all = SYSTEMS_MISSES_BY_MODE[t];
-  const only = (ms: SystemsMiss[]) => ms.filter(m => all.includes(m));
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly SystemsMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  // The mode's own levers first: the observer's next lever after a miss is the first open one that answers it.
-  const out: WorkspaceLever[] = [];
-  if (t === 'graph') {
-    out.push(lever(AXIS_GUIDE, 'help', 'both', only(['swapped', 'x_sign', 'y_sign', 'both_signs', 'intercept_point']),
-      'The learner swapped x and y, read a sign the wrong way, or read where one line meets the y-axis.',
-      'Writes under the graph how a crossing is read: from the origin, x across first (left is negative), then y up or '
-        + 'down (down is negative); the solution is where the two lines meet, not where a line meets an axis. No number.'));
-    if (c.showAxisLabels === false) {
-      out.push(lever(EVERY_LINE, 'help', 'shown', only(['off_by_one', 'x_only', 'y_only', 'wrong_point']),
-        'The learner lost count of the grid lines.', 'Numbers the axes again.'));
-    }
-  }
-  if (t === 'substitution') {
-    out.push(lever(SET_EQUAL, 'help', 'both', only(['intercept_point', 'y_only', 'wrong_point', 'x_sign', 'both_signs']),
-      'The learner did not start by setting the two expressions for y equal, or lost a term doing it.',
-      'Writes the first step under the equations: the two right-hand sides set equal. It does no solving.'));
-  }
-  if (t === 'elimination' && lineUpColumns(c)) {
-    out.push(lever(LINE_UP, 'help', 'both', only(['x_sign', 'y_sign', 'both_signs', 'y_only', 'wrong_point']),
-      'The learner added or subtracted terms that were not lined up, or lost a sign.',
-      'Stacks the two equations in x, y and constant columns and says which column already cancels, or that one must be '
-        + 'scaled first. It does no solving.'));
-  }
-  out.push(lever(CHECK_BOTH, 'help', 'shown', all,
-    'The learner\'s checked pair solves one equation, or neither, and they cannot see which.',
-    'Under the answer boxes, puts the learner\'s last checked pair into each equation and marks each works or does not '
-      + 'work. Only the learner\'s own numbers; it computes nothing new. Pull it after a check.'));
-  if (!(c.showStepHint && c.stepHint)) {
-    out.push(lever(METHOD_STEPS, 'help', 'both', only(['one_line_only', 'intercept_point', 'x_only', 'y_only', 'wrong_point']),
-      t === 'graph' ? 'The learner does not know what the solution of two lines is.' : 'The learner does not know the method\'s next step.',
-      'Shows the method\'s steps in words under the equations. No number.'));
-  }
-  if (workedExample(c)) {
-    out.push(lever(WORKED_EXAMPLE, 'help', 'both', all,
-      t === 'graph' ? 'The learner does not know where to read the solution on a graph.' : 'The learner does not know how the method goes.',
-      t === 'graph'
+/** What a lever reads beside the item: the learner's last checked pair on it (`check_both` shows it). */
+export interface SystemsLeverCtx { lastTried: SolutionPoint | null }
+
+/** A lever offered in several modes answers only the misses the item's own mode can name. */
+const ownMode = (ms: readonly SystemsMiss[]) => (c: SystemsEquationsChallenge) =>
+  ms.filter(m => SYSTEMS_MISSES_BY_MODE[c.type].includes(m));
+const METHOD_MISSES: readonly SystemsMiss[] = ['one_line_only', 'intercept_point', 'x_only', 'y_only', 'wrong_point'];
+
+/**
+ * The levers, declared once (`bossLevers.ts`). The mode's own levers come first: the observer's next lever after a
+ * miss is the first open one that answers it. None is offered on a practice item: the component declares nothing
+ * while one is on screen.
+ */
+export const SYSTEMS_LEVERS = leverSet<SystemsEquationsChallenge, SystemsLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => SYSTEMS_MISSES_BY_MODE[mode as SystemsMode] ?? [],
+  answersOf: c => [pairText(keyOf(c))],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a different system, solved',
+    own: 'this system\'s solution' },
+  specs: [
+    { id: AXIS_GUIDE, type: 'clue', modes: ['graph'],
+      answers: ['swapped', 'x_sign', 'y_sign', 'both_signs', 'intercept_point'],
+      when: 'The learner swapped x and y, read a sign the wrong way, or read where one line meets the y-axis.',
+      does: 'Writes under the graph how a crossing is read: from the origin, x across first (left is negative), then y up or '
+        + 'down (down is negative); the solution is where the two lines meet, not where a line meets an axis. No number.',
+      fact: 'Under the graph: from the origin, x across first (left is negative), then y up or down (down is negative); the '
+        + 'solution is where the two lines meet, not where a line meets an axis.' },
+    { id: EVERY_LINE, type: 'marks', modes: ['graph'], answers: ['off_by_one', 'x_only', 'y_only', 'wrong_point'],
+      when: 'The learner lost count of the grid lines.', does: 'Numbers the axes again.',
+      offer: c => c.showAxisLabels === false,
+      fact: 'The axes are numbered again.' },
+    { id: SET_EQUAL, type: 'clue', modes: ['substitution'],
+      answers: ['intercept_point', 'y_only', 'wrong_point', 'x_sign', 'both_signs'],
+      when: 'The learner did not start by setting the two expressions for y equal, or lost a term doing it.',
+      does: 'Writes the first step under the equations: the two right-hand sides set equal. It does no solving.',
+      content: c => setEqualLine(c),
+      fact: (line: string) => `Under the equations, the first step: ${line}.` },
+    { id: LINE_UP, type: 'layout', carrier: 'both', modes: ['elimination'],
+      answers: ['x_sign', 'y_sign', 'both_signs', 'y_only', 'wrong_point'],
+      when: 'The learner added or subtracted terms that were not lined up, or lost a sign.',
+      does: 'Stacks the two equations in x, y and constant columns and says which column already cancels, or that one must be '
+        + 'scaled first. It does no solving.',
+      content: c => lineUpColumns(c),
+      fact: (cols: Columns) => `The equations are stacked in x, y and constant columns; ${cols.note}.` },
+    // Offered once the learner has checked a pair on this item: before that it has nothing to show.
+    { id: CHECK_BOTH, type: 'marks', answers: 'all',
+      when: 'The learner\'s checked pair solves one equation, or neither, and they cannot see which.',
+      does: 'Under the answer boxes, puts the learner\'s last checked pair into each equation and marks each works or does not '
+        + 'work. Only the learner\'s own numbers; it computes nothing new.',
+      content: (c, ctx) => (ctx.lastTried ? checkRows(c, ctx.lastTried) : null),
+      fact: (_rows: CheckRow[], c, ctx) => (ctx.lastTried
+        ? `Under the boxes, the learner's last checked pair in each equation: ${checkSentence(c, ctx.lastTried)}.` : '') },
+    { id: METHOD_STEPS, type: 'clue', answers: METHOD_MISSES, answersOn: ownMode(METHOD_MISSES),
+      when: c => (c.type === 'graph' ? 'The learner does not know what the solution of two lines is.'
+        : 'The learner does not know the method\'s next step.'),
+      does: 'Shows the method\'s steps in words under the equations. No number.',
+      // The easy tier already opens them on screen.
+      offer: c => !(c.showStepHint && c.stepHint),
+      fact: (_on: unknown, c) => `Under the equations, the method: ${methodSteps(c.type)}` },
+    { id: WORKED_EXAMPLE, type: 'model', answers: 'all',
+      when: c => (c.type === 'graph' ? 'The learner does not know where to read the solution on a graph.'
+        : 'The learner does not know how the method goes.'),
+      does: c => (c.type === 'graph'
         ? 'Shows a worked example beside the graph: two different lines with the point where they cross marked and named. '
           + 'Read it aloud; it never shows this item\'s lines or solution.'
         : 'Shows a worked example beside the equations: a different system solved the same way, every step written out. '
-          + 'Read it aloud; it never shows this item\'s system or solution.'));
-  }
-  if (simplerItem(c)) {
-    out.push(lever(SIMPLER, 'simplify', 'shown', all,
-      'This system is too big a step yet.',
-      t === 'elimination'
+          + 'Read it aloud; it never shows this item\'s system or solution.'),
+      content: c => workedExample(c),
+      fact: (ex: WorkedExample) => `A worked example on a different system is shown: ${ex.steps.join('; ')}.` },
+    { id: SIMPLER, type: 'easier', answers: 'all',
+      when: 'This system is too big a step yet.',
+      does: c => (c.type === 'elimination'
         ? 'Opens an easier system first: one where adding the two equations cancels a variable at once, with the steps shown. '
           + 'It is not graded; the full item comes back after it.'
         : 'Opens an easier system first: two lines that rise and fall one step at a time, with the steps shown. It is not '
-          + 'graded; the full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. The learner's own pair and the item's givens only. */
-export function leverFacts(c: SystemsEquationsChallenge | null, pulled: readonly string[], lastTried: SolutionPoint | null): string {
-  if (!c || isPracticeItem(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const ex = on(WORKED_EXAMPLE) ? workedExample(c) : null;
-  const cols = on(LINE_UP) ? lineUpColumns(c) : null;
-  return [
-    on(CHECK_BOTH) && lastTried && `Under the boxes, the learner's last checked pair in each equation: ${checkSentence(c, lastTried)}.`,
-    on(AXIS_GUIDE) && 'Under the graph: from the origin, x across first (left is negative), then y up or down (down is negative); the solution is where the two lines meet, not where a line meets an axis.',
-    on(EVERY_LINE) && 'The axes are numbered again.',
-    on(SET_EQUAL) && `Under the equations, the first step: ${setEqualLine(c)}.`,
-    cols && `The equations are stacked in x, y and constant columns; ${cols.note}.`,
-    on(METHOD_STEPS) && `Under the equations, the method: ${methodSteps(c.type)}`,
-    ex && `A worked example on a different system is shown: ${ex.steps.join('; ')}.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+          + 'graded; the full item comes back after it.'),
+      content: c => simplerItem(c) },
+  ],
+});
 
 /** Leak rule for the levers' when/does words: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

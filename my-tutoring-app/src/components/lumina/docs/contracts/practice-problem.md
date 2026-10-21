@@ -5,6 +5,9 @@ One generated problem, solved by hand on a whiteboard. The transcription (`trans
 `derive_easy`, `derive_medium`, `derive_hard` are step-count bands (2-3, 3-5, 4-6) of the same task. The support tier
 (`config.difficulty`) only sets which scaffolds start on screen.
 
+Boss files: `primitives/visual-primitives/math/practiceProblem.card.ts`, `practiceProblem.boss.ts`, lever set
+`practiceProblemLevers.ts` (`PRACTICE_LEVERS`).
+
 ## Requirements
 
 - **R1 — the answer stays private until credit.** No label, scaffold or default state shows `canonicalAnswer` or a
@@ -21,8 +24,8 @@ One generated problem, solved by hand on a whiteboard. The transcription (`trans
   scaffold whose text shows a result is not offered) and `mark_lines` (only after a check flagged a line; marks the
   learner's own line, never the fix). No simplify lever; `nothing_read` unanswered. Probe:
   `PracticeProblem.levers.workspace.test.tsx`, `practiceProblemLevers.test.ts`.
-- **R5 — scripted path unchanged.** Without the tutor: one attempt, the verdict and the side-by-side reveal, one
-  submission scored 100 / 60 / 0.
+- **R5 — scripted path · RETIRED 2026-10-20.** The boss framework's one-path rule: without the tutor the mount shows
+  the shared "needs the tutor" card (`withWorkspaceOnly`).
 
 ## Gaps
 
@@ -40,3 +43,6 @@ One generated problem, solved by hand on a whiteboard. The transcription (`trans
 ## History
 
 - 2026-10-09 — created with the W1 workspace binding (R3) and levers (R4).
+- 2026-10-20 — moved onto a boss (wave 3): card + boss replace `adapters/practiceProblemLive.ts` and the catalog's
+  guidance and tutoring blocks; levers declared once as a lever set; workspace-only (R5 retired); Pip from the runner;
+  affordance answer `manipulate` -> `build` (the learner writes the solution).

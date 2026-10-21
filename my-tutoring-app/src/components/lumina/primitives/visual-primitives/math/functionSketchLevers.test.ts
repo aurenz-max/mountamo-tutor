@@ -6,7 +6,7 @@ import {
   revealSketch, sketchScore,
 } from './functionSketchWorkspace';
 import {
-  FEATURE_MODEL, MODEL_FEATURES, FLIP_MODEL, functionSketchLevers, isPracticeItem, leverFacts, leverTextLeaks, modelLeaks,
+  FEATURE_MODEL, FUNCTION_SKETCH_LEVERS, MODEL_FEATURES, FLIP_MODEL, isPracticeItem, leverTextLeaks, modelLeaks,
   practiceLeaks, sample, simplerItem, staircase, turnsAndCrossings,
 } from './functionSketchLevers';
 
@@ -40,7 +40,7 @@ const ALL = [...classifyItems, ...compareItems, ...identifyItems, ...sketchItems
 
 describe('lever declarations', () => {
   it.each(ALL.map(c => [c.id, c] as const))('%s: every miss of its mode is answered by a lever; no digit in when/does', (_id, c) => {
-    const levers = functionSketchLevers(c, []);
+    const levers = FUNCTION_SKETCH_LEVERS.declare(c, null, []);
     for (const l of levers) {
       expect(leverTextLeaks(l.when), `${l.id} when`).toBe(false);
       expect(leverTextLeaks(l.does), `${l.id} does`).toBe(false);
@@ -49,29 +49,29 @@ describe('lever declarations', () => {
   });
 
   it('this miss, then this lever', () => {
-    expect(nextLever(functionSketchLevers(classifyItems[1], []), 'line_for_curve')).toBe('family_gallery');
-    expect(nextLever(functionSketchLevers(compareItems[0], []), 'other_curve')).toBe('equal_steps');
-    expect(nextLever(functionSketchLevers(identifyItems[0], []), 'missed_root')).toBe('feature_guide');
-    expect(nextLever(functionSketchLevers(identifyItems[0], ['feature_guide']), 'missed_root')).toBe('axis_glow');
-    expect(nextLever(functionSketchLevers(sketchItems[0], []), 'upside_down')).toBe('sketch_steps');
-    expect(nextLever(functionSketchLevers(sketchItems[0], ['sketch_steps']), 'upside_down')).toBe('flip_model');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(classifyItems[1], null, []), 'line_for_curve')).toBe('family_gallery');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(compareItems[0], null, []), 'other_curve')).toBe('equal_steps');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(identifyItems[0], null, []), 'missed_root')).toBe('feature_guide');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(identifyItems[0], null, ['feature_guide']), 'missed_root')).toBe('axis_glow');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(sketchItems[0], null, []), 'upside_down')).toBe('sketch_steps');
+    expect(nextLever(FUNCTION_SKETCH_LEVERS.declare(sketchItems[0], null, ['sketch_steps']), 'upside_down')).toBe('flip_model');
   });
 
   it('feature_names only where the tier hid the names; a model only off the item', () => {
-    expect(functionSketchLevers(identifyItems[0], []).map(l => l.id)).not.toContain('feature_names');
-    expect(functionSketchLevers(identifyItems[1], []).map(l => l.id)).toContain('feature_names');
+    expect(FUNCTION_SKETCH_LEVERS.declare(identifyItems[0], null, []).map(l => l.id)).not.toContain('feature_names');
+    expect(FUNCTION_SKETCH_LEVERS.declare(identifyItems[1], null, []).map(l => l.id)).toContain('feature_names');
     // The worked example is y = (x - 1)² - 4: never offered on that curve.
     expect(modelLeaks(identifyItems[2], MODEL_FEATURES)).toBe(true);
-    expect(functionSketchLevers(identifyItems[2], []).map(l => l.id)).not.toContain('model_features');
+    expect(FUNCTION_SKETCH_LEVERS.declare(identifyItems[2], null, []).map(l => l.id)).not.toContain('model_features');
     expect(modelLeaks(sketchItems[2], FLIP_MODEL)).toBe(true);
-    expect(functionSketchLevers(sketchItems[2], []).map(l => l.id)).not.toContain('flip_model');
+    expect(FUNCTION_SKETCH_LEVERS.declare(sketchItems[2], null, []).map(l => l.id)).not.toContain('flip_model');
     expect(FEATURE_MODEL.features).toHaveLength(4);
   });
 
   it('a pulled lever\'s fact names what is drawn, never a place or a curve\'s letter', () => {
-    expect(leverFacts(compareItems[0], ['equal_steps', 'turn_marks'])).not.toMatch(/Curve [AB]|Model [AB]/);
-    expect(leverFacts(identifyItems[1], ['feature_names'])).toBe("The list under the graph names each feature's kind: minimum, y-intercept.");
-    expect(leverFacts(identifyItems[0], ['axis_glow', 'feature_guide'])).not.toMatch(/\(-?\d/);
+    expect(FUNCTION_SKETCH_LEVERS.onScreen(compareItems[0], null, ['equal_steps', 'turn_marks'])).not.toMatch(/Curve [AB]|Model [AB]/);
+    expect(FUNCTION_SKETCH_LEVERS.onScreen(identifyItems[1], null, ['feature_names'])).toBe("The list under the graph names each feature's kind: minimum, y-intercept.");
+    expect(FUNCTION_SKETCH_LEVERS.onScreen(identifyItems[0], null, ['axis_glow', 'feature_guide'])).not.toMatch(/\(-?\d/);
   });
 });
 

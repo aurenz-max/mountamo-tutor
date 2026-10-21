@@ -13,13 +13,12 @@ import { statesOfMatterCard } from '../../../primitives/visual-primitives/chemis
 import { mixingAndDissolvingCard } from '../../../primitives/visual-primitives/chemistry/mixingAndDissolving.card';
 import { reactionLabCard } from '../../../primitives/visual-primitives/chemistry/reactionLab.card';
 import { phExplorerCard } from '../../../primitives/visual-primitives/chemistry/phExplorer.card';
-import type { MoleculeMiss } from '../../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
-import type { AtomMiss } from '../../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
+import { moleculeConstructorCard } from '../../../primitives/visual-primitives/chemistry/moleculeConstructor.card';
+import { atomBuilderCard } from '../../../primitives/visual-primitives/chemistry/atomBuilder.card';
 import { gasLawsSimulatorCard } from '../../../primitives/visual-primitives/chemistry/gasLawsSimulator.card';
 import { equationBalancerCard } from '../../../primitives/visual-primitives/chemistry/equationBalancer.card';
 import { energyOfReactionsCard } from '../../../primitives/visual-primitives/chemistry/energyOfReactions.card';
 import { stoichiometryLabCard } from '../../../primitives/visual-primitives/chemistry/stoichiometryLab.card';
-import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   {
@@ -218,49 +217,13 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     id: 'atom-builder',
     description: 'Interactive atom construction tool where students drag protons, neutrons, and electrons to build atoms from scratch. Features Bohr model visualization with electron shells, mini periodic table with live element highlighting, identity card, charge and mass number display. Supports build, identify, fill-shells, make-ion, and make-isotope challenges. Grades 3-5 focus on element identity and shell filling. Grades 6-8 add ions, isotopes, and electron configuration. ESSENTIAL for chemistry lessons on atomic structure, subatomic particles, and the periodic table.',
     constraints: 'Best for grades 3-8. Use for chemistry lessons on atoms, subatomic particles, electron shells, element identity, ions, isotopes, periodic table connections, and electron configuration.',
-    affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription: 'Student is building an atom with {{protons}} protons, {{neutrons}} neutrons, {{electrons}} electrons (element: {{elementName}}, charge: {{charge}}). Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Instruction: "{{instruction}}". Attempt {{attemptNumber}}. Shells: {{shells}}. Shells correct: {{shellsCorrect}}.',
-      contextKeys: ['protons', 'neutrons', 'electrons', 'charge', 'massNumber', 'elementName', 'elementSymbol', 'shells', 'shellsCorrect', 'valenceElectrons', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Look at the periodic table — what number is next to the element you\'re building? That tells you how many protons it needs!"',
-        level2: '"Remember: protons = atomic number = element identity. Once you have the right protons, add the same number of electrons to make it neutral. Neutrons are usually close to the proton count for light elements."',
-        level3: '"Let\'s build step by step. First, the atomic number for {{elementName}} tells us it needs {{protons}} protons. For a neutral atom, add {{protons}} electrons too. For the most common isotope, add neutrons — usually the same number or slightly more than the protons."',
-      },
-      commonStruggles: [
-        { pattern: 'Student adds electrons before protons', response: 'Guide: "Start with protons first! Protons tell us WHICH element we\'re building. Then add neutrons to the nucleus, and finally electrons to the shells."' },
-        { pattern: 'Student puts too many electrons in the first shell', response: 'Explain: "The first shell can only hold 2 electrons — it\'s the smallest shell! Once it\'s full, the next electrons go in shell 2, which can hold up to 8."' },
-        { pattern: 'Student confuses protons and electrons when making ions', response: 'Clarify: "An ion is when the number of electrons is DIFFERENT from the protons. If you remove an electron, you get a positive charge (+1). If you add an extra electron, you get a negative charge (-1). The protons never change!"' },
-        { pattern: 'Student does not understand isotopes', response: 'Simplify: "Isotopes are like siblings — they have the same number of protons (same element!) but different numbers of neutrons. Carbon-12 has 6 neutrons, but Carbon-14 has 8 neutrons. Same element, different mass!"' },
-        { pattern: 'Student cannot identify element from particle counts', response: 'Guide: "The SECRET to identifying any element is simple: count the protons! The number of protons IS the atomic number, and the atomic number tells you exactly which element it is. Look at the periodic table!"' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      // Every item publishes levers (`atomBuilderLevers.ts`).
-      levers: true,
-      guidance: 'The activity checks every build itself, and you are not told the key. The learner adds and removes '
-        + 'protons, neutrons and electrons with the + and - buttons, then has the activity check the atom; on make_atom '
-        + 'many atoms pass. The check reads only the three particle counts: an item that asks what element an atom is '
-        + 'checks the build, not a named answer. The scene gives the learner\'s own counts and the name the identity card '
-        + 'shows. Never tell the learner which particle to add or remove or how many, never state a count or a mass number '
-        + 'the task does not state, and on make_atom never name an atom that has the asked property. When a lever is on '
-        + 'screen, ask the learner what it shows them. You cannot add or remove particles for the learner.',
-      // The activity's own checks: `classicMisses` (the target counts, in check order) and `judgeAtomBuild` (make_atom).
-      // The generator does not pin the classic modes, so any classic session can hold any classic challenge type.
-      misses: missLists<AtomMiss>({
-        build: ['protons_off', 'neutrons_off', 'electrons_off'],
-        identify: ['protons_off', 'neutrons_off', 'electrons_off'],
-        ion_isotope: ['protons_off', 'neutrons_off', 'electrons_off'],
-        make_atom: ['no_protons', 'nucleus_off', 'not_neutral', 'shell_not_full', 'valence_off', 'still_neutral',
-          'charge_sign', 'charge_size', 'need_two', 'different_element', 'same_neutrons'],
-      }),
-      // need_two: its words say to press Keep, and the Keep button is on the board.
-      unanswered: missLists<AtomMiss>({ make_atom: ['need_two'] }),
-    },
+    affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
+    // Live-tutor wiring: `atomBuilder.card.ts` + `atomBuilder.boss.ts` (a bespoke boss: builds on the particle tray the
+    // activity checks).
+    ...bossEntry(atomBuilderCard),
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['build'], description: 'Build a named element from protons, neutrons, electrons' },
-      { evalMode: 'identify', affordances: { answers: ['type', 'manipulate'] }, label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify', 'fill-shells'], description: 'Identify element from particle counts and fill electron shells' },
+      { evalMode: 'identify', affordances: { answers: ['build'] }, label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify', 'fill-shells'], description: 'Identify element from particle counts and fill electron shells' },
       { evalMode: 'make_atom', affordances: { answers: ['build'] }, label: 'Make Your Own Atom (Open)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['make_atom'], description: 'Make any atom with the asked property on an empty board: a number of outer electrons or a full outer shell (3-8), a charge or two isotopes of one element (6-8). Many atoms pass; code checks the build' },
       { evalMode: 'ion_isotope', affordances: { answers: ['build'] }, label: 'Ion & Isotope (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['make-ion', 'make-isotope'], description: 'Create specific ions and isotopes' },
     ],
@@ -271,57 +234,14 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive molecule-building workspace where students snap atoms together to form molecules. Atom palette with category-colored elements and valence connection dots. Click-to-bond interaction with single, double, and triple bond support. Live formula display, valence satisfaction indicators, molecule gallery with real-world categories, and multi-challenge progression (build, identify, formula write, predict). Perfect for teaching chemical bonding, molecular structure, valence rules, and molecular formulas. ESSENTIAL for grades 3-8 chemistry.',
     constraints: 'Best for grades 3-8. Use for chemistry lessons on chemical bonding, molecules, valence, molecular formulas, covalent bonds, Lewis structures, molecular shape, and properties from structure.',
     affordances: { representation: ['concrete', 'symbolic'], answers: ['build', 'type'], role: ['visualize', 'apply'], minutes: 7 },
-    tutoring: {
-      taskDescription: 'Student is building molecules by snapping atoms together. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Target: {{targetName}} ({{targetFormula}}). Current formula: {{formula}}. Atoms placed: {{atomsPlaced}}, bonds formed: {{bondsFormed}}. All valence satisfied: {{allValenceSatisfied}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'atomsPlaced', 'bondsFormed', 'formula', 'allValenceSatisfied', 'targetFormula', 'targetName', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'placedElements'],
-      scaffoldingLevels: {
-        level1: '"Look at the connection dots around each atom. How many dots does {{targetName}} need to use up all its connection points?"',
-        level2: '"Remember: each element has a set number of bonds it can make. Hydrogen makes 1, Oxygen makes 2, Carbon makes 4. To build {{targetName}} ({{targetFormula}}), count how many of each atom you need and connect them so every dot is used."',
-        level3: '"Let\'s build {{targetName}} step by step. First, place the central atom — usually the one that makes the most bonds (like Carbon with 4 or Oxygen with 2). Then attach the other atoms one by one. Watch the formula update as you go. You need: {{instruction}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Student places atoms but does not form bonds', response: 'Guide: "Great start placing atoms! Now click one atom, then click another to snap them together with a bond. Watch for the green dots — those show where bonds can form!"' },
-        { pattern: 'Student tries to bond atoms with no available valence', response: 'Explain: "That atom\'s connection points are all used up! Each atom can only make a certain number of bonds — hydrogen makes 1, oxygen makes 2, carbon makes 4. Try connecting to an atom that still has green dots."' },
-        { pattern: 'Student has correct atoms but wrong number of bonds', response: 'Guide: "You have the right atoms! Now make sure every green dot is connected. If an atom still has green dots, it needs more bonds. Click two atoms with available dots to connect them."' },
-        { pattern: 'Student confuses molecular formula with atom count', response: 'Clarify: "In a formula like H\u2082O, the small 2 after H means there are 2 hydrogen atoms. No number after O means there is 1 oxygen atom. So H\u2082O has 3 atoms total: 2 hydrogens and 1 oxygen."' },
-        { pattern: 'Student does not understand double or triple bonds', response: 'Explain: "Some atoms need to share more than one bond! Click two already-bonded atoms again to upgrade to a double bond. Double bonds share 2 connections, triple bonds share 3. Oxygen in O\u2082 uses a double bond because each oxygen needs 2 connections."' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      // make_molecule, build_target, free_build, identify and formula_write publish levers (`moleculeConstructorLevers.ts`).
-      levers: true,
-      guidance: 'The activity checks every answer itself, and you are not told the key: the learner adds atoms and joins '
-        + 'them on the canvas, or types a name or a formula, then presses Check Answer. On make_molecule many molecules '
-        + 'pass: the learner makes any one-piece molecule in which every atom uses all its bonds and which has the '
-        + 'property asked, then presses "I\'m done!". The scene gives the learner\'s own atoms, bonds and open bonds as '
-        + 'numbers: never say which atom is short of a bond, which bond to change, or what molecule to make, and never '
-        + 'name a molecule the learner could build. Ask the learner to count the bonds each atom makes. You cannot add, '
-        + 'join or type for the learner.',
-      // The activity's own checks: `buildTargetMiss` and the typed keys (classic), `moleculeMiss` (make_molecule). The
-      // generator does not pin the classic modes, so any classic session can hold any classic challenge type.
-      misses: missLists<MoleculeMiss>({
-        build: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
-        identify: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
-        predict: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
-        make_molecule: ['not_connected', 'too_many_bonds', 'bond_order_short', 'open_valence', 'no_triple_bond',
-          'no_double_bond', 'carbon_count_off', 'element_missing', 'too_many_atoms'],
-      }),
-      // The board refuses a bond past an atom's valence, so `too_many_bonds` cannot be built: no lever answers it.
-      // build: `name_off` and `formula_off` come only from identify/formula_write items, which an unpinned build
-      // session can hold. Those items now have levers (show_formula, formula_model, fewer_atoms), but the saved build
-      // payload holds none, so the sweep cannot see them answered there.
-      // predict: predict_bonds and shape_predict pass any build with one bond and check no prediction (EVAL_TRACKER
-      // MC-2), so their `no_bonds` has no lever on those items. An identify session holds them too (the generator does
-      // not pin classic modes), so identify lists `no_bonds` as well.
-      unanswered: missLists<MoleculeMiss>({ make_molecule: ['too_many_bonds'], build: ['name_off', 'formula_off'],
-        identify: ['no_bonds'], predict: ['no_bonds'] }),
-    },
+    // Live-tutor wiring: `moleculeConstructor.card.ts` + `moleculeConstructor.boss.ts` (a bespoke boss: builds and
+    // typed answers the activity checks).
+    ...bossEntry(moleculeConstructorCard),
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['build'], description: 'Build simple molecules from a name or formula' },
       { evalMode: 'make_molecule', affordances: { answers: ['build'] }, label: 'Make Your Own (Open)', beta: -0.4, scaffoldingMode: 2, challengeTypes: ['make_molecule'], description: 'Make any molecule with the asked property (a double bond, a number of carbon atoms, a given atom) on an empty board; every atom must use all its bonds' },
       { evalMode: 'identify', affordances: { answers: ['type'] }, label: 'Identify (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['identify', 'formula'], description: 'Identify molecules and write formulas from structure' },
-      { evalMode: 'predict', affordances: { answers: ['type'] }, label: 'Predict (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['predict'], description: 'Predict properties and shape from molecular structure' },
+      { evalMode: 'predict', affordances: { answers: ['build'] }, label: 'Predict (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['predict'], description: 'Predict properties and shape from molecular structure' },
     ],
     supportsEvaluation: true,
   },

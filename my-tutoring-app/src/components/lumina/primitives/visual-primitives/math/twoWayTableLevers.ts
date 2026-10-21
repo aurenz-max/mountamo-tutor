@@ -2,23 +2,24 @@
  * two-way-table's in-item levers (/add-support-tiers; report qa/eval-reports/two-way-table-levers-2026-10-09.md).
  * The misses are what `twoWayMiss` observes in the number typed; there is no real-learner evidence.
  *
- * - `outline_question` (help, every mode): outlines the cells the question is about: the one cell (joint), the whole
+ * Declared once as a lever set (`TWO_WAY_LEVERS`, `bossLevers.ts`):
+ * - `outline_question` (marks, every mode): outlines the cells the question is about: the one cell (joint), the whole
  *   row or column (marginal), the given row or column with the asked cell marked (conditional), the row and the column
  *   (independence). No number is written.
- * - `sum_frame` (help, where a total the question needs is hidden): writes each such total as its cells added up,
+ * - `sum_frame` (layout, where a total the question needs is hidden): writes each such total as its cells added up,
  *   "= ?". The sum is never written.
- * - `out_of_frame` (help, every mode): writes the probability in words: the group the question counts, divided by
+ * - `out_of_frame` (clue, every mode): writes the probability in words: the group the question counts, divided by
  *   the group it is out of (everyone, or only the given group). Category names only, no number.
- * - `model_table` (help, every mode): a worked example on a different small table, same kind of question, its own
+ * - `model_table` (model, every mode; when it comes is the set's `support`): a worked example on a different small table, same kind of question, its own
  *   numbers and an answer that is never the item's.
- * - `simpler_table` (simplify, every mode): the same kind of question on a 2 x 2 table of ten people, with the item's
+ * - `simpler_table` (easier, every mode): the same kind of question on a 2 x 2 table of ten people, with the item's
  *   own category names, built here; ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` text or scene fact carries a digit; the out-of frame carries no digit
  * outside the category names; the sum frame never writes a sum; the model's answer is outside the item's tolerance; a
  * practice table has its own id, ask, counts and answer, and keeps the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { TwoWayTableChallenge, TwoWayTableChallengeType } from './TwoWayTable';
 import {
   TWO_WAY_MISSES_BY_MODE, colSum, formatProbability, grandSum, locateTarget, matchesKey, probabilityOf, rowSum,
@@ -210,8 +211,9 @@ export function practiceLeaks(parent: TwoWayTableChallenge, practice: TwoWayTabl
     || practice.question.includes(formatProbability(parent.expectedProbability));
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
+/** The misses each help lever answers, by mode; `answers` lists every mode's, `answersOn` keeps the item's own. */
 const ANSWERS: Record<string, Record<TwoWayTableChallengeType, readonly TwoWayMiss[]>> = {
   [OUTLINE_LEVER]: {
     joint_probability: ['wrong_cell', 'marginal_instead'],
@@ -232,68 +234,62 @@ const ANSWERS: Record<string, Record<TwoWayTableChallengeType, readonly TwoWayMi
     independence_test: ['observed_joint', 'one_factor', 'added_factors', 'typed_count', 'near_miss', 'too_high', 'too_low'],
   },
 };
+const everyMode = (id: string) => Array.from(new Set(Object.values(ANSWERS[id]).flat()));
+const own = (id: string) => (c: TwoWayTableChallenge) => ANSWERS[id][c.challengeType];
 
-export function twoWayLevers(c: TwoWayTableChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeTable(c)) return [];
-  const t = c.challengeType;
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly TwoWayMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  if (outlineCells(c)) {
-    out.push(lever(OUTLINE_LEVER, 'help', 'shown', ANSWERS[OUTLINE_LEVER][t],
-      'The learner used the wrong cell, row or column for the question.',
-      t === 'independence_test'
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice table: the component declares nothing
+ * while one is on screen.
+ */
+export const TWO_WAY_LEVERS = leverSet<TwoWayTableChallenge, null>({
+  modeOf: c => c.challengeType,
+  missesOf: mode => TWO_WAY_MISSES_BY_MODE[mode as TwoWayTableChallengeType] ?? [],
+  answersOf: c => [formatProbability(c.expectedProbability)],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a different small table, worked out',
+    own: 'this table\'s probability' },
+  specs: [
+    { id: OUTLINE_LEVER, type: 'marks', answers: everyMode(OUTLINE_LEVER), answersOn: own(OUTLINE_LEVER),
+      when: 'The learner used the wrong cell, row or column for the question.',
+      does: c => (c.challengeType === 'independence_test'
         ? 'Outlines the row and the column the question names in the table. No number is written.'
-        : t === 'conditional_probability'
+        : c.challengeType === 'conditional_probability'
           ? 'Outlines the given row or column in the table and marks the asked cell inside it. No number is written.'
-          : t === 'marginal_distribution'
+          : c.challengeType === 'marginal_distribution'
             ? 'Outlines the whole row or column the question names in the table. No number is written.'
-            : 'Outlines the one cell where the two named categories meet. No number is written.'));
-  }
-  if (sumFrames(c).length) {
-    out.push(lever(SUM_LEVER, 'help', 'shown', ANSWERS[SUM_LEVER][t],
-      'The learner used one cell for a total, or added a hidden total wrong.',
-      'Under the table, writes each total the question needs that the table hides as its cells added up, equals a '
-        + 'question mark. The sum is not written.'));
-  }
-  if (outOfFrame(c)) {
-    out.push(lever(OUT_OF_LEVER, 'help', 'both', ANSWERS[OUT_OF_LEVER][t],
-      'The learner divides by the wrong group, or types a count instead of a probability.',
-      t === 'conditional_probability'
+            : 'Outlines the one cell where the two named categories meet. No number is written.'),
+      content: c => outlineCells(c),
+      fact: 'The cells the question is about are outlined in the table.' },
+    { id: SUM_LEVER, type: 'layout', answers: everyMode(SUM_LEVER), answersOn: own(SUM_LEVER),
+      when: 'The learner used one cell for a total, or added a hidden total wrong.',
+      does: 'Under the table, writes each total the question needs that the table hides as its cells added up, equals a '
+        + 'question mark. The sum is not written.',
+      content: c => (sumFrames(c).length ? sumFrames(c) : null),
+      fact: 'Under the table, each hidden total the question needs is written as its cells added up, equals a question mark.' },
+    { id: OUT_OF_LEVER, type: 'clue', answers: everyMode(OUT_OF_LEVER), answersOn: own(OUT_OF_LEVER),
+      when: 'The learner divides by the wrong group, or types a count instead of a probability.',
+      does: c => (c.challengeType === 'conditional_probability'
         ? 'Writes the probability in words under the table: how many of the given group are the asked category, divided by '
           + 'the given group only, not everyone. No number.'
-        : t === 'independence_test'
+        : c.challengeType === 'independence_test'
           ? 'Writes the expected probability in words under the table: each category\'s total out of everyone, multiplied. '
             + 'No number.'
           : 'Writes the probability in words under the table: the group the question counts, divided by everyone in the '
-            + 'table. No number.'));
-  }
-  if (tableModel(c)) {
-    out.push(lever(MODEL_LEVER, 'help', 'both', TWO_WAY_MISSES_BY_MODE[t],
-      'The learner does not know how this kind of probability is found from a table.',
-      'Shows a worked example beside the table: a different small table with its own counts, the same kind of question, '
-        + 'worked out. Read it aloud; it never shows the item\'s answer.'));
-  }
-  if (simplerTable(c)) {
-    out.push(lever(SIMPLER_LEVER, 'simplify', 'shown', TWO_WAY_MISSES_BY_MODE[t],
-      'This table is too big or its numbers too hard to work with yet.',
-      'Opens an easier problem of the same kind first, on a small table of ten with the same category names. It is not '
-        + 'graded; the full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: TwoWayTableChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeTable(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(OUTLINE_LEVER) && 'The cells the question is about are outlined in the table.',
-    on(SUM_LEVER) && 'Under the table, each hidden total the question needs is written as its cells added up, equals a question mark.',
-    on(OUT_OF_LEVER) && 'Under the table, the probability is written in words: the group counted, divided by the group it is out of.',
-    on(MODEL_LEVER) && 'Beside the table is a worked example on a different small table, with its own counts and answer.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+            + 'table. No number.'),
+      content: c => outOfFrame(c),
+      fact: 'Under the table, the probability is written in words: the group counted, divided by the group it is out of.' },
+    { id: MODEL_LEVER, type: 'model', answers: 'all',
+      when: 'The learner does not know how this kind of probability is found from a table.',
+      does: 'Shows a worked example beside the table: a different small table with its own counts, the same kind of question, '
+        + 'worked out. Read it aloud; it never shows the item\'s answer.',
+      content: c => tableModel(c),
+      fact: 'Beside the table is a worked example on a different small table, with its own counts and answer.' },
+    { id: SIMPLER_LEVER, type: 'easier', answers: 'all',
+      when: 'This table is too big or its numbers too hard to work with yet.',
+      does: 'Opens an easier problem of the same kind first, on a small table of ten with the same category names. It is not '
+        + 'graded; the full item comes back after it.',
+      content: c => simplerTable(c) },
+  ],
+});
 
 /** Leak rule for the levers' words and facts: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

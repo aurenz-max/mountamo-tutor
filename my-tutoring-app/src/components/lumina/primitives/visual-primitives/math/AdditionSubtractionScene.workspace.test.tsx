@@ -23,7 +23,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 import type { AddSubChallenge } from './AdditionSubtractionScene';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -38,8 +37,8 @@ const data = (gradeBand: 'K' | '1', challenges: AddSubChallenge[], over: Record<
   title: 'Story stage', gradeBand, maxNumber: gradeBand === 'K' ? 5 : 10, showTenFrame: false, showEquationBar: true,
   challenges, ...over,
 });
-const mount = (d: Record<string, unknown>, evalMode = 'act_out', pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'addition-subtraction-scene', evalMode, data: d, instanceId: 'story', pipStore });
+const mount = (d: Record<string, unknown>, evalMode = 'act_out') =>
+  mountWorkspace({ primitiveId: 'addition-subtraction-scene', evalMode, data: d, instanceId: 'story' });
 const objects = () => Array.from(document.querySelectorAll('[data-pip-object^="object-"]'));
 const positions = () => objects().map(g => { const c = g.querySelector('circle')!; return `${c.getAttribute('cx')},${c.getAttribute('cy')}`; });
 const addButton = (noun: string) => screen.getByRole('button', { name: `Add one ${noun}` });
@@ -58,7 +57,7 @@ describe('binding', () => {
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'addition-subtraction-scene', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
     const h = mount(d, mode);
     const key = h.state().task!.workspace!.expectedAnswer;
-    if (mode === 'solve_story') expect(key).toMatch(/^three \(3\)/);
+    if (mode === 'solve_story') expect(key).toMatch(/^"three"/);
     else expect(key).toBeUndefined();
   });
 
@@ -233,17 +232,6 @@ it('Hear the story again asks silently, as the host, never the answer', () => {
   expect(text).toContain('2 ducks are swimming');
   expect(text).not.toMatch(/three|\b3\b/);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip never publishes a change group still waiting, and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('story');
-  const h = mount(data('1', [ch({})], { groupedReveal: true }), 'act_out', store);
-  expect(store.getActive()?.targets.map(t => t.id)).not.toContain('object-2');
-  h.dispatch('present');
-  expect(store.getActive()?.targets.map(t => t.id)).toContain('object-2');
-  h.say('three'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('a spoken answer and a hands answer complete the lesson once', async () => {

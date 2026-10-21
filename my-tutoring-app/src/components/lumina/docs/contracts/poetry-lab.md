@@ -3,7 +3,7 @@
 - **Derived:** 2026-10-09 (W1 binding, batch C22)
 - **Component:** `primitives/visual-primitives/literacy/PoetryLab.tsx` · **Domain:** `poetryLabWorkspace.ts` ·
   **Generator:** `service/literacy/gemini-poetry-lab.ts` · **Oracle:** `service/qa/oracles/poetry-lab.ts` ·
-  **Adapter:** `components/live-activity/adapters/poetryLabLive.ts`
+  **Boss:** `poetryLab.card.ts` + `poetryLab.boss.ts` · **Levers:** `poetryLabLevers.ts` (`POETRY_LEVERS`)
 - **Modes:** `rhyme_hunt` (K-1), `analysis` (G2-6), `composition` (G3-6)
 
 ## Requirements
@@ -12,7 +12,7 @@
 The K-1 band contract (pictured cards, audio-first, no chrome) wins over the tier. Probe: `PoetryLab.support-tiers.test.tsx`.
 
 ### R2 — support tiers withdraw display only · OBSERVED
-L1 figurative count, L2 rhyme-scheme preview, L3 syllable chips; content and checks are tier-invariant, on both paths.
+L1 figurative count, L2 rhyme-scheme preview, L3 syllable chips; content and checks are tier-invariant (workspace mount).
 
 ### R3 — on the teaching workspace, the activity's code is the only judge · OBSERVED (2026-10-09)
 Items: one per rhyme round; one per analysis phase the poem supports (`mood`, `figurative`, `rhyme`); one `compose`
@@ -26,8 +26,9 @@ Rhyme cards draw in a seeded shuffle (`rhymeCards`): the generator lists them in
 lines 2 and 4. Mood and scheme choices draw shuffled (`moodChoices`, `schemeChoices`), on both paths. On the workspace
 every poem word is its own button on the figurative item, so a phrase is not marked by being the only tappable text.
 
-### R5 — scripted path unchanged otherwise · OBSERVED
-Outside a live runtime: rhyme hunt's timers and tutor cues; analysis/composition's Next, Edit, Submit and one submission.
+### R5 — RETIRED 2026-10-20
+The scripted path is gone: the boss component is taught only on the workspace (`withWorkspaceOnly`); an unbound
+mount shows the shared "needs the tutor" card.
 
 ### R6 — levers never mark a card, a choice or a word of the poem · OBSERVED (2026-10-09)
 `poetryLabLevers.ts`, workspace path only, state keyed by item. Help levers act on a model outside the item
@@ -39,7 +40,12 @@ with two choices (never a line of the session's), one line of the same form on a
 keeps it; the full item returns blank. Probe: `poetryLabLevers.test.ts`, `PoetryLab.levers.workspace.test.tsx`, sweep J12/J13.
 
 ## Open
-- **G1** — scripted analysis still makes only the figurative phrases tappable (hover shows them). `/eval-fix`.
+- **G1** — closed 2026-10-20: the scripted analysis is deleted with the scripted path.
 - **G2** — composition's free-verse and sonnet-intro draws carry no checkable form beyond line count: the check is
   "every line written". Needs a judged evidence contract (the shared writing judge) or a ruling. `/add-eval-modes`.
 - **G3** — generator ships near rhymes as the pair (saved payload: grass/fast). `/oracle-test`.
+
+## Changelog
+- 2026-10-20 — moved onto a boss (wave 3): `poetryLab.card.ts` + `poetryLab.boss.ts`, levers as one lever set
+  (`POETRY_LEVERS`), each item's kind a card step; `poetryLabLive.ts`, the scripted path (`LegacyPoetryLab`, rhyme
+  hunt cues/timers) and the catalog `tutoring` block deleted. Requirements R1-R4, R6 unchanged.

@@ -24,7 +24,7 @@ const results = [];
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateComponentContent } = await loader.import('/src/components/lumina/service/geminiService.ts');
-  const { validateParameterExplorerData } = await loader.import('/src/components/lumina/components/live-activity/adapters/parameterExplorerLive.ts');
+  const { validateParameterExplorerData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/parameterExplorer.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/math/parameterExplorerWorkspace.ts');
   for (const mode of modes) {
     logs.length = 0;

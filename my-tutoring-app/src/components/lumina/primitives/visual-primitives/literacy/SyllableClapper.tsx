@@ -1,41 +1,21 @@
 'use client';
 
 /**
- * SyllableClapper — the tutor says a word (joined, in parts, or minus a part) and the
- * child answers OUT LOUD. It runs only on the shared tutor/JEV teaching workspace
- * (workspace rollout C1; the scripted runner was retired, LA-14, user ruling 09-23: one
- * path). The tutor teaches in its own words, the observer judges each spoken answer and
- * the runtime owns progression. An unbound mount shows the shared "needs the tutor" card.
- * There is no advance timer, no Clap button, no Check button and no Next button.
+ * SyllableClapper, taught on the shared teaching workspace only (the boss: `syllableClapper.card.ts` +
+ * `syllableClapper.boss.ts`). A mount with no tutor shows the shared "needs the tutor" card (`withWorkspaceOnly`).
  *
- * ⭐ THE CLAP MOVED OFF THE SCREEN AND INTO THE ROOM. The click era's `👏 Clap!`
- * button failed the costume test outright — a child who cannot hear a single
- * syllable boundary can press it three times — and the six counter circles it
- * filled did the COUNTING, which is the one act this primitive exists to train.
- * The ask now invites the hands ("Clap the parts with your hands, then tell me
- * how many parts"), and those hands are the child's own, invisible to us exactly
- * as they are to a teacher at a table whose real signal is the spoken count.
+ * WHAT THE CHILD DOES. The tutor says a word (in parts, joined, or minus a part) and the child answers OUT LOUD: the
+ * whole word, how many parts, or the word left; the tutor judges it against the key. build_parts is the shared letter
+ * build (`LetterBuildSurface.tsx`): the child taps word-part cards into a word with the number of parts the task names.
  *
- * ANSWER-LEAK RULE, and it is the whole reason this stage is nearly empty:
- * NOTHING ON SCREEN MAY EQUAL WHAT THE CHILD IS ABOUT TO SAY. The word is never
- * printed before the affirmation (a reader chunks it orthographically instead of
- * hearing it), and the split syllable bar — three boxes for a three-part word —
- * is literally the answer drawn as furniture. Both live behind `revealHeld`,
- * which opens on a credited answer and closes when the next item opens.
- * Before credit the child has the tutor's voice and tap-to-hear, which is what
- * they would have at the table.
+ * THE CLAP MOVED OFF THE SCREEN AND INTO THE ROOM. The click era's `Clap!` button failed the costume test (a child who
+ * cannot hear a single syllable boundary can press it three times) and its counter circles did the COUNTING, the one
+ * act this primitive trains. The ask invites the hands, and those hands are the child's own.
  *
- * SUPPORT TIERS SURVIVE AS ASK LEVERS (L3 contract, re-based): the on-screen
- * tally and the directional miss hint are gone with the button they measured, so
- * the tier now shapes the ENUNCIATION — easy hears the word twice (natural, then
- * slower and still joined), medium once, and hard loses the clap invitation so
- * the segmenting happens in the ear alone. `syllableClapperScript` honors both
- * flags; the spoken word and tap-to-hear are never withdrawn at any tier.
- *
- * Items that cannot be asked or judged honestly — parts that do not spell their
- * word, a count outside 1..5, or a word whose syllable count is not one number
- * in English ("squirrel", "every", "fire") — are DROPPED at build time by
- * `itemsFromChallenges`. Ship nothing over a broken ask.
+ * ANSWER-LEAK RULE. Nothing on screen may equal what the child is about to say: the word is never printed before
+ * credit, and the split bar (three boxes for a three-part word) is the answer drawn as furniture. Both live behind
+ * `revealHeld`. Before credit the child has the tutor's voice and tap-to-hear. The domain is
+ * `syllableClapperDomain.ts`, the levers `syllableClapperLevers.ts`; nothing in this file writes a spoken line.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -54,27 +34,27 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SyllableClapperMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { itemsFromChallenges, type SyllableClapperItem } from './syllableClapperScript';
-import { hearPartRequest, hearQuestionRequest, syllableAssignment, syllableScene } from './syllableClapperWorkspace';
-import {
-  BEATS_LEVER, CLAP_MODEL_LEVER, DELETE_MODEL_LEVER, SIMPLIFY_LEVER,
-  clapModelFor, deleteModelFor, leversOnScreen, practiceItemFor, syllableClapperLevers,
-} from './syllableClapperLevers';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
-import type { SyllableTask } from './syllableClapperModes';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
 import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
+import type { SyllableTask } from './syllableClapperModes';
+import {
+  hearPartRequest, hearQuestionRequest, syllableScene, syllableWords, type SyllableClapperItem,
+} from './syllableClapperDomain';
+import {
+  BEATS_LEVER, CLAP_MODEL_LEVER, DELETE_MODEL_LEVER, SYLLABLE_LEVERS, clapModelFor, deleteModelFor, syllableBuildLevers,
+} from './syllableClapperLevers';
+import { syllableClapperBoss } from './syllableClapper.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -97,11 +77,8 @@ interface SyllableChallenge {
   /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
   wordSpace?: WordSpaceStamp;
 
-  // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from
-  //    ctx.supportTier). ASK levers now, not render levers: the click era's
-  //    on-screen tally and directional miss hint went with the Check button
-  //    they measured. All optional; absent ⇒ the fully supported ask, so every
-  //    legacy payload still plays. ──
+  // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from ctx.supportTier). Ask levers: all optional;
+  //    absent ⇒ the fully supported ask, so every legacy payload still plays. ──
   /** The ask says the word a second time, slower and still joined. easy only. */
   echoWordSlowly?: boolean;
   /** The ask invites the hands. Withdrawn at the hard tier (motor scaffold). */
@@ -111,9 +88,8 @@ interface SyllableChallenge {
 export interface SyllableClapperData {
   title: string;
   /**
-   * Within-mode SUPPORT tier from the manifest (config.difficulty): the ask
-   * scaffolds AND the word-length band. The generator stamps the per-challenge
-   * flags from it; nothing in this component reads it.
+   * Within-mode SUPPORT tier from the manifest (config.difficulty): the ask scaffolds, the word-length band, and when
+   * the model lever comes (the lever set's `support` fact). Absent ⇒ medium for the model.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SyllableChallenge[];
@@ -152,17 +128,14 @@ const SYLLABLE_COLORS = [
   'bg-rose-500/30 border-rose-400/50 text-rose-200',
 ];
 
-/** One row per ACT. The badge names what the child is doing, which is the only
- *  thing a five-year-old could read off the screen anyway — the old badge named
- *  the word-length band, a fact about the content that meant nothing to them. */
+/** One row per ACT. The badge names what the child is doing. */
 const TASK_META: Record<SyllableTask, { badge: string; icon: string; accent: LuminaAccent }> = {
   blend_syllables: { badge: 'Put It Together', icon: '🔗', accent: 'blue' },
   count_parts: { badge: 'Clap and Count', icon: '👏', accent: 'purple' },
   delete_compound: { badge: 'Take a Part Away', icon: '✂️', accent: 'emerald' },
 };
 
-/** The on-screen line under the stimulus button. It must never name the answer:
- *  no count, no word, no residue — only the ACT. */
+/** The on-screen line under the stimulus button. It must never name the answer: no count, no word, no residue. */
 const promptLineFor = (item: SyllableClapperItem): string => {
   if (item.task === 'blend_syllables') return 'Listen to the parts — then say the whole word!';
   if (item.task === 'delete_compound') return 'Take the part away — then say what is left!';
@@ -170,6 +143,8 @@ const promptLineFor = (item: SyllableClapperItem): string => {
     ? 'Clap the parts — then say how many!'
     : 'How many parts do you hear? Say the number!';
 };
+
+const PRACTICE_FACT = 'An easier practice item on another word, ungraded. The full item comes back after it.';
 
 // ============================================================================
 // Component
@@ -189,13 +164,11 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
 
   const stableInstanceIdRef = useRef(instanceId || `syllable-clapper-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Items (drop-gated) ────────────────────────────────────────────────────
   const items = useMemo<SyllableClapperItem[]>(() => {
-    const built = itemsFromChallenges(challenges);
+    const built = syllableWords({ challenges, supportTier: data.supportTier });
     if (built.length < challenges.length) {
       console.warn(
         `[SyllableClapper] dropped ${challenges.length - built.length} unaskable challenge(s) `
@@ -203,15 +176,13 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
       );
     }
     return built;
-  }, [challenges]);
+  }, [challenges, data.supportTier]);
+  const leverCtx = useMemo(() => ({ items }), [items]);
 
-  // ── The reveal payload (18b) ──────────────────────────────────────────────
-  // Set on the credit, rendered behind `runner.revealHeld`, and DELIBERATELY
-  // NOT cleared when the next item opens: the hold is the gate, and the next
-  // credit overwrites the payload.
+  // The reveal payload: set on the credit, rendered behind `runner.revealHeld`, overwritten by the next credit.
   const [revealed, setRevealed] = useState<SyllableClapperItem | null>(null);
-  // In-item levers (`syllableClapperLevers.ts`), keyed by the session item they were pulled on, the easier practice
-  // item a simplify lever put on screen in its place.
+  // In-item levers, keyed by the session item they were pulled on, and the easier practice item a simplify lever put
+  // on screen in its place (ungraded; the full item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<SyllableClapperItem | null>(null);
 
@@ -229,8 +200,7 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
   const finish = (summary: TeachingEvaluationResult) => {
     const syllableCountsEncountered: Record<number, number> = {};
     for (const item of items) {
-      syllableCountsEncountered[item.partCount] =
-        (syllableCountsEncountered[item.partCount] ?? 0) + 1;
+      syllableCountsEncountered[item.partCount] = (syllableCountsEncountered[item.partCount] ?? 0) + 1;
     }
     const scores = new Map(summary.outcomes.map((o) => [o.id, o.score]));
     const accuracyFor = (task: SyllableTask): number | undefined => {
@@ -268,7 +238,7 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
 
   const runner = useWorkspaceRunner<SyllableClapperItem>({
     primitiveId: 'syllable-clapper',
-    assignment: syllableAssignment,
+    assignment: syllableClapperBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -291,29 +261,28 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
   /** The credited item whose reveal is still on screen. `revealHeld`, never `currentSolved`. */
   const revealItem = runner.revealHeld ? revealed : null;
 
-  // What the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. The lever set writes the support and
+  // on-screen facts; a practice item carries no levers.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : syllableClapperLevers(sessionItem, pulledLevers, items);
-    const scene = syllableScene(currentItem);
-    const onScreen = leversOnScreen(currentItem, pulledLevers, items);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item on another word, ungraded. The full item comes back after it.' } : {}) },
+    const levers = practice ? [] : SYLLABLE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const scene: WorkspaceScene = syllableScene(currentItem);
+    workspace.current = {
+      ...leverScene(practice ? { ...scene, facts: { ...scene.facts, practice: PRACTICE_FACT } } : scene, {
+        support: practice ? '' : SYLLABLE_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : SYLLABLE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === SIMPLIFY_LEVER[sessionItem.task]) {
-          const simpler = practiceItemFor(sessionItem, items);
-          if (!simpler) return 'There is no easier item here.';
+        if (lever.kind === 'simplify') {
+          const simpler = SYLLABLE_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!simpler || 'mode' in simpler) return 'There is no easier item here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          return { practice: syllableAssignment(simpler) };
+          return { practice: syllableClapperBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -322,35 +291,18 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
     };
   });
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the workspace's committed state onto the hear-it-again button; Pip never
-  // answers, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, false);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets(['stimulus'], () => 'Hear the question again');
-    const pose = syllableClapperPipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld, judging: false,
-      // Audio belongs to this block only while the lesson is pointed at it.
-      tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id),
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Syllable clapper', dock: pip.dock.current, targets, pose };
-  });
-
   // ── Tap-to-hear. Silent host requests: never a learner turn, never the answer. ──
+  const { requestHear } = runner;
   const hearQuestion = useCallback(() => {
     if (!currentItem) return;
     SoundManager.tap();
-    ctx.sendText(hearQuestionRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    requestHear(hearQuestionRequest(currentItem));
+  }, [requestHear, currentItem]);
   /** One part of the reveal bar, which exists only after credit. */
   const hearPart = useCallback((part: string) => {
     SoundManager.tap();
-    ctx.sendText(hearPartRequest(part), { silent: true, author: 'host' });
-  }, [ctx]);
+    requestHear(hearPartRequest(part));
+  }, [requestHear]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -383,9 +335,12 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           {!showSummary && (
-            <LuminaBadge accent={taskMeta.accent} className="text-xs">
-              {taskMeta.icon} {taskMeta.badge}
-            </LuminaBadge>
+            <div className="flex items-center gap-2">
+              {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+              <LuminaBadge accent={taskMeta.accent} className="text-xs">
+                {taskMeta.icon} {taskMeta.badge}
+              </LuminaBadge>
+            </div>
           )}
         </div>
       </LuminaCardHeader>
@@ -401,96 +356,92 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
               />
             </div>
 
-            {/* The stimulus. The word is NEVER printed here — it arrives in the tutor's
-                voice, and a printed word lets a reader chunk it by sight instead of
-                hearing it, or read a blend's answer straight off the screen. Tapping
-                asks the tutor to say the whole question again. */}
-            <div className="flex flex-col items-center gap-3">
-              <button
-                ref={pip.ref('stimulus')}
-                data-pip-object="stimulus"
-                onClick={hearQuestion}
-                disabled={!runner.running}
-                data-testid="hear-word"
-                className="rounded-2xl border-2 px-12 py-8 text-center transition-all duration-200
-                  disabled:opacity-40 disabled:cursor-default bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
-              >
-                <span className="text-6xl">🔊</span>
-                <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the question again</p>
-              </button>
-              <p className="text-center text-base text-slate-300 font-medium">
-                {promptLineFor(currentItem)}
-              </p>
-            </div>
+            <PipDock />
 
-            {/* Help: a dot per part slides together. The parts are never printed or pictured. */}
-            {pulled(BEATS_LEVER) && (
-              <div data-lever="part-beats" className="flex flex-col items-center gap-1">
-                <div className="flex items-center gap-0.5">
-                  {currentItem.parts.map((_, i) => <span key={i} data-beat className="h-6 w-6 rounded-full bg-purple-400/70" />)}
-                </div>
-                <span aria-hidden className="text-2xl text-purple-300/80">⟶</span>
-              </div>
-            )}
-            {clapModel && (
-              <div data-lever="clap-model" aria-label="Clap model"
-                className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-950/10 p-3">
-                <span className="text-4xl" role="img" aria-label={clapModel.word}>{clapModel.emoji}</span>
-                {!isPreReader && <span className="text-lg font-bold text-slate-100">{clapModel.word}</span>}
-                <div className="flex gap-1.5">
-                  {clapModel.parts.map((_, i) => <span key={i} data-clap className="text-2xl">👏</span>)}
-                </div>
-              </div>
-            )}
-            {deleteModel && (
-              <div data-lever="delete-model" aria-label="Take-away model"
-                className="flex items-center justify-center gap-3 rounded-2xl border border-amber-300/20 bg-amber-950/10 p-3">
-                <span className="text-4xl opacity-30 line-through" role="img" aria-label={deleteModel.parts[0]}>{deleteModel.partEmoji[0]}</span>
-                <span className="text-4xl" role="img" aria-label={deleteModel.parts[1]}>{deleteModel.partEmoji[1]}</span>
-                <span aria-hidden className="text-2xl text-slate-400">→</span>
-                <span className="text-4xl" role="img" aria-label={`${deleteModel.parts[1]} left`}>{deleteModel.partEmoji[1]}</span>
-                {!isPreReader && <span className="text-lg font-bold text-slate-100">{deleteModel.parts[1]}</span>}
-              </div>
-            )}
-
-            {/* Pip's dock sits below the question, above the reveal bar. */}
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
-            {/* The reveal — the first moment the word, the split and the count
-                may appear on screen, held while the credit is on screen. Tap a part to hear it. */}
-            {revealItem && (
-              <LuminaPanel className="p-4 space-y-3" data-testid="reveal">
-                <div className="flex gap-1">
-                  {revealItem.parts.map((part, idx) => (
-                    <button
-                      key={`${revealItem.id}-${idx}`}
-                      onClick={() => hearPart(part)}
-                      className={`
-                        flex-1 rounded-xl border-2 p-3 text-center cursor-pointer
-                        transition-all duration-200 hover:scale-105 active:scale-95
-                        ${SYLLABLE_COLORS[idx % SYLLABLE_COLORS.length]}
-                      `}
-                    >
-                      <span className="text-2xl font-bold block">{part}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-center text-emerald-300 text-lg font-black">
-                  {revealItem.task === 'count_parts'
-                    ? `${revealItem.word} — ${revealItem.answer} ${revealItem.partCount === 1 ? 'part' : 'parts'}`
-                    : revealItem.task === 'delete_compound'
-                      ? `${revealItem.word} without ${revealItem.removePart} — ${revealItem.residue}`
-                      : revealItem.word}
+            <PipWorkspace className="space-y-4">
+              {/* The stimulus. The word is NEVER printed here — it arrives in the tutor's voice. Tapping asks the
+                  tutor to say the whole question again. */}
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  onClick={hearQuestion}
+                  disabled={!runner.running}
+                  data-testid="hear-word"
+                  className="rounded-2xl border-2 px-12 py-8 text-center transition-all duration-200
+                    disabled:opacity-40 disabled:cursor-default bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
+                >
+                  <span className="text-6xl">🔊</span>
+                  <p className="text-xs text-emerald-300/70 mt-3">Tap to hear the question again</p>
+                </button>
+                <p className="text-center text-base text-slate-300 font-medium">
+                  {promptLineFor(currentItem)}
                 </p>
-                {revealItem.imageDescription && (
-                  <p className="text-center text-sm text-slate-500 italic">
-                    {revealItem.imageDescription}
+              </div>
+
+              {/* Help: a dot per part slides together. The parts are never printed or pictured. */}
+              {pulled(BEATS_LEVER) && (
+                <div data-lever="part-beats" className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-0.5">
+                    {currentItem.parts.map((_, i) => <span key={i} data-beat className="h-6 w-6 rounded-full bg-purple-400/70" />)}
+                  </div>
+                  <span aria-hidden className="text-2xl text-purple-300/80">⟶</span>
+                </div>
+              )}
+              {clapModel && (
+                <div data-lever="clap-model" aria-label="Clap model"
+                  className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-950/10 p-3">
+                  <span className="text-4xl" role="img" aria-label={clapModel.word}>{clapModel.emoji}</span>
+                  {!isPreReader && <span className="text-lg font-bold text-slate-100">{clapModel.word}</span>}
+                  <div className="flex gap-1.5">
+                    {clapModel.parts.map((_, i) => <span key={i} data-clap className="text-2xl">👏</span>)}
+                  </div>
+                </div>
+              )}
+              {deleteModel && (
+                <div data-lever="delete-model" aria-label="Take-away model"
+                  className="flex items-center justify-center gap-3 rounded-2xl border border-amber-300/20 bg-amber-950/10 p-3">
+                  <span className="text-4xl opacity-30 line-through" role="img" aria-label={deleteModel.parts[0]}>{deleteModel.partEmoji[0]}</span>
+                  <span className="text-4xl" role="img" aria-label={deleteModel.parts[1]}>{deleteModel.partEmoji[1]}</span>
+                  <span aria-hidden className="text-2xl text-slate-400">→</span>
+                  <span className="text-4xl" role="img" aria-label={`${deleteModel.parts[1]} left`}>{deleteModel.partEmoji[1]}</span>
+                  {!isPreReader && <span className="text-lg font-bold text-slate-100">{deleteModel.parts[1]}</span>}
+                </div>
+              )}
+
+              {/* The reveal — the first moment the word, the split and the count may appear on screen, held while the
+                  credit is on screen. Tap a part to hear it. */}
+              {revealItem && (
+                <LuminaPanel className="p-4 space-y-3" data-testid="reveal">
+                  <div className="flex gap-1">
+                    {revealItem.parts.map((part, idx) => (
+                      <button
+                        key={`${revealItem.id}-${idx}`}
+                        onClick={() => hearPart(part)}
+                        className={`
+                          flex-1 rounded-xl border-2 p-3 text-center cursor-pointer
+                          transition-all duration-200 hover:scale-105 active:scale-95
+                          ${SYLLABLE_COLORS[idx % SYLLABLE_COLORS.length]}
+                        `}
+                      >
+                        <span className="text-2xl font-bold block">{part}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-center text-emerald-300 text-lg font-black">
+                    {revealItem.task === 'count_parts'
+                      ? `${revealItem.word} — ${revealItem.answer} ${revealItem.partCount === 1 ? 'part' : 'parts'}`
+                      : revealItem.task === 'delete_compound'
+                        ? `${revealItem.word} without ${revealItem.removePart} — ${revealItem.residue}`
+                        : revealItem.word}
                   </p>
-                )}
-                <p className="text-center text-xs text-slate-600">Tap a part to hear it</p>
-              </LuminaPanel>
-            )}
+                  {revealItem.imageDescription && (
+                    <p className="text-center text-sm text-slate-500 italic">
+                      {revealItem.imageDescription}
+                    </p>
+                  )}
+                  <p className="text-center text-xs text-slate-600">Tap a part to hear it</p>
+                </LuminaPanel>
+              )}
+            </PipWorkspace>
           </>
         )}
 
@@ -514,14 +465,20 @@ const buildPartsMetrics = (s: LetterBuildSummary): SyllableClapperMetrics => ({ 
   wordsCorrect: s.solved, wordsTotal: s.total, clapCountAccuracy: s.accuracy, syllableCountsEncountered: {},
   attemptsCount: s.attemptsCount });
 
+/** The open build (`build_parts`) on the shared letter build surface, wired from this boss. */
+function SyllableBuildSurface({ data, className, runtimePlanItemId }: SyllableClapperProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier ?? 'medium';
+    return { assignment: (item: LetterBuildItem) => syllableClapperBoss.assignment({ ...item, mode: 'build_parts', supportTier: tier }),
+      levers: syllableBuildLevers(tier) };
+  }, [data.supportTier]);
+  return <LetterBuildSurface primitiveId="syllable-clapper" className={className} runtimePlanItemId={runtimePlanItemId}
+    data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildPartsMetrics} boss={boss} />;
+}
+
 /** One mount, one shape: the open build (`build_parts`) runs on the shared letter build surface. */
 function SyllableClapperHost(props: SyllableClapperProps) {
-  const { data } = props;
-  if (data.task === 'letter_build') {
-    return <LetterBuildSurface primitiveId="syllable-clapper" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
-      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildPartsMetrics} />;
-  }
-  return <SyllableClapperSurface {...props} />;
+  return props.data.task === 'letter_build' ? <SyllableBuildSurface {...props} /> : <SyllableClapperSurface {...props} />;
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
@@ -529,4 +486,3 @@ const SyllableClapper = withWorkspaceOnly<SyllableClapperProps>('syllable-clappe
   props => props.data.title);
 
 export default SyllableClapper;
-

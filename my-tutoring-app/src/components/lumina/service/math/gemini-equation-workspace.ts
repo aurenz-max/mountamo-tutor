@@ -711,6 +711,8 @@ export const generateEquationWorkspace = async (
       ch.showNextStepHint = sc.showNextStepHint ?? false;
       ch.showInverseReminder = sc.showInverseReminder ?? false;
       ch.showBalanceIndicator = sc.showBalanceIndicator ?? false;
+      // The item's own tier: the lever set reads it to say when the worked model comes.
+      ch.supportTier = supportTier;
       // Modality #2: name the first inverse move in the instruction (easy only).
       // Never for identify-operation — naming the move reveals the MC answer.
       if (sc.nameFirstMove && ch.type !== 'identify-operation') {

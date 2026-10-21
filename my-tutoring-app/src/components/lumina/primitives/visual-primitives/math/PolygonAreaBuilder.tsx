@@ -19,30 +19,29 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PolygonAreaBuilderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
-import { areaMiss, describeAreaWork, workspaceAssignment, workspaceScene, type PolygonAreaView } from './polygonAreaWorkspace';
+import { areaMiss, describeAreaWork, workspaceScene } from './polygonAreaWorkspace';
 import {
-  EDGES_LEVER, NUMBERS_LEVER, PIECES_LEVER, SMALLER_LEVER, SMALLER_PERIMETER_LEVER, TURNED_LEVER, buildAreaLevers,
-  buildAreaMiss, buildAreaVerdict, buildLeverFacts, buildPerimeterLeverFacts, buildPerimeterLevers, buildPerimeterMiss,
+  EDGES_LEVER, NUMBERS_LEVER, PIECES_LEVER, TURNED_LEVER, buildAreaMiss, buildAreaVerdict, buildPerimeterMiss,
   buildPerimeterVerdict, cellKey, connectedParts, describeBuild, describePerimeterBuild, holesIn, isBuildPerimeter,
-  isGridBuild, outsideSides, smallerArea, smallerPerimeter, turnedToMatch, type Cell,
+  isGridBuild, outsideSides, turnedToMatch, type Cell,
 } from './polygonAreaBuild';
 import { AreaBuildGrid, AreaShapeThumb } from './AreaBuildGrid';
 import {
-  CUT_LEVER, GRID_LEVER, HALF_LEVER, LEFT_OUT_LEVER, OUTSIDE_LEVER, ROWS_LEVER, SIMPLER_FIGURE_LEVERS, SLIDE_LEVER, SLOT_LEVER,
-  SPLIT_LEVER, TURNED_COPY_LEVER, figureLeverFacts, figureLevers, figureOverlay, leftOutPieces, overlayPoints, smallerFigure,
+  CUT_LEVER, GRID_LEVER, HALF_LEVER, LEFT_OUT_LEVER, OUTSIDE_LEVER, POLYGON_LEVERS, ROWS_LEVER, SLIDE_LEVER, SLOT_LEVER,
+  SPLIT_LEVER, TURNED_COPY_LEVER, figureOverlay, leftOutPieces, overlayPoints, tierShown, type PolygonLeverCtx,
 } from './polygonAreaLevers';
+import { polygonAreaBuilderBoss } from './polygonAreaBuilder.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -131,7 +130,7 @@ export interface PolygonAreaChallenge {
   /** Faint unit grid behind triangle / parallelogram / trapezoid figures so the
    *  student can count squares to self-check (easy). */
   showGridOverlay?: boolean;
-  /** The student's support tier — read by the AI tutor to calibrate reveal. */
+  /** The student's support tier (the scaffolds above follow it). */
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -179,25 +178,6 @@ const FIG_STROKE = '#22d3ee';
 const FIG_FILL = 'rgba(34, 211, 238, 0.14)';
 const PART_FILLS = ['rgba(168, 85, 247, 0.18)', 'rgba(245, 158, 11, 0.18)', 'rgba(16, 185, 129, 0.18)'];
 const SNAP_TOLERANCE = 0.35; // figure units — how close the cut triangle must be to snap
-
-// ============================================================================
-// Support-tier tutor reveal clause
-// ============================================================================
-// The live tutor sees the full challenge (including expectedArea), so a tier
-// that hides decomposition cues on the canvas must also calibrate what the tutor
-// will reveal — otherwise the tutor leaks what the tier withheld.
-const tierTutorClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
-  switch (tier) {
-    case 'easy':
-      return ' SUPPORT TIER EASY: you may name how to decompose the figure — point to where to cut it, name the formula, and walk the student through each region step by step.';
-    case 'medium':
-      return ' SUPPORT TIER MEDIUM: the decomposition is shown on screen — nudge the student\'s execution (which formula, what to multiply), but do not solve it for them.';
-    case 'hard':
-      return ' SUPPORT TIER HARD: the decomposition guidelines are withdrawn — do NOT name how to split the shape or give any per-region sub-area; ask the student how the figure could be broken into shapes they know, and NEVER reveal the total area.';
-    default:
-      return '';
-  }
-};
 
 // ============================================================================
 // Geometry helpers
@@ -311,8 +291,9 @@ interface PolygonAreaBuilderProps {
   runtimeEvalMode?: string;
 }
 
-const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PolygonAreaBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PolygonAreaChallenge>) => Progress }) => {
+const usePolygonAreaProgress = useWorkspaceProgressFor('polygon-area-builder');
+
+const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId }: PolygonAreaBuilderProps) => {
   const {
     title,
     description,
@@ -327,7 +308,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   } = data;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression. On the workspace path the runtime moves the index.
+  // Multi-challenge progression: the teaching workspace moves the index.
   // -------------------------------------------------------------------------
   const liveRuntime = useLiveRuntime();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -336,11 +317,11 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePolygonAreaProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: polygonAreaBuilderBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
   });
@@ -350,16 +331,14 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next item. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current
     || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
 
-  // Levers (`polygonAreaBuild.ts` for the open build, `polygonAreaLevers.ts` for the typed-area modes), keyed by the
-  // session item they were pulled on, and the easier item a simplify lever put on screen in its place. A pull never
+  // Levers (`POLYGON_LEVERS`, `polygonAreaLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify lever put on screen in its place. A pull never
   // comes from the tier: a tier's grid or guides are a starting position. `left`: the composite pieces the learner's
   // last area left out, fixed when `left_out_piece` was pulled.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[]; left?: number[] }>({ item: '', pulled: [] });
@@ -452,7 +431,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     resetItem();
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Workspace path: a fresh challenge starts clean in the same render the runtime opens it (so the scene it publishes
+  // A fresh challenge starts clean in the same render the runtime opens it (so the scene it publishes
   // is final), and drops a practice build. Try again keeps the decompose rectangle and the open build's squares and
   // verdict (the learner revises the build); it clears a typed area.
   openItem.current = (retry) => {
@@ -912,11 +891,6 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
       SoundManager.snap();
       setFeedback('Same area — now it’s a rectangle! What is base × height?');
       setFeedbackType('info');
-      sendText(
-        `[DECOMPOSE_DONE] Student slid the cut triangle over and formed a rectangle from the parallelogram. `
-        + `Reinforce conservation of area: the shape changed but the amount of space did not. Now ask for base × height.`,
-        { silent: true },
-      );
     }
   };
 
@@ -957,56 +931,6 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    figureType: currentChallenge?.figureType ?? 'triangle',
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    base: currentChallenge?.base ?? null,
-    base2: currentChallenge?.base2 ?? null,
-    height: currentChallenge?.height ?? null,
-    expectedArea: currentChallenge?.expectedArea ?? null,
-    unitLabel: currentChallenge?.unitLabel ?? 'units',
-    gradeBand,
-    attemptNumber: currentAttempts + 1,
-    supportTier: currentChallenge?.supportTier,
-  }), [
-    challengeType,
-    currentChallenge,
-    currentChallengeIndex,
-    challenges.length,
-    gradeBand,
-    currentAttempts,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'polygon-area-builder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: `Grade ${gradeBand}`,
-    // The workspace packet replaces this context (it carries expectedArea).
-    enabled: !tutorOwned,
-  });
-  // The scripted tags never reach the tutor on the workspace path: it is told facts, not cues.
-  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Polygon area session: ${challenges.length} figures, mode "${challengeType}", grade ${gradeBand}. `
-      + `Introduce briefly: every polygon's area comes from base × height — we'll find each one. Then read the first figure's task.`
-      + tierTutorClause(currentChallenge?.supportTier),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, challengeType, gradeBand, sendText, currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Submit handler (handler-driven with stale-state guard)
@@ -1056,7 +980,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     const correct = Math.abs(parsed - currentChallenge.expectedArea) < 0.01;
     const left = correct || practice ? null : leftOutPieces(currentChallenge, parsed);
     lastLeftOut.current = left ? { item: currentChallenge.id, left } : null;
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records a correct result.
     progress.commitCheck(
       describeAreaWork(currentChallenge, { areaInput, rearranged, cells: [], firstShape: null, practice: false }),
       correct, correct ? undefined : areaMiss(currentChallenge, parsed));
@@ -1064,26 +988,15 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
       SoundManager.playCorrect();
       setFeedback(`Correct! Area = ${currentChallenge.expectedArea} ${unit}².`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student found area = ${currentChallenge.expectedArea} ${unit}² for the ${currentChallenge.figureType}. `
-        + `Celebrate briefly and reinforce the method used.`,
-        { silent: true },
-      );
       completeChallenge(true);
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Check your formula and units, then try again.');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${parsed} but area = ${currentChallenge.expectedArea} ${unit}² `
-        + `for a ${currentChallenge.figureType} (base ${currentChallenge.base ?? '-'}, height ${currentChallenge.height ?? '-'}). `
-        + `Attempt ${currentAttempts + 1}. Point at the specific step that needs another look — do NOT give the answer.`,
-        { silent: true },
-      );
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, challengeType, rearranged, areaInput,
-    progress, completeChallenge, currentAttempts, sendText,
+    progress, completeChallenge,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleShowHint = useCallback(() => {
@@ -1095,60 +1008,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     }
   }, [showHint]);
 
-  const advanceChallenge = useCallback(() => {
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      const next = challenges[nextIdx];
-      sendText(
-        `[NEXT_ITEM] Figure ${nextIdx + 1} of ${challenges.length}: a ${next?.figureType}. `
-        + `Introduce briefly: "Here's the next figure — same idea, new shape."`
-        + tierTutorClause(next?.supportTier),
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Session complete — build metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned || !allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: PolygonAreaBuilderMetrics = {
-      type: 'polygon-area-builder',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'find_area_triangle_parallelogram') as PolygonAreaBuilderMetrics['challengeType'],
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    submitEvaluation(correctCount === total, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} figures done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, area-focused summary.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, tutorOwned]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count corrections
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections
   // and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || submittedRef.current || progress.recordsEvaluation === false) return;
@@ -1176,8 +1036,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   const gridRef = useRef<SVGSVGElement | null>(null);
   const buildSolved = isBuild && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct);
-  const buildOpen = isBuild && !buildSolved && !hasSubmittedEvaluation
-    && !(tutorOwned && progress.canAttempt === false);
+  const buildOpen = isBuild && !buildSolved && !hasSubmittedEvaluation && progress.canAttempt !== false;
   // The live line (shared build layer): what the shape looks like so far, NEVER a number — counting the squares (or the
   // sides around them) is the task. On the perimeter build `made` says whether it is one shape and whether it has a hole,
   // the two things the picture alone can mislead on; no number.
@@ -1237,51 +1096,35 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     completeChallenge(true);
   };
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation. Only the open build declares levers.
+  // What the tutor and the observer are shown, republished every render, with the session item's levers.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { areaInput, rearranged, cells, firstShape: firstNow, practice: !!practice });
-    const build = isGridBuild(sessionChallenge);
-    const perimeter = isBuildPerimeter(sessionChallenge);
-    const onScreen = practice ? '' : perimeter ? buildPerimeterLeverFacts(sessionChallenge, pulledLevers)
-      : build ? buildLeverFacts(sessionChallenge, pulledLevers) : figureLeverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : perimeter ? buildPerimeterLevers(sessionChallenge, pulledLevers)
-      : build ? buildAreaLevers(sessionChallenge, pulledLevers) : figureLevers(sessionChallenge, pulledLevers);
-    if (!build && !practice && !levers.length) { workspace.current = { ...scene }; return; }
+    const last = lastLeftOut.current;
+    const ctx: PolygonLeverCtx = {
+      // The outline a pulled left_out_piece drew stays; before the pull, the pieces the last checked area left out.
+      leftOut: leftOut.length ? leftOut : last && last.item === sessionChallenge.id ? last.left : null,
+      rearranged, firstShape: !!firstNow,
+    };
+    // A guide or grid the tier already drew is a starting position: declared as pulled, never recorded as a pull.
+    const shown = [...pulledLevers, ...tierShown(sessionChallenge).filter((id) => !pulledLevers.includes(id))];
+    const levers = practice ? [] : POLYGON_LEVERS.declare(sessionChallenge, ctx, shown);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(scene, { support: '', onScreen: practice ? '' : POLYGON_LEVERS.onScreen(sessionChallenge, ctx, shown) }),
       levers,
-      // A synchronous commit (the workspace runs it inside flushSync): the grid changes before this returns.
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id], left: leftOut };
-        if (SIMPLER_FIGURE_LEVERS.includes(id)) {
-          const smaller = smallerFigure(sessionChallenge);
-          if (!smaller) return 'This figure has no simpler version; try a help lever.';
-          setLeverState(pulled); setAreaInput(''); setFeedback(''); setFeedbackType(''); setShowHint(false);
-          setDragOffset(0); setRearranged(false); setPractice(smaller);
-          return { practice: workspaceAssignment(smaller) };
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id], left: ctx.leftOut ? [...ctx.leftOut] : [] };
+        if (lever.kind === 'simplify') {
+          const easier = POLYGON_LEVERS.simpler(sessionChallenge, ctx, id);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setCells([]); setFirstShape(null); setAreaInput(''); setFeedback(''); setFeedbackType('');
+          setShowHint(false); setDragOffset(0); setRearranged(false); setPractice(easier);
+          return { practice: polygonAreaBuilderBoss.assignment!(easier) };
         }
-        if (id === SLOT_LEVER && rearranged) return 'The cut triangle is already in its slot; the rectangle is made.';
-        if (id === LEFT_OUT_LEVER) {
-          const last = lastLeftOut.current;
-          if (!last || last.item !== sessionChallenge.id) {
-            return "The learner's last area was not the area of one piece, so there is no left-out piece to outline.";
-          }
-          setLeverState({ ...pulled, left: last.left });
-          return true;
-        }
-        if (id === SMALLER_LEVER || id === SMALLER_PERIMETER_LEVER) {
-          const easier = id === SMALLER_LEVER ? smallerArea(sessionChallenge) : smallerPerimeter(sessionChallenge);
-          if (!easier) return 'This item has no easier shape; try a help lever.';
-          setLeverState(pulled); setCells([]); setFirstShape(null); setFeedback(''); setFeedbackType(''); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
-        }
-        if (id === TURNED_LEVER && !firstNow) return 'There is no first shape yet: the learner makes it first.';
         setLeverState(pulled);
         return true;
       },
@@ -1313,18 +1156,6 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The polygon workspace',
-    solved: isCurrentComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -1337,7 +1168,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
 
   const unit = currentChallenge.unitLabel;
   const needsRearrangeFirst = challengeType === 'decompose' && !rearranged;
-  const checkClosed = tutorOwned && progress.canAttempt === false;
+  const checkClosed = progress.canAttempt === false;
   // The piece-colours lever: each shaded square's piece, so separate pieces read apart.
   const pieceOf = leverOn(PIECES_LEVER)
     ? new Map(connectedParts(cells).flatMap((part, i) => part.map((x) => [cellKey(x), i] as [string, number])))
@@ -1350,6 +1181,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-xs">Practice</LuminaBadge>}
             <LuminaBadge accent="cyan" className="text-xs">
               {`Grade ${gradeBand}`}
             </LuminaBadge>
@@ -1388,9 +1220,10 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
           })}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the figure or the grid and
+            the answer box as one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {isBuild ? (
           /* Open build — the empty grid the learner shades, one square per tap. No count and no target beside it. */
           <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20 space-y-3">
@@ -1525,7 +1358,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         </>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback — on the open build the verdict's words stay on screen until the next check. */}
         {feedback && feedbackType === 'success' && (
@@ -1546,17 +1379,8 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
           </LuminaPrompt>
         )}
 
-        {/* Controls. On the workspace path the runtime advances, so there is no Next. */}
+        {/* Controls. The runtime retries and advances, so there is no Next. */}
         <div className="flex justify-center gap-2 flex-wrap">
-          {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton
-              tone="primary"
-              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-              onClick={advanceChallenge}
-            >
-              Next Figure →
-            </LuminaButton>
-          )}
           {!isCurrentComplete && !allChallengesComplete && (
             <LuminaButton
               tone="subtle"
@@ -1585,8 +1409,8 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   );
 };
 
-// The workspace path never registers a scripted cue; the runtime owns progression.
-const PolygonAreaBuilder = withWorkspaceController<PolygonAreaBuilderProps, ProgressOptions<PolygonAreaChallenge>, Progress>(
-  'polygon-area-builder', PolygonAreaBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('polygon-area-builder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const PolygonAreaBuilder = withWorkspaceOnly<PolygonAreaBuilderProps>('polygon-area-builder', PolygonAreaBuilderSurface,
+  props => props.data.title);
 
 export default PolygonAreaBuilder;

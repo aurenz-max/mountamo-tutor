@@ -15,9 +15,12 @@ import type { WorkspaceInput } from '../../../components/live-activity/runtime/c
 import { getComponentById } from '../../../service/manifest/catalog';
 import { foodWebBuilderOracle } from '../../../service/qa/oracles/food-web-builder';
 import {
-  chainAsk, feedingRelations, foodChainMiss, foodWebMiss, pickChainTargets, workspaceAssignment,
+  chainAsk, feedingRelations, foodChainMiss, foodWebAsk, foodWebMiss, pickChainTargets,
 } from './foodWebWorkspace';
-import { foodWebLevers, shorterChain } from './foodWebLevers';
+import { FOOD_WEB_LEVERS, shorterChain } from './foodWebLevers';
+
+const foodWebLevers = (c: FoodWebChallenge, organisms: Organism[], relations: Connection[], pulled: string[]) =>
+  FOOD_WEB_LEVERS.declare(c, { organisms, relations }, pulled);
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -30,7 +33,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { ge
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 // The live line is the shared layer's (its own leak rules are tested there): here only what the scene asks it.
 vi.mock('../../build-layer/buildLayer', () => ({ useBuildWatcher: (o: unknown) => { seam.watch(o); return ''; } }));
-import FoodWebBuilder, { type FoodWebBuilderData, type FoodWebChallenge, type Organism } from './FoodWebBuilder';
+import FoodWebBuilder, { type Connection, type FoodWebBuilderData, type FoodWebChallenge, type Organism } from './FoodWebBuilder';
 
 beforeEach(() => { vi.clearAllMocks(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); seam.evaluationContext = null; });
@@ -86,7 +89,7 @@ it.each(['build_chain', 'complete_web'] as const)('%s mounts under tutor ownersh
   const h = mount(mode, [HAWK4]);
   expect(h.state().owner).toBe('tutor');
   const item = mode === 'build_chain' ? HAWK4 : { id: 'web', type: 'complete_web' as const };
-  expect(h.state().task!.task).toBe(workspaceAssignment(item, 'Grassland').task);
+  expect(h.state().task!.task).toBe(foodWebAsk(item, 'Grassland'));
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   // No feeding relation reaches the tutor: no arrow, no "eats".
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/→|\beats\b/);
@@ -209,28 +212,12 @@ it('complete_web: a backwards arrow is named, Try again keeps the arrows, turnin
   expect(evidence.phases).toEqual([expect.objectContaining({ itemId: 'web', miss: 'backwards_arrows' })]);
 });
 
-it('build, scripted path (the tester, no tutor): a miss keeps the build, Next chain opens an empty scene, the session submits once', () => {
+it('an unbound mount (no tutor) shows the shared needs-the-tutor card, never a drill', () => {
   const data: FoodWebBuilderData = { primitiveType: 'food-web-builder', ecosystem: 'Grassland', organisms: ORGANISMS,
     correctConnections: RELATIONS, gradeBand: '3-5', instanceId: 'food-web', challengeType: 'build_chain', challenges: [HAWK4, SNAKE3] };
   const view = render(<FoodWebBuilder data={data} />);
-  const touch = (target: string) => act(() => { fireEvent.click(view.container.querySelector(`[data-pip-object="${target}"]`)!); });
-  const press = (name: string | RegExp) => act(() => { fireEvent.click(screen.getByRole('button', { name })); });
-  ['g', 'm', 'k'].forEach(id => touch(`list-${id}`));
-  [['g', 'm'], ['m', 'k']].forEach(([a, b]) => { touch(`scene-${a}`); touch(`scene-${b}`); });
-  press("I'm done!");
-  expect(screen.getByText(/^Not yet\./).textContent).toMatch(/count the living things/i);
-  touch('list-s'); touch('scene-m'); touch('scene-s'); touch('scene-s'); touch('scene-k');
-  // Mouse -> Hawk is still drawn beside Mouse -> Snake -> Hawk: a branch.
-  touch('arrow-m-k');
-  press("I'm done!");
-  expect(screen.getByText(/^Yes!/)).toBeTruthy();
-  press(/next chain/i);
-  expect(view.container.querySelectorAll('[data-placed]')).toHaveLength(0);
-  ['b', 'm', 's'].forEach(id => touch(`list-${id}`));
-  [['b', 'm'], ['m', 's']].forEach(([a, b]) => { touch(`scene-${a}`); touch(`scene-${b}`); });
-  press("I'm done!");
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0][2]).toMatchObject({ challengeType: 'build_chain', chainsBuilt: 2, firstTryCount: 1 });
+  expect(view.container.querySelector('[data-pip-object^="list-"]')).toBeNull();
+  expect(screen.queryByRole('button', { name: "I'm done!" })).toBeNull();
   expect(seam.send).not.toHaveBeenCalled();
 });
 

@@ -1,7 +1,7 @@
 # Contract: train-yard
 
 - **Derived:** 2026-10-06 · evidence: birth certificate and eval report `qa/eval-reports/train-yard-birth.md`, `train-yard-2026-10-05.md`, levers report `train-yard-levers-2026-10-06.md`
-- **Component:** `primitives/visual-primitives/engineering/TrainYard.tsx` · **Model:** `trainYardModel.ts` · **Levers:** `trainYardLevers.ts` · **Generator:** `service/engineering/gemini-train-yard.ts`
+- **Component:** `primitives/visual-primitives/engineering/TrainYard.tsx` · **Model:** `trainYardModel.ts` · **Levers:** `trainYardLevers.ts` (`TRAIN_LEVERS`) · **Boss:** `trainYard.card.ts` + `trainYard.boss.ts` · **Generator:** `service/engineering/gemini-train-yard.ts`
 - **Status:** ACTIVE (L0 born, L1 four modes, L3 levers)
 
 ## Consumers
@@ -34,8 +34,11 @@
 ### R4 — simplify stays in the mode and is ungraded
 - **Property:** a simpler job has the same task, a different cargo form, whole-car loads, and its own id `<id>~simpler`; it records no result, and only the full job's answer is credited, with the lever on the attempt.
 - **Mode floors:** match_car keeps choosing among cars (two, in yard order); enough_cars keeps counting cars; enough_pull keeps choosing engines (exactly 2 on a whole-number hill); build_train keeps the whole build.
-- **Probe:** `TrainYard.levers.workspace.test.tsx`; journey row rebuilds `~simpler` jobs with `simplerJob`.
+- **Probe:** `TrainYard.levers.workspace.test.tsx`; the boss drive (`trainYard.boss.ts` `drive.current`) rebuilds `~simpler` jobs with `simplerJob`.
 
 ### R5 — tier is a starting position, not assistance
 - **Property:** `supportTier: 'easy'` starts the self-checking help pulled (match_car picture; enough_cars tally; enough_pull weight; build_train tally + weight). The attempt records no lever for a starting position; the tier never changes numbers or tasks.
 - **Probe:** `TrainYard.levers.workspace.test.tsx` "easy starts…".
+
+## Changelog
+- 2026-10-20 — moved onto a boss (wave 3): card `trainYard.card.ts` (miss lists live there), boss `trainYard.boss.ts` (validate from the deleted `adapters/trainYardLive.ts`, drive from the old journey row), levers declared once as `TRAIN_LEVERS`; each job carries `supportTier` (generator stamps it; R5 start position unchanged); catalog guidance prose dropped; Pip from the runner.

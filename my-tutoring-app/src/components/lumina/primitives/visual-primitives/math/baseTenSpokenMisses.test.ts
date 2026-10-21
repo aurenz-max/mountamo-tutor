@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { spokenNumber } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { BaseTenItem } from './baseTenScript';
-import { baseTenSpokenMisses, diWorkspaceAssignment } from './baseTenWorkspace';
+import { baseTenKey, baseTenSpokenMisses } from './baseTenWorkspace';
+import { baseTenBlocksBoss } from './baseTenBlocks.boss';
 import { spokenIntegerWord } from './spokenNumberWords';
 
 const item = (step: BaseTenItem['step'], mode: 'read_blocks' | 'regroup', target: number, place: number, start: number[]) =>
@@ -15,7 +16,8 @@ it.each([
   ['predict', item('predict', 'regroup', 342, 1, [2, 4, 3]), 12,
     ['said_ten', 'said_start', 'one_short', 'one_over', 'short_by_more', 'over_by_more']],
 ] as const)('%s: known misses in order, none of them the answer', (_, it_, answer, ids) => {
-  expect(diWorkspaceAssignment(it_).expectedAnswer).toBe(String(answer));
+  expect(baseTenKey(it_)).toMatchObject({ answer: spokenIntegerWord(answer), alsoAccept: [String(answer)] });
+  expect(baseTenBlocksBoss.assignment!(it_)).toMatchObject({ response: 'speech', misses: baseTenSpokenMisses(it_) });
   const misses = baseTenSpokenMisses(it_);
   expect(misses.map(m => m.id)).toEqual(ids);
   const accepted = [String(answer), spokenNumber(answer), spokenIntegerWord(answer)];
@@ -25,5 +27,6 @@ it.each([
 it('a trade lists none', () => {
   const trade = item('trade', 'regroup', 342, 1, [2, 4, 3]);
   expect(baseTenSpokenMisses(trade)).toEqual([]);
-  expect(diWorkspaceAssignment(trade).misses).toBeUndefined();
+  expect(baseTenKey(trade)).toBeNull();
+  expect(baseTenBlocksBoss.assignment!(trade)).toEqual({ id: trade.id, task: 'ask', response: 'gesture' });
 });

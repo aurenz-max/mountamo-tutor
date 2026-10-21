@@ -1,6 +1,6 @@
 /**
  * Levers for polygon area builder's decompose, find_area_trapezoid, composite_area and coordinate_polygon modes
- * (`polygonAreaLevers.ts`), over the generator's own items at every tier: the leak rule, per-item coverage of every
+ * (`POLYGON_LEVERS`, `polygonAreaLevers.ts`), over the generator's own items at every tier: the leak rule, per-item coverage of every
  * miss the check can name on that item, the simpler-item builders, the drawn geometry, and "this miss, then this lever".
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -12,11 +12,18 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import { selectPolygonAreaChallenges } from '../../../service/math/gemini-polygon-area-builder';
 import type { PolygonAreaChallenge, PolygonAreaChallengeType } from './PolygonAreaBuilder';
 import {
-  CUT_LEVER, GRID_LEVER, LEFT_OUT_LEVER, OUTSIDE_LEVER, RECTANGLE_FIRST_LEVER, ROWS_LEVER, SLOT_LEVER, SMALLER_FIGURE_LEVER,
-  SPLIT_LEVER, TURNED_COPY_LEVER, doubledArea, figureLeverFacts, figureLeverLeaks, figureLevers, figureOverlay, leftOutPieces,
-  outsideOfBox, smallerFigure, squareRows,
+  CUT_LEVER, GRID_LEVER, LEFT_OUT_LEVER, OUTSIDE_LEVER, POLYGON_LEVERS, RECTANGLE_FIRST_LEVER, ROWS_LEVER, SLOT_LEVER,
+  SMALLER_FIGURE_LEVER, SPLIT_LEVER, TURNED_COPY_LEVER, doubledArea, figureLeverLeaks, figureOverlay, leftOutPieces,
+  outsideOfBox, smallerFigure, squareRows, tierShown, type PolygonLeverCtx,
 } from './polygonAreaLevers';
 import { areaMiss, type AreaMiss } from './polygonAreaWorkspace';
+
+/** The levers the set declares on an item, with the tier's starting guides counted as pulled (as the component does). */
+const NO: PolygonLeverCtx = { leftOut: null, rearranged: false, firstShape: false };
+const figureLevers = (c: PolygonAreaChallenge, pulled: readonly string[], ctx: Partial<PolygonLeverCtx> = {}) =>
+  POLYGON_LEVERS.declare(c, { ...NO, ...ctx }, [...pulled, ...tierShown(c).filter(id => !pulled.includes(id))]);
+const figureLeverFacts = (c: PolygonAreaChallenge, pulled: readonly string[], ctx: Partial<PolygonLeverCtx> = {}) =>
+  POLYGON_LEVERS.onScreen(c, { ...NO, ...ctx }, pulled);
 
 type Tier = 'easy' | 'medium' | 'hard';
 const MODES = ['decompose', 'find_area_trapezoid', 'composite_area', 'coordinate_polygon'] as const;
@@ -61,7 +68,7 @@ describe('leak rule', () => {
         expect(figureLeverLeaks(c, `${l.when} ${l.does}`), `${c.id} ${l.id}`).toBe(false);
         expect(`${l.when} ${l.does}`).not.toMatch(/\d/);
       }
-      expect(figureLeverFacts(c, ALL)).not.toMatch(/\d/);
+      expect(figureLeverFacts(c, ALL, { leftOut: [0] })).not.toMatch(/\d/);
     }
   });
 });
@@ -70,8 +77,9 @@ describe('every miss the check can name on an item has an open lever on that ite
   it.each(MODES)('%s', mode => {
     const catalog = getComponentById('polygon-area-builder')!.teachingWorkspace!.misses![mode];
     for (const c of of(mode)) {
-      const levers = figureLevers(c, []);
       for (const m of missesOn(c)) {
+        // left_out_piece is offered once the last area was one piece's: the check that names one_piece sets it.
+        const levers = figureLevers(c, [], m === 'one_piece' ? { leftOut: [0] } : {});
         expect(catalog, `${mode} catalog lists ${m}`).toContain(m);
         expect(levers.some(l => !l.pulled && l.answers?.includes(m)), `${c.id} ${JSON.stringify(c.vertices ?? c.parts ?? [c.base, c.base2, c.height])} ${m}`).toBe(true);
       }
@@ -169,7 +177,15 @@ describe('which lever comes next', () => {
     ['composite_area', 'one_piece', [], LEFT_OUT_LEVER], ['composite_area', 'halved', [], ROWS_LEVER],
     ['composite_area', 'one_piece', [LEFT_OUT_LEVER], SMALLER_FIGURE_LEVER],
   ])('%s: after %s with %j pulled, %s', (mode, miss, pulled, want) => {
-    expect(nextLever(figureLevers(first(mode), pulled as string[]), miss)).toBe(want);
+    expect(nextLever(figureLevers(first(mode), pulled as string[], { leftOut: [0] }), miss)).toBe(want);
+  });
+  it('composite: left_out_piece is offered only once an area was one piece\'s; decompose: the slot until it is filled', () => {
+    const c = first('composite_area');
+    expect(figureLevers(c, []).map(l => l.id)).not.toContain(LEFT_OUT_LEVER);
+    expect(figureLevers(c, [], { leftOut: [1] }).map(l => l.id)).toContain(LEFT_OUT_LEVER);
+    const d = of('decompose').find(x => x.supportTier === 'hard')!;
+    expect(figureLevers(d, []).map(l => l.id)).toContain(SLOT_LEVER);
+    expect(figureLevers(d, [], { rearranged: true }).map(l => l.id)).not.toContain(SLOT_LEVER);
   });
   it('coordinate: the outside of the box after the rectangle around it, rows on an L, the rectangle first last', () => {
     const tri = first('coordinate_polygon', c => c.vertices!.length === 3);
@@ -179,7 +195,7 @@ describe('which lever comes next', () => {
     const rectangle = first('coordinate_polygon', c => c.vertices!.length === 4);
     expect(nextLever(figureLevers(rectangle, []), 'halved')).toBe(ROWS_LEVER);
   });
-  it('a tier\'s guides are starting positions: shown as pulled, so the next lever is another', () => {
+  it('a tier\'s guides are starting positions (`tierShown`): shown as pulled, so the next lever is another', () => {
     const hard = of('composite_area').find(c => c.supportTier === 'hard')!;
     const easy = of('composite_area').find(c => c.supportTier === 'easy')!;
     expect(figureLevers(hard, []).find(l => l.id === SPLIT_LEVER)!.pulled).toBe(false);

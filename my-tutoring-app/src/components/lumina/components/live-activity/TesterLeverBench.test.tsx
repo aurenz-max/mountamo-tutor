@@ -9,19 +9,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
-const seam = vi.hoisted(() => ({ view: {} as Record<string, unknown> }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: false, isListening: false, isAudioPlaying: false, sessionMode: null, activePrimitiveId: null,
   conversation: [], sendText: vi.fn(), sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { primitiveData: Record<string, unknown> }) => {
-  seam.view = o.primitiveData;
-  return { sendText: vi.fn(), isConnected: false, isAudioPlaying: false, activePrimitiveId: null };
-} }));
 vi.mock('../../evaluation', () => ({ useEvaluationContext: () => null,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn(), elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
-import NumberLine, { type NumberLineData } from '../../primitives/visual-primitives/math/NumberLine';
+import NumberLine, { type NumberLineControls, type NumberLineData } from '../../primitives/visual-primitives/math/NumberLine';
 import { TesterLeverBench } from './TesterLeverBench';
 
 beforeEach(() => {
@@ -38,12 +33,13 @@ function mount(challenges: object[] = [jump]) {
   const data = { title: 'Hops', range: { min: 0, max: 20 }, gradeBand: 'K-2', numberType: 'integer', interactionMode: 'jump',
     supportTier: 'medium', challenges, instanceId: 'line' } as NumberLineData;
   const binding = { instanceId: 'line', primitiveId: 'number-line' as const, evalMode: 'jump', objectiveId: 'tester', planItemId: 'plan-line', guidance: '' };
+  let controls: NumberLineControls | null = null;
   const view = render(<TesterLeverBench binding={binding}>
-    <NumberLine data={data} runtimePlanItemId="plan-line" runtimeEvalMode="jump" />
+    <NumberLine data={data} runtimePlanItemId="plan-line" runtimeEvalMode="jump" onControlsReady={c => { controls = c; }} />
   </TesterLeverBench>);
   const tap = (value: number) => {
     const svg = document.querySelector('svg[viewBox="0 0 760 240"]')!;
-    const min = Number(seam.view.visibleMin), max = Number(seam.view.visibleMax);
+    const line = controls!.getState(), min = Number(line.visibleMin), max = Number(line.visibleMax);
     act(() => { fireEvent.click(svg, { clientX: 60 + ((value - min) / (max - min)) * 640 }); });
   };
   const click = (name: RegExp) => act(() => { fireEvent.click(screen.getByRole('button', { name })); });

@@ -31,7 +31,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateShapeBuilder } = await loader.import('/src/components/lumina/service/math/gemini-shape-builder.ts');
-  const { validateShapeBuilderData } = await loader.import('/src/components/lumina/components/live-activity/adapters/shapeBuilderLive.ts');
+  const { validateShapeBuilderData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/shapeBuilder.boss.ts');
   const { shapeBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/shape-builder.ts');
   const cases = [
     ['pinned-3-5', 'make_shape', '4', 'Classifying quadrilaterals by their properties', 'Draw quadrilaterals with given angle and side properties', 'medium'],
@@ -48,7 +48,7 @@ try {
       gradeLevel: 'elementary', gradeContext: grade === 'K' ? 'Kindergarten' : `Grade ${grade}`, intent, objective: { text: intent },
       scope: {}, targetEvalMode, raw: { targetEvalMode, difficulty } });
     const issues = [];
-    try { validateShapeBuilderData(data); } catch (e) { issues.push(`live adapter rejects the data: ${e.message}`); }
+    try { validateShapeBuilderData(data); } catch (e) { issues.push(`boss validate rejects the data: ${e.message}`); }
     const types = [...new Set(data.challenges.map(c => c.type))];
     if (targetEvalMode && (types.length !== 1 || types[0] !== 'make_shape')) issues.push(`routing: types ${types.join(',')}`);
     for (const c of data.challenges.filter(c => c.type === 'make_shape')) {

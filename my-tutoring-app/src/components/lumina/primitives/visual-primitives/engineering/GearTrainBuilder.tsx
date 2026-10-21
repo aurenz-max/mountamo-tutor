@@ -12,32 +12,33 @@
  * gear takes it out. "I'm done!" turns the crank and checks the last gear with code (`gearMiss`). Many trains pass.
  * Code owns every target (`gearChallenges`); the model writes only the title.
  *
- * On the shared teaching workspace (W1) every check commits through `progress.commitCheck` with the train in words and
- * a named miss; the runtime owns progression, so the scripted Next is hidden there and the scored session is
- * submitted from `onFinished`.
+ * Taught only on the shared teaching workspace (`withWorkspaceOnly`; its wiring is `gearTrainBuilder.card.ts` +
+ * `gearTrainBuilder.boss.ts`): every check commits through `progress.commitCheck` with the train in words and a named
+ * miss; the runtime owns progression, and the scored session is submitted from `onFinished`.
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  LuminaActionButton, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
+  LuminaBadge, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaFeedbackCard,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type GearTrainMetrics, type PrimitiveEvaluationResult } from '../../../evaluation';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
-  MAX_GEARS, TEETH, WATCH_NEVER_SAY, describeTrain, gearMiss, workspaceAssignment, workspaceScene,
+  MAX_GEARS, TEETH, WATCH_NEVER_SAY, describeTrain, gearMiss, workspaceScene,
   type GearChallenge, type GearMiss, type GearMode, type TrainGear,
 } from './gearWorkspace';
-import { ARROWS_LEVER, SPIN_LEVER, gearLevers, leverFacts, simplerTrain } from './gearLevers';
+import { ARROWS_LEVER, GEAR_LEVERS, SPIN_LEVER } from './gearLevers';
+import { gearTrainBuilderBoss } from './gearTrainBuilder.boss';
 import { GearScene } from './GearScene';
 
 export type { GearChallenge, GearMode, TrainGear } from './gearWorkspace';
@@ -87,8 +88,10 @@ const PASS_FEEDBACK = 'Yes! Your last gear does just what the job asks.';
 /** A check spins the crank twice; the lever's trial spin six times (whole turns for every ratio asked). */
 const CHECK_TURNS = 2, TRY_TURNS = 6, SPIN_MS_PER_TURN = 600;
 
-const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  GearTrainBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<GearChallenge>) => Progress }) => {
+const useGearProgress = useWorkspaceProgressFor('gear-train-builder');
+const PRACTICE_NOTE = 'An easier practice train is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId }: GearTrainBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const challenges = useMemo(() => (data.challenges ?? []).filter(c => PHASE_CONFIG[c.type]), [data.challenges]);
@@ -98,16 +101,16 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useGearProgress({
     challenges,
     getChallengeId: c => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: gearTrainBuilderBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
   });
-  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const { currentIndex, results, isComplete, mergeResult } = progress;
+  const learnerBlocked = () => progress.canAttempt === false;
 
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<GearChallenge | null>(null);
@@ -173,17 +176,7 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
     accuracy, attemptsCount, firstTryCount: firstTry,
   });
 
-  const sessionSubmitted = useRef(false);
-  useEffect(() => {
-    if (!isComplete || sessionSubmitted.current || tutorOwned || hasSubmitted) return;
-    sessionSubmitted.current = true;
-    const built = results.filter(r => r.correct).length;
-    const accuracy = Math.round(results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length));
-    submitResult(built === challenges.length, accuracy, sessionMetrics(built, accuracy, results.reduce((s, r) => s + r.attempts, 0),
-      results.filter(r => Number(r.score ?? 0) === 100).length), { studentWork: { targets: challenges } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isComplete, results, challenges, tutorOwned, hasSubmitted, submitResult]);
-
+  // Under a lesson's evaluation provider only: the scored session, from the runtime's result.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     submitResult(result.passed, result.accuracy,
@@ -258,15 +251,17 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
     setFeedback({ text: GEAR_FEEDBACK[miss], correct: false });
   };
 
-  // ── Workspace path ────────────────────────────────────────────
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, train);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : gearLevers(sessionChallenge, pulledLevers);
+    if (!currentChallenge || !sessionChallenge) return;
+    const levers = practice ? [] : GEAR_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(workspaceScene(currentChallenge, train), {
+      support: practice ? '' : GEAR_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : GEAR_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -274,10 +269,10 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerTrain(sessionChallenge);
+          const easier = GEAR_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: gearTrainBuilderBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -298,14 +293,6 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
       numbers: 'never',
       neverSay: WATCH_NEVER_SAY,
     },
-  });
-
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete ? null : currentChallenge?.id ?? null,
-    label: 'The gear train and the gear tray',
-    solved: challengeDone,
-    tutorSpeaking: false,
   });
 
   // ── Render ─────────────────────────────────────────────────────
@@ -332,14 +319,17 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
         <div className="space-y-1 text-center">
           {challenges.length > 1 && (
             <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Train {currentIndex + 1} / {challenges.length}{practice ? ' · practice' : ''}
+              Train {currentIndex + 1} / {challenges.length}
             </p>
           )}
+          {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
           <h4 className="text-lg font-semibold text-violet-200">{currentChallenge?.instruction}</h4>
         </div>
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the track and the tray as one
+            region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
           <GearScene ref={sceneRef} train={train} angles={angles} arrows={arrows} counts={counts} disabled={!buildOpen} onTapGear={removeGear} />
           <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
             {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-violet-100">👀 {buildSeeing}</span>}
@@ -355,7 +345,7 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
               </LuminaButton>
             ))}
           </div>
-        </div>
+        </PipWorkspace>
 
         {hint && <LuminaCallout accent="amber" label="Hint" className="p-3">{hint}</LuminaCallout>}
         {feedback && (
@@ -364,25 +354,22 @@ const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwne
           </LuminaFeedbackCard>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {!challengeDone ? (
-            <>
-              <LuminaButton disabled={!buildOpen || !train.length} onClick={clearAll}>Clear</LuminaButton>
-              {leverOn(SPIN_LEVER) && (
-                <LuminaButton disabled={!buildOpen || train.length < 2} onClick={() => spin(TRY_TURNS, true)}>Turn the crank</LuminaButton>
-              )}
-              <LuminaButton tone="primary" disabled={!buildOpen || !train.length} onClick={checkTrain}>I&apos;m done!</LuminaButton>
-            </>
-          ) : !tutorOwned && currentIndex + 1 < challenges.length && !practice ? (
-            <LuminaActionButton action="next" onClick={() => advance()}>Next train →</LuminaActionButton>
-          ) : null}
-        </div>
+        {/* Actions. The build commits with "I'm done!"; there is no auto-check. The runtime retries and advances. */}
+        {!challengeDone && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <LuminaButton disabled={!buildOpen || !train.length} onClick={clearAll}>Clear</LuminaButton>
+            {leverOn(SPIN_LEVER) && (
+              <LuminaButton disabled={!buildOpen || train.length < 2} onClick={() => spin(TRY_TURNS, true)}>Turn the crank</LuminaButton>
+            )}
+            <LuminaButton tone="primary" disabled={!buildOpen || !train.length} onClick={checkTrain}>I&apos;m done!</LuminaButton>
+          </div>
+        )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-const GearTrainBuilder = withWorkspaceController<GearTrainBuilderProps, ProgressOptions<GearChallenge>, Progress>(
-  'gear-train-builder', GearTrainBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('gear-train-builder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const GearTrainBuilder = withWorkspaceOnly<GearTrainBuilderProps>('gear-train-builder', GearTrainBuilderSurface, props => props.data.title);
 
 export default GearTrainBuilder;

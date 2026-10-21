@@ -3,18 +3,18 @@
  * The misses are what `slopeTriangleMiss` observes in the typed legs, the typed slope or the built run; there is no
  * real-learner evidence.
  *
- * Help:
- * - `count_ticks` (every mode, where the tier withheld the overlay): a tick at every grid step along each leg. No number.
- * - `leg_names` (identify): the words rise and run written on their legs. No number, no direction.
- * - `sign_frame` (identify): the sign rule under the card, in words. No digit.
- * - `leg_labels` (calculate, where withheld): each leg's length printed on it, as the easy tier does. The answer is the
+ * Declared once as a lever set (`SLOPE_LEVERS`, `bossLevers.ts`). Help:
+ * - `count_ticks` (marks, every mode, where the tier withheld the overlay): a tick at every grid step along each leg. No number.
+ * - `leg_names` (marks, identify): the words rise and run written on their legs. No number, no direction.
+ * - `sign_frame` (clue, identify): the sign rule under the card, in words. No digit.
+ * - `leg_labels` (marks, calculate, where withheld): each leg's length printed on it, as the easy tier does. The answer is the
  *   ratio, which the learner still forms and reduces.
- * - `formula_frame` (calculate): the slope = Δy ÷ Δx badge on the grid and the rule under the card. No digit.
- * - `build_frame` (draw): the fit rule under the card: the top corner lands back on the line when the rise is the slope
+ * - `formula_frame` (clue, calculate): the slope = Δy ÷ Δx badge on the grid and the rule under the card. No digit.
+ * - `build_frame` (clue, draw): the fit rule under the card: the top corner lands back on the line when the rise is the slope
  *   times the run, below the corner for a falling line. No digit.
- * - `model_triangle` (every mode): a worked example outside the item, a triangle on a different line with its rise, run
+ * - `model_triangle` (model, every mode; when it comes is the set's `support`): a worked example outside the item, a triangle on a different line with its rise, run
  *   and slope worked out.
- * Simplify: `simpler_item` (every mode): the same task on a smaller triangle (identify), a triangle whose legs need no
+ * Simplify: `simpler_item` (easier, every mode): the same task on a smaller triangle (identify), a triangle whose legs need no
  * reducing, labelled (calculate), or a line with a whole-number slope (draw), built here on another line; ungraded
  * practice.
  *
@@ -22,9 +22,9 @@
  * rise, run or slope (or the slope turned over), and its line's slope is not the item's; a practice item has its own id,
  * ask, line and answer, keeps the mode, and its legs and slope are not the item's.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { SlopeTriangleChallenge } from './SlopeTriangle';
-import { SLOPE_TRIANGLE_MISSES_BY_MODE, ratioText, type SlopeTriangleMiss } from './slopeTriangleWorkspace';
+import { SLOPE_TRIANGLE_MISSES_BY_MODE, ratioText } from './slopeTriangleWorkspace';
 
 export const COUNT_TICKS = 'count_ticks';
 export const LEG_NAMES = 'leg_names';
@@ -149,77 +149,89 @@ export function practiceLeaks(parent: SlopeTriangleChallenge, practice: SlopeTri
     || sameLine || sameKey || near(parent.expectedSlope, practice.expectedSlope) || !inView;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
-export function slopeTriangleLevers(c: SlopeTriangleChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeItem(c)) return [];
-  const all = SLOPE_TRIANGLE_MISSES_BY_MODE[c.type];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly SlopeTriangleMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  const ticks = !c.triangle.showGridCountOverlay;
-  if (c.type === 'identify_slope') {
-    if (ticks) out.push(lever(COUNT_TICKS, 'help', 'shown', ['rise_off', 'run_off', 'same_ratio', 'wrong_legs'],
-      'The learner miscounted a leg, or gave the slope in place of this triangle\'s legs.',
-      'Draws a tick at every grid step along the rise and along the run, to count. No number.'));
-    out.push(lever(LEG_NAMES, 'help', 'shown', ['swapped', 'run_sign', 'same_ratio', 'wrong_legs'],
-      'The learner mixed up which leg is the rise and which is the run.',
-      'Writes the word rise on the up-or-down leg and the word run on the across leg. No number, no direction.'));
-    out.push(lever(SIGN_FRAME, 'help', 'both', ['rise_sign', 'run_sign'],
-      'The learner gave the rise the wrong sign, or a negative run.',
-      'Writes under the card: from the left corner, a rise that goes up is positive and one that goes down is negative; the run '
-        + 'counts to the right, so it is positive. No number.'));
-  } else if (c.type === 'calculate') {
-    if (!labelsShown(c)) out.push(lever(LEG_LABELS, 'help', 'shown', ['rise_only', 'run_only', 'wrong_slope'],
-      'The learner misread a leg or used one leg only.',
-      'Prints each leg\'s length on it, the change in y on the up-or-down leg and the change in x on the across leg. The learner '
-        + 'still forms the fraction.'));
-    if (ticks) out.push(lever(COUNT_TICKS, 'help', 'shown', ['rise_only', 'run_only', 'wrong_slope'],
-      'The learner miscounted a leg.',
-      'Draws a tick at every grid step along each leg, to count. No number.'));
-    out.push(lever(FORMULA_FRAME, 'help', 'both', ['reciprocal', 'negative_reciprocal', 'rise_only', 'run_only', 'opposite_sign'],
-      'The learner turned the ratio over, used one leg, or lost the sign.',
-      'Shows the badge slope = change in y over change in x on the grid, and writes under the card that the up-or-down leg goes on '
-        + 'top and that a line falling from left to right has a negative slope. No number.'));
-  } else {
-    if (ticks) out.push(lever(COUNT_TICKS, 'help', 'shown', ['rise_off', 'wrong_ratio'],
-      'The learner miscounted the rise or the run they built.',
-      'Draws a tick at every grid step along the learner\'s run and rise as they build, to count. No number.'));
-    out.push(lever(BUILD_FRAME, 'help', 'both', ['flat', 'wrong_sign', 'swapped', 'rise_off', 'wrong_ratio'],
-      'The learner checked a triangle whose top corner is off the line.',
-      'Writes under the card: the top corner lands back on the line when the rise is the slope times the run, with the top corner '
-        + 'below the right angle for a line that falls from left to right; the top corner\'s buttons change the rise. No number.'));
-  }
-  if (triangleModel(c)) out.push(lever(MODEL_TRIANGLE, 'help', 'both', all,
-    c.type === 'identify_slope' ? 'The learner does not know how to read a rise and a run off a triangle.'
-      : c.type === 'calculate' ? 'The learner does not know how a slope comes from a triangle\'s legs.'
-        : 'The learner does not know how a line\'s slope sets a triangle\'s rise.',
-    'Shows a worked example beside the grid: a triangle on a different line with its rise, run'
-      + (c.type === 'identify_slope' ? '' : ' and slope') + ' worked out. Read it aloud; it never shows this item\'s numbers.'));
-  if (simplerItem(c)) out.push(lever(SIMPLER, 'simplify', 'shown', all,
-    'This item is too big a step yet.',
-    c.type === 'identify_slope' ? 'Opens a smaller triangle on another line first, with ticks to count. It is not graded; the full item comes back after it.'
-      : c.type === 'calculate' ? 'Opens a small triangle on another line first, its legs labelled and needing no reducing. It is not graded; the full item comes back after it.'
-        : 'Opens another line first whose slope is a whole number, ticks shown. It is not graded; the full item comes back after it.'));
-  return out;
-}
+const ticksHidden = (c: SlopeTriangleChallenge) => !c.triangle.showGridCountOverlay;
+const legNames = (c: SlopeTriangleChallenge) => (c.triangle.notation === 'deltaNotation' ? ['Δy', 'Δx'] : ['rise', 'run']);
+const TICKS_FACT = 'A tick marks every grid step along each leg of the triangle, without numbers.';
 
-/** What the pulled help levers put on screen, for the tutor and JEV. A model's caption and printed legs, never the key. */
-export function leverFacts(c: SlopeTriangleChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeItem(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const delta = c.triangle.notation === 'deltaNotation';
-  const model = on(MODEL_TRIANGLE) ? triangleModel(c) : null;
-  return [
-    on(COUNT_TICKS) && 'A tick marks every grid step along each leg of the triangle, without numbers.',
-    on(LEG_NAMES) && 'The word rise is written on the up-or-down leg and the word run on the across leg.',
-    on(SIGN_FRAME) && 'Under the card: from the left corner, a rise that goes up is positive and one that goes down is negative; the run counts to the right, so it is positive.',
-    on(LEG_LABELS) && `The legs are labelled ${delta ? 'Δy' : 'rise'} = ${c.expectedRise} and ${delta ? 'Δx' : 'run'} = ${c.expectedRun}.`,
-    on(FORMULA_FRAME) && `A badge on the grid reads slope = ${delta ? 'Δy ÷ Δx' : 'rise ÷ run'}; under the card: the up-or-down leg goes on top, and a line that falls from left to right has a negative slope.`,
-    on(BUILD_FRAME) && 'Under the card: the top corner lands back on the line when the rise is the slope times the run, with the top corner below the right angle for a line that falls from left to right; the top corner\'s buttons change the rise.',
-    model && `Beside the grid, a worked example on a different line: ${model.caption}.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`). `count_ticks` has a spec per mode (its words and misses differ by
+ * mode). None is offered on a practice item: the component declares nothing while one is on screen.
+ */
+export const SLOPE_LEVERS = leverSet<SlopeTriangleChallenge, null>({
+  modeOf: c => c.type,
+  missesOf: mode => SLOPE_TRIANGLE_MISSES_BY_MODE[mode as SlopeTriangleChallenge['type']] ?? [],
+  // The answer a clue's words must never name: the legs (identify), the slope (calculate). A build has no single key.
+  answersOf: c => (c.type === 'identify_slope' ? [String(c.expectedRise), String(c.expectedRun)]
+    : c.type === 'calculate' ? [ratioText(c.expectedRise, c.expectedRun), String(Math.round(c.expectedSlope * 100) / 100)] : []),
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a triangle on a different line, worked out',
+    own: 'this triangle\'s numbers' },
+  specs: [
+    // ── identify_slope ──
+    { id: COUNT_TICKS, type: 'marks', modes: ['identify_slope'], answers: ['rise_off', 'run_off', 'same_ratio', 'wrong_legs'],
+      when: 'The learner miscounted a leg, or gave the slope in place of this triangle\'s legs.',
+      does: 'Draws a tick at every grid step along the rise and along the run, to count. No number.',
+      offer: ticksHidden, fact: TICKS_FACT },
+    { id: LEG_NAMES, type: 'marks', modes: ['identify_slope'], answers: ['swapped', 'run_sign', 'same_ratio', 'wrong_legs'],
+      when: 'The learner mixed up which leg is the rise and which is the run.',
+      does: 'Writes the word rise on the up-or-down leg and the word run on the across leg. No number, no direction.',
+      fact: 'The word rise is written on the up-or-down leg and the word run on the across leg.' },
+    { id: SIGN_FRAME, type: 'clue', modes: ['identify_slope'], answers: ['rise_sign', 'run_sign'],
+      when: 'The learner gave the rise the wrong sign, or a negative run.',
+      does: 'Writes under the card: from the left corner, a rise that goes up is positive and one that goes down is negative; '
+        + 'the run counts to the right, so it is positive. No number.',
+      fact: 'Under the card: from the left corner, a rise that goes up is positive and one that goes down is negative; the run '
+        + 'counts to the right, so it is positive.' },
+    // ── calculate ──
+    { id: LEG_LABELS, type: 'marks', modes: ['calculate'], answers: ['rise_only', 'run_only', 'wrong_slope'],
+      when: 'The learner misread a leg or used one leg only.',
+      does: 'Prints each leg\'s length on it, the change in y on the up-or-down leg and the change in x on the across leg. The '
+        + 'learner still forms the fraction.',
+      offer: c => !labelsShown(c),
+      fact: (_content, c) => `The legs are labelled ${legNames(c)[0]} = ${c.expectedRise} and ${legNames(c)[1]} = ${c.expectedRun}.` },
+    { id: COUNT_TICKS, type: 'marks', modes: ['calculate'], answers: ['rise_only', 'run_only', 'wrong_slope'],
+      when: 'The learner miscounted a leg.',
+      does: 'Draws a tick at every grid step along each leg, to count. No number.',
+      offer: ticksHidden, fact: TICKS_FACT },
+    { id: FORMULA_FRAME, type: 'clue', modes: ['calculate'],
+      answers: ['reciprocal', 'negative_reciprocal', 'rise_only', 'run_only', 'opposite_sign'],
+      when: 'The learner turned the ratio over, used one leg, or lost the sign.',
+      does: 'Shows the badge slope = change in y over change in x on the grid, and writes under the card that the up-or-down leg '
+        + 'goes on top and that a line falling from left to right has a negative slope. No number.',
+      fact: (_content, c) => `A badge on the grid reads slope = ${legNames(c).join(' ÷ ')}; under the card: the up-or-down leg goes `
+        + 'on top, and a line that falls from left to right has a negative slope.' },
+    // ── draw_triangle ──
+    { id: COUNT_TICKS, type: 'marks', modes: ['draw_triangle'], answers: ['rise_off', 'wrong_ratio'],
+      when: 'The learner miscounted the rise or the run they built.',
+      does: 'Draws a tick at every grid step along the learner\'s run and rise as they build, to count. No number.',
+      offer: ticksHidden, fact: TICKS_FACT },
+    { id: BUILD_FRAME, type: 'clue', modes: ['draw_triangle'], answers: ['flat', 'wrong_sign', 'swapped', 'rise_off', 'wrong_ratio'],
+      when: 'The learner checked a triangle whose top corner is off the line.',
+      does: 'Writes under the card: the top corner lands back on the line when the rise is the slope times the run, with the top '
+        + 'corner below the right angle for a line that falls from left to right; the top corner\'s buttons change the rise. No number.',
+      fact: 'Under the card: the top corner lands back on the line when the rise is the slope times the run, with the top corner '
+        + 'below the right angle for a line that falls from left to right; the top corner\'s buttons change the rise.' },
+    // ── every mode ──
+    { id: MODEL_TRIANGLE, type: 'model', answers: 'all',
+      when: c => (c.type === 'identify_slope' ? 'The learner does not know how to read a rise and a run off a triangle.'
+        : c.type === 'calculate' ? 'The learner does not know how a slope comes from a triangle\'s legs.'
+          : 'The learner does not know how a line\'s slope sets a triangle\'s rise.'),
+      does: c => 'Shows a worked example beside the grid: a triangle on a different line with its rise, run'
+        + (c.type === 'identify_slope' ? '' : ' and slope') + ' worked out. Read it aloud; it never shows this item\'s numbers.',
+      content: c => triangleModel(c),
+      fact: (model: TriangleModel) => `Beside the grid, a worked example on a different line: ${model.caption}.` },
+    { id: SIMPLER, type: 'easier', answers: 'all',
+      when: 'This item is too big a step yet.',
+      does: c => (c.type === 'identify_slope'
+        ? 'Opens a smaller triangle on another line first, with ticks to count. It is not graded; the full item comes back after it.'
+        : c.type === 'calculate'
+          ? 'Opens a small triangle on another line first, its legs labelled and needing no reducing. It is not graded; the full item '
+            + 'comes back after it.'
+          : 'Opens another line first whose slope is a whole number, ticks shown. It is not graded; the full item comes back after it.'),
+      content: c => simplerItem(c) },
+  ],
+});
 
 /** Leak rule for the levers' when/does words: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

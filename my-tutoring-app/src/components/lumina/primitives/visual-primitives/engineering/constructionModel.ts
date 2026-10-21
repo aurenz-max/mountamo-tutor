@@ -1,6 +1,6 @@
 /**
  * Construction site diorama, the domain: the materials, the asks, the check and the misses. Pure (no three.js),
- * so the generator, the workspace module, the live adapter and the tests share one source.
+ * so the generator, the workspace module, the boss and the tests share one source.
  *
  * The task is to LOAD the dump truck with the right number of scoops and send it. The learner works the
  * excavator: tap the pile to dig a scoop, tap the truck to dump it (or, with an empty bucket, tap the truck to
@@ -10,6 +10,7 @@
  * - 3-5 (`units: 'tons'`): the ask gives the truck's limit and what one scoop weighs; the number of scoops is
  *   never on screen, and the weight in the bed shows only after the truck is sent.
  */
+import type { ConstructionMiss } from './constructionSiteDiorama.card';
 
 export const CONSTRUCTION_TASKS = ['load_truck'] as const;
 export type ConstructionTask = typeof CONSTRUCTION_TASKS[number];
@@ -83,11 +84,7 @@ export function buildLoadChallenge(n: LoadNumbers, destination: string, id: stri
   return { id, type: 'load_truck', ...base, instruction: loadInstruction(base) };
 }
 
-// ── The check ───────────────────────────────────────────────────────────────
-
-export const LOAD_TRUCK_MISSES = ['one_short', 'too_few', 'one_over', 'too_many'] as const;
-export const CONSTRUCTION_MISSES = [...LOAD_TRUCK_MISSES] as const;
-export type ConstructionMiss = typeof CONSTRUCTION_MISSES[number];
+// ── The check (the misses it names are the card's, `constructionSiteDiorama.card.ts`) ──
 
 export const loadMatches = (c: LoadTruckChallenge, loaded: number) => loaded === c.target;
 

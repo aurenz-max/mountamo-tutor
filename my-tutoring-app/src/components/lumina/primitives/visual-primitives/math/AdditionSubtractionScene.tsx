@@ -3,7 +3,8 @@
 /**
  * AdditionSubtractionScene — story math. It runs only on the shared tutor/JEV teaching
  * workspace (workspace rollout C4; the scripted runner was retired, LA-14, user ruling 09-23:
- * one path). A spoken number is judged by the observer; an enacted picture or a built number
+ * one path). Its wiring is `additionSubtractionScene.card.ts` + `additionSubtractionScene.boss.ts`
+ * (spoken preset). A spoken number is judged by the observer; an enacted picture or a built number
  * sentence commits on stillness and the activity checks it; the runtime owns progression. An
  * unbound mount shows the shared "needs the tutor" card.
  *
@@ -84,20 +85,19 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AdditionSubtractionSceneMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import {
   itemsFromChallenges,
   parseEquationTiles,
   type AddSubBand,
   type AddSubSceneItem,
-} from './additionSubtractionSceneScript';
+} from './additionSubtractionSceneDomain';
 import {
-  additionSubtractionAssignment,
   additionSubtractionScene,
   addSubMiss,
   describeEquation,
@@ -107,14 +107,13 @@ import {
   sceneMatches,
 } from './additionSubtractionSceneWorkspace';
 import {
-  FRAME_FACT, FRAME_LEVER, GROUPS_LEVER, PRACTICE_NOTE, addSubLevers, departedSlots, frameBoxes, groupLayout,
-  groupsFact, groupsOffered, smallerStory,
+  ADD_SUB_LEVERS, FRAME_LEVER, GROUPS_LEVER, departedSlots, frameBoxes, groupLayout, groupsOffered,
 } from './additionSubtractionSceneLevers';
+import { additionSubtractionSceneBoss } from './additionSubtractionScene.boss';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { additionSubtractionScenePipPose } from '../../../pip/additionSubtractionScenePipPose';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -305,7 +304,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   } = data;
 
   const isPreReader = gradeBand === 'K';
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Stage-payload state (the runner owns progression; this is the scene) ──
@@ -379,7 +377,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
 
   // ── Per-item scene reset — every item owns its starting state ─────────────
   const resetSceneFor = useCallback((item: AddSubSceneItem) => {
-    pip.clear();
     setTappedObjects([]);
     setEquationTiles([]);
     pendingTilesRef.current = [];
@@ -441,7 +438,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
 
   const runner = useWorkspaceRunner<AddSubSceneItem>({
     primitiveId: 'addition-subtraction-scene',
-    assignment: additionSubtractionAssignment,
+    assignment: additionSubtractionSceneBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -467,7 +464,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
       const item = practiceRef.current ?? sessionItem;
       // Try again restores the working surface for another go; the change group,
       // once presented, stays (the story does not un-happen).
-      pip.clear();
       if (item.kind === 'build-equation') {
         // The tray clears: the tiles are indistinguishable from each other, so
         // there is no "wrong slot" to clear the way cvc-speller does.
@@ -496,9 +492,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   const frameOn = !practice && pulledLevers.includes(FRAME_LEVER) && sessionItem?.kind === 'build-equation';
   const currentSolved = runner.currentSolved;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-  // Pip's presentation is a projection of the runner's phase and the child's
-  // own touches; it never adds, removes, builds, commits, or advances anything.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
   const sceneConfig = currentItem
     ? SCENE_BACKGROUNDS[currentItem.scene] || SCENE_BACKGROUNDS.pond
     : SCENE_BACKGROUNDS.pond;
@@ -690,12 +683,12 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   // demonstration targets; `present` brings in a change group that waits for the story.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    const scene = additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting });
-    const levers = practice ? [] : addSubLevers(sessionItem, pulledLevers, leverContext);
-    const onScreen = [groupsOn && sessionItem ? groupsFact(sessionItem) : '', frameOn ? FRAME_FACT : ''].filter(Boolean).join(' ');
+    const scene = additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting, practice: !!practice });
+    const levers = practice ? [] : ADD_SUB_LEVERS.declare(sessionItem, leverContext, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...leverScene(scene, {
+        support: practice ? '' : ADD_SUB_LEVERS.support(sessionItem, leverContext),
+        onScreen: practice ? '' : ADD_SUB_LEVERS.onScreen(sessionItem, leverContext, pulledLevers) }),
       canPresent: changeWaiting,
       readyForResponse: !changeWaiting,
       levers,
@@ -706,11 +699,11 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallerStory(sessionItem, leverContext);
+          const easier = ADD_SUB_LEVERS.simpler(sessionItem, leverContext, id);
           if (!easier) return 'There is no smaller story for this item.';
           runner.clearStillness();
           setLeverState(next); practiceRef.current = easier; setPractice(easier); resetSceneFor(easier);
-          return { practice: additionSubtractionAssignment(easier) };
+          return { practice: additionSubtractionSceneBoss.assignment(easier) };
         }
         setLeverState(next);
         return true;
@@ -723,8 +716,8 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   /** Asks the tutor for the story again: a silent host request, never the answer. */
   const hearStory = useCallback(() => {
     if (!currentItem) return;
-    ctx.sendText(hearStoryRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    runner.requestHear(hearStoryRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── Equation tray palette (R6 AXIS-1 lever, unchanged) ────────────────────
   const equationTilePalette = useMemo(() => {
@@ -737,32 +730,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
         });
     return [...numberTiles, '+', '-', '='];
   }, [currentItem, maxNumber]);
-
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    // Only what is in the picture right now: a change group still waiting on
-    // the tutor's voice is not rendered, so it is never published.
-    const visibleIds = [
-      'scene',
-      ...(currentItem.kind === 'build-equation' && showEquationBar ? ['tray'] : []),
-      ...sceneObjects.map(({ slotId }) => `object-${slotId}`),
-    ];
-    const targets = pip.targets(visibleIds, (id) => (
-      id === 'scene' ? 'The story picture' : id === 'tray' ? 'The number sentence tray' : currentItem.objectType
-    ));
-    const pose = additionSubtractionScenePipPose({
-      running: runner.running, preparing: false,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.isAwaitingGesture(), tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      kind: currentItem.kind, gesture: currentItem.answerKind === 'gesture',
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentItem.id,
-      label: 'Story scene', dock: pip.dock.current, targets, pose,
-    };
-  });
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** An all-spoken run never touched the picture and an all-hands run never said
@@ -865,7 +832,11 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
               </LuminaPrompt>
             )}
 
-            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice story</div>}
+            {practice && (
+              <div className="flex justify-center" data-practice>
+                <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+              </div>
+            )}
 
             {/* The number sentence a create-story item must be built FOR — the
                 given prompt, not an answer. */}
@@ -875,10 +846,12 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
               </div>
             )}
 
+            <PipDock />
+            {/* Pip outlines the picture and its answer controls as a whole, never one object. */}
+            <PipWorkspace className="space-y-4">
             {/* Scene */}
             <div className="flex justify-center">
               <div
-                ref={pip.ref('scene')}
                 data-pip-object="scene"
                 className={`relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br ${sceneConfig.gradient}`}
                 style={{ width: SCENE_WIDTH, maxWidth: '100%', height: SCENE_HEIGHT }}
@@ -920,11 +893,10 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                     return (
                       <g
                         key={slotId}
-                        ref={pip.ref(`object-${slotId}`)}
                         data-pip-object={`object-${slotId}`}
                         className={`cursor-pointer transition-transform duration-300 ${arriving ? 'animate-fadeIn' : ''}`}
                         style={{ animationFillMode: 'forwards' }}
-                        onClick={() => { pip.look(`object-${slotId}`); handleObjectTap(slotId); }}
+                        onClick={() => handleObjectTap(slotId)}
                       >
                         {/* Hit target — an SVG <g> paints nothing of its own and
                             the emoji <text> is pointer-events-none, so WITHOUT
@@ -977,9 +949,6 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
               </div>
             </div>
 
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-              className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
             {/* Ten-frame aid — mirrors what is ACTUALLY VISIBLE (R8), so it can
                 never fill to the total while the change group is still waiting
                 on her voice. */}
@@ -997,7 +966,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                 <button
                   type="button"
                   aria-label={`Add one ${currentItem.objectType}`}
-                  onClick={() => { pip.look('scene'); addSceneObject(); }}
+                  onClick={addSceneObject}
                   disabled={!runner.canAttempt || builtCount >= maxNumber}
                   className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-amber-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
                 >
@@ -1013,7 +982,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                 on a Check. */}
             {kind === 'build-equation' && showEquationBar && (
               <div className="space-y-3">
-                <div ref={pip.ref('tray')} data-pip-object="tray"
+                <div data-pip-object="tray"
                   className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
                   {frameOn ? (
                     // The help lever `sentence_frame`: five boxes, square for a number and round for a sign, filled
@@ -1021,7 +990,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                     <div className="flex items-center gap-1" data-lever="sentence-frame">
                       {frameBoxes(equationTiles).map((box, i) => (
                         <button key={i} type="button" data-frame-box={box.shape}
-                          onClick={() => { if (box.tile !== null) { pip.look('tray'); removeTile(i); } }}
+                          onClick={() => { if (box.tile !== null) removeTile(i); }}
                           className={`h-9 w-9 border-2 border-dashed border-sky-300/50 text-purple-200 text-lg font-mono ${box.shape === 'sign' ? 'rounded-full' : 'rounded-md'}`}>
                           {box.tile ?? ''}
                         </button>
@@ -1029,7 +998,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                       {equationTiles.slice(5).map((tile, i) => (
                         <LuminaButton key={`extra-${i}`}
                           className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0"
-                          onClick={() => { pip.look('tray'); removeTile(i + 5); }} title="Tap to remove">
+                          onClick={() => removeTile(i + 5)} title="Tap to remove">
                           {tile}
                         </LuminaButton>
                       ))}
@@ -1041,7 +1010,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                       <LuminaButton
                         key={i}
                         className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
-                        onClick={() => { pip.look('tray'); removeTile(i); }}
+                        onClick={() => removeTile(i)}
                         title="Tap to remove"
                       >
                         {tile}
@@ -1055,7 +1024,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                       key={tile}
                       aria-label={`Add tile ${tile}`}
                       className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
-                      onClick={() => { pip.look('tray'); addTile(tile); }}
+                      onClick={() => addTile(tile)}
                     >
                       {tile}
                     </LuminaButton>
@@ -1063,6 +1032,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                 </div>
               </div>
             )}
+            </PipWorkspace>
 
             {/* The reward — the first moment a number sentence may appear. */}
             {/* Gated on `revealHeld`, never on `currentSolved`: the runner opens

@@ -17,20 +17,16 @@ import { observerLever } from '../../../components/live-activity/runtime/observe
 
 // The summary's confetti draws on a canvas jsdom does not have.
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
-const seam = vi.hoisted(() => ({ send: vi.fn(), view: {} as Record<string, unknown> }));
+const seam = vi.hoisted(() => ({ send: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'line',
   conversation: [], sendText: seam.send,
   sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { primitiveData: Record<string, unknown> }) => {
-  seam.view = o.primitiveData;
-  return { sendText: vi.fn(), isConnected: true, isAudioPlaying: false, activePrimitiveId: 'line' };
-} }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => null,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn(), elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
-import NumberLine, { type NumberLineData } from './NumberLine';
+import NumberLine, { type NumberLineControls, type NumberLineData } from './NumberLine';
 
 beforeEach(() => { vi.clearAllMocks();
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 760, height: 240, right: 760, bottom: 240, x: 0, y: 0, toJSON: () => ({}) });
@@ -45,8 +41,9 @@ function mount(challenges = [jump('j0', 8, 3), jump('j1', 15, 4)]) {
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const data = { title: 'Hops', range: { min: 0, max: 20 }, gradeBand: 'K-2', numberType: 'integer', interactionMode: 'jump',
     supportTier: 'medium', challenges, instanceId: 'line' } as NumberLineData;
+  let controls: NumberLineControls | null = null;
   const view = render(<LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
-    <NumberLine data={data} runtimePlanItemId="plan-line" runtimeEvalMode="jump" />
+    <NumberLine data={data} runtimePlanItemId="plan-line" runtimeEvalMode="jump" onControlsReady={c => { controls = c; }} />
   </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
   const state = () => runtime.getSnapshot();
   const offered = (name: string) => state().affordances.find(a => a.action.type === name
@@ -61,7 +58,7 @@ function mount(challenges = [jump('j0', 8, 3), jump('j1', 15, 4)]) {
   };
   const tap = (value: number) => {
     const svg = document.querySelector('svg[viewBox="0 0 760 240"]')!;
-    const min = Number(seam.view.visibleMin), max = Number(seam.view.visibleMax);
+    const line = controls!.getState(), min = Number(line.visibleMin), max = Number(line.visibleMax);
     act(() => { fireEvent.click(svg, { clientX: 60 + ((value - min) / (max - min)) * 640 }); });
   };
   const check = () => act(() => { fireEvent.click(screen.getByRole('button', { name: /check/i })); });

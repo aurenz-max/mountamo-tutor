@@ -12,9 +12,9 @@
  *   presses "I'm done!". Many chains pass: the check (`foodChainMiss`) reads the build as a graph against the lesson's
  *   own feeding relations. Code owns every target (`pickChainTargets`).
  *
- * On the shared teaching workspace (W1, plain shape) every check commits through `progress.commitCheck` with the
- * learner's work in words and a named miss; the runtime owns progression, so the scripted Next and Try Again are
- * hidden there and the scored session is submitted from `onFinished`.
+ * Taught only on the shared teaching workspace (the boss is `foodWebBuilder.boss.ts`): every check commits through
+ * `progress.commitCheck` with the learner's work in words and a named miss; the runtime owns progression, and the
+ * scored session is submitted from `onFinished` under a lesson's evaluation provider.
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -28,20 +28,21 @@ import type { FoodWebBuilderMetrics } from '../../../evaluation/types';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { bossAssignment } from '../../../components/live-activity/boss';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
-  chainShape, describeFoodWebWork, feedingRelations, feeds, foodChainMiss, foodWebMiss, watchNeverSay, workspaceAssignment, workspaceScene,
+  chainShape, describeFoodWebWork, feedingRelations, feeds, foodChainMiss, foodWebAsk, foodWebItems, foodWebMiss, watchNeverSay, workspaceScene,
   type Arrow, type FoodChainMiss, type FoodWebView,
 } from './foodWebWorkspace';
 import {
-  ARROW_COUNTS_LEVER, ARROW_WORDS_LEVER, CHAIN_COUNT_LEVER, FOOD_TAG, FOOD_TAGS_LEVER, foodWebLevers, leverFacts, shorterChain,
-  smallerWeb, webArrowCounts, webPart,
+  ARROW_COUNTS_LEVER, ARROW_WORDS_LEVER, CHAIN_COUNT_LEVER, FOOD_TAG, FOOD_TAGS_LEVER, FOOD_WEB_LEVERS, webArrowCounts, webPart,
+  type FoodWebLeverContext,
 } from './foodWebLevers';
 import { FoodChainScene, freeSlot, type PlacedOrganism } from './FoodChainScene';
 
@@ -111,8 +112,6 @@ export interface FoodWebBuilderProps {
 // Constants
 // ============================================================================
 
-const WEB_ITEM: FoodWebChallenge = { id: 'web', type: 'complete_web' };
-
 const TROPHIC_COLOR: Record<Organism['trophicLevel'], string> = {
   producer: 'bg-green-500/20 border-green-500/50 text-green-300',
   'primary-consumer': 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300',
@@ -149,8 +148,9 @@ const CHAIN_FEEDBACK: Record<FoodChainMiss, string> = {
 // Component
 // ============================================================================
 
-const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  FoodWebBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FoodWebChallenge>) => Progress }) => {
+const useFoodWebProgress = useWorkspaceProgressFor('food-web-builder');
+
+const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId }: FoodWebBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     ecosystem, organisms = [], correctConnections = [], disruptionChallenges,
@@ -158,8 +158,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   } = data;
   const isBuild = data.challengeType === 'build_chain';
   const challenges = useMemo<FoodWebChallenge[]>(
-    () => (isBuild ? (data.challenges ?? []).filter(c => c.type === 'build_chain') : [WEB_ITEM]),
-    [isBuild, data.challenges]);
+    () => foodWebItems({ challengeType: data.challengeType, challenges: data.challenges }), [data.challengeType, data.challenges]);
   /** The feeding relations the build is judged against (cleaned by code); the whole web keeps the lesson's list. */
   const relations = useMemo(() => (isBuild ? feedingRelations(organisms, correctConnections) : correctConnections),
     [isBuild, organisms, correctConnections]);
@@ -167,20 +166,20 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const stableInstanceId = useRef(instanceId || `food-web-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace moves the index. ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useFoodWebProgress({
     challenges,
     getChallengeId: c => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: c => workspaceAssignment(c, ecosystem),
+    workspace, assignment: c => bossAssignment(c.id, foodWebAsk(c, ecosystem), null),
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
   });
-  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const { currentIndex, results, isComplete, mergeResult } = progress;
+  /** A checked answer stays closed until Try again or the next item on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   // Levers (`foodWebLevers.ts`, both modes), keyed by the session item they were pulled on, and the easier item a
   // simplify lever put on screen in its place (a shorter chain, a smaller web). The item starts bare: no lever comes
@@ -207,8 +206,8 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const [showDisruption, setShowDisruption] = useState(false);
   const recordedRef = useRef(false);
 
-  // A fresh item (or a practice ask, or the return from one) opens an empty scene. On the workspace path the reset
-  // runs in the update that opens the item (`openItem`, the lever handlers); the effect then finds it already reset.
+  // A fresh item (or a practice ask, or the return from one) opens an empty scene. The reset runs in the update that
+  // opens the item (`openItem`, the lever handlers); the effect then finds it already reset.
   const resetFor = useRef<string | null>(null);
   const resetItem = (challenge: FoodWebChallenge) => {
     resetFor.current = challenge.id;
@@ -221,7 +220,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
 
-  // Workspace path: a fresh item ends any practice. Try again KEEPS the build and the verdict's words, so the learner
+  // A fresh item ends any practice. Try again KEEPS the build and the verdict's words, so the learner
   // revises it; only the selection and the whole web's right/wrong colours clear.
   openItem.current = (index, retry) => {
     if (!retry) {
@@ -233,7 +232,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   };
 
   // ── Evaluation ────────────────────────────────────────────────
-  const { submitResult, hasSubmitted, resetAttempt, submittedResult, elapsedMs } = usePrimitiveEvaluation<FoodWebBuilderMetrics>({
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs } = usePrimitiveEvaluation<FoodWebBuilderMetrics>({
     primitiveType: 'food-web-builder',
     instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
@@ -274,22 +273,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   };
   const latestArrows = useRef(arrows); latestArrows.current = arrows;
 
-  // ── Scripted build session complete → submit (the workspace path submits from `onFinished`) ──
-  const sessionSubmitted = useRef(false);
-  useEffect(() => {
-    if (!isBuild || !isComplete || sessionSubmitted.current || tutorOwned || hasSubmitted) return;
-    sessionSubmitted.current = true;
-    const solved = results.filter(r => r.correct).length;
-    const accuracy = Math.round(results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length));
-    submitResult(solved === challenges.length, accuracy, {
-      type: 'food-web-builder', challengeType: 'build_chain', totalConnections: challenges.length, correctConnections: solved,
-      missingConnections: challenges.length - solved, extraConnections: 0, webComplete: solved === challenges.length, accuracy,
-      connectionAttempts: [], chainsBuilt: solved, attemptsCount: results.reduce((s, r) => s + r.attempts, 0),
-      firstTryCount: results.filter(r => Number(r.score ?? 0) === 100).length,
-    }, { studentWork: { targets: challenges } });
-  }, [isBuild, isComplete, results, challenges, tutorOwned, hasSubmitted, submitResult]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  // Under a lesson's evaluation provider only: the scored session.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     const metrics: FoodWebBuilderMetrics = isBuild
@@ -305,9 +289,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   };
 
   // ── Building ──────────────────────────────────────────────────
-  /** complete_web on the scripted path keeps its legacy lock: one submission, then Try Again. */
-  const webLocked = !isBuild && !tutorOwned && hasSubmitted;
-  const buildOpen = !challengeDone && !learnerBlocked() && !webLocked;
+  const buildOpen = !challengeDone && !learnerBlocked();
 
   const toggleListed = (id: string) => {
     if (!buildOpen) return;
@@ -387,28 +369,18 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     if (s.extra) parts.push(`${s.extra} incorrect connection(s).`);
     setFeedback({ text: miss ? `Almost there! Check your food web. ${parts.join(' ')}` : "Perfect! You've built a complete food web!", correct: !miss });
     if (!miss) { SoundManager.playCorrect(); completeCurrent(next); } else SoundManager.playIncorrect();
-    if (!tutorOwned && !practice) {
-      submitResult(!miss, s.accuracy, webMetrics(arrows), { studentWork: { connections: arrows } });
-    }
   };
 
-  /** Scripted complete_web: start over after a submission. */
-  const handleWebReset = () => {
-    resetItem(WEB_ITEM);
-    resetAttempt();
-  };
-
-  const handleNext = () => { advance(); };
-
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
+  const leverCtx: FoodWebLeverContext = { organisms, relations };
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, view);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : foodWebLevers(sessionChallenge, organisms, relations, pulledLevers);
+    if (!currentChallenge || !sessionChallenge) return;
+    const levers = practice ? [] : FOOD_WEB_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(workspaceScene(currentChallenge, view), {
+        support: practice ? '' : FOOD_WEB_LEVERS.support(sessionChallenge, leverCtx),
+        onScreen: practice ? '' : FOOD_WEB_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+      }),
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -416,10 +388,10 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = isBuild ? shorterChain(sessionChallenge, organisms, relations) : smallerWeb(sessionChallenge, organisms, relations);
+          const easier = FOOD_WEB_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier, ecosystem) };
+          return { practice: bossAssignment(easier.id, foodWebAsk(easier, ecosystem), null) };
         }
         setLeverState(pulled);
         return true;
@@ -442,15 +414,6 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
       // Never a living thing that is not in the scene: naming one would hand over a missing link.
       neverSay: watchNeverSay(organisms, placed.map(p => p.id)),
     },
-  });
-
-  // ── Pip shared surface ─────────────────────────────────────────
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: (isBuild && isComplete) || webLocked ? null : currentChallenge?.id ?? null,
-    label: isBuild ? 'The food chain' : 'The food web',
-    solved: challengeDone,
-    tutorSpeaking: false,
   });
 
   // ── Render ─────────────────────────────────────────────────────
@@ -489,9 +452,10 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           <div className="space-y-1 text-center">
             {challenges.length > 1 && (
               <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
-                Chain {currentIndex + 1} / {challenges.length}{practice ? ' · practice' : ''}
+                Chain {currentIndex + 1} / {challenges.length}
               </p>
             )}
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             <h4 className="text-lg font-semibold text-emerald-300">{currentChallenge.instruction}</h4>
             <p className="text-xs text-slate-500">
               Tap a living thing in the list to put it in. Tap one in your scene, then another, to draw an arrow. Tap an arrow to take it out.
@@ -502,7 +466,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         {!isBuild && practice?.type === 'complete_web' && (
           <div className="space-y-1 text-center" data-practice="smaller-web">
             <p className="text-xs font-mono uppercase tracking-wider text-slate-400">Practice · a smaller web</p>
-            <h4 className="text-lg font-semibold text-emerald-300">{workspaceAssignment(practice, ecosystem).task}</h4>
+            <h4 className="text-lg font-semibold text-emerald-300">{foodWebAsk(practice, ecosystem)}</h4>
           </div>
         )}
 
@@ -526,9 +490,9 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           </>
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !webLocked && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workspace as one region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
           {isBuild ? (
             <>
               <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Living things">
@@ -631,7 +595,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
               )}
             </>
           )}
-        </div>
+        </PipWorkspace>
 
         {feedback && (
           <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'} label={feedback.correct ? 'Yes' : 'Not yet'}>
@@ -665,18 +629,15 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         {/* Actions. The build commits with "I'm done!"; there is no auto-check. */}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {isBuild ? (
-            !challengeDone ? (
+            !challengeDone && (
               <>
                 <LuminaButton disabled={!buildOpen || !placed.length} onClick={clearScene}>Clear the scene</LuminaButton>
                 <LuminaButton tone="primary" disabled={!buildOpen || !arrows.length} onClick={checkChain}>I&apos;m done!</LuminaButton>
               </>
-            ) : !tutorOwned && currentIndex + 1 < challenges.length && !practice ? (
-              <LuminaActionButton action="next" onClick={handleNext}>Next chain →</LuminaActionButton>
-            ) : null
+            )
           ) : (
             <>
               <LuminaActionButton action="check" onClick={checkWeb} disabled={!buildOpen || !arrows.length} />
-              {webLocked && <LuminaButton onClick={handleWebReset}>Try Again</LuminaButton>}
               <div className="ml-auto text-sm text-slate-400 self-center">{arrows.length} / {webRelations.length} connections</div>
             </>
           )}
@@ -686,8 +647,8 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const FoodWebBuilder = withWorkspaceController<FoodWebBuilderProps, ProgressOptions<FoodWebChallenge>, Progress>(
-  'food-web-builder', FoodWebBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('food-web-builder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const FoodWebBuilder = withWorkspaceOnly<FoodWebBuilderProps>('food-web-builder', FoodWebBuilderSurface,
+  props => props.data.ecosystem);
 
 export default FoodWebBuilder;

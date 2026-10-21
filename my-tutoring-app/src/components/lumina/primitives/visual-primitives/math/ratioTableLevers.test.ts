@@ -8,7 +8,7 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { RatioTableChallenge } from './RatioTable';
 import {
   ARROWS_LEVER, BANNER_LEVER, BAR_CHART_LEVER, DIVISION_LEVER, GROUPS_LEVER, MODEL_LEVER, SIMPLER_LEVER,
-  divisionRow, leverFacts, leverTextLeaks, practiceLeaks, ratioLevers, ratioModel, simplerRatio,
+  RATIO_LEVERS, divisionRow, leverTextLeaks, practiceLeaks, ratioModel, simplerRatio,
 } from './ratioTableLevers';
 import { RATIO_MISSES_BY_MODE, RATIO_MODE_TYPES, buildRatioAsk, formatNum, ratioCorrect, ratioKey, ratioMiss } from './ratioTableWorkspace';
 
@@ -69,11 +69,12 @@ describe('declarations', () => {
     const misses = getComponentById('ratio-table')!.teachingWorkspace!.misses![mode];
     expect(misses).toEqual(RATIO_MISSES_BY_MODE[mode]);
     for (const c of items(type)) for (const barChartShown of [false, true]) for (const bannerOn of [false, true]) {
-      const levers = ratioLevers(c, [], { barChartShown, bannerOn });
+      const ctx = { barChartShown, bannerOn };
+      const levers = RATIO_LEVERS.declare(c, ctx, []);
       const help = levers.filter(l => l.kind === 'help');
       for (const miss of misses) expect(help.some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id)))).toBe(false);
+      expect(leverTextLeaks(RATIO_LEVERS.onScreen(c, ctx, levers.map(l => l.id)))).toBe(false);
       const key = formatNum(ratioKey(c));
       const model = ratioModel(c);
       if (model) expect([...model.from, ...model.to, model.by].map(formatNum)).not.toContain(key);
@@ -86,10 +87,10 @@ describe('declarations', () => {
 
   it('the bar chart and banner are offered only where the session does not draw them; a practice problem has no levers', () => {
     const c = items('missing-value').find(x => x.baseRatio[0] === 3 && x.baseRatio[1] === 12 && x.targetMultiplier === 2.5)!;
-    expect(ratioLevers(c, [], { barChartShown: false, bannerOn: false }).map(l => l.id))
+    expect(RATIO_LEVERS.declare(c, { barChartShown: false, bannerOn: false }, []).map(l => l.id))
       .toEqual([BAR_CHART_LEVER, BANNER_LEVER, ARROWS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
-    expect(ratioLevers(c, [], { barChartShown: true, bannerOn: true }).map(l => l.id)).toEqual([ARROWS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
-    expect(ratioLevers(simplerRatio(c)!, [], { barChartShown: false, bannerOn: false })).toEqual([]);
+    expect(RATIO_LEVERS.declare(c, { barChartShown: true, bannerOn: true }, []).map(l => l.id)).toEqual([ARROWS_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
+    expect(RATIO_LEVERS.declare(simplerRatio(c)!, { barChartShown: false, bannerOn: false }, [])).toEqual([]);
   });
 
   // "This wrong answer, then this lever": the number typed (or the slider), the miss, the first open lever.
@@ -107,11 +108,11 @@ describe('declarations', () => {
   ] as const)('%s %j typed %s / slider %d: %s, then %s', (type, [a, b, k, hidden], typed, multiplier, miss, lever) => {
     const c = find(type, a, b, k, hidden);
     expect(ratioMiss(c, { typed, multiplier })).toBe(miss);
-    expect(nextLever(ratioLevers(c, [], ctx), miss)).toBe(lever);
+    expect(nextLever(RATIO_LEVERS.declare(c, ctx, []), miss)).toBe(lever);
   });
 
   it('with the first lever pulled, the next one for the same miss comes up', () => {
     const c = find('missing-value', 3, 12, 2, 'scaled-second');
-    expect(nextLever(ratioLevers(c, [ARROWS_LEVER], ctx), 'added_difference')).toBe(MODEL_LEVER);
+    expect(nextLever(RATIO_LEVERS.declare(c, ctx, [ARROWS_LEVER]), 'added_difference')).toBe(MODEL_LEVER);
   });
 });

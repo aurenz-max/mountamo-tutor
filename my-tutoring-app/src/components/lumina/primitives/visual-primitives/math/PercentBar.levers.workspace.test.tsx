@@ -80,12 +80,13 @@ it('every help lever draws without a digit or any of the item\'s numbers', () =>
   expect(h.view.container.textContent).not.toMatch(/\b70\b|28\.00/);
 });
 
-it('convert: a bar lever is refused on the compare step with nothing changed; the compare picture draws there', () => {
+it('convert: no bar lever is offered on the compare step, a pull of one changes nothing; the compare picture draws there', () => {
   const h = mount('convert', compare);
   slide(h, 70); check(h);
   slide(h, 50); check(h);
   h.press('Store B $30.00'); check(h);
   expect(attempts(h).at(-1)).toMatchObject({ miss: 'bigger_discount' });
+  expect(levers(h).map(([id]) => id)).toEqual(['discount_model', 'compare_model']);
   const before = snapshot(h);
   expect(h.dispatch('pull_lever', { lever: 'tenths' }).status).toBe('blocked');
   expect(snapshot(h)).toEqual(before);

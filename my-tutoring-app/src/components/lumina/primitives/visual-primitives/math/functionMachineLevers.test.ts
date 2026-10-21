@@ -4,9 +4,10 @@ import type { FunctionMachineChallenge, FunctionMachineChallengeType } from './F
 import { evaluateRule, makeRuleTarget, rulesEquivalent } from './functionMachineDomain';
 import {
   MODEL_LEVER, OUTPUT_STEPS_LEVER, RUN_MACHINE_LEVER, SHAPES_LEVER, SIMPLER_LEVER, STEP_ORDER_LEVER, CHECK_PAIRS_LEVER,
-  containsPhrase, isPracticeMachine, leverFacts, machineLevers, machineModel, machineRun, machineShapes, modelText, outputSteps,
-  pairMarks, practiceLeaks, ruleSteps, simplerMachine,
+  MACHINE_LEVERS, containsPhrase, isPracticeMachine, machineModel, machineRun, machineShapes, modelText, outputSteps,
+  pairMarks, practiceItem, practiceLeaks, ruleSteps, simplerMachine, type MachineLeverContext,
 } from './functionMachineLevers';
+import type { FunctionMachineItem } from './functionMachineWorkspace';
 import { buildMakeRuleChallenges } from '../../../service/math/gemini-function-machine';
 
 const RULES = ['x + 1', 'x + 4', 'x + 7', 'x - 2', 'x - 5', '2*x', '3*x', '4*x', '10*x', 'x/2', 'x/5', '2*x + 1', '3*x - 2',
@@ -17,8 +18,9 @@ const item = (rule: string, mode: string): FunctionMachineChallenge =>
 const outputs = (c: FunctionMachineChallenge) => c.inputQueue.map(x => String(evaluateRule(c.rule, x)));
 const pairsOf = (c: FunctionMachineChallenge, n = c.inputQueue.length) =>
   c.inputQueue.slice(0, n).map(input => ({ input, output: evaluateRule(c.rule, input)! }));
-const ctx = (mode: FunctionMachineChallengeType, c: FunctionMachineChallenge, extra = {}) =>
-  ({ mode, pairs: mode === 'predict' ? [] : pairsOf(c, 2), lastGuess: '', lastMachine: [], ...extra });
+const ctx = (mode: FunctionMachineChallengeType, c: FunctionMachineChallenge, extra: Partial<MachineLeverContext> = {}): MachineLeverContext =>
+  ({ pairs: mode === 'predict' ? [] : pairsOf(c, 2), lastGuess: '', lastMachine: [], ...extra });
+const asItem = (c: FunctionMachineChallenge, mode: FunctionMachineChallengeType): FunctionMachineItem => ({ ...c, mode });
 
 describe('model_machine never shows the item\'s answer', () => {
   it.each(RULES)('predict %s: a model exists, of another rule, and none of its numbers is an output of the item', rule => {
@@ -97,56 +99,78 @@ describe('simpler_machine', () => {
   });
 });
 
-describe('declarations: every checked miss has a lever on the item', () => {
+describe('declarations (MACHINE_LEVERS): every checked miss has a lever on the item', () => {
   const MISSES: Record<string, string[]> = {
     predict: ['gave_input', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'too_high', 'too_low'],
     discover_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
     create_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
   };
   it.each(RULES.flatMap(r => Object.keys(MISSES).map(m => [r, m] as const)))('%s %s', (rule, mode) => {
-    const c = item(rule, mode);
-    const levers = machineLevers(c, [], ctx(mode as FunctionMachineChallengeType, c));
+    const m = mode as FunctionMachineChallengeType, c = item(rule, m);
+    const levers = MACHINE_LEVERS.declare(asItem(c, m), ctx(m, c), []);
     for (const miss of MISSES[mode]) expect(levers.find(l => l.id === nextLever(levers, miss))?.answers, miss).toContain(miss);
     if (mode === 'predict') expect(levers.map(l => l.id)).not.toContain(CHECK_PAIRS_LEVER);
     expect(levers.some(l => l.id === STEP_ORDER_LEVER)).toBe(mode === 'predict' && !!ruleSteps(rule));
   });
-  it('make_rule: run_machine first after a wrong output, shapes after a machine that cannot run or repeats the first', () => {
+  it('check_pairs is offered once a checked rule runs on the pairs', () => {
+    const c = item('2*x + 1', 'discover_rule'), one = asItem(c, 'discover_rule');
+    const ids = (lastGuess: string) => MACHINE_LEVERS.declare(one, ctx('discover_rule', c, { lastGuess }), []).map(l => l.id);
+    expect(ids('')).not.toContain(CHECK_PAIRS_LEVER);
+    expect(ids('x +')).not.toContain(CHECK_PAIRS_LEVER);
+    expect(ids('x + 1')).toContain(CHECK_PAIRS_LEVER);
+  });
+  it('make_rule: run_machine once a checked machine runs, first after a wrong output; shapes after a machine that cannot run or repeats the first', () => {
     const [c] = buildMakeRuleChallenges('oneStep', 1, () => 0.5);
-    const levers = machineLevers(c, [], { mode: 'make_rule', pairs: [], lastGuess: '', lastMachine: [] });
+    const one = asItem(c, 'make_rule'), simpler = simplerMachine(c, 'make_rule') ? [SIMPLER_LEVER] : [];
+    expect(MACHINE_LEVERS.declare(one, { pairs: [], lastGuess: '', lastMachine: [] }, []).map(l => l.id)).toEqual([SHAPES_LEVER, ...simpler]);
+    const levers = MACHINE_LEVERS.declare(one, { pairs: [], lastGuess: '', lastMachine: ['x', '+', '9'] }, []);
     expect(nextLever(levers, 'wrong_output')).toBe(RUN_MACHINE_LEVER);
     expect(nextLever(levers, 'not_a_rule')).toBe(SHAPES_LEVER);
     expect(nextLever(levers, 'same_machine')).toBe(SHAPES_LEVER);
-    expect(levers.map(l => l.id)).toEqual([RUN_MACHINE_LEVER, SHAPES_LEVER, ...(simplerMachine(c, 'make_rule') ? [SIMPLER_LEVER] : [])]);
+    expect(levers.map(l => l.id)).toEqual([RUN_MACHINE_LEVER, SHAPES_LEVER, ...simpler]);
   });
-  it('observe and a practice machine have none', () => {
+  it('observe has none, and a practice machine has no easier one of its own', () => {
     const c = item('x + 2', 'predict');
-    expect(machineLevers(c, [], ctx('observe', c))).toEqual([]);
-    expect(machineLevers(simplerMachine(item('4*x', 'predict'), 'predict'), [], ctx('predict', c))).toEqual([]);
+    expect(MACHINE_LEVERS.declare(asItem(c, 'observe'), ctx('observe', c), [])).toEqual([]);
+    const practice = practiceItem(asItem(item('4*x', 'predict'), 'predict'))!;
+    expect(practice.mode).toBe('predict');
+    expect(practiceItem(practice)).toBeNull();
   });
   it('lever words carry no digit, so no lever names a number', () => {
     for (const rule of RULES) for (const mode of Object.keys(MISSES) as FunctionMachineChallengeType[]) {
-      for (const l of machineLevers(item(rule, mode), [], ctx(mode, item(rule, mode)))) expect(`${l.when} ${l.does}`).not.toMatch(/\d/);
+      const c = item(rule, mode);
+      for (const l of MACHINE_LEVERS.declare(asItem(c, mode), ctx(mode, c, { lastGuess: 'x + 1' }), [])) {
+        expect(`${l.when} ${l.does}`).not.toMatch(/\d/);
+      }
     }
   });
 });
 
-describe('scene facts for pulled levers', () => {
+describe('scene facts for pulled levers (MACHINE_LEVERS.onScreen)', () => {
   it('predict: the model is described, with no output of the item', () => {
     const c = item('4*x', 'predict');
-    const facts = leverFacts(c, [MODEL_LEVER, STEP_ORDER_LEVER], ctx('predict', c));
+    const facts = MACHINE_LEVERS.onScreen(asItem(c, 'predict'), ctx('predict', c), [MODEL_LEVER, STEP_ORDER_LEVER]);
     expect(facts).toMatch(/different machine of the same kind: f\(x\) = \d+x/);
     for (const o of outputs(c)) expect(containsPhrase(facts, o), o).toBe(false);
   });
   it('discover: the marks, the changes and the model never write the item\'s rule', () => {
     const c = item('2*x + 1', 'discover_rule');
-    const facts = leverFacts(c, [MODEL_LEVER, CHECK_PAIRS_LEVER, OUTPUT_STEPS_LEVER], ctx('discover_rule', c, { lastGuess: 'x + 1' }));
+    const facts = MACHINE_LEVERS.onScreen(asItem(c, 'discover_rule'), ctx('discover_rule', c, { lastGuess: 'x + 1' }),
+      [MODEL_LEVER, CHECK_PAIRS_LEVER, OUTPUT_STEPS_LEVER]);
     expect(facts).toMatch(/0 → 1 fits, 1 → 3 does not fit/);
     expect(facts).toMatch(/0 to 1: \+2/);
     expect(containsPhrase(facts, c.rule)).toBe(false);
   });
   it('make: the learner\'s machine worked through', () => {
     const c: FunctionMachineChallenge = { id: 'm', rule: '3*x', inputQueue: [4], showRule: false, makeInput: 4, makeOutput: 12 };
-    expect(leverFacts(c, [RUN_MACHINE_LEVER, SHAPES_LEVER], { mode: 'make_rule', pairs: [], lastGuess: '', lastMachine: ['x', '+', '9'] }))
-      .toBe('The learner\'s machine f(x) = x + 9 is worked through: 4 + 9 = 13; 5 + 9 = 14. Empty machine shapes are shown, each using x with a box for a number.');
+    expect(MACHINE_LEVERS.onScreen(asItem(c, 'make_rule'), { pairs: [], lastGuess: '', lastMachine: ['x', '+', '9'] },
+      [RUN_MACHINE_LEVER, SHAPES_LEVER]))
+      .toBe('The learner\'s machine f(x) = x + 9 is worked through: 4 + 9 = 13; 5 + 9 = 14. Empty machine shapes are shown, '
+        + 'each using x with a box for a number.');
+  });
+  it('support: the model comes by the session tier, medium when none', () => {
+    const c = item('4*x', 'predict');
+    expect(MACHINE_LEVERS.support(asItem(c, 'predict'), ctx('predict', c))).toMatch(/after a miss, model a different machine/);
+    expect(MACHINE_LEVERS.support({ ...asItem(c, 'predict'), supportTier: 'hard' }, ctx('predict', c))).toMatch(/this machine's outputs/);
   });
 });

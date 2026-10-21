@@ -20,8 +20,8 @@
  *     (the whole echoed back) and the accept clause ("two more" counts).
  *  6. Hand items carry a SILENCE contract; every verdict is code-computed and
  *     the cue names WHICH fault happened.
- *  7. The catalog keeps its side: audio mode, contextKeys, template keys,
- *     sentinel scan — and its steering names the microphone.
+ *  7. The catalog steers the manifest at the modality and names the microphone
+ *     (its tutoring block left with the move onto the boss, 2026-10-20).
  *  8. Harness answer material mirrors the discrimination clauses it drills.
  */
 import { describe, it, expect } from 'vitest';
@@ -58,7 +58,6 @@ import {
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
-  checkDiCatalogEntry,
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
@@ -299,18 +298,10 @@ describe('number-bond pack · missing-part judging contract', () => {
   });
 
   it('binds the correction to script fidelity on REPEATED wrong answers', () => {
-    // REGRESSION (first number-bond cap drill, 2026-08-14): on the SECOND
-    // identical wrong answer the model balked at the byte-identical scripted
-    // correction (18c) and recited the catalog ladder's quoted hints instead —
-    // lines opening with neither sentinel, so the engine saw no verdict and
-    // the correction counter stalled. Both surfaces now command the SAME line.
+    // REGRESSION (first number-bond cap drill, 2026-08-14): on the SECOND identical wrong answer the model recited the
+    // catalog ladder's hints instead of the scripted correction. The ladder left the catalog with the move onto the
+    // boss (2026-10-20); the retired cue still commands the same line.
     expect(itemCue(MP)).toContain('the SAME line on every wrong answer');
-    const entry = MATH_CATALOG.find((p) => p.id === 'number-bond')!;
-    const levels = Object.values(entry.tutoring?.scaffoldingLevels ?? {}).join(' ');
-    expect(levels).toContain('exactly as written');
-    // No ladder level may OFFER a quotable replacement line — that was the fuel.
-    expect(levels).not.toContain('Think about the two parts');
-    expect(levels).not.toContain('Take your time');
   });
 });
 
@@ -429,10 +420,6 @@ describe('number-bond pack · session frame', () => {
 
 describe('number-bond catalog · DI frame', () => {
   const entry = MATH_CATALOG.find((p) => p.id === 'number-bond')!;
-
-  it('keeps its side: audio mode, contextKeys, template keys, sentinel scan', () => {
-    expect(checkDiCatalogEntry(entry, pack, MP)).toEqual([]);
-  });
 
   it('steers the manifest at the modality, not at a Check button', () => {
     expect(entry.constraints).toMatch(/microphone/i);

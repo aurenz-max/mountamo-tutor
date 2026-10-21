@@ -153,6 +153,9 @@ export interface BaseChallenge {
   hint?: string;
   /** Plain-language explanation revealed after commit (correct or not). */
   rationale: string;
+  /** The lesson's support tier (config.difficulty), stamped by the generator: when the worked-model lever comes
+   *  (`DISTRIBUTION_LEVERS.support`). Absent on older payloads: 'medium'. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface GuidedExplorationChallenge extends BaseChallenge {

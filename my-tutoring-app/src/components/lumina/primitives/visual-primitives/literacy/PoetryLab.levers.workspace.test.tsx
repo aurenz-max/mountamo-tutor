@@ -80,8 +80,8 @@ it('rhyme_hunt fewer cards: a three-card practice round, ungraded; the full roun
   expect(receipt.state.task!.itemId).toBe('rhyme-hunt-1~simpler');
   const p = practiceFor(poetryItems(RHYME)[0], RHYME)!;
   const cards = q(h, 'button[aria-label]').map(b => b.getAttribute('aria-label'));
-  expect(cards.sort()).toEqual(p.item.round!.candidates.map(c => c.word).sort());
-  poetryHarnessWork(p.item, p.data, false).picked.forEach(w => h.press(w));
+  expect(cards.sort()).toEqual(p.round!.candidates.map(c => c.word).sort());
+  poetryHarnessWork(p, p.practice!, false).picked.forEach(w => h.press(w));
   expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('rhyme-hunt-1');
@@ -145,7 +145,7 @@ it('composition one line: a one-line practice on another subject; the poem comes
   expect(h.state().task!.itemId).toBe('compose~simpler');
   expect(q(h, 'input')).toHaveLength(1);
   const p = practiceFor({ id: 'compose', kind: 'compose' }, HAIKU)!;
-  write(h, poetryHarnessWork(p.item, p.data, false).lines); h.press(/^Check/);
+  write(h, poetryHarnessWork(p, p.practice!, false).lines); h.press(/^Check/);
   expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('compose');

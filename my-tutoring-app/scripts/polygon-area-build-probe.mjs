@@ -40,8 +40,9 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generatePolygonAreaBuilder } = await loader.import('/src/components/lumina/service/math/gemini-polygon-area-builder.ts');
   const { polygonAreaBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/polygon-area-builder.ts');
-  const { buildAreaAsk, buildAreaLevers } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaBuild.ts');
-  const { validatePolygonAreaData } = await loader.import('/src/components/lumina/components/live-activity/adapters/polygonAreaBuilderLive.ts');
+  const { buildAreaAsk } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaBuild.ts');
+  const { POLYGON_LEVERS } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaLevers.ts');
+  const { validatePolygonAreaData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaBuilder.boss.ts');
   const cases = [
     ['g3', '3', 'build_area', undefined, 'Area: make shapes with a given number of unit squares',
       'Make shapes with a given area by shading unit squares', null],
@@ -60,7 +61,7 @@ try {
     const issues = [];
     const types = [...new Set(ch.map(c => c.type))];
     if (types.length !== 1 || types[0] !== mode) issues.push(`routing: got ${JSON.stringify(types)}`);
-    try { validatePolygonAreaData(data); } catch (e) { issues.push(`live adapter refuses: ${e.message}`); }
+    try { validatePolygonAreaData(data); } catch (e) { issues.push(`boss validate refuses: ${e.message}`); }
     const oracle = polygonAreaBuilderOracle.verify(data, { componentId: 'polygon-area-builder', evalMode: mode, topic,
       gradeLevel: `Grade ${grade}`, ...(scopeMax ? { scopeMax } : {}) });
     for (const v of oracle.violations) issues.push(`oracle ${v.check} ${v.where}: ${v.detail}`);
@@ -72,7 +73,7 @@ try {
         if (c.instruction !== buildAreaAsk(c.targetArea, c.shapesAsked)) issues.push(`instruction not code-written: "${c.instruction}"`);
         if (scopeMax && c.targetArea > scopeMax) issues.push(`area ${c.targetArea} over the stated ${scopeMax}`);
         if (c.showGridOverlay || c.showDecompositionGuides || c.showRegionAreaLabel) issues.push(`aid on: ${c.id}`);
-        if (!buildAreaLevers(c, []).length) issues.push(`no levers on ${c.id}`);
+        if (!POLYGON_LEVERS.declare(c, { leftOut: null, rearranged: false, firstShape: false }, []).length) issues.push(`no levers on ${c.id}`);
       }
       const shapes = ch.map(c => c.shapesAsked);
       if (!shapes.includes(2)) issues.push(`no two-shape item: ${JSON.stringify(shapes)}`);

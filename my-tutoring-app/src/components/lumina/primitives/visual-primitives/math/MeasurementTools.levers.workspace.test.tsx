@@ -46,8 +46,9 @@ const convert = (h: WorkspaceHarness, value: number) => { type(h, 'Length in cen
 
 it('measure: the shaded spaces show in the same commit and write no number; a repeat pull changes nothing; the next attempt records it', () => {
   const h = mount('measure', [shape('a', 'Red Rectangle', 6)]);
-  expect(levers(h)).toEqual([['space_shading', false], ['edge_line', false], ['shorter_shape', false]]);
+  expect(levers(h)).toEqual([['space_shading', false], ['shorter_shape', false]]);
   measure(h, 7);
+  expect(levers(h)).toEqual([['space_shading', false], ['edge_line', false], ['shorter_shape', false]]);
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'one_over' });
   expect(nextLever(h.state().task!.workspace!.levers!, 'one_over')).toBe('space_shading');
   const text = h.view.container.textContent;
@@ -68,7 +69,7 @@ it('measure: the shaded spaces show in the same commit and write no number; a re
   h.close();
 });
 
-it('measure: the edge line is refused until the shape is on the ruler, then drops from its right edge', () => {
+it('measure: the edge line is not offered until the shape is on the ruler, then drops from its right edge', () => {
   const h = mount('measure', [shape('a', 'Red Rectangle', 6)]);
   const html = h.view.container.innerHTML;
   expect(h.dispatch('pull_lever', { lever: 'edge_line' }).status).toBe('blocked');
@@ -117,6 +118,8 @@ it('measure: the shorter shape is ungraded practice; the full item comes back bl
 
 it('convert: the inch model shows on the conversion step only, with no digit; the smaller length is practice', () => {
   const h = mount('convert', [shape('a', 'Red Rectangle', 4)]);
+  expect(levers(h).map(([id]) => id)).toEqual(['space_shading', 'smaller_length']);
+  h.press('Put it on the ruler');
   expect(levers(h).map(([id]) => id)).toEqual(['space_shading', 'edge_line', 'smaller_length']);
   measure(h, 4);
   expect(levers(h).map(([id]) => id)).toEqual(['inch_model', 'smaller_length']);

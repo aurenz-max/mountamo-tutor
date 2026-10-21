@@ -1,48 +1,46 @@
 /**
- * The in-item levers on molecule-constructor.
+ * The in-item levers on molecule-constructor, as one lever set (`bossLevers.ts`).
  *
  * The open build, `make_molecule` (/add-eval-modes references/build-mode.md). The learner makes any molecule with the
- * asked property on an empty board. Using up every atom's bonds IS the task, so the item starts bare and the levers
- * come on a miss, never from the tier. Designed from why learners fail:
- * - `open_bonds` (help): a hollow dot beside each atom for every bond it can still make. Learners stop with an atom
+ * asked property on an empty board. Using up every atom's bonds IS the task, so the item starts bare. Designed from
+ * why learners fail:
+ * - `open_bonds` (marks): a hollow dot beside each atom for every bond it can still make. Learners stop with an atom
  *   that still has bonds to make (a hydrogen short, a single bond where a double fits) and cannot see where.
- * - `bond_tally` (help): under each atom, how many bonds it has made and how many it makes ("2 of 4"). Learners count
- *   a double bond as one bond, so a carbon with a double bond looks full at three lines.
- * - `piece_colors` (help): each separate piece of the build tinted its own colour. Learners make two small molecules
+ * - `bond_tally` (custom, shown): under each atom, how many bonds it has made and how many it makes ("2 of 4").
+ *   Learners count a double bond as one bond, so a carbon with a double bond looks full at three lines.
+ * - `piece_colors` (marks): each separate piece of the build tinted its own colour. Learners make two small molecules
  *   side by side and call it one.
- * - `fewer_atoms` (simplify): an ungraded smaller ask first (fewer atoms, or one property fewer), on an empty board.
+ * - `fewer_atoms` (easier): an ungraded smaller ask first (fewer atoms, or one property fewer), on an empty board.
  * `too_many_bonds` has no lever: the board refuses a bond past an atom's valence, so it cannot be built.
  *
- * The classic `build` mode (build_target: build the named formula; free_build: join any atoms). No tier start: the
- * generator's showOptions (valence dots, the satisfied dot, the formula) are the item's presentation.
- * - `atom_tally` (help, build_target): under the asked formula, one empty circle per atom it names, filled as the
- *   learner places that element; an atom past the formula's count, or of an element it does not name, ringed red.
+ * The classic canvas (build_target: build the named formula; free_build: join any atoms). The generator's showOptions
+ * (valence dots, the satisfied dot, the formula) are the item's presentation.
+ * - `atom_tally` (custom, shown; build_target): under the asked formula, one empty circle per atom it names, filled as
+ *   the learner places that element; an atom past the formula's count, or of an element it does not name, ringed red.
  *   Learners misread the subscripts (H2O as one H, or as H and 2 O) and stop an atom short or over (`atoms_off`).
- *   Declared only when the formula is on screen and the item's atom list agrees with it (`atomTallyLeaks`).
- * - `bond_tally` (help, build_target): the same "made of makes" count under each atom of the classic canvas, for
- *   `open_valence` (the right atoms with bonds still to make, most often a single bond where a double is needed).
- * - `join_rings` (help, free_build): a green ring on every atom that can still make a bond, for `no_bonds` (atoms
- *   placed and never joined). Refused with fewer than two joinable atoms on the canvas: nothing to ring yet.
- * - `fewer_atoms` (simplify, build_target): an ungraded smaller target from `SIMPLE_TARGETS` (fewer atoms, bonds no
- *   higher, the palette's elements, never the item's own formula or another item's), then the full item comes back.
- * free_build has no simplify lever: it asks for any one bond, and nothing simpler is still a build.
+ *   Offered only when the formula is on screen and the item's atom list agrees with it (`atomTallyLeaks`).
+ * - `bond_tally` (build_target): the same "made of makes" count under each atom of the classic canvas, for
+ *   `open_valence`. Offered once an atom is on the canvas (before that there is nothing to count).
+ * - `join_rings` (marks; free_build): a green ring on every atom that can still make a bond, for `no_bonds`. Offered
+ *   once two atoms on the canvas can still bond (before that there is nothing to ring).
+ * - `fewer_atoms` (easier; build_target): an ungraded smaller target from `SIMPLE_TARGETS`, then the full item comes
+ *   back. free_build has none: it asks for any one bond, and nothing simpler is still a build.
  *
- * The `identify` mode (identify: name the drawn molecule; formula_write: write its formula). Code draws the molecule on
- * the canvas (`drawnMolecule`), and nothing on screen names it. No tier start.
- * - `show_formula` (help, identify): writes the drawn molecule's formula beside it, for `name_off`. The name is the
- *   answer; the formula is one step toward it. Declared only when the item's formula agrees with what is drawn.
- * - `formula_model` (help, formula_write): beside the item, a different small molecule drawn with its formula written
- *   under it, for `formula_off` (the documented "confuses molecular formula with atom count"). The model is never the
- *   item's own molecule or another session item's (`formulaModelLeaks`).
- * - `fewer_atoms` (simplify, identify and formula_write): a smaller molecule from `SIMPLE_TARGETS` to name or write
- *   first, ungraded, never a session item's; then the full item comes back.
- * The `predict` mode's items (predict_bonds, shape_predict) have no lever: their check passes any build with one bond
- * and checks no prediction, so there is no checked miss a lever could answer (EVAL_TRACKER MC-2).
+ * Typed items on a drawn molecule (identify: name it; formula_write: write its formula). Nothing on screen names it.
+ * - `show_formula` (clue; identify): writes the drawn molecule's formula beside it, for `name_off`. The name is the
+ *   answer; the formula is one step toward it. Offered only when the formula agrees with what is drawn.
+ * - `formula_model` (model; formula_write): beside the item, a different small molecule drawn with its formula under
+ *   it, for `formula_off`. Never the item's molecule or another session item's (`formulaModelLeaks`). When it comes is
+ *   the item's support tier (`supportTier`, stamped by the generator; 'medium' when absent: after a miss).
+ * - `fewer_atoms` (easier): a smaller molecule from `SIMPLE_TARGETS` to name or write first, ungraded.
+ * predict_bonds and shape_predict items have no lever: their check passes any build with one bond and checks no
+ * prediction, so there is no checked miss a lever could answer (EVAL_TRACKER MC-2).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { MoleculeConstructorChallenge, MoleculeConstructorData } from './MoleculeConstructor';
-import { VALENCE, askText, simplerAskFor, type MakeMoleculeMiss } from './moleculeBuild';
-import { askOf, specForAtoms, type ClassicMoleculeMiss } from './moleculeConstructorWorkspace';
+import { VALENCE, askText, simplerAskFor } from './moleculeBuild';
+import { askOf, specForAtoms } from './moleculeConstructorWorkspace';
+import { MOLECULE_MISSES_BY_MODE, type MoleculeMode } from './moleculeConstructor.card';
 
 export const OPEN_BONDS_LEVER = 'open_bonds';
 export const BOND_TALLY_LEVER = 'bond_tally';
@@ -261,89 +259,95 @@ export function simplerMolecule(c: MoleculeConstructorChallenge, ctx: SimplerCon
   return { ...c, id: `${c.id}${SIMPLER}`, ask, instruction: askText(ask) };
 }
 
-/** What the levers read off the screen: whether the Target panel shows the formula, and the session's items. */
-export interface LeverContext extends SimplerContext { showName?: boolean }
-
-export function moleculeLevers(c: MoleculeConstructorChallenge | null, pulled: readonly string[], ctx: LeverContext = {}): WorkspaceLever[] {
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly (MakeMoleculeMiss | ClassicMoleculeMiss)[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  if (c?.type === 'build_target') return [
-    ...(atomTallyLeaks(c, !!ctx.showName) ? [] : [lever(ATOM_TALLY_LEVER, 'help', ['atoms_off'],
-      'The learner places too few or too many of an atom, misreading the small numbers in the formula.',
-      'Under the asked formula, draws one empty circle for each atom it names; each atom the learner places fills one, '
-        + 'and an atom past the count, or of an element the formula does not name, is ringed red.')]),
-    lever(BOND_TALLY_LEVER, 'help', ['open_valence'],
-      'The learner has the right atoms but stops with bonds still to make, or counts a double bond as one bond.',
-      'Writes under each atom on the canvas how many bonds it has made and how many it makes in all, a double bond counting two.'),
-    ...(simplerTarget(c, ctx) ? [lever(FEWER_ATOMS_LEVER, 'simplify', ['atoms_off', 'open_valence'],
-      'The learner cannot build a molecule this big yet.',
-      'Opens a smaller molecule to build first, with fewer atoms, on an empty canvas. It is not graded; the full item comes back after it.')] : []),
-  ];
-  if (c?.type === 'identify') return [
-    ...(showFormulaLeaks(c) ? [] : [lever(SHOW_FORMULA_LEVER, 'help', ['name_off'],
-      'The learner cannot name the drawn molecule.',
-      'Writes the drawn molecule\'s formula beside it. It never shows the name.')]),
-    ...(simplerTyped(c, ctx) ? [lever(FEWER_ATOMS_LEVER, 'simplify', ['name_off'],
-      'The learner cannot name a molecule this big yet.',
-      'Opens a smaller molecule to name first. It is not graded; the full item comes back after it.')] : []),
-  ];
-  if (c?.type === 'formula_write') return [
-    ...(formulaModel(c, ctx) ? [lever(FORMULA_MODEL_LEVER, 'help', ['formula_off'],
-      'The learner misreads what the small numbers in a formula count, or miscounts the atoms of an element.',
-      'Beside the item, draws a different small molecule with its formula written under it, so the learner sees how a '
-        + 'drawing becomes a formula. It writes nothing about the item\'s own molecule.')] : []),
-    ...(simplerTyped(c, ctx) ? [lever(FEWER_ATOMS_LEVER, 'simplify', ['formula_off'],
-      'The learner cannot write the formula of a molecule this big yet.',
-      'Opens a smaller molecule to write the formula of first. It is not graded; the full item comes back after it.')] : []),
-  ];
-  if (c?.type === 'free_build') return [
-    lever(JOIN_RINGS_LEVER, 'help', ['no_bonds'],
-      'The learner places atoms but never joins two of them.',
-      'Rings in green every atom on the canvas that can still make a bond, so the learner sees which atoms can be joined.'),
-  ];
-  if (c?.type !== 'make_molecule') return [];
-  return [
-    lever(OPEN_BONDS_LEVER, 'help', ['open_valence', 'bond_order_short'],
-      'The learner stops while some atoms can still make bonds, and cannot find which.',
-      'Puts a small hollow dot beside each atom on the board for every bond it can still make. It marks the learner\'s own atoms only.'),
-    lever(BOND_TALLY_LEVER, 'help', ['bond_order_short', 'no_double_bond', 'no_triple_bond', 'open_valence'],
-      'The learner counts a double or triple bond as one bond, or loses track of how many bonds an atom has made.',
-      'Writes under each atom on the board how many bonds it has made and how many it makes in all, a double bond counting two.'),
-    lever(PIECE_COLORS_LEVER, 'help', ['not_connected'],
-      'The learner makes two or more separate pieces and calls them one molecule.',
-      'Tints each separate piece of the learner\'s build its own colour, so the pieces show.'),
-    ...(simplerMolecule(c) ? [lever(FEWER_ATOMS_LEVER, 'simplify',
-      ['not_connected', 'open_valence', 'bond_order_short', 'no_double_bond', 'no_triple_bond', 'carbon_count_off', 'element_missing', 'too_many_atoms'],
-      'The learner cannot make a molecule this big or with this many properties yet.',
-      'Opens an easier ask first, a molecule with fewer atoms or one property fewer, on an empty board. It is not graded; the full item comes back after it.')] : []),
-  ];
+/** What the levers read beside the item: the Target panel, the session's items, and the classic canvas now. */
+export interface LeverContext extends SimplerContext {
+  showName?: boolean;
+  /** Atoms on the classic canvas. */
+  atoms?: number;
+  /** Atoms on the classic canvas that can still make a bond. */
+  joinable?: number;
 }
 
-/**
- * A classic-canvas help pull that would draw nothing yet, refused with what to do instead (null: the pull goes ahead).
- * `atoms` is how many atoms are on the canvas, `joinable` how many of them can still make a bond.
- */
-export function classicRefusal(id: string, atoms: number, joinable: number): string | null {
-  if (id === BOND_TALLY_LEVER && atoms === 0) return 'No atoms on the canvas yet, so there is nothing to count; ask the learner to place the atoms first.';
-  if (id === JOIN_RINGS_LEVER && joinable < 2) return 'Fewer than two atoms on the canvas can make a bond, so there is nothing to ring yet; ask the learner to add atoms first.';
-  return null;
-}
+/** The card mode an item's type belongs to (a classic session may hold any classic type: every classic lever is in
+ *  all three classic modes, and its content picks the type). */
+const MODE_OF: Record<MoleculeConstructorChallenge['type'], MoleculeMode> = {
+  build_target: 'build', free_build: 'build', identify: 'identify', formula_write: 'identify',
+  predict_bonds: 'predict', shape_predict: 'predict', make_molecule: 'make_molecule',
+};
+const CLASSIC: readonly MoleculeMode[] = ['build', 'identify', 'predict'];
+const MAKE: readonly MoleculeMode[] = ['make_molecule'];
+const board = (c: MoleculeConstructorChallenge) => (c.type === 'make_molecule' ? 'board' : 'canvas');
 
-/** What the pulled help levers put on screen, for the tutor. */
-export function leverFacts(c: MoleculeConstructorChallenge | null, pulled: readonly string[]): string {
-  const facts = (list: Array<string | false>) => list.filter((s): s is string => !!s).join(' ');
-  if (c?.type === 'build_target') return facts([
-    pulled.includes(ATOM_TALLY_LEVER) && 'Under the asked formula is one circle for each atom it names, filled for each atom of that element placed; any atom past the count is ringed red.',
-    pulled.includes(BOND_TALLY_LEVER) && 'Under each atom on the canvas is how many bonds it has made and how many it makes in all.',
-  ]);
-  if (c?.type === 'identify') return facts([pulled.includes(SHOW_FORMULA_LEVER) && 'Beside the drawn molecule is its formula.']);
-  if (c?.type === 'formula_write') return facts([pulled.includes(FORMULA_MODEL_LEVER)
-    && 'Beside the item is a different molecule, drawn with its formula written under it.']);
-  if (c?.type === 'free_build') return facts([pulled.includes(JOIN_RINGS_LEVER) && 'Every atom on the canvas that can still make a bond has a green ring.']);
-  if (c?.type !== 'make_molecule') return '';
-  return facts([
-    pulled.includes(OPEN_BONDS_LEVER) && 'Beside each atom on the board is a hollow dot for every bond it can still make.',
-    pulled.includes(BOND_TALLY_LEVER) && 'Under each atom is how many bonds it has made and how many it makes in all.',
-    pulled.includes(PIECE_COLORS_LEVER) && 'Each separate piece of the build is tinted its own colour.',
-  ]);
-}
+export const MOLECULE_LEVERS = leverSet<MoleculeConstructorChallenge, LeverContext>({
+  modeOf: c => MODE_OF[c.type] ?? 'build',
+  missesOf: mode => MOLECULE_MISSES_BY_MODE[mode as MoleculeMode] ?? [],
+  // show_formula's words must never name the molecule it is the formula of.
+  answersOf: c => (c.type === 'identify' && c.targetName ? [c.targetName] : []),
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a different molecule, drawn with its formula',
+    own: 'this molecule\'s formula' },
+  specs: [
+    { id: OPEN_BONDS_LEVER, type: 'marks', modes: MAKE, answers: ['open_valence', 'bond_order_short'],
+      when: 'The learner stops while some atoms can still make bonds, and cannot find which.',
+      does: 'Puts a small hollow dot beside each atom on the board for every bond it can still make. It marks the learner\'s own atoms only.',
+      fact: 'Beside each atom on the board is a hollow dot for every bond it can still make.' },
+    { id: ATOM_TALLY_LEVER, type: 'custom', carrier: 'shown', modes: CLASSIC, answers: ['atoms_off'],
+      why: 'It counts the atoms the learner has placed against the formula on screen and changes as they place them; no '
+        + 'stock type reads back the learner\'s own work.',
+      when: 'The learner places too few or too many of an atom, misreading the small numbers in the formula.',
+      does: 'Under the asked formula, draws one empty circle for each atom it names; each atom the learner places fills one, '
+        + 'and an atom past the count, or of an element the formula does not name, is ringed red.',
+      content: (c, ctx) => (c.type === 'build_target' && !atomTallyLeaks(c, !!ctx.showName) ? true : null),
+      fact: 'Under the asked formula is one circle for each atom it names, filled for each atom of that element placed; any atom past the count is ringed red.' },
+    { id: BOND_TALLY_LEVER, type: 'custom', carrier: 'shown', answers: ['open_valence', 'bond_order_short', 'no_double_bond', 'no_triple_bond'],
+      answersOn: c => (c.type === 'make_molecule' ? ['bond_order_short', 'no_double_bond', 'no_triple_bond', 'open_valence'] : ['open_valence']),
+      why: 'It counts the bonds each atom has made against how many it makes and changes as the learner builds; no stock '
+        + 'type reads back the learner\'s own work.',
+      when: c => (c.type === 'make_molecule'
+        ? 'The learner counts a double or triple bond as one bond, or loses track of how many bonds an atom has made.'
+        : 'The learner has the right atoms but stops with bonds still to make, or counts a double bond as one bond.'),
+      does: c => `Writes under each atom on the ${board(c)} how many bonds it has made and how many it makes in all, a double bond counting two.`,
+      content: c => (c.type === 'make_molecule' || c.type === 'build_target' ? true : null),
+      offer: (c, ctx) => c.type === 'make_molecule' || (ctx.atoms ?? 0) > 0,
+      fact: (_on, c) => `Under each atom on the ${board(c)} is how many bonds it has made and how many it makes in all.` },
+    { id: PIECE_COLORS_LEVER, type: 'marks', modes: MAKE, answers: ['not_connected'],
+      when: 'The learner makes two or more separate pieces and calls them one molecule.',
+      does: 'Tints each separate piece of the learner\'s build its own colour, so the pieces show.',
+      fact: 'Each separate piece of the build is tinted its own colour.' },
+    { id: SHOW_FORMULA_LEVER, type: 'clue', modes: CLASSIC, answers: ['name_off'],
+      when: 'The learner cannot name the drawn molecule.',
+      does: 'Writes the drawn molecule\'s formula beside it. It never shows the name.',
+      content: c => (c.type === 'identify' && !showFormulaLeaks(c) ? c.targetFormula : null),
+      fact: 'Beside the drawn molecule is its formula.' },
+    { id: FORMULA_MODEL_LEVER, type: 'model', modes: CLASSIC, answers: ['formula_off'],
+      when: 'The learner misreads what the small numbers in a formula count, or miscounts the atoms of an element.',
+      does: 'Beside the item, draws a different small molecule with its formula written under it, so the learner sees how a '
+        + 'drawing becomes a formula. It writes nothing about the item\'s own molecule.',
+      content: (c, ctx) => formulaModel(c, ctx),
+      fact: 'Beside the item is a different molecule, drawn with its formula written under it.' },
+    { id: JOIN_RINGS_LEVER, type: 'marks', modes: CLASSIC, answers: ['no_bonds'],
+      when: 'The learner places atoms but never joins two of them.',
+      does: 'Rings in green every atom on the canvas that can still make a bond, so the learner sees which atoms can be joined.',
+      content: c => (c.type === 'free_build' ? true : null),
+      offer: (_c, ctx) => (ctx.joinable ?? 0) >= 2,
+      fact: 'Every atom on the canvas that can still make a bond has a green ring.' },
+    { id: FEWER_ATOMS_LEVER, type: 'easier',
+      answers: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'not_connected', 'bond_order_short', 'no_double_bond',
+        'no_triple_bond', 'carbon_count_off', 'element_missing', 'too_many_atoms'],
+      answersOn: c => ({
+        build_target: ['atoms_off', 'open_valence'], identify: ['name_off'], formula_write: ['formula_off'],
+        make_molecule: ['not_connected', 'open_valence', 'bond_order_short', 'no_double_bond', 'no_triple_bond', 'carbon_count_off',
+          'element_missing', 'too_many_atoms'],
+      } as Record<string, string[]>)[c.type] ?? [],
+      when: c => ({
+        build_target: 'The learner cannot build a molecule this big yet.',
+        identify: 'The learner cannot name a molecule this big yet.',
+        formula_write: 'The learner cannot write the formula of a molecule this big yet.',
+      } as Record<string, string>)[c.type] ?? 'The learner cannot make a molecule this big or with this many properties yet.',
+      does: c => ({
+        build_target: 'Opens a smaller molecule to build first, with fewer atoms, on an empty canvas. It is not graded; the full item comes back after it.',
+        identify: 'Opens a smaller molecule to name first. It is not graded; the full item comes back after it.',
+        formula_write: 'Opens a smaller molecule to write the formula of first. It is not graded; the full item comes back after it.',
+      } as Record<string, string>)[c.type] ?? 'Opens an easier ask first, a molecule with fewer atoms or one property fewer, on an empty board. It is not graded; the full item comes back after it.',
+      content: (c, ctx) => simplerMolecule(c, ctx) },
+  ],
+});

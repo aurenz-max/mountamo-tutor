@@ -1,20 +1,22 @@
 /**
- * Formula lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C17).
+ * Formula lab's domain on the shared tutor/JEV teaching workspace (the boss is `formulaLab.boss.ts`).
  *
- * Pure: the component, the journey row and any probe read the same assignment, check and scene. Each challenge is
- * answered on the screen and checked by the activity's own code:
+ * Pure: the component, the boss and any probe read the same ask, check and scene. Each challenge is answered on the
+ * screen and checked by the activity's own code:
  * - free-explore: the changed quantity moved to its target (always credited; there is nothing to get wrong);
- * - predict-direction / predict-magnitude: the prediction placed on the track and locked. On the workspace path the
- *   lock is the checked answer, and the output stays hidden after a miss; the scripted path still tests first;
+ * - predict-direction / predict-magnitude: the prediction placed on the track and locked. The lock is the checked
+ *   answer, and the output stays hidden after a miss;
  * - construct-formula: the tokens arranged and checked. Any arrangement that uses every token and gives the same
  *   value as the hidden formula is credited (b * a for a * b), not only the generator's token order;
  * - transfer-apply: the output typed and checked within half a percent.
  * The tutor is never handed the direction, the strength, the hidden expression, or the output.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { FormulaLabChallenge, FormulaLabChallengeType, FormulaLabData, FormulaLabDirection } from './FormulaLab';
 import { evaluateFormulaExpression } from './formulaLabMath';
+import type { FormulaLabMiss } from './formulaLab.card';
+
+export { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from './formulaLab.card';
 
 type Lab = Pick<FormulaLabData, 'expression' | 'variables' | 'outputSymbol' | 'outputName' | 'outputUnit' | 'transferContext'>;
 
@@ -121,31 +123,6 @@ export function formulaCheck(d: Lab, ch: FormulaLabChallenge, work: FormulaWork)
   }
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), named for the pattern on screen, drawn from the
- * catalog's commonStruggles (the same direction every time, arithmetic before structure, tokens in an invalid order):
- * - `opposite_direction`: predicted the output moves the other way;
- * - `missed_change`: predicted it stays about the same when it changes; `invented_change`: predicted a change when it
- *   stays about the same;
- * - `too_strong` / `too_weak` (magnitude): the right way, or near the centre, but too far from the observed marker;
- * - `incomplete`: fewer tokens than the formula has; `not_an_expression`: every token, in an order that is not a
- *   formula; `inverted`: every token, giving the reciprocal of the output (a divisor and a multiplier swapped);
- *   `operation_order`: every token, a valid formula, a different relationship;
- * - `used_starting_inputs` (transfer): the output at the starting values the scene still shows, not the new ones;
- *   `power_as_multiply`: a power worked as a multiplication; `near_miss`: within 5%; `too_high` / `too_low`.
- */
-export type FormulaLabMiss = 'opposite_direction' | 'missed_change' | 'invented_change' | 'too_strong' | 'too_weak'
-  | 'incomplete' | 'not_an_expression' | 'inverted' | 'operation_order'
-  | 'used_starting_inputs' | 'power_as_multiply' | 'near_miss' | 'too_high' | 'too_low';
-
-/** free-explore credits every finished move, so it names none. */
-export const FORMULA_MISSES_BY_MODE: Record<string, readonly FormulaLabMiss[]> = {
-  'predict-direction': ['opposite_direction', 'missed_change', 'invented_change'],
-  'predict-magnitude': ['opposite_direction', 'too_strong', 'too_weak'],
-  'construct-formula': ['incomplete', 'not_an_expression', 'inverted', 'operation_order'],
-  'transfer-apply': ['used_starting_inputs', 'power_as_multiply', 'near_miss', 'too_high', 'too_low'],
-};
-
 export function formulaMiss(d: Lab, ch: FormulaLabChallenge, work: FormulaWork): FormulaLabMiss | undefined {
   if (formulaCheck(d, ch, work).correct) return undefined;
   switch (ch.type) {
@@ -221,20 +198,19 @@ const MODE_LABEL: Record<FormulaLabChallengeType, string> = {
 };
 
 /** The ask, as the screen states it. */
-export function workspaceAssignment(d: Lab, ch: FormulaLabChallenge): TeachingAssignment {
+export function formulaAsk(d: Lab, ch: FormulaLabChallenge): string {
   const { index, variable } = changed(d, ch);
   const name = variable?.name ?? ch.changedVariableSymbol, unit = variable?.unit ?? '';
   const from = `${formatNumber(ch.baselineValues[index] ?? 0)} ${unit}`.trim(), to = `${formatNumber(ch.targetValues[index] ?? 0)} ${unit}`.trim();
-  const task = {
+  return {
     'free-explore': `Move ${name} from ${from} to ${to} while every other quantity stays fixed, and watch what happens to ${d.outputName}.`,
     'predict-direction': `When ${name} changes from ${from} to ${to}, will ${d.outputName} increase, decrease, or stay about the same? `
       + 'Place your prediction on the track and press Lock prediction.',
     'predict-magnitude': `Predict how strongly ${d.outputName} will change, and which way, when ${name} moves from ${from} to ${to}. `
       + 'Place your prediction on the track and press Lock prediction.',
     'construct-formula': `Build the hidden right-hand side of ${d.outputSymbol} = ? from the tokens, then press Check formula.`,
-    'transfer-apply': `${d.transferContext} Use the shown inputs to calculate ${d.outputName}, type it, and press Check.`.trim(),
+    'transfer-apply': `${d.transferContext} Use the shown inputs to calculate ${d.outputName}, type it, and press Check transferred output.`.trim(),
   }[ch.type];
-  return { id: ch.id, task, response: 'gesture' };
 }
 
 /** Every token of the formula, grouped and sorted (never in the formula's order). */
@@ -249,7 +225,7 @@ export interface FormulaLabView extends FormulaWork {
 }
 
 /** What is drawn and asked. The direction, the strength, the hidden expression and the output are never named. */
-export function workspaceScene(d: Lab, ch: FormulaLabChallenge, view: FormulaLabView): WorkspaceScene {
+export function workspaceScene(d: Lab, ch: FormulaLabChallenge, view: FormulaLabView): SceneOf {
   const { index, variable } = changed(d, ch);
   const facts: Record<string, string> = {
     mode: MODE_LABEL[ch.type],
@@ -278,13 +254,6 @@ export function workspaceScene(d: Lab, ch: FormulaLabChallenge, view: FormulaLab
   if (ch.strategyCue === 'visible') facts.strategyCue = 'a strategy card is shown';
   if (ch.requireJustification) facts.reasonRequired = 'the learner writes a short reason before locking or checking';
   facts.learnerWork = describeFormulaWork(d, ch, view);
-  facts.constraints = {
-    'free-explore': 'The learner drags the slider to the target; reaching it finishes the experiment.',
-    'predict-direction': 'The learner drags the prediction on the track and presses Lock prediction; the activity checks the prediction.',
-    'predict-magnitude': 'The learner drags the prediction on the track and presses Lock prediction; the activity scores how close it is.',
-    'construct-formula': 'The learner taps tokens in order (Undo token takes the last back) and presses Check formula.',
-    'transfer-apply': 'The learner types the output and presses Check.',
-  }[ch.type] + ' You cannot move anything, type, or press a button.';
   return { objects: [], facts };
 }
 

@@ -19,6 +19,7 @@
  * `baseTenHarnessAnswers` carries each as `signatureWrong` for the drives.
  */
 import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import { digitValueWord } from './spokenNumberWords';
 import {
   blockNoun,
@@ -40,6 +41,8 @@ export interface BaseTenItem extends JudgedScriptItem {
   problem: BtProblem;
   step: BaseTenStep;
   actionContract: DiActionContract;
+  /** The lesson's support tier, which sets when the model lever comes (`supportFact`); absent on old payloads. */
+  supportTier?: SupportTier;
 }
 
 /** A session never exceeds this many judged asks. Whole PROBLEMS are selected,
@@ -96,10 +99,11 @@ const planItemFor = (problem: BtProblem): BaseTenPlanItem => ({
   problem,
 });
 
-export const baseTenItems = (problems: readonly BtProblem[]): BaseTenItem[] =>
+export const baseTenItems = (problems: readonly BtProblem[], supportTier?: SupportTier): BaseTenItem[] =>
   problems.flatMap((problem) => baseTenModePlan(planItemFor(problem)).steps.map((step) => ({
     id: step.id,
     problem,
+    ...(supportTier ? { supportTier } : {}),
     step: step.key as BaseTenStep,
     action: step.actionContract.id,
     answerKind: step.answerKind,
@@ -110,11 +114,12 @@ export const baseTenItems = (problems: readonly BtProblem[]): BaseTenItem[] =>
 export const itemsFromChallenges = (
   challenges: readonly BaseTenChallengeLike[],
   mode: BtMode,
+  supportTier?: SupportTier,
 ): BaseTenItem[] => {
   const problems = problemsFromChallenges(challenges, mode);
   const items: BaseTenItem[] = [];
   for (const problem of problems) {
-    const next = baseTenItems([problem]);
+    const next = baseTenItems([problem], supportTier);
     if (items.length + next.length > MAX_SESSION_ITEMS) break;
     items.push(...next);
   }

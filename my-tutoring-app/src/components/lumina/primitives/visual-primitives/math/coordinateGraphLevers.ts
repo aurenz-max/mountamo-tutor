@@ -3,25 +3,27 @@
  * The misses are what `coordinateMiss` observes in the crossing tapped or the choice taken; there is no real-learner
  * evidence.
  *
+ * Declared once as a lever set (`COORDINATE_LEVERS`, `bossLevers.ts`), the context being the lesson's grid.
  * Help:
- * - `axis_guide` (plot, read): names each axis's direction (x across, y up or down) and writes each quadrant's sign
+ * - `axis_guide` (legend; plot, read): names each axis's direction (x across, y up or down) and writes each quadrant's sign
  *   pattern, (+, +) and so on. No digit.
- * - `every_line` (plot, read; where a grid line goes unnumbered): numbers every grid line on both axes.
- * - `drop_lines` (read, where not drawn): dashed lines from the point straight to each axis.
- * - `rise_run_triangle` (slope, where not drawn) and `unit_steps` (slope, where the legs are unlabelled): the triangle on
- *   the line; a tick at every grid step along its legs. No number.
- * - `slope_frame` (slope) and `intercept_frame` (intercept): the definition under the plane in words. No digit.
- * - `crossing_marker` (intercept, where hidden): a question mark where the line meets the y-axis.
- * - `model_point` (plot, read) and `model_line` (slope, intercept): a worked example outside the item, a different point
- *   drawn with its moves, or a different line in an inset with its slope or crossing worked out.
- * Simplify: `simpler_item` (every mode): the same task on a smaller point, a line with a small reduced rise and run, or a
+ * - `every_line` (marks; plot, read; where a grid line goes unnumbered): numbers every grid line on both axes.
+ * - `drop_lines` (marks; read, where not drawn): dashed lines from the point straight to each axis.
+ * - `rise_run_triangle` (marks; slope, where not drawn) and `unit_steps` (marks; slope, where the legs are unlabelled):
+ *   the triangle on the line; a tick at every grid step along its legs. No number.
+ * - `slope_frame` (clue; slope) and `intercept_frame` (clue; intercept): the definition under the plane in words. No digit.
+ * - `crossing_marker` (marks; intercept, where hidden): a question mark where the line meets the y-axis.
+ * - `model_point` (model; plot, read) and `model_line` (model; slope, intercept): a worked example outside the item, a
+ *   different point drawn with its moves, or a different line in an inset with its slope or crossing worked out. When it
+ *   comes is the set's `support`, from the item's tier.
+ * Simplify: `simpler_item` (easier, every mode): the same task on a smaller point, a line with a small reduced rise and run, or a
  * line with slope one that crosses near its marked points, built here; ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` carries a digit; a model's caption holds no number equal to the key and its
  * value is never the key; `every_line` is not offered where the key is a lone number (intercept); a practice item has its
  * own id, ask, points and answer, and keeps the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { CoordinateGraphChallenge } from './CoordinateGraph';
 import {
   COORDINATE_MISSES_BY_MODE, interceptOf, keyText, optionIsKey, optionsOf, parseNumber, parsePoint, runOf, riseOf, slopeOf,
@@ -233,107 +235,98 @@ export function practiceLeaks(parent: CoordinateGraphChallenge, practice: Coordi
     || (key !== '' && optionsOf(practice).some(o => o.replace(/\s/g, '') === key.replace(/\s/g, '')));
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 const POINT_SIGNS: readonly CoordinateMiss[] = ['swapped', 'both_signs', 'x_sign', 'y_sign', 'one_axis'];
+const POINTS: CoordinateGraphMode[] = ['plot_point', 'read_point'];
+const LINES: CoordinateGraphMode[] = ['find_slope', 'find_intercept'];
+const isPoint = (c: CoordinateGraphChallenge) => c.type === 'plot_point' || c.type === 'read_point';
 
-export function coordinateLevers(c: CoordinateGraphChallenge | null, g: Grid, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeItem(c)) return [];
-  const t: CoordinateGraphMode = c.type;
-  const all = COORDINATE_MISSES_BY_MODE[t];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly CoordinateMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  if (t === 'plot_point' || t === 'read_point') {
-    out.push(lever(AXIS_GUIDE, 'help', 'shown', POINT_SIGNS,
-      'The learner swapped x and y, or went the wrong way on an axis.',
-      'Names each axis on the plane with its direction (x across, y up or down) and writes each quadrant\'s sign pattern. No number.'));
-    if (c.showAxisLabels === false || labelStep(g) > 1) {
-      out.push(lever(EVERY_LINE, 'help', 'shown', ['off_by_one', 'one_axis', 'wrong_point'],
-        'The learner landed a step off, or lost count of the grid lines.',
-        'Numbers every grid line on both axes.'));
-    }
-    if (t === 'read_point' && !c.showDropLines) {
-      out.push(lever(DROP_LINES, 'help', 'shown', ['off_by_one', 'one_axis', 'swapped', 'wrong_point'],
-        'The learner read the wrong line, or one coordinate only.',
-        'Draws dashed lines from the point straight to each axis.'));
-    }
-    if (pointModel(c, g)) {
-      out.push(lever(MODEL_POINT, 'help', 'both', all,
-        'The learner does not know how an ordered pair finds a point.',
-        'Draws a different example point on the plane, marked Example, with its moves from the origin: across first, then up or '
-          + 'down. Read it aloud; it is never the item\'s point.'));
-    }
-  } else if (t === 'find_slope') {
-    if (c.showRiseRunGuides === false) {
-      out.push(lever(RISE_RUN, 'help', 'shown', ['reciprocal', 'negative_reciprocal', 'rise_only', 'run_only'],
-        'The learner put the run over the rise, or used one leg only.',
-        'Draws the dashed rise and run triangle on the line. No number.'));
-    }
-    if (c.showRiseRunGuides === false || c.showRiseRunLabels === false) {
-      out.push(lever(UNIT_STEPS, 'help', 'shown', ['rise_only', 'run_only', 'reciprocal', 'wrong_slope'],
-        'The learner miscounted the rise or the run.',
-        'Draws the triangle and a tick at every grid step along its rise and its run, to count. No number.'));
-    }
-    out.push(lever(SLOPE_FRAME, 'help', 'both', all,
-      'The learner turned the ratio over, lost the sign, or gave one leg.',
-      'Writes under the plane: slope is rise divided by run, the change in y over the change in x, and a line that falls from '
-        + 'left to right has a negative slope. No number.'));
-  } else {
-    if (c.showInterceptMarker === false) {
-      out.push(lever(CROSSING, 'help', 'shown', ['point_y', 'x_intercept', 'slope_instead', 'off_by_one', 'wrong_intercept'],
-        'The learner read somewhere other than where the line meets the y-axis.',
-        'Marks where the line crosses the y-axis with a question mark. No number.'));
-    }
-    out.push(lever(INTERCEPT_FRAME, 'help', 'both', ['slope_instead', 'x_intercept', 'point_y', 'opposite_sign'],
-      'The learner gave the slope, the x-axis crossing or a marked point\'s height.',
-      'Writes under the plane: the y-intercept is the y-value where the line meets the up-and-down axis, where x is zero; not '
-        + 'the slope, not where it meets the across axis. No number.'));
-  }
-  if ((t === 'find_slope' || t === 'find_intercept') && lineModel(c)) {
-    out.push(lever(MODEL_LINE, 'help', 'both', all,
-      t === 'find_slope' ? 'The learner does not know how a slope is read from a line.'
-        : 'The learner does not know where a y-intercept is on a graph.',
-      t === 'find_slope'
+/**
+ * The levers, declared once (`bossLevers.ts`); the context is the lesson's grid. None is offered on a practice item:
+ * the component declares nothing while one is on screen.
+ */
+export const COORDINATE_LEVERS = leverSet<CoordinateGraphChallenge, Grid>({
+  modeOf: c => c.type,
+  missesOf: mode => COORDINATE_MISSES_BY_MODE[mode as CoordinateGraphMode] ?? [],
+  answersOf: c => [keyText(c)].filter(Boolean),
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (isPoint(c) ? 'a different point, plotted with its moves from the origin' : 'a different line, worked out'),
+    own: c => (c.type === 'find_slope' ? 'this line\'s slope' : c.type === 'find_intercept' ? 'this line\'s y-intercept'
+      : 'this point\'s ordered pair'),
+  },
+  specs: [
+    { id: AXIS_GUIDE, type: 'legend', modes: POINTS, answers: POINT_SIGNS,
+      when: 'The learner swapped x and y, or went the wrong way on an axis.',
+      does: 'Names each axis on the plane with its direction (x across, y up or down) and writes each quadrant\'s sign pattern. No number.',
+      fact: 'Each axis is named with its direction (x across, y up or down), and each quadrant shows its sign pattern.' },
+    { id: EVERY_LINE, type: 'marks', modes: POINTS, answers: ['off_by_one', 'one_axis', 'wrong_point'],
+      when: 'The learner landed a step off, or lost count of the grid lines.',
+      does: 'Numbers every grid line on both axes.',
+      offer: (c, g) => c.showAxisLabels === false || labelStep(g) > 1,
+      fact: 'Every grid line on both axes is numbered.' },
+    { id: DROP_LINES, type: 'marks', modes: ['read_point'], answers: ['off_by_one', 'one_axis', 'swapped', 'wrong_point'],
+      when: 'The learner read the wrong line, or one coordinate only.',
+      does: 'Draws dashed lines from the point straight to each axis.',
+      offer: c => !c.showDropLines,
+      fact: 'Dashed lines run from the point straight to each axis.' },
+    { id: MODEL_POINT, type: 'model', modes: POINTS, answers: 'all',
+      when: 'The learner does not know how an ordered pair finds a point.',
+      does: 'Draws a different example point on the plane, marked Example, with its moves from the origin: across first, then up or '
+        + 'down. Read it aloud; it is never the item\'s point.',
+      content: (c, g) => pointModel(c, g),
+      fact: (m: PointModel) => `A different example point is drawn in violet, marked Example: ${m.caption}.` },
+    { id: RISE_RUN, type: 'marks', modes: ['find_slope'], answers: ['reciprocal', 'negative_reciprocal', 'rise_only', 'run_only'],
+      when: 'The learner put the run over the rise, or used one leg only.',
+      does: 'Draws the dashed rise and run triangle on the line. No number.',
+      offer: c => c.showRiseRunGuides === false,
+      fact: 'A dashed rise and run triangle is drawn on the line, without numbers.' },
+    { id: UNIT_STEPS, type: 'marks', modes: ['find_slope'], answers: ['rise_only', 'run_only', 'reciprocal', 'wrong_slope'],
+      when: 'The learner miscounted the rise or the run.',
+      does: 'Draws the triangle and a tick at every grid step along its rise and its run, to count. No number.',
+      offer: c => c.showRiseRunGuides === false || c.showRiseRunLabels === false,
+      fact: 'The rise and run triangle is drawn with a tick at every grid step along each leg, without numbers.' },
+    { id: SLOPE_FRAME, type: 'clue', modes: ['find_slope'], answers: 'all',
+      when: 'The learner turned the ratio over, lost the sign, or gave one leg.',
+      does: 'Writes under the plane: slope is rise divided by run, the change in y over the change in x, and a line that falls from '
+        + 'left to right has a negative slope. No number.',
+      fact: 'Under the plane: slope = rise ÷ run, the change in y over the change in x; a line that falls from left to right has a negative slope.' },
+    { id: CROSSING, type: 'marks', modes: ['find_intercept'],
+      answers: ['point_y', 'x_intercept', 'slope_instead', 'off_by_one', 'wrong_intercept'],
+      when: 'The learner read somewhere other than where the line meets the y-axis.',
+      does: 'Marks where the line crosses the y-axis with a question mark. No number.',
+      offer: c => c.showInterceptMarker === false,
+      fact: 'Where the line crosses the y-axis is marked with a question mark.' },
+    { id: INTERCEPT_FRAME, type: 'clue', modes: ['find_intercept'], answers: ['slope_instead', 'x_intercept', 'point_y', 'opposite_sign'],
+      when: 'The learner gave the slope, the x-axis crossing or a marked point\'s height.',
+      does: 'Writes under the plane: the y-intercept is the y-value where the line meets the up-and-down axis, where x is zero; not '
+        + 'the slope, not where it meets the across axis. No number.',
+      fact: 'Under the plane: the y-intercept is the y-value where the line meets the y-axis, where x is zero; not the slope, not '
+        + 'where the line meets the x-axis.' },
+    { id: MODEL_LINE, type: 'model', modes: LINES, answers: 'all',
+      when: c => (c.type === 'find_slope' ? 'The learner does not know how a slope is read from a line.'
+        : 'The learner does not know where a y-intercept is on a graph.'),
+      does: c => (c.type === 'find_slope'
         ? 'Shows a worked example beside the plane: a different line with its rise, run and slope worked out. Read it aloud; it '
           + 'never shows the item\'s slope.'
         : 'Shows a worked example beside the plane: a different line with its y-axis crossing marked and named. Read it aloud; '
-          + 'it never shows the item\'s intercept.'));
-  }
-  if (simplerItem(c, g)) {
-    out.push(lever(SIMPLER, 'simplify', 'shown', all,
-      'This item is too big a step yet.',
-      t === 'plot_point' || t === 'read_point'
+          + 'it never shows the item\'s intercept.'),
+      content: c => lineModel(c),
+      fact: (m: LineModel) => `Beside the plane, a worked example on a different line: ${m.caption}.` },
+    { id: SIMPLER, type: 'easier', answers: 'all',
+      when: 'This item is too big a step yet.',
+      does: c => (isPoint(c)
         ? 'Opens an easier point of the same kind first: smaller moves in the same direction. It is not graded; the full item '
           + 'comes back after it.'
-        : t === 'find_slope'
+        : c.type === 'find_slope'
           ? 'Opens an easier line first: a small rise and run that need no reducing, with the triangle labelled. It is not graded; '
             + 'the full item comes back after it.'
           : 'Opens an easier line first: one that crosses one step from a marked point, with the crossing marked. It is not graded; '
-            + 'the full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. A model's caption, never the key. */
-export function leverFacts(c: CoordinateGraphChallenge | null, g: Grid, pulled: readonly string[]): string {
-  if (!c || isPracticeItem(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const point = on(MODEL_POINT) ? pointModel(c, g) : null;
-  const line = on(MODEL_LINE) ? lineModel(c) : null;
-  return [
-    on(AXIS_GUIDE) && 'Each axis is named with its direction (x across, y up or down), and each quadrant shows its sign pattern.',
-    on(EVERY_LINE) && 'Every grid line on both axes is numbered.',
-    on(DROP_LINES) && 'Dashed lines run from the point straight to each axis.',
-    point && `A different example point is drawn in violet, marked Example: ${point.caption}.`,
-    on(RISE_RUN) && 'A dashed rise and run triangle is drawn on the line, without numbers.',
-    on(UNIT_STEPS) && 'The rise and run triangle is drawn with a tick at every grid step along each leg, without numbers.',
-    on(SLOPE_FRAME) && 'Under the plane: slope = rise ÷ run, the change in y over the change in x; a line that falls from left to right has a negative slope.',
-    on(CROSSING) && 'Where the line crosses the y-axis is marked with a question mark.',
-    on(INTERCEPT_FRAME) && 'Under the plane: the y-intercept is the y-value where the line meets the y-axis, where x is zero; not the slope, not where the line meets the x-axis.',
-    line && `Beside the plane, a worked example on a different line: ${line.caption}.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+            + 'the full item comes back after it.'),
+      content: (c, g) => simplerItem(c, g) },
+  ],
+});
 
 /** Leak rule for the levers' when/does words: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

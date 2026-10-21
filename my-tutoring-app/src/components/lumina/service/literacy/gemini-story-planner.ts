@@ -192,6 +192,10 @@ Never reveal a "correct" plan in any prompt, label, or placeholder — the promp
     void _unused;
     const finalData: StoryPlannerData = { ...result, ...configRest };
 
+    // The lesson's support tier (config.difficulty, normalized by the pipeline) tells the live tutor when its model
+    // lever comes. Absent: no field, and the component falls back to medium.
+    if (ctx.supportTier) finalData.supportTier = ctx.supportTier;
+
     // Post-process: backfill planningFocus from the pinned mode if Gemini dropped it.
     if (!finalData.planningFocus && evalConstraint) {
       finalData.planningFocus = evalConstraint.allowedTypes[0] as StoryPlannerData['planningFocus'];

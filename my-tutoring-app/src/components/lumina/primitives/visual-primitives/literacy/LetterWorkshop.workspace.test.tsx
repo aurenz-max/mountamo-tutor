@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding, plain shape: the real LetterWorkshop on the shared teaching workspace, mounted the way a lesson
+ * The real LetterWorkshop on the shared teaching workspace (its boss: `letterWorkshop.boss.ts`), mounted the way a lesson
  * mounts it. The paper's own Check commits a checked gesture; the runtime owns progression. jsdom has no 2D canvas, so
  * the vision judge never answers and geometry decides, as on a failed judge request. Write sends no scripted cue: the
  * tutor says the letter's name as the task, and nothing on the screen shows it.
@@ -66,7 +66,7 @@ it.each(['trace', 'copy', 'write'] as const)('%s mounts under tutor ownership wi
   expect(h.view.queryByRole('button', { name: /next letter|finish practice|help me|hear the/i })).toBeNull();
   if (mode === 'write') {
     // Nothing on the screen names or shows the letter; the paper is open without a cue.
-    expect(String(demand(h).onScreen)).toMatch(/Nothing on the screen/);
+    expect(String(demand(h).shown)).toMatch(/Nothing on the screen/);
     expect(h.view.queryByTestId('letter-copy-model')).toBeNull();
     expect(h.view.getByTestId('letter-writing-paper').getAttribute('aria-label')).not.toMatch(/\bt\b/);
     expect(h.view.queryByText(/Waiting for your tutor/)).toBeNull();
@@ -92,7 +92,7 @@ it.each(['trace', 'copy', 'write'] as const)('%s: a backwards letter commits sta
   h.dispatch('retry');
   expect(demand(h)).toMatchObject({ strokesDrawn: 0 });
   // Write keeps the model it revealed for Try again.
-  if (mode === 'write') expect(String(demand(h).onScreen)).toMatch(/model of the letter is shown/);
+  if (mode === 'write') expect(String(demand(h).shown)).toMatch(/model of the letter is shown/);
   draw(h, a); await check(h);
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.dispatch('advance'); h.confirmVisible();

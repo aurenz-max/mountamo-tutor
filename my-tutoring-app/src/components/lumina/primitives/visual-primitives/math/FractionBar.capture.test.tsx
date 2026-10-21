@@ -1,36 +1,70 @@
 // @vitest-environment jsdom
+/**
+ * The misconception evidence fraction-bar attaches at submit (`fractionBarEvidence.ts`, read by the remediation loop in
+ * `service/math/fractionBarRemediation.ts`), captured on the teaching workspace under an evaluation provider: every
+ * checked response is recorded as it happened, and the submitted score and success are the bar's own.
+ */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
+import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
+
 const seam = vi.hoisted(() => ({ submissions: [] as unknown[][] }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false }) }));
-vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, elapsedMs: 0,
-  submitResult: (...args: unknown[]) => seam.submissions.push(args) }) }));
+vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
+  isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'bar',
+  conversation: [], sendText: vi.fn(),
+  sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
+}) }));
+vi.mock('../../../evaluation', async () => {
+  const React = await import('react');
+  return { useEvaluationContext: () => ({ lesson: 'test' }), usePrimitiveEvaluation: () => {
+    const [hasSubmitted, setSubmitted] = React.useState(false);
+    return { hasSubmitted, elapsedMs: 0, submittedResult: null,
+      submitResult: (...args: unknown[]) => { seam.submissions.push(args); setSubmitted(true); return null; } };
+  } };
+});
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
-import FractionBar from './FractionBar';
+import FractionBar, { type FractionBarData } from './FractionBar';
 import { isDiagnosableFailure, type DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+beforeEach(() => { seam.submissions = []; });
+afterEach(() => { cleanup(); });
 const fraction = (id: string, n: number, d: number) => ({ id, numerator: n, denominator: d,
   numeratorChoices: [n, d, n - 1, d + 1], denominatorChoices: [d, n, d + 1, d + 2] });
 
-it('records swapped first responses as factual evidence without changing the submitted score or success', async () => {
-  vi.useFakeTimers();
-  seam.submissions = [];
-  render(<FractionBar data={{ title: 'Build', description: 'Shade', challengeType: 'build', supportTier: 'medium', showPartitionNumerals: false,
-    challenges: [fraction('fraction-bar-1', 3, 4), fraction('fraction-bar-2', 4, 5), fraction('fraction-bar-3', 2, 6)] }} />);
-  const click = async (name: string | RegExp) => act(async () => { fireEvent.click(screen.getByRole('button', { name })); });
-  const answer = async (value: number) => { await click(String(value)); await click('Check Answer'); };
-  const settle = async () => act(async () => { vi.advanceTimersByTime(1600); });
-  const shade = async (count: number) => { for (let i = 1; i <= count; i++) await click(`Shade part ${i}`); await click('Submit Fraction'); };
-  const unshadeTo = async (count: number, from: number) => { for (let i = from; i > count; i--) await click(`Unshade part ${i}`); await click('Submit Fraction'); };
+function mount(data: FractionBarData) {
+  const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
+  const view = render(<LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
+    <FractionBar data={{ ...data, instanceId: 'bar' }} runtimePlanItemId="plan-bar" runtimeEvalMode={data.challengeType} />
+  </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
+  let last = '';
+  const dispatch = (name: 'retry' | 'advance') => {
+    const s = runtime.getSnapshot(), a = s.affordances.find(x => x.action.type === name);
+    expect(a, `missing action ${name}`).toBeTruthy();
+    last = crypto.randomUUID();
+    act(() => { runtime.dispatch({ sessionEpoch: 'test', commandId: last, instanceId: s.instanceId!, itemId: s.task!.itemId,
+      expectedRevision: s.revision, action: a!.action }); });
+  };
+  const next = () => { dispatch('advance'); act(() => { runtime.confirmVisibleResponse(last); }); };
+  const click = (name: string) => act(() => { fireEvent.click(screen.getByRole('button', { name })); });
+  const answer = (value: number) => { click(String(value)); click('Check Answer'); };
+  const shade = (count: number) => {
+    act(() => { fireEvent.click(view.container.querySelector(`[data-pip-object="part-${count - 1}"]`)!); });
+    click('Submit Fraction');
+  };
+  return { answer, shade, retry: () => dispatch('retry'), next };
+}
 
-  await answer(4); await answer(3); await settle(); await answer(4); await settle(); await shade(3); // numerator swap
-  await click(/Next Problem/);
-  await answer(5); await answer(4); await settle(); await answer(5); await settle(); await shade(4); // numerator swap
-  await click(/Next Problem/);
-  await answer(2); await settle(); await answer(6); await settle(); await shade(6); await unshadeTo(2, 6); // shaded the denominator
+it('records swapped first responses as factual evidence without changing the submitted score or success', () => {
+  const h = mount({ title: 'Build', description: 'Shade', challengeType: 'build', supportTier: 'medium', showPartitionNumerals: false,
+    challenges: [fraction('fraction-bar-1', 3, 4), fraction('fraction-bar-2', 4, 5), fraction('fraction-bar-3', 2, 6)] });
+
+  h.answer(4); h.retry(); h.answer(3); h.answer(4); h.shade(3); h.next(); // numerator swap
+  h.answer(5); h.retry(); h.answer(4); h.answer(5); h.shade(4); h.next(); // numerator swap
+  h.answer(2); h.answer(6); h.shade(6); h.retry(); h.shade(2); h.next(); // shaded the denominator
 
   expect(seam.submissions).toHaveLength(1);
   const [success, score, , work, , evidence] = seam.submissions[0] as [boolean, number, unknown, { studentWork: { responses: unknown[] } }, unknown, DiagnosisEvidence];
@@ -45,15 +79,10 @@ it('records swapped first responses as factual evidence without changing the sub
   expect(isDiagnosableFailure({ success, score }, evidence)).toBe(true);
 });
 
-it('attaches no evidence when every response was correct first time', async () => {
-  vi.useFakeTimers();
-  seam.submissions = [];
-  render(<FractionBar data={{ title: 'Build', description: 'Shade', challengeType: 'build', showPartitionNumerals: false,
-    challenges: [fraction('fraction-bar-1', 2, 3)] }} />);
-  const click = async (name: string) => act(async () => { fireEvent.click(screen.getByRole('button', { name })); });
-  await click('2'); await click('Check Answer'); await act(async () => { vi.advanceTimersByTime(1600); });
-  await click('3'); await click('Check Answer'); await act(async () => { vi.advanceTimersByTime(1600); });
-  await click('Shade part 1'); await click('Shade part 2'); await click('Submit Fraction');
+it('attaches no evidence when every response was correct first time', () => {
+  const h = mount({ title: 'Build', description: 'Shade', challengeType: 'build', showPartitionNumerals: false,
+    challenges: [fraction('fraction-bar-1', 2, 3)] });
+  h.answer(2); h.answer(3); h.shade(2); h.next();
   expect(seam.submissions).toHaveLength(1);
   expect(seam.submissions[0][5]).toBeUndefined();
 });

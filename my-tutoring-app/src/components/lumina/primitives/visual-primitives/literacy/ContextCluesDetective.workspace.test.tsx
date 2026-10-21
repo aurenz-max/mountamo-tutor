@@ -10,15 +10,14 @@ vi.mock('@/components/lumina/evaluation', async () => (await import('@/component
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import React from 'react';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
-import ContextCluesDetective, { type ContextClueChallenge, type ContextCluesDetectiveData } from './ContextCluesDetective';
-import { CONTEXT_CLUE_MISSES_BY_MODE, clueMiss, clueSteps, findCorrect, scriptedScore, stepFor } from './contextCluesWorkspace';
+import type { ContextClueChallenge, ContextCluesDetectiveData } from './ContextCluesDetective';
+import { CONTEXT_CLUE_MISSES_BY_MODE, clueMiss, clueSteps, findCorrect } from './contextCluesWorkspace';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -179,36 +178,5 @@ it('the adapter refuses a word its own check cannot read', () => {
 it('the classify step is built only when the session mixes clue types', () => {
   expect(clueSteps([ITEMS.definition]).map(s => s.phase)).toEqual(['find', 'define']);
   expect(clueSteps([ITEMS.synonym_antonym, SYN]).map(s => s.id)).toEqual(['s:find', 's:classify', 's:define', 'y:find', 'y:classify', 'y:define']);
-  expect(stepFor([ITEMS.definition], 'd:classify')).toBeNull();
-});
-
-it('the scripted path (no runtime) keeps its flow: steps advance on their own, a wrong meaning shows the meaning, Finish submits', () => {
-  const c = ITEMS.synonym_antonym;
-  const view = render(<ContextCluesDetective data={lesson([c])} />);
-  const press = (label: string) => act(() => {
-    const b = Array.from(view.container.querySelectorAll('button')).find(x => x.textContent?.trim() === label || x.getAttribute('aria-label') === label);
-    expect(b, label).toBeTruthy(); fireEvent.click(b!);
-  });
-  press('sentence 2'); press('Check Clue');
-  act(() => { vi.advanceTimersByTime(1100); });
-  // One word, one clue type: no classify step.
-  expect(view.container.textContent).not.toMatch(/What type of context clue/);
-  press('Very brave'); press('Check Meaning');
-  expect(view.container.textContent).toMatch(/The meaning is: "Shy and easily scared"/);
-  expect(seam.legacyAI).toHaveBeenCalledWith('enabled');
-  press('Finish');
-  expect(seam.submit).toHaveBeenCalledOnce();
-  // Clue found, meaning wrong, no type step: 30/70 of the word, rescaled.
-  expect(seam.submit.mock.calls[0][1]).toBe(43);
-});
-
-it('the scripted score weighs only the steps built: 30/30/40 with a type step, find 3/7 and define 4/7 without', () => {
-  const r = (clueCorrect: boolean, typeCorrect: boolean, meaningCorrect: boolean) => ({ clueCorrect, typeCorrect, meaningCorrect });
-  expect(scriptedScore([r(true, true, true)], true)).toBe(100);
-  expect(scriptedScore([r(true, false, false)], true)).toBe(30);
-  expect(scriptedScore([r(true, true, false), r(true, false, true)], true)).toBe(30 + 15 + 20);
-  expect(scriptedScore([r(true, false, true)], false)).toBe(100);
-  expect(scriptedScore([r(true, false, false)], false)).toBe(43);
-  expect(scriptedScore([r(false, false, true)], false)).toBe(57);
-  expect(scriptedScore([], false)).toBe(0);
+  expect(clueSteps([ITEMS.definition]).some(s => s.id === 'd:classify')).toBe(false);
 });

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding, plain shape: the real MeasurementTools on the shared teaching workspace, mounted the way a lesson
- * mounts it. One item per shape (put it on the ruler, type the length, Check; convert then converts), plus compare's
+ * The real MeasurementTools on the shared teaching workspace (its boss), mounted the way a lesson mounts it. One item per shape (put it on the ruler, type the length, Check; convert then converts), plus compare's
  * ordering item. The activity's own check commits a checked gesture with its named miss; Try again clears the item
  * (a conversion keeps its checked measurement); the runtime owns progression; no width, converted length or order
  * reaches the tutor.
@@ -71,7 +70,7 @@ it.each(Object.keys(DATA))('%s mounts under tutor ownership with no scripted cue
   expect(JSON.stringify(demand(h)).replace(/edge at 0/g, '')).not.toMatch(/\d/);
   expect(seam.legacyAI).not.toHaveBeenCalled();
   expect(h.view.container.textContent).not.toMatch(/Next|Finish/);
-  const items = measurementItems(data.challengeType, data.challenges);
+  const items = measurementItems(lessonOf(data));
   items.forEach((item, i) => {
     expect(h.state().task!.itemId).toBe(item.id);
     answerRight(h, data);
@@ -163,14 +162,14 @@ it('compare: the ordering is the last item, listed never shortest first; longest
 
 it('measurementMiss names each step\'s signature error', () => {
   const v = EMPTY_VIEW;
-  const item = { id: 'a', kind: 'shape' as const, challenge: SHAPES[0] };
   const m = lessonOf(session('measure'));
+  const item = { id: 'a', lesson: m, kind: 'shape' as const, challenge: SHAPES[0] };
   expect(measurementMiss(item, m, { ...v, measure: 6 })).toBe('one_short');
   expect(measurementMiss(item, m, { ...v, measure: 9 })).toBe('too_long');
   expect(measurementMiss(item, m, { ...v, measure: 4 })).toBe('too_short');
   expect(measurementMiss(item, m, { ...v, measure: 7.5 })).toBeUndefined();
   const est = lessonOf(session('estimate', ESTIMATE));
-  const half = { id: 'a', kind: 'shape' as const, challenge: ESTIMATE[0] };
+  const half = { id: 'a', lesson: est, kind: 'shape' as const, challenge: ESTIMATE[0] };
   expect(measurementMiss(half, est, { ...v, measure: 7 })).toBe('whole_not_half');
   expect(measurementMiss(half, est, { ...v, measure: 6 })).toBe('whole_not_half');
   expect(measurementMiss(half, est, { ...v, measure: 7.5 })).toBe('one_over');
@@ -181,7 +180,7 @@ it('measurementMiss names each step\'s signature error', () => {
   expect(measurementMiss(item, conv, { ...v, convertStep: true, converted: 25 })).toBe('too_large');
   expect(measurementMiss(item, conv, { ...v, convertStep: true, converted: 18 })).toBeUndefined();
   const cmp = lessonOf(session('compare'));
-  const order = { id: ORDER_ITEM_ID, kind: 'order' as const };
+  const order = { id: ORDER_ITEM_ID, lesson: cmp, kind: 'order' as const };
   expect(measurementMiss(order, cmp, { ...v, order: ['a', 'c', 'b'] })).toBe('longest_first');
   expect(measurementMiss(order, cmp, { ...v, order: ['c', 'b', 'a'] })).toBe('two_swapped');
   expect(measurementMiss(order, cmp, { ...v, order: ['c', 'a', 'b'] })).toBe('out_of_order');

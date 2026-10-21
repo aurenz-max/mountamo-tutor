@@ -6,19 +6,20 @@ import {
   type AreaModelMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  areaCheckCorrect, areaMiss, describeAreaCheck, workspaceAssignmentFor, workspaceScene, type AreaCheck, type AreaView,
+  areaCheckCorrect, areaItems, areaMiss, describeAreaCheck, workspaceScene, type AreaCheck, type AreaItem, type AreaView,
 } from './areaModelWorkspace';
 import {
-  ALL_SIDES_LEVER, CELL_DOTS_LEVER, CELL_LABELS_LEVER, PRACTICE_NOTE, SHARED_PARTS_LEVER, SIDE_SUM_LEVER, STACK_LEVER,
-  START_CELL_LEVER, TENS_SPLIT_LEVER, areaModelLevers, leverFacts, practiceItem, tensSplits,
+  ALL_SIDES_LEVER, AREA_LEVERS, CELL_DOTS_LEVER, CELL_LABELS_LEVER, PRACTICE_NOTE, SHARED_PARTS_LEVER, SIDE_SUM_LEVER,
+  STACK_LEVER, START_CELL_LEVER, TENS_SPLIT_LEVER, tensSplits, tierAids,
 } from './areaModelLevers';
+import { areaModelBoss } from './areaModel.boss';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import {
@@ -29,14 +30,12 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaPanel,
-  LuminaActionButton,
   LuminaButton,
   LuminaInput,
   LuminaFeedbackCard,
 } from '../../../ui';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { areaModelDiagnosisEvidence, type AreaModelResponse } from './areaModelEvidence';
 
 /**
@@ -163,54 +162,18 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
-/**
- * How much the live tutor may reveal, calibrated to the on-screen support tier
- * and the eval mode. Keeps the tutor (a second information channel) consistent
- * with the on-screen scaffold: at 'hard' the UI withholds the cell pre-labeling
- * (or the side-sum), so the tutor must not supply it either. The final numbers
- * (partial products, total, perimeter, or — in factor mode — the dimensions)
- * are the answer and are never stated at any tier.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  mode: AreaModelChallengeType,
-): string {
-  if (!tier) return '';
-  const common =
-    mode === 'perimeter'
-      ? 'Never state the perimeter value or add the four sides for the student.'
-      : mode === 'factor'
-        ? 'Never state the dimension numbers — discovering the factors IS the task.'
-        : 'Never state a partial product or the total product for the student.';
-  const method =
-    mode === 'perimeter'
-      ? 'add all four sides, or use Perimeter = 2 × (length + width)'
-      : mode === 'factor'
-        ? 'each cell equals its column header × its row header, so one cell pins down a dimension'
-        : 'multiply the column header by the row header for each cell, then add the partial products';
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the method (${method}) and walk the setup step by step. ${common}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the method is shown on screen; nudge the next step and let the student do the arithmetic. ${common}`;
-    default:
-      return `SUPPORT TIER hard: the on-screen scaffold is withdrawn (cells are NOT pre-labeled, or the side-sum is not written out). Do NOT supply that withheld step — ask the student to read the row and column headers (or the labeled sides) and map it themselves. ${common}`;
-  }
-}
-
 // ============================================================================
 // Component
 // ============================================================================
 
-const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  AreaModelProps & { tutorOwned: boolean; useController: (options: ProgressOptions<AreaModelChallenge>) => Progress }) => {
+const useAreaModelProgress = useWorkspaceProgressFor('area-model');
+
+const AreaModelSurface = ({ data, className, runtimePlanItemId }: AreaModelProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
-    challenges = [],
     challengeType: sessionChallengeType,
-    gradeLevel,
     supportTier,
     instanceId,
     skillId,
@@ -222,33 +185,36 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
 
   const stableInstanceIdRef = useRef(instanceId || `area-model-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** The lesson's items, each with the session's mode (`areaItems`): what the boss, the levers and the runtime read. */
+  const challenges = useMemo(() => areaItems({ challenges: data.challenges, challengeType: sessionChallengeType }),
+    [data.challenges, sessionChallengeType]);
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace owns it. ──
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useAreaModelProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignmentFor(sessionChallengeType),
+    workspace, assignment: areaModelBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
-  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const { currentIndex, results, isComplete, mergeResult } = progress;
+  /** A checked answer stays closed until Try again or the next item. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the memoized callbacks read the latest.
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
 
   const sessionChallenge = challenges[currentIndex] ?? null;
-  // In-item levers (`areaModelLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place.
+  // In-item levers (`AREA_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<AreaModelChallenge | null>(null);
+  const [practice, setPractice] = useState<AreaItem | null>(null);
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
@@ -326,7 +292,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const [lastWrong, setLastWrong] = useState<string | null>(null);
 
   const recordedRef = useRef(false);
-  const sessionCompleteFiredRef = useRef(false);
   // Every checked entry, including tries later corrected. Evidence only; grading is unchanged.
   const responsesRef = useRef<AreaModelResponse[]>([]);
   const recordResponse = (entry: Omit<AreaModelResponse, 'challengeId' | 'factor1Parts' | 'factor2Parts' | 'hintsBefore'>) => {
@@ -421,65 +386,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
   });
 
-  // ── AI tutoring ────────────────────────────────────────────────
-  // aiPrimitiveData carries the current problem + tier so the tutor's reveal
-  // level matches the on-screen scaffold. Mode is session-level (all challenges
-  // share sessionChallengeType), so the reveal policy is resolved once.
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: sessionChallengeType,
-    currentChallengeIndex: currentIndex + 1,
-    totalChallenges: challenges.length,
-    factor1Parts,
-    factor2Parts,
-    factor1Total,
-    factor2Total,
-    algebraicMode,
-    supportTier: supportTier ?? null,
-  }), [
-    title, sessionChallengeType, currentIndex, challenges.length,
-    factor1Parts, factor2Parts, factor1Total, factor2Total, algebraicMode, supportTier,
-  ]);
-
-  // The legacy context carries the factors and totals; on the workspace path the tutor reads the scene instead.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'area-model',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The area model',
-    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
-  const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Area-model session: ${challenges.length} problems, mode "${sessionChallengeType}". `
-      + `Introduce briefly: the area model breaks a multiplication (or a rectangle) into parts so each piece is easy, `
-      + `then we combine the pieces. Then read the first task.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, sessionChallengeType, revealPolicy, sendText]);
-
   // ── Per-challenge content match (stale-state guard, §6a #8) ────
   const stateMatchesChallenge = useCallback(
     (challenge: AreaModelChallenge | null): boolean => {
@@ -518,83 +424,11 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         hintsUsed: challengeHintCount,
         ...extras,
       });
-      sendText(
-        `[CHALLENGE_CORRECT] Student finished problem ${currentIndex + 1} of ${challenges.length} `
-        + `(${sessionChallengeType}) in ${attempts} attempt${attempts === 1 ? '' : 's'}. `
-        + `Celebrate briefly and reinforce the area-model idea they just used.`,
-        { silent: true },
-      );
     },
-    [
-      currentChallenge, stateMatchesChallenge, mergeResult, challengeHintCount, practice,
-      sendText, currentIndex, challenges.length, sessionChallengeType,
-    ],
+    [currentChallenge, stateMatchesChallenge, mergeResult, challengeHintCount, practice],
   );
 
-  // ── Session complete → aggregate metrics + submitEvaluation ────
-  useEffect(() => {
-    if (!isComplete) return;
-    if (sessionCompleteFiredRef.current) return;
-    if (challenges.length === 0) return;
-    sessionCompleteFiredRef.current = true;
-
-    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => Number(r.score ?? 0) === 100).length;
-    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
-    const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length),
-    );
-    const averageAttemptsPerChallenge =
-      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
-
-    const metrics: AreaModelMetrics = {
-      type: 'area-model',
-      challengeType: sessionChallengeType,
-      totalChallenges: challenges.length,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (!hasSubmittedEvaluation && !tutorOwned) {
-      const goalMet = correctCount === challenges.length;
-      submitEvaluation(goalMet, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          challengeType: sessionChallengeType,
-          pairs: challenges.map((c) => ({
-            factor1: c.factor1Parts,
-            factor2: c.factor2Parts,
-          })),
-          scoresPerChallenge: challenges.map((c) => {
-            const r = results.find((rr) => rr.challengeId === c.id);
-            return Number(r?.score ?? 0);
-          }),
-          responses: responsesRef.current.map(({ challengeId, step, cell, expected, entered, attempt }) =>
-            ({ challengeId, step, cell, expected, entered, attempt })),
-        },
-        // Entries retry until correct and one wrong cell can still score 100, so the
-        // first-response score inside the evidence is what lets the shared gate see errors.
-      }, undefined, areaModelDiagnosisEvidence(challenges.map((c) => c.id), responsesRef.current, sessionChallengeType, supportTier));
-    }
-
-    sendText(
-      `[ALL_COMPLETE] All ${challenges.length} ${sessionChallengeType} problems done. `
-      + `Correct: ${correctCount}/${challenges.length}. First-try: ${firstTryCount}. Accuracy: ${overallAccuracy}%. `
-      + `Give an encouraging, area-model-focused summary.`,
-      { silent: true },
-    );
-  }, [
-    isComplete, results, challenges, sessionChallengeType, supportTier,
-    submitEvaluation, hasSubmittedEvaluation, sendText, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session (item scores count corrections).
+  // Under a lesson's evaluation provider only: the scored session (item scores count corrections).
   // The evidence is this primitive's own per-entry record, right cells included, with each wrong entry's named miss;
   // its first-response score is the session's, so an item worked with a lever pulled is not read as first try.
   finish.current = (result) => {
@@ -689,12 +523,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     } else {
       SoundManager.playIncorrect();
       commitWrong(check, showCellEquations);
-      sendText(
-        `[CELL_INCORRECT] Student entered "${currentInput}" for the cell ${formatCellEquation(row, col)} `
-        + `(attempt ${newState.attempts}). Give a brief hint about this one cell without giving the product.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
     }
   };
 
@@ -716,13 +544,7 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     if (!isCorrect) {
       SoundManager.playIncorrect();
       commitWrong(check, showCellEquations);
-      sendText(
-        `[SUM_INCORRECT] Student summed the partial products to "${sumInput}" but that is wrong `
-        + `(attempt ${nextSumAttempts}). All cell products are already correct. `
-        + `Nudge them to re-add the partial products carefully; do NOT give the total.`,
-        { silent: true },
-      );
-      return; // let the student try again
+      return;
     }
     SoundManager.playCorrect();
 
@@ -769,13 +591,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     if (!isCorrect) {
       SoundManager.playIncorrect();
       commitWrong(check, false);
-      sendText(
-        `[PERIMETER_INCORRECT] Student answered "${perimeterInput}" for the perimeter of a `
-        + `${factor1Total} × ${factor2Total} rectangle (attempt ${nextAttempts}). `
-        + `Give a brief hint without giving the value.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
       return;
     }
     SoundManager.playCorrect();
@@ -831,13 +646,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     if (!allCorrect) {
       SoundManager.playIncorrect();
       commitWrong(check, false);
-      sendText(
-        `[FACTOR_INCORRECT] Student's dimension guesses are wrong (attempt ${nextAttempts}). `
-        + `They entered top: [${factorTopInputs.join(', ')}], left: [${factorLeftInputs.join(', ')}]. `
-        + `Point them at a corner cell to deduce one dimension; do NOT give the factors.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
       return;
     }
     SoundManager.playCorrect();
@@ -852,23 +660,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const handleShowHint = () => {
     if (challengeDone) return;
     setChallengeHintCount((c) => c + 1);
-  };
-
-  // ── Advance to next challenge ──────────────────────────────────
-  // Send exactly one end_of_turn message carrying the NEXT problem's data, so
-  // the tutor introduces the real problem (the auto context update is silent).
-  const handleNextChallenge = () => {
-    const next = challenges[currentIndex + 1];
-    if (next) {
-      const nf1 = next.factor1Parts.reduce((s, v) => s + v, 0);
-      const nf2 = next.factor2Parts.reduce((s, v) => s + v, 0);
-      sendText(
-        `[NEXT_ITEM] Problem ${currentIndex + 2} of ${challenges.length} (${sessionChallengeType}): `
-        + `a ${nf1} × ${nf2} model. Introduce it briefly — same strategy, new numbers.`,
-        { silent: true },
-      );
-    }
-    advance();
   };
 
   // ── UI helpers ─────────────────────────────────────────────────
@@ -941,41 +732,40 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     factorChecked &&
     factorTopCorrect.every((v) => v === true) &&
     factorLeftCorrect.every((v) => v === true);
-  const hasNextChallenge = currentIndex + 1 < challenges.length;
-  /** Workspace path: the learner's input is closed while a checked answer waits for Try again. */
-  const closed = tutorOwned && progress.canAttempt === false;
+  /** The learner's input is closed while a checked answer waits for Try again. */
+  const closed = progress.canAttempt === false;
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets, no presentation.
   const areaView: AreaView = {
     cells: Object.fromEntries(Array.from(cellStates, ([key, s]) => [key, { entered: s.studentAnswer, correct: !!s.isCorrect }])),
     sumInput, perimeterInput, factorTop: factorTopInputs, factorLeft: factorLeftInputs,
     cellsLabelled: showCellEquations, sideSumShown: showPerimeterExpansion, lastWrong,
   };
-  // Every mode declares its levers; a tier aid already on screen counts as pulled.
+  // Every mode declares its levers (`AREA_LEVERS`); a tier aid already on screen counts as pulled.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, sessionChallengeType, areaView);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, sessionChallengeType);
-    const levers = practice ? [] : areaModelLevers(sessionChallenge, pulledLevers, { mode: sessionChallengeType,
-      cellsLabelled: tierCellEquations, sideSumShown: tierPerimeterExpansion, startCellShown: !!sessionChallenge.highlightCell });
+    const ctx = { cellsRight: allCellsComplete() };
+    const levers = practice ? [] : AREA_LEVERS.declare(sessionChallenge, ctx, [...pulledLevers, ...tierAids(sessionChallenge)]);
+    const published = leverScene(scene, {
+      support: practice ? '' : AREA_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : AREA_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already on screen.`;
-        if (id === STACK_LEVER && !allCellsComplete())
-          return 'The products stand in a column only once every cell is right; first help with the cell, with another lever.';
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, sessionChallengeType);
+          const easier = AREA_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); resetWork(easier); setPractice(easier);
-          return { practice: workspaceAssignmentFor(sessionChallengeType)(easier) };
+          return { practice: areaModelBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1048,7 +838,11 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
 
         <LuminaCardHeader className="relative z-10 text-center">
           <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          {practice ? <div className="text-center text-xs text-amber-300" data-practice>Practice</div> : null}
+          {practice ? (
+            <div className="flex justify-center" data-practice>
+              <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+            </div>
+          ) : null}
           <LuminaCardDescription className="text-slate-300">{description}</LuminaCardDescription>
         </LuminaCardHeader>
 
@@ -1108,11 +902,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   {factor1Total} × {factor2Total}
                 </span>
               </div>
-              {perimeterAttempts > 0 && !tutorOwned && (
-                <div className="text-xs text-slate-500 mt-1">
-                  Attempts: {perimeterAttempts}
-                </div>
-              )}
             </LuminaPanel>
           )}
 
@@ -1127,11 +916,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   Total area = {totalProduct}
                 </span>
               </div>
-              {factorAttempts > 0 && !tutorOwned && (
-                <div className="text-xs text-slate-500 mt-1">
-                  Attempts: {factorAttempts}
-                </div>
-              )}
             </LuminaPanel>
           )}
 
@@ -1184,8 +968,10 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             </div>
           </div>
 
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace}>
+          {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the grid and its entries as one
+              region. */}
+          <PipDock />
+          <PipWorkspace>
           {/* Area Model Grid */}
           <div className="flex justify-center items-center">
             <div className="relative inline-block">
@@ -1568,7 +1354,7 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             </LuminaCard>
           )}
 
-          </div>
+          </PipWorkspace>
 
           {/* Between-challenge interstitial: shown after the current challenge is done */}
           {challengeDone && (
@@ -1592,17 +1378,6 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   </p>
                 )}
               </LuminaFeedbackCard>
-              {tutorOwned ? null : hasNextChallenge ? (
-                <div className="flex justify-end">
-                  <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                    Next Problem →
-                  </LuminaActionButton>
-                </div>
-              ) : (
-                <p className="text-right text-sm text-slate-400 font-mono uppercase tracking-wider">
-                  Last problem
-                </p>
-              )}
             </div>
           )}
 
@@ -1684,8 +1459,7 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const AreaModel = withWorkspaceController<AreaModelProps, ProgressOptions<AreaModelChallenge>, Progress>(
-  'area-model', AreaModelSurface, useScriptedProgress, useWorkspaceProgressFor('area-model'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const AreaModel = withWorkspaceOnly<AreaModelProps>('area-model', AreaModelSurface, props => props.data.title);
 
 export default AreaModel;

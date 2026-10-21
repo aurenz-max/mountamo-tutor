@@ -1,18 +1,16 @@
 /**
- * Matrix display on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C20).
+ * Matrix display's domain: the matrix arithmetic, the activity's check and its misses, and the scene the tutor reads.
+ * The boss (`matrixDisplay.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
+ * Pure: the component and any probe read the same scene. Every mode is a gesture item checked by the
  * activity's own Check: every box of the answer grid against the result matrix, or the one determinant box against
  * the determinant. The tutor is never handed the answer: no result entry, no determinant.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { MatrixChallengeType, MatrixDisplayChallenge } from './MatrixDisplay';
+import type { MatrixMiss } from './matrixDisplay.card';
 
-/** Catalog eval mode -> the challenge types it generates. */
-export const MATRIX_MODE_TYPES: Record<string, readonly MatrixChallengeType[]> = {
-  transpose: ['transpose'], add_subtract: ['add', 'subtract'], multiply: ['multiply'], determinant_inverse: ['determinant', 'inverse'],
-};
+export { MATRIX_MISSES_BY_MODE, MATRIX_MISSES_BY_TYPE, MATRIX_MODE_TYPES, type MatrixMiss } from './matrixDisplay.card';
 
 // ── matrix arithmetic (the practice builders recompute their own keys) ─────
 
@@ -114,38 +112,6 @@ export function describeMatrixWork(ch: MatrixDisplayChallenge, work: MatrixWork)
 
 // ── misses ─────────────────────────────────────────────────────────────────
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), drawn from the catalog's commonStruggles (wrong
- * determinant formula, multiplication order, inverse confusion, transpose dimensions) and the typed grid:
- * - transpose: `reshaped` A's entries typed in reading order into the new shape, not swapped;
- * - add / subtract: `wrong_operation` the other operation done; `reversed_subtraction` B − A;
- * - multiply: `entrywise` matching entries multiplied; `reversed_order` B·A; `row_times_row` row of A times row of B;
- *   `missed_term` every box one product short (the last term of each sum dropped);
- * - determinant: `added_products` the products added (2×2 ad + bc; 3×3 every cofactor term added);
- *   `opposite_sign` the determinant's negative; `one_product` only ad or only bc typed; else `near_miss` (within 2),
- *   `too_high`, `too_low`;
- * - inverse: `no_negation` a and d swapped, b and c not negated; `no_swap` b and c negated, a and d not swapped;
- *   `unscaled` not divided by a determinant of −1; `original` A itself typed;
- * - any grid: `sign_error` every wrong box is the right number with the wrong sign; `one_entry` one box wrong;
- *   `some_entries` more than one.
- */
-export type MatrixMiss = 'reshaped' | 'wrong_operation' | 'reversed_subtraction' | 'entrywise' | 'reversed_order'
-  | 'row_times_row' | 'missed_term' | 'added_products' | 'opposite_sign' | 'one_product' | 'near_miss' | 'too_high'
-  | 'too_low' | 'no_negation' | 'no_swap' | 'unscaled' | 'original' | 'sign_error' | 'one_entry' | 'some_entries';
-
-const GRID: readonly MatrixMiss[] = ['sign_error', 'one_entry', 'some_entries'];
-export const MATRIX_MISSES_BY_TYPE: Record<MatrixChallengeType, readonly MatrixMiss[]> = {
-  transpose: ['reshaped', ...GRID],
-  add: ['wrong_operation', ...GRID],
-  subtract: ['wrong_operation', 'reversed_subtraction', ...GRID],
-  multiply: ['entrywise', 'reversed_order', 'row_times_row', 'missed_term', ...GRID],
-  determinant: ['added_products', 'opposite_sign', 'one_product', 'near_miss', 'too_high', 'too_low'],
-  inverse: ['no_negation', 'no_swap', 'unscaled', 'original', ...GRID],
-};
-export const MATRIX_MISSES_BY_MODE: Record<string, readonly MatrixMiss[]> = Object.fromEntries(
-  Object.entries(MATRIX_MODE_TYPES).map(([mode, types]) =>
-    [mode, Array.from(new Set(types.flatMap(t => MATRIX_MISSES_BY_TYPE[t])))]));
-
 /** The values each signature miss stands for on this item, most specific first. Shared by the check and the harness. */
 export function signatureMatrices(ch: MatrixDisplayChallenge): Array<[MatrixMiss, number[][]]> {
   const a = ch.values, b = ch.secondMatrix?.values, key = ch.expectedMatrix;
@@ -214,11 +180,7 @@ export function matrixMiss(ch: MatrixDisplayChallenge, work: MatrixWork): Matrix
   return wrong.length === 1 ? 'one_entry' : 'some_entries';
 }
 
-// ── assignment and scene ──────────────────────────────────────────────────
-
-export function workspaceAssignment(ch: MatrixDisplayChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.instruction, response: 'gesture' };
-}
+// ── scene ─────────────────────────────────────────────────────────────────
 
 const KIND: Record<MatrixChallengeType, string> = {
   transpose: 'transpose: the rows of the matrix become the columns of the answer',
@@ -240,7 +202,7 @@ export interface MatrixView extends MatrixWork {
 }
 
 /** What is drawn and asked. No result entry and no determinant is named. */
-export function workspaceScene(ch: MatrixDisplayChallenge, view: MatrixView): WorkspaceScene {
+export function workspaceScene(ch: MatrixDisplayChallenge, view: MatrixView): SceneOf {
   const facts: Record<string, string> = {
     kind: KIND[ch.challengeType],
     [ch.secondMatrix ? 'matrixA' : 'matrix']: describeMatrix(ch.values),
@@ -254,11 +216,8 @@ export function workspaceScene(ch: MatrixDisplayChallenge, view: MatrixView): Wo
     facts.checkMarks = wrong.length ? `boxes marked wrong: ${wrong.join('; ')}; every other box is marked right` : 'every box marked right';
   }
   facts.learnerWork = describeMatrixWork(ch, view);
-  facts.constraints = shape
-    ? 'The learner types a number in every box of the answer grid and presses Check. The activity checks every box '
-      + 'itself and marks each one right or wrong. You cannot type or press Check.'
-    : 'The learner types one number in the determinant box and presses Check. The activity checks it itself. '
-      + 'You cannot type or press Check.';
+  // How the learner answers is the card's `moves`; only what is this grid's own is said here.
+  if (shape) facts.constraints = 'A check marks each box right or wrong; Try again empties the boxes marked wrong and keeps the right ones.';
   return { objects: [], facts };
 }
 

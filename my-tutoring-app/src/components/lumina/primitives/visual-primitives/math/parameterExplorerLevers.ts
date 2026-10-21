@@ -1,17 +1,17 @@
 /**
  * parameter-explorer's in-item levers (/add-support-tiers; report qa/eval-reports/parameter-explorer-levers-2026-10-09.md).
  * The misses are what `parameterMiss` observes on the chosen direction, the typed value or the chosen parameter; there is
- * no real-learner evidence.
+ * no real-learner evidence. Declared once as a lever set (`PARAMETER_LEVERS`, `bossLevers.ts`).
  *
- * - predict-direction: `find_parameter` (help) rings the changed parameter wherever it sits in the formula;
- *   `model_pair` (help) a picture outside the item: y = k × x and y = k ÷ x with x moving from one number to the next,
- *   and what each gives; `simpler_problem` (simplify) the same mode on a parameter that only multiplies, doubled, when
+ * - predict-direction: `find_parameter` (marks) rings the changed parameter wherever it sits in the formula;
+ *   `model_pair` (legend) a picture outside the item: y = k × x and y = k ÷ x with x moving from one number to the next,
+ *   and what each gives; `simpler_problem` (easier) the same mode on a parameter that only multiplies, doubled, when
  *   the item's parameter divides, is raised to a power or only adds.
- * - predict-value: `substitution` (help) the formula with the asked setting written in, not worked out (refused when it
- *   would print the answer); `scaling_model` (help) three rules outside the item with x doubled: y = k × x, y = k × x²,
- *   y = k ÷ x; `simpler_problem` (simplify) the same formula with one parameter doubled or halved from its start.
- * - identify-relationship: `double_marks` (help, where the output readout is on screen) a mark at each slider's start
- *   and at its double, and a Back to start button, so the learner can run the doubling test; `doubling_model` (help)
+ * - predict-value: `substitution` (layout) the formula with the asked setting written in, not worked out (not offered when
+ *   it would print the answer); `scaling_model` (legend) three rules outside the item with x doubled: y = k × x, y = k × x²,
+ *   y = k ÷ x; `simpler_problem` (easier) the same formula with one parameter doubled or halved from its start.
+ * - identify-relationship: `double_marks` (marks, where the output readout is on screen) a mark at each slider's start
+ *   and at its double, and a Back to start button, so the learner can run the doubling test; `doubling_model` (legend)
  *   three rules outside the item, y = k × x, y = k × x², y = x + k, with x doubled. No simplify: the lesson has one
  *   formula, and any smaller item on it asks the same question with the same key.
  * - explore credits every move and names no miss, so it has no lever.
@@ -20,11 +20,10 @@
  * the models use letters the item does not use and none of its numbers; the substitution never prints the answer; a
  * practice item has its own id, keeps the mode and never repeats the item's setting.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ParameterExplorerChallenge, ParameterExplorerData } from './ParameterExplorer';
-import {
-  askedOutput, evaluateFormula, formatOutput, formulaDirection, plainFormula, startingValues, type ParameterExplorerMiss,
-} from './parameterExplorerWorkspace';
+import { askedOutput, evaluateFormula, formatOutput, formulaDirection, plainFormula, startingValues } from './parameterExplorerWorkspace';
+import { PARAMETER_MISSES_BY_MODE, type ParameterExplorerMiss } from './parameterExplorer.card';
 
 type Lab = Pick<ParameterExplorerData, 'formula' | 'jsExpression' | 'outputName' | 'outputUnit' | 'parameters'>;
 
@@ -183,85 +182,73 @@ export const doubleMarks = (d: Lab) => d.parameters.filter(p => p.default !== 0 
 export const DIRECTION_WORDS = /\b(increases?|decreases?|more|less|bigger|smaller|larger|grows?|shrinks?|up|down|higher|lower|rises?|falls?|stays? the same)\b/i;
 export const leverTextLeaks = (text: string) => DIRECTION_WORDS.test(text);
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ───────────────────────────────────────────────────────
 
-export interface ParameterLeverContext {
-  /** The numeric output readout is on screen on this item (identify's doubling test needs it). */
-  outputShown: boolean;
-}
+const PREDICT = ['predict-direction', 'predict-value'];
+const MISSES = PARAMETER_MISSES_BY_MODE as Record<string, readonly ParameterExplorerMiss[]>;
+const PRACTICE_THEN = 'It is not graded; the full item comes back after it.';
+export const PRACTICE_NOTE = `An easier practice problem is on screen in place of the item. ${PRACTICE_THEN}`;
 
-export function parameterLevers(d: Lab, c: ParameterExplorerChallenge | null, pulled: readonly string[],
-  ctx: ParameterLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeParameter(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly ParameterExplorerMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerParameter(d, c);
-  switch (c.type) {
-    case 'predict-direction': {
-      const pair = modelPair(d, c);
-      return [
-        lever(FIND_PARAMETER_LEVER, 'help', 'shown', ['opposite_direction', 'missed_change', 'invented_change'],
-          'The learner predicts without looking at where the changed parameter sits in the formula.',
-          'Rings the changed parameter\'s symbol wherever it appears in the formula. Nothing else is written.'),
-        ...(pair ? [lever(MODEL_PAIR_LEVER, 'help', 'both', ['opposite_direction', 'missed_change'],
-          'The learner does not yet see how multiplying by a quantity differs from dividing by it.',
-          'Shows a picture outside the item: two small rules, one that multiplies by a letter and one that divides by it, '
-            + 'with the letter moving from one number to the next and what each rule gives. It uses none of the item\'s '
-            + 'letters or numbers; ask which rule the item\'s formula is like.')] : []),
-        ...(simpler ? [lever(SIMPLER_LEVER, 'simplify', 'shown', ['opposite_direction', 'missed_change', 'invented_change'],
-          'The changed parameter divides, is raised to a power or only adds, and that is too hard to predict yet.',
-          'Opens an easier prediction of the same kind first, on a parameter of the same formula that only multiplies, '
-            + 'doubled or halved. It is not graded; the full item comes back after it.')] : []),
-      ];
-    }
-    case 'predict-value': {
-      const scaling = scalingModel(d, c);
-      return [
-        ...(!substitutionLeaks(d, c) ? [lever(SUBSTITUTION_LEVER, 'help', 'shown',
-          ['unchanged_output', 'assumed_proportional', 'near_miss', 'opposite_direction', 'too_high', 'too_low'],
-          'The learner cannot write the calculation at the new setting.',
-          'Shows the formula with the new setting and the held values written in place of the letters. It does not work it out.')] : []),
-        ...(scaling ? [lever(SCALING_MODEL_LEVER, 'help', 'both', ['assumed_proportional', 'unchanged_output', 'opposite_direction', 'too_high', 'too_low'],
-          'The learner scales the output by the parameter\'s own ratio whatever its place in the formula.',
-          'Shows a picture outside the item: three small rules (times a letter, times its square, divided by it), the '
-            + 'letter doubled, and what each rule gives. It uses none of the item\'s letters or numbers.')] : []),
-        ...(simpler ? [lever(SIMPLER_LEVER, 'simplify', 'shown',
-          ['unchanged_output', 'assumed_proportional', 'near_miss', 'opposite_direction', 'too_high', 'too_low'],
-          'The new setting makes the arithmetic too heavy to see the method.',
-          'Opens an easier problem of the same kind first: the same formula with one parameter doubled or halved from its '
-            + 'start. It is not graded; the full item comes back after it.')] : []),
-      ];
-    }
-    case 'identify-relationship': {
-      const marks = ctx.outputShown ? doubleMarks(d) : [];
-      const model = doublingModel(d, c);
-      return [
-        ...(marks.length ? [lever(DOUBLE_MARKS_LEVER, 'help', 'shown', ['no_effect', 'largest_value', 'weaker_effect'],
-          'The learner guesses instead of testing each parameter.',
-          'Marks each slider\'s starting value and its double, and adds a Back to start button, so the learner can double '
-            + 'one parameter at a time and watch the output readout. It names no parameter and no result.')] : []),
-        ...(model ? [lever(DOUBLING_MODEL_LEVER, 'help', 'both', ['no_effect', 'largest_value', 'weaker_effect'],
-          'The learner judges by the size of the numbers, not by where each parameter sits in the formula.',
-          'Shows a picture outside the item: three small rules (times a letter, times its square, plus a number), the '
-            + 'letter doubled, and what each rule gives. It uses none of the item\'s letters or numbers; ask which rule '
-            + 'each parameter is like.')] : []),
-      ];
-    }
-    default:
-      return [];
-  }
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No direction, value or leading parameter. */
-export function leverFacts(d: Lab, c: ParameterExplorerChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeParameter(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(FIND_PARAMETER_LEVER) && 'The changed parameter\'s symbol is ringed wherever it appears in the formula.',
-    on(MODEL_PAIR_LEVER) && 'A picture outside the item shows one small rule that multiplies by a letter and one that divides by it, with what each gives as the letter moves to the next number.',
-    on(SUBSTITUTION_LEVER) && `The formula is shown with the setting written in: ${substitutionText(d, c)}. It is not worked out.`,
-    on(SCALING_MODEL_LEVER) && 'A picture outside the item shows three small rules (times a letter, times its square, divided by it) with the letter doubled and what each gives.',
-    on(DOUBLE_MARKS_LEVER) && 'Each slider shows a mark at its starting value and at its double, and a Back to start button puts every slider back.',
-    on(DOUBLING_MODEL_LEVER) && 'A picture outside the item shows three small rules (times a letter, times its square, plus a number) with the letter doubled and what each gives.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`); the context is the lab (the formula and its parameters). None is offered
+ * on a practice problem: the component declares nothing then.
+ */
+export const PARAMETER_LEVERS = leverSet<ParameterExplorerChallenge, Lab>({
+  modeOf: c => c.type,
+  missesOf: mode => MISSES[mode] ?? [],
+  specs: [
+    { id: FIND_PARAMETER_LEVER, type: 'marks', modes: ['predict-direction'], answers: 'all',
+      when: 'The learner predicts without looking at where the changed parameter sits in the formula.',
+      does: 'Rings the changed parameter\'s symbol wherever it appears in the formula. Nothing else is written.',
+      fact: 'The changed parameter\'s symbol is ringed wherever it appears in the formula.' },
+    { id: MODEL_PAIR_LEVER, type: 'legend', modes: ['predict-direction'], answers: ['opposite_direction', 'missed_change'],
+      when: 'The learner does not yet see how multiplying by a quantity differs from dividing by it.',
+      does: 'Shows a picture outside the item: two small rules, one that multiplies by a letter and one that divides by it, '
+        + 'with the letter moving from one number to the next and what each rule gives. It uses none of the item\'s '
+        + 'letters or numbers; ask which rule the item\'s formula is like.',
+      // Null when every number set collides with the item's: then it is not offered.
+      content: (c, d) => modelPair(d, c),
+      fact: 'A picture outside the item shows one small rule that multiplies by a letter and one that divides by it, with '
+        + 'what each gives as the letter moves to the next number.' },
+    { id: SUBSTITUTION_LEVER, type: 'layout', modes: ['predict-value'], answers: 'all',
+      when: 'The learner cannot write the calculation at the new setting.',
+      does: 'Shows the formula with the new setting and the held values written in place of the letters. It does not work it out.',
+      // Not offered when it would print the answer.
+      content: (c, d) => (substitutionLeaks(d, c) ? null : substitutionText(d, c)),
+      fact: (text: string) => `The formula is shown with the setting written in: ${text}. It is not worked out.` },
+    { id: SCALING_MODEL_LEVER, type: 'legend', modes: ['predict-value'],
+      answers: ['assumed_proportional', 'unchanged_output', 'opposite_direction', 'too_high', 'too_low'],
+      when: 'The learner scales the output by the parameter\'s own ratio whatever its place in the formula.',
+      does: 'Shows a picture outside the item: three small rules (times a letter, times its square, divided by it), the '
+        + 'letter doubled, and what each rule gives. It uses none of the item\'s letters or numbers.',
+      content: (c, d) => scalingModel(d, c),
+      fact: 'A picture outside the item shows three small rules (times a letter, times its square, divided by it) with the '
+        + 'letter doubled and what each gives.' },
+    { id: DOUBLE_MARKS_LEVER, type: 'marks', modes: ['identify-relationship'], answers: 'all',
+      when: 'The learner guesses instead of testing each parameter.',
+      does: 'Marks each slider\'s starting value and its double, and adds a Back to start button, so the learner can double '
+        + 'one parameter at a time and watch the output readout. It names no parameter and no result.',
+      // The test needs the output readout: an item that hides it (hard tier) has nothing to watch.
+      offer: c => c.showOutputReadout ?? true,
+      content: (_c, d) => (doubleMarks(d).length ? doubleMarks(d) : null),
+      fact: 'Each slider shows a mark at its starting value and at its double, and a Back to start button puts every slider back.' },
+    { id: DOUBLING_MODEL_LEVER, type: 'legend', modes: ['identify-relationship'], answers: 'all',
+      when: 'The learner judges by the size of the numbers, not by where each parameter sits in the formula.',
+      does: 'Shows a picture outside the item: three small rules (times a letter, times its square, plus a number), the '
+        + 'letter doubled, and what each rule gives. It uses none of the item\'s letters or numbers; ask which rule '
+        + 'each parameter is like.',
+      content: (c, d) => doublingModel(d, c),
+      fact: 'A picture outside the item shows three small rules (times a letter, times its square, plus a number) with the '
+        + 'letter doubled and what each gives.' },
+    { id: SIMPLER_LEVER, type: 'easier', modes: PREDICT, answers: 'all',
+      when: c => (c.type === 'predict-value' ? 'The new setting makes the arithmetic too heavy to see the method.'
+        : 'The changed parameter divides, is raised to a power or only adds, and that is too hard to predict yet.'),
+      does: c => (c.type === 'predict-value'
+        ? 'Opens an easier problem of the same kind first: the same formula with one parameter doubled or halved from its '
+          + `start. ${PRACTICE_THEN}`
+        : 'Opens an easier prediction of the same kind first, on a parameter of the same formula that only multiplies, '
+          + `doubled or halved. ${PRACTICE_THEN}`),
+      // Null when the item is already the simple shape: then it is not offered.
+      content: (c, d) => simplerParameter(d, c) },
+  ],
+});

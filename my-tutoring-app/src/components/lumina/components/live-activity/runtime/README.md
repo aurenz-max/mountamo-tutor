@@ -113,7 +113,7 @@ of counters stacked so their columns line up, with the unpartnered tail of each 
 ringed: it states a relationship BETWEEN two collections, which one row cannot. A
 `step-sequence` draws the SAME collection two to four times on one column grid, one change
 and one sentence per step (tones: plain, added, empty, marked `+`, crossed `×`): it states a
-PROCESS. Ten-frame prepares one for `make_ten` on a different frame in `useTenFrameRuntime.ts`.
+PROCESS. Ten-frame prepared one for `make_ten` in its tool-lab hook (retired 2026-10-20; the boss's `fill_model` lever carries it).
 Every advertised `request_support` choice carries a `purpose` (`SUPPORT_PURPOSE` in
 `contract.ts`: worked example, contrast, step-by-step explanation) so the model picks by
 what the learner is missing, not by title. A fourth kind, `generated-image`, is never prepared:

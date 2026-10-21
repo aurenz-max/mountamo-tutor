@@ -3,33 +3,33 @@
  * The misses are what `functionSketchMiss` observes in the family or curve chosen, the features found, or the sketch's
  * match; there is no real-learner evidence.
  *
- * Help:
- * - `family_gallery` (classify): beside the graph, the parent shape of every choice's family, each under the choice's own
+ * Declared once as a lever set (`FUNCTION_SKETCH_LEVERS`, `bossLevers.ts`). Help:
+ * - `family_gallery` (legend; classify): beside the graph, the parent shape of every choice's family, each under the choice's own
  *   name; never the item's curve, and every choice gets a panel, so none is singled out.
- * - `turn_marks` (classify, compare; where a curve turns or crosses the x-axis): a dot on the item's curve(s) at every
+ * - `turn_marks` (marks; classify, compare; where a curve turns or crosses the x-axis): a dot on the item's curve(s) at every
  *   turning point and x-axis crossing. No label, no family.
- * - `equal_steps` (classify, compare): a staircase of equal steps across under the curve(s): each riser shows how much
+ * - `equal_steps` (marks; classify, compare): a staircase of equal steps across under the curve(s): each riser shows how much
  *   the curve rises or falls over one step (equal risers: a line; risers that grow by a factor: exponential). No number.
- * - `feature_guide` (identify): what each kind of feature is, in words under the graph. No digit.
- * - `axis_glow` (identify, where a root or y-intercept is asked): both axes drawn bright: roots sit on the x-axis, the
+ * - `feature_guide` (meaning; identify): what each kind of feature is, in words under the graph. No digit.
+ * - `axis_glow` (marks; identify, where a root or y-intercept is asked): both axes drawn bright: roots sit on the x-axis, the
  *   y-intercept on the y-axis. Nothing on the curve.
- * - `feature_names` (identify, where the tier hid the names): the list below names each feature's kind. No place.
- * - `model_features` (identify): a worked example beside the graph, a different curve with its roots, lowest point and
+ * - `feature_names` (marks; identify, where the tier hid the names): the list below names each feature's kind. No place.
+ * - `model_features` (model; identify): a worked example beside the graph, a different curve with its roots, lowest point and
  *   y-intercept marked and named; never at one of the item's features.
- * - `sketch_steps` (sketch): the order to find a sketch's anchors, in words under the graph. No digit.
- * - `flip_model` (sketch, where the item is not one of its two parabolas): an inset of y = x² beside y = -x², the sign in
+ * - `sketch_steps` (clue; sketch): the order to find a sketch's anchors, in words under the graph. No digit.
+ * - `flip_model` (model; sketch, where the item is not one of its two parabolas): an inset of y = x² beside y = -x², the sign in
  *   front deciding which way it opens.
- * Simplify: `simpler_item` (every mode): the same task on an easier item, built here; ungraded practice.
+ * When a model comes is the set's `support`, from the item's tier.
+ * Simplify: `simpler_item` (easier, every mode): the same task on an easier item, built here; ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` carries a digit; a model never sits on the item (`modelLeaks`); a practice
  * item has its own id, ask, curve and answer, keeps the mode, and never offers the item's key (`practiceLeaks`).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { FunctionSketchChallenge } from './FunctionSketch';
 import type { CurvePoint } from './canvas-2d/types';
-import {
-  FUNCTION_SKETCH_MISSES_BY_MODE, familyOf, type Family, type FunctionSketchMiss, type FunctionSketchMode,
-} from './functionSketchWorkspace';
+import { FUNCTION_SKETCH_MISSES_BY_MODE, type FunctionSketchMiss, type FunctionSketchMode } from './functionSketch.card';
+import { familyOf, labelOf, type Family } from './functionSketchWorkspace';
 
 export const FAMILY_GALLERY = 'family_gallery';
 export const TURN_MARKS = 'turn_marks';
@@ -236,110 +236,111 @@ export function practiceLeaks(parent: FunctionSketchChallenge, practice: Functio
     || (practice.sketchDescription ?? '') === (parent.sketchDescription ?? '');
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 const FEATURE_ASKED: Record<string, FunctionSketchMiss> = {
   root: 'missed_root', maximum: 'missed_extremum', minimum: 'missed_extremum', 'y-intercept': 'missed_intercept', asymptote: 'missed_asymptote',
 };
+const turns = (c: FunctionSketchChallenge) => curvesOf(c).some(curve => turnsAndCrossings(curve).length > 0);
+const CLASSIFY: FunctionSketchMode[] = ['classify-shape'];
+const COMPARE: FunctionSketchMode[] = ['compare-functions'];
+const IDENTIFY: FunctionSketchMode[] = ['identify-features'];
+const SKETCH: FunctionSketchMode[] = ['sketch-match'];
 
-export function functionSketchLevers(c: FunctionSketchChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeItem(c)) return [];
-  const t: FunctionSketchMode = c.type;
-  const all = FUNCTION_SKETCH_MISSES_BY_MODE[t];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly FunctionSketchMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  const turns = curvesOf(c).some(curve => turnsAndCrossings(curve).length > 0);
-  if (t === 'classify-shape') {
-    out.push(lever(FAMILY_GALLERY, 'help', 'both', all,
-      'The learner cannot tell the families apart by their shapes.',
-      'Shows, beside the graph, the basic shape of every family in the choices, each under its own name. The item\'s curve is '
-        + 'not among them: the learner still matches it.'));
-    if (turns) {
-      out.push(lever(TURN_MARKS, 'help', 'shown', ['line_for_curve', 'polynomial_degree', 'periodic_family', 'wrong_family'],
-        'The learner missed where the curve bends, or how many times it turns.',
-        'Marks a dot on the curve at every turning point and every crossing of the x-axis. No label.'));
-    }
-    out.push(lever(EQUAL_STEPS, 'help', 'shown', ['line_for_curve', 'curve_for_line', 'growth_family', 'wrong_family'],
-      'The learner confused a straight line with a curve, or two kinds of growth.',
-      'Draws a staircase of equal steps across under the curve: each riser shows how much the curve rises or falls over one '
-        + 'step. Equal risers make a line. No number.'));
-  } else if (t === 'compare-functions') {
-    out.push(lever(EQUAL_STEPS, 'help', 'shown', all,
-      'The learner cannot see how the two curves change differently.',
-      'Draws a staircase of equal steps across under both curves: each riser shows how much that curve rises or falls over one '
-        + 'step. No number, and neither curve is singled out.'));
-    if (turns) {
-      out.push(lever(TURN_MARKS, 'help', 'shown', all,
-        'The learner missed where the curves turn or cross the x-axis.',
-        'Marks a dot on both curves at every turning point and every crossing of the x-axis. No label.'));
-    }
-  } else if (t === 'identify-features') {
-    out.push(lever(FEATURE_GUIDE, 'help', 'both', all,
-      'The learner confuses roots, turning points and intercepts, or does not know where to look.',
-      'Writes under the graph what each kind of feature is: a root is where the curve crosses the x-axis, a maximum or minimum '
-        + 'is where it turns, the y-intercept is where it crosses the y-axis, an asymptote is a line it approaches. No place.'));
-    const asked = new Set((c.features ?? []).map(f => FEATURE_ASKED[f.type]));
-    if (asked.has('missed_root') || asked.has('missed_intercept')) {
-      out.push(lever(AXIS_GLOW, 'help', 'shown', ['missed_root', 'missed_intercept'],
-        'The learner missed a root or the y-intercept.',
-        'Draws both axes bright: roots sit on the x-axis, the y-intercept on the y-axis. Nothing is marked on the curve.'));
-    }
-    if (c.showFeatureLabels !== true) {
-      out.push(lever(FEATURE_NAMES, 'help', 'shown', all,
-        'The learner does not know which kinds of feature to look for.',
-        'Names the kind of each feature in the list under the graph. It does not say where they are.'));
-    }
-    if (!modelLeaks(c, MODEL_FEATURES)) {
-      out.push(lever(MODEL_FEATURES, 'help', 'both', all,
-        'The learner does not know what a root, a turning point or an intercept looks like on a graph.',
-        'Shows a worked example beside the graph: a different curve with its roots, its lowest point and its y-intercept '
-          + 'marked and named. Read it aloud; it is never the item\'s curve.'));
-    }
-  } else {
-    out.push(lever(SKETCH_STEPS, 'help', 'both', all,
-      'The learner placed points without anchors, or missed a crossing, a turning point or the ends.',
-      'Writes under the graph the order to find a sketch\'s anchors: where it crosses the x-axis, where it crosses the y-axis, '
-        + 'where it turns, which way each end goes; then points between. No number.'));
-    if (!modelLeaks(c, FLIP_MODEL)) {
-      out.push(lever(FLIP_MODEL, 'help', 'both', ['upside_down', 'missed_peak', 'missed_trend'],
-        'The learner drew the curve upside down, or the ends going the wrong way.',
-        'Shows an example beside the graph: a parabola that opens up beside one that opens down, with the sign in front that '
-          + 'decides it. It is never the item\'s function.'));
-    }
-  }
-  if (simplerItem(c)) {
-    out.push(lever(SIMPLER, 'simplify', 'shown', all,
-      'This item is too big a step yet.',
-      t === 'classify-shape' ? 'Opens an easier curve first: a textbook shape with two far-apart choices. It is not graded; the '
-        + 'full item comes back after it.'
-        : t === 'compare-functions' ? 'Opens an easier pair first: two very different curves and a plain question. It is not '
-          + 'graded; the full item comes back after it.'
-          : t === 'identify-features' ? 'Opens an easier curve first: a parabola with two features, ringed and named. It is not '
-            + 'graded; the full item comes back after it.'
-            : 'Opens an easier sketch first: a parabola whose crossings and turning point are written out. It is not graded; '
-              + 'the full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. Never a place, a family or a curve's letter. */
-export function leverFacts(c: FunctionSketchChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeItem(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const both = c.type === 'compare-functions';
-  return [
-    on(FAMILY_GALLERY) && `Beside the graph, the basic shape of every choice's family, each under its name: ${(c.options ?? []).join(', ')}.`,
-    on(TURN_MARKS) && `A dot marks every turning point and every x-axis crossing on ${both ? 'both curves' : 'the curve'}, unlabelled.`,
-    on(EQUAL_STEPS) && `A staircase of equal steps across is drawn under ${both ? 'both curves' : 'the curve'}; each riser shows the rise or fall over one step, without numbers.`,
-    on(FEATURE_GUIDE) && 'Under the graph: a root is where the curve crosses the x-axis; a maximum or minimum is where it turns; the y-intercept is where it crosses the y-axis; an asymptote is a line it approaches but never reaches.',
-    on(AXIS_GLOW) && 'Both axes are drawn bright: roots sit on the x-axis, the y-intercept on the y-axis.',
-    on(FEATURE_NAMES) && `The list under the graph names each feature's kind: ${(c.features ?? []).map(f => f.type).join(', ')}.`,
-    on(MODEL_FEATURES) && `Beside the graph, a worked example on a different curve, ${FEATURE_MODEL.expression}: its two roots, its minimum and its y-intercept are marked and named.`,
-    on(SKETCH_STEPS) && 'Under the graph, the order to sketch: find where it crosses the x-axis, where it crosses the y-axis, where it turns, and which way each end goes; then add points between.',
-    on(FLIP_MODEL) && 'Beside the graph, an example: y = x² opens up and y = -x² opens down; the sign in front decides which way.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`); there is no lesson context. None is offered on a practice item: the
+ * component declares nothing while one is on screen, and a practice item has no easier version.
+ */
+export const FUNCTION_SKETCH_LEVERS = leverSet<FunctionSketchChallenge, null>({
+  modeOf: c => c.type,
+  missesOf: mode => FUNCTION_SKETCH_MISSES_BY_MODE[mode as FunctionSketchMode] ?? [],
+  // What a worded lever must never name: the family on a classify item, the curve's button on a compare item.
+  answersOf: c => (c.type === 'classify-shape' ? [c.correctType ?? '']
+    : c.type === 'compare-functions' && c.correctCurve ? [labelOf(c, c.correctCurve)] : []).filter(Boolean),
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (c.type === 'sketch-match' ? 'a different parabola that opens up, beside one that opens down'
+      : 'a different curve with its features marked and named'),
+    own: c => (c.type === 'sketch-match' ? 'this function\'s sketch' : 'this curve\'s features'),
+  },
+  specs: [
+    { id: FAMILY_GALLERY, type: 'legend', modes: CLASSIFY, answers: 'all',
+      when: 'The learner cannot tell the families apart by their shapes.',
+      does: 'Shows, beside the graph, the basic shape of every family in the choices, each under its own name. The item\'s curve is '
+        + 'not among them: the learner still matches it.',
+      fact: (_on: unknown, c: FunctionSketchChallenge) =>
+        `Beside the graph, the basic shape of every choice's family, each under its name: ${(c.options ?? []).join(', ')}.` },
+    { id: TURN_MARKS, type: 'marks', modes: CLASSIFY, answers: ['line_for_curve', 'polynomial_degree', 'periodic_family', 'wrong_family'],
+      when: 'The learner missed where the curve bends, or how many times it turns.',
+      does: 'Marks a dot on the curve at every turning point and every crossing of the x-axis. No label.',
+      offer: turns,
+      fact: 'A dot marks every turning point and every x-axis crossing on the curve, unlabelled.' },
+    { id: EQUAL_STEPS, type: 'marks', modes: CLASSIFY, answers: ['line_for_curve', 'curve_for_line', 'growth_family', 'wrong_family'],
+      when: 'The learner confused a straight line with a curve, or two kinds of growth.',
+      does: 'Draws a staircase of equal steps across under the curve: each riser shows how much the curve rises or falls over one '
+        + 'step. Equal risers make a line. No number.',
+      fact: 'A staircase of equal steps across is drawn under the curve; each riser shows the rise or fall over one step, without numbers.' },
+    { id: EQUAL_STEPS, type: 'marks', modes: COMPARE, answers: 'all',
+      when: 'The learner cannot see how the two curves change differently.',
+      does: 'Draws a staircase of equal steps across under both curves: each riser shows how much that curve rises or falls over one '
+        + 'step. No number, and neither curve is singled out.',
+      fact: 'A staircase of equal steps across is drawn under both curves; each riser shows the rise or fall over one step, without numbers.' },
+    { id: TURN_MARKS, type: 'marks', modes: COMPARE, answers: 'all',
+      when: 'The learner missed where the curves turn or cross the x-axis.',
+      does: 'Marks a dot on both curves at every turning point and every crossing of the x-axis. No label.',
+      offer: turns,
+      fact: 'A dot marks every turning point and every x-axis crossing on both curves, unlabelled.' },
+    { id: FEATURE_GUIDE, type: 'meaning', modes: IDENTIFY, answers: 'all',
+      when: 'The learner confuses roots, turning points and intercepts, or does not know where to look.',
+      does: 'Writes under the graph what each kind of feature is: a root is where the curve crosses the x-axis, a maximum or minimum '
+        + 'is where it turns, the y-intercept is where it crosses the y-axis, an asymptote is a line it approaches. No place.',
+      fact: 'Under the graph: a root is where the curve crosses the x-axis; a maximum or minimum is where it turns; the y-intercept '
+        + 'is where it crosses the y-axis; an asymptote is a line it approaches but never reaches.' },
+    { id: AXIS_GLOW, type: 'marks', modes: IDENTIFY, answers: ['missed_root', 'missed_intercept'],
+      when: 'The learner missed a root or the y-intercept.',
+      does: 'Draws both axes bright: roots sit on the x-axis, the y-intercept on the y-axis. Nothing is marked on the curve.',
+      offer: c => (c.features ?? []).some(f => FEATURE_ASKED[f.type] === 'missed_root' || FEATURE_ASKED[f.type] === 'missed_intercept'),
+      fact: 'Both axes are drawn bright: roots sit on the x-axis, the y-intercept on the y-axis.' },
+    { id: FEATURE_NAMES, type: 'marks', modes: IDENTIFY, answers: 'all',
+      when: 'The learner does not know which kinds of feature to look for.',
+      does: 'Names the kind of each feature in the list under the graph. It does not say where they are.',
+      offer: c => c.showFeatureLabels !== true,
+      fact: (_on: unknown, c: FunctionSketchChallenge) =>
+        `The list under the graph names each feature's kind: ${(c.features ?? []).map(f => f.type).join(', ')}.` },
+    { id: MODEL_FEATURES, type: 'model', modes: IDENTIFY, answers: 'all',
+      when: 'The learner does not know what a root, a turning point or an intercept looks like on a graph.',
+      does: 'Shows a worked example beside the graph: a different curve with its roots, its lowest point and its y-intercept '
+        + 'marked and named. Read it aloud; it is never the item\'s curve.',
+      content: c => (modelLeaks(c, MODEL_FEATURES) ? null : FEATURE_MODEL),
+      fact: `Beside the graph, a worked example on a different curve, ${FEATURE_MODEL.expression}: its two roots, its minimum `
+        + 'and its y-intercept are marked and named.' },
+    { id: SKETCH_STEPS, type: 'clue', modes: SKETCH, answers: 'all',
+      when: 'The learner placed points without anchors, or missed a crossing, a turning point or the ends.',
+      does: 'Writes under the graph the order to find a sketch\'s anchors: where it crosses the x-axis, where it crosses the y-axis, '
+        + 'where it turns, which way each end goes; then points between. No number.',
+      fact: 'Under the graph, the order to sketch: find where it crosses the x-axis, where it crosses the y-axis, where it turns, '
+        + 'and which way each end goes; then add points between.' },
+    { id: FLIP_MODEL, type: 'model', modes: SKETCH, answers: ['upside_down', 'missed_peak', 'missed_trend'],
+      when: 'The learner drew the curve upside down, or the ends going the wrong way.',
+      does: 'Shows an example beside the graph: a parabola that opens up beside one that opens down, with the sign in front that '
+        + 'decides it. It is never the item\'s function.',
+      content: c => (modelLeaks(c, FLIP_MODEL) ? null : true),
+      fact: 'Beside the graph, an example: y = x² opens up and y = -x² opens down; the sign in front decides which way.' },
+    { id: SIMPLER, type: 'easier', answers: 'all',
+      when: 'This item is too big a step yet.',
+      does: c => (c.type === 'classify-shape'
+        ? 'Opens an easier curve first: a textbook shape with two far-apart choices. It is not graded; the full item comes back after it.'
+        : c.type === 'compare-functions'
+          ? 'Opens an easier pair first: two very different curves and a plain question. It is not graded; the full item comes back '
+            + 'after it.'
+          : c.type === 'identify-features'
+            ? 'Opens an easier curve first: a parabola with two features, ringed and named. It is not graded; the full item comes '
+              + 'back after it.'
+            : 'Opens an easier sketch first: a parabola whose crossings and turning point are written out. It is not graded; the '
+              + 'full item comes back after it.'),
+      content: c => simplerItem(c) },
+  ],
+});
 
 /** Leak rule for the levers' when/does words: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

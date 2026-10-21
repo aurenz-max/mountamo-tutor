@@ -1,14 +1,17 @@
 /**
- * Transformation lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C18).
+ * Transformation lab's pure domain: geometry, the activity's check, the named miss, the scene and the harness inputs
+ * (the boss is `transformationLab.boss.ts`).
  *
- * Pure: the component, the journey row and any probe read the same geometry, assignment and scene. Every mode is a
+ * Pure: the component, the boss and any probe read the same geometry and scene. Every mode is a
  * gesture item checked by the activity's own Check: the pink image's corners match the expected image (drag and
  * compose modes, as a set of grid points), or the tapped option is the right one (identify). The tutor is never
  * handed the expected image's coordinates (drag modes), the move sequence (compose) or which option is right.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { GridPoint, SequenceOp, TransformationLabChallenge, TransformationLabChallengeType } from './TransformationLab';
+import type { TransformMiss } from './transformationLab.card';
+
+export { TRANSFORM_MISSES_BY_MODE, type TransformMiss } from './transformationLab.card';
 
 // ── canvas geometry (the component draws with these; the journey row drags in them) ──────────────────────────────
 
@@ -147,11 +150,10 @@ export function slideBetween(a: readonly GridPoint[], b: readonly GridPoint[]): 
   return sa.every((p, i) => p.x + dx === sb[i].x && p.y + dy === sb[i].y) ? { dx, dy } : null;
 }
 
-// ── assignment, work, check ───────────────────────────────────────────────────────────────────────────────────────
+// ── work, check ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-export function workspaceAssignment(ch: TransformationLabChallenge): TeachingAssignment {
-  return { id: ch.id, task: [ch.narration, ch.instruction].filter(Boolean).join(' '), response: 'gesture' };
-}
+/** What the learner is asked on one item: the narration, then the instruction. */
+export const transformAsk = (ch: TransformationLabChallenge) => [ch.narration, ch.instruction].filter(Boolean).join(' ');
 
 /** The learner's work on the current item. */
 export interface TransformWork {
@@ -184,37 +186,7 @@ export function describeTransformWork(ch: TransformationLabChallenge, work: Tran
   return `the pink corners are at ${fmtPoints(work.image)}`;
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), named from the figure the learner made or the option
- * tapped, drawn from the catalog's commonStruggles (wrong axis, wrong turn direction, a dilation taken as congruent)
- * and the patterns a drag shows:
- * - `unmoved`: checked with the figure still on the pre-image (no corner dragged, no move pressed);
- * - translation: `opposite_shift` the slide the other way; `swapped_shift` the two numbers swapped; `one_axis_shift`
- *   only one of the two numbers applied;
- * - reflection: `wrong_axis` reflected over another line (identify: another reflection chosen);
- * - rotation: `wrong_direction` turned the other way (90 for 270); `wrong_angle` another angle (180 for a quarter turn);
- *   `reflected_instead` the figure flipped instead of turned;
- * - dilation: `added_factor` the scale factor added to each coordinate; `wrong_factor` scaled by another factor;
- *   `one_axis_scaled` only x or only y multiplied;
- * - `partly_placed`: some corners on their image points, not all; `shape_changed`: the corners no longer make the
- *   figure's shape (a rigid motion keeps it; a dilation keeps it in proportion); `misplaced`: the right shape, elsewhere;
- * - identify: `reflection_for_rotation` / `rotation_for_reflection` the other family chosen;
- * - compose: `orientation_off` the figure faces another way than the target; `position_off` it faces the target's way
- *   and sits elsewhere.
- */
-export type TransformMiss = 'unmoved' | 'opposite_shift' | 'swapped_shift' | 'one_axis_shift' | 'wrong_axis'
-  | 'wrong_direction' | 'wrong_angle' | 'reflected_instead' | 'added_factor' | 'wrong_factor' | 'one_axis_scaled'
-  | 'partly_placed' | 'shape_changed' | 'misplaced' | 'reflection_for_rotation' | 'rotation_for_reflection'
-  | 'orientation_off' | 'position_off';
-
-const DRAG_TAIL: readonly TransformMiss[] = ['partly_placed', 'shape_changed', 'misplaced'];
-export const TRANSFORM_MISSES_BY_MODE: Record<TransformationLabChallengeType, readonly TransformMiss[]> = {
-  apply_translation_reflection: ['unmoved', 'opposite_shift', 'swapped_shift', 'one_axis_shift', 'wrong_axis', ...DRAG_TAIL],
-  apply_rotation: ['unmoved', 'wrong_direction', 'wrong_angle', 'reflected_instead', ...DRAG_TAIL],
-  identify_transformation: ['wrong_axis', 'reflection_for_rotation', 'rotation_for_reflection', 'wrong_direction', 'wrong_angle'],
-  compose_sequence: ['unmoved', 'orientation_off', 'position_off'],
-  dilation_similarity: ['unmoved', 'added_factor', 'wrong_factor', 'one_axis_scaled', ...DRAG_TAIL],
-};
+// What a wrong check shows: `TransformMiss` and `TRANSFORM_MISSES_BY_MODE` live in the card.
 
 type Mapper = (p: GridPoint) => GridPoint;
 const viaSpec = (s: TransformSpec): Mapper => p => applySpec(s, p);
@@ -312,7 +284,7 @@ export interface TransformView extends TransformWork {
 
 /** What is drawn and asked. The expected image's coordinates (drag), the moves (compose) and the right option
  *  (identify) are never named. */
-export function workspaceScene(ch: TransformationLabChallenge, view: TransformView): WorkspaceScene {
+export function workspaceScene(ch: TransformationLabChallenge, view: TransformView): SceneOf {
   const n = ch.preImage.length;
   const facts: Record<string, string> = {
     kind: MODE_LABEL[ch.type],
@@ -332,13 +304,6 @@ export function workspaceScene(ch: TransformationLabChallenge, view: TransformVi
   }
   if (view.rule) facts.rule = `a rule card reads ${view.rule}`;
   facts.learnerWork = describeTransformWork(ch, view);
-  facts.constraints = ch.answerKind === 'identify'
-    ? 'The learner taps one option and presses Check. The activity checks it itself. You cannot choose or press Check.'
-    : ch.answerKind === 'sequence'
-    ? 'The learner presses the move buttons (each moves the whole pink figure at once; Reset starts over) and presses '
-      + 'Check. The activity checks whether the figure lies on the target. You cannot press a move or Check.'
-    : 'The learner drags each pink corner to a grid point (corners snap) and presses Check. The activity checks the whole '
-      + 'image itself. You cannot move a corner or press Check.';
   return { objects: [], facts };
 }
 

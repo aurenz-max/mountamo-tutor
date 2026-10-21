@@ -1,13 +1,15 @@
 /**
- * Shape tracer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C11).
+ * Shape tracer's domain on the boss (`shapeTracer.boss.ts`): the ask, the scene, the check and the miss.
  *
- * Pure: the component and any probe read the same assignment, scene and check. Every challenge is answered by
+ * Pure: the component, the boss and any probe read the same ask, scene and check. Every challenge is answered by
  * tapping dots on the canvas and checked by the activity itself, so the tutor is never handed the dot order or a
  * shape the screen has not named yet.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ShapeTracerChallenge } from './ShapeTracer';
+import type { ShapeTracerMiss } from './shapeTracer.card';
+
+export { DOT_MISSES, DRAW_MISSES, type ShapeTracerMiss } from './shapeTracer.card';
 
 export type Point = { x: number; y: number };
 
@@ -90,12 +92,12 @@ export function nextTraceCorner(n: number, tapped: readonly number[], free: bool
  * pre-reader hears it from the tutor), and a trace's corner numbers when its tier shows them (the numbered order is
  * then the instruction on the canvas, not a secret).
  */
-export function workspaceAssignment(challenge: ShapeTracerChallenge): TeachingAssignment {
+export function shapeTask(challenge: ShapeTracerChallenge): string {
   const n = challenge.tracePath?.length ?? 0;
   const extra = challenge.type === 'draw-from-description' && challenge.description ? ` Clue: ${challenge.description}`
     : challenge.type === 'trace' && tierGuides(challenge).orderNumbers && n
       ? ` The corners are numbered ${Array.from({ length: n }, (_, i) => i + 1).join(', ')}.` : '';
-  return { id: challenge.id, task: challenge.instruction + extra, response: 'gesture' };
+  return challenge.instruction + extra;
 }
 
 /** What the learner has done on the current challenge, as the component holds it. */
@@ -143,17 +145,7 @@ export function describeShapeWork(c: ShapeTracerChallenge, view: ShapeTracerView
   }
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20). Only connect-dots and draw-from-description have a
- * wrong check: a trace or completion tap that is not the next corner is refused on the dot, never checked.
- * - connect-dots, from the dot tapped instead of the next number: `went_back` (a dot already joined),
- *   `started_elsewhere` (the first tap is not the first number), `skipped_number` (a later number);
- * - draw-from-description, from the checked corners: `too_few_sides`, `too_many_sides`, `sides_unequal` (the
- *   right count, but the clue asks for sides of one length and these are not).
- */
-export type ShapeTracerMiss = 'went_back' | 'started_elsewhere' | 'skipped_number'
-  | 'too_few_sides' | 'too_many_sides' | 'sides_unequal';
-
+/** What a wrong check shows (`TeachingAttempt.miss`); the miss list and its meaning are on the card. */
 export function shapeTracerMiss(c: ShapeTracerChallenge | null,
   work: { tapped: readonly number[]; points: readonly Point[]; wrongDot?: number }): ShapeTracerMiss | undefined {
   if (!c) return undefined;
@@ -176,8 +168,11 @@ export function shapeTracerMiss(c: ShapeTracerChallenge | null,
 
 const shown = (on: boolean) => (on ? 'shown' : 'hidden');
 
-/** What is drawn and asked. The order of the dots is on screen only as their numbers; no hidden shape is named. */
-export function workspaceScene(c: ShapeTracerChallenge, view: ShapeTracerView): WorkspaceScene {
+/**
+ * What is drawn and asked. The order of the dots is on screen only as their numbers; no hidden shape is named. How to
+ * answer is the card's `moves`; only a free trace (no numbers, no glow) adds that any corner may start.
+ */
+export function workspaceScene(c: ShapeTracerChallenge, view: ShapeTracerView): SceneOf {
   const drawn: Record<string, string | number> = {};
   const g = view.guides;
   if (c.type === 'trace') {
@@ -186,15 +181,13 @@ export function workspaceScene(c: ShapeTracerChallenge, view: ShapeTracerView): 
     drawn.dottedOutline = shown(g.guidePath);
     drawn.orderNumbers = shown(g.orderNumbers);
     drawn.nextDotGlow = shown(g.nextCue);
-    drawn.howToAnswer = freeTrace(c)
-      ? 'tap the corners one after another around the outline, starting at any corner; the shape closes on the last one'
-      : 'tap the numbered corners in order from 1; the shape closes on the last one';
+    // The card's moves say how to tap; a free trace (no numbers, no glow) also starts anywhere and goes either way.
+    if (freeTrace(c)) drawn.howToAnswer = 'any corner may start, and the outline may go either way round';
   } else if (c.type === 'complete') {
     drawn.shape = c.targetShape;
     drawn.sidesAlreadyDrawn = c.drawnSides?.length ?? 0;
     drawn.openCorners = c.remainingVertices?.length ?? 0;
     drawn.nextDotGlow = shown(g.nextCue);
-    drawn.howToAnswer = 'tap the open corners one after another, carrying on from where the drawn sides stop; the shape closes on the last one';
   } else if (c.type === 'draw-from-description') {
     drawn.clue = c.description ?? '';
     if (view.propertyReminder && c.requiredProperties) {
@@ -203,12 +196,10 @@ export function workspaceScene(c: ShapeTracerChallenge, view: ShapeTracerView): 
         r.allSidesEqual ? 'all sides equal' : ''].filter(Boolean).join(', ');
     }
     drawn.cornerNumbers = shown(g.orderNumbers);
-    drawn.howToAnswer = 'tap grid dots to place corners in turn around the shape, then press Check Shape';
   } else {
     const n = c.dots?.length ?? 0;
     drawn.dots = `${n} dots numbered 1 to ${n}`;
     drawn.nextDotGlow = shown(g.nextCue);
-    drawn.howToAnswer = 'tap the dots in number order, starting at 1; the shape appears when every dot is joined';
     if (view.complete) drawn.revealed = c.revealShape || c.targetShape;
   }
   return {
@@ -216,8 +207,6 @@ export function workspaceScene(c: ShapeTracerChallenge, view: ShapeTracerView): 
     facts: {
       kind: c.type, ...drawn,
       learnerWork: describeShapeWork(c, view),
-      constraints: 'The learner answers on the screen by tapping dots on the canvas (and Check Shape when drawing); the '
-        + 'activity checks the work itself. You cannot tap, draw or check for the learner.',
     },
   };
 }

@@ -1,15 +1,16 @@
 /**
- * Multiplication explorer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C15).
+ * Multiplication explorer's domain: the fact, the ask, the activity's check and its misses, and the scene the tutor
+ * reads. The boss (`multiplicationExplorer.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same fact, ask, scene and check. Every mode is one typed number checked
+ * Pure: the component, the boss and any probe read the same fact, ask, scene and check. Every mode is one typed number checked
  * by the activity itself (`multiplicationAnswerCorrect`), so the tutor is never handed the product or, on
  * missing_factor, the hidden factor. This module also owns what the screen may show while an item is open: the asked
  * value is a `?` in the equation, and a picture that would show it (a factor's groups, a fluency fact's array) is not
  * drawn (`modelShown`).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { MultiplicationExplorerChallenge, MultiplicationRepresentation } from './MultiplicationExplorer';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { MultiplicationExplorerChallenge, MultiplicationExplorerData, MultiplicationRepresentation } from './MultiplicationExplorer';
+import { MULTIPLICATION_MISSES_BY_MODE, type MultiplicationMiss } from './multiplicationExplorer.card';
 
 export interface ExplorerFactValue { factor1: number; factor2: number; product: number }
 export type ExplorerChallengeType = MultiplicationExplorerChallenge['type'];
@@ -41,6 +42,21 @@ export function resolveChallengeFact(challenge: Pick<MultiplicationExplorerChall
     return { factor1: own.factor1, factor2: own.factor2, product: own.factor1 * own.factor2 };
   }
   return parseTargetFact(challenge?.targetFact) ?? sessionFact;
+}
+
+/** No session fact: an item stamped by `explorerItems` never falls back to it. */
+export const NO_FACT: ExplorerFactValue = { factor1: NaN, factor2: NaN, product: NaN };
+
+/**
+ * The lesson's items, each stamped with the fact it is asked, drawn and judged on (`resolveChallengeFact`), so the
+ * assignment, the levers and an easier item read the item alone, never the session fact beside it.
+ */
+export function explorerItems(d: Pick<MultiplicationExplorerData, 'challenges' | 'fact'>): MultiplicationExplorerChallenge[] {
+  return (d.challenges ?? []).map(c => {
+    const f = resolveChallengeFact(c, d.fact ?? NO_FACT);
+    return c.fact && c.fact.factor1 === f.factor1 && c.fact.factor2 === f.factor2
+      ? c : { ...c, fact: { factor1: f.factor1, factor2: f.factor2 } };
+  });
 }
 
 /** The value the learner types. A missing hiddenValue asks the product (the component always graded it so). */
@@ -129,10 +145,6 @@ export function hintFor(c: MultiplicationExplorerChallenge, fact: ExplorerFactVa
   return text && !textLeaks(text, c, fact) ? `Not quite. ${text}` : 'Not quite. Try again!';
 }
 
-export function workspaceAssignment(c: MultiplicationExplorerChallenge, sessionFact: ExplorerFactValue): TeachingAssignment {
-  return { id: c.id, task: askFor(c, resolveChallengeFact(c, sessionFact)), response: 'gesture' };
-}
-
 /** Whether a typed answer is right, by the activity's own rule. */
 export function multiplicationAnswerCorrect(c: MultiplicationExplorerChallenge, fact: ExplorerFactValue, typed: string): boolean {
   return parseInt(typed, 10) === expectedAnswer(c, fact);
@@ -149,26 +161,10 @@ export const distributiveSplit = (fact: ExplorerFactValue) => {
   return [first, fact.factor1 - first] as const;
 };
 
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the typed number, drawn from the catalog's
- * commonStruggles (groups confused with items per group, the distributive parts, missing-factor confusion). Only the
- * observable pattern:
- * - the product asked: `added_factors` (the two factors added), `one_part_only` (distributive: one of the two partial
- *   products on the break-apart), `one_group_short` / `one_group_over` (one group of either factor too few or too
- *   many), `off_by_one`, `other_product`;
- * - a factor asked: `gave_product` (the product typed back), `gave_known_factor` (the factor already shown),
- *   `subtracted` (the product less the known factor), `one_jump_off` (one more or less than the factor), `other_factor`.
- */
-export type MultiplicationMiss = 'added_factors' | 'one_part_only' | 'one_group_short' | 'one_group_over' | 'off_by_one' | 'other_product'
-  | 'gave_product' | 'gave_known_factor' | 'subtracted' | 'one_jump_off' | 'other_factor';
+export { MULTIPLICATION_MISSES_BY_MODE, PRODUCT_MISSES, DISTRIBUTIVE_MISSES, FACTOR_MISSES, type MultiplicationMiss }
+  from './multiplicationExplorer.card';
 
-export const PRODUCT_MISSES: readonly MultiplicationMiss[] = ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'];
-export const DISTRIBUTIVE_MISSES: readonly MultiplicationMiss[] = ['added_factors', 'one_part_only', 'one_group_short', 'one_group_over',
-  'off_by_one', 'other_product'];
-export const FACTOR_MISSES: readonly MultiplicationMiss[] = ['gave_product', 'gave_known_factor', 'subtracted', 'one_jump_off', 'other_factor'];
-
-export const missesFor = (type: ExplorerChallengeType): readonly MultiplicationMiss[] =>
-  type === 'missing_factor' ? FACTOR_MISSES : type === 'distributive' ? DISTRIBUTIVE_MISSES : PRODUCT_MISSES;
+export const missesFor = (type: ExplorerChallengeType): readonly MultiplicationMiss[] => MULTIPLICATION_MISSES_BY_MODE[type];
 
 export function multiplicationMiss(c: MultiplicationExplorerChallenge | null, fact: ExplorerFactValue, typed: string): MultiplicationMiss | undefined {
   if (!c) return undefined;
@@ -219,7 +215,7 @@ const PANEL: Record<Exclude<MultiplicationRepresentation, 'all'>, (g: number, n:
 };
 
 /** What is drawn and asked. Every number here is printed on the screen; the asked value is not. */
-export function workspaceScene(c: MultiplicationExplorerChallenge, fact: ExplorerFactValue, view: ExplorerView): WorkspaceScene {
+export function workspaceScene(c: MultiplicationExplorerChallenge, fact: ExplorerFactValue, view: ExplorerView): SceneOf {
   const drawn: Record<string, string | number> = { equation: equationText(c, fact, view.flipped) };
   const groups = view.flipped ? fact.factor2 : fact.factor1, each = view.flipped ? fact.factor1 : fact.factor2;
   if (!modelShown(c)) {
@@ -239,8 +235,8 @@ export function workspaceScene(c: MultiplicationExplorerChallenge, fact: Explore
       kind: c.type,
       ...drawn,
       learnerWork: view.lastWrong ? `${view.lastWrong}, marked wrong` : describeAnswer(c, view.answer),
-      constraints: 'The learner types one number in the answer box and presses Check; the activity checks it '
-        + 'itself. The learner may switch the picture tabs. You cannot type or press for the learner.',
+      // How the learner answers is the card's `moves`; only what is this activity's own is said here.
+      constraints: 'The picture tabs, the flip and the phase buttons change the view only; they check nothing.',
     },
   };
 }

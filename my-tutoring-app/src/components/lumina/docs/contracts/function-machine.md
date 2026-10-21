@@ -1,7 +1,7 @@
 # Contract: function-machine
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C17) for the workspace and open-build requirements only. A full `/primitive-contract function-machine` derivation (consumers per patterns/functions skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/FunctionMachine.tsx` · **Domain:** `functionMachineDomain.ts` (rule arithmetic, make_rule judge) · **Workspace:** `functionMachineWorkspace.ts` · **Generator:** `service/math/gemini-function-machine.ts` · **Oracle:** `service/qa/oracles/function-machine.ts` · **Adapter:** `components/live-activity/adapters/functionMachineLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`function-machine`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/FunctionMachine.tsx` · **Domain:** `functionMachineDomain.ts` (rule arithmetic, make_rule judge) · **Workspace:** `functionMachineWorkspace.ts` · **Generator:** `service/math/gemini-function-machine.ts` · **Oracle:** `service/qa/oracles/function-machine.ts` · **Boss:** `functionMachine.card.ts` + `functionMachine.boss.ts` · **Levers:** `functionMachineLevers.ts` (`MACHINE_LEVERS`) · **Catalog:** `service/manifest/catalog/math.ts` (`function-machine`)
 
 ## Requirements
 
@@ -23,9 +23,10 @@
 - **Property:** the discover/create rule box placeholder is "use x"; it was "e.g., x + 3", which is the answer on an x + 3 item.
 
 ### R5 — every checked mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
-- **Property:** help levers draw a model machine outside the item (predict: none of its numbers is an item output; discover/create: never the rule or a text containing it), the rule's own two steps in place of the rule, the learner's own last rule marked on each pair, output changes between pairs already on screen, the learner's own last machine worked through, or empty machine shapes with no number. Simplify opens a one-step, small-number practice item of the same mode (make: a smaller pair), with its own id, never equivalent to the item's rule and, on predict, with none of its outputs; it is ungraded and the full item returns blank. A pull with nothing to draw (no checked rule or machine yet) is refused. Observe has no lever (nothing can miss). See `functionMachineLevers.ts`, `qa/eval-reports/function-machine-levers-2026-10-09.md`.
+- **Property:** help levers draw a model machine outside the item (predict: none of its numbers is an item output; discover/create: never the rule or a text containing it), the rule's own two steps in place of the rule, the learner's own last rule marked on each pair, output changes between pairs already on screen, the learner's own last machine worked through, or empty machine shapes with no number. Simplify opens a one-step, small-number practice item of the same mode (make: a smaller pair), with its own id, never equivalent to the item's rule and, on predict, with none of its outputs; it is ungraded and the full item returns blank. A lever with nothing to draw (no checked rule or machine yet) is not offered. Observe has no lever (nothing can miss). See `functionMachineLevers.ts`, `qa/eval-reports/function-machine-levers-2026-10-09.md`.
 - **Evidence:** `functionMachineLevers.test.ts`, `FunctionMachine.levers.workspace.test.tsx`; sweep J9/J12/J13.
 
 ## Changelog
 
 - 2026-10-09 — created with R1-R5 (W1 plain-shape binding and levers, C17). R2 recorded from the 10-08 open-build report.
+- 2026-10-20 — moved onto a boss (wave 3): card + boss replace the adapter and the catalog guidance/tutoring blocks; levers declared once as `MACHINE_LEVERS` (check_pairs and run_machine offered once a checked rule or machine runs, instead of refusing the pull); the scripted `useLuminaAI` path, its cue tags and the hand-wired Pip surface are gone (`withWorkspaceOnly`). R1-R5 hold.

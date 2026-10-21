@@ -1,14 +1,16 @@
 /**
- * Circle explorer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C18).
+ * Circle explorer on the shared tutor/JEV teaching workspace (its boss: `circleExplorer.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item: the learner
+ * Pure: the component, the boss and any probe read the same check and scene. Every mode is a gesture item: the learner
  * types a number and presses Check, and the activity's own check accepts it within the item's tolerance (which covers
  * π ≈ 3.14 against the true π). On discover π the circumference must be unrolled first. The tutor is never handed the
  * answer: not the ratio, the circumference, the area, the radius a reverse item asks for, or a composite's result.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { CircleExplorerChallenge, CircleExplorerChallengeType } from './CircleExplorer';
+import type { CircleMiss } from './circleExplorer.card';
+
+export { CIRCLE_MISSES_BY_MODE, type CircleMiss } from './circleExplorer.card';
 
 /** π as the activity tells the learner to use it (the generator computes every answer with it). */
 export const PI_APPROX = 3.14;
@@ -51,41 +53,6 @@ export function describeCircleWork(ch: CircleExplorerChallenge, work: CircleWork
   if (ch.type === 'discover_pi') return `${work.unrolled ? 'unrolled the circumference; ' : 'has not unrolled the circumference; '}${typed}`;
   return typed;
 }
-
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the number typed, drawn from the catalog's
- * commonStruggles (radius and diameter swapped, the radius not squared, around and inside confused, multiplying where
- * the reverse divides) and from what each mode's formula can be mistaken for:
- * - discover π: `inverse_ratio` d ÷ C; `typed_length` the circumference or the diameter typed instead of the ratio (a
- *   plain 3 is inside the item's tolerance and is credited);
- * - circumference: `pi_times_radius` π × r (half of it); `two_pi_times_diameter` 2 × π × d (twice it);
- *   `area_formula` π × r²; `no_pi` the diameter or the radius alone;
- * - area: `circumference_formula` 2 × π × r; `pi_times_radius` π × r (not squared); `diameter_squared` π × d²;
- *   `no_pi` r²;
- * - reverse: `diameter_not_radius` C ÷ π (the diameter); `multiplied` C or A times π (or 2π); `divided_by_two_only`
- *   C ÷ 2; `no_square_root` A ÷ π (r²); `divided_by_two_pi` A ÷ 2π; `no_pi_divide` √A;
- * - composite: semicircle area `whole_circle` π × r², `diameter_as_radius` ½ × π × (2r)², `half_circumference` π × r;
- *   semicircle perimeter `curve_only` π × r, `full_circle_edge` 2 × π × r (with or without the diameter), `radius_edge`
- *   π × r + r; circle in square `circle_area` π × r², `square_area` s², `added` s² + π × r²;
- * - every mode: `near_miss` within 10%, else `too_high` / `too_low`.
- */
-export type CircleMiss = 'inverse_ratio' | 'typed_length'
-  | 'pi_times_radius' | 'two_pi_times_diameter' | 'area_formula' | 'no_pi'
-  | 'circumference_formula' | 'diameter_squared'
-  | 'diameter_not_radius' | 'multiplied' | 'divided_by_two_only' | 'no_square_root' | 'divided_by_two_pi' | 'no_pi_divide'
-  | 'whole_circle' | 'diameter_as_radius' | 'half_circumference' | 'curve_only' | 'full_circle_edge' | 'radius_edge'
-  | 'circle_area' | 'square_area' | 'added'
-  | 'near_miss' | 'too_high' | 'too_low';
-
-const SIZE: readonly CircleMiss[] = ['near_miss', 'too_high', 'too_low'];
-export const CIRCLE_MISSES_BY_MODE: Record<CircleExplorerChallengeType, readonly CircleMiss[]> = {
-  discover_pi: ['inverse_ratio', 'typed_length', ...SIZE],
-  circumference: ['pi_times_radius', 'two_pi_times_diameter', 'area_formula', 'no_pi', ...SIZE],
-  area: ['circumference_formula', 'pi_times_radius', 'diameter_squared', 'no_pi', ...SIZE],
-  reverse: ['diameter_not_radius', 'multiplied', 'divided_by_two_only', 'no_square_root', 'divided_by_two_pi', 'no_pi_divide', ...SIZE],
-  composite: ['whole_circle', 'diameter_as_radius', 'half_circumference', 'curve_only', 'full_circle_edge', 'radius_edge',
-    'circle_area', 'square_area', 'added', ...SIZE],
-};
 
 /** The values each signature miss stands for on this item, most specific first. Shared by the check and the harness. */
 export function signatureValues(ch: CircleExplorerChallenge): Array<[CircleMiss, number]> {
@@ -135,9 +102,8 @@ export function circleMiss(ch: CircleExplorerChallenge, work: CircleWork): Circl
   return value > key ? 'too_high' : 'too_low';
 }
 
-export function workspaceAssignment(ch: CircleExplorerChallenge): TeachingAssignment {
-  return { id: ch.id, task: `${ch.narration} ${ch.instruction}`.trim(), response: 'gesture' };
-}
+/** What the learner is asked on one item: its story and its instruction. Never the answer. */
+export const circleAsk = (ch: CircleExplorerChallenge) => `${ch.narration} ${ch.instruction}`.trim();
 
 /** What the box in front of the answer says (`C ÷ d =`, `r =`, `Area =` ...), as the component prints it. */
 export function answerLead(ch: CircleExplorerChallenge): string {
@@ -194,31 +160,23 @@ const KIND: Record<CircleExplorerChallengeType, string> = {
   composite: 'a composite figure made from part of a circle',
 };
 
-/** What is drawn and asked. The answer is never named. */
-export function workspaceScene(ch: CircleExplorerChallenge, view: CircleWork): WorkspaceScene {
+/** What is drawn and asked. The answer is never named. How the learner answers is the card's `moves`. */
+export function workspaceScene(ch: CircleExplorerChallenge, view: CircleWork): SceneOf {
   const suffix = unitSuffix(ch);
-  const facts: Record<string, string> = {
+  return { objects: [], facts: {
     kind: KIND[ch.type],
     figure: figureLabels(ch, view),
     answerBox: `${answerLead(ch)} [box]${suffix ? ` ${suffix}` : ''}`,
     ...(ch.type !== 'discover_pi' ? { piNote: 'The screen says to use π ≈ 3.14.' } : {}),
     formulaLabels: ch.showFormulaReveal === false
-      ? 'withheld: the figure prints no formula on its reveals'
+      ? 'withheld: the figure prints no formula on its reveals, so do not name one; ask what the figure shows'
       : 'shown on the figure\'s reveals (unroll or slice)',
     learnerWork: describeCircleWork(ch, view),
-  };
-  facts.constraints = ch.type === 'discover_pi'
-    ? 'The learner presses "Unroll the circumference" first, then types a number in the answer box and presses Check. '
-      + 'The activity checks it itself, within a small rounding band. You cannot unroll, type, or press Check.'
-    : 'The learner types a number in the answer box and presses Check; '
-      + (ch.type === 'circumference' ? 'they may unroll the circumference first. '
-        : ch.type === 'area' ? 'they may slice the circle into wedges first. ' : '')
-      + 'The activity checks it itself, within a small rounding band. You cannot type, press its buttons, or press Check.';
-  return { objects: [], facts };
+  } };
 }
 
 /**
- * The journey row's input (`liveJourneySpec.ts`): the number to type. `correct`: the key. `wrong`: the item's first
+ * The harness's input (`circleExplorerBoss.drive.play`): the number to type. `correct`: the key. `wrong`: the item's first
  * signature miss that is not itself right, else the key half again too high.
  */
 export function circleHarnessText(ch: CircleExplorerChallenge, intent: 'correct' | 'wrong'): string {

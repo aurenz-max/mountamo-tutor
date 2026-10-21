@@ -20,7 +20,6 @@ vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAI
   conversation: [], sendText: vi.fn(),
   sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: true, isAudioPlaying: false, activePrimitiveId: 'line' }) }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => null,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: vi.fn(), elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));

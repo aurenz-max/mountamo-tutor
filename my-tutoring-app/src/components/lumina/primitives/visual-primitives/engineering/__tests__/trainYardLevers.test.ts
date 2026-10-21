@@ -9,8 +9,16 @@ import {
   type CargoForm, type TrainJobStory, type TrainYardBand, type TrainYardChallenge, type TrainYardTask,
 } from '../trainYardModel';
 import {
-  CARGO_LOOKS, carTally, isPracticeJob, leverFacts, modelMatch, simplerJob, startLevers, trainWeight, trainYardLevers, workedHill,
+  CARGO_LOOKS, TRAIN_LEVERS, carTally, isPracticeJob, modelMatch, simplerJob, startLevers, trainWeight, workedHill,
 } from '../trainYardLevers';
+import type { Consist } from '../trainYardModel';
+
+/** The lever set with the learner's part as the train that runs (the component passes the yard's train too). */
+const EMPTY: Consist = { engines: 0, cars: {} };
+const trainYardLevers = (c: TrainYardChallenge, pulled: readonly string[], band: TrainYardBand) =>
+  TRAIN_LEVERS.declare(c, { band, consist: EMPTY, train: EMPTY }, pulled);
+const leverFacts = (c: TrainYardChallenge, pulled: readonly string[], consist: Consist) =>
+  TRAIN_LEVERS.onScreen(c, { band: '3-5', consist, train: consist }, pulled);
 
 const STORIES: TrainJobStory[] = [
   { title: 'Harvest Rush', cargo: 'grain', cargoForm: 'loose_bulk', from: 'the elevator', to: 'the port', hillName: 'Cedar Hill' },
@@ -154,6 +162,14 @@ describe('which lever after which miss', () => {
       const answered = new Set(trainYardLevers(jobs(type, '3-5', 1)[0], [], '3-5').flatMap(l => l.answers ?? []));
       expect(misses[type].filter(m => !answered.has(m)), type).toEqual([]);
     }
+  });
+
+  it('support: the job\'s tier says when its model lever comes; a mode with no model lever gets none', () => {
+    const ctx = { band: '3-5' as const, consist: EMPTY, train: EMPTY };
+    const match = { ...jobs('match_car', '3-5', 1)[0], supportTier: 'easy' as const };
+    expect(TRAIN_LEVERS.support(match, ctx)).toMatch(/^before the learner tries, pull the model lever \(model_match\)/);
+    expect(TRAIN_LEVERS.support({ ...jobs('enough_pull', '3-5', 1)[0], supportTier: 'hard' }, ctx)).toMatch(/^answer it cold/);
+    expect(TRAIN_LEVERS.support(jobs('enough_cars', '3-5', 1)[0], ctx)).toBe('');
   });
 
   it('easy starts with the self-checking help pulled; other tiers start released', () => {

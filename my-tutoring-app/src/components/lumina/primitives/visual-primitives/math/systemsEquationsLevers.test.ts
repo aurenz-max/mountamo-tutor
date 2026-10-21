@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { SystemsEquationsChallenge } from './SystemsEquationsVisualizer';
 import {
-  CHECK_BOTH, SIMPLER, checkSentence, exampleCandidates, exampleLeaks, leverFacts, leverTextLeaks, lineUpColumns,
-  practiceLeaks, setEqualLine, simplerItem, slopeDisplay, standardDisplay, systemsLevers, workedExample,
+  CHECK_BOTH, SIMPLER, SYSTEMS_LEVERS, WORKED_EXAMPLE, checkSentence, exampleCandidates, exampleLeaks, leverTextLeaks,
+  lineUpColumns, practiceLeaks, setEqualLine, simplerItem, slopeDisplay, standardDisplay, workedExample,
 } from './systemsEquationsLevers';
 import {
   SYSTEMS_MISSES_BY_MODE, onLine, pairText, solutionCorrect, systemsMiss, type SolutionPoint, type SystemsMode,
@@ -47,12 +47,15 @@ function items(type: SystemsMode): SystemsEquationsChallenge[] {
   return out;
 }
 const MODES: SystemsMode[] = ['graph', 'substitution', 'elimination'];
+/** The levers on an item once the learner has checked a wrong pair on it (check_both is offered from then on). */
+const afterMiss = (c: SystemsEquationsChallenge, p: SolutionPoint = { x: c.expectedX + 1, y: c.expectedY }) =>
+  SYSTEMS_LEVERS.declare(c, { lastTried: p }, []);
 
 describe.each(MODES)('%s', mode => {
   const all = items(mode);
 
   it('no lever\'s when or does carries a digit', () => {
-    for (const c of all) for (const l of systemsLevers(c, [])) {
+    for (const c of all) for (const l of afterMiss(c)) {
       expect(leverTextLeaks(l.when), `${c.id} ${l.id}`).toBe(false);
       expect(leverTextLeaks(l.does), `${c.id} ${l.id}`).toBe(false);
     }
@@ -60,7 +63,7 @@ describe.each(MODES)('%s', mode => {
 
   it('every miss the check names is answered by a lever on every item', () => {
     for (const c of all) {
-      const levers = systemsLevers(c, []);
+      const levers = afterMiss(c);
       for (const m of SYSTEMS_MISSES_BY_MODE[mode]) expect(levers.some(l => l.answers?.includes(m)), `${c.id} ${m}`).toBe(true);
     }
   });
@@ -91,7 +94,6 @@ describe.each(MODES)('%s', mode => {
       expect([p.equationA, p.equationB].every(e => onLine(e, { x: p.expectedX, y: p.expectedY }))).toBe(true);
       expect(Math.max(Math.abs(p.expectedX), Math.abs(p.expectedY))).toBeLessThanOrEqual(3);
       expect(simplerItem(p)).toBeNull();
-      expect(systemsLevers(p, [])).toEqual([]);
       if (mode === 'elimination') expect(lineUpColumns({ ...p })?.note).toMatch(/opposites/);
       else expect([p.equationA.slope, p.equationB.slope].sort()).toEqual([-1, 1]);
     }
@@ -117,7 +119,8 @@ describe.each(MODES)('%s', mode => {
         expect(text, c.id).not.toMatch(/(^|[^\w.])[xy]\s*=\s*-?\d+(\.\d+)?\s*($|[;,.])/);
       }
       expect(lineUpColumns(c)?.note ?? '', c.id).not.toMatch(/\d/);
-      const facts = leverFacts(c, systemsLevers(c, []).map(l => l.id), { x: c.expectedX + 1, y: c.expectedY });
+      const tried = { x: c.expectedX + 1, y: c.expectedY };
+      const facts = SYSTEMS_LEVERS.onScreen(c, { lastTried: tried }, afterMiss(c, tried).map(l => l.id));
       expect(facts.replace(/\s/g, ''), c.id).not.toContain(pairText({ x: c.expectedX, y: c.expectedY }).replace(/\s/g, ''));
     }
   });
@@ -139,12 +142,26 @@ describe('this wrong answer, then this lever', () => {
   ] as const)('%#: %s', (c, p, miss, lever) => {
     expect(c, 'fixture').toBeTruthy();
     expect(systemsMiss(c, p)).toBe(miss);
-    expect(nextLever(systemsLevers(c, []), miss)).toBe(lever);
+    expect(nextLever(afterMiss(c, p), miss)).toBe(lever);
   });
 
   it('a pulled lever is not offered again; simplify comes after every help lever that answers', () => {
-    const ids = systemsLevers(graph, []).map(l => l.id);
+    const ids = afterMiss(graph).map(l => l.id);
     expect(ids.at(-1)).toBe(SIMPLER);
-    expect(nextLever(systemsLevers(graph, ['axis_guide']), 'swapped')).toBe(CHECK_BOTH);
+    expect(nextLever(SYSTEMS_LEVERS.declare(graph, { lastTried: { x: 3, y: 1 } }, ['axis_guide']), 'swapped')).toBe(CHECK_BOTH);
+  });
+
+  it('check_both is offered only once a pair has been checked on the item: before that it has nothing to show', () => {
+    expect(SYSTEMS_LEVERS.declare(graph, { lastTried: null }, []).map(l => l.id)).not.toContain(CHECK_BOTH);
+    expect(afterMiss(graph).map(l => l.id)).toContain(CHECK_BOTH);
+  });
+
+  it("the support fact names the worked example and follows the item's tier", () => {
+    const ctx = { lastTried: null };
+    expect(SYSTEMS_LEVERS.support({ ...graph, supportTier: 'easy' }, ctx)).toContain(WORKED_EXAMPLE);
+    expect(SYSTEMS_LEVERS.support({ ...graph, supportTier: 'easy' }, ctx))
+      .not.toBe(SYSTEMS_LEVERS.support({ ...graph, supportTier: 'hard' }, ctx));
+    // No tier stamped (an older payload): the medium rule.
+    expect(SYSTEMS_LEVERS.support(graph, ctx)).toBe(SYSTEMS_LEVERS.support({ ...graph, supportTier: 'medium' }, ctx));
   });
 });

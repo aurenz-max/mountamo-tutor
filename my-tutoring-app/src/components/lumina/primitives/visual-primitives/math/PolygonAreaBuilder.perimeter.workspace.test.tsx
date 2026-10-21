@@ -14,7 +14,8 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { buildPerimeterAsk, buildPerimeterLevers } from './polygonAreaBuild';
+import { buildPerimeterAsk } from './polygonAreaBuild';
+import { POLYGON_LEVERS } from './polygonAreaLevers';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -162,7 +163,7 @@ it('the edge-marks lever dots every side around the shape, no number, and stays 
   expect(h.view.container.querySelectorAll('[data-lever="edge-mark"]')).toHaveLength(0);
   expect(h.dispatch('pull_lever', { lever: 'edge_marks' }).status).toBe('committed');
   expect(h.view.container.querySelectorAll('[data-lever="edge-mark"]')).toHaveLength(10);
-  expect(String(h.demand().onScreen)).toMatch(/a dot sits on every side/);
+  expect(String(h.demand().onScreen)).toMatch(/a dot sits on every side/i);
   expect(String(h.demand().onScreen)).not.toMatch(/\b12\b/);
   const picture = h.view.container.querySelector('svg[data-build-scene="area-grid"]')!.cloneNode(true) as SVGSVGElement;
   picture.querySelectorAll('[data-aid]').forEach(n => n.remove());
@@ -195,6 +196,6 @@ it('the catalog mode is a build at beta 2.4, and every catalog miss is answered 
   const entry = getComponentById('polygon-area-builder')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'build_perimeter')).toMatchObject({ beta: 2.4,
     challengeTypes: ['build_perimeter'], affordances: { answers: ['build'] } });
-  const levers = buildPerimeterLevers(build('a', 18, 2), []);
+  const levers = POLYGON_LEVERS.declare(build('a', 18, 2), { leftOut: null, rearranged: false, firstShape: true }, []);
   for (const m of entry.teachingWorkspace!.misses!.build_perimeter) expect(levers.some(l => l.answers?.includes(m)), m).toBe(true);
 });

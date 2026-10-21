@@ -16,30 +16,30 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FunctionMachineMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   evaluateRule, rulesEquivalent, makeRuleKeys, MAKE_RULE_MAX_TILES, MAKE_RULE_WAYS, judgeMakeRule, makeRuleMissWords,
   makeRuleAsk, makeRuleTarget, compareInput, showRule as ruleText, type MakeRuleMiss,
 } from './functionMachineDomain';
 import {
-  CHECK_PAIRS_LEVER, MODEL_LEVER, OUTPUT_STEPS_LEVER, PRACTICE_NOTE, RUN_MACHINE_LEVER, SHAPES_LEVER, STEP_ORDER_LEVER,
-  isPracticeMachine, leverFacts, machineLevers, machineModel, machineRun, machineShapes, outputSteps, pairMarks,
-  ruleDisplay, ruleSteps, simplerMachine, substituted, type MachineLeverContext,
+  CHECK_PAIRS_LEVER, MACHINE_LEVERS, MODEL_LEVER, OUTPUT_STEPS_LEVER, PRACTICE_NOTE, RUN_MACHINE_LEVER, SHAPES_LEVER,
+  STEP_ORDER_LEVER, isPracticeMachine, machineModel, machineRun, machineShapes, outputSteps, pairMarks, ruleDisplay,
+  ruleSteps, substituted, type MachineLeverContext,
 } from './functionMachineLevers';
 import {
-  describeGuess, describeMachine, describeObserve, describePrediction, guessMiss, predictMiss, workspaceAssignment,
-  workspaceScene, type FunctionMachineView,
+  describeGuess, describeMachine, describeObserve, describePrediction, functionMachineItems, guessMiss, predictMiss,
+  workspaceScene, type FunctionMachineItem, type FunctionMachineView,
 } from './functionMachineWorkspace';
+import { functionMachineBoss } from './functionMachine.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -121,51 +121,8 @@ const CHALLENGE_TYPE_LABEL: Record<FunctionMachineChallengeType, string> = {
 // Helpers
 // ============================================================================
 
-const gradeLabel = (band?: string): string => {
-  switch (band) {
-    case '3-4': return 'Grade 3';
-    case '5': return 'Grade 5';
-    case 'advanced': return 'Grade 7';
-    default: return 'Grade 5';
-  }
-};
-
 /** Per-attempt decay (§6a #11). */
 const phaseScore = (attempts: number): number => Math.max(20, 100 - (attempts - 1) * 20);
-
-/**
- * Tutor reveal policy — keeps the AI tutor's reveal level in sync with the on-screen
- * support tier so it never leaks what the tier withheld. For discover_rule/create_rule
- * the rule is the ANSWER: the tutor must NEVER name it at any tier (the on-screen rule
- * is hidden — that's the mode identity); the tier only dials coaching depth. For
- * observe/predict the rule is already on screen, so the tutor may reference it freely.
- */
-const tutorRevealClause = (
-  challengeType: FunctionMachineChallengeType,
-  tier?: 'easy' | 'medium' | 'hard',
-): string => {
-  if (challengeType === 'make_rule') {
-    // Open build: many rules pass and choosing one IS the task.
-    return 'REVEAL POLICY: the learner invents the rule. Never say a rule, an operation or a number that would make the pair; '
-      + 'you may ask what they could do to the input, and talk about the machine they built.';
-  }
-  const ruleIsAnswer = challengeType === 'discover_rule' || challengeType === 'create_rule';
-  if (ruleIsAnswer) {
-    // NEVER name the rule. Tier dials how much strategy coaching is allowed.
-    if (tier === 'easy') {
-      return 'REVEAL POLICY: never state the rule. Coach the discovery strategy: point out how the output changes as the input grows by 1, and which pairs to compare.';
-    }
-    if (tier === 'hard') {
-      return 'REVEAL POLICY: never state the rule and do NOT name the operation. Only ask what changes from input to output; let the student reason from the pairs.';
-    }
-    return 'REVEAL POLICY: never state the rule. Nudge the student toward the pattern without naming the operation.';
-  }
-  // observe/predict: rule is on screen; tier dials coaching depth.
-  if (tier === 'hard') {
-    return 'REVEAL POLICY: the rule is visible. Nudge the student to apply it themselves; do not pre-compute outputs for them.';
-  }
-  return 'REVEAL POLICY: the rule is visible. You may walk through how it transforms an input step by step.';
-};
 
 // ============================================================================
 // Component
@@ -195,18 +152,16 @@ interface LeverShow {
   shapes: string[] | null;
 }
 
-const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  FunctionMachineProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FunctionMachineChallenge>) => Progress }) => {
+const useFunctionMachineProgress = useWorkspaceProgressFor('function-machine');
+
+const FunctionMachineSurface = ({ data, className, runtimePlanItemId }: FunctionMachineProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     challengeType,
-    challenges,
     ruleComplexity = 'oneStep',
-    gradeBand = '3-4',
     outputDisplay = 'animated',
-    supportTier,
     showComplexityBadge = true,
     instanceId,
     skillId,
@@ -222,18 +177,21 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   const stableInstanceIdRef = useRef(instanceId || `function-machine-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
+  /** The lesson's items, each with the session's mode and tier (`functionMachineItems`): what the boss, the levers and
+   *  the runtime read. */
+  const challenges = useMemo(() => functionMachineItems(data), [data]);
 
   // -------------------------------------------------------------------------
-  // Challenge Progress. On the workspace path the runtime moves the index.
+  // Challenge progress: the teaching workspace owns it.
   // -------------------------------------------------------------------------
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useFunctionMachineProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (ch) => workspaceAssignment(ch, challengeType),
+    workspace, assignment: functionMachineBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -242,11 +200,10 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -255,7 +212,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   // Levers (`functionMachineLevers.ts`), keyed by the session item they were pulled on, and the easier practice machine
   // a simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<FunctionMachineChallenge | null>(null);
+  const [practice, setPractice] = useState<FunctionMachineItem | null>(null);
   const sessionChallenge = challenges[currentIndex];
   /** What is on screen: the practice machine while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
@@ -322,8 +279,8 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   useEffect(() => () => { flightTimers.current.forEach(clearTimeout); }, []);
 
   // -------------------------------------------------------------------------
-  // Per-challenge reset: the scripted path runs it whenever the index moves to a new challenge; the workspace path
-  // runs it from `onItemOpened`, in the same render as the item change, so no stale scene is published for the item.
+  // Per-challenge reset, run from `onItemOpened` in the same render as the item change, so no stale scene is published
+  // for the item.
   // -------------------------------------------------------------------------
   const resetForChallenge = (challenge: FunctionMachineChallenge | undefined) => {
     if (!challenge) return;
@@ -368,11 +325,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
     setLastMachine([]);
     recordedRef.current = false;
   };
-  useEffect(() => {
-    if (!tutorOwned) resetForChallenge(currentChallenge);
-  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Workspace path. A fresh item (or the full item back after a practice machine) resets everything. Try again after
+  // A fresh item (or the full item back after a practice machine) resets everything. Try again after
   // a checked miss clears the typed prediction or rule and keeps a practice machine; pairs already fed stay (they are
   // data, not the answer). make_rule keeps its row and verdict, so the learner revises the machine.
   openItem.current = (index, retry) => {
@@ -425,67 +378,6 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring (scripted path only: its context carries the rule)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    title,
-    currentChallengeIndex: currentIndex + 1,
-    totalChallenges: challenges.length,
-    // make_rule: the stored rule is only one of many that pass; naming it would do the task, so the tutor never gets it.
-    rule: challengeType === 'make_rule' ? '' : currentChallenge?.rule ?? '',
-    ...(challengeType === 'make_rule' ? {
-      makeInput: makeTarget?.input ?? '',
-      makeOutput: makeTarget?.output ?? '',
-      machineInRow: ruleText(makeRow),
-      machinesMade: madeMachines.map((m) => ruleText(m.tiles)).join(' ; '),
-    } : {}),
-    showRule: currentChallenge?.showRule ?? false,
-    supportTier,
-    processedPairs,
-    guessedRule,
-    gradeBand,
-    ruleComplexity,
-    pairsCount: processedPairs.length,
-    predictionsCorrect,
-    predictionsTotal,
-    guessAttempts,
-    ruleDiscovered: guessResult === 'correct',
-  }), [
-    challengeType, title, currentIndex, challenges.length, currentChallenge,
-    supportTier, processedPairs, guessedRule, gradeBand, ruleComplexity, predictionsCorrect,
-    predictionsTotal, guessAttempts, guessResult, makeTarget?.input, makeTarget?.output, makeRow, madeMachines,
-  ]);
-
-  // Its context carries the rule, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'function-machine',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeLabel(gradeBand),
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Introduction (once per session)
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Function machine session "${title}". `
-      + `${challenges.length} function rules, mode: ${challengeType}. `
-      + `Grade band: ${gradeBand}. Complexity: ${ruleComplexity}. `
-      + `${supportTier ? `Support tier: ${supportTier}. ` : ''}`
-      + `${tutorRevealClause(challengeType, supportTier)} `
-      + `Introduce the activity warmly and explain the first step.`,
-      { silent: true },
-    );
-  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // -------------------------------------------------------------------------
   // Feed a value through the machine (observe / predict / discover_rule). The pair is recorded at once; the hopper
   // and chute animation that follows is display only, so a quick second feed is never lost.
   // -------------------------------------------------------------------------
@@ -505,20 +397,14 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       if (right) setPredictionsCorrect((c) => c + 1);
       if (right) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
-      if (tutorOwned) {
-        // Workspace path: a wrong prediction is a checked miss and the output stays hidden until the learner gets
-        // it; the item's success is the last input predicted right.
-        if (!right) {
-          commitCheck.current(describePrediction(input, prediction), false, predictMiss(currentChallenge.rule, input, prediction));
-          return;
-        }
-        if (availableInputs.length === 1 && availableInputs[0] === input) {
-          commitCheck.current(describePrediction(input, prediction), true);
-        }
-      } else if (right) {
-        sendText(`[PREDICTION_CORRECT] Student predicted ${predicted} for input ${input}. Output ${output}. Celebrate briefly.`, { silent: true });
-      } else {
-        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, actual output ${output}. ${tutorRevealClause('predict', supportTier)} Encourage and hint at the pattern.`, { silent: true });
+      // A wrong prediction is a checked miss and the output stays hidden until the learner gets it; the item's success
+      // is the last input predicted right.
+      if (!right) {
+        commitCheck.current(describePrediction(input, prediction), false, predictMiss(currentChallenge.rule, input, prediction));
+        return;
+      }
+      if (availableInputs.length === 1 && availableInputs[0] === input) {
+        commitCheck.current(describePrediction(input, prediction), true);
       }
     }
 
@@ -532,7 +418,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       setTimeout(() => setFlight({ input, output }), 600),
       setTimeout(() => setFlight(null), 1400),
     ];
-  }, [currentChallenge, challengeType, prediction, availableInputs, sendText, supportTier, tutorOwned]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, challengeType, prediction, availableInputs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Completion helpers — each mode has its own submit, all share stale-state guard
@@ -564,11 +450,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       score,
       pairsObserved,
     });
-    sendText(
-      `[PHASE_COMPLETE] Observe rule "${currentChallenge.rule}" complete with ${pairsObserved} pairs observed. Encourage moving to the next function.`,
-      { silent: true },
-    );
-  }, [currentChallenge, processedPairs.length, availableInputs.length, completeCurrentChallenge, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, processedPairs.length, availableInputs.length, completeCurrentChallenge]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** predict: complete when all inputs have been predicted. */
   useEffect(() => {
@@ -582,20 +464,16 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
     const score = Math.round((predictionsCorrect / predictionsTotal) * 100);
     completeCurrentChallenge({
       challengeId: currentChallenge.id,
-      // Workspace path: every input was predicted right in the end (a miss reopens the same input).
-      correct: tutorOwned || predictionsCorrect === predictionsTotal,
+      // Every input was predicted right in the end (a miss reopens the same input).
+      correct: true,
       attempts: predictionsTotal,
       score,
       predictionsCorrect,
       predictionsTotal,
     });
-    sendText(
-      `[PHASE_COMPLETE] Predict rule "${currentChallenge.rule}" complete: ${predictionsCorrect}/${predictionsTotal} correct.`,
-      { silent: true },
-    );
   }, [
     challengeType, currentChallenge, availableInputs.length, predictionsTotal,
-    predictionsCorrect, processedPairs.length, completeCurrentChallenge, sendText, tutorOwned,
+    predictionsCorrect, processedPairs.length, completeCurrentChallenge,
   ]);
 
   /** discover_rule / create_rule: complete on correct rule guess. */
@@ -623,17 +501,8 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
         score,
         ruleDiscovered: true,
       });
-      sendText(
-        `[PHASE_COMPLETE] ${challengeType === 'discover_rule' ? 'Discover' : 'Create'} rule complete: student guessed "${guessedRule}" matching "${currentChallenge.rule}" in ${nextAttempts} attempt(s). Celebrate!`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${currentChallenge.rule}". Attempt ${nextAttempts}. ${challengeType === 'discover_rule' ? `Pairs seen: ${processedPairs.map((p) => `${p.input}→${p.output}`).join(', ')}.` : ''} ${tutorRevealClause(challengeType, supportTier)} Give a targeted hint without naming the rule.`,
-        { silent: true },
-      );
     }
-  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, createRulePairs, completeCurrentChallenge, sendText, supportTier]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, createRulePairs, completeCurrentChallenge]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // make_rule (open build): tap tiles into the row, tap a row tile to take it out, "I'm done!" runs the machine.
@@ -665,13 +534,6 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       setLastMachine([...makeRow]);
       setMakeVerdict({ kind: verdict.miss, words: makeRuleMissWords(verdict, input, output), gave: verdict.gave });
       commitCheck.current(describeMachine(makeRow, input, verdict.gave), false, verdict.miss);
-      sendText(
-        `[MACHINE_CHECKED] The learner built f(x) = ${built} and pressed I'm done. `
-        + (verdict.gave === null ? 'The machine could not run it. ' : `Fed ${input}, it gave ${verdict.gave}. `)
-        + `The ask: a machine that turns ${input} into ${output}${madeMachines.length ? `, working differently from their first machine (f(x) = ${ruleText(madeMachines[0].tiles)})` : ''}. `
-        + `The board checked it: not right (${verdict.miss}). ${tutorRevealClause('make_rule')}`,
-        { silent: true },
-      );
       return;
     }
     SoundManager.playCorrect();
@@ -680,11 +542,6 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
     setMakeRow([]);
     if (made.length < MAKE_RULE_WAYS) {
       setMakeVerdict({ kind: 'way', words: `Yes! f(x) = ${built} turns ${input} into ${output}.`, gave: verdict.gave });
-      sendText(
-        `[MACHINE_CHECKED] The learner built f(x) = ${built}; fed ${input}, it gave ${output}. The board checked it: right. `
-        + `Next they make a different machine that also turns ${input} into ${output}. ${tutorRevealClause('make_rule')}`,
-        { silent: true },
-      );
       return;
     }
     setMakeVerdict({ kind: 'pass', words: `Two different machines, and both turn ${input} into ${output}!`, gave: verdict.gave });
@@ -697,66 +554,9 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       score: phaseScore(attempts),
       machines: made.map((m) => m.rule),
     });
-    sendText(
-      `[PHASE_COMPLETE] Make a machine: the learner built f(x) = ${ruleText(made[0].tiles)} and f(x) = ${built}; both turn ${input} into ${output}. `
-      + `${makeMisses} miss(es) on the way. Celebrate that two different rules can share one input-output pair.`,
-      { silent: true },
-    );
-  }, [currentChallenge, makeTarget, makeRow, madeMachines, makeMisses, challengeDone, completeCurrentChallenge, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, makeTarget, makeRow, madeMachines, makeMisses, challengeDone, completeCurrentChallenge]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -------------------------------------------------------------------------
-  // Submit aggregate evaluation when all challenges complete (scripted path; the workspace submits from onFinished)
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (tutorOwned) return;
-    if (!allChallengesComplete) return;
-    if (hasSubmittedEvaluation) return;
-
-    const totalChallenges = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const hintsViewed = challengeResults.filter((r) => r.attempts > 1).length;
-    const overallAccuracy = totalChallenges > 0
-      ? Math.round(
-          challengeResults.reduce(
-            (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-            0,
-          ) / totalChallenges,
-        )
-      : 0;
-    const averageAttemptsPerChallenge = totalChallenges > 0
-      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
-      : 0;
-
-    const goalMet = overallAccuracy >= 70;
-
-    submitEvaluation(
-      goalMet,
-      overallAccuracy,
-      {
-        type: 'function-machine',
-        challengeType,
-        totalChallenges,
-        correctCount,
-        attemptsCount,
-        firstTryCount,
-        hintsViewed,
-        overallAccuracy,
-        averageAttemptsPerChallenge,
-      },
-    );
-
-    sendText(
-      `[ALL_COMPLETE] Function machine session complete. ${correctCount}/${totalChallenges} correct, overall accuracy ${overallAccuracy}%. Celebrate the session and give phase-specific feedback.`,
-      { silent: true },
-    );
-  }, [
-    allChallengesComplete, hasSubmittedEvaluation, challenges.length, challengeResults,
-    challengeType, submitEvaluation, sendText, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0) return;
@@ -778,8 +578,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   };
 
   // -------------------------------------------------------------------------
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets, no presentation.
   // -------------------------------------------------------------------------
   const view: FunctionMachineView = {
     pairs: challengeType === 'create_rule' ? createRulePairs : processedPairs,
@@ -793,7 +592,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
   };
   const viewRef = useRef(view);
   viewRef.current = view;
-  const leverCtx: MachineLeverContext = { mode: challengeType, pairs: view.pairs, lastGuess, lastMachine };
+  const leverCtx: MachineLeverContext = { pairs: view.pairs, lastGuess, lastMachine, complexity: ruleComplexity };
   // What each pulled help lever draws (never on a practice machine).
   const leverShow: LeverShow = {
     model: leverOn(MODEL_LEVER) && sessionChallenge ? machineModel(sessionChallenge, challengeType) : null,
@@ -805,30 +604,29 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
     lastMachine: ruleText(lastMachine),
     shapes: leverOn(SHAPES_LEVER) ? machineShapes(ruleComplexity) : null,
   };
+  // Every checked mode declares its levers (`MACHINE_LEVERS`); none on a practice machine.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, challengeType, viewRef.current);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverCtx);
-    const levers = practice ? [] : machineLevers(sessionChallenge, pulledLevers, leverCtx);
+    const levers = practice ? [] : MACHINE_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : MACHINE_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : MACHINE_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        // A help lever that would draw nothing yet is refused, so a pull is always something the learner can see.
-        if (id === CHECK_PAIRS_LEVER && !pairMarks(lastGuess, viewRef.current.pairs))
-          return 'No checked rule that runs yet: once the learner checks a rule, this marks it on every pair.';
-        if (id === RUN_MACHINE_LEVER && !(makeTarget && lastMachine.length && machineRun(lastMachine, makeTarget.input)))
-          return 'No checked machine that runs yet: once the learner checks a machine, this works it through.';
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerMachine(sessionChallenge, challengeType);
+          const easier = MACHINE_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetForChallenge(easier);
-          return { practice: workspaceAssignment(easier, challengeType) };
+          return { practice: functionMachineBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -864,12 +662,10 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
         currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
         shownScore: practiceScore(progress.practiceSummary), elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
         makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
-        predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, resolvedInstanceId,
-        isAudioPlaying, activePrimitiveId, leverShow,
+        guessedRule, createRulePairs, leverShow,
       }}
       isPractice={!!practice}
-      blocked={tutorOwned && progress.canAttempt === false}
-      onAdvance={() => advance()}
+      blocked={progress.canAttempt === false}
       onFeed={processValue}
       onPrediction={(v) => { if (!learnerBlocked()) { setPrediction(v); setPredictionFeedback(null); } }}
       onGuess={(v) => { if (!learnerBlocked()) { setGuessedRule(v); setGuessResult(null); } }}
@@ -919,20 +715,13 @@ interface FunctionMachineScreenProps {
   flight: Flight | null;
   prediction: string;
   predictionFeedback: 'correct' | 'incorrect' | null;
-  predictionsCorrect: number;
-  predictionsTotal: number;
   guessedRule: string;
   createRulePairs: Array<{ input: number; output: number }>;
-  tutorOwned: boolean;
-  resolvedInstanceId: string;
-  isAudioPlaying: boolean;
-  activePrimitiveId: string | null | undefined;
   leverShow: LeverShow;
   /** A practice machine (a simplify lever) is on screen in place of the item. */
   isPractice: boolean;
-  /** Workspace path: a checked answer waits for Try again or Next challenge. */
+  /** A checked answer waits for Try again or Next challenge. */
   blocked: boolean;
-  onAdvance: () => void;
   onFeed: (input: number) => void;
   onPrediction: (value: string) => void;
   onGuess: (value: string) => void;
@@ -950,7 +739,7 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
     currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
     shownScore, elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
     makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
-    predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, blocked, leverShow,
+    guessedRule, createRulePairs, blocked, leverShow,
   } = p;
 
   const showRule = currentChallenge.showRule || guessResult === 'correct';
@@ -967,18 +756,6 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
   // attempt); otherwise the standard "after 2 attempts" gate.
   const ruleHintThreshold = hintLevel === 'full' ? 1 : 2;
   const showRuleHint = hintLevel !== 'none' && guessAttempts >= ruleHintThreshold;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: p.resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The function machine',
-    solved: challengeDone && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: p.isAudioPlaying && p.activePrimitiveId === p.resolvedInstanceId,
-  });
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-8 space-y-6 ${className || ''}`}>
@@ -1050,9 +827,9 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
         />
       )}
 
-      {/* Pip's dock stays mounted through the interstitial so a solved machine can
-          be celebrated; it outlines the active workspace below as a region. */}
-      {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+      {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock stays mounted through the interstitial
+          so a solved machine can be celebrated, and the active workspace below is one region. */}
+      {!allChallengesComplete && <PipDock />}
 
       {/* Between-challenge interstitial */}
       {challengeDone && !allChallengesComplete && (
@@ -1071,19 +848,13 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
                     {' '}gives {evaluateRule(m.rule, compareInput(makeTarget.input)) ?? '—'}
                   </p>
                 ))}
-                {!tutorOwned && <p>Ready for the next one?</p>}
               </div>
             ) : (
               <p className="text-sm text-emerald-200/80 mb-4">
-                Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>.{!tutorOwned && ' Ready for the next one?'}
+                Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>.
               </p>
             )}
-            {/* The workspace's shell offers Next challenge; the runtime owns progression there. */}
-            {!tutorOwned && (
-              <LuminaActionButton action="next" onClick={p.onAdvance}>
-                Next Function →
-              </LuminaActionButton>
-            )}
+            {/* The workspace's shell offers Next challenge; the runtime owns progression. */}
           </LuminaCardContent>
         </LuminaCard>
       )}
@@ -1091,7 +862,7 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
       {/* Active interaction (hidden once challenge is done or all done) */}
       {!challengeDone && !allChallengesComplete && (
         <>
-          <div {...pip.workspace} className="space-y-6">
+          <PipWorkspace className="space-y-6">
           {/* Machine Visualization */}
           <LuminaCard>
             <LuminaCardContent className="py-8">
@@ -1271,12 +1042,6 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
                   )}
                   {predictionFeedback === 'incorrect' && (
                     <LuminaBadge accent="rose">Not quite</LuminaBadge>
-                  )}
-                  {/* The workspace's observer keeps the tally there. */}
-                  {!tutorOwned && predictionsTotal > 0 && hintLevel !== 'none' && (
-                    <span className="text-xs text-amber-300/70 ml-auto">
-                      {predictionsCorrect}/{predictionsTotal} correct
-                    </span>
                   )}
                 </div>
               </LuminaCardContent>
@@ -1523,7 +1288,7 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
             </div>
           )}
 
-          </div>
+          </PipWorkspace>
 
           {/* How to Use (first challenge only) */}
           {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && showHowItWorks && (
@@ -1578,8 +1343,6 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const FunctionMachine = withWorkspaceController<FunctionMachineProps, ProgressOptions<FunctionMachineChallenge>, Progress>(
-  'function-machine', FunctionMachineSurface, useScriptedProgress, useWorkspaceProgressFor('function-machine'));
+const FunctionMachine = withWorkspaceOnly<FunctionMachineProps>('function-machine', FunctionMachineSurface, props => props.data.title);
 
 export default FunctionMachine;

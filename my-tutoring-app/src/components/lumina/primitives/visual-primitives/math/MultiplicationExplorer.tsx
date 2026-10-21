@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   LuminaCard,
@@ -16,25 +16,23 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  askFor, askedSlot, describeAnswer, distributiveSplit, equationText, expectedAnswer, hintFor, modelShown,
-  multiplicationAnswerCorrect, multiplicationMiss, resolveChallengeFact, workspaceAssignment, workspaceScene,
-  type ExplorerView,
+  askFor, askedSlot, describeAnswer, distributiveSplit, equationText, explorerItems, hintFor, modelShown,
+  multiplicationAnswerCorrect, multiplicationMiss, resolveChallengeFact, workspaceScene, type ExplorerView,
 } from './multiplicationExplorerWorkspace';
 import {
-  BREAK_APART_LEVER, SHOW_MODEL_LEVER, SKIP_LINE_LEVER, SKIP_STRIP_LEVER, leverFacts, multiplicationLevers, skipLine,
-  skipStripTotals, smallerFact,
+  BREAK_APART_LEVER, MULTIPLICATION_LEVERS, SHOW_MODEL_LEVER, SKIP_LINE_LEVER, SKIP_STRIP_LEVER, skipLine, skipStripTotals,
 } from './multiplicationExplorerLevers';
+import { multiplicationExplorerBoss } from './multiplicationExplorer.boss';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -80,7 +78,7 @@ export interface MultiplicationExplorerChallenge {
 
 export interface MultiplicationExplorerData {
   primitiveType?: 'multiplication-explorer';
-  title?: string;
+  title: string;
   description?: string;
   fact: {
     factor1: number;
@@ -105,11 +103,7 @@ export interface MultiplicationExplorerData {
   imagePrompt: string | null;
   gradeBand: '2-3' | '3-4';
 
-  /**
-   * Within-mode support tier from the manifest ('easy' | 'medium' | 'hard').
-   * Set by the generator whenever a tier is present (blends included). Drives the
-   * tutor's reveal level so it never names a strategy the on-screen scaffold withheld.
-   */
+  /** Within-mode support tier from the manifest ('easy' | 'medium' | 'hard'), set by the generator when a tier is present. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -563,69 +557,24 @@ const PhaseIndicator: React.FC<{ current: Phase }> = ({ current }) => {
 // Main Component
 // =============================================================================
 
-/**
- * Mode-aware reveal policy for the AI tutor, keyed off the support tier and the
- * CURRENT challenge type (correct in a blend). Keeps the tutor's coaching depth in
- * sync with the on-screen scaffold so a hard tier doesn't leak via the tutor.
- *
- * For commutative/distributive the RELATIONSHIP is the lesson — the tutor calibrates
- * how much it coaches that relationship, but never hands over the product itself.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType: MultiplicationExplorerChallenge['type'],
-): string {
-  if (!tier) return '';
-  const base = ' SUPPORT TIER: ';
-  if (tier === 'easy') {
-    switch (challengeType) {
-      case 'build':
-      case 'missing_factor':
-        return base + 'EASY — you may name the skip-count strategy and walk the count, but never state the final answer.';
-      case 'distributive':
-        return base + 'EASY — you may walk the break-apart split step by step, but do not state the product.';
-      case 'commutative':
-        return base + 'EASY — you may explain why swapping the factors keeps the total the same, without stating the total.';
-      default:
-        return base + 'EASY — you may name the strategy and guide the setup, but never reveal the answer.';
-    }
-  }
-  if (tier === 'medium') {
-    return base + 'MEDIUM — the model is on screen; nudge the student to use it. Do NOT name the full strategy or solve it for them.';
-  }
-  // hard
-  switch (challengeType) {
-    case 'build':
-    case 'missing_factor':
-      return base + 'HARD — do NOT name the skip-count strategy. Ask what the array/groups show and let the student find it.';
-    case 'distributive':
-      return base + 'HARD — do NOT suggest the split. Ask how they could break the hard fact into easier ones.';
-    case 'commutative':
-      return base + 'HARD — do NOT confirm whether the total stays the same. Ask the student to predict first, then check.';
-    default:
-      return base + 'HARD — do not name the strategy or reveal the answer; ask what the student sees in the model.';
-  }
-}
+const useExplorerProgress = useWorkspaceProgressFor('multiplication-explorer');
+const PRACTICE_NOTE = 'An easier practice fact is on screen in place of the item. It is not graded; the full item comes back after it.';
 
 /**
- * On the shared teaching workspace (W1, plain shape) the typed answer commits through `progress.commitCheck` with its
- * named miss (`multiplicationMiss`), the runtime owns the challenge index, and Next, Submit Results and the scripted
- * tutor cues are off. The scripted path keeps its own Next and Submit Results.
+ * Taught on the shared teaching workspace only: the typed answer commits through `progress.commitCheck` with its named
+ * miss (`multiplicationMiss`), and the runtime owns the challenge index, retry and advance.
  *
- * On both paths the open item never shows its answer: the asked value is `?` in the equation, a picture that would
- * show it is not drawn (`modelShown`), and the product readouts, the landing label, the break-apart sum and the fact
- * family wait until the item is solved.
+ * The open item never shows its answer: the asked value is `?` in the equation, a picture that would show it is not
+ * drawn (`modelShown`), and the product readouts, the landing label, the break-apart sum and the fact family wait until
+ * the item is solved.
  */
-const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MultiplicationExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MultiplicationExplorerChallenge>) => Progress }) => {
+const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId }: MultiplicationExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     fact,
-    challenges,
     showOptions,
     gradeBand,
     representations,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -633,33 +582,32 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  /** Each item stamped with its own fact (`explorerItems`): the panels, the check and the levers read it alone. */
+  const challenges = useMemo(() => explorerItems(data), [data]);
 
   const stableInstanceIdRef = useRef(instanceId || `multiplication-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace owns it. ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useExplorerProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (c) => workspaceAssignment(c, fact),
+    workspace, assignment: multiplicationExplorerBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const { currentIndex: challengeIndex, results: challengeResults, mergeResult } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   // State
   const [currentPhase, setCurrentPhase] = useState<Phase>('groups');
   const [flipped, setFlipped] = useState(false);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [attemptsCount, setAttemptsCount] = useState(0);
-  const [factsCorrect, setFactsCorrect] = useState(0);
-  const [factsTotal, setFactsTotal] = useState(0);
   const [missingFactorCorrect, setMissingFactorCorrect] = useState(0);
   const [missingFactorTotal, setMissingFactorTotal] = useState(0);
   const [representationsUsed, setRepresentationsUsed] = useState<Set<string>>(new Set());
@@ -671,8 +619,8 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
   const [activeTab, setActiveTab] = useState<string>(data.activeRepresentation === 'all' ? 'groups' : data.activeRepresentation);
   /** A wrong check in the learner's terms, for the tutor, until Try again clears it. */
   const [lastWrong, setLastWrong] = useState<string | null>(null);
-  // Levers (`multiplicationExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  // Levers (`MULTIPLICATION_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. The item starts bare: no lever comes from the tier.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<MultiplicationExplorerChallenge | null>(null);
   const sessionChallenge = challenges[challengeIndex] ?? null;
@@ -707,8 +655,7 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
   const showAllRepresentations =
     challengeRepresentation === 'all' || currentPhase === 'connect';
 
-  // Workspace path: a fresh item and Try again both clear what was typed and the verdict. The scripted path resets in
-  // its Next handler.
+  // A fresh item and Try again both clear what was typed and the verdict.
   const clearItem = () => {
     setAnswer('');
     setFeedback(null);
@@ -726,34 +673,8 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
     if (representation && representation !== 'all') setActiveTab(representation);
   };
 
-  // AI tutoring integration (scripted path only: its context carries the fact and the product).
-  const aiPrimitiveData = useMemo(() => ({
-    fact: `${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}`,
-    currentPhase,
-    challengeIndex,
-    challengeType: currentChallenge?.type || 'none',
-    instruction: currentChallenge?.instruction || '',
-    flipped,
-    attemptsCount,
-    factsCorrect,
-    factsTotal,
-    gradeBand,
-    supportTier: supportTier ?? null,
-  }), [activeFact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand, supportTier]);
-
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'multiplication-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '2-3' ? '2nd Grade' : '4th Grade',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   // Evaluation
-  const { submitResult, hasSubmitted, submittedResult, elapsedMs, resetAttempt } = usePrimitiveEvaluation<MultiplicationExplorerMetrics>({
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs } = usePrimitiveEvaluation<MultiplicationExplorerMetrics>({
     primitiveType: 'multiplication-explorer',
     instanceId: resolvedInstanceId,
     skillId,
@@ -763,8 +684,8 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  /** The summary: after Submit Results on the scripted path; on the workspace path once every item is solved. */
-  const showSummary = hasSubmitted || (tutorOwned && progress.isComplete);
+  /** The summary, once every item is solved. */
+  const showSummary = progress.isComplete;
 
   // Per-challenge-type breakdown for the end-of-session summary. Per-challenge
   // score: 100 first try, then -20 per extra attempt, floored at 20.
@@ -808,14 +729,10 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
 
   const handleSubmitAnswer = () => {
     if (!currentChallenge || solved || learnerBlocked() || !answer.trim()) return;
-    const expected = expectedAnswer(currentChallenge, activeFact);
-    const userAnswer = parseInt(answer, 10);
     const isCorrect = multiplicationAnswerCorrect(currentChallenge, activeFact, answer);
     const nextChallengeAttempts = progress.currentAttempts + 1;
 
     // An easier item (the simplify lever) is practice: it counts toward no session tally.
-    setAttemptsCount((a) => a + 1);
-    if (!practice) setFactsTotal((t) => t + 1);
     if (!practice && currentChallenge.type === 'missing_factor') {
       setMissingFactorTotal((t) => t + 1);
     }
@@ -824,7 +741,6 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
 
     if (isCorrect) {
       SoundManager.playCorrect();
-      if (!practice) setFactsCorrect((c) => c + 1);
       if (!practice && currentChallenge.type === 'missing_factor') {
         setMissingFactorCorrect((c) => c + 1);
       }
@@ -845,107 +761,33 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
 
       setFeedback({ correct: true, message: 'Correct!' });
       setLastWrong(null);
-
-      // AI: celebrate
-      sendText(
-        `[ANSWER_CORRECT] Student answered ${activeFact.factor1} × ${activeFact.factor2} = ${userAnswer} correctly ` +
-        `on attempt ${attemptsCount + 1}. Challenge: "${currentChallenge.instruction}". ` +
-        `Congratulate briefly and introduce the next step.` +
-        tutorRevealPolicy(supportTier, currentChallenge.type),
-        { silent: true }
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback({ correct: false, message: hintFor(currentChallenge, activeFact) });
       setLastWrong(describeAnswer(currentChallenge, answer));
-
-      // AI: hint
-      sendText(
-        `[ANSWER_INCORRECT] Student answered "${userAnswer}" but correct is ${expected}. ` +
-        `Fact: ${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}. ` +
-        `Challenge: "${currentChallenge.instruction}". Attempt ${attemptsCount + 1}. ` +
-        `Give a brief hint without revealing the answer.` +
-        tutorRevealPolicy(supportTier, currentChallenge.type),
-        { silent: true }
-      );
     }
   };
 
-  /** Scripted path only: the workspace hides Next, and the runtime opens the next item. */
-  const handleNextChallenge = () => {
-    if (challengeIndex >= challenges.length - 1) return;
-    SoundManager.navigate();
-    progress.advance();
-    clearItem();
-    setFluencyStart(null);
-
-    // AI: next challenge
-    const next = challenges[challengeIndex + 1];
-    sendText(
-      `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}: ` +
-      `"${next.instruction}". Type: ${next.type}. Briefly introduce it.` +
-      tutorRevealPolicy(supportTier, next.type),
-      { silent: true }
-    );
-  };
-
-  const handlePhaseTransition = useCallback((newPhase: Phase) => {
+  const handlePhaseTransition = (newPhase: Phase) => {
     SoundManager.navigate();
     setCurrentPhase(newPhase);
+  };
 
-    sendText(
-      `[PHASE_CHANGE] Student moved to phase: ${newPhase}. ` +
-      `${newPhase === 'connect' ? 'All 5 representations shown simultaneously. Help student see they all show the same fact.' : ''}` +
-      `${newPhase === 'strategy' ? 'Distributive property phase. Coach: "Don\'t know a hard fact? Break it into easy ones!"' : ''}` +
-      `Briefly introduce this phase.` +
-      tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
-      { silent: true }
-    );
-  }, [sendText, supportTier, currentChallenge]);
-
-  // Narrate the commutative question once per fact — flipping back and forth on
-  // the same fact shouldn't re-ask it; a new challenge (new fact) re-enables it.
-  const lastFlipNarratedFactRef = useRef<string>('');
-  const handleFlip = useCallback(() => {
+  const handleFlip = () => {
     SoundManager.toggle(!flipped);
     setFlipped((f) => !f);
     setCommutativeExplored(true);
+  };
 
-    const factKey = `${activeFact.factor1}x${activeFact.factor2}`;
-    if (lastFlipNarratedFactRef.current !== factKey) {
-      lastFlipNarratedFactRef.current = factKey;
-      sendText(
-        `[COMMUTATIVE_FLIP] Student flipped ${activeFact.factor1} × ${activeFact.factor2} to ${activeFact.factor2} × ${activeFact.factor1}. ` +
-        `Ask: "Is the total the same? Why?"`,
-        { silent: true }
-      );
-    }
-  }, [activeFact, flipped, sendText]);
-
-  const handleShowFactFamily = useCallback(() => {
+  const handleShowFactFamily = () => {
     SoundManager.pop();
     setFactFamilyCompleted(true);
+  };
 
-    sendText(
-      `[FACT_FAMILY] Student explored the fact family: ` +
-      `${activeFact.factor1}×${activeFact.factor2}=${activeFact.product}, ${activeFact.product}÷${activeFact.factor1}=${activeFact.factor2}, etc. ` +
-      `Briefly explain how multiplication and division are connected.`,
-      { silent: true }
-    );
-  }, [activeFact, sendText]);
-
-  const handleShowDistributive = useCallback(() => {
+  const handleShowDistributive = () => {
     SoundManager.pop();
     setDistributiveUsed(true);
-
-    const [a, b] = distributiveSplit(activeFact);
-    sendText(
-      `[DISTRIBUTIVE_STRATEGY] Student explored distributive property: ` +
-      `${activeFact.factor1}×${activeFact.factor2} = ${a}×${activeFact.factor2} + ${b}×${activeFact.factor2} = ${a * activeFact.factor2} + ${b * activeFact.factor2} = ${activeFact.product}. ` +
-      `Celebrate the strategy: "You broke a hard fact into easy ones!"`,
-      { silent: true }
-    );
-  }, [activeFact, sendText]);
+  };
 
   const metricsFor = (correct: number, total: number, attempts: number): MultiplicationExplorerMetrics => ({
     type: 'multiplication-explorer',
@@ -972,24 +814,7 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
     flipped,
   });
 
-  /** Scripted path: Submit Results. */
-  const handleComplete = () => {
-    if (hasSubmitted) return;
-    const score = factsTotal > 0 ? Math.round((factsCorrect / factsTotal) * 100) : 0;
-    submitResult(score >= 70, score, metricsFor(factsCorrect, factsTotal, attemptsCount), { studentWork: studentWork() });
-
-    sendText(
-      `[SESSION_COMPLETE] Student finished multiplication explorer. ` +
-      `Score: ${score}%. Facts: ${factsCorrect}/${factsTotal}. ` +
-      `Representations used: ${Array.from(representationsUsed).join(', ')}. ` +
-      `Commutative explored: ${commutativeExplored}. Distributive used: ${distributiveUsed}. ` +
-      `Celebrate their work and summarize what they learned!`,
-      { silent: true }
-    );
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong
-  // check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     submitResult(result.passed, result.accuracy, metricsFor(result.solvedCount, result.attemptsCount, result.attemptsCount),
@@ -997,26 +822,6 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
   };
-
-  const handleReset = useCallback(() => {
-    progress.reset();
-    clearItem();
-    setAttemptsCount(0);
-    setFactsCorrect(0);
-    setFactsTotal(0);
-    setMissingFactorCorrect(0);
-    setMissingFactorTotal(0);
-    setRepresentationsUsed(new Set());
-    setCommutativeExplored(false);
-    setDistributiveUsed(false);
-    setFactFamilyCompleted(false);
-    setFluencyTimes([]);
-    setFluencyStart(null);
-    setCurrentPhase('groups');
-    setFlipped(false);
-    resetAttempt();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetAttempt, progress.reset]);
 
   // Determine which representations to show based on tab
   const representationTabs = useMemo(() => {
@@ -1090,10 +895,9 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
 
   const breakdownShown = picturesShown && showOptions.showDistributiveBreakdown && currentPhase === 'strategy' && distributiveUsed;
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation.
+  // ── What the tutor and the observer are shown, republished every render. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const view: ExplorerView = {
       answer,
       representation: showAllRepresentations ? 'all' : (activeTab as ExplorerView['representation']),
@@ -1102,41 +906,32 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
       lastWrong,
     };
     const scene = workspaceScene(currentChallenge, activeFact, view);
-    const sessionFact = sessionChallenge ? resolveChallengeFact(sessionChallenge, fact) : activeFact;
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, sessionFact, pulledLevers);
-    const levers = practice ? [] : multiplicationLevers(sessionChallenge, fact, pulledLevers, { breakdownShown });
+    const ctx = { breakdownShown };
+    const levers = practice ? [] : MULTIPLICATION_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : MULTIPLICATION_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : MULTIPLICATION_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
-        if (practice || !lever || !sessionChallenge) return `No lever ${id} on this item.`;
+        if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallerFact(sessionChallenge, fact);
+          const easier = MULTIPLICATION_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no smaller fact; try a help lever.';
           setLeverState(pulled); clearItem(); setPractice(easier);
-          return { practice: workspaceAssignment(easier, fact) };
+          return { practice: multiplicationExplorerBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { clearItem(); setPractice(null); },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: showSummary ? null : currentChallenge?.id ?? 'explore',
-    label: 'The multiplication models',
-    solved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   const inputClosed = showSummary || solved || learnerBlocked();
@@ -1183,9 +978,10 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
           </div>
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !showSummary && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the models and the answer box
+            as one region. */}
+        {!showSummary && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Representations */}
         {!picturesShown ? null : showAllRepresentations ? (
           /* Connect: the five representations of one fact, side by side */
@@ -1264,9 +1060,12 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
               <p className="text-sm font-medium text-slate-200">
                 {askFor(currentChallenge, activeFact)}
               </p>
-              <LuminaBadge className="text-slate-400 text-[10px]">
-                {challengeIndex + 1}/{challenges.length}
-              </LuminaBadge>
+              <div className="flex items-center gap-2">
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+                <LuminaBadge className="text-slate-400 text-[10px]">
+                  {challengeIndex + 1}/{challenges.length}
+                </LuminaBadge>
+              </div>
             </div>
 
             {/* Answer Input */}
@@ -1297,21 +1096,10 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
                 {feedback.message}
               </div>
             )}
-
-            {/* Next Challenge Button (scripted path; the workspace's shell offers Next challenge) */}
-            {!tutorOwned && feedback?.correct && challengeIndex < challenges.length - 1 && (
-              <LuminaActionButton
-                action="next"
-                className="w-full"
-                onClick={handleNextChallenge}
-              >
-                Next Challenge →
-              </LuminaActionButton>
-            )}
           </LuminaPanel>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Phase Navigation */}
         <div className="flex flex-wrap gap-2 justify-center pt-2">
@@ -1341,32 +1129,6 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
           </LuminaButton>
         </div>
 
-        {/* Score Summary (scripted path: on the workspace a running tally beside the item is not its work) */}
-        {!tutorOwned && factsTotal > 0 && !showSummary && (
-          <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
-            <span>Score: {factsCorrect}/{factsTotal}</span>
-            <span>Reps: {representationsUsed.size}/5</span>
-            {commutativeExplored && <span className="text-emerald-400">Commutative ✓</span>}
-            {distributiveUsed && <span className="text-cyan-400">Distributive ✓</span>}
-          </div>
-        )}
-
-        {/* Submit / Reset (scripted path; the workspace submits from the runtime's finish) */}
-        {!tutorOwned && (
-          <div className="flex gap-2 justify-center">
-            <LuminaActionButton
-              action="check"
-              onClick={handleComplete}
-              disabled={hasSubmitted || factsTotal === 0}
-            >
-              {hasSubmitted ? 'Submitted!' : 'Submit Results'}
-            </LuminaActionButton>
-            {hasSubmitted && (
-              <LuminaActionButton action="retry" onClick={handleReset} />
-            )}
-          </div>
-        )}
-
         {/* End-of-session phase breakdown (by challenge type) */}
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -1387,8 +1149,8 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const MultiplicationExplorer = withWorkspaceController<MultiplicationExplorerProps, ProgressOptions<MultiplicationExplorerChallenge>, Progress>(
-  'multiplication-explorer', MultiplicationExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('multiplication-explorer'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const MultiplicationExplorer = withWorkspaceOnly<MultiplicationExplorerProps>('multiplication-explorer',
+  MultiplicationExplorerSurface, props => props.data.title);
 
 export default MultiplicationExplorer;

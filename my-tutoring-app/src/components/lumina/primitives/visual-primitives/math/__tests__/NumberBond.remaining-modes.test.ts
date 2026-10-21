@@ -6,6 +6,8 @@ import {
   factFamilyCanonicalKeys,
   factFamilyForms,
   familyFaultOf,
+  modeActionVerdictCue,
+  numberBondInteractionCue,
   parseBondEquation,
 } from '../numberBondScript';
 import {
@@ -15,8 +17,6 @@ import {
   expandNumberBondInteractions,
   familyEquationFaultOf,
   groupsForBond,
-  modeActionVerdictCue,
-  numberBondInteractionCue,
   numberBondInteractionSummary,
   relatedQuestion,
 } from '../numberBondModes';

@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   usePrimitiveEvaluation,
   type ArrayGridMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -21,20 +20,21 @@ import {
   LuminaButton,
   LuminaInput,
 } from '../../../ui';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
-  arrayMiss, arrayShape, cellKey, describeArrayWork, gridFor, makeArrayAsk, makeArrayMiss, workspaceAssignment, workspaceScene,
-  type ArrayGridView,
+  arrayItems, arrayMiss, arrayShape, cellKey, describeArrayWork, gridFor, makeArrayAsk, makeArrayMiss, workspaceScene,
+  type ArrayGridView, type ArrayItem,
 } from './arrayGridWorkspace';
 import {
-  NUMBER_LABELS_LEVER, ROW_COUNTS_LEVER, ROW_STRIPS_LEVER, SQUARE_COUNT_LEVER, arrayGridLevers, leverFacts, smallerArray,
+  ARRAY_LEVERS, NUMBER_LABELS_LEVER, ROW_COUNTS_LEVER, ROW_STRIPS_LEVER, SQUARE_COUNT_LEVER, type ArrayLeverContext,
 } from './arrayGridLevers';
+import { arrayGridBoss } from './arrayGrid.boss';
 import { ArrayBuildGrid, FirstArray } from './ArrayBuildGrid';
 
 /**
@@ -46,8 +46,9 @@ import { ArrayBuildGrid, FirstArray } from './ArrayBuildGrid';
  * (§6a #8). Pool-service generator owns dimension variance — Gemini emits
  * only wrapper metadata.
  *
- * On the shared teaching workspace (W1, plain shape) the check commits through `progress.commitCheck` and the
- * runtime owns progression: no Next button, no scripted cues, the scored session submitted from `onFinished`.
+ * Taught only on the shared teaching workspace (`arrayGrid.card.ts`, `arrayGrid.boss.ts`): the check commits through
+ * `progress.commitCheck` and the runtime owns progression: no Next button, the scored session submitted from
+ * `onFinished`.
  */
 
 // ============================================================================
@@ -130,59 +131,31 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
-/**
- * Keeps the tutor's reveal level consistent with the on-screen support tier
- * (the strategyHint added by /add-support-tiers, modality #2). At 'hard' the
- * instruction withholds the strategy, so the tutor must not name it either.
- *
- * Mode-aware: in count_array / multiply_array the row & column counts ARE part
- * of what the student must find, so the tutor never states them. In build_array
- * the dimensions are given on screen, so only the total stays hidden.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType: ArrayGridChallengeType,
-): string {
-  if (!tier) return '';
-  const dimsGiven = challengeType === 'build_array';
-  const common = dimsGiven
-    ? 'Never state the total (rows × columns) — the student must count it.'
-    : 'Never state the total, and never state the row or column counts — identifying them from the array is part of the task.';
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the strategy — count the rows, then how many are in each row, then skip-count or multiply — and point to the axis labels. ${common}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the axis labels are on screen but the strategy tip is withdrawn. Nudge one next step (e.g. "try skip-counting one row at a time"); do not walk the whole strategy. ${common}`;
-    default:
-      return `SUPPORT TIER hard: no axis labels and no strategy tip — working out the structure is part of the task. Do NOT name the skip-count/multiply strategy; ask what the student notices about the rows and how many are in each. ${common}`;
-  }
-}
-
 /** The make_array verdict's words: the rule an array keeps, never a number or a direction. */
 const MAKE_FEEDBACK: Record<string, string> = {
   ragged: 'Not yet. In an array every row has the same number of squares, with no gaps. Fix your squares.',
   same_as_first: 'That is the same array as your first one. Change your squares to make a different array.',
 };
 const MAKE_NOT_YET = 'Not yet. Count your squares, then fix your array.';
+const PRACTICE_NOTE = 'An easier practice array is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const useArrayProgress = useWorkspaceProgressFor('array-grid');
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ArrayGridProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ArrayGridChallenge>) => Progress }) => {
+const ArrayGridSurface = ({ data, className, runtimePlanItemId }: ArrayGridProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
-    challenges = [],
     challengeType: sessionChallengeType,
     iconType = 'star',
     showLabels = true,
     maxRows = 6,
     maxColumns = 8,
     strategyHint,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -190,6 +163,8 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  /** The lesson's arrays, each with the session's mode and icon (`arrayItems`). */
+  const challenges = useMemo(() => arrayItems(data), [data]);
 
   const isMakeMode = sessionChallengeType === 'make_array';
   /** make_array always builds squares: the ask names them. */
@@ -198,27 +173,27 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const stableInstanceIdRef = useRef(instanceId || `array-grid-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace moves the index. ──
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useArrayProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (c) => workspaceAssignment(c, sessionChallengeType, icon),
+    workspace, assignment: arrayGridBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
-  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const { currentIndex, results, isComplete, mergeResult } = progress;
+  /** A checked answer stays closed until Try again or the next item. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
-  // Levers (`arrayGridLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
-  // lever put on screen in its place. The item starts bare: no lever comes from the tier (the tier's labels and
-  // strategy tip are session-level starting positions, not levers).
+  // Levers (`ARRAY_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify lever put
+  // on screen in its place. The item starts bare: no lever comes from the tier (the tier's labels and strategy tip
+  // are session-level starting positions, not levers).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<ArrayGridChallenge | null>(null);
+  const [practice, setPractice] = useState<ArrayItem | null>(null);
   const sessionChallenge = challenges[currentIndex] ?? null;
   /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
@@ -255,13 +230,12 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const [firstWay, setFirstWay] = useState<{ rows: number; columns: number } | null>(null);
 
   const recordedRef = useRef(false);
-  const sessionCompleteFiredRef = useRef(false);
 
   // ── Reset every per-challenge slot when the active challenge changes ──
   // PRD §6c lesson: missing any slot leaks state from challenge N into N+1. A practice ask and the return from it
-  // change the id too, so each opens an empty grid. On the workspace path the reset runs in the same update that
-  // opens the item (`openItem`, the lever handlers), so no later render of the item supersedes its receipt; the
-  // effect then finds the item already reset.
+  // change the id too, so each opens an empty grid. The reset runs in the same update that opens the item
+  // (`openItem`, the lever handlers), so no later render of the item supersedes its receipt; the effect then finds
+  // the item already reset.
   const resetFor = useRef<string | null>(null);
   const resetItem = (challenge: ArrayGridChallenge) => {
     resetFor.current = challenge.id;
@@ -286,8 +260,8 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id, isPreBuilt]);
 
-  // Workspace path: a fresh item ends any practice; Try again clears what was typed. The open build keeps its
-  // squares and the verdict's words, so the learner revises the array.
+  // A fresh item ends any practice; Try again clears what was typed. The open build keeps its squares and the
+  // verdict's words, so the learner revises the array.
   openItem.current = (index, retry) => {
     if (!retry) {
       setPractice(null);
@@ -328,153 +302,39 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
   });
 
-  // ── AI tutoring (scripted path only) ───────────────────────────
-  // Its context carries the dimensions, so it is off on the workspace path, and its cues send nothing there.
-  const aiPrimitiveData = useMemo(
-    () => ({
-      title,
-      challengeType: sessionChallengeType,
-      currentChallengeIndex: currentIndex + 1,
-      totalChallenges: challenges.length,
-      targetRows,
-      targetColumns,
-      supportTier: supportTier ?? null,
-      attemptNumber: attempts + 1,
-    }),
-    [
-      title, sessionChallengeType, currentIndex, challenges.length,
-      targetRows, targetColumns, supportTier, attempts,
-    ],
-  );
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'array-grid',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const policy = tutorRevealPolicy(supportTier, sessionChallengeType);
-    sendText(
-      `[ACTIVITY_START] Array session: ${challenges.length} arrays, mode "${sessionChallengeType}". `
-      + `Introduce briefly: an array is rows and columns of items, and the total is rows × columns — you can skip-count by rows to find it. Then read the first task.`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, sessionChallengeType, supportTier, sendText]);
-
   // ── Per-challenge content match (stale-state guard, §6a #8) ────
-  const stateMatchesChallenge = useCallback(
-    (challenge: ArrayGridChallenge | null): boolean => {
-      if (!challenge) return false;
-      // For pre-built modes the array is rendered at target dims from the reset
-      // effect — match against that. For build mode, the student-built dims can
-      // legitimately disagree with target dims, so any state belongs to the
-      // active challenge.
-      if (isPreBuilt) {
-        return (
-          currentRows === challenge.targetRows &&
-          currentColumns === challenge.targetColumns
-        );
-      }
-      return true;
-    },
-    [isPreBuilt, currentRows, currentColumns],
-  );
+  const stateMatchesChallenge = (challenge: ArrayGridChallenge | null): boolean => {
+    if (!challenge) return false;
+    // For pre-built modes the array is rendered at target dims from the reset effect — match against that. For
+    // build mode, the student-built dims can legitimately disagree with target dims, so any state belongs to the
+    // active challenge.
+    if (isPreBuilt) return currentRows === challenge.targetRows && currentColumns === challenge.targetColumns;
+    return true;
+  };
 
   // ── Per-challenge completion (called from submit handlers) ─────
   // A practice ask (the simplify lever) records nothing: it is not the session's challenge.
-  const completeCurrentChallenge = useCallback(
-    (score: number, attemptsCount: number) => {
-      if (!currentChallenge) return;
-      if (recordedRef.current) return;
-      if (!stateMatchesChallenge(currentChallenge)) return;
-      recordedRef.current = true;
-      setChallengeDone(true);
-      if (!practice) mergeResult({ challengeId: currentChallenge.id, correct: true, attempts: attemptsCount, score });
-    },
-    [currentChallenge, stateMatchesChallenge, mergeResult, practice],
-  );
+  const completeCurrentChallenge = (score: number, attemptsCount: number) => {
+    if (!currentChallenge) return;
+    if (recordedRef.current) return;
+    if (!stateMatchesChallenge(currentChallenge)) return;
+    recordedRef.current = true;
+    setChallengeDone(true);
+    if (!practice) mergeResult({ challengeId: currentChallenge.id, correct: true, attempts: attemptsCount, score });
+  };
 
   // ── The learner's work, as the check, the tutor and the scene read it ──
   const view: ArrayGridView = {
     mode: sessionChallengeType, icon, rows: currentRows, columns: currentColumns, totalAnswer, rowsAnswer, columnsAnswer,
-    labelsShown: labelsShown, cells, firstWay,
+    labelsShown, cells, firstWay,
   };
-  /** Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture. */
+  /** The checked gesture: counts the attempt and records the verdict with its named miss. */
   const commit = (correct: boolean) => {
     progress.commitCheck(describeArrayWork(view), correct, correct ? undefined : arrayMiss(currentChallenge, view));
   };
 
-  // ── Session complete → aggregate metrics + submitEvaluation (scripted path) ────
-  useEffect(() => {
-    if (!isComplete) return;
-    if (sessionCompleteFiredRef.current) return;
-    if (challenges.length === 0) return;
-    sessionCompleteFiredRef.current = true;
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned) return;
-
-    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => Number(r.score ?? 0) === 100).length;
-    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
-    const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length),
-    );
-    const averageAttemptsPerChallenge =
-      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
-
-    const metrics: ArrayGridMetrics = {
-      type: 'array-grid',
-      challengeType: sessionChallengeType,
-      totalChallenges: challenges.length,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    if (!hasSubmittedEvaluation) {
-      const goalMet = correctCount === challenges.length;
-      submitEvaluation(goalMet, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          challengeType: sessionChallengeType,
-          pairs: challenges.map((c) => ({
-            rows: c.targetRows,
-            columns: c.targetColumns,
-          })),
-          scoresPerChallenge: challenges.map((c) => {
-            const r = results.find((rr) => rr.challengeId === c.id);
-            return Number(r?.score ?? 0);
-          }),
-        },
-      });
-    }
-
-    sendText(
-      `[ALL_COMPLETE] All ${challenges.length} arrays done. Correct: ${correctCount}/${challenges.length}. `
-      + `First-try: ${firstTryCount}. Accuracy: ${overallAccuracy}%. `
-      + `Give an encouraging, arrays-as-multiplication summary.`,
-      { silent: true },
-    );
-  }, [
-    isComplete, results, challenges, sessionChallengeType,
-    submitEvaluation, hasSubmittedEvaluation, sendText, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
   finish.current = (result) => {
     if (hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
     const metrics: ArrayGridMetrics = {
@@ -532,24 +392,10 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
       );
       setFeedbackType('success');
       completeCurrentChallenge(phaseScore(nextAttempts), nextAttempts);
-      sendText(
-        `[ANSWER_CORRECT] Student gave total ${studentTotal} for a ${sessionChallengeType} array `
-        + `(${targetRows} rows × ${targetColumns} columns) on attempt ${nextAttempts}. `
-        + `Celebrate briefly and reinforce that rows × columns gives the total.`,
-        { silent: true },
-      );
       return;
     }
 
     SoundManager.playIncorrect();
-    const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
-    sendText(
-      `[ANSWER_INCORRECT] Student answered total ${studentTotal} for a ${targetRows}×${targetColumns} `
-      + `${sessionChallengeType} array (correct total is ${targetProduct}). Attempt ${nextAttempts}. `
-      + `Give a brief hint without stating the total — point at how to skip-count the rows.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
     if (correctArray && !correctTotal) {
       setFeedback(
         sessionChallengeType === 'count_array'
@@ -594,11 +440,6 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
       );
       setFeedbackType('success');
       completeCurrentChallenge(phaseScore(nextAttempts), nextAttempts);
-      sendText(
-        `[ANSWER_CORRECT] Student wrote ${studentRows} × ${studentColumns} = ${studentTotal} (correct) `
-        + `on attempt ${nextAttempts}. Celebrate briefly and reinforce the array → multiplication link.`,
-        { silent: true },
-      );
       return;
     }
 
@@ -609,14 +450,6 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     if (!correctTotal) hints.push('multiply rows × columns for the total');
     setFeedback(`Not quite. Try to ${hints.join(', ')}.`);
     setFeedbackType(hints.length === 1 ? 'hint' : 'error');
-    const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
-    sendText(
-      `[ANSWER_INCORRECT] Student wrote ${studentRows} × ${studentColumns} = ${studentTotal} for an array `
-      + `that is ${targetRows} × ${targetColumns} = ${targetProduct}. Attempt ${nextAttempts}. `
-      + `Point at the specific part that needs another look (rows, columns, or the product) — do NOT give the answer.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
   };
 
   /**
@@ -663,59 +496,39 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     setCells((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
-  // ── Advance to next challenge (scripted path; the workspace hides Next) ──
-  // One end_of_turn message per advance, and number-free so the tutor doesn't
-  // reveal the next array's dimensions (see ADDING_TUTORING_SCAFFOLD turn-race).
-  const handleNextChallenge = () => {
-    advance();
-    const nextIdx = currentIndex + 1;
-    if (nextIdx < challenges.length) {
-      sendText(
-        `[NEXT_ITEM] Array ${nextIdx + 1} of ${challenges.length} — same kind of task, a new array. `
-        + `Introduce it briefly without giving its size.`,
-        { silent: true },
-      );
-    }
-  };
-
   // ── Can submit? ────────────────────────────────────────────────
-  const canSubmit = useMemo(() => {
+  const canSubmit = (() => {
     if (challengeDone) return false;
     if (isMakeMode) return cells.length > 0;
-    if (isMultiplyMode) {
-      return rowsAnswer !== '' && columnsAnswer !== '' && totalAnswer !== '';
-    }
+    if (isMultiplyMode) return rowsAnswer !== '' && columnsAnswer !== '' && totalAnswer !== '';
     return arrayBuilt && totalAnswer !== '';
-  }, [challengeDone, isMakeMode, cells.length, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
+  })();
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation. Every mode declares levers (`arrayGridLevers.ts`).
+  // ── What the tutor and the observer are shown, republished every render ──
+  // The levers draw on the array, so on build they come once the learner has picked its rows and columns.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
+    const ctx: ArrayLeverContext = { labelsShown: showLabels, arrayShown: isPreBuilt || (currentRows > 0 && currentColumns > 0) };
     const scene = workspaceScene(currentChallenge, view);
-    const ctx = { mode: sessionChallengeType, labelsShown: showLabels };
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : arrayGridLevers(sessionChallenge, pulledLevers, ctx);
+    const levers = practice ? [] : ARRAY_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : ARRAY_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : ARRAY_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        // A help lever on a given array draws on the array: on build there is none until rows and columns are picked.
-        if (id === ROW_STRIPS_LEVER || id === NUMBER_LABELS_LEVER) {
-          if (!(isPreBuilt ? targetRows : currentRows) || !(isPreBuilt ? targetColumns : currentColumns)) {
-            return 'There is no array on screen yet: the learner picks the rows and columns first.';
-          }
-        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallerArray(sessionChallenge);
+          const easier = ARRAY_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier, sessionChallengeType, icon) };
+          return { practice: arrayGridBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -771,20 +584,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   // Displayed rows/columns for the grid
   const displayRows = isPreBuilt ? targetRows : currentRows;
   const displayColumns = isPreBuilt ? targetColumns : currentColumns;
-  const hasNextChallenge = currentIndex + 1 < challenges.length;
   const stripsOn = leverOn(ROW_STRIPS_LEVER);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The array',
-    solved: challengeDone && results.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   // ── Empty state ────────────────────────────────────────────────
   if (challenges.length === 0) {
@@ -842,6 +642,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             <LuminaBadge accent="emerald" className="text-xs font-mono uppercase tracking-wider">
               {isMakeMode ? 'Make an Array' : isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
             </LuminaBadge>
+            {practice && <LuminaBadge accent="amber" className="text-xs font-mono uppercase tracking-wider">Practice</LuminaBadge>}
           </div>
         </div>
       </div>
@@ -895,9 +696,10 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             </div>
           )}
 
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace}>
+          {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the array and its answer
+              inputs as one region. */}
+          <PipDock />
+          <PipWorkspace>
           {/* Open build (make_array): the ask, an empty grid, the first array beside it on a two-ways item. */}
           {isMakeMode && currentChallenge && (
             <div className="mb-6 space-y-3">
@@ -1127,8 +929,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
               </div>
             </div>
           )}
-
-          </div>
+          </PipWorkspace>
 
           {/* Feedback Display */}
           {feedback && (
@@ -1167,7 +968,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             </div>
           )}
 
-          {/* Between-challenge interstitial */}
+          {/* Between-challenge interstitial; the runtime advances. */}
           {challengeDone && (
             <LuminaCard surface="nested" className="mt-2 border-green-500/30">
               <LuminaCardContent className="pt-6">
@@ -1175,15 +976,6 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   <h4 className="text-lg font-bold text-green-400">
                     ✓ Array {currentIndex + 1} complete!
                   </h4>
-                  {tutorOwned ? null : hasNextChallenge ? (
-                    <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                      Next Array →
-                    </LuminaActionButton>
-                  ) : (
-                    <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
-                      Last array
-                    </span>
-                  )}
                 </div>
                 {isMakeMode ? (
                   <p className="text-sm text-slate-300">
@@ -1204,8 +996,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ArrayGrid = withWorkspaceController<ArrayGridProps, ProgressOptions<ArrayGridChallenge>, Progress>(
-  'array-grid', ArrayGridSurface, useScriptedProgress, useWorkspaceProgressFor('array-grid'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const ArrayGrid = withWorkspaceOnly<ArrayGridProps>('array-grid', ArrayGridSurface, props => props.data.title);
 
 export default ArrayGrid;

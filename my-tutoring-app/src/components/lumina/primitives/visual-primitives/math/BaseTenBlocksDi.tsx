@@ -2,7 +2,8 @@
 
 /**
  * BaseTenBlocksDi — base-ten-blocks' spoken mat for `read_blocks` and `regroup`, on the shared
- * teaching workspace, its only teaching path (the scripted judged runner was deleted, LA-14).
+ * teaching workspace, its only teaching path. Its items, assignment and levers are the boss's
+ * (`baseTenBlocks.boss.ts`).
  * Forked beside `BaseTenBlocks` rather than folded into it: the click mat still serves
  * `build_number` and the operate modes.
  *
@@ -33,11 +34,13 @@ import {
 import DiActionPanel from '../../../components/DiActionPanel';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { BaseTenBlocksMetrics } from '../../../evaluation/types';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingWorkspace, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeTrade, diWorkspaceAssignment, diWorkspaceScene, tradeMiss } from './baseTenWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { describeTrade, diWorkspaceScene, isSpokenItem, tradeMiss } from './baseTenWorkspace';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { BaseTenBlocksData } from './BaseTenBlocks';
 import { placeWord } from './spokenNumberWords';
@@ -50,11 +53,10 @@ import {
   type BtColumns,
   type BtMode,
 } from './baseTenModel';
-import { itemsFromChallenges, problemsFromChallenges, stepsOfProblem, type BaseTenItem } from './baseTenScript';
-import {
-  DIM_LEVER, FIVES_LEVER, GLOW_LEVER, MODEL_LEVER, SPOKEN_SIMPLIFY, WORTH_LEVER,
-  baseTenSpokenLevers, spokenLeverFacts, spokenPracticeItem, tradeModel, worthKey,
-} from './baseTenSpokenLevers';
+import { problemsFromChallenges, stepsOfProblem, type BaseTenItem } from './baseTenScript';
+import { BASE_TEN_LEVERS, DIM_LEVER, FIVES_LEVER, GLOW_LEVER, MODEL_LEVER, WORTH_LEVER, baseTenLeverContext, tradeModel, worthKey }
+  from './baseTenLevers';
+import { baseTenBlocksBoss, baseTenBlocksItems } from './baseTenBlocks.boss';
 
 /** Mat colours by place — size carries the value, colour only aids scanning. */
 const PLACE_STYLE: readonly { fill: string; edge: string; w: number; h: number }[] = [
@@ -93,7 +95,8 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
     () => problemsFromChallenges(data.challenges ?? [], mode),
     [data.challenges, mode],
   );
-  const items = useMemo(() => itemsFromChallenges(data.challenges ?? [], mode), [data.challenges, mode]);
+  // The router mounts this mat only for a spoken payload, so every item is a spoken step.
+  const items = useMemo(() => baseTenBlocksItems(data).filter(isSpokenItem), [data]);
 
   const instance = useRef(data.instanceId ?? `base-ten-di-${Date.now()}`);
   const mats = useRef<Record<string, number[]>>({});
@@ -101,7 +104,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
   const [mat, setMat] = useState<number[]>(problems[0] ? [...problems[0].start] : []);
   const [feedback, setFeedback] = useState('');
   const reduceMotion = useReducedMotion();
-  // In-item levers (`baseTenSpokenLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // In-item levers (`BASE_TEN_LEVERS`, `baseTenLevers.ts`), keyed by the session item they were pulled on, and the easier
   // practice item a simplify lever put on screen in its place. The ref is what the retry callback reads.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<BaseTenItem | null>(null);
@@ -168,7 +171,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
 
   const runner = useWorkspaceRunner<BaseTenItem>({
     primitiveId: 'base-ten-blocks',
-    assignment: diWorkspaceAssignment,
+    assignment: baseTenBlocksBoss.assignment!,
     items,
     workspace,
     objectiveId: data.objectiveId,
@@ -249,14 +252,14 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!item || !sessionItem) return;
-    const scene = diWorkspaceScene(item, { mat });
-    const levers = practice ? [] : baseTenSpokenLevers(sessionItem, pulledLevers, problems);
-    const onScreen = practice ? '' : spokenLeverFacts(sessionItem, pulledLevers, problems);
+    const scene: WorkspaceScene = diWorkspaceScene(item, { mat });
+    const leverCtx = baseTenLeverContext({ problems });
+    const levers = practice ? [] : BASE_TEN_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice mat, ungraded. The full item comes back after it.' } : {}) },
+      ...leverScene({ ...scene, facts: { ...scene.facts,
+        ...(practice ? { practice: 'An easier practice mat, ungraded. The full item comes back after it.' } : {}) } }, {
+        support: practice ? '' : BASE_TEN_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : BASE_TEN_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the mat changes before this returns.
       pullLever: (id) => {
@@ -264,12 +267,12 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (SPOKEN_SIMPLIFY.has(id)) {
-          const easier = spokenPracticeItem(sessionItem, id, problems);
-          if (!easier) return 'There is no easier mat for this item.';
+        if (lever.kind === 'simplify') {
+          const easier = BASE_TEN_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!easier || !isSpokenItem(easier)) return 'There is no easier mat for this item.';
           practiceRef.current = easier;
           setLeverState(pulled); setPractice(easier); setMat([...easier.problem.start]); setFeedback('');
-          return { practice: diWorkspaceAssignment(easier) };
+          return { practice: baseTenBlocksBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -352,7 +355,10 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
       <LuminaCardHeader>
         <div className="flex items-center justify-between gap-3">
           <LuminaCardTitle>{item.problem.mode === 'regroup' ? 'Trade Ten' : 'Read the Blocks'}</LuminaCardTitle>
-          <LuminaBadge accent="purple">Say it out loud</LuminaBadge>
+          <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber">Practice</LuminaBadge>}
+            <LuminaBadge accent="purple">Say it out loud</LuminaBadge>
+          </div>
         </div>
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-5">
@@ -368,11 +374,14 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
         ) : (
           <>
             <LuminaChallengeCounter current={problemIndex + 1} total={problems.length} variant="dots" />
-            <LayoutGroup id={instance.current}>
-              <div className="flex items-end justify-center gap-3" aria-label="Block mat" data-base-ten-mat="judged">
-                {places.map(column)}
-              </div>
-            </LayoutGroup>
+            <PipDock />
+            <PipWorkspace>
+              <LayoutGroup id={instance.current}>
+                <div className="flex items-end justify-center gap-3" aria-label="Block mat" data-base-ten-mat="judged">
+                  {places.map(column)}
+                </div>
+              </LayoutGroup>
+            </PipWorkspace>
             {(key || model) && (
               <div className="flex flex-wrap items-end justify-center gap-6 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
                 {key && (

@@ -1,8 +1,7 @@
 /**
- * Parameter explorer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C20).
+ * Parameter explorer's domain on the shared tutor/JEV teaching workspace (the boss is `parameterExplorer.boss.ts`).
  *
- * Pure: the component, the adapter, the journey row and any probe read the same assignment, check and scene. Every
+ * Pure: the component, the boss and any probe read the same ask, check and scene. Every
  * item starts from the parameters' starting values (their defaults) and is checked by the activity's own code:
  * - explore: a slider moved since the item opened (credited; there is nothing to get wrong);
  * - predict-direction: Increase / Decrease / Stay Same against the direction the formula gives when the named
@@ -14,8 +13,11 @@
  * is never handed the direction, the predicted value or the leading parameter, and in the predict modes the output is
  * hidden on screen until the answer is credited.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ParameterDef, ParameterExplorerChallenge, ParameterExplorerData } from './ParameterExplorer';
+import type { ParameterExplorerMiss } from './parameterExplorer.card';
+
+export { PARAMETER_MISSES_BY_MODE, type ParameterExplorerMiss } from './parameterExplorer.card';
 
 type Lab = Pick<ParameterExplorerData, 'formula' | 'jsExpression' | 'outputName' | 'outputUnit' | 'parameters'>;
 export type Direction = 'increase' | 'decrease' | 'stay-same';
@@ -65,10 +67,10 @@ export function formulaDirection(d: Lab, ch: ParameterExplorerChallenge): Direct
 }
 
 /**
- * predict-direction's key: the formula's direction. An older lesson with no `newValue` (the scripted path only; the
- * live adapter refuses it) falls back to the generator's word.
+ * predict-direction's key: the formula's direction. An older lesson with no `newValue` (the boss's
+ * validate refuses it) falls back to the generator's word.
  */
-export const directionKey = (d: Lab, ch: ParameterExplorerChallenge): Direction | null =>
+const directionKey = (d: Lab, ch: ParameterExplorerChallenge): Direction | null =>
   ch.prediction?.newValue === undefined ? ch.prediction?.correctDirection ?? null : formulaDirection(d, ch);
 
 /** predict-value's tolerance: the generator's, kept between 0.5% (a rounded decimal passes) and 5% of the key. */
@@ -99,10 +101,10 @@ export function dominantParameter(d: Lab): string | null {
 }
 
 /**
- * identify-relationship's key: the formula's leading parameter. Where none clearly leads (the live adapter refuses
- * that item and the generator drops it) the scripted path falls back to the generator's key.
+ * identify-relationship's key: the formula's leading parameter. Where none clearly leads (the boss's validate refuses
+ * that item and the generator drops it) it falls back to the generator's key.
  */
-export const identifyKey = (d: Lab, ch: ParameterExplorerChallenge): string | null =>
+const identifyKey = (d: Lab, ch: ParameterExplorerChallenge): string | null =>
   dominantParameter(d) ?? ch.correctParameter ?? null;
 
 const inRange = (p: ParameterDef, v: number | undefined): v is number =>
@@ -114,7 +116,7 @@ const snap = (p: ParameterDef, v: number) => {
 
 /**
  * The generator's challenge made answerable by the activity's own check, or null to drop it (`gemini-parameter-explorer`;
- * the live adapter refuses what this would drop). Code owns the key:
+ * the boss's validate refuses what this would drop). Code owns the key:
  * - predict-direction: the setting is the generator's `newValue` when it lies on the slider and the formula agrees with
  *   its direction word; otherwise a quarter of the slider up or down, whichever gives that word. The key is the formula's.
  *   An explanation written for another setting is dropped (the result line states the effect).
@@ -187,28 +189,6 @@ export function parameterCheck(d: Lab, ch: ParameterExplorerChallenge, work: Par
     }
   }
 }
-
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), named for the pattern on screen, drawn from the
- * catalog's commonStruggles (a divisor read as a multiplier, all sliders moved at once) and the formula's structure:
- * - `opposite_direction`: predicted the output moves the other way (a value typed on the wrong side of the start too);
- * - `missed_change`: Stay Same when the output changes; `invented_change`: a change when it stays the same;
- * - `unchanged_output`: typed the output at the starting values; `assumed_proportional`: typed the start scaled by the
- *   parameter's own ratio (new ÷ start) where the formula does not scale that way; `near_miss` within 5%;
- *   `too_high` / `too_low`;
- * - `no_effect`: chose a parameter whose doubling leaves the output where it is; `largest_value`: chose the parameter
- *   with the largest starting number; `weaker_effect`: another parameter that moves it less.
- */
-export type ParameterExplorerMiss = 'opposite_direction' | 'missed_change' | 'invented_change'
-  | 'unchanged_output' | 'assumed_proportional' | 'near_miss' | 'too_high' | 'too_low'
-  | 'no_effect' | 'largest_value' | 'weaker_effect';
-
-/** explore credits every move, so it names none. */
-export const PARAMETER_MISSES_BY_MODE: Record<string, readonly ParameterExplorerMiss[]> = {
-  'predict-direction': ['opposite_direction', 'missed_change', 'invented_change'],
-  'predict-value': ['unchanged_output', 'assumed_proportional', 'near_miss', 'opposite_direction', 'too_high', 'too_low'],
-  'identify-relationship': ['no_effect', 'largest_value', 'weaker_effect'],
-};
 
 /** The parameter's own ratio applied to the start: what a learner who assumes "output scales with it" types. */
 function proportionalGuess(d: Lab, ch: ParameterExplorerChallenge): number | null {
@@ -300,7 +280,7 @@ export function promptFor(d: Lab, ch: ParameterExplorerChallenge): string {
 }
 
 /**
- * What the screen states once the item is over (credited, or missed on the scripted path): the output at the asked
+ * What the screen states once the item is over (credited): the output at the asked
  * setting, or each parameter's doubling effect. Built from the formula, so it cannot contradict the check.
  */
 export function resultText(d: Lab, ch: ParameterExplorerChallenge): string {
@@ -320,15 +300,15 @@ export function resultText(d: Lab, ch: ParameterExplorerChallenge): string {
   return '';
 }
 
-/** The ask, as the screen states it, plus the answer channel. */
-export function workspaceAssignment(d: Lab, ch: ParameterExplorerChallenge): TeachingAssignment {
+/** The ask, as the screen states it, plus how it is answered (the boss's `ask`; no key reaches the tutor). */
+export function parameterAsk(d: Lab, ch: ParameterExplorerChallenge): string {
   const how = {
     explore: 'Move a slider, then press Done Exploring.',
-    'predict-direction': 'Choose Increase, Decrease or Stay Same and press Check.',
-    'predict-value': 'Type the prediction and press Check.',
-    'identify-relationship': 'Choose one parameter and press Check.',
+    'predict-direction': 'Choose Increase, Decrease or Stay Same and press Check Answer.',
+    'predict-value': 'Type the prediction and press Check Answer.',
+    'identify-relationship': 'Choose one parameter and press Check Answer.',
   }[ch.type];
-  return { id: ch.id, task: `${promptFor(d, ch)} ${how}`.trim(), response: 'gesture' };
+  return `${promptFor(d, ch)} ${how}`.trim();
 }
 
 /**
@@ -367,7 +347,7 @@ export interface ParameterExplorerView extends ParameterWork {
 }
 
 /** What is drawn and asked. The direction, the asked value and the leading parameter are never named. */
-export function workspaceScene(d: Lab, ch: ParameterExplorerChallenge, view: ParameterExplorerView): WorkspaceScene {
+export function workspaceScene(d: Lab, ch: ParameterExplorerChallenge, view: ParameterExplorerView): SceneOf {
   const facts: Record<string, string> = {
     mode: MODE_LABEL[ch.type],
     formula: plainFormula(d),
@@ -390,12 +370,6 @@ export function workspaceScene(d: Lab, ch: ParameterExplorerChallenge, view: Par
   }
   if (view.solved) facts.result = 'credited; the output at the asked setting and the explanation are on screen';
   facts.learnerWork = describeParameterWork(d, ch, view);
-  facts.constraints = {
-    explore: 'The learner moves the sliders (a lock holds one) and presses Done Exploring.',
-    'predict-direction': 'The learner chooses Increase, Decrease or Stay Same and presses Check; the activity checks it against the formula.',
-    'predict-value': 'The learner types a number and presses Check; the activity checks it against the formula.',
-    'identify-relationship': 'The learner chooses one parameter and presses Check; the activity checks it against the formula.',
-  }[ch.type] + ' You cannot move a slider, choose, type, or press a button.';
   return { objects: [], facts };
 }
 

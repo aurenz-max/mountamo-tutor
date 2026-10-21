@@ -1,11 +1,12 @@
 /**
  * Airplane diorama, the domain: the parts of a jet, the asks, the check and the misses. Pure (no three.js),
- * so the generator, the workspace module, the live adapter and the tests share one source.
+ * so the generator, the workspace module, the boss and the tests share one source.
  *
  * The task is to FIND a part on the 3D jet and tap it. Nothing on screen names a part while the learner
  * looks: the ask names the target (K-2: by name) or what it does (3-5: by its job), and the jet is the
  * only answer surface. After a right tap the part shows what it does.
  */
+import { AIRPLANE_MISSES_BY_MODE, type AirplaneMiss } from './airplaneDiorama.card';
 
 export const AIRPLANE_PARTS = ['wings', 'engines', 'tail', 'cockpit', 'gear', 'cabin', 'nose'] as const;
 export type AirplanePart = typeof AIRPLANE_PARTS[number];
@@ -113,12 +114,7 @@ export function selectParts(focus: readonly AirplanePart[], count: number, rng: 
   return [...out, ...rest].slice(0, Math.max(1, Math.min(count, AIRPLANE_PARTS.length)));
 }
 
-// ── The check ───────────────────────────────────────────────────────────────
-
-export const FIND_PART_MISSES = ['close_part', 'wrong_part'] as const;
-export const FLIGHT_PLAN_MISSES = ['too_little_fuel', 'no_spare_fuel', 'too_much_fuel'] as const;
-export const AIRPLANE_MISSES = [...FIND_PART_MISSES, ...FLIGHT_PLAN_MISSES] as const;
-export type AirplaneMiss = typeof AIRPLANE_MISSES[number];
+// ── The check (the misses each check names are the card's, `airplaneDiorama.card.ts`) ──
 
 /** Parts a learner mixes up because they sit together or look alike (the back wings look like wings). */
 const NEIGHBORS: Record<AirplanePart, readonly AirplanePart[]> = {
@@ -236,7 +232,7 @@ export function flyTrip(c: FlightPlanChallenge, loaded: number): FlightRun {
     left: reached ? loaded - tanksForTrip(c) : 0 };
 }
 
-export type FlightPlanMiss = typeof FLIGHT_PLAN_MISSES[number];
+export type FlightPlanMiss = typeof AIRPLANE_MISSES_BY_MODE.flight_plan[number];
 
 export function flightMiss(c: FlightPlanChallenge, loaded: number): FlightPlanMiss | undefined {
   const trip = tanksForTrip(c);

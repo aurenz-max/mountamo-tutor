@@ -9,26 +9,27 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AtomBuilderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { LuminaBadge } from '../../../ui';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   atomShells, ELEMENTS, ATOM_BUILD_MISS_WORDS, type AtomAsk, type AtomBuildMiss, type BuiltAtom,
 } from './atomBuild';
 import {
-  atomMiss, CLASSIC_MISS_WORDS, describeAtom, openAskOf, workspaceAssignment, workspaceScene,
+  atomMiss, CLASSIC_MISS_WORDS, describeAtom, openAskOf, workspaceScene,
   type AtomView, type ClassicAtomMiss,
 } from './atomBuilderWorkspace';
 import {
-  ISOTOPE_COMPARE_LEVER, MASS_METER_LEVER, PAIR_UP_LEVER, RING_COUNTS_LEVER, TABLE_KEY_LEVER,
-  atomLevers, atomRefusal, leverFacts, massLine, pairUp, practiceFor, ringCounts, tableKey,
+  ATOM_LEVERS, ISOTOPE_COMPARE_LEVER, MASS_METER_LEVER, PAIR_UP_LEVER, RING_COUNTS_LEVER, TABLE_KEY_LEVER,
+  massLine, pairUp, ringCounts, tableKey, type AtomLeverContext,
 } from './atomBuilderLevers';
+import { atomBuilderBoss } from './atomBuilder.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -425,12 +426,14 @@ interface AtomBuilderProps {
  * Atom Builder: add protons, neutrons and electrons to build atoms (classic target checks), and the open build
  * `make_atom`: make ANY atom with the asked property, judged by code at "I'm done!".
  *
- * On the shared teaching workspace (W1, plain shape; `atomBuilderWorkspace.ts`) every check commits through
- * `progress.commitCheck` and the runtime owns progression: no auto-advance, no scripted cues, the scored session
- * submitted from `onFinished`. Levers: `atomBuilderLevers.ts`.
+ * Taught only on the shared teaching workspace (its boss: `atomBuilder.boss.ts`): every check commits through
+ * `progress.commitCheck` and the runtime owns progression; the scored session is submitted from `onFinished`.
+ * Levers: `ATOM_LEVERS` (`atomBuilderLevers.ts`).
  */
-const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  AtomBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<AtomBuilderChallenge>) => Progress }) => {
+const useAtomProgress = useWorkspaceProgressFor('atom-builder');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const AtomBuilderSurface = ({ data, className, runtimePlanItemId }: AtomBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -449,23 +452,23 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const stableInstanceIdRef = useRef(instanceId || `atom-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace moves the index. ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useAtomProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: atomBuilderBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const challengeIndex = progress.currentIndex;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
-  // Levers (`atomBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
-  // lever put on screen in its place. No lever comes from the tier.
+  // Levers (`ATOM_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify lever put
+  // on screen in its place. No lever comes from the tier.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<AtomBuilderChallenge | null>(null);
   const sessionChallenge = challenges[challengeIndex] ?? null;
@@ -523,38 +526,6 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     return true;
   }, [shells]);
 
-  // ---- AI Tutoring (scripted path only) ----
-  // On the workspace path the tutor reads the published scene, and the scripted cues send nothing.
-  const aiPrimitiveData = useMemo(() => ({
-    protons,
-    neutrons,
-    electrons,
-    charge,
-    massNumber,
-    elementName: element?.name || 'none',
-    elementSymbol: element?.symbol || '',
-    shells: JSON.stringify(shells),
-    shellsCorrect,
-    valenceElectrons,
-    currentChallengeIndex: challengeIndex,
-    totalChallenges: challenges.length,
-    challengeType: currentChallenge?.type || '',
-    instruction: currentChallenge?.instruction || '',
-    attemptNumber: attemptsCount,
-    gradeBand,
-  }), [protons, neutrons, electrons, charge, massNumber, element, shells, shellsCorrect, valenceElectrons, challengeIndex, challenges.length, currentChallenge, attemptsCount, gradeBand]);
-
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'atom-builder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   // ---- Evaluation ----
   const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<AtomBuilderMetrics>({
     primitiveType: 'atom-builder',
@@ -587,8 +558,8 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
 
-  // Workspace path: a fresh item ends any practice and opens an empty board. Try again keeps the atom and the
-  // verdict's words (they name no count), so the learner fixes the build.
+  // A fresh item ends any practice and opens an empty board. Try again keeps the atom and the verdict's words (they
+  // name no count), so the learner fixes the build.
   openItem.current = (index, retry) => {
     if (retry) return;
     setPractice(null);
@@ -623,51 +594,7 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setKeptAtom({ protons, neutrons, electrons });
   };
 
-  const handleFinalSubmit = useCallback(() => {
-    if (hasSubmitted) return;
-
-    const totalChallenges = challenges.length;
-    const completedCount = completedChallenges.size + (currentChallenge && !completedChallenges.has(currentChallenge.id) ? 1 : 0);
-    const ionChallenges = challenges.filter(c => c.type === 'make_ion').length;
-    const isotopeChallenges = challenges.filter(c => c.type === 'make_isotope').length;
-    const identifyChallenges = challenges.filter(c => c.type === 'identify').length;
-    const score = (completedCount / Math.max(totalChallenges, 1)) * 100;
-
-    const metrics: AtomBuilderMetrics = {
-      type: 'atom-builder',
-      elementsBuiltCorrectly: completedCount,
-      elementsTotal: totalChallenges,
-      shellsFilledCorrectly: shellsFilled,
-      elementIdentifiedFromAtom: challenges.filter(c => c.type === 'identify' && completedChallenges.has(c.id)).length,
-      identificationTotal: identifyChallenges,
-      ionsCreatedCorrectly: ionsCreated,
-      ionsTotal: ionChallenges,
-      isotopesCreatedCorrectly: isotopesCreated,
-      isotopesTotal: isotopeChallenges,
-      periodicTableConnectionMade: periodicTableUsed,
-      valenceElectronsIdentified: valenceIdentified,
-      attemptsCount,
-    };
-
-    submitResult(score >= 70, score, metrics, {
-      studentWork: {
-        completedChallenges: Array.from(completedChallenges),
-        finalAtom: { protons, neutrons, electrons },
-      },
-    });
-
-    setFeedback('All challenges complete! Great work building atoms!');
-    setFeedbackType('success');
-
-    sendText(
-      `[ALL_COMPLETE] Student finished all ${totalChallenges} atom-building challenges. Score: ${Math.round(score)}%. ` +
-      `Shells correct: ${shellsFilled}. Ions created: ${ionsCreated}/${ionChallenges}. ` +
-      `Celebrate their accomplishment and summarize what they learned about atoms.`,
-      { silent: true }
-    );
-  }, [hasSubmitted, challenges, completedChallenges, currentChallenge, shellsFilled, ionsCreated, isotopesCreated, periodicTableUsed, valenceIdentified, attemptsCount, protons, neutrons, electrons, submitResult, sendText]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
@@ -722,34 +649,14 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       if (currentChallenge.type === 'make_ion') setIonsCreated(prev => prev + 1);
       if (currentChallenge.type === 'make_isotope') setIsotopesCreated(prev => prev + 1);
       if (valenceElectrons > 0 && shells.length > 0) setValenceIdentified(true);
-
-      sendText(
-        `[CHALLENGE_CORRECT] Student completed challenge "${currentChallenge.instruction}" correctly on attempt ${attemptRef.current}. ` +
-        `Built: ${element?.name || 'unknown'} with ${protons}p, ${neutrons}n, ${electrons}e (charge: ${charge >= 0 ? '+' : ''}${charge}). ` +
-        `Congratulate briefly and explain what they built.`,
-        { silent: true }
-      );
-
-      // Scripted path: the next challenge after a short pause, or the final submission. The workspace advances itself.
-      if (tutorOwned) return;
-      setTimeout(() => {
-        if (challengeIndex < challenges.length - 1) progress.advance();
-        else handleFinalSubmit();
-      }, 2000);
+      // The workspace advances itself.
     } else {
       SoundManager.playIncorrect();
-      // Both paths: the miss's own words, never a count or the generated hint (it states the target counts).
+      // The miss's own words, never a count or the generated hint (it states the target counts).
       const words = miss in CLASSIC_MISS_WORDS
         ? CLASSIC_MISS_WORDS[miss as ClassicAtomMiss] : ATOM_BUILD_MISS_WORDS[miss as AtomBuildMiss];
       setFeedback(words);
       setFeedbackType('error');
-
-      sendText(
-        `[CHALLENGE_INCORRECT] Student attempted "${currentChallenge.instruction}" but got it wrong (attempt ${attemptRef.current}). ` +
-        `Current atom: ${protons}p, ${neutrons}n, ${electrons}e. Issue: ${words} ` +
-        `Give a brief hint without revealing the answer.`,
-        { silent: true }
-      );
     }
   };
 
@@ -768,31 +675,32 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     resetAttempt();
   }, [resetAtom, resetAttempt, progress]);
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation. Every item declares levers.
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    const declared = atomLevers(sessionChallenge, pulledLevers);
-    if (!declared.length && !practice) { workspace.current = { ...scene }; return; }
-    const onScreen = practice ? '' : leverFacts(pulledLevers);
-    const levers = practice ? [] : declared;
+    const leverCtx: AtomLeverContext = { atom: { protons, neutrons, electrons }, kept: keptAtom };
+    const levers = practice ? [] : ATOM_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : ATOM_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : ATOM_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+    });
+    // A lever with nothing to draw yet (an empty board, no kept atom) is not offered.
+    if (!levers.length && !practice) { workspace.current = published; return; }
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        const refused = atomRefusal(id, view, keptAtom);
-        if (refused) return refused;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceFor(sessionChallenge);
+          const easier = ATOM_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item has no easier step; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: atomBuilderBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -804,10 +712,6 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // ---- Nucleus color based on element category ----
   const nucleusColor = element?.categoryColor || '#475569';
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
   // The live line on the open build (shared build layer): what the atom looks like, never a verdict or a number.
   // The task is given without the property: the line may never say whether the atom has it.
   const particleTotal = protons + neutrons + electrons;
@@ -826,14 +730,6 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       made: `red protons and grey neutrons in the middle, blue electrons on ${element ? `rings: a ${element.name.toLowerCase()} atom` : 'rings'}`
         + (keptAtom ? '; a kept atom in the corner' : ''),
     },
-  });
-
-  const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || 'atom-builder'),
-    scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
-    label: 'The atom and the particle tray',
-    solved: !!currentChallenge && (completedChallenges.has(currentChallenge.id) || solvedId === currentChallenge.id),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'atom-builder'),
   });
 
   const blocked = hasSubmitted || learnerBlocked();
@@ -876,16 +772,17 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {/* Current challenge instruction */}
         {currentChallenge && !hasSubmitted && (
           <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-            <p className="text-sm text-cyan-200 font-medium">
+            <p className="flex items-center gap-2 text-sm text-cyan-200 font-medium">
               {practice ? 'A first step' : `Challenge ${challengeIndex + 1}/${challenges.length}`}
+              {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             </p>
             <p className="text-slate-200 mt-1">{currentChallenge.instruction}</p>
           </div>
         )}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !hasSubmitted && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {!hasSubmitted && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Main workspace: Bohr model + Identity card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bohr Model Visualization */}
@@ -1050,12 +947,12 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             protons={protons}
             neutrons={neutrons}
             electrons={electrons}
-            disabled={blocked || openSolved || (tutorOwned && classicSolved)}
+            disabled={blocked || openSolved || classicSolved}
             maxProtons={trayLimit}
           />
         </div>
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (
@@ -1127,8 +1024,7 @@ const AtomBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
-const AtomBuilder = withWorkspaceController<AtomBuilderProps, ProgressOptions<AtomBuilderChallenge>, Progress>(
-  'atom-builder', AtomBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('atom-builder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const AtomBuilder = withWorkspaceOnly<AtomBuilderProps>('atom-builder', AtomBuilderSurface, props => props.data.title);
 
 export default AtomBuilder;

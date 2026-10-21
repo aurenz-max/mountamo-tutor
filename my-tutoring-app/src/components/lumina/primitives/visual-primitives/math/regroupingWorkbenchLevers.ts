@@ -2,21 +2,26 @@
  * regrouping-workbench's in-item levers (/add-support-tiers; report qa/eval-reports/regrouping-workbench-levers-2026-10-09.md).
  * The misses are what `regroupMiss` observes in the typed digits; there is no real-learner evidence.
  *
- * - every mode: `column_colors` (help) each place's column of the written problem and its answer box drawn in that
- *   place's block colour, with the place names over the columns; `operation_model` (help) a picture outside the item of
- *   what + or − does to blocks (two groups put together, or some crossed out of one group), captioned in words;
- *   `smaller_problem` (simplify) a same-mode problem one step smaller, built here.
- * - add_regroup / subtract_regroup also: `regroup_marks` (help) the session's regroup marks turned on (the count of a
+ * Declared once as a lever set (`REGROUP_LEVERS`, `bossLevers.ts`); an item's mode is its structure (`modeOf`):
+ * - every mode: `column_colors` (marks) each place's column of the written problem and its answer box drawn in that
+ *   place's block colour, with the place names over the columns; `operation_model` (meaning) a picture outside the item
+ *   of what + or − means (two groups put together, or some crossed out of one group), captioned in words;
+ *   `smaller_problem` (easier) a same-mode problem one step smaller, built here.
+ * - add_regroup / subtract_regroup also: `regroup_marks` (marks) the session's regroup marks turned on (the count of a
  *   column that needs a trade drawn red, its Carry/Borrow button the only one), offered only where the session hides
- *   them; `trade_model` (help) a picture outside the item of ten ones becoming one ten (or one ten becoming ten ones).
+ *   them and a column still needs a trade; `trade_model` (model; when it comes is the set's `support`) a worked trade
+ *   outside the item: ten ones becoming one ten (or one ten becoming ten ones).
  *
  * Leak rules (code): no lever text or scene fact carries a digit; a practice problem shares no operand and no result
  * with the learner's item, keeps the mode (a regroup mode keeps at least one trade, a no-regroup mode none), and is
  * strictly smaller (fewer columns, a shorter bottom number, or fewer trades).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { RegroupingChallenge } from './RegroupingWorkbench';
-import { digitsOf, operandsOf, regroupColumns, resultOf, type RegroupMiss, type RegroupOperation } from './regroupingWorkbenchWorkspace';
+import {
+  REGROUP_MISSES_BY_MODE, digitsOf, modeOf, operandsOf, operationOf, regroupColumns, resultOf, type RegroupMiss,
+  type RegroupMode, type RegroupOperation,
+} from './regroupingWorkbenchWorkspace';
 
 export const COLUMN_COLORS_LEVER = 'column_colors';
 export const OPERATION_MODEL_LEVER = 'operation_model';
@@ -125,71 +130,89 @@ export function simplerLeaks(parent: RegroupingChallenge, simpler: RegroupingCha
   return !smaller || s.trades > p.trades || s.w > p.w;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 export interface RegroupLeverContext {
   operation: RegroupOperation;
   fallback: Operands;
   /** The session already draws the regroup marks (the easy tier's starting position). */
   marksShown: boolean;
+  /** A column of blocks on screen still needs a trade. Absent: assumed (nothing traded yet). */
+  tradeNeeded?: boolean;
 }
 
-export function regroupLevers(c: RegroupingChallenge | null, pulled: readonly string[], ctx: RegroupLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeRegroup(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly RegroupMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const [a, b] = operandsOf(c, ctx.fallback);
-  const add = ctx.operation === 'addition';
-  const regroups = regroupColumns(ctx.operation, a, b, width(Math.max(a, b)) + 1).length > 0;
-  const tradeMisses: readonly RegroupMiss[] = add ? ['no_carry'] : ['smaller_from_larger', 'forgot_to_reduce'];
-  const simpler = smallerProblem(c, ctx.operation, ctx.fallback);
-  return [
-    lever(COLUMN_COLORS_LEVER, 'help', 'shown', ['left_blank', 'misplaced_digits', 'column_slip', 'other_answer'],
-      'The learner writes a digit in the wrong place, leaves a box empty, or slips in one column.',
-      'Draws each place\'s column of the written problem and its answer box in the colour of that place\'s blocks, with '
-        + 'the place names over the columns. No digit is added.'),
-    lever(OPERATION_MODEL_LEVER, 'help', 'both', ['wrong_operation'],
-      add ? 'The learner takes away instead of putting together.' : 'The learner puts together instead of taking away.',
-      add ? 'Shows a picture outside the item: two small groups of plain dots joined into one group, captioned put '
-          + 'together. Read the caption aloud; it uses none of the item\'s numbers.'
-        : 'Shows a picture outside the item: one group of plain dots with some crossed out, captioned take away. Read the '
-          + 'caption aloud; it uses none of the item\'s numbers.'),
-    ...(regroups && !ctx.marksShown ? [lever(REGROUP_MARKS_LEVER, 'help', 'shown', tradeMisses,
-      add ? 'The learner does not see that a column makes ten or more.' : 'The learner does not see that a top digit is too small.',
-      `Draws the block count of each column that needs a trade in red, and shows the ${add ? 'Carry' : 'Borrow'} button `
-        + 'only under that column. It writes no digit of the answer.')] : []),
-    ...(regroups ? [lever(TRADE_MODEL_LEVER, 'help', 'both', tradeMisses,
-      add ? 'The learner leaves out the carried ten.' : 'The learner takes the smaller digit from the larger, or forgets the next place is one less.',
-      add ? 'Shows a picture outside the item: a column of ten small cubes joined into one rod, captioned ten ones make one '
+const TRADE_MISSES: Record<RegroupOperation, readonly RegroupMiss[]> = {
+  addition: ['no_carry'], subtraction: ['smaller_from_larger', 'forgot_to_reduce'],
+};
+const EVERY_TRADE_MISS = [...TRADE_MISSES.addition, ...TRADE_MISSES.subtraction];
+const REGROUP_MODES: readonly RegroupMode[] = ['add_regroup', 'subtract_regroup'];
+const add = (c: RegroupingChallenge) => operationOf(c) === 'addition';
+const tradeMisses = (c: RegroupingChallenge) => TRADE_MISSES[operationOf(c)];
+const regroups = (c: RegroupingChallenge) => REGROUP_MODES.includes(modeOf(c));
+/** No lever is offered on a practice problem (the component declares nothing while one is on screen). */
+const notPractice = (c: RegroupingChallenge) => !isPracticeRegroup(c);
+
+/** The levers, declared once (`bossLevers.ts`). */
+export const REGROUP_LEVERS = leverSet<RegroupingChallenge, RegroupLeverContext>({
+  modeOf,
+  missesOf: mode => REGROUP_MISSES_BY_MODE[mode as RegroupMode] ?? [],
+  answersOf: (c, ctx) => {
+    const [a, b] = operandsOf(c, ctx.fallback);
+    return [String(resultOf(operationOf(c), a, b))];
+  },
+  support: { tier: c => c.supportTier ?? 'medium',
+    different: c => (add(c) ? 'one trade on blocks outside this problem, ten ones made into one ten'
+      : 'one trade on blocks outside this problem, one ten broken into ten ones'),
+    own: 'this problem\'s answer or a digit of it' },
+  specs: [
+    { id: COLUMN_COLORS_LEVER, type: 'marks', answers: ['left_blank', 'misplaced_digits', 'column_slip', 'other_answer'],
+      offer: notPractice,
+      when: 'The learner writes a digit in the wrong place, leaves a box empty, or slips in one column.',
+      does: 'Draws each place\'s column of the written problem and its answer box in the colour of that place\'s blocks, with '
+        + 'the place names over the columns. No digit is added.',
+      fact: 'Each column of the written problem and its answer box is drawn in its place\'s block colour, with the place '
+        + 'names over the columns.' },
+    { id: OPERATION_MODEL_LEVER, type: 'meaning', answers: ['wrong_operation'], offer: notPractice,
+      when: c => (add(c) ? 'The learner takes away instead of putting together.' : 'The learner puts together instead of taking away.'),
+      does: c => (add(c)
+        ? 'Shows a picture outside the item of what the plus sign means: two small groups of plain dots joined into one '
+          + 'group, captioned put together. Read the caption aloud; it uses none of the item\'s numbers.'
+        : 'Shows a picture outside the item of what the minus sign means: one group of plain dots with some crossed out, '
+          + 'captioned take away. Read the caption aloud; it uses none of the item\'s numbers.'),
+      fact: (_content, c) => (add(c)
+        ? 'Beside the problem is a picture outside the item: two small groups of dots joined into one, captioned put together.'
+        : 'Beside the problem is a picture outside the item: one group of dots with some crossed out, captioned take away.') },
+    { id: REGROUP_MARKS_LEVER, type: 'marks', modes: REGROUP_MODES, answers: EVERY_TRADE_MISS, answersOn: tradeMisses,
+      // Offered where the session hides the marks and a column on screen still needs a trade: once the learner has
+      // made the trades there is nothing to mark.
+      offer: (c, ctx) => notPractice(c) && !ctx.marksShown && ctx.tradeNeeded !== false,
+      when: c => (add(c) ? 'The learner does not see that a column makes ten or more.'
+        : 'The learner does not see that a top digit is too small.'),
+      does: c => `Draws the block count of each column that needs a trade in red, and shows the ${add(c) ? 'Carry' : 'Borrow'} `
+        + 'button only under that column. It writes no digit of the answer.',
+      fact: (_content, c) => `The regroup marks are on: a column that needs a trade has its count drawn red and the only ${
+        add(c) ? 'Carry' : 'Borrow'} button.` },
+    { id: TRADE_MODEL_LEVER, type: 'model', modes: REGROUP_MODES, answers: EVERY_TRADE_MISS, answersOn: tradeMisses,
+      offer: notPractice,
+      when: c => (add(c) ? 'The learner leaves out the carried ten.'
+        : 'The learner takes the smaller digit from the larger, or forgets the next place is one less.'),
+      does: c => (add(c)
+        ? 'Shows a picture outside the item: a column of ten small cubes joined into one rod, captioned ten ones make one '
           + 'ten. Read the caption aloud; it uses none of the item\'s numbers.'
         : 'Shows a picture outside the item: one rod leaving the tens and broken into ten small cubes in the ones, '
-          + 'captioned one ten makes ten ones, and the tens have one less. Read the caption aloud; it uses none of the item\'s numbers.')] : []),
-    ...(simpler ? [lever(SMALLER_LEVER, 'simplify', 'shown',
-      regroups ? [...tradeMisses, 'column_slip', 'other_answer'] : ['column_slip', 'other_answer'],
-      'This problem is too big to work through yet.',
-      `Opens an easier ${add ? 'addition' : 'subtraction'} first, ${regroups ? 'with one trade, in the ones' : 'with no trade'} `
-        + 'and fewer digits. It is not graded; the full item comes back after it.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: RegroupingChallenge | null, pulled: readonly string[], operation: RegroupOperation): string {
-  if (!c || isPracticeRegroup(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const add = operation === 'addition';
-  return [
-    on(COLUMN_COLORS_LEVER) && 'Each column of the written problem and its answer box is drawn in its place\'s block colour, '
-      + 'with the place names over the columns.',
-    on(OPERATION_MODEL_LEVER) && (add ? 'Beside the problem is a picture outside the item: two small groups of dots joined '
-      + 'into one, captioned put together.' : 'Beside the problem is a picture outside the item: one group of dots with some '
-      + 'crossed out, captioned take away.'),
-    on(REGROUP_MARKS_LEVER) && `The regroup marks are on: a column that needs a trade has its count drawn red and the only ${
-      add ? 'Carry' : 'Borrow'} button.`,
-    on(TRADE_MODEL_LEVER) && (add ? 'Beside the blocks is a picture outside the item: ten small cubes joined into one rod, '
-      + 'captioned ten ones make one ten.' : 'Beside the blocks is a picture outside the item: one rod broken into ten small '
-      + 'cubes, captioned one ten makes ten ones, and the tens have one less.'),
-  ].filter((s): s is string => !!s).join(' ');
-}
+          + 'captioned one ten makes ten ones, and the tens have one less. Read the caption aloud; it uses none of the item\'s numbers.'),
+      fact: (_content, c) => (add(c)
+        ? 'Beside the blocks is a picture outside the item: ten small cubes joined into one rod, captioned ten ones make one ten.'
+        : 'Beside the blocks is a picture outside the item: one rod broken into ten small cubes, captioned one ten makes ten '
+          + 'ones, and the tens have one less.') },
+    { id: SMALLER_LEVER, type: 'easier', answers: [...EVERY_TRADE_MISS, 'column_slip', 'other_answer'],
+      answersOn: c => (regroups(c) ? [...tradeMisses(c), 'column_slip', 'other_answer'] : ['column_slip', 'other_answer']),
+      when: 'This problem is too big to work through yet.',
+      does: c => `Opens an easier ${add(c) ? 'addition' : 'subtraction'} first, ${regroups(c) ? 'with one trade, in the ones' : 'with no trade'} `
+        + 'and fewer digits. It is not graded; the full item comes back after it.',
+      content: (c, ctx) => smallerProblem(c, ctx.operation, ctx.fallback) },
+  ],
+});
 
 /** Leak rule for the help levers' words: no digit at all (the answer is written in digits). */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

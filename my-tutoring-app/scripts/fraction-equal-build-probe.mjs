@@ -31,7 +31,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateFractionCircles } = await loader.import('/src/components/lumina/service/math/gemini-fraction-circles.ts');
   const eq = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionEqualBuild.ts');
-  const { validateFractionCirclesData } = await loader.import('/src/components/lumina/components/live-activity/adapters/fractionCirclesLive.ts');
+  const { validateFractionCirclesData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionCircles.boss.ts');
   const { fractionCirclesOracle } = await loader.import('/src/components/lumina/service/qa/oracles/fraction-circles.ts').catch(() => ({}));
   const cases = [
     ['pinned-3-5', 'build_equal', '4', 'Equivalent fractions', 'Make equivalent fractions with circle models', 'medium'],

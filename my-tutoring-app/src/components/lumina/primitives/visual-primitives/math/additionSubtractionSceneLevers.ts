@@ -2,32 +2,29 @@
  * The in-item levers on an addition-subtraction-scene item (`/add-support-tiers`, report
  * qa/eval-reports/addition-subtraction-scene-levers-2026-10-08.md). No real-learner evidence: the misses are what
  * `addSubMiss` (pictures, number sentences) and `additionSubtractionSpokenMisses` (spoken numbers) observe.
- * Pure: the component draws from these, the workspace publishes them, the tests hold each leak rule.
+ * Pure: one lever set (`ADD_SUB_LEVERS`) the boss and the component read; the component draws a pulled lever from
+ * the layout helpers here; the tests hold each leak rule.
  *
- * - `story_groups` (help, every mode): the objects there at the start move into a dashed pen on the left; any that
+ * - `story_groups` (layout, every mode): the objects there at the start move into a dashed pen on the left; any that
  *   join sit to its right; any that go away stay as faded outlines inside it. Leak rule (`groupsLeak`): never on a
  *   solve-story whose unknown is the change or the start, where the joined or departed group IS the answer as a
  *   group to count; never when nothing was there at the start.
- * - `sentence_frame` (help, build_equation): the tray is drawn as five boxes, square for a number and round for a
+ * - `sentence_frame` (marks, build_equation): the tray is drawn as five boxes, square for a number and round for a
  *   sign; the learner's tiles fill them in order and nothing else is put in a box.
- * - `smaller_story` (simplify, every mode): an ungraded practice story of the same mode and operation with one
+ * - `smaller_story` (easier, every mode): an ungraded practice story of the same mode and operation with one
  *   joining or going away (and, on a solve-story asking for the change or the start, asking for the end instead).
  *   Built by `smallerStory`; id `<item>~simpler`; never the item's numbers, its hidden answer, or another item's
  *   story (`practiceLeaks`). Not offered on an item already the plainest shape.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { numberWordFor } from './countingBoardScript';
-import { publicValuesFor, storyLeaksAnswer, type AddSubSceneItem } from './additionSubtractionSceneScript';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { numberWordFor } from './countingBoardDomain';
+import { publicValuesFor, storyLeaksAnswer, type AddSubSceneItem } from './additionSubtractionSceneDomain';
+import { ADD_SUB_MISSES } from './additionSubtractionScene.card';
 
 export const GROUPS_LEVER = 'story_groups';
 export const FRAME_LEVER = 'sentence_frame';
 export const SIMPLER_LEVER = 'smaller_story';
 export const PRACTICE_SUFFIX = '~simpler';
-
-/** A story picture's misses: what `addSubMiss` names on a built picture and `additionSubtractionSpokenMisses` on a
- *  spoken number. One list for both, since act_out is a picture at K and a spoken number at Grade 1. */
-const STORY_MISSES = ['no_change', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more',
-  'said_start', 'said_change', 'said_result', 'other_operation'];
 
 const enacted = (item: AddSubSceneItem) =>
   item.kind === 'create-story' || (item.kind === 'act-out' && (item.band === 'K' || item.operation === 'subtraction'));
@@ -149,35 +146,51 @@ export function smallerStory(item: AddSubSceneItem, ctx: StoryContext): AddSubSc
 export const practiceParent = (id: string | null | undefined, items: readonly AddSubSceneItem[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? items.find(i => `${i.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-// ── the levers ─────────────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls. */
-export function addSubLevers(item: AddSubSceneItem | null, pulled: readonly string[], ctx: StoryContext): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const equation = item.kind === 'build-equation';
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string) =>
-    levers.push({ id, kind, carrier: 'shown', when, does, pulled: pulled.includes(id), answers });
-  if (groupsOffered(item)) lever(GROUPS_LEVER, 'help',
-    equation ? ['false_equation', 'other_operation', 'other_numbers'] : STORY_MISSES,
-    'The learner loses which objects were there at the start, which joined and which went away.',
-    (enacted(item) && seededCount(item) === 0
-      ? 'Draws an empty dashed pen on the left, sized for the first number of the number sentence: the first objects '
-        + 'brought in go inside it, any more go to its right.'
-      : 'Moves the objects there at the start into a dashed pen on the left; any that join sit to the right of it, any '
-        + 'that go away stay as faded outlines inside it.')
-      + ' You may point to the pen and the groups; never count them for the learner or say the answer.');
-  if (equation) lever(FRAME_LEVER, 'help', ['unfinished_equation'],
-    'The learner\'s number sentence is unfinished or out of shape.',
-    'Draws the tray as five boxes, square for a number and round for a sign: number, sign, number, sign, number. '
-      + 'The learner\'s tiles fill them in order; nothing is put in a box for them.');
-  if (smallerStory(item, ctx)) lever(SIMPLER_LEVER, 'simplify',
-    equation ? ['unfinished_equation', 'false_equation', 'other_operation'] : STORY_MISSES,
-    'The learner cannot do this story even with the help on screen: a smaller one first.',
-    `Opens an ungraded practice story with one ${item.operation === 'addition' ? 'joining' : 'going away'}`
-      + (groupsLeak(item) ? ' that asks how many there are at the end' : ' and smaller numbers')
-      + '; then this story comes back blank.');
-  return levers;
-}
+const STORY_MODES = ['act_out', 'solve_story', 'create_story'];
+const EQUATION = ['build_equation'];
+const MODE_OF: Record<AddSubSceneItem['kind'], string> = {
+  'act-out': 'act_out', 'build-equation': 'build_equation', 'solve-story': 'solve_story', 'create-story': 'create_story',
+};
+
+const groupsDoes = (item: AddSubSceneItem) => (enacted(item) && seededCount(item) === 0
+  ? 'Draws an empty dashed pen on the left, sized for the first number of the number sentence: the first objects '
+    + 'brought in go inside it, any more go to its right.'
+  : 'Moves the objects there at the start into a dashed pen on the left; any that join sit to the right of it, any '
+    + 'that go away stay as faded outlines inside it.')
+  + ' You may point to the pen and the groups; never count them for the learner or say the answer.';
+const GROUPS_WHEN = 'The learner loses which objects were there at the start, which joined and which went away.';
+
+const smallerDoes = (item: AddSubSceneItem) =>
+  `Opens an ungraded practice story with one ${item.operation === 'addition' ? 'joining' : 'going away'}`
+    + (groupsLeak(item) ? ' that asks how many there are at the end' : ' and smaller numbers')
+    + '; then this story comes back blank.';
+const SMALLER_WHEN = 'The learner cannot do this story even with the help on screen: a smaller one first.';
+
+const groups = { id: GROUPS_LEVER, type: 'layout', when: GROUPS_WHEN, does: groupsDoes,
+  offer: (item: AddSubSceneItem) => groupsOffered(item), fact: (_: unknown, item: AddSubSceneItem) => groupsFact(item) } as const;
+const smaller = { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', when: SMALLER_WHEN, does: smallerDoes,
+  content: (item: AddSubSceneItem, ctx: StoryContext) => smallerStory(item, ctx) } as const;
+
+/**
+ * The levers, once, by type (`bossLevers.ts`). A story mode's levers answer every miss of the mode; on a number
+ * sentence the pen answers the faults of a finished sentence and the frame an unfinished one.
+ */
+export const ADD_SUB_LEVERS = leverSet<AddSubSceneItem, StoryContext>({
+  modeOf: item => MODE_OF[item.kind],
+  missesOf: mode => ADD_SUB_MISSES[mode as keyof typeof ADD_SUB_MISSES] ?? [],
+  specs: [
+    { ...groups, modes: STORY_MODES, answers: 'all' },
+    { ...groups, modes: EQUATION, answers: ['false_equation', 'other_operation', 'other_numbers'] },
+    { id: FRAME_LEVER, type: 'marks', modes: EQUATION, answers: ['unfinished_equation'],
+      when: "The learner's number sentence is unfinished or out of shape.",
+      does: 'Draws the tray as five boxes, square for a number and round for a sign: number, sign, number, sign, number. '
+        + "The learner's tiles fill them in order; nothing is put in a box for them.",
+      fact: FRAME_FACT },
+    { ...smaller, modes: STORY_MODES, answers: 'all' },
+    { ...smaller, modes: EQUATION, answers: ['unfinished_equation', 'false_equation', 'other_operation'] },
+  ],
+});
 
 export const PRACTICE_NOTE = 'An easier practice story, ungraded; the full story comes back after it.';

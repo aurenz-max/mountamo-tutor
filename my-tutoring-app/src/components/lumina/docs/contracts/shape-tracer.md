@@ -3,7 +3,7 @@
 - **Derived:** 2026-10-09 (W1 workspace binding, C11). Not a full `/primitive-contract` census: it records what the
   binding relies on and the requirements already in the code.
 - **Component:** `primitives/visual-primitives/math/ShapeTracer.tsx` · **Domain:** `shapeTracerWorkspace.ts` ·
-  **Generator:** `service/math/gemini-shape-tracer.ts` · **Adapter:** `components/live-activity/adapters/shapeTracerLive.ts`
+  **Generator:** `service/math/gemini-shape-tracer.ts` · **Boss:** `shapeTracer.card.ts` + `shapeTracer.boss.ts` (levers: `SHAPE_TRACER_LEVERS`)
 - **Modes (4):** `trace`, `connect_dots`, `complete`, `draw_from_description`.
 
 ## Requirements
@@ -49,3 +49,4 @@
 
 ## History
 - 2026-10-09 — derived at the W1 binding; R3 fixes found while saving payloads. R5 levers the same day.
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss` (`shapeTracer.boss.ts`, validate moved from the adapter, `current` rebuilds a practice item), levers as one lever set (outline, numbers, glow, fade and rings marks; number strip a legend; side bars a layout offered once two corners are placed instead of refused on pull; `fade_joined` now offered from the start, so a pull before any dot is joined turns dots into ticks as they are joined; simpler_item easier, one spec per mode), workspace-only export; the scripted path (`useLuminaAI` cues, tier reveal clauses, Next Challenge, scripted submit), the hand-wired Pip and its pose file and surface test, the adapter, and the catalog guidance/tutoring prose deleted; scene `constraints` and per-mode `howToAnswer` dropped for the card's `moves` (a free trace keeps its any-corner fact). R4's `withWorkspaceController` clause is now `withWorkspaceOnly`; R1-R5 otherwise unchanged.

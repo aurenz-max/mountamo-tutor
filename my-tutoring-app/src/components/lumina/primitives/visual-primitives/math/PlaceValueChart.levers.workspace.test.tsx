@@ -15,7 +15,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromChallenges } from './placeValueScript';
+import { itemsFromChallenges } from './placeValueDomain';
 import { plainNumber } from './placeValueLevers';
 
 const buildItem = (targetNumber: number) => itemsFromChallenges([{ id: 'p1', targetNumber, highlightedDigitPlace: 0, minPlace: 0,

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * histogram levers on the teaching workspace: a pull changes the screen and the scene fact in the same commit, the
- * next attempt records it, a refused pull changes nothing, and the easier graph is ungraded practice with the full
+ * next attempt records it, a repeat pull changes nothing, and the easier graph is ungraded practice with the full
  * item back after it.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -72,18 +72,20 @@ it('identify_shape: the outline draws in the same commit; the next attempt recor
   expect(attempts(h).at(-1)).toMatchObject({ itemId: 's1', correct: true, levers: ['outline_tops', 'tail_model'] });
 });
 
-it('find_modal_bin: the level line sits at the tapped bar, never at the tallest; refused with nothing tapped', () => {
+it('find_modal_bin: the level line sits at the tapped bar, never at the tallest; pulled before a tap it waits for one', () => {
   const h = mount('find_modal_bin', modal);
-  const before = snapshot(h);
-  expect(h.dispatch('pull_lever', { lever: 'level_line' }).status).toBe('blocked');
-  expect(snapshot(h)).toEqual(before);
-  h.touch('bar-3'); check(h);
-  expect(attempts(h).at(-1)).toMatchObject({ miss: 'neighbor_bar' });
+  expect(levers(h)).toEqual([['level_line', false], ['simpler_graph', false]]);
   expect(h.dispatch('pull_lever', { lever: 'level_line' }).status).toBe('committed');
+  expect(q(h, '[data-lever="level-line"]')).toHaveLength(0);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/whichever bar the learner taps/);
+  h.touch('bar-3');
   const line = q(h, '[data-lever="level-line"]')[0];
   const top3 = q(h, 'rect[data-pip-object="bar-3"]')[0], top2 = q(h, 'rect[data-pip-object="bar-2"]')[0];
   expect(line.getAttribute('y1')).toBe(top3.getAttribute('y'));
   expect(Number(top2.getAttribute('y'))).toBeLessThan(Number(line.getAttribute('y1')));
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/top of the bar the learner tapped/);
+  check(h);
+  expect(attempts(h).at(-1)).toMatchObject({ miss: 'neighbor_bar', levers: ['level_line'] });
 });
 
 it('read_frequency: fade, axis names and count marks draw without writing the count', () => {

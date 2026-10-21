@@ -32,7 +32,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateSyllableClapper } = await loader.import('/src/components/lumina/service/literacy/gemini-syllable-clapper.ts');
-  const { validateSyllableClapperData } = await loader.import('/src/components/lumina/components/live-activity/adapters/syllableClapperLive.ts');
+  const { validateSyllableClapperData } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/syllableClapperDomain.ts');
   const { syllableClapperOracle } = await loader.import('/src/components/lumina/service/qa/oracles/syllable-clapper.ts');
   const cases = [
     ['pinned-K', 'build_parts', 'K', 'Syllables in animal words', 'Make words with two or three parts'],

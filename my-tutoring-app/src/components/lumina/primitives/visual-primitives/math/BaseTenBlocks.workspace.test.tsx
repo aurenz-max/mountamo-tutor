@@ -133,12 +133,12 @@ it('a spoken step publishes the number it asks for; the trade, build and operate
   const read = itemsFromChallenges(DECKS.read_blocks, 'read_blocks');
   let h = mount('read_blocks');
   expect(h.state().task!.task).toBe(read[0].actionContract.instruction);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four" \(also accept "4"\)/);
   // The counts are the answers: the scene names the asked size and no count or total.
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/47|\b4\b|forty/);
   cleanup();
   h = mount('regroup');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('14');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"fourteen" \(also accept "14"\)/);
   h.say('fourteen'); h.feedback('correct', 'advance');
   expect(h.state().task!.task).toBe('Now make that trade. Tap one ten-stick to break it apart.');
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
@@ -173,9 +173,9 @@ it('read_blocks: a wrong count is retried, the worth step is judged against the 
   seam.evaluationContext = { lesson: 'test' };
   const h = mount('read_blocks');
   h.say('forty'); h.feedback('incorrect', 'retry');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four" \(also accept "4"\)/);
   h.say('four'); h.feedback('correct', 'advance');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('40');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"forty" \(also accept "40"\)/);
   expect(columnOf('tens').getAttribute('data-highlighted')).toBe('true');
   h.say('forty'); h.feedback('correct', 'advance');
   expect(h.state().status).not.toBe('completed');
@@ -193,7 +193,7 @@ it('read_blocks: a wrong count is retried, the worth step is judged against the 
   expect(work.problem.challenges).toEqual(DECKS.read_blocks);
   expect(evidence.firstResponseScore).toBe(50);
   expect(evidence.phases).toHaveLength(1);
-  expect(evidence.phases[0]).toMatchObject({ expected: '4' });
+  expect(evidence.phases[0].expected).toMatch(/^"four" \(also accept "4"\)/);
   expect(evidence.phases[0].observed).toContain('forty');
   expect(work.diagnosisEvidence).toEqual(evidence);
 });

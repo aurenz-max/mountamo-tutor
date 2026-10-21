@@ -13,9 +13,10 @@
  * left with a pressure per unit of height; a part blows over when the wind's turning push about its downwind edge is
  * more than its weight's pull back (`windLimit`). Weight is area, so a piece's weight is where its size says it is.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { TowerMiss, TowerMode } from './towerStacker.card';
 
-export type TowerMode = 'build_tall' | 'build_few' | 'build_windproof';
+export { TOWER_MISSES, type TowerMiss, type TowerMode } from './towerStacker.card';
 export const TOWER_MODES: readonly TowerMode[] = ['build_tall', 'build_few', 'build_windproof'];
 
 export type PieceKind = 'small' | 'block' | 'big' | 'beam';
@@ -166,20 +167,6 @@ export function blownCut(pieces: readonly TowerPiece[], pressure: number): Tower
 
 // ── The check ────────────────────────────────────────────────────────────────
 
-/**
- * What a wrong tower shows (`TeachingAttempt.miss`), in the order the activity tests it:
- * - `tips_over`: a part of the tower falls under its own weight (its balance point is past what holds it up);
- * - `too_short`: it stands, but its top is below the green line;
- * - `too_many_pieces` (build_few): it stands and reaches the line with more pieces than the ask allows;
- * - `blown_over` (build_windproof): it stands and reaches the line, and the wind blows a part of it over.
- */
-export type TowerMiss = 'tips_over' | 'too_short' | 'too_many_pieces' | 'blown_over';
-export const TOWER_MISSES: Record<TowerMode, readonly TowerMiss[]> = {
-  build_tall: ['tips_over', 'too_short'],
-  build_few: ['tips_over', 'too_short', 'too_many_pieces'],
-  build_windproof: ['tips_over', 'too_short', 'blown_over'],
-};
-
 export function towerMiss(c: TowerChallenge, pieces: readonly TowerPiece[]): TowerMiss | undefined {
   if (pieces.length && tippingCut(pieces)) return 'tips_over';
   if (towerHeight(pieces) < c.targetHeight) return 'too_short';
@@ -279,8 +266,6 @@ export function towerChallenges(modes: readonly TowerMode[], band: TowerBand, co
 
 // ── Assignment, work, scene ──────────────────────────────────────────────────
 
-export const workspaceAssignment = (c: TowerChallenge): TeachingAssignment => ({ id: c.id, task: c.instruction, response: 'gesture' });
-
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** The learner's tower in their own terms: which pieces, how tall, how wide at the bottom. Never a verdict. */
@@ -294,20 +279,20 @@ export function describeTower(pieces: readonly TowerPiece[]): string {
   return `${plural(pieces.length, 'piece')}: ${counts.join(', ')}. ${towerHeight(pieces)} tall, ${baseWidth(pieces)} wide at the bottom`;
 }
 
-/** What is drawn and asked. No balance point, wind limit or verdict is published; the tower's size is the learner's. */
-export function workspaceScene(c: TowerChallenge, pieces: readonly TowerPiece[]): WorkspaceScene {
+/**
+ * What is drawn and asked. No balance point, wind limit or verdict is published; the tower's size is the learner's.
+ * How the learner builds and hands it in is the card's `moves`.
+ */
+export function workspaceScene(c: TowerChallenge, pieces: readonly TowerPiece[]): SceneOf {
   return { objects: [], facts: {
     kind: c.type,
     scene: 'an empty building area on the ground with a green goal line across it'
       + (c.type === 'build_windproof' ? ' and wind arrows blowing from the left' : '')
-      + '; the learner picks a piece from the tray, may turn it, and taps a spot to drop it; it falls until it rests on '
-      + 'what is under it. Tapping a piece with nothing on it takes it off',
+      + '; a dropped piece falls until it rests on what is under it',
     piecesInTray: PIECE_KINDS.map(k => `${PIECES[k].label.toLowerCase()} (${PIECES[k].width} wide, ${PIECES[k].height} tall)`).join(', '),
     // The made tower as numbers, so the shared work history records a revision (`piecesPlaced 0 -> 9 -> 7`).
     piecesPlaced: pieces.length, towerHeight: towerHeight(pieces), bottomWidth: baseWidth(pieces),
     learnerWork: describeTower(pieces),
-    constraints: 'The learner builds the tower and presses "I\'m done!"; the activity tests whether every part stands'
-      + (c.type === 'build_windproof' ? ' and whether the wind blows any part over' : '') + '. You cannot place, turn or remove a piece.',
   } };
 }
 

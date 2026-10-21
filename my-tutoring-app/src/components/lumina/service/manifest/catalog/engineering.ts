@@ -5,19 +5,18 @@
  */
 
 import { ComponentDefinition } from '../../../types';
-import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
-import type { RampMiss, RampSpokenMiss } from '../../../primitives/visual-primitives/engineering/rampLabWorkspace';
-import { TRAIN_YARD_MISSES, type TrainYardMiss } from '../../../primitives/visual-primitives/engineering/trainYardWorkspace';
-import { TOWER_MISSES, type TowerMiss } from '../../../primitives/visual-primitives/engineering/towerWorkspace';
-import { GEAR_MISSES, type GearMiss } from '../../../primitives/visual-primitives/engineering/gearWorkspace';
-import { FIND_PART_MISSES, FLIGHT_PLAN_MISSES, type AirplaneMiss } from '../../../primitives/visual-primitives/engineering/airplaneModel';
+import { rampLabCard } from '../../../primitives/visual-primitives/engineering/rampLab.card';
+import { trainYardCard } from '../../../primitives/visual-primitives/engineering/trainYard.card';
+import { towerStackerCard } from '../../../primitives/visual-primitives/engineering/towerStacker.card';
+import { gearTrainBuilderCard } from '../../../primitives/visual-primitives/engineering/gearTrainBuilder.card';
+import { airplaneDioramaCard } from '../../../primitives/visual-primitives/engineering/airplaneDiorama.card';
+import { constructionSiteDioramaCard } from '../../../primitives/visual-primitives/engineering/constructionSiteDiorama.card';
 import { flightForcesExplorerCard } from '../../../primitives/visual-primitives/engineering/flightForcesExplorer.card';
 import { constructionSequencePlannerCard } from '../../../primitives/visual-primitives/engineering/constructionSequencePlanner.card';
 import { propulsionLabCard } from '../../../primitives/visual-primitives/engineering/propulsionLab.card';
 import { transportChallengeCard } from '../../../primitives/visual-primitives/engineering/transportChallenge.card';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { vehicleComparisonLabCard } from '../../../primitives/visual-primitives/engineering/vehicleComparisonLab.card';
-import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   {
@@ -64,7 +63,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     description: 'Interactive inclined-plane simulation and controlled-investigation bench. Students compare ramp conditions, measure the least push that moves a load, and design within a force budget. Grades 3-5 can plan a fair test by changing only ramp angle, surface, or box mass while holding other conditions constant; record a prediction; run two trials; and explain aloud how the changed condition affected measured push using both trial records. Code owns the physics and observations; the live tutor judges spoken evidence-based comparisons. Earlier comparison and design modes support K-5 simple machines learning.',
     constraints: 'Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects, fair tests, and constraint-based engineering design. compare_conditions isolates angle, surface, or rolling/sliding in matched setups. find_threshold measures the least sufficient push. design_with_budget holds platform height fixed while students find the steepest feasible ramp. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.',
     affordances: { representation: 'concrete', answers: ['manipulate', 'tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
-    audioInput: JUDGED_AUDIO_INPUT,
+    ...bossEntry(rampLabCard),
     evalModes: [
       {
         evalMode: 'compare_conditions',
@@ -108,44 +107,6 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The lab checks the comparison, threshold, design and fair-test answers itself: the learner picks or sets '
-        + 'something and presses the check button, and you are not told the answer. Never say which setup needs '
-        + 'less push, the smallest working push, the steepest workable angle, or which setting to change before the '
-        + 'learner has checked. A fair plan changes only the requested condition; the lab locks it, then the '
-        + 'learner predicts and runs both trials. On explain the learner says aloud what changing the condition did '
-        + 'to the push, using both trial results; a true comparison in their own words counts, and numbers are '
-        + 'optional. A reversed comparison, one measurement alone, a slogan, or the question echoed back does not '
-        + 'count. Never give the conclusion before an attempt. You cannot move sliders, pick setups or run trials.',
-      // Every mode publishes levers (`rampLabLevers.ts`).
-      levers: true,
-      // The lab's own checks (`rampMiss`); explain_from_trials is spoken (`rampSpokenMisses`).
-      misses: missLists<RampMiss | RampSpokenMiss>({
-        compare_conditions: ['harder_setup', 'same_for_different', 'one_for_same'],
-        find_threshold: ['load_did_not_move', 'more_than_minimum'],
-        design_with_budget: ['over_budget', 'not_steepest'],
-        plan_fair_test: ['nothing_changed', 'other_condition', 'extra_condition'],
-        explain_from_trials: ['reversed_comparison', 'said_same', 'one_setup'],
-      }),
-    },
-    tutoring: {
-      taskDescription: 'Ramp investigation: {{evalMode}}. Current phase: {{phase}}. Question: {{question}}. Recorded trials: {{trialCount}}. Support: {{supportTier}}. Latest feedback: {{feedback}}. During explanation the active RAMP_EVIDENCE_ITEM contract owns every spoken line and verdict. During planning, guide comparison of settings without choosing them for the learner.',
-      contextKeys: ['evalMode', 'phase', 'question', 'trialCount', 'supportTier', 'feedback'],
-      scaffoldingLevels: {
-        level1: 'What is your investigation trying to find out?',
-        level2: 'Compare the settings in A and B. Which conditions stayed the same?',
-        level3: 'A fair comparison changes one condition. After both trials, connect that condition to the two recorded results.',
-      },
-      commonStruggles: [
-        { pattern: 'The plan changes more than one condition', response: 'Ask the learner to compare every setting with the reference setup. Do not name the setting to change.' },
-        { pattern: 'A prediction disagrees with the trial results', response: 'Explain that predictions can change with evidence. Do not treat a wrong prediction as a failed fair-test plan.' },
-        { pattern: 'The learner gives a fluent explanation without using the trials', response: 'During the spoken loop follow only the active judging contract. Outside it, ask what the two records show.' },
-      ],
-      aiDirectives: [
-        { title: 'Investigation evidence boundaries', instruction: 'Never state which setup needs less push or supply force thresholds before trials. Never choose a fair setup for the learner. RAMP_PLAN_RETRY supplies a line to speak. During RAMP_EVIDENCE_ITEM use only its scripted ask and two verdict branches; judge the audio on meaning against the recorded trials. Every learner answer, including repeated answers and off-task talk, must receive a verdict beginning exactly Yes, or My turn:. Do not omit that opening or switch to general conversation. A true qualitative comparison of A with B uses both records; do not require spoken numbers. Never speak private metadata. RAMP_EVIDENCE_HEAR repeats only the question. The verdict owns completion; do not invent another question.' },
-      ],
-    },
   },
   {
     id: 'wheel-axle-explorer',
@@ -160,26 +121,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for grades K-5. Code builds every train target (way, speed, ratio, number of gears) from the lesson grade; the manifest must NOT supply gears or ratios. K-1: which way the last gear turns, and faster or slower. Grades 2-3: way and faster or slower. Grades 4-5: faster or slower with a way, and exact ratios (2, 3, 4 times; once per 2 or 3 turns).',
     affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 6 },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The track starts empty. The learner taps a gear size to add a gear to the end of the train, where it meshes '
-        + 'with the gear before it, and taps a gear to take it out; the first gear has the crank. They press I’m done! and the '
-        + 'activity turns the crank and checks the last gear: which way it turns, and whether it turns faster or slower, or '
-        + 'the asked number of times, for each turn of the first. Many trains pass. Never say which way a gear turns, how fast '
-        + 'it turns, which gear or size to add or take out, or that each gear reverses the way or that a smaller gear turns '
-        + 'faster: that is what they are finding out. Asking which way the gear next to the crank turns, or what they think '
-        + 'the last gear will do, is teaching. You cannot add, remove or turn a gear.',
-      // Every mode publishes levers (`gearLevers.ts`).
-      levers: true,
-      // The activity's own check (`gearMiss`).
-      misses: missLists<GearMiss>({
-        build_direction: [...GEAR_MISSES.build_direction],
-        build_speed: [...GEAR_MISSES.build_speed],
-        build_ratio: [...GEAR_MISSES.build_ratio],
-      }),
-      // `too_few_gears` has no lever: the ask states the number of gears.
-      unanswered: { build_direction: ['too_few_gears'], build_speed: ['too_few_gears'], build_ratio: ['too_few_gears'] },
-    },
+    ...bossEntry(gearTrainBuilderCard),
     evalModes: [
       {
         evalMode: 'build_direction',
@@ -226,26 +168,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for grades K-5. Code builds every tower (heights, piece limits, wind) from the lesson grade; the manifest must NOT supply heights, pieces or wind. K-1: reach the line and stand. Grades 2-3: add the few-pieces and windproof towers. Grades 4-5: few pieces and windproof.',
     affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 7 },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The building area starts empty. The learner picks a piece from the tray, may turn it on end, and taps where '
-        + 'to drop it; it falls until it rests on what is under it. They press I’m done! and the activity tests the tower: '
-        + 'whether every part stands and reaches the green line, on few-pieces towers how many pieces it uses, and on windproof '
-        + 'towers whether the wind blows a part over. Many towers pass. Never tell the learner where to put a piece or which '
-        + 'piece to use, and never say the tower needs a wider bottom, more weight lower down or its weight over the middle: '
-        + 'that is what they are finding out. Asking what happened to the part that fell, or what is holding a part up, is '
-        + 'teaching. You cannot place, turn or remove a piece.',
-      // Every mode publishes levers (`towerLevers.ts`).
-      levers: true,
-      // The activity's own check (`towerMiss`).
-      misses: missLists<TowerMiss>({
-        build_tall: [...TOWER_MISSES.build_tall],
-        build_few: [...TOWER_MISSES.build_few],
-        build_windproof: [...TOWER_MISSES.build_windproof],
-      }),
-      // `too_short` has no lever: the green line is on screen.
-      unanswered: { build_tall: ['too_short'], build_few: ['too_short'], build_windproof: ['too_short'] },
-    },
+    ...bossEntry(towerStackerCard),
     evalModes: [
       {
         evalMode: 'build_tall',
@@ -776,33 +699,13 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The train run is the check: the learner presses Highball and the train loads, climbs the hill, and '
-        + 'arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load '
-        + 'with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is '
-        + 'part of the task: the yard shows how each car is built, never what it carries, so never name the car for '
-        + 'this cargo or describe how that car is built. The tutor '
-        + 'may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a '
-        + 'little to roll) and help the learner use a run\'s numbers, but never says how many cars or engines this job '
-        + 'needs. In some jobs the yard sets part of the train (the scene says which part is the learner\'s); help '
-        + 'only with that part.',
-      // Every miss is answered by a lever (`trainYardLevers.ts`).
-      levers: true,
-      // The run's own check (`trainYardMiss`).
-      misses: missLists<TrainYardMiss>({
-        match_car: ['wrong_car'],
-        enough_cars: ['too_few_cars', 'extra_cars'],
-        enough_pull: ['stalled', 'extra_engines'],
-        build_train: [...TRAIN_YARD_MISSES],
-      }),
-    },
+    ...bossEntry(trainYardCard),
   },
   {
     id: 'construction-site-diorama',
     description: 'A 3D construction site with an excavator, a pile of dirt, sand, gravel or rocks, and a dump truck. Students work the excavator: tap the pile to dig a scoop, tap the truck to dump it, and each scoop lands as its own mound in the truck bed. They load the truck with the right amount and send it off to a job. Younger students load a stated number of scoops (counting objects to 7, one-to-one counting while doing); older students read the truck\'s weight limit and what one scoop weighs, and work out how many scoops fill it without going over (multiplication and division, weight and capacity). Perfect for lessons on construction machines, excavators and dump trucks, how machines help people work, counting, and measurement of weight. ESSENTIAL for K-5 engineering, construction and counting.',
     constraints: 'Grades K-5. Each session is 5 loads; code picks every number and writes every ask. K-2 asks name the number of scoops (2-7); 3-5 asks give the truck limit and the weight of one scoop (3-8 scoops). The manifest must NOT supply numbers.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['apply'], minutes: 6 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['build'], role: ['apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'load_truck',
@@ -814,26 +717,17 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Sending the truck is the check: the learner taps the pile to dig a scoop and taps the truck to dump it, then presses '
-        + 'Send. Each scoop is its own mound in the truck bed, and no number on screen counts them. On a scoops ask, counting is the '
-        + 'task: never say how many scoops are in the truck or how many more are needed; ask the learner to count the mounds, and '
-        + 'count along only after the learner starts. On a tons ask (a weight limit and the weight of one scoop), working out the '
-        + 'number of scoops is the task: never say it, and never add up the weight in the bed for the learner while loading; '
-        + 'ask what one scoop weighs and how the learner will know when the truck is full. With an empty bucket a tap on the '
-        + 'truck takes a scoop back out, so a learner who loaded too many can fix it. After Send the screen says what was in the '
-        + 'truck (and on a tons ask what the scale read); the tutor may talk about that.',
-    },
+    ...bossEntry(constructionSiteDioramaCard),
   },
   {
     id: 'airplane-diorama',
     description: 'A 3D passenger jet on a display stand that students turn, zoom and tap. Students find the parts of an airplane (wings, engines, tail, cockpit, landing gear, cabin, nose) and tap them on the jet; each part they find shows what it does (the engines spin up, the flaps slide down, the rudder moves, the gear bounces, the cockpit and cabin open to show the seats inside, the radar sweeps ahead of the nose), and the jet takes off when every part is found. Younger students find parts by name; older students find the part that does a job (lifts the plane, pushes it forward, keeps it steady). Students also plan flights: a trip between two airports on a map, where they load enough fuel tanks for the distance plus a spare and fly it (K-2 count the hops on the map; 3-5 divide the distance by how far one tank flies). Perfect for lessons on airplanes, parts of a machine and what each part does, flight, transportation, how vehicles work, and measurement or division word problems about distance and fuel. ESSENTIAL for K-5 engineering and transportation.',
     constraints: 'Grades K-5. Each session asks for 5 different parts of the jet. The manifest may name the parts the lesson is about in the intent ("the wings and the engines"); it must NOT write the asks, which code writes. K-2 asks name the part; 3-5 asks name only its job. A flight-plan session is 4 trips; code sets every distance and fuel rule.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'find_part',
+        affordances: { answers: ['tap'] },
         label: 'Find the Part',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -842,6 +736,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'flight_plan',
+        affordances: { answers: ['build'] },
         label: 'Plan the Flight',
         beta: 0.5,
         scaffoldingMode: 3,
@@ -850,20 +745,6 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Two kinds of item; the scene says which. FIND A PART: a tap on the jet is the check: the learner turns the 3D jet and taps the part the ask names. Finding the part is '
-        + 'the task, so never say where the asked part is on the jet (front, back, under, on top, beside another part) and never '
-        + 'point toward it. When the ask gives only a job ("the part that pushes the plane forward"), never say the part\'s name '
-        + 'either: matching the job to the part is the task. After a wrong tap the screen names the part that was tapped; the '
-        + 'tutor may say what that part does and ask the learner to look again. The learner can drag to turn the jet and zoom in. '
-        + 'After the right tap that part shows what it does; the tutor may talk about it. '
-        + 'PLAN A FLIGHT: the learner loads fuel tanks and presses Fly, and the flight is the check. The trip, the map and the '
-        + 'fuel rule (how far one tank flies, plus one spare tank) are on screen and the tutor may read them out and explain '
-        + 'them. Working out the number of tanks is the task, so never say how many tanks the trip needs, never count the hops '
-        + 'for the learner, and never do the division or say its result. The tutor may ask how far the trip is, how far one '
-        + 'tank goes, and how to use a flight\'s result (how far it got, how many tanks were left).',
-      misses: missLists<AirplaneMiss>({ find_part: [...FIND_PART_MISSES], flight_plan: [...FLIGHT_PLAN_MISSES] }),
-    },
+    ...bossEntry(airplaneDioramaCard),
   },
 ];

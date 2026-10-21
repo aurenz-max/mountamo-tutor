@@ -446,6 +446,10 @@ Return a complete Ramp Lab configuration appropriate for the grade level.
   if (data.pushForce === undefined) data.pushForce = 0;
   data.gradeLevel = ctx.grade ?? ctx.gradeLevel;
   data.supportTier = resolution?.modes.length === 1 ? ctx.supportTier : undefined;
+  // Each item carries the tier: the lever set reads it per item (when the model lever comes).
+  if (data.supportTier && Array.isArray(data.challenges)) {
+    data.challenges = data.challenges.map((ch: RampChallenge) => ({ ...ch, supportTier: data.supportTier }));
+  }
   // Task copy is code-owned on investigation runs. The generative wrapper's
   // physics primer must never pre-teach the explanation being assessed.
   if (data.challenges?.some((ch: RampChallenge) => ch.mode === 'plan_fair_test' || ch.mode === 'explain_from_trials')) {

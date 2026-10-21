@@ -1,31 +1,21 @@
 /**
- * Number tracer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch A2).
+ * Number tracer on the shared tutor/JEV teaching workspace (boss: `numberTracer.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. The canvas checks the
- * writing itself (geometry, then the vision judge), so no key is published; on a sequence item
- * the missing number is the answer and never appears in the scene.
+ * Pure: the component and any probe read the same scene. The canvas checks the writing itself (geometry, then the
+ * vision judge), so no key is published; on a sequence item the missing number is the answer and never appears in
+ * the scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { NumberTracerChallenge } from './NumberTracer';
+import type { NumberTracerMiss } from './numberTracer.card';
 
-export function workspaceAssignment(challenge: NumberTracerChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+export type { NumberTracerMiss } from './numberTracer.card';
 
 /** The checked writing in the learner's terms. `writtenAs` is the judge's reading, when it had one. */
 export const describeWriting = (score: number, writtenAs: string | null) =>
   `${writtenAs ? `Wrote something read as ${writtenAs}` : 'Wrote on the canvas'}; the canvas scored it ${score}%`;
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from what the check read:
- * - the vision judge's reading, when trusted: `other_numeral`, `digits_swapped` (a two-digit number's digits in
- *   reverse), `not_readable` (read as no numeral), `poorly_formed` (read as the numeral, scored under half);
- * - geometry, when there is no trusted reading: `part_left_out` (what is drawn follows the numeral, much of the
- *   numeral is not drawn), `shape_off` (the strokes do not follow the numeral, or its guide on a trace).
- */
-export type NumberTracerMiss = 'other_numeral' | 'digits_swapped' | 'not_readable' | 'poorly_formed' | 'part_left_out' | 'shape_off';
-
+/** What a wrong check shows, from what the check read (the misses are listed on the card). */
 export function numberTracerMiss(target: number, work: { writtenAs: string | null; accuracy: number; coverage: number }): NumberTracerMiss {
   const read = work.writtenAs?.trim();
   if (read) {
@@ -37,7 +27,7 @@ export function numberTracerMiss(target: number, work: { writtenAs: string | nul
   return work.coverage < 50 && work.accuracy >= 50 ? 'part_left_out' : 'shape_off';
 }
 
-export function workspaceScene(challenge: NumberTracerChallenge, view: { strokes: number }): WorkspaceScene {
+export function workspaceScene(challenge: NumberTracerChallenge, view: { strokes: number }): SceneOf {
   const sequence = challenge.type === 'sequence';
   const shown = sequence && challenge.sequenceNumbers
     ? challenge.sequenceNumbers.map((n, i) => (i === challenge.missingIndex ? '_' : String(n))).join(', ') : null;
@@ -47,8 +37,6 @@ export function workspaceScene(challenge: NumberTracerChallenge, view: { strokes
       kind: challenge.type,
       ...(shown ? { printedSequence: shown } : { numeral: challenge.digit }),
       strokesDrawn: view.strokes,
-      constraints: 'The learner writes on the canvas with a finger and presses Check; the canvas checks the writing '
-        + 'itself. You cannot draw, trace or clear.',
     },
   };
 }

@@ -1,14 +1,15 @@
 /**
- * Regrouping workbench on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C12).
+ * Regrouping workbench's domain: the column arithmetic, the activity's check and its misses, and the scene the tutor
+ * reads. The boss (`regroupingWorkbench.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the screen:
- * one digit typed in each answer box under the written problem, then Check. The activity's own check compares the
- * typed number with the operands' result, so the tutor is never handed the result or a digit of it. Trading blocks
- * (Carry / Borrow) is the learner's tool and is never checked.
+ * Pure: the component and any probe read the same scene. Every challenge is answered on the screen: one digit typed in
+ * each answer box under the written problem, then Check. The activity's own check compares the typed number with the
+ * operands' result, so the tutor is never handed the result or a digit of it. Trading blocks (Carry / Borrow) is the
+ * learner's tool and is never checked.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { RegroupingChallenge } from './RegroupingWorkbench';
+import type { RegroupMiss, RegroupMode } from './regroupingWorkbench.card';
 
 export type RegroupOperation = 'addition' | 'subtraction';
 export const PLACE_NAMES = ['ones', 'tens', 'hundreds', 'thousands'] as const;
@@ -57,13 +58,23 @@ export function regroupColumns(op: RegroupOperation, a: number, b: number, place
   return out;
 }
 
-export function workspaceAssignment(c: RegroupingChallenge, op: RegroupOperation, fallback: { operand1: number; operand2: number }): TeachingAssignment {
-  const [a, b] = operandsOf(c, fallback);
-  return {
-    id: c.id,
-    task: `Find ${a} ${sign(op)} ${b}. Write the answer in the boxes under the problem, one digit in each place, then press Check.`,
-    response: 'gesture',
-  };
+/** The item's operation, from its problem's sign (the boss's validator holds it to the session's operation). */
+export const operationOf = (c: Pick<RegroupingChallenge, 'problem'>): RegroupOperation =>
+  (c.problem.includes('+') ? 'addition' : 'subtraction');
+
+const NO_FALLBACK = { operand1: 0, operand2: 0 };
+
+/** The item's eval mode, from its structure: its operation, and whether any column needs a trade. */
+export function modeOf(c: Pick<RegroupingChallenge, 'problem'>): RegroupMode {
+  const op = operationOf(c), [a, b] = operandsOf(c, NO_FALLBACK);
+  const trades = regroupColumns(op, a, b, String(Math.max(a, b)).length + 1).length > 0;
+  return `${op === 'addition' ? 'add' : 'subtract'}_${trades ? 'regroup' : 'no_regroup'}`;
+}
+
+/** What the learner is asked: the problem. Never its result. */
+export function regroupAsk(c: Pick<RegroupingChallenge, 'problem'>): string {
+  const [a, b] = operandsOf(c, NO_FALLBACK);
+  return `Find ${a} ${sign(operationOf(c))} ${b}.`;
 }
 
 export interface RegroupView {
@@ -105,27 +116,7 @@ export function describeRegroupWork(view: RegroupView): string {
   return view.trades ? `${tradeWord(view.operation, view.trades)}. ${typed}` : typed;
 }
 
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the typed digits, drawn from the catalog's
- * commonStruggles (forgetting to carry or borrow, subtracting the smaller digit from the larger):
- * - `left_blank`: a box inside the answer's digits left empty;
- * - `wrong_operation`: the other operation's result (added on a take-away, or the other way round);
- * - `no_carry` (addition): every column's own sum without the carried one (27 + 45 written as 62);
- * - `smaller_from_larger` (subtraction): each column's smaller digit taken from its larger (52 − 17 written as 45);
- * - `forgot_to_reduce` (subtraction): ten given to the column, but the next column's top digit not made one less;
- * - `misplaced_digits`: the answer's digits in the wrong boxes;
- * - `column_slip`: one column's digit wrong, the rest right;
- * - `other_answer`: any other number.
- */
-export type RegroupMiss = 'left_blank' | 'wrong_operation' | 'no_carry' | 'smaller_from_larger' | 'forgot_to_reduce'
-  | 'misplaced_digits' | 'column_slip' | 'other_answer';
-
-export const REGROUP_MISSES_BY_MODE: Record<string, readonly RegroupMiss[]> = {
-  add_no_regroup: ['left_blank', 'wrong_operation', 'misplaced_digits', 'column_slip', 'other_answer'],
-  subtract_no_regroup: ['left_blank', 'wrong_operation', 'misplaced_digits', 'column_slip', 'other_answer'],
-  add_regroup: ['left_blank', 'wrong_operation', 'no_carry', 'misplaced_digits', 'column_slip', 'other_answer'],
-  subtract_regroup: ['left_blank', 'wrong_operation', 'smaller_from_larger', 'forgot_to_reduce', 'misplaced_digits', 'column_slip', 'other_answer'],
-};
+export { REGROUP_MISSES_BY_MODE, type RegroupMiss, type RegroupMode } from './regroupingWorkbench.card';
 
 /** The number a column-by-column bug writes, ones first through `places`. */
 export function buggedResult(kind: 'no_carry' | 'smaller_from_larger' | 'forgot_to_reduce', a: number, b: number, places: number): number {
@@ -154,7 +145,7 @@ export function regroupMiss(view: RegroupView): RegroupMiss | undefined {
 }
 
 /** What is drawn and asked. The problem, the blocks and the aids on screen are named; the result never is. */
-export function workspaceScene(c: RegroupingChallenge, view: RegroupView): WorkspaceScene {
+export function workspaceScene(c: RegroupingChallenge, view: RegroupView): SceneOf {
   const { operation: op, a, b, places } = view;
   const columns = PLACE_NAMES.slice(0, places).slice().reverse().join(', ');
   const verb = op === 'addition' ? 'Carry' : 'Borrow';
@@ -178,9 +169,9 @@ export function workspaceScene(c: RegroupingChallenge, view: RegroupView): Works
     ...(view.columnBadges ? { columnBadges: 'each column of blocks is tagged with how many blocks it holds' } : {}),
     ...(view.story ? { story: view.story } : {}),
     learnerWork: describeRegroupWork(view),
-    constraints: 'The learner answers on the screen: types one digit in each answer box and presses Check; the activity '
-      + 'checks the number itself. Trading blocks is the learner\'s choice and is never checked. You cannot type, trade '
-      + 'or press Check for the learner.',
+    // How the learner answers is the card's `moves`; only what is this problem's own is said here.
+    constraints: `Trading blocks is the learner's tool and is never checked.${view.regroupMarks ? ''
+      : ' No column is marked: which column needs a trade is the learner\'s to find.'}`,
   };
   void c;
   return { objects: [], facts };

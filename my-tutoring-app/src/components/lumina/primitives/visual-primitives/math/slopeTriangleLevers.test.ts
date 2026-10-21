@@ -6,13 +6,12 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { SlopeTriangleChallenge } from './SlopeTriangle';
 import {
-  MODEL_TRIANGLE, SIMPLER, captionLeaks, isPracticeItem, leverFacts, leverTextLeaks, practiceLeaks, simplerItem,
-  slopeTriangleLevers, triangleModel,
+  MODEL_TRIANGLE, SIMPLER, SLOPE_LEVERS, captionLeaks, isPracticeItem, leverTextLeaks, practiceLeaks, simplerItem, triangleModel,
 } from './slopeTriangleLevers';
 import {
   SLOPE_TRIANGLE_MISSES_BY_MODE, emptyWork, ratioText, slopeTriangleMiss, workCorrect, type SlopeTriangleMode, type SlopeWork,
 } from './slopeTriangleWorkspace';
-import { validateSlopeTriangleData } from '../../../components/live-activity/adapters/slopeTriangleLive';
+import { validateSlopeTriangleData } from './slopeTriangle.boss';
 
 const MODES = Object.keys(SLOPE_TRIANGLE_MISSES_BY_MODE) as SlopeTriangleMode[];
 /** The generator's slope pools and run bands (gemini-slope-triangle.ts), with the tier overlays as starting positions. */
@@ -39,6 +38,7 @@ function items(type: SlopeTriangleMode): SlopeTriangleChallenge[] {
   });
   return out;
 }
+const declared = (c: SlopeTriangleChallenge, pulled: readonly string[]) => SLOPE_LEVERS.declare(c, null, pulled);
 const lesson = (challenges: SlopeTriangleChallenge[]) => ({ title: 't', description: '', xRange: [-10, 10] as [number, number],
   yRange: [-10, 10] as [number, number], challenges });
 
@@ -49,7 +49,7 @@ it('the hand-built items are what the adapter accepts', () => {
 describe('declarations', () => {
   it.each(MODES)('%s: no digit in any when/does; every miss is answered by a help lever on every item', (type) => {
     for (const c of items(type)) {
-      const levers = slopeTriangleLevers(c, []);
+      const levers = declared(c, []);
       for (const l of levers) {
         expect(leverTextLeaks(l.when), `${c.id} ${l.id} when`).toBe(false);
         expect(leverTextLeaks(l.does), `${c.id} ${l.id} does`).toBe(false);
@@ -61,11 +61,11 @@ describe('declarations', () => {
 
   it('a lever the tier already shows is not offered', () => {
     const [plain, easy] = items('calculate').filter(c => c.id.startsWith('calculate-2-3-3'));
-    expect(slopeTriangleLevers(plain, []).map(l => l.id)).not.toContain('leg_labels');
-    expect(slopeTriangleLevers(plain, []).map(l => l.id)).toContain('count_ticks');
-    expect(slopeTriangleLevers(easy, []).map(l => l.id)).not.toContain('count_ticks');
+    expect(declared(plain, []).map(l => l.id)).not.toContain('leg_labels');
+    expect(declared(plain, []).map(l => l.id)).toContain('count_ticks');
+    expect(declared(easy, []).map(l => l.id)).not.toContain('count_ticks');
     const bare = items('calculate').find(c => c.id === 'calculate-2-3-3-2')!;
-    expect(slopeTriangleLevers(bare, []).map(l => l.id)).toContain('leg_labels');
+    expect(declared(bare, []).map(l => l.id)).toContain('leg_labels');
   });
 });
 
@@ -77,7 +77,7 @@ describe('the worked model', () => {
       expect(captionLeaks(c, model!.caption), `${c.id}: ${model!.caption}`).toBe(false);
       expect(Math.abs(model!.rise / model!.run)).not.toBeCloseTo(Math.abs(c.expectedSlope), 6);
       // The facts the tutor reads say no more than the caption.
-      const facts = leverFacts(c, [MODEL_TRIANGLE]);
+      const facts = SLOPE_LEVERS.onScreen(c, null, [MODEL_TRIANGLE]);
       expect(captionLeaks(c, facts), facts).toBe(false);
     }
   });
@@ -88,7 +88,7 @@ describe('simplify builder', () => {
     let built = 0;
     for (const c of items(type)) {
       const s = simplerItem(c);
-      const offered = slopeTriangleLevers(c, []).some(l => l.id === SIMPLER);
+      const offered = declared(c, []).some(l => l.id === SIMPLER);
       expect(offered, c.id).toBe(!!s);
       if (!s) continue;
       built++;
@@ -131,7 +131,7 @@ describe('this wrong answer, then this lever', () => {
     for (const c of items(type)) for (const miss of SLOPE_TRIANGLE_MISSES_BY_MODE[type]) {
       const w = missWork(c, miss);
       if (!w || workCorrect(c, w) || slopeTriangleMiss(c, w) !== miss) continue;
-      const levers = slopeTriangleLevers(c, []);
+      const levers = declared(c, []);
       const next = nextLever(levers, miss);
       expect(next, `${c.id} ${miss}`).toBeTruthy();
       expect(levers.find(l => l.id === next)!.answers).toContain(miss);
@@ -141,17 +141,17 @@ describe('this wrong answer, then this lever', () => {
 
   it('named examples', () => {
     const c = items('identify_slope').find(x => x.id === 'identify_slope--2-1-3-0')!;
-    const levers = slopeTriangleLevers(c, []);
+    const levers = declared(c, []);
     expect(levers.map(l => l.id)).toEqual(['count_ticks', 'leg_names', 'sign_frame', 'model_triangle', 'simpler_item']);
     expect(nextLever(levers, 'rise_sign')).toBe('sign_frame');
     expect(nextLever(levers, 'swapped')).toBe('leg_names');
     expect(nextLever(levers, 'rise_off')).toBe('count_ticks');
     const k = items('calculate').find(x => x.id === 'calculate-2-3-6-2')!;
-    expect(nextLever(slopeTriangleLevers(k, []), 'reciprocal')).toBe('formula_frame');
-    expect(nextLever(slopeTriangleLevers(k, []), 'rise_only')).toBe('leg_labels');
+    expect(nextLever(declared(k, []), 'reciprocal')).toBe('formula_frame');
+    expect(nextLever(declared(k, []), 'rise_only')).toBe('leg_labels');
     const d = items('draw_triangle').find(x => x.id === 'draw_triangle-1-1-3-0')!;
-    expect(nextLever(slopeTriangleLevers(d, []), 'flat')).toBe('build_frame');
-    expect(nextLever(slopeTriangleLevers(d, []), 'wrong_sign')).toBe('build_frame');
-    expect(nextLever(slopeTriangleLevers(d, []), 'rise_off')).toBe('count_ticks');
+    expect(nextLever(declared(d, []), 'flat')).toBe('build_frame');
+    expect(nextLever(declared(d, []), 'wrong_sign')).toBe('build_frame');
+    expect(nextLever(declared(d, []), 'rise_off')).toBe('count_ticks');
   });
 });

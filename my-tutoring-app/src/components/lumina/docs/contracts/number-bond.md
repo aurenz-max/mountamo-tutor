@@ -1,7 +1,7 @@
 # Contract: number-bond
 
 - **Derived:** 2026-09-28 · evidence window: eval report 2026-06-14, topic traces 2026-06-12 to 2026-08-08, live DI reports 2026-08-14, K band-floor re-audit 2026-09-08, K held-floors probe 2026-09-09, W1 report 2026-09-23, handoff 20 A2 (2026-09-27), saved payloads to 2026-09-28 (commit `763e5e98`), authored map read live 2026-09-28, catalog/generator/component/oracle source and tests
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/NumberBond.tsx` (+ `numberBondScript.ts`, `numberBondModes.ts`, `numberBondSplit.ts`, `numberBondWorkspace.ts`, `SplitAndSayBoard.tsx`, `useNumberBondRuntime.ts`) · **Generator:** `src/components/lumina/service/math/gemini-number-bond.ts` · **Catalog:** `src/components/lumina/service/manifest/catalog/math.ts` (`id: 'number-bond'`, :3484; `teachingWorkspace` :3485-3500; `evalModes` :3585-3660)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/NumberBond.tsx` (+ `numberBondDomain.ts`, `numberBondModes.ts`, `numberBondSplit.ts`, `numberBondWorkspace.ts`, `SplitAndSayBoard.tsx`) · **Boss:** `numberBond.card.ts` + `numberBond.boss.ts` (spoken preset, stepped; levers `numberBondLevers.ts`) · **Generator:** `src/components/lumina/service/math/gemini-number-bond.ts` · **Catalog:** `src/components/lumina/service/manifest/catalog/math.ts` (`id: 'number-bond'`, :3484; `teachingWorkspace` :3485-3500; `evalModes` :3585-3660)
 - **Status:** ACTIVE. No open conflict. Four requirements are VIOLATED with fixes queued (R4 as NB-REP-1; R12, R13, R14 as handoff 21 M1 "fix first" items). Static derivation plus the authored map; no live census. Written before the handoff 21 M1 lever slice.
 
 ## Consumers (blast radius)
@@ -18,7 +18,7 @@
 | Standalone judged DI runner (scripted cues, non-workspace hosts) and its headless drive plan | DI pack + drive plan + live DI reports | `numberBondScript.ts`; `service/qa/di/numberBondDrivePlan.test.ts`; `qa/tutor-reports/number-bond-live-di-{plain,signature}-2026-08-14.md` | 2026-08-14 |
 | Handoff 21 M1 in-item levers (approved, not built) | lever table | `qa/support-levers/m1-lever-tables-2026-09-28.md` § number-bond | 2026-09-28 |
 | IRT/mastery + content QA across all modes | evaluation hooks + oracle | `usePrimitiveEvaluation` submit; `service/qa/oracles/number-bond.ts` | ongoing |
-| Pip shared surface | pip rollout | `qa/pip-surface/ROLLOUT.md`; `pip/NumberBond.surface.test.tsx` | 2026-09-14 |
+| Pip shared surface | pip rollout | `qa/pip-surface/ROLLOUT.md`; `pip/WorkspacePip.surface.test.tsx` (since 2026-10-20) | 2026-09-14 |
 
 Calibration channel [4] not read (403, needs auth).
 
@@ -52,7 +52,7 @@ Calibration channel [4] not read (403, needs auth).
 - **Property:** a whole w has ⌊w/2⌋+1 pairs, zero included, and each becomes a build phase and then a say phase. The split commits only on stillness with every counter placed, so an incomplete split is exploration and never commits. It is accepted when its sum is right and the pair is new. The say phase asks about the non-empty part, so zero is never spoken. The same counters move between the whole and the parts, and the child's banked pairs stay visible ("Ways found: k of N", with "(with help)" marked). A capped hand turn may show a tutor example with an unused pair, attributed to the tutor.
 - **Demanded by:** OPS001-01-D, OPS001-02-B ("every decomposition retained on screen"), K.OA.3.
 - **Evidence:** `numberBondSplit.ts` (`validSplit`, `prepareSplit`, `splitQuestion`); component `armSplitSettle`, found-pairs panel; commit `6d09ee9d`.
-- **Probe:** `__tests__/NumberBond.split-and-say.test.ts` (all 7); `NumberBond.split-and-say.test.tsx` "moves the same counters between parts…", "freezes the chosen split for speech…", "allows returning and undoing counters…", "attributes a capped construction…"; di-script "expands one decompose challenge…", "judges a split by sum AND novelty, in code".
+- **Probe:** `__tests__/NumberBond.split-and-say.test.ts` (all 7); `NumberBond.workspace.test.tsx` R5 case; `NumberBond.levers.workspace.test.tsx` "a decompose say step asks about the split the learner built…"; di-script "expands one decompose challenge…", "judges a split by sum AND novelty, in code".
 
 ### R6 — ten_and_ones accepts exactly one pair, a full ten and the rest · OBSERVED
 - **Property:** a split is accepted only when one part is exactly 10 and the parts sum to the whole. A sum-correct split with no ten (7+7 for 14) is refused, and the correction names the missing property, never a pair. The say phase asks "One ten and how many ones?" and the ones appear only in the affirmation and the reward (`14 = 10 + 4`). The how-to-play teaches the rule on entry, because decompose just taught the opposite.
@@ -64,31 +64,31 @@ Calibration channel [4] not read (403, needs auth).
 - **Property:** the whole and the known part are shown. The covered part is opaque, and its aria-label is "Covered part, quantity hidden" until the answer is affirmed or the correction reveals it. The ask states the whole and the known part in words and never contains the answer (hence "is the whole", not "has two parts"). The stimulus channel carries no number. Optional counters appear only when the child presses "Use counters", can be set aside only into the known part, and are recorded as `independent` / `counters` / `revealed` evidence; they are never scored as a second answer. The support tier moves only which side is unknown (easy: the larger part; medium: the smaller).
 - **Demanded by:** OPS001-03-E, OPS001-03-F; the answer-leak rule; the W1 observer (LA-13).
 - **Evidence:** component missing-infer section and `missingEvidence`; `askFor`/`stimulusFor` comments; generator `unknownSide`.
-- **Probe:** `NumberBond.split-and-say.test.tsx` "keeps the missing quantity covered…" and "reveals the covered counters only on an explicit correction path"; di-script "never puts the missing part in a spoken ask…", "pushes only the answer-free question side…"; W1 `missing_part --audio` drives (`number-bond-w1-missing-part-audio-2026-09-23-{c,d}.json`).
+- **Probe:** `NumberBond.workspace.test.tsx` R7 case; di-script "never puts the missing part in a spoken ask…", "pushes only the answer-free question side…"; W1 `missing_part --audio` drives (`number-bond-w1-missing-part-audio-2026-09-23-{c,d}.json`).
 
 ### R8 — related_fact is two linked spoken turns over one bond with unequal parts · OBSERVED
 - **Property:** turn 1 joins the groups and asks "P and how many more make W?". Turn 2 moves the found group out and asks "W take away X leaves how many?", where X is the number just found, so the answer is the other part. The red and blue groups keep their identity across join, say, separate and say. Each question and its expected answer are read from the committed model, or from the modelled move if the child's move did not match. The how-to-play says no number word.
 - **Demanded by:** OPS001-02-G, OPS001-03-F (inverse operations using related facts).
 - **Evidence:** `numberBondModes.ts` `groupsForBond`/`relatedQuestion`/`initialCountersForInteraction`; commit `404c5877`; `qa/eval-reports/k-held-floors-2026-09-09.md`.
-- **Probe:** `__tests__/NumberBond.remaining-modes.test.ts` "keeps token group identity stable…", "derives both spoken targets from the committed model"; `NumberBond.split-and-say.test.tsx` "keeps related-fact groups stable…"; `numberBondDrivePlan.test.ts` "drives the same four-phase related-fact sequence…"; `scripts/probe-number-bond-related-fact.mjs --draws=3` (18/18).
+- **Probe:** `__tests__/NumberBond.remaining-modes.test.ts` "keeps token group identity stable…", "derives both spoken targets from the committed model"; `NumberBond.workspace.test.tsx` R8 case; `scripts/probe-number-bond-related-fact.mjs --draws=3` (18/18).
 
 ### R9 — build_equation: the child's own action, then an equation that matches it · OBSERVED
 - **Property:** the model phase offers exactly join, take away red and take away blue, with no swap. The equation must be arithmetically true, use exactly the bond's three numbers, and describe the committed action. Either orientation of = is accepted. A true fact of the bond that describes a different action is `other_fact` and gets action-specific coaching, not a bare wrong mark. The tile tray holds the three bond numbers and `+ − =`, shuffled, and can also be typed into (aria-label "Equation keyboard entry").
 - **Demanded by:** Grade 1 number sentences (catalog `build_equation` description); the harness journey that writes into the typed entry.
 - **Evidence:** `bondEquationFaultOf`/`bondEquationMatchesAction`; component `commitEquation`, action buttons, tile seeding; `liveJourneySpec.ts` number-bond row (`write` to "Equation keyboard entry").
-- **Probe:** remaining-modes "limits the open Build Equation choice…", "separates equation arithmetic, bond-number, and action matching"; `NumberBond.split-and-say.test.tsx` "requires a build-equation response to match the action the learner chose"; journey sweep on `number-bond.build_equation.json`.
+- **Probe:** remaining-modes "limits the open Build Equation choice…", "separates equation arithmetic, bond-number, and action matching"; `NumberBond.workspace.test.tsx` R9 case; journey sweep on `number-bond.build_equation.json`.
 
 ### R10 — fact_family: one transformation-linked equation at a time, 4 forms or 2 · OBSERVED
 - **Property:** each form has a model phase and a build phase. Unequal parts need 4 forms (both addition orders, both subtraction directions). Equal parts need 2. Reversing = is the same form. Accepted equations stay as the child's family record and the next form is never filled in. One aggregate outcome per family keeps per-form evidence, and a partly solved family stays inspectable without counting as complete.
 - **Demanded by:** Grade 1 inverse-relationship objectives; catalog `fact_family` description.
 - **Evidence:** `factFamilyForms`, `familyEquationFaultOf`, `numberBondInteractionSummary`; component `familyRecord`.
-- **Probe:** remaining-modes "requires four unequal family forms but only two equal-part forms", "treats reversed equality as the same required form…", "keeps partial family success inspectable…"; `NumberBond.split-and-say.test.tsx` "records one fact-family equation at a time…"; oracle "accepts the two genuinely distinct forms…", "rejects padded duplicates…".
+- **Probe:** remaining-modes "requires four unequal family forms but only two equal-part forms", "treats reversed equality as the same required form…", "keeps partial family success inspectable…"; `NumberBond.workspace.test.tsx` R10 case; oracle "accepts the two genuinely distinct forms…", "rejects padded duplicates…".
 
 ### R11 — no answer appears on screen before the child's attempt is affirmed · OBSERVED
 - **Property:** the reward line (the equation, or the revealed counters) renders only while `runner.revealHeld`, never on `currentSolved`. A hand verdict on a build phase prints nothing (`setReward(null)`), so the coming spoken answer is not shown. The live equation mirror never renders on an expanded phase. The say-phase board labels the answer part "How many here?" and prints no count. Spoken asks carry no answer word (`leakTokens`).
 - **Demanded by:** pedagogy rule #1; every spoken consumer (R5-R8).
 - **Evidence:** component `onAffirmed`, `liveEquation`, reward panel (18b comment); `SplitAndSayBoard` labels; `numberBondHarnessAnswers.leakTokens`.
-- **Probe:** `NumberBond.split-and-say.test.tsx` "freezes the chosen split for speech, hides the numeral answer…"; di-script "answer-leak" block; journey sweep J1-J7 over the six payloads.
+- **Probe:** `NumberBond.workspace.test.tsx` R5/R11 case; di-script "answer-leak" block; journey sweep J1-J7 over the six payloads.
 
 ### R12 — the equation entry shows no operator and no answer before a try · OBSERVED · FIXED 2026-09-28
 - **Property:** before the child places anything, the equation workspace shows no operator, number or pre-placed tile. On build_equation the choice of + or − is part of the assessed response, since it must match the committed action (R9).
@@ -133,13 +133,13 @@ Calibration channel [4] not read (403, needs auth).
 - **Evidence:** commit `763e5e98`.
 - **Probe:** `journeySweep.test.tsx` green on all six number-bond payloads.
 
-### R19 — the scripted live-runtime adapter never advances, points, or states the answer · OBSERVED
+### R19 — the scripted live-runtime adapter never advances, points, or states the answer · OBSERVED · **retired 2026-10-20** (the scripted path and `useNumberBondRuntime.ts` are deleted; see changelog)
 - **Property:** on the scripted path (`useNumberBondRuntime`) the board advertises replay and a text reminder, never advance, retry or point (on every hand mode the tap is the answer). Hand aids stay hidden while the child is still building. No aid states the answer. Only one detour is allowed per item. The worked-example detour draws a nearby bond, never this bond's own numbers, and is withheld on fact-family and build-equation. The child's counters survive an example and return. Stale or duplicate commands are refused.
 - **Demanded by:** `/add-live-tutor-tools` adoption on the scripted path.
 - **Evidence:** `useNumberBondRuntime.ts` docblock; `bondScaffoldsFor` aids.
 - **Probe:** `NumberBond.runtime.test.tsx` (all 12 cases).
 
-### R20 — Pip follows the phases and never answers · OBSERVED
+### R20 — Pip follows the phases and never answers · OBSERVED · **moved to the framework 2026-10-20** (the runner publishes Pip; `pip/WorkspacePip.surface.test.tsx`)
 - **Property:** Pip points at the board while cued, follows the child's counter moves, receives the split, and points at the equation slot row, never at a tile. It never moves a counter or places a tile.
 - **Demanded by:** Pip shared-surface rollout.
 - **Evidence:** component `usePipSurface` block; `numberBondPipPose`.
@@ -182,10 +182,11 @@ _None open._ Notes for the four M1 fixes and the lever slice:
 - **description:** faithful as of 2026-09-28. It names all six modes and their answer channels correctly.
 - **constraints:** faithful. The windows (R2), the K mode set (R1) and the fact-family form counts (R10) match the code.
 - **evalModes:** faithful. One possible sharpening, not applied: `ten_and_ones` ends "Kindergarten." although the mode runs at both bands and `teachingWorkspace.grades` lists Grade 1. Leave it unless a Grade 1 consumer appears.
-- **tutoring:** the `aiDirectives` and `taskDescription` describe the scripted DI cue protocol (`[NS_ITEM]`, `[NB_*]`, "your own affirmation advances"). That path is still live for non-workspace hosts (`useScriptedController`), so the block is not stale yet. If the scripted path is retired, it goes stale the same way cvc-speller's and letter-sound-link's did. Not applied.
+- **tutoring:** the `aiDirectives` and `taskDescription` describe the scripted DI cue protocol (`[NS_ITEM]`, `[NB_*]`, "your own affirmation advances"). That path is still live for non-workspace hosts (`useScriptedController`), so the block is not stale yet. If the scripted path is retired, it goes stale the same way cvc-speller's and letter-sound-link's did. Not applied. **Deleted 2026-10-20** with the scripted path (bound sessions send `tutoring: null`).
 
 ## Changelog
 
+- 2026-10-20 — moved onto a boss (wave 3). The workspace is the ONLY path: `numberBond.card.ts` + `numberBond.boss.ts` (spoken preset, every mode stepped: `split`, `move`, `equation`, `say`; `stepOf` is the scene's `kind`) describe the wiring. A say step is judged against `numberBondKey` (the scripted pack's accept and echo-refusal clauses as a `SpokenKey`); a decompose say step carries the split on the board when it opened (`askedSplit`, stamped by the component, the first unmade pair when absent), and a related-fact say step's board is fixed by its move, so the preset's `assignment(item)` needs no view. Split, move and equation steps have no key and the board checks them (R1-R18, R21 unchanged). A mount with no tutor shows the shared "needs the tutor" card; the scripted controller, `useNumberBondRuntime.ts` (and `bondScaffoldsFor`), the hand Pip pose, the catalog `tutoring` block, the `DI_PORTS` row, `adapters/numberBondLive.ts` and the dead pre-expansion branches (`BondDiagram`, the live equation bar) are deleted, with the scripted-path suites (`NumberBond.runtime`, `NumberBond.split-and-say`, `pip/NumberBond.surface`, `service/qa/di/numberBondDrivePlan`); their board cases for R5, R7-R11 are ported to `NumberBond.workspace.test.tsx` on bound mounts; R19 retired, R20 moved to the framework. `numberBondScript.ts` keeps its cue builders for `__tests__/NumberBond.di-script.test.ts` and the probes, and re-exports the new `numberBondDomain.ts`. R12-R14: one lever set (`NUMBER_BOND_LEVERS`), same ids, answers, leak rules, offers and carriers. Changed on purpose: a spoken step's `expectedAnswer` is the key sentence, not the bare digit; scene `kind` is the step name and the `phase`/`constraints` facts are gone (the card's moves carry them).
 - 2026-10-13 — `/add-item-space`, all six modes measured. Before: every tier gave nearly the same bonds
   (missing_part 4/1 6/2 7/3 8/4 10/4 in 9 of 12 runs; decompose 4,5,6 / 4,6,8 / 4,7,10 at every tier;
   ten_and_ones 11-15 in 12 of 12). Now:

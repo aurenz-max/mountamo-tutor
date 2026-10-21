@@ -33,7 +33,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateEquationBuilder } = await loader.import('/src/components/lumina/service/math/gemini-equation-builder.ts');
   const { equationBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/equation-builder.ts');
-  const { validateEquationBuilderData } = await loader.import('/src/components/lumina/components/live-activity/adapters/equationBuilderLive.ts');
+  const { validateEquationBuilderData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/equationBuilder.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/math/equationBuilderWorkspace.ts');
   const results = [];
   for (const lesson of LESSONS) {

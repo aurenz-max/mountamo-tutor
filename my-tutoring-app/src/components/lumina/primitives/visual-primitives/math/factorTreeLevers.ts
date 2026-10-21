@@ -2,23 +2,24 @@
  * factor-tree's in-item levers (/add-support-tiers; report qa/eval-reports/factor-tree-levers-2026-10-09.md).
  * The misses are what `factorMiss` observes in a wrong split; there is no real-learner evidence.
  *
- * Every mode has the same levers (the modes differ in number size, listed pairs and reset, not in the split):
- * - `divisibility_rules` (help) the rules panel: even means two is a factor, ending in zero or five means five is,
- *   digits adding to a multiple of three means three is, and no small factor means it may be prime. Written in words.
- *   The easy guided tier already draws it (a starting position, declared pulled).
- * - `partner_frame` (help) a frame under the tree: the selected number ÷ the learner's Factor 1 = its partner, with
+ * Declared once as a lever set (`FACTOR_LEVERS`, `bossLevers.ts`). Every mode has the same levers (the modes differ
+ * in number size, listed pairs and reset, not in the split):
+ * - `divisibility_rules` (legend) the rules panel: even means two is a factor, ending in zero or five means five is,
+ *   digits adding to a multiple of three means three is, and no small factor means it may be prime. Written in words,
+ *   every small prime alike. The easy guided tier already draws it (a starting position, declared pulled).
+ * - `partner_frame` (layout) a frame under the tree: the selected number ÷ the learner's Factor 1 = its partner, with
  *   the result left as "?"; multiply back to check.
- * - `product_check` (help) a readout of what the learner's two typed factors multiply to, beside the number they
+ * - `product_check` (custom) a readout of what the learner's two typed factors multiply to, beside the number they
  *   must make.
- * - `smaller_tree` (simplify) a practice tree on a nearby composite with one prime factor fewer, built here.
+ * - `smaller_tree` (easier) a practice tree on a nearby composite with one prime factor fewer, built here.
  *
  * Leak rules (code): the rules panel, the lever words and the scene facts carry no digit; the frame prints only the
  * selected number and the learner's own Factor 1, never the quotient; the readout prints only the learner's typed
  * factors, their product and the number; a practice tree is not the item, a factor of it or a multiple of it.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { FactorTreeChallenge } from './FactorTree';
-import { isPrime, primeFactors, type FactorTreeMiss } from './factorTreeWorkspace';
+import { FACTOR_TREE_MISSES_BY_MODE, isPrime, primeFactors } from './factorTreeWorkspace';
 
 export const RULES_LEVER = 'divisibility_rules';
 export const PARTNER_LEVER = 'partner_frame';
@@ -84,46 +85,50 @@ export function practiceLeaks(parent: FactorTreeChallenge, practice: FactorTreeC
     || primeFactors(b).length >= primeFactors(a).length;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 export interface FactorLeverContext {
   /** The easy guided tier already draws the rules panel: a starting position, declared pulled. */
   rulesShown: boolean;
 }
 
-export function factorTreeLevers(c: FactorTreeChallenge | null, pulled: readonly string[], ctx: FactorLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeTree(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly FactorTreeMiss[], when: string, does: string,
-    on = pulled.includes(id)): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: on, answers, when, does });
-  const smaller = smallerTree(c);
-  return [
-    lever(RULES_LEVER, 'help', ['used_one', 'not_a_factor'],
-      'The learner splits off one, or tries a number that does not divide the one they are splitting.',
-      'Shows the divisibility rules under the tree, in words: even means two is a factor, ending in zero or five means '
-        + 'five is, digits adding to a multiple of three means three is, and no small factor means it may be prime. It '
-        + 'names no number on the tree.', ctx.rulesShown || pulled.includes(RULES_LEVER)),
-    lever(PARTNER_LEVER, 'help', ['wrong_partner'],
-      'The learner has a factor that divides the number but pairs it with the wrong partner.',
-      'Shows a frame under the tree: the selected number divided by the learner\'s Factor one equals a question mark, '
-        + 'and "multiply back to check". It never works out the division.'),
-    lever(PRODUCT_LEVER, 'help', ['added', 'wrong_partner', 'not_a_factor'],
-      'The learner adds instead of multiplying, or gives two numbers whose product is not the number.',
-      'Shows what the learner\'s two typed factors multiply to, beside the number they must make, as they type. It '
-        + 'shows nothing until both are typed and never suggests a factor.'),
-    ...(smaller ? [lever(SMALLER_LEVER, 'simplify', ['used_one', 'added', 'wrong_partner', 'not_a_factor'],
-      'This number needs too many splits to hold at once.',
-      'Opens a practice tree first, on a nearby number that needs one split fewer and is not a factor or a multiple '
-        + 'of this one. It is not graded; the full item comes back after it, blank.')] : []),
-  ];
-}
+/** The levers a mount declares pulled: its runtime pulls, plus the rules panel the tier already draws. */
+export const pulledWith = (pulled: readonly string[], ctx: FactorLeverContext): string[] =>
+  (ctx.rulesShown && !pulled.includes(RULES_LEVER) ? [RULES_LEVER, ...pulled] : [...pulled]);
 
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: FactorTreeChallenge | null, pulled: readonly string[], ctx: FactorLeverContext): string {
-  if (!c || isPracticeTree(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    (ctx.rulesShown || on(RULES_LEVER)) && 'Under the tree are the divisibility rules in words (two, three, five, and "may be prime").',
-    on(PARTNER_LEVER) && 'Under the tree is a frame: the selected number divided by the learner\'s Factor one equals a question mark. Until the learner taps a number and types Factor one, it reads the number divided by your first factor, in words. It never shows the result.',
-    on(PRODUCT_LEVER) && 'Under the tree is a readout of what the learner\'s two typed factors multiply to, beside the number; it is blank until both are typed.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** None is offered on a practice tree: the component declares nothing while one is on screen. */
+const notPractice = (c: FactorTreeChallenge) => !isPracticeTree(c);
+
+/** The levers, declared once (`bossLevers.ts`). Every miss is answered by a help lever offered on every tree. */
+export const FACTOR_LEVERS = leverSet<FactorTreeChallenge, FactorLeverContext>({
+  missesOf: () => FACTOR_TREE_MISSES_BY_MODE.unguided,
+  specs: [
+    { id: RULES_LEVER, type: 'legend', answers: ['used_one', 'not_a_factor'], offer: notPractice,
+      when: 'The learner splits off one, or tries a number that does not divide the one they are splitting.',
+      does: 'Shows the divisibility rules under the tree, in words: even means two is a factor, ending in zero or five '
+        + 'means five is, digits adding to a multiple of three means three is, and no small factor means it may be '
+        + 'prime. It names no number on the tree.',
+      fact: 'Under the tree are the divisibility rules in words (two, three, five, and "may be prime").' },
+    { id: PARTNER_LEVER, type: 'layout', answers: ['wrong_partner'], offer: notPractice,
+      when: 'The learner has a factor that divides the number but pairs it with the wrong partner.',
+      does: 'Shows a frame under the tree: the selected number divided by the learner\'s Factor one equals a question '
+        + 'mark, and "multiply back to check". It never works out the division.',
+      fact: 'Under the tree is a frame: the selected number divided by the learner\'s Factor one equals a question mark. '
+        + 'Until the learner taps a number and types Factor one, it reads the number divided by your first factor, in '
+        + 'words. It never shows the result.' },
+    { id: PRODUCT_LEVER, type: 'custom', carrier: 'shown', answers: ['added', 'wrong_partner', 'not_a_factor'],
+      offer: notPractice,
+      why: 'a live readout computed from the learner\'s own typed factors as they type; no stock type works from the '
+        + 'learner\'s input',
+      when: 'The learner adds instead of multiplying, or gives two numbers whose product is not the number.',
+      does: 'Shows what the learner\'s two typed factors multiply to, beside the number they must make, as they type. It '
+        + 'shows nothing until both are typed and never suggests a factor.',
+      fact: 'Under the tree is a readout of what the learner\'s two typed factors multiply to, beside the number; it is '
+        + 'blank until both are typed.' },
+    { id: SMALLER_LEVER, type: 'easier', answers: 'all',
+      when: 'This number needs too many splits to hold at once.',
+      does: 'Opens a practice tree first, on a nearby number that needs one split fewer and is not a factor or a multiple '
+        + 'of this one. It is not graded; the full item comes back after it, blank.',
+      content: c => smallerTree(c) },
+  ],
+});

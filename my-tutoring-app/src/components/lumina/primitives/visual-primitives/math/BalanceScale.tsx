@@ -1,36 +1,36 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaPanel,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaInput,
-  LuminaSectionLabel,
-  LuminaChallengeCounter,
-  dropZoneStateClass,
-} from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+/**
+ * Balance scale, taught only on the shared tutor/JEV teaching workspace (`balanceScale.boss.ts`). A session is one
+ * challenge type: `equality` runs on the match-and-add scale (build, total, infer), the other five modes on the weight
+ * workshop (`balanceWorkshopModel.ts`). Hands steps are checked by the scale once the move is complete and the learner
+ * stops; spoken steps are judged by the tutor against the boss's key. An unbound mount shows the "needs the tutor" card
+ * (`withWorkspaceOnly`).
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
+import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardContent, LuminaBadge, LuminaButton,
+  LuminaChallengeCounter, LuminaPanel } from '../../../ui';
+import DiActionPanel from '../../../components/DiActionPanel';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeVerify, plainAssignment, plainScene } from './balanceScaleWorkspace';
-import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { SoundManager } from '../../../utils/SoundManager';
-import BalanceScaleEquality, { type BalanceSurfaceProps } from './BalanceScaleEquality';
-import { usesEqualityPilot } from './balanceEqualityModel';
-import BalanceScaleWorkshop from './BalanceScaleWorkshop';
-import { usesBalanceWorkshop } from './balanceWorkshopModel';
+import { BalanceModel, PartWholeBar, UnitCells } from './BalanceLeverViews';
+import { balanceScaleBoss } from './balanceScale.boss';
+import { BALANCE_LEVERS, BALANCE_MODEL, balanceLeverCtx, equalityPracticeBoard, modelWeight, ON_SCALE, ONE_GROUP,
+  PART_WHOLE, practiceBoard, UNIT_CELLS } from './balanceScaleLevers';
+import { balanceSurface, equalityScene, equalitySession, workshopScene, workshopSession, type BalanceItem } from './balanceScaleWorkspace';
+import { addWeight, removeWeight, balanceState, equalityFeedback, initialBoard, demonstratedBoard, isMatched, WEIGHTS,
+  type WeightBlock, type EqualityBoard, type EqualityChange, type EqualityItem } from './balanceEqualityModel';
+import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWorkshopUnit, placeWorkshopWeight,
+  removeWorkshopWeight, scene, separated, shared, stageSolved, STAGES, TITLES, TRAY, workshopBalance, workshopFeedback,
+  type WorkshopBoard, type WorkshopItem, type WorkshopWeight } from './balanceWorkshopModel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -74,10 +74,9 @@ export interface BalanceScaleData {
   /** Perception aid: BALANCED / UNBALANCED status pill. Default true. */
   showBalanceStatus?: boolean;
   /**
-   * Within-mode support tier ('easy' | 'medium' | 'hard') — how much balance
-   * feedback is on screen. Set by the generator from config.difficulty; drives
-   * showSideValues / showBalanceStatus / showTilt.
-   * Never changes the equations or numbers.
+   * Within-mode support tier ('easy' | 'medium' | 'hard'), set by the generator from config.difficulty. On the
+   * workshop, easy prints each parcel group's unit count; on every surface it sets when the model lever comes
+   * (`BALANCE_LEVERS.support`). Never changes the equations or numbers.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
   allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[];
@@ -94,808 +93,587 @@ export interface BalanceScaleData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<BalanceScaleMetrics>) => void;
 }
 
-// ============================================================================
-// Types
-// ============================================================================
-
-type Phase = 'explore' | 'identify' | 'solve' | 'verify';
-
-const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
-  explore: { label: 'Explore', description: 'Look at both sides of the scale' },
-  identify: { label: 'Identify', description: 'What equation does this show?' },
-  solve: { label: 'Solve', description: 'Isolate the variable' },
-  verify: { label: 'Verify', description: 'Check your answer' },
-};
-
-interface StepEntry {
-  description: string;
-  justification: string;
-  leftSnapshot: BalanceScaleObject[];
-  rightSnapshot: BalanceScaleObject[];
+export interface BalanceSurfaceProps {
+  data: BalanceScaleData;
+  className?: string;
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted. */
+  runtimeEvalMode?: string;
 }
 
-// Whole-side multiply: replicate each variable k times, multiply constants by k.
-function multiplySide(side: BalanceScaleObject[], k: number): BalanceScaleObject[] {
-  const out: BalanceScaleObject[] = [];
-  for (const obj of side) {
-    if (obj.isVariable) {
-      for (let i = 0; i < k; i++) out.push({ ...obj });
-    } else {
-      const v = obj.value * k;
-      out.push({ ...obj, value: v, label: String(v) });
+const PRACTICE_NOTE = 'An easier practice scale, ungraded. The full item comes back after it.';
+
+/** The generic pull: a simplify lever opens its practice step (ungraded), any other lever is marked pulled. */
+function pullFor<I extends BalanceItem>(levers: WorkspaceLever[], onPractice: boolean, simpler: (id: string) => BalanceItem | null,
+  open: (easier: I) => void, mark: (id: string) => void): TeachingWorkspace['pullLever'] {
+  return (id) => {
+    const lever = levers.find(l => l.id === id);
+    if (onPractice || !lever) return `No lever ${id} on this item.`;
+    if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+    if (lever.kind === 'simplify') {
+      const easier = simpler(id) as I | null;
+      if (!easier) return 'There is no easier scale for this item.';
+      mark(id); open(easier);
+      return { practice: balanceScaleBoss.assignment(easier) };
     }
-  }
-  return out;
-}
-
-// Whole-side divide: collapse like-labeled variable groups to count/k copies;
-// divide each constant value by k. Caller must check isSideDivisibleBy first.
-function divideSide(side: BalanceScaleObject[], k: number): BalanceScaleObject[] {
-  const varGroups = new Map<string, BalanceScaleObject>();
-  const varCounts = new Map<string, number>();
-  const out: BalanceScaleObject[] = [];
-  for (const obj of side) {
-    if (obj.isVariable) {
-      const key = obj.label || 'x';
-      if (!varGroups.has(key)) varGroups.set(key, obj);
-      varCounts.set(key, (varCounts.get(key) || 0) + 1);
-    } else {
-      const v = obj.value / k;
-      out.push({ ...obj, value: v, label: String(v) });
-    }
-  }
-  varCounts.forEach((count, key) => {
-    const proto = varGroups.get(key)!;
-    const newCount = count / k;
-    for (let i = 0; i < newCount; i++) out.push({ ...proto });
-  });
-  return out;
-}
-
-// Divisibility check: every constant's value and every variable group's count
-// must be cleanly divisible by k.
-function isSideDivisibleBy(side: BalanceScaleObject[], k: number): boolean {
-  if (k <= 0) return false;
-  const counts = new Map<string, number>();
-  for (const obj of side) {
-    if (obj.isVariable) {
-      const key = obj.label || 'x';
-      counts.set(key, (counts.get(key) || 0) + 1);
-    } else {
-      if (obj.value % k !== 0) return false;
-    }
-  }
-  let allDivisible = true;
-  counts.forEach((count) => {
-    if (count % k !== 0) allDivisible = false;
-  });
-  return allDivisible;
+    mark(id);
+    return true;
+  };
 }
 
 // ============================================================================
-// Phase Summary Config
+// Match and add (`equality`)
 // ============================================================================
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  equality:       { label: 'Equality',        icon: '⚖️', accentColor: 'cyan' },
-  equality_hard:  { label: 'Equality Hard',   icon: '⚖️', accentColor: 'cyan' },
-  one_step:       { label: 'One-Step',        icon: '🔢', accentColor: 'purple' },
-  one_step_hard:  { label: 'One-Step Hard',   icon: '✖️', accentColor: 'purple' },
-  two_step_intro: { label: 'Two-Step Intro',  icon: '🧮', accentColor: 'emerald' },
-  two_step:       { label: 'Two-Step',        icon: '🧮', accentColor: 'emerald' },
-};
-
-// ============================================================================
-// Component
-// ============================================================================
-
-type BalanceScaleProps = BalanceSurfaceProps;
-
-/** The teaching workspace is the plain solver's only controller: the runtime owns progression. */
-const useBalanceProgress = useWorkspaceProgressFor('balance-scale');
-
-const BalanceScaleSurface = ({ data, className, runtimePlanItemId }: BalanceScaleProps) => {
+function EqualitySurface({ data, className, runtimePlanItemId }: BalanceSurfaceProps) {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  const {
-    title,
-    description,
-    leftSide: initialLeft = [],
-    rightSide: initialRight = [],
-    variableValue,
-    showTilt = true,
-    showSideValues = true,
-    showBalanceStatus = true,
-    allowOperations = ['add', 'subtract'],
-    gradeBand = '3-4',
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+  const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
+  const built = useMemo(() => {
+    try { return { items: equalitySession(data), error: '' }; }
+    catch (error) { return { items: [] as EqualityItem[], error: error instanceof Error ? error.message : 'Invalid balance problem.' }; }
+  }, [data]);
+  const items = built.items;
+  const problems = useMemo(() => items.filter(i => i.step === 'build').map(i => i.problem), [items]);
+  const instance = useRef(data.instanceId ?? `balance-equality-${Date.now()}`);
+  const boards = useRef<Record<string, EqualityBoard>>({});
+  const histories = useRef<Record<string, EqualityChange[]>>({});
+  const undoStacks = useRef<Record<string, EqualityBoard[]>>({});
+  const helped = useRef(new Set<string>());
+  const [sessionBoardState, setBoard] = useState<EqualityBoard>(initialBoard());
+  const nextBlockId = useRef(0);
+  const reduceMotion = useReducedMotion();
+  const [feedback, setFeedback] = useState('Add weights on the right and watch the scale.');
+  // Levers pulled on the session item, and the easier practice step a simplify lever put on screen in its place.
+  // The ref is what the retry callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: EqualityItem; board: EqualityBoard } | null>(null);
+  const practiceRef = useRef<{ item: EqualityItem; board: EqualityBoard } | null>(null);
+  const boardFor = (item: EqualityItem) => boards.current[item.problem.id] ?? initialBoard(item.problem);
+  const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale',
+    instanceId: instance.current, skillId: data.skillId, subskillId: data.subskillId,
+    objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-  // Initial sides come from challenge #0 when available, falling back to root-level
-  // data for single-instance / manifest-config paths.
-  const firstChallenge = challenges[0];
-  const initialChallengeLeft = firstChallenge?.leftSide ?? initialLeft;
-  const initialChallengeRight = firstChallenge?.rightSide ?? initialRight;
+  const finish = (summary: TeachingEvaluationResult) => {
+    const results = problems.map((problem) => {
+      const build = summary.outcomes.find((outcome) => outcome.id === `${problem.id}-build`);
+      const total = summary.outcomes.find((outcome) => outcome.id === `${problem.id}-total`);
+      const inference = summary.outcomes.find((outcome) => outcome.id === `${problem.id}-infer`);
+      return { id: problem.id, mode: problem.mode, solved: !!total?.solved && !!inference?.solved,
+        score: Math.min(total?.score ?? 0, inference?.score ?? 0),
+        attempts: (total ? 1 + total.corrections : 0) + (inference ? 1 + inference.corrections : 0),
+        build, total, inference, demonstrationUsed: helped.current.has(problem.id),
+        moves: histories.current[problem.id] ?? [], finalBoard: boards.current[problem.id] };
+    });
+    const accuracy = results.length ? Math.round(results.reduce((sum, result) => sum + result.score, 0) / results.length) : 0;
+    const attempts = results.reduce((sum, result) => sum + result.attempts, 0);
+    const mode = problems[0]?.mode ?? 'equality';
+    const metrics: BalanceScaleMetrics = { type: 'balance-scale', evalMode: mode, challengeType: mode,
+      totalChallenges: results.length, correctCount: results.filter((result) => result.solved).length,
+      attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
+      hintsViewed: helped.current.size, overallAccuracy: accuracy,
+      averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
+    // The workspace owns the evidence (first-response share, kept phases); the shared capture gate decides.
+    evaluation.submitResult(accuracy >= 60, accuracy, metrics,
+      { interactionVersion: 'match-compose-infer-di-v2', scoringBasis: 'spoken-sum-and-weight-inference',
+        explorationIsUngraded: true, results, learningResponses: summary.learningResponses,
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
+      undefined, summary.diagnosisEvidence);
+  };
 
-  const [currentLeft, setCurrentLeft] = useState<BalanceScaleObject[]>(initialChallengeLeft);
-  const [currentRight, setCurrentRight] = useState<BalanceScaleObject[]>(initialChallengeRight);
-  const [phase, setPhase] = useState<Phase>('explore');
-  const [userSteps, setUserSteps] = useState<StepEntry[]>([]);
-  const [selectedOp, setSelectedOp] = useState<'add' | 'subtract' | 'multiply' | 'divide' | null>(null);
-  const [opValue, setOpValue] = useState('');
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [verifyInput, setVerifyInput] = useState('');
-
-  const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  // Challenge state (multi-phase hooks). The runtime moves the index.
-  const challengeIdOf = (ch: BalanceScaleChallenge) => `bs-${challenges.indexOf(ch) + 1}`;
-  const progress = useBalanceProgress<BalanceScaleChallenge>({
-    challenges,
-    getChallengeId: challengeIdOf,
-    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace,
-    assignment: (ch) => plainAssignment(ch, challengeIdOf(ch)),
-    // A fresh equation resets the scale; Try again clears the typed value.
-    onItemOpened: (index, retry) => {
-      if (retry) { setVerifyInput(''); setFeedback(''); setFeedbackType(''); recordedRef.current = false; return; }
-      const next = challenges[index];
-      if (!next) return;
-      setCurrentLeft(next.leftSide); setCurrentRight(next.rightSide); setPhase('explore'); setUserSteps([]);
-      setFeedback(''); setFeedbackType(''); setVerifyInput(''); setSelectedOp(null); setOpValue('');
-      recordedRef.current = false;
-    },
+  // The teaching workspace is the only controller: the runtime owns progression, and `finish` runs
+  // only under an evaluation provider.
+  const runner = useWorkspaceRunner<EqualityItem>({ primitiveId: 'balance-scale', assignment: balanceScaleBoss.assignment,
+    items, workspace, instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    onFinished: finish,
+    onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
+    onItemOpened: (item, index) => openItem(item, index),
+    // A retry on the practice step keeps it; only endPractice gives the full item back.
+    onCorrectionRetry: (item) => { if (!practiceRef.current) openItem(item, items.indexOf(item)); },
   });
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-  } = progress;
-  // A checked answer waits for Try again or Next challenge on the shell.
-  const blockedRef = useRef(false);
-  blockedRef.current = progress.canAttempt === false;
-  const learnerBlocked = () => blockedRef.current;
-
-  // Drag state
-  const [draggedBlock, setDraggedBlock] = useState<BalanceScaleObject | null>(null);
-  const [dropTarget, setDropTarget] = useState<'left' | 'right' | null>(null);
-
-  // Refs
-  const recordedRef = useRef(false);
-
-  // Computed
-  const currentChallenge = challenges[currentChallengeIndex] || null;
-  const activeVariableValue = currentChallenge?.variableValue ?? variableValue;
-
-  const calcSideValue = useCallback((side: BalanceScaleObject[]): number => {
-    return side.reduce((sum, obj) => sum + (obj.isVariable ? activeVariableValue : obj.value), 0);
-  }, [activeVariableValue]);
-
-  const leftValue = useMemo(() => calcSideValue(currentLeft), [calcSideValue, currentLeft]);
-  const rightValue = useMemo(() => calcSideValue(currentRight), [calcSideValue, currentRight]);
-  const isBalanced = Math.abs(leftValue - rightValue) < 0.01;
-
-  const tiltAngle = useMemo(() => {
-    if (!showTilt || isBalanced) return 0;
-    return Math.max(-15, Math.min(15, (leftValue - rightValue) * 0.5));
-  }, [showTilt, isBalanced, leftValue, rightValue]);
-
-  const formatObj = (obj: BalanceScaleObject) => obj.isVariable ? (obj.label || 'x') : (obj.label || String(obj.value));
-
-  const isSolved = useMemo(() => {
-    const leftOnlyVar = currentLeft.length === 1 && currentLeft[0].isVariable && currentRight.every(o => !o.isVariable) && currentRight.length >= 1;
-    const rightOnlyVar = currentRight.length === 1 && currentRight[0].isVariable && currentLeft.every(o => !o.isVariable) && currentLeft.length >= 1;
-    return leftOnlyVar || rightOnlyVar;
-  }, [currentLeft, currentRight]);
-
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  // Standard per-challenge score (per PRD §6a #11): 100 first try, -20 per extra
-  // attempt, floored at 20, zero on incorrect. Stored on ChallengeResult.score.
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-    getScore: (rs) =>
-      Math.round(
-        rs.reduce(
-          (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-          0,
-        ) / Math.max(rs.length, 1),
-      ),
-  });
-
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<BalanceScaleMetrics>({
-    primitiveType: 'balance-scale',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-  // Phase transition: an isolated variable moves the learner to Verify.
-  useEffect(() => {
-    if (isSolved && phase === 'solve') setPhase('verify');
-  }, [isSolved, phase]);
-
-  // -------------------------------------------------------------------------
-  // Interaction Handlers
-  // -------------------------------------------------------------------------
-  const addStep = useCallback((desc: string, justification: string) => {
-    setUserSteps(prev => [...prev, {
-      description: desc,
-      justification,
-      leftSnapshot: [...currentLeft],
-      rightSnapshot: [...currentRight],
-    }]);
-  }, [currentLeft, currentRight]);
-
-  const removeObject = useCallback((side: 'left' | 'right', index: number) => {
-    if (hasSubmittedEvaluation || learnerBlocked()) return;
-    if (phase === 'explore') setPhase('solve');
-
-    const obj = side === 'left' ? currentLeft[index] : currentRight[index];
-    if (!obj) return;
-
-    const otherSide = side === 'left' ? currentRight : currentLeft;
-    const otherIdx = otherSide.findIndex(o => o.isVariable === obj.isVariable && o.value === obj.value);
-
-    if (otherIdx === -1) {
-      SoundManager.invalid();
-      setFeedback('To keep balanced, remove the same value from both sides!');
-      setFeedbackType('error');
-      return;
+  function openItem(item: EqualityItem, index: number) {
+    practiceRef.current = null; setPractice(null);
+    if (index === 0) { boards.current = {}; histories.current = {}; undoStacks.current = {}; helped.current.clear(); }
+    if (item.step === 'build') {
+      boards.current[item.problem.id] = initialBoard(item.problem);
+      histories.current[item.problem.id] = [];
+      undoStacks.current[item.problem.id] = [];
+      nextBlockId.current = 0;
+      setFeedback('Add weights on the right and watch the scale.');
+    } else if (item.step === 'total' && !isMatched(item.problem, boardFor(item))) {
+      boards.current[item.problem.id] = demonstratedBoard(item.problem);
+      helped.current.add(item.problem.id);
+      setFeedback('The tutor placed a matching set of weights.');
     }
+    setBoard(boardFor(item));
+  }
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice step while a simplify lever holds it, else the session item. */
+  const item = practice?.item ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverCtx = balanceLeverCtx(items, sessionItem ? boardFor(sessionItem).blocks.length : 0);
+  const modelK = pulledLevers.includes(BALANCE_MODEL) && sessionItem ? modelWeight(sessionItem.problem.target, leverCtx.used) : null;
+  const canChange = !!item && item.step === 'build' && runner.canAttempt
+    && runner.cuedItemId === item.id && !runner.isAwaitingGesture();
 
-    const newLeft = side === 'left'
-      ? currentLeft.filter((_, i) => i !== index)
-      : currentLeft.filter((_, i) => i !== otherIdx);
-    const newRight = side === 'right'
-      ? currentRight.filter((_, i) => i !== index)
-      : currentRight.filter((_, i) => i !== otherIdx);
-
+  const publishBoard = (next: EqualityBoard, description: string, pushUndo = true) => {
+    if (!item || !canChange || runner.isAwaitingGesture()) return;
+    const previous = boardFor(item);
+    if (previous.blocks.length === next.blocks.length && previous.blocks.every((block, index) => block.id === next.blocks[index].id)) return;
+    if (pushUndo) (undoStacks.current[item.problem.id] ??= []).push({ ...previous });
+    const change = { before: previous, after: next, description };
+    (histories.current[item.problem.id] ??= []).push(change);
+    boards.current[item.problem.id] = next;
+    setBoard(next);
+    setFeedback(equalityFeedback(item.problem, next));
+    // Wait for settled hands; only an exact match commits. Other moves are exploration the tutor
+    // reads from the published scene.
+    runner.armStillness(() => {
+      if (runner.isAwaitingGesture()) return;
+      if (isMatched(item.problem, next)) runner.commitGesture({ response: `Balanced the scale with right weights ${next.blocks
+        .map((block) => block.value).join(', ')}`, correct: true, cue: () => '' });
+    }, isMatched(item.problem, next) ? 900 : 1800);
     SoundManager.tap();
-    setCurrentLeft(newLeft);
-    setCurrentRight(newRight);
-
-    const desc = `Removed ${formatObj(obj)} from both sides`;
-    addStep(desc, `Subtract ${formatObj(obj)} to simplify`);
-    setFeedback(desc);
-    setFeedbackType('success');
-  }, [hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep]);
-
-  const applyOperation = useCallback(() => {
-    if (!selectedOp || !opValue || hasSubmittedEvaluation || learnerBlocked()) return;
-    if (phase === 'explore') setPhase('solve');
-
-    const value = parseFloat(opValue);
-    if (isNaN(value) || value <= 0) {
-      SoundManager.invalid();
-      setFeedback('Enter a valid positive number');
-      setFeedbackType('error');
-      return;
-    }
-
-    let newLeft = [...currentLeft];
-    let newRight = [...currentRight];
-    let desc = '';
-
-    if (selectedOp === 'add') {
-      newLeft.push({ value, label: String(value) });
-      newRight.push({ value, label: String(value) });
-      desc = `Added ${value} to both sides`;
-    } else if (selectedOp === 'subtract') {
-      const leftIdx = newLeft.findIndex(o => !o.isVariable && o.value === value);
-      const rightIdx = newRight.findIndex(o => !o.isVariable && o.value === value);
-      if (leftIdx === -1 || rightIdx === -1) {
-        SoundManager.invalid();
-        setFeedback(`Need ${value} on both sides to subtract!`);
-        setFeedbackType('error');
-        return;
-      }
-      newLeft.splice(leftIdx, 1);
-      newRight.splice(rightIdx, 1);
-      desc = `Subtracted ${value} from both sides`;
-    } else if (selectedOp === 'multiply') {
-      if (!Number.isInteger(value)) {
-        SoundManager.invalid();
-        setFeedback('Multiplier must be a whole number.');
-        setFeedbackType('error');
-        return;
-      }
-      newLeft = multiplySide(newLeft, value);
-      newRight = multiplySide(newRight, value);
-      desc = `Multiplied both sides by ${value}`;
-    } else if (selectedOp === 'divide') {
-      if (!Number.isInteger(value)) {
-        SoundManager.invalid();
-        setFeedback('Divisor must be a whole number.');
-        setFeedbackType('error');
-        return;
-      }
-      if (!isSideDivisibleBy(newLeft, value) || !isSideDivisibleBy(newRight, value)) {
-        SoundManager.invalid();
-        setFeedback(`Cannot divide both sides evenly by ${value}.`);
-        setFeedbackType('error');
-        return;
-      }
-      newLeft = divideSide(newLeft, value);
-      newRight = divideSide(newRight, value);
-      desc = `Divided both sides by ${value}`;
-    }
-
-    SoundManager.tap();
-    setCurrentLeft(newLeft);
-    setCurrentRight(newRight);
-    addStep(desc, `${selectedOp} ${value} to isolate variable`);
-    setOpValue('');
-    setSelectedOp(null);
-    setFeedback(desc);
-    setFeedbackType('success');
-  }, [selectedOp, opValue, hasSubmittedEvaluation, phase, currentLeft, currentRight, addStep]);
-
-  // Drag handlers
-  const handleDragStart = (block: BalanceScaleObject) => setDraggedBlock(block);
-  const handleDragOver = (e: React.DragEvent, side: 'left' | 'right') => { e.preventDefault(); setDropTarget(side); };
-  const handleDragLeave = () => setDropTarget(null);
-  const handleDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
-    e.preventDefault();
-    setDropTarget(null);
-    if (!draggedBlock || hasSubmittedEvaluation || learnerBlocked()) return;
-    SoundManager.snap();
-    const block = { ...draggedBlock };
-    if (side === 'left') setCurrentLeft(prev => [...prev, block]);
-    else setCurrentRight(prev => [...prev, block]);
-    addStep(`Added ${formatObj(block)} to ${side} side`, 'Add block');
-    setDraggedBlock(null);
-  }, [draggedBlock, hasSubmittedEvaluation, addStep]);
-
-  // Verify
-  const handleVerify = useCallback(() => {
-    if (recordedRef.current || learnerBlocked()) return; // stale-state guard — already recorded for this challenge
-    const answer = parseFloat(verifyInput);
-    if (Number.isNaN(answer)) {
-      SoundManager.invalid();
-      setFeedback('Enter a number to check your answer.');
-      setFeedbackType('error');
-      return;
-    }
-    const correct = Math.abs(answer - activeVariableValue) < 0.01;
-    // The scale's own check is the verdict, right or wrong.
-    progress.commitCheck(describeVerify(answer), correct);
-    const attempts = currentAttempts + 1;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Correct! x = ${activeVariableValue}`);
-      setFeedbackType('success');
-
-      // Standard per-challenge score (PRD §6a #11): 100 first try, -20 per extra, floor 20.
-      const score = correct ? Math.max(20, 100 - (attempts - 1) * 20) : 0;
-      recordedRef.current = true;
-
-      if (challenges.length > 0 && currentChallenge) {
-        recordResult({
-          challengeId: `bs-${currentChallengeIndex + 1}`,
-          correct: true,
-          attempts,
-          score,
-          steps: userSteps.length,
-        });
-      }
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`${answer} is not correct. Check your work!`);
-      setFeedbackType('error');
-    }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, progress]);
-
-  // Session-complete: build flattened metrics and submit exactly once.
-  useEffect(() => {
-    // The live host has no evaluation provider; the workspace submits only under one.
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0 || !progress.recordsEvaluation) return;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: BalanceScaleMetrics = {
-      type: 'balance-scale',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'one_step') as BalanceScaleMetrics['challengeType'],
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: 0,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    const goalMet = correctCount === total;
-    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, progress.recordsEvaluation]);
-
-  const handleReset = useCallback(() => {
-    if (learnerBlocked()) return;
-    const left = currentChallenge?.leftSide ?? initialLeft;
-    const right = currentChallenge?.rightSide ?? initialRight;
-    setCurrentLeft(left);
-    setCurrentRight(right);
-    setPhase('explore');
-    setUserSteps([]);
-    setFeedback('');
-    setFeedbackType('');
-    setVerifyInput('');
-    setSelectedOp(null);
-    setOpValue('');
-  }, [currentChallenge, initialLeft, initialRight]);
-
-  const isCurrentComplete = challenges.length > 0 && challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
-
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    return Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / challengeResults.length,
-    );
-  }, [allChallengesComplete, challengeResults]);
-
-  // Block palette
-  const availableBlocks: BalanceScaleObject[] = [
-    { value: 1, label: '1' },
-    { value: 5, label: '5' },
-    { value: 10, label: '10' },
-  ];
-
-  const getObjStyle = (obj: BalanceScaleObject) =>
-    obj.isVariable
-      ? 'bg-gradient-to-br from-purple-500/80 to-pink-500/80 border-purple-400/50'
-      : 'bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border-blue-400/50';
+  };
+  const place = (value: number) => {
+    if (!item || !canChange) return;
+    const next = addWeight(boardFor(item), value, nextBlockId.current++);
+    if (next) publishBoard(next, `Added a ${value} weight to the right`);
+  };
+  const remove = (id: number) => {
+    if (!item || !canChange) return;
+    const current = boardFor(item);
+    const block = current.blocks.find((entry) => entry.id === id);
+    if (block) publishBoard(removeWeight(current, id), `Removed a ${block.value} weight from the right`);
+  };
 
   // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...plainScene(currentChallenge, { left: currentLeft, right: currentRight, phase, steps: userSteps.length }) };
+    if (!item || !sessionItem) return;
+    const levers = practice ? [] : BALANCE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const published = leverScene(equalityScene(item, practice?.board ?? sessionBoardState), {
+      support: practice ? '' : BALANCE_LEVERS.support(sessionItem, leverCtx),
+      onScreen: practice ? '' : BALANCE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers),
+    });
+    workspace.current = {
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: pullFor<EqualityItem>(levers, !!practice, id => BALANCE_LEVERS.simpler(sessionItem, leverCtx, id),
+        (easier) => { const opened = { item: easier, board: equalityPracticeBoard(easier) }; practiceRef.current = opened; setPractice(opened); },
+        (id) => setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] })),
+      endPractice: () => { practiceRef.current = null; setPractice(null); setBoard(boardFor(sessionItem)); },
+    };
   });
+  // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
+  const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
-  return (
-    <LuminaCard className={`shadow-2xl ${className || ''}`}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="emerald" className="text-xs">{gradeBand}</LuminaBadge>
-            {challenges.length > 0 && (
-              <LuminaChallengeCounter
-                current={Math.min(currentChallengeIndex + 1, challenges.length)}
-                total={challenges.length}
-              />
-            )}
-          </div>
-        </div>
-        <p className="text-slate-400 text-sm mt-1">
-          {currentChallenge?.instruction ?? description}
-        </p>
-      </LuminaCardHeader>
+  if (!item || !sessionItem || built.error) return <LuminaCard className={className}><LuminaCardContent>
+    <p>{built.error || 'No equality challenges are available.'}</p>
+  </LuminaCardContent></LuminaCard>;
+  const board = practice?.board ?? sessionBoardState;
+  const state = balanceState(item.problem, board);
+  const tilt = state === 'left-heavy' ? -7 : state === 'right-heavy' ? 7 : 0;
+  const equationIndex = problems.findIndex((problem) => problem.id === sessionItem.problem.id);
 
-      <LuminaCardContent className="space-y-4">
-        {/* Phase Progress */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {Object.entries(PHASE_CONFIG).map(([p, config]) => (
-            <LuminaBadge
-              key={p}
-              accent={phase === p ? 'emerald' : undefined}
-              className={`text-xs ${
-                phase === p
-                  ? 'bg-green-500/20 border-green-400/50'
-                  : 'text-slate-500'
-              }`}
-            >
-              {config.label}
-            </LuminaBadge>
-          ))}
-        </div>
+  const gathered = item.step !== 'build';
+  const drawBlock = (block: WeightBlock) => <motion.button key={block.id} type="button"
+    layoutId={`${item.problem.id}-weight-${block.id}`} layout
+    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 180, damping: 24 }}
+    disabled={!canChange} onClick={() => remove(block.id)}
+    aria-label={`Remove ${block.value} weight, block ${block.id}`}
+    className="flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-md p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-200 disabled:cursor-default">
+    <span aria-hidden="true" className="block w-9 rounded-sm border border-cyan-200/60 bg-cyan-400/70"
+      style={{ height: block.value * 8 }} />
+    <span className="font-semibold text-cyan-100">{block.value}</span>
+  </motion.button>;
 
-        {/* Balance Status — bespoke simulation readout (support-tier perception aid) */}
-        {showBalanceStatus && (
-          <div className="flex justify-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono ${
-              isBalanced
-                ? 'bg-green-500/15 border border-green-500/40 text-green-300'
-                : 'bg-yellow-500/15 border border-yellow-500/40 text-yellow-300'
-            }`}>
-              <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`} />
-              {isBalanced ? 'BALANCED' : 'UNBALANCED'}
-              {isSolved && <span className="text-purple-300 ml-2">SOLVED</span>}
-            </div>
-          </div>
-        )}
-
-        {/* Scale Visual — bespoke interaction surface (drag/click) */}
-        <div className="relative flex justify-center" style={{ minHeight: 220 }}>
-          {/* Beam */}
-          <div
-            className="absolute w-full max-w-lg h-2 bg-gradient-to-r from-slate-600 via-slate-500 to-slate-600 rounded-full shadow-lg transition-transform duration-700"
-            style={{ top: 50, transform: `rotate(${tiltAngle}deg)`, transformOrigin: 'center' }}
-          />
-          {/* Pivot */}
-          <div className="absolute" style={{ top: 46 }}>
-            <div className="w-6 h-6 bg-slate-700 rounded-full border-3 border-slate-500 shadow-xl z-10" />
-          </div>
-          {/* Fulcrum */}
-          <div className="absolute" style={{ top: 60 }}>
-            <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-slate-700" />
-          </div>
-
-          {/* Left Pan */}
-          <div
-            className="absolute left-4 sm:left-8"
-            style={{ top: 50 + tiltAngle * 1.5 }}
-            onDragOver={e => handleDragOver(e, 'left')}
-            onDragLeave={handleDragLeave}
-            onDrop={e => handleDrop(e, 'left')}
-          >
-            <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
-            <div className={`w-36 min-h-[80px] rounded-b-xl ${dropZoneStateClass(
-              dropTarget === 'left' ? 'dragOver' : currentLeft.length > 0 ? 'filled' : 'idle'
-            )} backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
-              {currentLeft.length === 0 && <span className="text-xs italic">Drop blocks here</span>}
-              {currentLeft.map((obj, i) => (
-                <button
-                  key={`l-${i}`}
-                  onClick={() => removeObject('left', i)}
-                  className={`${getObjStyle(obj)} border rounded-md px-2.5 py-1.5 text-white font-bold text-sm font-mono transition-all hover:scale-110 hover:ring-1 hover:ring-yellow-400 cursor-pointer min-w-[36px] text-center`}
-                  title={`Click to remove ${formatObj(obj)} from both sides`}
-                >
-                  {formatObj(obj)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Pan */}
-          <div
-            className="absolute right-4 sm:right-8"
-            style={{ top: 50 - tiltAngle * 1.5 }}
-            onDragOver={e => handleDragOver(e, 'right')}
-            onDragLeave={handleDragLeave}
-            onDrop={e => handleDrop(e, 'right')}
-          >
-            <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
-            <div className={`w-36 min-h-[80px] rounded-b-xl ${dropZoneStateClass(
-              dropTarget === 'right' ? 'dragOver' : currentRight.length > 0 ? 'filled' : 'idle'
-            )} backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
-              {currentRight.length === 0 && <span className="text-xs italic">Drop blocks here</span>}
-              {currentRight.map((obj, i) => (
-                <button
-                  key={`r-${i}`}
-                  onClick={() => removeObject('right', i)}
-                  className={`${getObjStyle(obj)} border rounded-md px-2.5 py-1.5 text-white font-bold text-sm font-mono transition-all hover:scale-110 hover:ring-1 hover:ring-yellow-400 cursor-pointer min-w-[36px] text-center`}
-                  title={`Click to remove ${formatObj(obj)} from both sides`}
-                >
-                  {formatObj(obj)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Equation Display */}
-        <LuminaPanel className="p-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1">Equation</p>
-          <div className="flex items-center justify-center gap-3 text-lg font-mono font-bold">
-            <span className="text-blue-300">{currentLeft.map(formatObj).join(' + ') || '0'}</span>
-            <span className="text-slate-500">=</span>
-            <span className="text-cyan-300">{currentRight.map(formatObj).join(' + ') || '0'}</span>
-          </div>
-          {/* Exact side totals — support-tier perception aid (hidden at medium/hard) */}
-          {showSideValues && (
-            <div className="flex justify-center gap-6 mt-2 text-xs text-slate-500">
-              <span>Left: <span className="text-blue-300 font-mono">{leftValue}</span></span>
-              <span>Right: <span className="text-cyan-300 font-mono">{rightValue}</span></span>
-            </div>
-          )}
-        </LuminaPanel>
-
-        {/* Block Palette — bespoke drag source */}
-        <div className="flex items-center gap-2 justify-center">
-          <span className="text-slate-500 text-xs">Drag blocks:</span>
-          {availableBlocks.map((block, i) => (
-            <div
-              key={i}
-              draggable
-              onDragStart={() => handleDragStart(block)}
-              className="bg-gradient-to-br from-blue-500/80 to-cyan-500/80 border border-blue-400/50 rounded-md px-3 py-1.5 text-white font-bold text-sm font-mono cursor-grab active:cursor-grabbing hover:scale-105 transition-all"
-            >
-              {block.label}
-            </div>
-          ))}
-        </div>
-
-        {/* Operations Panel */}
-        {phase === 'solve' && (
-          <LuminaPanel accent="cyan" className="p-3 space-y-2">
-            <LuminaSectionLabel accent="cyan" size="sm">Operations (apply to both sides)</LuminaSectionLabel>
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              {allowOperations.map(op => (
-                <LuminaButton
-                  key={op}
-                  tone={selectedOp === op ? 'primary' : 'ghost'}
-                  size="sm"
-                  className={`text-xs ${selectedOp === op ? 'bg-green-500/20 border-green-400/50 text-green-300' : 'text-slate-400'}`}
-                  onClick={() => setSelectedOp(selectedOp === op ? null : op)}
-                  disabled={hasSubmittedEvaluation}
-                >
-                  {op}
-                </LuminaButton>
-              ))}
-              {selectedOp && (
-                <>
-                  <LuminaInput
-                    type="number"
-                    min={1}
-                    value={opValue}
-                    onChange={e => setOpValue(e.target.value)}
-                    className="w-14 px-2 py-1 text-center text-sm"
-                    placeholder="#"
-                    onKeyDown={e => e.key === 'Enter' && applyOperation()}
-                    disabled={learnerBlocked()}
-                  />
-                  <LuminaButton tone="primary" size="sm" className="text-xs" onClick={applyOperation}>
-                    Apply
-                  </LuminaButton>
-                </>
-              )}
-            </div>
-          </LuminaPanel>
-        )}
-
-        {/* Verify Phase */}
-        {phase === 'verify' && !isCurrentComplete && !allChallengesComplete && (
-          <LuminaPanel className="p-3 space-y-2">
-            <p className="text-slate-300 text-sm">What is the value of x?</p>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-purple-300 font-mono font-bold">x =</span>
-              <LuminaInput
-                type="number"
-                value={verifyInput}
-                onChange={e => setVerifyInput(e.target.value)}
-                className="w-20 px-3 py-1.5 text-center text-lg"
-                onKeyDown={e => e.key === 'Enter' && handleVerify()}
-                aria-label="Value of x"
-                disabled={learnerBlocked()}
-              />
-              <LuminaActionButton action="check" onClick={handleVerify} disabled={learnerBlocked()}>
-                Check
-              </LuminaActionButton>
-            </div>
-          </LuminaPanel>
-        )}
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-
-        {/* Steps History */}
-        {userSteps.length > 0 && (
-          <LuminaPanel className="p-3 max-h-32 overflow-y-auto">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">
-              Steps ({userSteps.length})
-            </p>
-            <div className="space-y-1">
-              {userSteps.map((step, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-slate-400">
-                  <span className="w-4 h-4 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300 font-mono text-[9px] shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <span className="text-slate-300">{step.description}</span>
-                    <span className="text-slate-600 ml-1">({step.justification})</span>
+  return <LuminaCard className={className} surface="elevated">
+    <LuminaCardHeader><div className="flex items-center justify-between gap-3">
+      <LuminaCardTitle>Weigh It Together</LuminaCardTitle>
+      <div className="flex items-center gap-2">
+        {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+        <LuminaBadge accent="purple">Balance &amp; add</LuminaBadge>
+      </div>
+    </div></LuminaCardHeader>
+    <LuminaCardContent className="space-y-5">
+      {finished ? <div className="space-y-3 text-center">
+        <p className="text-xl font-semibold text-emerald-200">Nice work with the scale!</p>
+        <p className="text-slate-300">You matched weights and used equal balance to find the other weight.</p>
+      </div> : <>
+        <LuminaChallengeCounter current={equationIndex + 1} total={problems.length} variant="dots" />
+        {!practice && helped.current.has(item.problem.id) && <p className="text-center text-amber-200">Tutor's example: a matching set of weights.</p>}
+        <PipDock />
+        <PipWorkspace className="space-y-5">
+          <LayoutGroup id={instance.current}>
+            <div className="relative px-2 pb-6" aria-label="Balance scale workspace">
+              <div className="grid grid-cols-2 items-end gap-5">
+                <section aria-label="left pan" className="flex min-h-56 flex-col items-center justify-end gap-3 pb-3 transition-transform duration-500 motion-reduce:transition-none"
+                  style={{ transform: `translateY(${state === 'left-heavy' ? 12 : state === 'right-heavy' ? -12 : 0}px)` }}>
+                  <div aria-label="Left weight; number hidden" className="w-9 rounded-sm border border-purple-200/70 bg-purple-400/70"
+                    style={{ height: item.problem.target * 8 }} />
+                  <span className="text-sm text-purple-200">Left weight</span>
+                  <div className="h-2 w-full rounded-b-xl bg-purple-300/70" />
+                </section>
+                <section aria-label="right pan" className="flex min-h-56 flex-col items-center justify-end gap-3 pb-3 transition-transform duration-500 motion-reduce:transition-none"
+                  style={{ transform: `translateY(${state === 'right-heavy' ? 12 : state === 'left-heavy' ? -12 : 0}px)` }}>
+                  <div className="flex min-h-20 flex-wrap items-end justify-center gap-2">
+                    {!gathered ? board.blocks.map(drawBlock) : <span className="text-sm text-cyan-200">Matched with the blocks below</span>}
                   </div>
-                </div>
-              ))}
+                  {!board.blocks.length && <span className="text-sm text-slate-400">Place weights here</span>}
+                  <span className="text-sm text-cyan-200">Right weights</span>
+                  <div className="h-2 w-full rounded-b-xl bg-cyan-300/70" />
+                </section>
+              </div>
+              <div aria-label="Balance beam" className="mx-auto h-2 w-full rounded-full bg-slate-300 transition-transform duration-500 motion-reduce:transition-none"
+                style={{ transform: `rotate(${tilt}deg)` }} />
+              <div className="mx-auto h-7 w-3 bg-slate-500" />
+              <div className="mx-auto h-2 w-24 rounded-full bg-slate-500" />
             </div>
-          </LuminaPanel>
-        )}
+            <p className="text-center font-medium text-cyan-200" aria-live="polite">
+              {state === 'balanced' ? 'Balanced - equal weight' : state === 'left-heavy' ? 'Left side is heavier' : 'Right side is heavier'}
+            </p>
+            {gathered && <section aria-label="Add your right-side weights" className="space-y-3 rounded-2xl border border-cyan-300/30 p-4">
+              <p className="text-center text-sm text-cyan-200">Your right-side weights, together</p>
+              <div className="flex flex-wrap items-end justify-center gap-1">
+                {board.blocks.map((block, index) => <React.Fragment key={block.id}>
+                  {index > 0 && <span aria-hidden="true" className="pb-3 text-xl text-slate-300">+</span>}
+                  {drawBlock(block)}
+                </React.Fragment>)}
+                <span aria-hidden="true" className="pb-3 text-xl text-slate-300">=</span>
+                <span className="pb-3 text-sm text-cyan-200">{item.step === 'total' ? 'Say the total' : item.problem.target}</span>
+              </div>
+              {pulledLevers.includes(UNIT_CELLS) && <UnitCells values={board.blocks.map((block) => block.value)} />}
+              {item.step === 'infer' && <p className="text-center text-purple-200">Balanced sides have equal weight.</p>}
+              {modelK !== null && <BalanceModel weight={modelK} />}
+            </section>}
+            {practice && <p className="text-center text-sm text-amber-200">Practice scale - your full scale comes back after this.</p>}
+          </LayoutGroup>
+          {item.step === 'build' && <div className="space-y-3">
+            <div className="flex flex-wrap items-end justify-center gap-3" aria-label="Weight tray">
+              {WEIGHTS.map((value) => <button key={value} type="button" disabled={!canChange || !addWeight(board, value, nextBlockId.current)}
+                onClick={() => place(value)} aria-label={`Add ${value} weight`}
+                className="flex min-h-20 min-w-14 flex-col items-center justify-end gap-2 rounded-xl border border-cyan-300/30 p-2 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-200">
+                <span aria-hidden="true" className="w-9 rounded-sm border border-cyan-200/60 bg-cyan-400/70" style={{ height: value * 8 }} />
+                <span className="font-semibold text-cyan-100">{value}</span>
+              </button>)}
+            </div>
+            <div className="flex justify-center gap-2">
+              <LuminaButton size="sm" disabled={!canChange || !undoStacks.current[item.problem.id]?.length} onClick={() => {
+                if (!canChange || runner.isAwaitingGesture()) return;
+                const previous = undoStacks.current[item.problem.id]?.pop();
+                if (previous) publishBoard(previous, 'Undid the last change', false);
+              }}>Undo</LuminaButton>
+              <LuminaButton size="sm" disabled={!canChange || !board.blocks.length}
+                onClick={() => publishBoard(initialBoard(), 'Cleared the right pan')}>Clear weights</LuminaButton>
+            </div>
+            <p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p>
+          </div>}
+        </PipWorkspace>
+        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={sessionItem}
+          steps={items.filter((step) => step.problem.id === sessionItem.problem.id)} completedIds={affirmedIds}
+          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !affirmedIds.has(step.id)).map((step) => step.id))}
+          startInstruction="Start the tutor, then put weights on the right to balance the scale." />
+      </>}
+    </LuminaCardContent>
+  </LuminaCard>;
+}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-2">
-          <LuminaButton
-            tone="ghost"
-            size="sm"
-            className="text-slate-400"
-            onClick={handleReset}
-            disabled={hasSubmittedEvaluation || learnerBlocked()}
-          >
-            Reset
-          </LuminaButton>
-          {phase === 'explore' && (
-            <LuminaButton
-              tone="primary"
-              size="sm"
-              className="text-xs"
-              disabled={learnerBlocked()}
-              onClick={() => { if (learnerBlocked()) return; setPhase('solve'); }}
-            >
-              Start Solving
-            </LuminaButton>
-          )}
-        </div>
+// ============================================================================
+// Weight workshop (the other five modes)
+// ============================================================================
 
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
-            durationMs={elapsedMs}
-            heading="All Equations Solved!"
-            celebrationMessage={`You completed all ${challenges.length} balance scale challenges!`}
-            className="mt-4"
-          />
-        )}
+function WorkshopSurface({ data, className, runtimePlanItemId }: BalanceSurfaceProps) {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const [affirmedIds, setAffirmedIds] = useState<ReadonlySet<string>>(new Set());
+  const built = useMemo(() => {
+    try { return { items: workshopSession(data), error: '' }; }
+    catch (error) { return { items: [] as WorkshopItem[], error: error instanceof Error ? error.message : 'Invalid weight activity.' }; }
+  }, [data]);
+  const items = built.items;
+  const problems = useMemo(() => Array.from(new Set(items.map(i => i.problem))), [items]);
+  const instance = useRef(data.instanceId ?? `balance-workshop-${Date.now()}`);
+  const boards = useRef<Record<string, WorkshopBoard>>({});
+  const moves = useRef<Record<string, { before: WorkshopBoard; after: WorkshopBoard; description: string }[]>>({});
+  const undo = useRef<WorkshopBoard[]>([]);
+  const modeled = useRef(new Set<string>());
+  const nextId = useRef(0);
+  const [sessionBoard, setBoard] = useState<WorkshopBoard>(() => problems[0] ? initialWorkshopBoard(problems[0])
+    : { weights: [], first: [], leftAside: false, units: [] });
+  const [selected, setSelected] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState('Move the weights and watch what changes.');
+  const reduced = useReducedMotion();
+  // Levers pulled on the session item, and the easier practice step a simplify lever put on screen in its place.
+  // The ref is what the retry callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: WorkshopItem; board: WorkshopBoard } | null>(null);
+  const practiceRef = useRef<{ item: WorkshopItem; board: WorkshopBoard } | null>(null);
+  const boardFor = (item: WorkshopItem) => boards.current[item.problem.id] ?? initialWorkshopBoard(item.problem);
+  const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale', instanceId: instance.current,
+    skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
+  const finish = (summary: TeachingEvaluationResult) => {
+    const results = problems.map((problem) => {
+      const outcomes = items.filter((item) => item.problem.id === problem.id).map((item) => ({ step: item.step,
+        ...summary.outcomes.find((outcome) => outcome.id === item.id) }));
+      const numeric = outcomes.filter((outcome) => !isHands(outcome.step) && outcome.step !== 'explain');
+      return { id: problem.id, mode: problem.mode, score: Math.min(...numeric.map((outcome) => outcome.score ?? 0)),
+        solved: numeric.length > 0 && numeric.every((outcome) => outcome.solved),
+        attempts: numeric.reduce((sum, outcome) => sum + (outcome.id ? 1 + (outcome.corrections ?? 0) : 0), 0),
+        outcomes, moves: moves.current[problem.id] ?? [], finalBoard: boards.current[problem.id],
+        modeledSteps: items.filter((item) => item.problem.id === problem.id && modeled.current.has(item.id)).map((item) => item.step) };
+    });
+    const score = Math.round(results.reduce((sum, result) => sum + result.score, 0) / Math.max(1, results.length));
+    const attempts = results.reduce((sum, result) => sum + result.attempts, 0);
+    const mode = problems[0]?.mode ?? 'one_step';
+    const metrics: BalanceScaleMetrics = { type: 'balance-scale', evalMode: mode, challengeType: mode,
+      totalChallenges: results.length, correctCount: results.filter((result) => result.solved).length, overallAccuracy: score,
+      attemptsCount: attempts, firstTryCount: results.filter((result) => result.score === 100).length,
+      hintsViewed: modeled.current.size, averageAttemptsPerChallenge: attempts / Math.max(1, results.length) };
+    // The workspace owns the evidence (first-response share, kept phases); the shared capture gate decides.
+    evaluation.submitResult(score >= 60, score, metrics, { interactionVersion: 'weight-workshop-di-v1', explorationIsUngraded: true,
+      explanationIsCoaching: true, scoringBasis: 'minimum-of-distinct-spoken-quantities', results,
+      learningResponses: summary.learningResponses,
+      teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
+    undefined, summary.diagnosisEvidence);
+  };
+  // The teaching workspace is the only controller: the runtime owns progression, and `finish` runs
+  // only under an evaluation provider.
+  const runner = useWorkspaceRunner<WorkshopItem>({ primitiveId: 'balance-scale', assignment: balanceScaleBoss.assignment,
+    items, workspace, instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    onFinished: finish,
+    onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
+    onItemOpened: (item, index) => openItem(item, index),
+    // A retry on the practice step keeps it; only endPractice gives the full item back.
+    onCorrectionRetry: (item) => { if (!practiceRef.current) openItem(item, items.indexOf(item)); },
+  });
+  function openItem(item: WorkshopItem, index: number) {
+    practiceRef.current = null; setPractice(null);
+    if (index === 0) { boards.current = {}; moves.current = {}; modeled.current.clear(); }
+    if (item.step === STAGES[item.problem.mode][0]) {
+      boards.current[item.problem.id] = initialWorkshopBoard(item.problem); moves.current[item.problem.id] = []; nextId.current = 0;
+    }
+    const prepared = enterWorkshopStage(item.problem, item.step, boardFor(item));
+    boards.current[item.problem.id] = prepared.board;
+    if (prepared.modeled) modeled.current.add(item.id);
+    undo.current = []; setSelected(null); setBoard(prepared.board);
+    setFeedback(isHands(item.step) ? workshopFeedback(item.problem, item.step, prepared.board) : '');
+  }
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice step while a simplify lever holds it, else the session item. */
+  const item = practice?.item ?? sessionItem;
+  const board = practice?.board ?? sessionBoard;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverCtx = balanceLeverCtx(items, sessionItem ? boardFor(sessionItem).weights.length : 0);
+  const canMove = !!item && isHands(item.step) && runner.canAttempt && runner.cuedItemId === item.id && !runner.isAwaitingGesture();
+  const publish = (next: WorkshopBoard | null, description: string, saveUndo = true) => {
+    if (!next || !item || !canMove || runner.isAwaitingGesture()) return;
+    const previous = boardFor(item);
+    if (JSON.stringify(previous) === JSON.stringify(next)) return;
+    if (saveUndo) undo.current.push(previous);
+    (moves.current[item.problem.id] ??= []).push({ before: previous, after: next, description });
+    boards.current[item.problem.id] = next; setBoard(next); setSelected(null);
+    setFeedback(workshopFeedback(item.problem, item.step, next));
+    // Only a completed move commits; anything else is exploration the tutor reads from the published scene.
+    runner.armStillness(() => {
+      if (runner.isAwaitingGesture()) return;
+      if (stageSolved(item.problem, item.step, next)) runner.commitGesture({ response: `${description}. Now: ${scene(item.problem, next)}`,
+        correct: true, cue: () => '' });
+    }, stageSolved(item.problem, item.step, next) ? 900 : 1800);
+    SoundManager.tap();
+  };
+  const moveUnit = (index: number, destination: number) => {
+    if (!item || !canMove) return;
+    publish(moveWorkshopUnit(item.problem, boardFor(item), index, destination, item.step), `Moved unit ${index + 1} to ${destination === -2 ? 'set aside' : destination === -1 ? 'pool' : `group ${destination + 1}`}`);
+  };
+  // What the tutor and the observer are shown, republished every render.
+  useLayoutEffect(() => {
+    if (!item || !sessionItem) return;
+    const levers = practice ? [] : BALANCE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    const published = leverScene(workshopScene(item, board), {
+      support: practice ? '' : BALANCE_LEVERS.support(sessionItem, leverCtx),
+      onScreen: practice ? '' : BALANCE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers),
+    });
+    workspace.current = {
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: pullFor<WorkshopItem>(levers, !!practice, id => BALANCE_LEVERS.simpler(sessionItem, leverCtx, id),
+        (easier) => { const opened = { item: easier, board: practiceBoard(easier.problem, easier.step) }; practiceRef.current = opened; setPractice(opened); },
+        (id) => setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] })),
+      endPractice: () => { practiceRef.current = null; setPractice(null); setBoard(boardFor(sessionItem)); },
+    };
+  });
+  // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
+  const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
+  const solvedIds = affirmedIds;
 
-        {/* Instructions */}
-        <div className="text-center">
-          <p className="text-slate-600 text-[10px]">
-            Click blocks to remove from both sides. Drag blocks from palette. Use operations panel to apply to both sides.
-          </p>
-        </div>
-      </LuminaCardContent>
-    </LuminaCard>
-  );
-};
+  if (!item || !sessionItem || built.error) return <LuminaCard className={className}><LuminaCardContent>{built.error || 'No weight challenges are available.'}</LuminaCardContent></LuminaCard>;
+  const p = item.problem;
+  const state = workshopBalance(p, board);
+  const modelK = pulledLevers.includes(BALANCE_MODEL) ? modelWeight(p.target, leverCtx.used) : null;
+  const oneGroup = pulledLevers.includes(ONE_GROUP), onScale = pulledLevers.includes(ON_SCALE);
+  const grouping = p.parcels > 1 && ['share', 'each', 'infer', 'explain'].includes(item.step);
+  const gathering = p.parcels === 1 && !isHands(item.step);
+  const animation = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 190, damping: 25 };
+  const weightVisual = (value: number, purple = false) => <span aria-hidden="true"
+    className={`block w-9 rounded-sm border ${purple ? 'border-purple-200 bg-purple-400/70' : 'border-cyan-200 bg-cyan-400/70'}`}
+    style={{ height: value * 4 }} />;
+  const weight = (block: WorkshopWeight) => <motion.button key={block.id} type="button" layout layoutId={`${p.id}-weight-${block.id}`}
+    transition={animation} disabled={!canMove} onClick={() => publish(removeWorkshopWeight(boardFor(item), block.id), `Removed weight ${block.value}`)}
+    aria-label={`Remove ${block.value} weight, block ${block.id}`} className="flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-lg p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-200">
+    {weightVisual(block.value)}<span className="font-semibold text-cyan-100">{block.value}</span>
+  </motion.button>;
+  const unit = (index: number) => <motion.button key={index} layout layoutId={`${p.id}-unit-${index}`} transition={animation}
+    type="button" draggable={canMove && item.step === 'share' && board.units[index] !== -2}
+    onDragStartCapture={(event) => { if (!canMove) return; event.dataTransfer.setData('text/plain', String(index)); setSelected(index); }}
+    disabled={!canMove || (item.step === 'share' && board.units[index] === -2)} aria-label={`Unit ${index + 1}${board.units[index] === -2 ? ', set aside' : ''}`}
+    aria-pressed={selected === index} onClick={() => {
+      if (!canMove) return;
+      if (item.step === 'separate') moveUnit(index, board.units[index] === -2 ? -1 : -2);
+      else if (board.units[index] >= 0) moveUnit(index, -1);
+      else setSelected(selected === index ? null : index);
+    }} className={`flex h-11 w-11 items-center justify-center rounded-lg border text-sm ${selected === index
+      ? 'border-amber-200 bg-amber-400/30 text-white' : 'border-cyan-200/40 bg-cyan-400/15 text-cyan-100'}`}>1</motion.button>;
+  const parcel = (index: number) => <div key={index} aria-label={`Sealed parcel ${index + 1}`} className="flex h-14 w-12 shrink-0 items-center justify-center rounded-lg border border-purple-200/60 bg-purple-500/30">
+    <span aria-hidden="true" className="h-full w-2 bg-purple-200/30" />
+  </div>;
+  const dropUnit = (event: React.DragEvent, destination: number) => {
+    event.preventDefault();
+    const raw = event.dataTransfer.getData('text/plain');
+    if (!/^\d+$/.test(raw)) return;
+    moveUnit(Number(raw), destination);
+  };
+  return <LuminaCard className={className} surface="elevated">
+    <LuminaCardHeader><div className="flex items-center justify-between gap-3"><LuminaCardTitle>{TITLES[p.mode]}</LuminaCardTitle>
+      <div className="flex items-center gap-2">
+        {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+        <LuminaBadge accent="purple">Hands + voice</LuminaBadge>
+      </div></div></LuminaCardHeader>
+    <LuminaCardContent className="space-y-5">
+      {finished ? <p className="text-center text-xl text-emerald-200">You built the math with weights. Nice work!</p> : <>
+        <LuminaChallengeCounter current={problems.indexOf(sessionItem.problem) + 1} total={problems.length} variant="dots" />
+        {practice && <p className="text-center text-sm text-amber-200">Practice scale - your full scale comes back after this.</p>}
+        {!practice && items.some((entry) => entry.problem.id === p.id && modeled.current.has(entry.id)) && <p className="text-center text-amber-200">Tutor's example includes a demonstrated step.</p>}
+        <PipDock />
+        <PipWorkspace className="space-y-5">
+          <LayoutGroup id={instance.current}>
+            <div aria-label="Balance scale workspace" className="px-2 pb-4">
+              <div className="grid grid-cols-2 items-end gap-5">
+                <section aria-label="left pan" className="flex min-h-48 flex-col items-center justify-end gap-3 pb-3 transition-transform motion-reduce:transition-none"
+                  style={{ transform: `translateY(${state === 'left-heavy' ? 10 : state === 'right-heavy' ? -10 : 0}px)` }}>
+                  {p.mode === 'equality_hard' ? <div aria-label="Unnumbered left weight">{weightVisual(p.target, true)}</div>
+                    : p.mode === 'one_step' ? <>
+                      <div aria-label={`Known left weight ${p.known}`} className="flex flex-col items-center gap-1">{weightVisual(p.known, true)}<span>{p.known}</span></div>
+                      {!gathering ? <div className="flex flex-wrap items-end justify-center gap-1">{board.weights.map(weight)}</div>
+                        : <p className="text-center text-xs text-cyan-200">Added weights shown below</p>}
+                    </> : <>
+                      <div data-lever={onScale ? 'parcels-together' : undefined}
+                        className={`flex flex-wrap justify-center gap-2 ${onScale ? 'rounded-xl p-1 ring-2 ring-amber-200/80' : ''}`}>{Array.from({ length: p.parcels }, (_, index) => parcel(index))}</div>
+                      <p className="text-center text-xs text-purple-200">{p.parcels} identical parcels</p>
+                      {p.known > 0 && !board.leftAside && <button type="button" aria-label={`Set aside known ${p.known} weight`} disabled={!canMove || item.step !== 'separate'}
+                        onClick={() => publish({ ...boardFor(item), leftAside: true }, `Set aside the known ${p.known} weight`)} className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-lg border border-purple-200/40 p-2">
+                        {weightVisual(p.known, true)}<span>{p.known}</span></button>}
+                    </>}
+                  <div className="h-2 w-full rounded-b-xl bg-purple-300/70" />
+                </section>
+                <section aria-label="right pan" className="flex min-h-48 flex-col items-center justify-end gap-3 pb-3 transition-transform motion-reduce:transition-none"
+                  style={{ transform: `translateY(${state === 'right-heavy' ? 10 : state === 'left-heavy' ? -10 : 0}px)` }}>
+                  {p.mode === 'one_step' ? <div aria-label={`Known right weight ${p.total}`} className="flex flex-col items-center gap-1">{weightVisual(p.total)}<span>{p.total}</span></div>
+                    : p.mode === 'equality_hard' ? <div className="flex min-h-20 flex-wrap items-end justify-center gap-1">{gathering
+                      ? <p className="text-center text-xs text-cyan-200">Matched weights shown below</p> : board.weights.map(weight)}</div>
+                    : <>{!grouping && <div aria-label="Right weight units" className="flex flex-wrap justify-center gap-1">{board.units.map((place, index) => place === -1 ? unit(index) : null)}</div>}
+                      <p className="text-center text-xs text-cyan-200">{grouping ? 'Matching units are in the groups below' : `Original weight: ${p.total}`}</p></>}
+                  <div className="h-2 w-full rounded-b-xl bg-cyan-300/70" />
+                </section>
+              </div>
+              <div aria-label="Balance beam" className="h-2 w-full rounded-full bg-slate-300 transition-transform motion-reduce:transition-none"
+                style={{ transform: `rotate(${state === 'left-heavy' ? -6 : state === 'right-heavy' ? 6 : 0}deg)` }} />
+              <div className="mx-auto h-6 w-3 bg-slate-500" /><div className="mx-auto h-2 w-24 rounded-full bg-slate-500" />
+            </div>
+            <p className="text-center text-cyan-200" aria-live="polite">{state === 'balanced' ? 'Balanced - equal weight' : state === 'left-heavy' ? 'Left side is heavier' : 'Right side is heavier'}</p>
+            {p.known > 0 && p.parcels > 1 && <div data-lever={onScale ? 'faded' : undefined}
+              className={`grid grid-cols-2 gap-3 ${onScale ? 'opacity-30' : ''}`} aria-label="Known weights set aside">
+              <LuminaPanel><p className="mb-2 text-sm text-purple-200">Set aside from left</p>{board.leftAside && <LuminaButton size="sm" disabled={!canMove || item.step !== 'separate'}
+                onClick={() => publish({ ...boardFor(item), leftAside: false }, 'Returned the known weight to the left')}>Return {p.known} weight</LuminaButton>}</LuminaPanel>
+              <LuminaPanel><p className="mb-2 text-sm text-cyan-200">Set aside from right</p><div className="flex flex-wrap gap-1">{board.units.map((place, index) => place === -2 ? unit(index) : null)}</div></LuminaPanel>
+            </div>}
+            {grouping && <div className="space-y-3">
+              <section aria-label="Unshared weight units" onDragOver={(event) => event.preventDefault()} onDrop={(event) => dropUnit(event, -1)} className="rounded-xl border border-cyan-300/30 p-3">
+                <p className="mb-2 text-sm text-cyan-200">Weight to share</p><div className="flex flex-wrap gap-1">{board.units.map((place, index) => place === -1 ? unit(index) : null)}</div>
+                {!board.units.includes(-1) && <p className="text-sm text-slate-400">All units are in groups.</p>}
+              </section>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {groupCounts(p, board).map((count, group) => <section key={group} aria-label={`Parcel group ${group + 1}`} onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => dropUnit(event, group)} data-lever={oneGroup ? group === 0 ? 'one-group' : 'faded' : undefined}
+                  className={`space-y-2 rounded-xl border border-purple-300/30 p-3 ${oneGroup ? group === 0 ? 'ring-2 ring-amber-200/80' : 'opacity-30' : ''}`}>
+                  <button type="button" aria-label={`Place unit in group ${group + 1}`} disabled={!canMove || item.step !== 'share' || !board.units.includes(-1)}
+                    onClick={() => { const index = selected !== null && board.units[selected] === -1 ? selected : board.units.indexOf(-1); if (index >= 0) moveUnit(index, group); }}
+                    className="flex w-full flex-col items-center gap-2 rounded-lg p-2 focus-visible:outline focus-visible:outline-purple-200">
+                    {parcel(group)}<span className="text-sm text-purple-200">Group {group + 1}</span>
+                  </button>
+                  <div className="flex flex-wrap gap-1">{board.units.map((place, index) => place === group ? unit(index) : null)}</div>
+                  {data.supportTier === 'easy' && <p className="text-sm text-cyan-200">{count} units</p>}
+                </section>)}
+              </div>
+            </div>}
+            {p.mode === 'equality_hard' && board.first.length > 0 && <LuminaPanel><p className="text-sm text-purple-200">Your first combination</p>
+              <p className="mt-1 text-center">{board.first.map((block) => block.value).join(' + ')}</p></LuminaPanel>}
+            {gathering && <section aria-label="Chosen weights addition" className="rounded-xl border border-cyan-300/30 p-4">
+              <p className="mb-3 text-center text-sm text-cyan-200">{p.mode === 'one_step' ? 'Just the weights you added' : 'Your chosen weights'}</p>
+              <div className="flex flex-wrap items-end justify-center gap-1">{board.weights.map((block, index) => <React.Fragment key={block.id}>
+                {index > 0 && <span className="pb-3">+</span>}{weight(block)}</React.Fragment>)}<span className="pb-3">=</span>
+                <span className="pb-3 text-cyan-200">{['relate', 'infer'].includes(item.step) ? p.target : 'Say the total'}</span></div>
+              {pulledLevers.includes(UNIT_CELLS) && <div className="mt-3"><UnitCells values={board.weights.map((block) => block.value)} /></div>}
+              {pulledLevers.includes(PART_WHOLE) && <div className="mt-3"><PartWholeBar whole={p.total} part={p.known} /></div>}
+              {modelK !== null && <div className="mt-3"><BalanceModel weight={modelK} /></div>}
+            </section>}
+          </LayoutGroup>
+          {p.mode === 'two_step' && <LuminaPanel><p className="text-sm text-purple-200">Your moves as an equation - x means one parcel</p>
+            <div aria-label="Equation notebook" className="mt-2 space-y-2 text-center font-mono text-lg">
+              <p>{p.parcels}x + {p.known} = {p.total}</p>
+              {separated(p, board) && <><p className="text-sm text-slate-400">Subtract {p.known} from both sides</p><p>{p.parcels}x = {p.total - p.known}</p></>}
+              {shared(p, board) && <><p className="text-sm text-slate-400">Divide both sides into {p.parcels} equal groups</p>
+                <p>x = {['infer', 'explain'].includes(item.step) ? p.target : 'one group'}</p></>}
+            </div></LuminaPanel>}
+          {canMove && p.parcels === 1 && <div aria-label="Weight tray" className="flex flex-wrap items-end justify-center gap-2">
+            {TRAY.map((value) => <button key={value} type="button" aria-label={`Add ${value} weight`} disabled={!placeWorkshopWeight(board, value, nextId.current)}
+              onClick={() => publish(placeWorkshopWeight(boardFor(item), value, nextId.current++), `Added ${value} weight`)} className="flex min-h-16 min-w-14 flex-col items-center justify-end gap-1 rounded-xl border border-cyan-300/40 p-2 disabled:opacity-40">
+              {weightVisual(value)}<span>{value}</span></button>)}
+          </div>}
+          {isHands(item.step) && <div className="space-y-3"><div className="flex justify-center gap-2">
+            <LuminaButton size="sm" disabled={!canMove || !undo.current.length} onClick={() => { if (!canMove || runner.isAwaitingGesture()) return; publish(undo.current.pop() ?? null, 'Undid the last move', false); }}>Undo</LuminaButton>
+            <LuminaButton size="sm" disabled={!canMove} onClick={() => {
+              const current = boardFor(item);
+              publish(item.step === 'share' ? { ...current, units: current.units.map((place) => place === -2 ? -2 : -1) }
+                : item.step === 'separate' ? { ...current, leftAside: false, units: current.units.map(() => -1) }
+                  : { ...current, weights: [] }, 'Reset this step');
+            }}>Reset this step</LuminaButton>
+          </div><p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p></div>}
+        </PipWorkspace>
+        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={sessionItem}
+          steps={items.filter((step) => step.problem.id === sessionItem.problem.id)} completedIds={solvedIds}
+          carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !solvedIds.has(step.id)).map((step) => step.id))}
+          startInstruction="Start the tutor, then work with the weights." />
+      </>}
+    </LuminaCardContent>
+  </LuminaCard>;
+}
+
+// ============================================================================
+// One family, routed by data
+// ============================================================================
+
+/** A session is one challenge type; its surface is fixed by the data. A mixed session runs on neither. */
+function BalanceScaleSurface(props: BalanceSurfaceProps) {
+  const surface = balanceSurface(props.data);
+  if (surface === 'equality') return <EqualitySurface {...props} />;
+  if (surface === 'workshop') return <WorkshopSurface {...props} />;
+  return <LuminaCard className={props.className}><LuminaCardContent>
+    <p>This balance scale session mixes challenge types, so it cannot run. Regenerate it with one mode.</p>
+  </LuminaCardContent></LuminaCard>;
+}
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const BalanceScale = withWorkspaceOnly<BalanceScaleProps>('balance-scale', BalanceScaleSurface, props => props.data.title);
-
-/**
- * Three surfaces, one family: the route is by DATA, and each surface is its own
- * `withWorkspaceOnly`, so every route renders on the teaching workspace or, unbound, the
- * "needs the tutor" card. There is no scripted fallback.
- */
-const BalanceScaleWithEqualityPilot: React.FC<BalanceScaleProps> = (props) =>
-  usesBalanceWorkshop(props.data) ? <BalanceScaleWorkshop {...props} />
-    : usesEqualityPilot(props.data) ? <BalanceScaleEquality {...props} /> : <BalanceScale {...props} />;
-
-export default BalanceScaleWithEqualityPilot;
+const BalanceScale = withWorkspaceOnly<BalanceSurfaceProps>('balance-scale', BalanceScaleSurface, props => props.data.title);
+export default BalanceScale;

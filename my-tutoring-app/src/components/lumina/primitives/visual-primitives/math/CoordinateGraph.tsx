@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaAnswerChoice,
   LuminaFeedbackCard,
-  LuminaActionButton,
+  LuminaBadge,
   LuminaChallengeCounter,
   LuminaProgress,
   type AnswerChoiceState,
@@ -16,24 +16,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CoordinateGraphMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   PLANE, choiceCorrect, coordinateMiss, describeCoordinateWork, interceptOf, maskedEquation, nearestCrossing,
-  plotCorrect, workspaceAssignment, workspaceScene, type GridPoint,
+  plotCorrect, workspaceScene, type GridPoint,
 } from './coordinateGraphWorkspace';
 import {
-  AXIS_GUIDE, CROSSING, DROP_LINES, EVERY_LINE, INTERCEPT_FRAME, MODEL_LINE, MODEL_POINT, RISE_RUN, SLOPE_FRAME, UNIT_STEPS,
-  coordinateLevers, isPracticeItem, leverFacts, lineModel, pointModel, simplerItem, type LineModel,
+  AXIS_GUIDE, COORDINATE_LEVERS, CROSSING, DROP_LINES, EVERY_LINE, INTERCEPT_FRAME, MODEL_LINE, MODEL_POINT, RISE_RUN,
+  SLOPE_FRAME, UNIT_STEPS, isPracticeItem, lineModel, pointModel, type LineModel,
 } from './coordinateGraphLevers';
+import { coordinateGraphBoss } from './coordinateGraph.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -107,32 +107,6 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   find_intercept: { label: 'Find Intercept',  icon: '🎯', accentColor: 'emerald' },
 };
 
-// ============================================================================
-// Tutor reveal policy (scripted path) — keep the AI tutor in sync with the on-screen scaffold so
-// it never names what a harder tier withheld.
-// ============================================================================
-
-function tutorRevealClause(type: string, tier?: string): string {
-  if (!tier) return '';
-  if (tier === 'easy')
-    return ' Support tier EASY: you may name the method and walk the first step.';
-  if (tier === 'medium')
-    return ' Support tier MEDIUM: on-screen guides are reduced — nudge the next step, do not state the full method.';
-  // hard — the screen withholds the key aid; the tutor must not leak it.
-  switch (type) {
-    case 'plot_point':
-      return ' Support tier HARD: no hover readout or axis labels — ask which direction each coordinate moves; do NOT confirm the exact cell.';
-    case 'read_point':
-      return ' Support tier HARD: axis labels are hidden — ask the student to count gridlines from the origin; do NOT read the coordinates for them.';
-    case 'find_slope':
-      return ' Support tier HARD: rise/run guides are hidden — ask which two points they see; do NOT give rise, run, or the slope.';
-    case 'find_intercept':
-      return ' Support tier HARD: the equation and crossing marker are hidden — ask where the line meets the y-axis; do NOT name the intercept.';
-    default:
-      return ' Support tier HARD: minimal scaffolding — guide with questions, never reveal the answer.';
-  }
-}
-
 /** A pointer position in the plane's viewBox (the screen matrix inverted), or by its box where there is none. */
 function viewBoxPoint(svg: SVGSVGElement, clientX: number, clientY: number): { x: number; y: number } | null {
   const matrix = svg.getScreenCTM?.();
@@ -190,33 +164,35 @@ interface CoordinateGraphProps {
   runtimeEvalMode?: string;
 }
 
-const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  CoordinateGraphProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CoordinateGraphChallenge>) => Progress }) => {
+const useCoordinateProgress = useWorkspaceProgressFor('coordinate-graph');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const CoordinateGraphSurface = ({ data, className, runtimePlanItemId }: CoordinateGraphProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { gridMin, gridMax, challenges } = data;
   const svgRef = useRef<SVGSVGElement>(null);
   const stableInstanceIdRef = useRef(data.instanceId || `coordinate-graph-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
 
-  // --- Challenge progression. On the workspace path the runtime moves the index. ---
+  // --- Challenge progression: the teaching workspace owns it. ---
   /** Bound below, once the setters exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useCoordinateProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: coordinateGraphBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const {
     currentIndex, currentAttempts, results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult, mergeResult, advance: advanceProgress,
+    mergeResult,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -254,32 +230,13 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
   /** A runtime pull on the session item; never drawn on a practice item. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
-  // --- AI Tutoring (scripted path; on the workspace path the tutor reads the scene instead) ---
-  const aiData = useMemo(() => ({
-    title: data.title,
-    challenge: challenge ? { type: challenge.type, instruction: challenge.instruction } : null,
-    supportTier: challenge?.supportTier,
-    progress: `${currentIndex + 1}/${challenges.length}`,
-  }), [data.title, challenge, currentIndex, challenges.length]);
-
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'coordinate-graph',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiData,
-    gradeLevel: data.gradeBand || '6-8',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   // --- Local state ---
   const [hoverPt, setHoverPt] = useState<GridPoint | null>(null);
   const [placedPt, setPlacedPt] = useState<GridPoint | null>(null);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'show_answer' | null>(null);
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
 
-  /** A fresh item (both paths) or Try again (workspace): nothing placed or chosen, the feedback gone. */
+  /** A fresh item or Try again: nothing placed or chosen, the feedback gone. */
   const resetWork = () => { setFeedback(null); setPlacedPt(null); setSelectedOpt(null); setHoverPt(null); };
   openItem.current = (_index, retry) => {
     // Try again on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
@@ -315,28 +272,13 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
   }, [challenge, gridMin, gridMax]);
 
   // --- Answer handling. Every tap that grades commits, right or wrong. ---
-  const handleAnswer = useCallback((correct: boolean, student: string, answer: string, work: { placed: GridPoint | null; chosen: number | null }) => {
+  const handleAnswer = useCallback((correct: boolean, work: { placed: GridPoint | null; chosen: number | null }) => {
     if (feedback || !challenge) return;
     const attempts = currentAttempts + 1;
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback('correct');
-      sendText(`[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: "${challenge.instruction}". Student answered "${student}" correctly on attempt ${attempts}. Congratulate briefly.`, { silent: true });
-    } else {
-      SoundManager.playIncorrect();
-      if (!tutorOwned && currentAttempts >= 1) {
-        setFeedback('show_answer');
-        recordResult({
-          challengeId: challenge.id, correct: false, score: 0,
-          attempts, challengeType: challenge.type,
-        });
-        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 2. Show answer and explain.`, { silent: true });
-      } else {
-        setFeedback('incorrect');
-        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 1. Give a hint.${tutorRevealClause(challenge.type, challenge.supportTier)}`, { silent: true });
-      }
-    }
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+    setFeedback(correct ? 'correct' : 'incorrect');
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own fields.
     progress.commitCheck(describeCoordinateWork(challenge, work), correct, coordinateMiss(challenge, work));
     // An easier practice item (a simplify lever) is not the session's challenge: it records nothing of its own.
     if (correct && !isPracticeItem(challenge)) {
@@ -347,48 +289,10 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedback, challenge, currentIndex, challenges.length, currentAttempts, recordResult, mergeResult, sendText, tutorOwned, progress.commitCheck]);
+  }, [feedback, challenge, currentAttempts, mergeResult, progress.commitCheck]);
 
-  // --- Advance (scripted path; the workspace path has no Continue and the runtime advances) ---
-  const advanceToNext = useCallback(() => {
-    if (tutorOwned) return;
-    resetWork();
-    if (!advanceProgress()) {
-      const totalCorrect = challengeResults.filter(r => r.correct).length;
-      const score = Math.round((totalCorrect / challenges.length) * 100);
-      const types = challenges.map(c => c.type);
-      const uniqueTypes = types.filter((t, i) => types.indexOf(t) === i);
-      submitEvaluation(
-        totalCorrect === challenges.length,
-        score,
-        {
-          type: 'coordinate-graph',
-          totalCorrect,
-          totalChallenges: challenges.length,
-          challengeTypes: uniqueTypes,
-          averageAttempts: challengeResults.reduce((s, r) => s + (r.attempts ?? 1), 0) / challengeResults.length,
-          durationMs: elapsedMs,
-        },
-        { challengeResults },
-      );
-      const ps = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(`[ALL_COMPLETE] Phase scores: ${ps}. Overall: ${score}%. Give encouraging phase-specific feedback.`, { silent: true });
-    } else {
-      sendText(`[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`, { silent: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorOwned, advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitEvaluation, elapsedMs]);
-
-  // Auto-advance on correct (scripted path only: on the workspace path the runtime owns progression)
-  useEffect(() => {
-    if (!tutorOwned && feedback === 'correct') {
-      const t = setTimeout(advanceToNext, 1500);
-      return () => clearTimeout(t);
-    }
-  }, [tutorOwned, feedback, advanceToNext]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   const submittedRef = useRef(false);
   finish.current = (result) => {
     if (hasSubmitted || submittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
@@ -420,7 +324,7 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
     if (!pt) return;
     SoundManager.snap();
     setPlacedPt(pt);
-    handleAnswer(plotCorrect(challenge, pt), `(${pt.x}, ${pt.y})`, `(${challenge.x1}, ${challenge.y1})`, { placed: pt, chosen: null });
+    handleAnswer(plotCorrect(challenge, pt), { placed: pt, chosen: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge, feedback, pointerCrossing, handleAnswer]);
 
@@ -434,21 +338,22 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
     if (!challenge || feedback || learnerBlocked()) return;
     SoundManager.select();
     setSelectedOpt(idx);
-    const opts = [challenge.option0, challenge.option1, challenge.option2, challenge.option3];
-    handleAnswer(choiceCorrect(challenge, idx), opts[idx] ?? '', opts[challenge.correctOptionIndex ?? 0] ?? '', { placed: null, chosen: idx });
+    handleAnswer(choiceCorrect(challenge, idx), { placed: null, chosen: idx });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge, feedback, handleAnswer]);
 
-  // --- Workspace path: what the tutor and the observer are shown, republished every render. ---
+  // --- What the tutor and the observer are shown, republished every render. ---
   useLayoutEffect(() => {
-    if (!tutorOwned || !challenge || !sessionChallenge) return;
+    if (!challenge || !sessionChallenge) return;
     const scene = workspaceScene(challenge, { gridMin, gridMax, work: { placed: placedPt, chosen: selectedOpt } });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, grid, pulledLevers);
-    const levers = practice ? [] : coordinateLevers(sessionChallenge, grid, pulledLevers);
+    const levers = practice ? [] : COORDINATE_LEVERS.declare(sessionChallenge, grid, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : COORDINATE_LEVERS.support(sessionChallenge, grid),
+      onScreen: practice ? '' : COORDINATE_LEVERS.onScreen(sessionChallenge, grid, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -456,10 +361,10 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge, grid);
+          const easier = COORDINATE_LEVERS.simpler(sessionChallenge, grid, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: coordinateGraphBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -469,28 +374,14 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
   });
 
   // --- Render helpers ---
-  // Map the option FSM onto the kit's grading-state language. The workspace path never shows the right choice.
+  // Map the option FSM onto the kit's grading-state language. The right choice is never shown after a wrong one.
   const optionState = (idx: number): AnswerChoiceState => {
     if (!feedback || selectedOpt === null) return 'idle';
     const isSelected = idx === selectedOpt;
-    const isCorrect = idx === challenge?.correctOptionIndex;
     if (feedback === 'correct' && isSelected) return 'correct';
-    if (feedback === 'show_answer' && isCorrect) return 'correct';
-    if ((feedback === 'incorrect' || feedback === 'show_answer') && isSelected) return 'incorrect';
+    if (feedback === 'incorrect' && isSelected) return 'incorrect';
     return 'dimmed';
   };
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : challenge?.id ?? null,
-    label: 'The coordinate plane and answer choices',
-    solved: feedback === 'correct',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   if (!challenges || challenges.length === 0) {
     return (
@@ -553,13 +444,15 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
             <LuminaProgress value={(currentIndex / challenges.length) * 100} accent="blue" />
 
             {/* Instruction */}
-            <p className="text-base text-slate-200 font-medium text-center py-2">
-              {challenge.instruction}
-            </p>
+            <div className="flex items-center justify-center gap-2 py-2">
+              {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+              <p className="text-base text-slate-200 font-medium text-center">{challenge.instruction}</p>
+            </div>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-5">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the plane and the choices
+                as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-5">
             {/* SVG Coordinate Plane — bespoke interaction surface */}
             <div className="flex justify-center">
               <svg
@@ -656,20 +549,6 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
                     <circle data-pip-object="placed-point" cx={toX(placedPt.x)} cy={toY(placedPt.y)} r={7}
                       fill={feedback === 'correct' ? '#4ade80' : '#f87171'}
                       stroke="white" strokeWidth={2} />
-                  )}
-
-                  {/* plot_point: show correct answer after 2 fails (scripted path only) */}
-                  {challenge.type === 'plot_point' && feedback === 'show_answer' && (
-                    <>
-                      <circle cx={toX(challenge.x1)} cy={toY(challenge.y1)} r={9}
-                        fill="#4ade80" fillOpacity={0.2} stroke="#4ade80" strokeWidth={1.5} strokeDasharray="4 3" />
-                      <circle cx={toX(challenge.x1)} cy={toY(challenge.y1)} r={5}
-                        fill="#4ade80" />
-                      <text x={toX(challenge.x1)} y={toY(challenge.y1) - 14} fill="#4ade80"
-                        fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
-                        ({challenge.x1}, {challenge.y1})
-                      </text>
-                    </>
                   )}
 
                   {/* read_point: displayed point */}
@@ -842,44 +721,15 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
               </div>
             )}
 
-            </div>
+            </PipWorkspace>
 
             {/* Feedback */}
             {feedback === 'correct' && (
               <LuminaFeedbackCard status="correct">Correct! Well done.</LuminaFeedbackCard>
             )}
-            {/* With the tutor, Try again is the shell's and the hint is the tutor's. */}
-            {feedback === 'incorrect' && tutorOwned && (
+            {/* Try again is the shell's and the hint is the tutor's. */}
+            {feedback === 'incorrect' && (
               <LuminaFeedbackCard status="incorrect">Not quite.</LuminaFeedbackCard>
-            )}
-            {feedback === 'incorrect' && !tutorOwned && (
-              <LuminaFeedbackCard status="incorrect" teachingNote={challenge.hint}>
-                <div className="space-y-3">
-                  <p className="text-sm">Not quite. Try again!</p>
-                  <LuminaActionButton
-                    action="retry"
-                    size="sm"
-                    onClick={() => { setFeedback(null); setPlacedPt(null); setSelectedOpt(null); }}
-                  />
-                </div>
-              </LuminaFeedbackCard>
-            )}
-            {feedback === 'show_answer' && (
-              <LuminaFeedbackCard status="incorrect" teachingNote={challenge.hint}>
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    The correct answer is{' '}
-                    <span className="text-emerald-300 font-bold">
-                      {challenge.type === 'plot_point'
-                        ? `(${challenge.x1}, ${challenge.y1})`
-                        : [challenge.option0, challenge.option1, challenge.option2, challenge.option3][challenge.correctOptionIndex ?? 0]}
-                    </span>
-                  </p>
-                  <LuminaActionButton action="next" size="sm" onClick={advanceToNext}>
-                    Continue
-                  </LuminaActionButton>
-                </div>
-              </LuminaFeedbackCard>
             )}
           </LuminaCardContent>
         </LuminaCard>
@@ -888,8 +738,7 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
   );
 };
 
-// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
-const CoordinateGraph = withWorkspaceController<CoordinateGraphProps, ProgressOptions<CoordinateGraphChallenge>, Progress>(
-  'coordinate-graph', CoordinateGraphSurface, useScriptedProgress, useWorkspaceProgressFor('coordinate-graph'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const CoordinateGraph = withWorkspaceOnly<CoordinateGraphProps>('coordinate-graph', CoordinateGraphSurface, props => props.data.title);
 
 export default CoordinateGraph;

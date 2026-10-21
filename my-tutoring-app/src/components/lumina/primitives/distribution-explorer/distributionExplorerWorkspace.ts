@@ -1,15 +1,17 @@
 /**
- * Distribution explorer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C19).
+ * Distribution explorer on the shared tutor/JEV teaching workspace; its boss is `distributionExplorer.boss.ts`.
  *
- * Pure: the component, the journey row and any probe read the same choices, check, assignment and scene. Every mode
+ * Pure: the component, the boss and any probe read the same choices, check, ask and scene. Every mode
  * is a gesture item answered on the screen: identify, compute and predict-shape items are a tap on one choice and
  * Check; an explore item is checked by whether the learner moved a slider or changed the family before "Got it". The
  * tutor is never handed `correctFamily`, `correctValue`, `acceptableAnswers` or the rationale.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../components/live-activity/bossLevers';
 import { FAMILIES } from '../../lib/probability';
-import type { DistributionChallenge, DistributionEvalMode, DistributionFamily } from './types';
+import type { DistributionChallenge, DistributionFamily } from './types';
+import type { DistributionMiss } from './distributionExplorer.card';
+
+export { DISTRIBUTION_MISSES_BY_MODE, type DistributionMiss } from './distributionExplorer.card';
 
 /** One answer button: `key` is what the check reads, `label` is the button's text (and its aria-label). */
 export interface DistributionChoice { key: string; label: string }
@@ -90,28 +92,6 @@ export function describeDistributionWork(ch: DistributionChallenge, work: Distri
   return choice ? `picked "${choice.label}"` : 'nothing picked yet';
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the choice picked, drawn from the catalog's
- * commonStruggles (rate vs mean, discrete vs continuous, complements and boundary terms, skew direction):
- * - explore: `not_explored` (Got it with no slider moved and no family changed);
- * - identify: `discrete_continuous` (a family of the other kind: exponential for a count, or a count for a waiting
- *   time), `binomial_poisson` (the two counting families swapped);
- * - compute: `complement` (1 − the answer), `reciprocal` (1 ÷ the answer: the rate for the mean), `near_value` (within
- *   15%: a boundary term in or out, ≤ for <), `wrong_value`;
- * - predict shape: `reversed_skew` (left for right or right for left), `said_symmetric`, `wrong_shape`.
- */
-export type DistributionMiss = 'not_explored' | 'discrete_continuous' | 'binomial_poisson'
-  | 'complement' | 'reciprocal' | 'near_value' | 'wrong_value'
-  | 'reversed_skew' | 'said_symmetric' | 'wrong_shape';
-
-const COMPUTE_MISSES: readonly DistributionMiss[] = ['complement', 'reciprocal', 'near_value', 'wrong_value'];
-export const DISTRIBUTION_MISSES_BY_MODE: Record<DistributionEvalMode, readonly DistributionMiss[]> = {
-  explore: ['not_explored'],
-  identify: ['discrete_continuous', 'binomial_poisson'],
-  compute_basic: COMPUTE_MISSES,
-  compute_advanced: [...COMPUTE_MISSES, 'reversed_skew', 'said_symmetric', 'wrong_shape'],
-};
-
 const close = (a: number, b: number, rel: number) => Math.abs(a - b) <= Math.max(1e-4, rel * Math.abs(b));
 
 /** A wrong numeric pick, read against the key. */
@@ -150,12 +130,15 @@ export function distributionMiss(ch: DistributionChallenge | null, work: Distrib
   }
 }
 
-export function workspaceAssignment(ch: DistributionChallenge): TeachingAssignment {
-  const task = ch.type === 'guided_exploration'
+/** What the learner is asked on one item (the boss's `ask`). Never the key. */
+export function distributionAsk(ch: DistributionChallenge): string {
+  return ch.type === 'guided_exploration'
     ? `${ch.prompt} Move the sliders or change the family, then press Got it.`
     : ch.scenario ? `${ch.scenario} ${ch.prompt}` : ch.prompt;
-  return { id: ch.id, task, response: 'gesture' };
 }
+
+/** A compute prompt that asks for a mean or a variance, not a probability: one formula is the whole item. */
+const isMoment = (prompt: string) => !/probab|p\s*\(/i.test(prompt) && /variance|var\s*\[|expected|e\s*\[|mean/i.test(prompt);
 
 const KIND: Record<DistributionChallenge['type'], string> = {
   guided_exploration: 'guided exploration: try the experiment the prompt names on the workbench, then press Got it',
@@ -166,7 +149,7 @@ const KIND: Record<DistributionChallenge['type'], string> = {
 
 /** What is drawn and asked. The key is never named; on identify the workbench hides its family until the check. */
 export function workspaceScene(ch: DistributionChallenge, work: DistributionWork, familyHidden: boolean,
-  valuesHidden = false): WorkspaceScene {
+  valuesHidden = false): SceneOf {
   const facts: Record<string, string> = { kind: KIND[ch.type] };
   if (ch.scenario) facts.scenario = ch.scenario;
   facts.question = ch.prompt;
@@ -180,16 +163,15 @@ export function workspaceScene(ch: DistributionChallenge, work: DistributionWork
         : 'the chart (PMF/PDF or CDF) and the mean, variance, standard deviation and skewness update as the sliders move');
   facts.learnerWork = describeDistributionWork(ch, work);
   facts.constraints = ch.type === 'guided_exploration'
-    ? 'The learner moves the parameter sliders or changes the family, then presses Got it; the activity credits Got it '
-      + 'only after the workbench was moved on this prompt. There is no right answer to the question; their observation is spoken to you. '
-      + 'You cannot move a slider, change the family or press Got it.'
-    : 'The learner taps one choice and presses Check; the activity checks it itself. The learner may also use the '
-      + 'workbench sliders to test an idea. You cannot tap a choice, move a slider or press Check.';
+    ? 'The question has no checked answer; what the learner noticed is spoken to you.'
+    : 'The learner may also move the workbench sliders to test an idea before they check.'
+      + (ch.type === 'compute' && isMoment(ch.prompt)
+        ? ' This item asks for a mean or a variance: stating the formula of its family works it to the answer.' : '');
   return { objects: [], facts };
 }
 
 /**
- * The journey row's input (`liveJourneySpec.ts`). Choices: `correct` the key's label; `wrong` the first other choice in
+ * The boss's harness input (`distributionExplorer.boss.ts`). Choices: `correct` the key's label; `wrong` the first other choice in
  * screen order. Explore: `correct` a new value for the first slider (its maximum, or its minimum when it is there);
  * `wrong` nothing (Got it alone).
  */

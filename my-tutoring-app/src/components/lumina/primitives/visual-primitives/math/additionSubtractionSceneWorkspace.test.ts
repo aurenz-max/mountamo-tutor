@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
-import { itemFromChallenge } from './additionSubtractionSceneScript';
+import { itemFromChallenge } from './additionSubtractionSceneDomain';
 import { spokenNumber } from '../../../components/live-activity/runtime/spokenMissContract';
-import { addSubMiss, additionSubtractionAssignment, additionSubtractionSpokenMisses } from './additionSubtractionSceneWorkspace';
+import { addSubMiss, additionSubtractionSpokenMisses } from './additionSubtractionSceneWorkspace';
+import { additionSubtractionSceneBoss } from './additionSubtractionScene.boss';
 
 const item = (type: string, operation: 'addition' | 'subtraction', startCount: number, changeCount: number, band: 'K' | '1' = 'K') =>
   itemFromChallenge({ id: type, type, operation, startCount, changeCount,
@@ -39,7 +40,7 @@ it.each([
   const misses = additionSubtractionSpokenMisses(it_);
   expect(misses.map(m => m.id)).toEqual(ids);
   expect(misses.flatMap(m => m.examples ?? []).filter(e => e === spokenNumber(answer) || e === String(answer))).toEqual([]);
-  expect(additionSubtractionAssignment(it_).misses).toEqual(misses);
+  expect(additionSubtractionSceneBoss.assignment(it_).misses).toEqual(misses);
 });
 
 it('an enacted item lists none', () => expect(additionSubtractionSpokenMisses(join)).toEqual([]));

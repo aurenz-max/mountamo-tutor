@@ -1,18 +1,16 @@
 /**
- * Shape builder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md), plus the open build `make_shape` (shapeMakeBuild.ts).
+ * Shape builder on the shared tutor/JEV teaching workspace (boss: `shapeBuilder.boss.ts`), plus the open build
+ * `make_shape` (shapeMakeBuild.ts).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the grid
- * (placed corners, tapped shapes and categories, drawn fold lines, measuring tools) and checked by the activity's
- * own check, so the tutor is never handed a target shape name, a `correctCategory` or where to place a corner.
+ * Pure: the component and any probe read the same scene. Every challenge is answered on the grid (placed corners,
+ * tapped shapes and categories, drawn fold lines, measuring tools) and checked by the activity's own check, so the
+ * tutor is never handed a target shape name, a `correctCategory` or where to place a corner.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ShapeBuilderChallenge } from './ShapeBuilder';
 import { readShape, shapeMakeMiss, type Pt, type ShapeAsk, type ShapeMakeMiss } from './shapeMakeBuild';
 
-export function workspaceAssignment(challenge: ShapeBuilderChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+export { SHAPE_BUILDER_MISSES_BY_MODE, type ShapeBuilderMiss } from './shapeBuilder.card';
 
 export interface ShapeView {
   /** The corners placed on the grid (build, coordinate_shape, make_shape), in order. */
@@ -53,16 +51,6 @@ export function describeShapeWork(challenge: ShapeBuilderChallenge, view: ShapeV
   }
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), only the observable pattern:
- * - build and coordinate_shape: the first target property the closed shape does not have, as the existing check
- *   reads it (`buildCheck`): `sides_off`, `right_angles_off`, `parallel_off`, `equal_sides_off`;
- * - make_shape: the first asked property the shape does not have (`shapeMakeMiss`), plus `symmetry_off`;
- * - classify and classify_by_lines: `misplaced_shape` (at least one shape in a category it does not belong to).
- * find_symmetry, measure and compose have no wrong check: an unfinished one is not checked.
- */
-export type ShapeBuilderMiss = ShapeMakeMiss | 'misplaced_shape';
-
 type BuildTarget = NonNullable<ShapeBuilderChallenge['targetProperties']>;
 interface BuiltProps { sides: number; rightAngles: number; parallelPairs: number; equalSides: 'all' | 'pairs' | 'none' }
 
@@ -101,14 +89,16 @@ export function makeShapeMiss(challenge: ShapeBuilderChallenge, view: ShapeView)
   return shapeMakeMiss(askOf(challenge), view.closed ? readShape(view.points) : null);
 }
 
-/** What is drawn and asked. No target shape name, category key or placement is ever published. */
-export function workspaceScene(challenge: ShapeBuilderChallenge, view: ShapeView): WorkspaceScene {
+/**
+ * What is drawn and asked. No target shape name, category key or placement is ever published. On make_shape the
+ * learner's own shape goes as numbers; the shape is never named, because naming it can be the skill.
+ */
+export function workspaceScene(challenge: ShapeBuilderChallenge, view: ShapeView): SceneOf {
   const drawn: Record<string, string | number> = {};
   if (challenge.type === 'make_shape') {
-    drawn.howToBuild = 'tap dots to place corners; tap the first corner to close the shape; tap a corner to take it '
-      + 'out; with the shape closed, tap a new dot to add a corner on the nearest side';
     Object.assign(drawn, makeShapeFacts(view));
-    drawn.shapeFacts = "the numbers above are the learner's own shape as it is now, measured by the activity";
+    drawn.shapeFacts = "the numbers above are the learner's own shape as it is now, measured by the activity; the "
+      + 'shape is not named (square, trapezoid), because naming it can be the skill';
   } else if (challenge.type === 'build' || challenge.type === 'coordinate_shape') {
     drawn.cornersPlaced = view.points.length;
     drawn.shapeClosed = view.closed ? 'yes' : 'no';
@@ -120,16 +110,5 @@ export function workspaceScene(challenge: ShapeBuilderChallenge, view: ShapeView
   } else if (challenge.type === 'measure') {
     drawn.toolsOn = view.toolsOn.join(', ') || 'none';
   }
-  return {
-    objects: [],
-    facts: {
-      kind: challenge.type, ...drawn,
-      learnerWork: describeShapeWork(challenge, view),
-      constraints: challenge.type === 'make_shape'
-        ? 'The learner builds on the dot grid and presses "I\'m done!"; the activity checks the shape against the ask '
-          + 'itself. You cannot place, move or take out a corner for the learner.'
-        : 'The learner works on the grid (places corners, taps a shape then a category, draws fold lines or turns on '
-          + 'tools) and presses Check; the activity checks the work itself. You cannot place, sort or draw for the learner.',
-    },
-  };
+  return { objects: [], facts: { kind: challenge.type, ...drawn, learnerWork: describeShapeWork(challenge, view) } };
 }

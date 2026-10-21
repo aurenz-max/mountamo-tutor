@@ -21,24 +21,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PercentBarMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  amountsHidden, challengeSteps, describePercentWork, parseAmount, percentMiss, stepCorrect, workspaceAssignment, workspaceScene,
+  amountsHidden, challengeSteps, describePercentWork, parseAmount, percentMiss, stepCorrect, workspaceScene,
   type PercentWork,
 } from './percentBarWorkspace';
 import {
-  ADDED_MODEL_LEVER, BAR_LEVERS, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, TENTHS_LEVER,
-  VALUE_BAR_LEVER, isPracticePercent, leverFacts, percentLevers, simplerPercent,
+  ADDED_MODEL_LEVER, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, PERCENT_LEVERS, TENTHS_LEVER,
+  VALUE_BAR_LEVER, isPracticePercent,
 } from './percentBarLevers';
+import { percentBarBoss } from './percentBar.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -187,26 +187,6 @@ const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
   whole_of: { label: 'Find the Whole', icon: '🎯', accentColor: 'purple' },
 };
 
-/**
- * Mode-aware tutor reveal clause — keeps the AI tutor in sync with the on-screen
- * support tier so it does not leak what the tier withheld (scripted path only).
- */
-function tierRevealClause(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  type: PercentBarChallengeType,
-): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return type === 'subtraction'
-      ? ' SUPPORT TIER easy: you may name the strategy (start at 100%, subtract the discount) and walk the setup step by step.'
-      : ' SUPPORT TIER easy: you may name the percent-of-whole strategy and walk the student through where the percent sits on the 0%-100% bar.';
-  }
-  if (tier === 'medium') {
-    return ' SUPPORT TIER medium: the on-screen aids are partly withdrawn — nudge the student toward the next step, do not solve it for them.';
-  }
-  return ' SUPPORT TIER hard: aids are off. Do NOT name the target percent or the arithmetic that produces it. Ask what the scenario states and where that lands on the bar; the student works unaided.';
-}
-
 // Map the local feedback channel to the kit's feedback-card status.
 const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
   success: 'correct',
@@ -255,8 +235,10 @@ interface PercentBarProps {
 // Component
 // ============================================================================
 
-const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PercentBarProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PercentBarChallenge>) => Progress }) => {
+const usePercentProgress = useWorkspaceProgressFor('percent-bar');
+const PRACTICE_NOTE = 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const PercentBarSurface = ({ data, className, runtimePlanItemId }: PercentBarProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -267,7 +249,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     benchmarkLines = [25, 50, 75],
     doubleBar = false,
     showCalculation = true,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -280,16 +261,16 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Challenge progress. On the workspace path the runtime moves the index.
+  // Challenge progress: the teaching workspace owns it.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePercentProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: percentBarBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -298,10 +279,9 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -329,7 +309,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const [isDragging, setIsDragging] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [showHint, setShowHint] = useState(false);
   const [hoveredBenchmark, setHoveredBenchmark] = useState<number | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepAttempts, setStepAttempts] = useState(0);
@@ -345,15 +324,13 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   // Refs
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
   /** Per-step results accumulated within the CURRENT challenge (cleared on advance). */
   const stepLogRef = useRef<{ attempts: number; accuracy: number }[]>([]);
 
   // -------------------------------------------------------------------------
   // Derived state — challenge + active step
   // -------------------------------------------------------------------------
-  // In-item levers (`percentBarLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // In-item levers (`PERCENT_LEVERS`), keyed by the session item they were pulled on, and the easier problem a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<PercentBarChallenge | null>(null);
@@ -403,10 +380,8 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     setAmountText('');
     setFeedback('');
     setFeedbackType('');
-    setShowHint(false);
     setIsDragging(false);
     setHoveredBenchmark(null);
-    hintViewedRef.current = false;
   };
   const resetChallenge = () => {
     setCurrentStepIndex(0);
@@ -441,61 +416,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration (scalar session-level + active-step fields)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    currentStepIndex: currentStepIndex + 1,
-    totalSteps: steps.length,
-    scenario: currentChallenge?.scenario ?? '',
-    wholeValue,
-    wholeValueLabel,
-    question: currentStep ? currentStep.prompt : currentChallenge?.question ?? '',
-    targetPercent: placeStep?.targetPercent ?? 0,
-    currentPercent,
-    currentValue,
-    attemptNumber: stepAttempts + 1,
-    ...(supportTier ? { supportTier } : {}),
-  }), [
-    challengeType, currentChallengeIndex, challenges.length, currentStepIndex, steps.length,
-    currentChallenge, currentStep, placeStep, wholeValue, wholeValueLabel,
-    currentPercent, currentValue, stepAttempts, supportTier,
-  ]);
-
-  // The legacy context carries the target percent; on the workspace path the tutor reads the scene instead.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'percent-bar',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Grade 5-8',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction (fires once on connect)
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const first = challenges[0];
-    const firstSteps = challengeSteps(first);
-    const firstPrompt = firstSteps[0]?.prompt ?? first.question;
-    sendText(
-      `[ACTIVITY_START] Percent bar session: ${challenges.length} ${CHALLENGE_TYPE_LABEL[challengeType]} problems`
-      + `${firstSteps.length > 1 ? ` (each is a ${firstSteps.length}-step problem)` : ''}. `
-      + `Title: "${title}". First scenario: "${first.scenario}" — "${firstPrompt}". `
-      + `Introduce warmly and read the first question.`
-      + tierRevealClause(supportTier, first.type),
-      { silent: true },
-    );
-  }, [isConnected, challenges, challengeType, title, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever the challenge id changes (both paths)
+  // Per-challenge reset — fires whenever the challenge id changes
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!currentChallenge) return;
@@ -503,7 +424,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     setEstablished([]);
     stepLogRef.current = [];
     recordedRef.current = false;
-    hintViewedRef.current = false;
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
@@ -524,8 +444,8 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     return Math.max(0, 100 - error * 2);
   };
 
-  /** Input on the bar, the slider or the options: closed once the item is done, and on the workspace path while a
-   *  checked answer waits for Try again. */
+  /** Input on the bar, the slider or the options: closed once the item is done, and while a checked answer waits for
+   *  Try again. */
   const inputClosed = allChallengesComplete || hasSubmittedEvaluation || isCurrentChallengeComplete || blocked;
 
   const setPercent = (value: number) => {
@@ -550,24 +470,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging) handleBarInteraction(e);
-  };
-
-  const handleShowHint = () => {
-    if (!currentStep) return;
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      hintsViewedRef.current += 1;
-    }
-    const targetClause = currentStep.kind === 'place'
-      ? ` Current percent: ${currentPercent}%, target: ${currentStep.targetPercent}%.`
-      : '';
-    sendText(
-      `[HINT_REQUESTED] Student requested a hint for: "${currentStep.prompt}". `
-      + `Hint shown: "${currentStep.hint}".${targetClause} `
-      + `Provide additional encouragement without revealing the answer.`,
-      { silent: true },
-    );
   };
 
   // -------------------------------------------------------------------------
@@ -596,8 +498,8 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   }, [recordResult]);
 
   // -------------------------------------------------------------------------
-  // Check answer (handles both place + choice steps). A right step that is not the last opens the next step and is
-  // not a commit; a wrong step, and the last step right, are the checked gestures.
+  // Check answer (place, amount and choice steps). A right step that is not the last opens the next step and is not a
+  // commit; a wrong step, and the last step right, are the checked gestures.
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge || !currentStep || learnerBlocked()) return;
@@ -639,31 +541,12 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           setFeedback(`${stepLabel}Too low at ${currentPercent}%. Try higher.`);
           setFeedbackType('error');
         }
-        sendText(
-          `[ANSWER_INCORRECT] ${stepLabel}Student placed ${currentPercent}% but target is ${currentStep.targetPercent}%. `
-          + `Difference: ${Math.abs(diff)}%. Attempt ${attempts}. `
-          + `Give a directional hint without revealing the exact answer.`
-          + tierRevealClause(supportTier, currentChallenge.type),
-          { silent: true },
-        );
       } else if (currentStep.kind === 'amount') {
         setFeedback(`${stepLabel}Not quite. Look at what the whole bar stands for and what the filled part stands for, then try again.`);
         setFeedbackType('error');
-        sendText(
-          `[ANSWER_INCORRECT] ${stepLabel}Student typed ${amountText}. Attempt ${attempts}. `
-          + `Help them reason from the bar without naming the amount.`
-          + tierRevealClause(supportTier, currentChallenge.type),
-          { silent: true },
-        );
       } else {
         setFeedback(`${stepLabel}Not quite — recheck the prices you found, then choose again.`);
         setFeedbackType('error');
-        sendText(
-          `[ANSWER_INCORRECT] ${stepLabel}Student chose the wrong option on the compare step. Attempt ${attempts}. `
-          + `Prompt them to compare the two prices they computed, without naming the answer.`
-          + tierRevealClause(supportTier, currentChallenge.type),
-          { silent: true },
-        );
       }
       progress.commitCheck(response, false, percentMiss(currentChallenge, work));
       return;
@@ -701,13 +584,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
     if (!isLastStep) {
       // Advance to the next sub-step within this challenge.
-      const next = steps[currentStepIndex + 1];
-      sendText(
-        `[NEXT_STEP] Moving to step ${currentStepIndex + 2} of ${steps.length} in this problem. `
-        + `Next: "${next?.prompt ?? ''}". Read it to the student.`
-        + tierRevealClause(supportTier, currentChallenge.type),
-        { silent: true },
-      );
       setCurrentStepIndex((i) => i + 1);
       return;
     }
@@ -716,83 +592,15 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     recordedRef.current = true;
     progress.commitCheck(response, true);
     finalizeChallenge(currentChallenge);
-    sendText(
-      `[CHALLENGE_CORRECT] Student finished all ${steps.length} step(s) of "${currentChallenge.scenario}". `
-      + `Congratulate briefly and reinforce the key idea of this ${CHALLENGE_TYPE_LABEL[currentChallenge.type]} problem.`,
-      { silent: true },
-    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge, currentStep, currentStepIndex, steps, isMultiStep,
-    currentPercent, selectedOption, amountText, stepAttempts, supportTier, hideAmounts,
-    finalizeChallenge, sendText, progress.commitCheck,
+    currentPercent, selectedOption, amountText, stepAttempts, hideAmounts,
+    finalizeChallenge, progress.commitCheck,
   ]);
 
-  // -------------------------------------------------------------------------
-  // Advance to next challenge (scripted path; the workspace path hides Next and the runtime advances)
-  // -------------------------------------------------------------------------
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) return;
-    const nextIdx = currentChallengeIndex + 1;
-    const next = challenges[nextIdx];
-    if (next) {
-      const nextSteps = challengeSteps(next);
-      const firstPrompt = nextSteps[0]?.prompt ?? next.question;
-      sendText(
-        `[NEXT_ITEM] Moving to challenge ${nextIdx + 1} of ${challenges.length}`
-        + `${nextSteps.length > 1 ? ` (${nextSteps.length} steps)` : ''}. `
-        + `Scenario: "${next.scenario}". First question: "${firstPrompt}". Read it to the student.`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Session-complete (scripted path): build canonical 9-field metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned) return;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: PercentBarMetrics = {
-      type: 'percent-bar',
-      challengeType,
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    const goalMet = correctCount === total;
-    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} percent problems done. Correct: ${correctCount}/${total}. `
-      + `First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging summary.`,
-      { silent: true },
-    );
-  }, [
-    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
-    challengeType, submitEvaluation, sendText, tutorOwned,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0) return;
     const metrics: PercentBarMetrics = {
@@ -802,7 +610,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       correctCount: result.solvedCount,
       attemptsCount: result.attemptsCount,
       firstTryCount: result.firstTryCount,
-      hintsViewed: hintsViewedRef.current,
+      hintsViewed: 0,
       overallAccuracy: result.accuracy,
       averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
     };
@@ -825,35 +633,36 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     );
   }, [allChallengesComplete, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`percentBarLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; every mode
+  // declares levers (`PERCENT_LEVERS`). The levers' context: the second bar the session already draws, and the step on
+  // screen (the bar levers are not offered on a choice step).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, {
       stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption, amount: amountText, established,
       showPercentLabels, showValueLabels: valueLabelsOn, showCalculation: calculationOn, benchmarkLines,
       doubleBar: doubleBarOn || leverOn(VALUE_BAR_LEVER),
     });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : percentLevers(sessionChallenge, pulledLevers, { valueBarShown: doubleBarOn });
+    const leverCtx = { valueBarShown: doubleBarOn, step: currentStep?.kind };
+    const levers = practice ? [] : PERCENT_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : PERCENT_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : PERCENT_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (BAR_LEVERS.includes(id) && choiceStep) return 'The bar is not on screen on this step: the learner is choosing an option.';
-        if (id === VALUE_BAR_LEVER && amountStep) return 'On this step the bar is fixed and its amounts are written on it; try tenths or part_copies.';
-        if (id === PART_COPIES_LEVER && !amountStep) return 'The part is not marked yet: part_copies works on the step where the learner types the whole.';
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerPercent(sessionChallenge);
+          const easier = PERCENT_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetChallenge();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: percentBarBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -865,18 +674,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The percent bar',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
@@ -886,6 +683,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
             <LuminaBadge accent="emerald" className="text-xs">
               {CHALLENGE_TYPE_LABEL[challengeType]}
             </LuminaBadge>
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             {challenges.length > 0 && (
               <LuminaChallengeCounter
                 current={Math.min(currentChallengeIndex + 1, challenges.length)}
@@ -958,9 +756,10 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           </div>
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the bar, its aids and the options
+            below as one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* ---- PLACE step: values + bar + calculation ---- */}
         {placeStep && !allChallengesComplete && (
           <>
@@ -1291,7 +1090,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           </div>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && feedbackType && (
@@ -1300,7 +1099,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           </LuminaFeedbackCard>
         )}
 
-        {/* Action Buttons. On the workspace path the shell's Try again / Next challenge replace Next. */}
+        {/* Action Buttons. The shell's Try again and Next challenge follow a check. */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && (
@@ -1309,35 +1108,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                 onClick={handleCheckAnswer}
                 disabled={hasSubmittedEvaluation || blocked}
               />
-            )}
-            {!tutorOwned && isCurrentChallengeComplete && (
-              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </LuminaActionButton>
-            )}
-          </div>
-        )}
-
-        {/* Hint (scripted path). The generated hint can name the step's percent; with the tutor, help is the tutor's. */}
-        {!tutorOwned && !allChallengesComplete && currentStep && (
-          <div className="flex flex-col items-center gap-2">
-            {!showHint ? (
-              stepAttempts >= 1 && !isCurrentChallengeComplete && (
-                <LuminaButton
-                  tone="subtle"
-                  size="sm"
-                  className="text-slate-400 text-xs"
-                  onClick={handleShowHint}
-                >
-                  Show Hint
-                </LuminaButton>
-              )
-            ) : (
-              <LuminaPanel accent="amber" className="max-w-md">
-                <p className="text-amber-300 text-xs">
-                  <span className="font-semibold">Hint:</span> {currentStep.hint}
-                </p>
-              </LuminaPanel>
             )}
           </div>
         )}
@@ -1365,8 +1135,6 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const PercentBar = withWorkspaceController<PercentBarProps, ProgressOptions<PercentBarChallenge>, Progress>(
-  'percent-bar', PercentBarSurface, useScriptedProgress, useWorkspaceProgressFor('percent-bar'));
+const PercentBar = withWorkspaceOnly<PercentBarProps>('percent-bar', PercentBarSurface, props => props.data.title);
 
 export default PercentBar;

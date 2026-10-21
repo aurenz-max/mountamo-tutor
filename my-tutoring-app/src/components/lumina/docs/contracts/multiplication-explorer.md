@@ -3,6 +3,7 @@
 - **Derived:** 2026-10-09 (workspace binding, batch C15) · evidence: W1 payloads, `MultiplicationExplorer.workspace.test.tsx`,
   `__tests__/MultiplicationExplorer.per-challenge-fact.test.tsx`, oracle `service/qa/oracles/multiplication-explorer.ts`
 - **Component:** `primitives/visual-primitives/math/MultiplicationExplorer.tsx` · **Domain:** `multiplicationExplorerWorkspace.ts` ·
+  **Levers:** `multiplicationExplorerLevers.ts` · **Boss:** `multiplicationExplorer.card.ts` + `multiplicationExplorer.boss.ts` ·
   **Generator:** `service/math/gemini-multiplication-explorer.ts` · **Catalog:** `service/manifest/catalog/math.ts`
 - **Modes:** `build` β1.5 · `connect` β2.5 · `commutative` β3.5 · `distributive` β4.5 · `missing_factor` β5.5 · `fluency` β6.5.
   Every mode is one typed number checked by `multiplicationAnswerCorrect`.
@@ -27,8 +28,8 @@
   (`? × 6 = 36` prints its own answer), while enough other facts remain. Probe: workspace test, journey sweep J3.
 
 ### R4 — shared teaching workspace, W1 plain shape · OBSERVED (2026-10-09)
-- `withWorkspaceController`; the typed answer commits through `progress.commitCheck` with `multiplicationMiss`; Next,
-  Submit Results and the score line are scripted-path only; scripted cues are muted on the workspace path. Misses:
+- `withWorkspaceOnly` (since 2026-10-20; before, `withWorkspaceController` beside a scripted path); the typed answer
+  commits through `progress.commitCheck` with `multiplicationMiss`; there is no Next, Submit Results or score line. Misses:
   product modes `added_factors`, `one_group_short`, `one_group_over`, `off_by_one`, `other_product` (+ `one_part_only`
   on distributive); missing_factor `gave_product`, `gave_known_factor`, `subtracted`, `one_jump_off`, `other_factor`.
   Probe: `MultiplicationExplorer.workspace.test.tsx`, journey sweep on six payloads, tutor replay.
@@ -74,3 +75,8 @@
   hard 7×9, 8×7, 9×8). Commutative asks written as "if 7 × 8 is 56, what is 8 × 7?" state the product; `askFor`
   replaces them with code wording (R3). A grade band that cannot fill every tier (the 2-3 band, products to 50)
   now uses thirds of its facts (`tierPick`).
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (`skip_strip`,
+  `show_model`, `break_apart`, `skip_line` as layout; `smaller_fact` easier), workspace-only export; the scripted path,
+  the scripted tutor cues and reveal policy, the adapter and the catalog guidance/tutoring prose deleted. Items are
+  stamped with their own fact (`explorerItems`) so the assignment and levers read the item alone. R1-R3, R5, R6
+  unchanged; R4 updated.

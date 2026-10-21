@@ -40,9 +40,10 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generatePolygonAreaBuilder } = await loader.import('/src/components/lumina/service/math/gemini-polygon-area-builder.ts');
   const { polygonAreaBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/polygon-area-builder.ts');
-  const { buildPerimeterAsk, buildPerimeterLevers, buildPerimeterMiss } =
+  const { buildPerimeterAsk, buildPerimeterMiss } =
     await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaBuild.ts');
-  const { validatePolygonAreaData } = await loader.import('/src/components/lumina/components/live-activity/adapters/polygonAreaBuilderLive.ts');
+  const { POLYGON_LEVERS } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaLevers.ts');
+  const { validatePolygonAreaData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/polygonAreaBuilder.boss.ts');
   /** A rectangle `rows` tall with perimeter p, at the top-left. */
   const rect = (p, rows) => { const cols = p / 2 - rows; return Array.from({ length: rows * cols }, (_, i) => ({ c: i % cols, r: Math.floor(i / cols) })); };
   const cases = [
@@ -62,7 +63,7 @@ try {
     const issues = [];
     const types = [...new Set(ch.map(c => c.type))];
     if (types.length !== 1 || types[0] !== mode) issues.push(`routing: got ${JSON.stringify(types)}`);
-    try { validatePolygonAreaData(data); } catch (e) { issues.push(`live adapter refuses: ${e.message}`); }
+    try { validatePolygonAreaData(data); } catch (e) { issues.push(`boss validate refuses: ${e.message}`); }
     const oracle = polygonAreaBuilderOracle.verify(data, { componentId: 'polygon-area-builder', evalMode: mode, topic,
       gradeLevel: `Grade ${grade}`, ...(scopeMax ? { scopeMax } : {}) });
     for (const v of oracle.violations) issues.push(`oracle ${v.check} ${v.where}: ${v.detail}`);
@@ -75,7 +76,7 @@ try {
       if (c.instruction !== buildPerimeterAsk(p, c.shapesAsked)) issues.push(`instruction not code-written: "${c.instruction}"`);
       if (scopeMax && p > scopeMax) issues.push(`perimeter ${p} over the stated ${scopeMax}`);
       if (c.showGridOverlay || c.showDecompositionGuides || c.showRegionAreaLabel) issues.push(`aid on: ${c.id}`);
-      if (!buildPerimeterLevers(c, []).length) issues.push(`no levers on ${c.id}`);
+      if (!POLYGON_LEVERS.declare(c, { leftOut: null, rearranged: false, firstShape: false }, []).length) issues.push(`no levers on ${c.id}`);
       // The judge on this item: two different shapes pass (the second against the first), one narrower is named.
       const firstRows = p / 2 - 1 > 10 ? 2 : 1;
       const first = rect(p, firstRows), second = rect(p, firstRows + 1), narrow = rect(p - 2, firstRows);

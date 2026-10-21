@@ -117,7 +117,7 @@ it('open_counters opens the tray for the learner; the covered part stays covered
 // ── The equation levers (slice 2) ─────────────────────────────────────────────
 
 import { fireEvent, act } from '@testing-library/react';
-import { buildBondItems } from './numberBondScript';
+import { buildBondItems } from './numberBondDomain';
 import { expandNumberBondInteractions } from './numberBondModes';
 import { smallerBond } from './numberBondLevers';
 
@@ -236,5 +236,22 @@ it('a related-fact say turn: the frame holds the whole, each counter in its colo
   expect(frame).toHaveLength(1);
   expect(frame[0].closest('section')!.getAttribute('aria-label')).toBe('whole counter tray');
   expect(h.state().task!.demand.onScreen).toMatch(/whole's counters/);
+  h.close();
+});
+
+// ── The say step asks about the learner's own split ──────────────────────────
+
+it('a decompose say step asks about the split the learner built: its ask and its key are that part', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'decompose', instanceId: 'bond',
+    data: bondData([{ id: 'd', type: 'decompose', whole: 5 }], 5) });
+  h.settle();
+  split(h, 2, 3);
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance'); h.settle();
+  expect(h.state().task!.demand).toMatchObject({ kind: 'say', countersInLeftPart: 2, countersInRightPart: 3 });
+  expect(h.state().task!.task).toBe('This part has two. How many are in the highlighted part?');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"three"/);
+  h.say('three'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true });
   h.close();
 });

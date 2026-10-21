@@ -1,23 +1,29 @@
 /**
- * revision-workshop on the teaching workspace (OB-7L, following R12). Every mode revises a draft:
+ * revision-workshop on the teaching workspace (OB-7L, following R12), wired from its boss (`revisionWorkshop.boss.ts`).
+ * Every mode revises a draft:
  *   - add-details, word-choice, combine-sentences, transitions, concision: one target sentence per item; the learner
  *     types the revised sentence. Code catches an unchanged sentence, a too-short one, a combine still split in two,
  *     and a "concise" one that is not shorter; the shared writing judge checks the revision does the skill's job.
  *   - reorganize: the learner orders the draft's sentences; the targets' order is the answer, checked in code.
- *   - build_combine (open build): the learner MAKES one sentence from two ideas' clause tiles and joining words; many
- *     joins pass (and, but, because, so, when), judged by the writing judge for keeping both ideas and making sense.
  * The generator's `idealRevision` is never shown: it is this item's answer.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
+import type { RevisionMiss } from './revisionWorkshop.card';
+import { mixedOrder } from './sentenceOrder';
+
+export { REVISION_MISSES_BY_MODE, type RevisionMiss } from './revisionWorkshop.card';
 
 export type RevisionSkill = 'add-details' | 'word-choice' | 'combine-sentences' | 'transitions' | 'concision' | 'reorganize';
-export interface RevisionTarget { targetId: string; originalText: string; suggestion?: string; idealRevision?: string }
-export interface RevisionPayload { revisionSkill: RevisionSkill; draft: string; targets: RevisionTarget[] }
+export interface RevisionTarget { targetId: string; originalText: string; suggestion?: string; idealRevision?: string; alternatives?: string[] }
+export interface RevisionPayload { revisionSkill: RevisionSkill; draft: string; targets: RevisionTarget[]; supportTier?: SupportTier }
 
-export type RevisionMiss = 'unchanged' | 'too_short' | 'not_combined' | 'not_shorter' | 'not_sense' | 'wrong_job' | 'wrong_order';
-export const TYPED_MISSES: readonly RevisionMiss[] = ['unchanged', 'too_short', 'not_combined', 'not_shorter', 'not_sense', 'wrong_job'];
+/** The eval mode each skill runs as. */
+export const MODE_OF: Record<RevisionSkill, string> = {
+  'add-details': 'add_details', 'word-choice': 'word_choice', 'combine-sentences': 'combine_sentences',
+  transitions: 'transitions', concision: 'concision', reorganize: 'reorganize',
+};
 
 const JOB: Record<Exclude<RevisionSkill, 'reorganize'>, { ask: string; criterion: string }> = {
   'add-details': { ask: 'Rewrite the sentence and add a detail: what it looked, sounded or felt like, how many, or which kind.',
@@ -32,24 +38,47 @@ const JOB: Record<Exclude<RevisionSkill, 'reorganize'>, { ask: string; criterion
     criterion: 'It says the same thing in fewer words, removing repeated or extra words.' },
 };
 
-export interface RevisionItem { id: string; skill: RevisionSkill; original: string; suggestion: string; ask: string; criterion: string }
+export interface RevisionSentence { id: string; text: string }
+export interface RevisionItem {
+  id: string;
+  skill: RevisionSkill;
+  /** The eval mode (`MODE_OF`). */
+  mode: string;
+  original: string;
+  suggestion: string;
+  ask: string;
+  criterion: string;
+  /** The generator's revisions of this sentence: never shown, and no clue may name one. */
+  ideal: string[];
+  /** reorganize: the draft's sentences in the order that makes sense (the answer). Empty on a typed item. */
+  sentences: RevisionSentence[];
+  /** The lesson's support tier, stamped on each item (when the model lever comes). */
+  supportTier?: SupportTier;
+}
 
 /** One item per target; reorganize is one item for the whole draft. */
 export function revisionItems(p: RevisionPayload): RevisionItem[] {
   const targets = (p?.targets ?? []).filter(t => t && typeof t.originalText === 'string' && t.originalText.trim());
+  const tier = p?.supportTier ? { supportTier: p.supportTier } : {};
   if (p?.revisionSkill === 'reorganize') {
-    return targets.length >= 3 ? [{ id: 'order', skill: 'reorganize', original: p.draft, suggestion: '', criterion: '',
-      ask: 'Put the sentences in the order that makes sense.' }] : [];
+    return targets.length >= 3 ? [{ id: 'order', skill: 'reorganize', mode: 'reorganize', original: p.draft, suggestion: '',
+      criterion: '', ask: 'Put the sentences in the order that makes sense.', ideal: [],
+      sentences: targets.map(t => ({ id: t.targetId, text: t.originalText.trim() })), ...tier }] : [];
   }
   const job = JOB[p?.revisionSkill as Exclude<RevisionSkill, 'reorganize'>];
   if (!job) return [];
-  return targets.map((t, i) => ({ id: t.targetId || `r${i + 1}`, skill: p.revisionSkill, original: t.originalText.trim(),
-    suggestion: (t.suggestion ?? '').trim(), ask: job.ask, criterion: job.criterion }));
+  return targets.map((t, i) => {
+    const original = t.originalText.trim();
+    const ideal = [t.idealRevision, ...(t.alternatives ?? [])]
+      .filter((s): s is string => typeof s === 'string' && !!s.trim() && norm(s) !== norm(original)).map(s => s.trim());
+    return { id: t.targetId || `r${i + 1}`, skill: p.revisionSkill, mode: MODE_OF[p.revisionSkill], original,
+      suggestion: (t.suggestion ?? '').trim(), ask: job.ask, criterion: job.criterion, ideal, sentences: [], ...tier };
+  });
 }
 
 const words = (s: string) => s.trim().split(/\s+/).filter(w => /[a-z]/i.test(w));
 const sentences = (s: string) => s.split(/[.!?]+/).filter(x => words(x).length > 0).length;
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+export const norm = (s: string) => s.toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
 
 /** What code checks before any judge. */
 export function revisionShapeMiss(item: RevisionItem, revised: string): RevisionMiss | undefined {
@@ -65,27 +94,46 @@ export function revisionShapeMiss(item: RevisionItem, revised: string): Revision
 export const orderMiss = (p: RevisionPayload, order: readonly string[]): RevisionMiss | undefined =>
   order.length === p.targets.length && order.every((id, i) => id === p.targets[i].targetId) ? undefined : 'wrong_order';
 
-export const revisionAssignment = (item: RevisionItem): TeachingAssignment => ({ id: item.id, task: item.ask, response: 'gesture' });
+/**
+ * reorganize's sentence cards: a stable mixed order (the same on every render) that is never the answer and never
+ * holds three sentences together as the answer has them (`mixedOrder`). The generator's scrambled draft is not used:
+ * its order is the model's.
+ */
+export const boardOrder = (item: RevisionItem): RevisionSentence[] =>
+  mixedOrder(item.sentences, s => s.text, [item.sentences.map(s => s.text)], item.sentences.map(s => s.id).join('|') + item.id);
 
 export const revisionJudgeRequest = (item: RevisionItem, revised: string, draft: string, grade?: string): WordBuildJudgeRequest => ({
   ask: `${item.ask} Original: "${item.original}". (${item.criterion})`, made: revised.trim(), unit: 'writing', context: draft,
   ...(grade ? { grade } : {}),
 });
 
-export function revisionScene(item: RevisionItem, draft: string, typed: string, inspectorSaid?: string): WorkspaceScene {
+/**
+ * What the tutor is told: the task, and on a typed item the draft, the marked sentence and the learner's revision; on
+ * reorganize the sentences in board order (`boardOrder`, never the answer's) and the learner's order as text. The moves
+ * are the card's; this says what the builder checks.
+ */
+export function revisionScene(item: RevisionItem, draft: string, typed: string, placed: number, inspectorSaid?: string): SceneOf {
+  if (item.skill === 'reorganize') {
+    return { objects: [], facts: {
+      ask: item.ask,
+      sentences: boardOrder(item).map(s => s.text).join(' | '),
+      order: typed || 'nothing placed',
+      sentencesPlaced: placed,
+      ...(inspectorSaid ? { inspectorSaid } : {}),
+      constraints: 'The builder checks the whole order at once; one order makes sense.',
+    } };
+  }
   return { objects: [], facts: {
     ask: item.ask,
     draft: draft.length > 480 ? `${draft.slice(0, 477)}...` : draft,
-    ...(item.skill === 'reorganize' ? { order: typed || 'nothing placed' } : { sentenceToRevise: item.original, revision: typed.trim() || 'empty' }),
+    sentenceToRevise: item.original,
+    revision: typed.trim() || 'empty',
     ...(inspectorSaid ? { inspectorSaid } : {}),
-    constraints: item.skill === 'reorganize'
-      ? 'The learner taps the draft\'s sentences into order and presses "I\'m done!". You cannot move a sentence.'
-      : 'The learner types a revised sentence and presses "I\'m done!". The builder checks it is changed and does this '
-        + 'revision\'s job; spelling is not judged. Many revisions pass. You cannot type for the learner.',
+    constraints: 'The builder checks the revision is changed and does this revision\'s job; spelling is not judged. Many revisions pass.',
   } };
 }
 
-// ── Levers ───────────────────────────────────────────────────────────────────
+// ── Levers (declared in `revisionWorkshopLevers.ts`) ─────────────────────────
 export const HINT_LEVER = 'revision_hint';
 export const MODEL_LEVER = 'model_revision';
 export const EDIT_LEVER = 'edit_original';
@@ -99,28 +147,6 @@ export const MODEL_REVISION: Record<RevisionSkill, [string, string]> = {
   concision: ['The big huge tree was very tall and high.', 'The huge tree was very tall.'],
   reorganize: ['Then I brushed my teeth. First I woke up.', 'First I woke up. Then I brushed my teeth.'],
 };
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly RevisionMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function revisionLevers(item: RevisionItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  if (item.skill === 'reorganize') return [
-    lever(MODEL_LEVER, 'help', ['wrong_order'], 'The learner\'s order does not make sense.',
-      'Shows two other sentences put in order, so the learner sees order words (first, then) doing their job.', pulled),
-  ];
-  return [
-    ...(item.suggestion ? [lever(HINT_LEVER, 'help', ['unchanged', 'wrong_job', 'not_combined', 'not_shorter'],
-      'The learner does not know what to change, or the change does a different job.',
-      'Shows the revision tip for this sentence (what kind of change to make), never a revised sentence.', pulled)] : []),
-    lever(MODEL_LEVER, 'help', ['wrong_job', 'not_sense', 'not_combined', 'not_shorter'],
-      'The learner\'s revision does a different job or does not make sense.',
-      'Shows one revision of a DIFFERENT sentence for this skill, before and after.', pulled),
-    lever(EDIT_LEVER, 'help', ['too_short', 'unchanged', 'not_sense'],
-      'The learner cannot start from a blank box.',
-      'Puts the original sentence in the box so the learner changes it instead of retyping it.', pulled),
-  ];
-}
 
 export function revisionMissWords(miss: RevisionMiss | undefined): string {
   switch (miss) {

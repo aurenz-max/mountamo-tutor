@@ -51,6 +51,8 @@ export interface SystemsEquationsChallenge {
   // Display-only: the checker always compares to expectedX/expectedY, never to
   // any of these flags. A tier withdraws solving help; it NEVER changes the
   // coefficients, the system, or the answer.
+  /** The item's support tier: the lever set reads it to say when the model lever comes (`SYSTEMS_LEVERS.support`). */
+  supportTier?: 'easy' | 'medium' | 'hard';
   /**
    * Show a FUZZY translucent region around the lines' crossing (a "look here"
    * self-check cue). NEVER the exact point and NEVER its coordinates — the
@@ -1128,6 +1130,7 @@ Return ONLY the wrapper fields described above.
       ch.showAxisLabels = sc.showAxisLabels;
       ch.showStepHint = sc.showStepHint;
       ch.stepHint = stepHintFor(ch.type);
+      ch.supportTier = supportTier;
     }
     console.log(
       `[SystemsEquations] Tier "${supportTier}" (structure + scaffolding) applied per-challenge across ${challenges.length} challenge(s) `

@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 /**
- * sentence-builder `build_sentence` (open build) on the real teaching workspace, with a real generation as the payload;
- * the tile-order modes stay off the workspace. The Live context, evaluation writes, sound and the judge's HTTP call
- * are substituted.
+ * sentence-builder `build_sentence` (open build) on the real teaching workspace, with a real generation as the payload.
+ * The Live context, evaluation writes, sound and the judge's HTTP call are substituted.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -23,9 +22,10 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { ge
 import SentenceBuilder, { type SentenceBuilderData } from './SentenceBuilder';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/sentence-builder.build_sentence.json';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { validateSentenceBuilderData } from '../../../components/live-activity/adapters/sentenceBuilderLive';
+import { validateSentenceBuilderData } from './sentenceBuilder.boss';
+import { SENTENCE_LEVERS } from './sentenceBuilderLevers';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { askableSentence, sentenceLevers, sentenceShapeMiss, sentenceText, sentencesFrom, type SentenceItem } from './sentenceBuild';
+import { askableSentence, bankFor, sentenceScene, sentenceShapeMiss, sentenceText, sentencesFrom, type SentenceItem } from './sentenceBuild';
 
 const data = (payload as unknown as { data: SentenceBuilderData }).data;
 const items = sentencesFrom(data.sentences!);
@@ -68,8 +68,19 @@ describe('build_sentence rules (pure)', () => {
     expect(workspaceBinding({ instanceId: 'w', primitiveId: 'sentence-builder', pin: 'simple', objectiveIds: ['o'], data: tiles })).toBeNull();
     expect(workspaceBinding({ instanceId: 'b', primitiveId: 'sentence-builder', pin: 'build_sentence', objectiveIds: ['o'], data })).not.toBeNull();
     const tw = getComponentById('sentence-builder')!.teachingWorkspace!;
-    const answered = new Set(sentenceLevers(items[0], []).flatMap(l => l.answers ?? []));
+    const answered = new Set(SENTENCE_LEVERS.declare(items[0], null, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.build_sentence) if (m !== 'same_sentence') expect(answered.has(m), m).toBe(true);
+  });
+
+  it('the bank and the scene never hold three tiles together as one of its sentences has them', () => {
+    for (const item of items) {
+      const bank = bankFor(item);
+      expect([...bank].sort()).toEqual([...item.bank].sort());
+      expect(bank.slice(-2).every(t => t === '.' || t === '?')).toBe(true);
+      const runs = item.examples.flatMap(ex => ex.slice(0, -2).map((_, i) => ex.slice(i, i + 3).join(' ')));
+      for (let i = 0; i + 3 <= bank.length; i++) expect(runs, item.id).not.toContain(bank.slice(i, i + 3).join(' '));
+      expect(sentenceScene(item, [], []).facts.tiles).toBe(bank.join(' '));
+    }
   });
 });
 

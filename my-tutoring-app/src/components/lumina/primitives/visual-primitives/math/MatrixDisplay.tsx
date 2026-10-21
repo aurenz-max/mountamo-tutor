@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaCardContent,
-  LuminaButton,
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
@@ -19,21 +18,21 @@ import type { MatrixDisplayMetrics } from '../../../evaluation/types';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   SCALAR_LABEL, blankGrid, boxLabel, boxMarks, describeMatrixWork, formatEntry, matrixCorrect, matrixMiss,
-  workComplete, workspaceAssignment, workspaceScene, type MatrixWork,
+  workComplete, workspaceScene, type MatrixWork,
 } from './matrixDisplayWorkspace';
 import {
-  DIAGONALS_LEVER, LETTERS_LEVER, MODEL_LEVER, POSITION_LEVER, ROW_BANDS_LEVER, ROW_COLUMN_LEVER, SIGNS_LEVER, TERMS_LEVER,
-  isPracticeMatrix, leverFacts, matrixLevers, matrixModel, positionRecipe, simplerMatrix, termList, type MatrixModel,
+  DIAGONALS_LEVER, LETTERS_LEVER, MATRIX_LEVERS, MODEL_LEVER, POSITION_LEVER, ROW_BANDS_LEVER, ROW_COLUMN_LEVER, SIGNS_LEVER,
+  TERMS_LEVER, isPracticeMatrix, matrixModel, positionRecipe, termList, type MatrixModel,
 } from './matrixDisplayLevers';
+import { matrixDisplayBoss } from './matrixDisplay.boss';
 
 // ============================================================================
 // Data Types — re-exported from the generator's canonical interface
@@ -63,9 +62,10 @@ export interface MatrixDisplayChallenge {
   expectedScalar?: number;
   expectedMatrix?: number[][];
   hint: string;
-  /** Support tier (modality #4): when true, "Show steps" is withheld until the student
-   *  has made at least one attempt. Undefined/false = available up front. */
+  /** Support tier (modality #4): the generator's hard-tier flag (the old scripted "Show steps" gate). */
   stepsAfterAttempt?: boolean;
+  /** The lesson's support tier, stamped on each challenge: when the tutor's model lever comes. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface MatrixDisplayData {
@@ -75,7 +75,7 @@ export interface MatrixDisplayData {
   challengeType: MatrixChallengeType;
   educationalContext?: string;
   gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
-  /** Within-mode support tier when present (surfaced for a future live tutor). */
+  /** Within-mode support tier when present (also stamped on each challenge). */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
@@ -109,41 +109,6 @@ const formatNumber = formatEntry;
 /** §6a #11 standard per-challenge score formula. */
 function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (Math.max(0, attempts - 1) * 20));
-}
-
-/**
- * Tier-aware reveal policy for the AI tutor (scripted path). Tells the tutor how much of the
- * method it may surface and — crucially — what it must never state outright, so
- * the scaffold never leaks the answer the student is computing. Keyed on the
- * operation because the "never say X" line differs per challenge type.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  mode: MatrixChallengeType,
-): string {
-  if (!tier) return '';
-  const never =
-    mode === 'determinant'
-      ? 'Never state the determinant value for the student.'
-      : 'Never state the result-matrix entries for the student.';
-  const method =
-    mode === 'determinant'
-      ? 'for a 2×2 [[a,b],[c,d]], det = ad − bc'
-      : mode === 'inverse'
-        ? 'A⁻¹ = (1/det) · [[d, −b], [−c, a]] — swap the diagonal, negate the off-diagonal, divide by det'
-        : mode === 'multiply'
-          ? 'each result entry is a row of A dotted with a column of B (multiply matching entries, then sum)'
-          : mode === 'transpose'
-            ? 'row i of A becomes column i of Aᵀ'
-            : 'add or subtract matching entries position by position';
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the method (${method}) and walk the setup one entry at a time. ${never}`;
-    case 'medium':
-      return `SUPPORT TIER medium: nudge the next entry and let the student do the arithmetic. ${never}`;
-    default:
-      return `SUPPORT TIER hard: the on-screen hint and up-front "Show steps" are withdrawn. Ask the student to recall the rule and map one entry themselves; do not supply the withheld method outright. ${never}`;
-  }
 }
 
 /** Colour bands for the `row_bands` lever: row r of the matrix and column r of the answer grid. */
@@ -281,101 +246,6 @@ const MatrixInput: React.FC<MatrixInputProps> = ({ rows, columns, values, onChan
 };
 
 // ============================================================================
-// Steps Reveal — one worked entry per operation (scripted path). It never fills in the
-// whole answer: the rest of the result stays masked, and a determinant stops before its value.
-// ============================================================================
-
-const StepsReveal: React.FC<{ challenge: MatrixDisplayChallenge }> = ({ challenge }) => {
-  const { challengeType, values, secondMatrix, expectedMatrix } = challenge;
-  const onlyCell = (m: number[][], r: number, c: number) => m.map((row, ri) => row.map((_, ci) => ri === r && ci === c));
-
-  if (challengeType === 'determinant' && values.length === 2) {
-    const a = values[0][0], b = values[0][1], c = values[1][0], d = values[1][1];
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div className="font-mono text-slate-200">det = ad − bc</div>
-        <div className="font-mono text-slate-300">= ({a})({d}) − ({b})({c})</div>
-        <div className="text-xs text-slate-400">Multiply each pair, then subtract the second product from the first.</div>
-      </div>
-    );
-  }
-
-  if (challengeType === 'determinant' && values.length === 3) {
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div className="font-mono">det = a₁₁(a₂₂a₃₃ − a₂₃a₃₂) − a₁₂(a₂₁a₃₃ − a₂₃a₃₁) + a₁₃(a₂₁a₃₂ − a₂₂a₃₁)</div>
-        <div className="text-xs text-slate-400">Work each bracket, multiply by the top-row entry in front of it, then combine with the signs + − +.</div>
-      </div>
-    );
-  }
-
-  if (challengeType === 'transpose' && expectedMatrix && values.length > 1) {
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div>Each entry at A[i][j] moves to position Aᵀ[j][i].</div>
-        <div className="font-mono text-slate-300">Worked example: Aᵀ[0][1] = A[1][0] = {formatNumber(values[1][0])}</div>
-        <MatrixRenderer values={expectedMatrix} label="Aᵀ" accent="emerald" revealMask={onlyCell(expectedMatrix, 0, 1)} />
-      </div>
-    );
-  }
-
-  if ((challengeType === 'add' || challengeType === 'subtract') && expectedMatrix && secondMatrix) {
-    const sym = challengeType === 'add' ? '+' : '−';
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div className="font-mono">result[i][j] = A[i][j] {sym} B[i][j]</div>
-        <div className="font-mono text-slate-300">
-          Worked example: result[0][0] = ({values[0][0]}) {sym} ({secondMatrix.values[0][0]}) = {formatNumber(expectedMatrix[0][0])}
-        </div>
-        <MatrixRenderer values={expectedMatrix} label="Result" accent="emerald" revealMask={onlyCell(expectedMatrix, 0, 0)} />
-      </div>
-    );
-  }
-
-  if (challengeType === 'multiply' && expectedMatrix && secondMatrix) {
-    // Walk through result[0][0] as the worked example so students see the dot product
-    // mechanic (row 0 of A · column 0 of B) before generalizing to the rest. Mask the
-    // remaining cells of the Result matrix so the walkthrough doesn't give away the
-    // answers the student still has to compute.
-    const aRow0 = values[0];
-    const bCol0 = secondMatrix.values.map((row) => row[0]);
-    const products = aRow0.map((a, k) => a * bCol0[k]);
-    const r00 = expectedMatrix[0][0];
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div className="font-mono text-slate-200">result[i][j] = Σ A[i][k] × B[k][j]</div>
-        <div className="pt-1 text-xs uppercase tracking-wider text-slate-400">Worked example: result[0][0]</div>
-        <div className="font-mono text-slate-300">
-          = {aRow0.map((_, k) => `A[0][${k}] × B[${k}][0]`).join(' + ')}
-        </div>
-        <div className="font-mono text-slate-300">
-          = {aRow0.map((a, k) => `(${a})(${bCol0[k]})`).join(' + ')}
-        </div>
-        <div className="font-mono text-slate-300">
-          = {products.join(' + ')}
-        </div>
-        <div className="font-mono text-emerald-300 font-bold">= {r00}</div>
-        <div className="pt-1 text-xs text-slate-400">Repeat for each row of A and column of B to fill the rest.</div>
-        <MatrixRenderer values={expectedMatrix} label="Result" accent="emerald" revealMask={onlyCell(expectedMatrix, 0, 0)} />
-      </div>
-    );
-  }
-
-  if (challengeType === 'inverse' && values.length === 2) {
-    const a = values[0][0], b = values[0][1], c = values[1][0], d = values[1][1];
-    return (
-      <div className="space-y-2 text-sm text-slate-300">
-        <div className="font-mono">A⁻¹ = (1/det) · [[d, −b], [−c, a]]</div>
-        <div className="font-mono text-slate-300">det = ({a})({d}) − ({b})({c})</div>
-        <div className="text-xs text-slate-400">Swap a and d, change the signs of b and c, then divide every entry by det.</div>
-      </div>
-    );
-  }
-
-  return null;
-};
-
-// ============================================================================
 // Lever pictures (workspace path, `matrixDisplayLevers.ts`)
 // ============================================================================
 
@@ -433,9 +303,10 @@ interface MatrixDisplayProps {
 }
 
 const NO_LEVERS: string[] = [];
+const useMatrixProgress = useWorkspaceProgressFor('matrix-display');
+const PRACTICE_NOTE = 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.';
 
-const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MatrixDisplayProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MatrixDisplayChallenge>) => Progress }) => {
+const MatrixDisplaySurface = ({ data, className, runtimePlanItemId }: MatrixDisplayProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -443,8 +314,6 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     challenges,
     challengeType: sessionChallengeType,
     educationalContext,
-    gradeBand,
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -467,15 +336,15 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progression: the teaching workspace owns it. ──
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useMatrixProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: matrixDisplayBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -484,18 +353,16 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
 
-  // In-item levers (`matrixDisplayLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
-  // simplify lever put on screen in its place.
+  // In-item levers (`MATRIX_LEVERS`), keyed by the session item they were pulled on, and the easier problem a simplify
+  // lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<MatrixDisplayChallenge | null>(null);
   const sessionChallenge = challenges[currentIndex] ?? null;
@@ -509,19 +376,17 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const [scalarInput, setScalarInput] = useState<string>('');
   const [matrixInput, setMatrixInput] = useState<string[][]>(() => (challenges[0] ? blankGrid(challenges[0]) : []));
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showSteps, setShowSteps] = useState<boolean>(false);
   const [cellCorrectness, setCellCorrectness] = useState<boolean[][] | undefined>(undefined);
   /** The answer box being worked (the tracking levers follow it). */
   const [activeCell, setActiveCell] = useState<[number, number]>([0, 0]);
 
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
   const submittedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
 
   /**
-   * A fresh item (both paths): every box empty. Try again (workspace): the boxes the check marked wrong are emptied and
-   * the right ones kept; the determinant box is emptied.
+   * A fresh item: every box empty. Try again: the boxes the check marked wrong are emptied and the right ones kept; the
+   * determinant box is emptied.
    */
   const resetWork = (ch: MatrixDisplayChallenge | null, retry: boolean) => {
     setScalarInput('');
@@ -529,68 +394,18 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       setMatrixInput(prev => blankGrid(ch).map((row, i) => row.map((_, j) => (cellCorrectness[i]?.[j] ? prev[i]?.[j] ?? '' : ''))));
     } else {
       setMatrixInput(ch ? blankGrid(ch) : []);
-      setShowSteps(false);
-      hintViewedRef.current = false;
       setActiveCell([0, 0]);
     }
     setFeedback(null);
     setCellCorrectness(undefined);
     recordedRef.current = false;
   };
-  // Scripted path: a new session item (Next, or new lesson content) opens blank, as before the workspace binding.
-  useEffect(() => {
-    if (!tutorOwned) resetWork(sessionChallenge, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionChallenge?.id]);
   openItem.current = (index, retry) => {
     // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
     if (retry) { resetWork(practice ?? challenges[index] ?? null, true); return; }
     setPractice(null);
     resetWork(challenges[index] ?? null, false);
   };
-
-  // ── AI tutoring (scripted path) ─────────────────────────────────
-  // aiPrimitiveData carries only session/progress metadata (the catalog
-  // contextKeys), never per-cell matrix values — those would leak the answer
-  // through the silent context update. Mode + tier are session-level, so the
-  // reveal policy is resolved once. On the workspace path the tutor reads the scene instead.
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: sessionChallengeType,
-    currentChallengeIndex: currentIndex + 1,
-    totalChallenges: challenges.length,
-    gradeBand: gradeBand ?? null,
-    supportTier: supportTier ?? null,
-  }), [title, sessionChallengeType, currentIndex, challenges.length, gradeBand, supportTier]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'matrix-display',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
-
-  // Introduce the session once the tutor connects (one end_of_turn message
-  // carrying the first problem's shape, so the tutor reads a real task).
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const first = challenges[0];
-    sendText(
-      `[ACTIVITY_START] Matrix session: ${challenges.length} ${sessionChallengeType} problem(s). `
-      + `Introduce the ${sessionChallengeType} operation briefly, then read the first task `
-      + `(a ${first.rows}×${first.columns} matrix).`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
-  }, [tutorOwned, isConnected, challenges, sessionChallengeType, revealPolicy, sendText]);
 
   // ── Aggregate score (live preview) ──────────────────────────────
   const localOverallScore = useMemo(() => {
@@ -615,51 +430,8 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
   const [submittedResult, setSubmittedResult] = useState<PrimitiveEvaluationResult<MatrixDisplayMetrics> | null>(null);
 
-  // ── Scripted path: submit the aggregate evaluation exactly once ──
-  useEffect(() => {
-    if (tutorOwned) return;
-    if (!allChallengesComplete) return;
-    if (submittedRef.current) return;
-    if (hasSubmitted) return;
-    submittedRef.current = true;
-
-    const totalChallenges = challengeResults.length;
-    const overallAccuracy = totalChallenges > 0
-      ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / totalChallenges)
-      : 0;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const hintsViewed = challengeResults.filter((r) => Boolean(r.hintViewed)).length;
-    const averageAttemptsPerChallenge = totalChallenges > 0
-      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
-      : 0;
-
-    const metrics: MatrixDisplayMetrics = {
-      type: 'matrix-display',
-      challengeType: sessionChallengeType,
-      totalChallenges,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    const result = submitResult(overallAccuracy >= 60, overallAccuracy, metrics);
-    setSubmittedResult(result);
-
-    sendText(
-      `[ALL_COMPLETE] The student finished all ${totalChallenges} ${sessionChallengeType} matrices. `
-      + `Correct: ${correctCount}/${totalChallenges}, first-try: ${firstTryCount}, accuracy: ${overallAccuracy}%. `
-      + `Give a brief, encouraging, matrix-focused summary.`,
-      { silent: true },
-    );
-  }, [tutorOwned, allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (progress.recordsEvaluation === false || hasSubmitted || submittedRef.current || challenges.length === 0) return;
     submittedRef.current = true;
@@ -705,9 +477,8 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     }
     const attempts = currentAttempts + 1;
     const correct = matrixCorrect(currentChallenge, work);
-    const perCellCorrect = boxMarks(currentChallenge, work);
-    setCellCorrectness(perCellCorrect);
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    setCellCorrectness(boxMarks(currentChallenge, work));
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own fields.
     progress.commitCheck(describeMatrixWork(currentChallenge, work), correct, matrixMiss(currentChallenge, work));
 
     if (correct) {
@@ -724,101 +495,30 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           attempts,
           score,
           challengeType: currentChallenge.challengeType,
-          hintViewed: hintViewedRef.current,
         });
       }
-      sendText(
-        `[ANSWER_CORRECT] The student solved the ${currentChallenge.challengeType} matrix correctly on attempt ${attempts}. `
-        + `Congratulate briefly and cue them to click "${currentIndex + 1 < challenges.length ? 'Next Matrix →' : 'Finish'}".`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: attempts === 1 || tutorOwned
-          ? 'Not quite — check each entry and try again.'
-          : 'Still off. Open "Show steps" for a walkthrough.',
-      });
-      // Describe what's off WITHOUT surfacing the correct value: for a scalar we
-      // can echo the student's own wrong entry; for a matrix we report only the
-      // count of incorrect cells so the hint stays scaffolding, not solving.
-      const wrongDetail = currentChallenge.expectedScalar !== undefined
-        ? `entered "${scalarInput.trim()}"`
-        : perCellCorrect
-          ? `got ${perCellCorrect.flat().filter((ok) => !ok).length} of ${perCellCorrect.flat().length} entries wrong`
-          : 'has some entries off';
-      sendText(
-        `[ANSWER_INCORRECT] On the ${currentChallenge.challengeType} matrix the student ${wrongDetail} (attempt ${attempts}). `
-        + `Point at one specific entry (or the cross-multiplication step) to recheck. Give a hint without revealing the answer.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
+      setFeedback({ correct: false, message: 'Not quite — check each entry and try again.' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, currentAttempts, currentIndex, challenges.length, feedback, scalarInput, matrixInput, mergeResult,
-    sendText, revealPolicy, tutorOwned, progress.commitCheck]);
+  }, [currentChallenge, currentAttempts, feedback, scalarInput, matrixInput, mergeResult, progress.commitCheck]);
 
-  // ── Reveal hint / steps (scripted path; with the tutor, help is the tutor's) ──
-  const handleShowSteps = useCallback(() => {
-    SoundManager.pop();
-    setShowSteps(true);
-    hintViewedRef.current = true;
-    if (!currentChallenge) return;
-    sendText(
-      `[SHOW_STEPS] The student opened the worked walkthrough for the ${currentChallenge.challengeType} matrix. `
-      + `Reinforce the method in one or two sentences and invite them to finish the remaining entries themselves.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
-  }, [currentChallenge, sendText, revealPolicy]);
-
-  // ── Advance to next challenge (scripted path; the workspace path hides Next and the runtime advances) ──
-  // Send exactly one end_of_turn message carrying the NEXT problem's shape, so
-  // the tutor introduces the real problem (the auto context update is silent).
-  const handleNext = useCallback(() => {
-    if (!currentChallenge || tutorOwned) return;
-    // If user hasn't gotten it right after multiple attempts, record as incorrect and move on.
-    if (!recordedRef.current) {
-      recordedRef.current = true;
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: false,
-        attempts: Math.max(1, currentAttempts),
-        score: 0,
-        challengeType: currentChallenge.challengeType,
-        hintViewed: hintViewedRef.current,
-      });
-    }
-    const next = challenges[currentIndex + 1];
-    if (next) {
-      sendText(
-        `[NEXT_ITEM] Matrix ${currentIndex + 2} of ${challenges.length} (${next.challengeType}, ${next.rows}×${next.columns}). `
-        + `Introduce it briefly — same operation, new numbers.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true },
-      );
-      resetWork(next, false);
-    }
-    advanceProgress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advanceProgress, challenges, currentIndex, currentAttempts, currentChallenge, recordResult, sendText, revealPolicy, tutorOwned]);
-
-  // ── Levers (workspace path) ─────────────────────────────────────
-  const leverDecls = useMemo(() => matrixLevers(sessionChallenge, pulledLevers), [sessionChallenge, pulledLevers]);
   const model = useMemo(() => (sessionChallenge ? matrixModel(sessionChallenge) : null), [sessionChallenge]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
+  // ── What the tutor and the observer are shown, republished every render. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
+    const ctx = { active: activeCell };
     const scene = workspaceScene(currentChallenge, { scalar: scalarInput, cells: matrixInput, marks: cellCorrectness });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, activeCell);
-    const levers = practice ? [] : leverDecls;
+    const levers = practice ? [] : MATRIX_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : MATRIX_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : MATRIX_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -826,28 +526,16 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerMatrix(sessionChallenge);
+          const easier = MATRIX_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork(easier, false);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: matrixDisplayBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { setPractice(null); resetWork(sessionChallenge, false); },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
-    label: 'The matrices and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   if (!challenges || challenges.length === 0) {
@@ -864,7 +552,7 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const canSubmit = currentChallenge?.expectedScalar !== undefined
     ? scalarInput.trim().length > 0
     : (currentChallenge?.expectedMatrix?.every((row, i) => row.every((_, j) => (matrixInput[i]?.[j] ?? '').trim().length > 0)) ?? false);
-  /** Input closed once the item is solved, and on the workspace path while a checked answer waits for Try again. */
+  /** Input closed once the item is solved, and while a checked answer waits for Try again. */
   const inputClosed = !!feedback?.correct || blocked;
 
   // Lever marks on the session item.
@@ -917,102 +605,106 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           <>
             {/* Instruction */}
             <LuminaPanel>
-              <p className="text-slate-100 text-sm font-medium">{ch.instruction}</p>
+              <div className="flex items-center gap-2">
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+                <p className="text-slate-100 text-sm font-medium">{ch.instruction}</p>
+              </div>
             </LuminaPanel>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-            <div {...pip.workspace}>
-            {/* Source matrices */}
-            <LuminaPanel className="flex flex-wrap items-center justify-center gap-6">
-              <MatrixRenderer
-                values={ch.values}
-                label={ch.secondMatrix ? 'Matrix A' : 'Matrix'}
-                accent="purple"
-                tint={tintA}
-                lit={litA}
-                corner={cornerA}
-              />
-              {ch.secondMatrix && (
-                <>
-                  <div className="text-3xl text-slate-400 font-bold">
-                    {ch.challengeType === 'add' ? '+' :
-                     ch.challengeType === 'subtract' ? '−' :
-                     ch.challengeType === 'multiply' ? '×' : ''}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the matrices and the answer
+                as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {/* Source matrices */}
+              <LuminaPanel className="flex flex-wrap items-center justify-center gap-6">
+                <MatrixRenderer
+                  values={ch.values}
+                  label={ch.secondMatrix ? 'Matrix A' : 'Matrix'}
+                  accent="purple"
+                  tint={tintA}
+                  lit={litA}
+                  corner={cornerA}
+                />
+                {ch.secondMatrix && (
+                  <>
+                    <div className="text-3xl text-slate-400 font-bold">
+                      {ch.challengeType === 'add' ? '+' :
+                       ch.challengeType === 'subtract' ? '−' :
+                       ch.challengeType === 'multiply' ? '×' : ''}
+                    </div>
+                    <MatrixRenderer
+                      values={ch.secondMatrix.values}
+                      label={ch.secondMatrix.label ?? 'Matrix B'}
+                      accent="blue"
+                      lit={litB}
+                    />
+                  </>
+                )}
+                <div className="text-3xl text-slate-400 font-bold">=</div>
+
+                {/* Student input */}
+                {ch.expectedScalar !== undefined ? (
+                  <div className="flex flex-col items-center">
+                    <div className="text-xs font-mono text-emerald-300 mb-2 font-semibold">Your Answer</div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      aria-label={SCALAR_LABEL}
+                      value={scalarInput}
+                      onChange={(e) => { if (!learnerBlocked()) setScalarInput(e.target.value); }}
+                      disabled={inputClosed}
+                      placeholder="det = ?"
+                      className="w-32 h-14 text-center text-lg font-mono rounded-lg bg-slate-800/60 border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 text-white outline-none font-semibold disabled:opacity-70"
+                    />
                   </div>
-                  <MatrixRenderer
-                    values={ch.secondMatrix.values}
-                    label={ch.secondMatrix.label ?? 'Matrix B'}
-                    accent="blue"
-                    lit={litB}
+                ) : ch.expectedMatrix ? (
+                  <MatrixInput
+                    rows={ch.expectedMatrix.length}
+                    columns={ch.expectedMatrix[0]?.length ?? 0}
+                    values={matrixInput}
+                    onChange={handleMatrixInputChange}
+                    onFocusCell={focusCell}
+                    disabled={inputClosed}
+                    highlightCorrect={cellCorrectness}
+                    tint={tintAnswer}
+                    outline={outline}
                   />
+                ) : null}
+              </LuminaPanel>
+
+              {/* Lever pictures (`matrixDisplayLevers.ts`), on the session item only. */}
+              {!practice && !feedback?.correct && (
+                <>
+                  {diagonals && (
+                    <p data-lever="diagonal-marks" className="text-center text-xs text-slate-300">
+                      <span className="text-emerald-300">green product</span> − <span className="text-rose-300">red product</span>
+                    </p>
+                  )}
+                  {signs && (
+                    <p data-lever="cofactor-signs" className="text-center text-xs text-slate-300">
+                      Expand along the top row: each top entry times the small determinant left when its row and column are covered, with the signs + − +.
+                    </p>
+                  )}
+                  {letters && (
+                    <figure data-lever="swap-negate-letters" className="text-center font-mono text-sm text-cyan-200">
+                      <div>A⁻¹ = [ d   −b ]  [ −c   a ]  ÷ (ad − bc)</div>
+                      <figcaption className="font-sans text-[11px] text-slate-400">Swap a and d, change the signs of b and c, divide every entry by ad − bc.</figcaption>
+                    </figure>
+                  )}
+                  {position && (ch.challengeType === 'add' || ch.challengeType === 'subtract') && (
+                    <p data-lever="position-recipe" className="text-center font-mono text-sm text-cyan-200">
+                      This box = {positionRecipe(ar, ac, ch.challengeType === 'add' ? '+' : '−')}
+                    </p>
+                  )}
+                  {leverOn(TERMS_LEVER) && ch.secondMatrix && (
+                    <p data-lever="term-list" className="text-center font-mono text-sm text-cyan-200">
+                      This box = {termList(ar, ac, ch.values[0]?.length ?? 0)}
+                    </p>
+                  )}
+                  {leverOn(MODEL_LEVER) && model && <ModelCard model={model} />}
                 </>
               )}
-              <div className="text-3xl text-slate-400 font-bold">=</div>
-
-              {/* Student input */}
-              {ch.expectedScalar !== undefined ? (
-                <div className="flex flex-col items-center">
-                  <div className="text-xs font-mono text-emerald-300 mb-2 font-semibold">Your Answer</div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    aria-label={SCALAR_LABEL}
-                    value={scalarInput}
-                    onChange={(e) => { if (!learnerBlocked()) setScalarInput(e.target.value); }}
-                    disabled={inputClosed}
-                    placeholder="det = ?"
-                    className="w-32 h-14 text-center text-lg font-mono rounded-lg bg-slate-800/60 border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 text-white outline-none font-semibold disabled:opacity-70"
-                  />
-                </div>
-              ) : ch.expectedMatrix ? (
-                <MatrixInput
-                  rows={ch.expectedMatrix.length}
-                  columns={ch.expectedMatrix[0]?.length ?? 0}
-                  values={matrixInput}
-                  onChange={handleMatrixInputChange}
-                  onFocusCell={focusCell}
-                  disabled={inputClosed}
-                  highlightCorrect={cellCorrectness}
-                  tint={tintAnswer}
-                  outline={outline}
-                />
-              ) : null}
-            </LuminaPanel>
-
-            {/* Lever pictures, on the session item only. */}
-            {!practice && !feedback?.correct && (
-              <>
-                {diagonals && (
-                  <p data-lever="diagonal-marks" className="text-center text-xs text-slate-300">
-                    <span className="text-emerald-300">green product</span> − <span className="text-rose-300">red product</span>
-                  </p>
-                )}
-                {signs && (
-                  <p data-lever="cofactor-signs" className="text-center text-xs text-slate-300">
-                    Expand along the top row: each top entry times the small determinant left when its row and column are covered, with the signs + − +.
-                  </p>
-                )}
-                {letters && (
-                  <figure data-lever="swap-negate-letters" className="text-center font-mono text-sm text-cyan-200">
-                    <div>A⁻¹ = [ d   −b ]  [ −c   a ]  ÷ (ad − bc)</div>
-                    <figcaption className="font-sans text-[11px] text-slate-400">Swap a and d, change the signs of b and c, divide every entry by ad − bc.</figcaption>
-                  </figure>
-                )}
-                {position && (ch.challengeType === 'add' || ch.challengeType === 'subtract') && (
-                  <p data-lever="position-recipe" className="text-center font-mono text-sm text-cyan-200">
-                    This box = {positionRecipe(ar, ac, ch.challengeType === 'add' ? '+' : '−')}
-                  </p>
-                )}
-                {leverOn(TERMS_LEVER) && ch.secondMatrix && (
-                  <p data-lever="term-list" className="text-center font-mono text-sm text-cyan-200">
-                    This box = {termList(ar, ac, ch.values[0]?.length ?? 0)}
-                  </p>
-                )}
-                {leverOn(MODEL_LEVER) && model && <ModelCard model={model} />}
-              </>
-            )}
-            </div>
+            </PipWorkspace>
 
             {/* Feedback */}
             {feedback && (
@@ -1025,49 +717,18 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               </div>
             )}
 
-            {/* Hint panel (challenge-specific). Withdrawn at the hard support tier
-                (generator emits an empty hint), so render only when present. It states the rule, never a value. */}
+            {/* Rule line (challenge-specific). Withdrawn at the hard support tier (the generator emits an empty hint),
+                so render only when present. It states the rule, never a value. */}
             {ch.hint && (
               <div className="text-xs text-slate-400 italic">{ch.hint}</div>
             )}
 
-            {/* Show steps reveal (scripted path) */}
-            {!tutorOwned && showSteps && (
-              <LuminaPanel accent="purple">
-                <div className="text-xs font-mono uppercase tracking-wider text-purple-400 mb-2">Walkthrough</div>
-                <StepsReveal challenge={ch} />
-              </LuminaPanel>
+            {/* Check; the runtime retries and advances. */}
+            {!feedback?.correct && (
+              <div className="flex flex-wrap items-center gap-2">
+                <LuminaActionButton action="check" onClick={handleCheck} disabled={!canSubmit || blocked} />
+              </div>
             )}
-
-            {/* Controls. On the workspace path the shell's Try again / Next challenge replace Next and Skip. */}
-            <div className="flex flex-wrap items-center gap-2">
-              {!feedback?.correct && (
-                <LuminaActionButton
-                  action="check"
-                  onClick={handleCheck}
-                  disabled={!canSubmit || blocked}
-                />
-              )}
-              {/* "Show steps" worked example. At the hard tier (stepsAfterAttempt) it is
-                  withheld until the student has attempted at least once — recovery, not a
-                  free pass. Easy/medium: available up front. */}
-              {!tutorOwned && !showSteps && !feedback?.correct &&
-                (!ch.stepsAfterAttempt || currentAttempts >= 1) && (
-                <LuminaButton onClick={handleShowSteps}>
-                  Show steps
-                </LuminaButton>
-              )}
-              {!tutorOwned && feedback?.correct && (
-                <LuminaActionButton action="next" onClick={handleNext}>
-                  {currentIndex + 1 < challenges.length ? 'Next Matrix →' : 'Finish'}
-                </LuminaActionButton>
-              )}
-              {!tutorOwned && !feedback?.correct && currentAttempts >= 3 && (
-                <LuminaButton tone="subtle" onClick={handleNext}>
-                  Skip →
-                </LuminaButton>
-              )}
-            </div>
           </>
         )}
 
@@ -1082,8 +743,7 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const MatrixDisplay = withWorkspaceController<MatrixDisplayProps, ProgressOptions<MatrixDisplayChallenge>, Progress>(
-  'matrix-display', MatrixDisplaySurface, useScriptedProgress, useWorkspaceProgressFor('matrix-display'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const MatrixDisplay = withWorkspaceOnly<MatrixDisplayProps>('matrix-display', MatrixDisplaySurface, props => props.data.title);
 
 export default MatrixDisplay;

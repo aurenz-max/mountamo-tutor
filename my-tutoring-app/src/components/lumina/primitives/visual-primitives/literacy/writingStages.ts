@@ -6,11 +6,14 @@
  * written); the shared literacy judge (`judgeWordBuild`, `unit: 'writing'`) decides whether the sentence makes sense and
  * does its stage's job, reading the paragraph so far. Spelling is never judged.
  *
- * Pure: the surface, the live adapter and the tests read the same rules.
+ * Pure: the surface, the bosses (paragraph-architect, opinion-builder) and the tests read the same rules.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { LeverSpec, LeverSupport, SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
+import type { WritingMiss } from './paragraphArchitect.card';
+
+export { WRITING_MISSES, type WritingMiss } from './paragraphArchitect.card';
 
 /** paragraph-architect's three paragraph types, and opinion-builder's two frameworks. */
 export type ParagraphKind = 'informational' | 'narrative' | 'opinion' | 'oreo' | 'cer';
@@ -19,6 +22,8 @@ export type StageJob = 'topic' | 'fact' | 'closing' | 'beginning' | 'middle' | '
 
 export interface WritingStage {
   id: string;
+  /** The paragraph type (the eval mode: informational, narrative, opinion; oreo, cer). */
+  kind: ParagraphKind;
   job: StageJob;
   /** The task as said and printed. The topic is shown beside it, never spliced in (a generated topic can be a phrase). */
   ask: string;
@@ -28,10 +33,9 @@ export interface WritingStage {
   criterion: string;
   /** Sentence starters from the payload for this job (a help lever shows them). */
   starters: string[];
+  /** The lesson's support tier, stamped on each step (when the model lever comes). */
+  supportTier?: SupportTier;
 }
-
-export type WritingMiss = 'too_short' | 'blank_left' | 'repeat' | 'not_sense' | 'wrong_job';
-export const WRITING_MISSES: readonly WritingMiss[] = ['too_short', 'blank_left', 'repeat', 'not_sense', 'wrong_job'];
 
 /** The writing payload the generator already makes (frames, a topic, the paragraph type). */
 export interface WritingPayload {
@@ -40,6 +44,7 @@ export interface WritingPayload {
   topicSentenceFrames?: string[];
   detailSentenceFrames?: string[];
   concludingSentenceFrames?: string[];
+  supportTier?: SupportTier;
 }
 
 const JOBS: Record<ParagraphKind, { job: StageJob; ask: (t: string) => string; criterion: string; frames: 'topic' | 'detail' | 'closing' }[]> = {
@@ -101,8 +106,8 @@ export function stagesFor(p: WritingPayload): WritingStage[] {
   const kind: ParagraphKind = JOBS[p.paragraphType] ? p.paragraphType : 'informational';
   const topic = (p.topic || 'your topic').trim();
   const frames = { topic: p.topicSentenceFrames ?? [], detail: p.detailSentenceFrames ?? [], closing: p.concludingSentenceFrames ?? [] };
-  return JOBS[kind].map((j, i) => ({ id: `w${i + 1}`, job: j.job, ask: j.ask(topic), topic, criterion: j.criterion,
-    starters: frames[j.frames].slice(0, 4) }));
+  return JOBS[kind].map((j, i) => ({ id: `w${i + 1}`, kind, job: j.job, ask: j.ask(topic), topic, criterion: j.criterion,
+    starters: frames[j.frames].slice(0, 4), ...(p.supportTier ? { supportTier: p.supportTier } : {}) }));
 }
 
 const words = (s: string) => s.trim().split(/\s+/).filter(w => /[a-z]/i.test(w));
@@ -116,12 +121,11 @@ export function writingShapeMiss(sentence: string, starters: readonly string[], 
   return undefined;
 }
 
-export const writingAssignment = (stage: WritingStage): TeachingAssignment => ({ id: stage.id, task: stage.ask, response: 'gesture' });
-
 export const writingJudgeRequest = (stage: WritingStage, sentence: string, paragraph: readonly string[], grade?: string): WordBuildJudgeRequest =>
   ({ ask: `${stage.ask} Topic: ${stage.topic}. (${stage.criterion})`, made: sentence.trim(), unit: 'writing', context: paragraph.join(' '), ...(grade ? { grade } : {}) });
 
-export function writingScene(stage: WritingStage, draft: string, paragraph: readonly string[], inspectorSaid?: string): WorkspaceScene {
+/** What the tutor is told about a step. The moves are the card's; this says only what this activity checks. */
+export function writingScene(stage: WritingStage, draft: string, paragraph: readonly string[], inspectorSaid?: string): SceneOf {
   return { objects: [], facts: {
     ask: stage.ask,
     topic: stage.topic,
@@ -129,9 +133,8 @@ export function writingScene(stage: WritingStage, draft: string, paragraph: read
     draft: draft.trim() || 'empty',
     wordsTyped: words(draft).length,
     ...(inspectorSaid ? { inspectorSaid } : {}),
-    constraints: 'The learner types one sentence for this step in the box and presses "I\'m done!". The builder checks it '
-      + 'makes sense and does this step\'s job; spelling is not judged. Accepted sentences join the paragraph above. You '
-      + 'cannot type for the learner.',
+    constraints: 'The builder checks the sentence makes sense and does this step\'s job; spelling is not judged. An '
+      + 'accepted sentence joins the paragraph above, and any sentence that does the job passes.',
   } };
 }
 
@@ -157,26 +160,54 @@ export const MODEL_STEPS: Record<StageJob, string> = {
   reasoning: 'Growing food helps students try vegetables, so a garden makes them healthier.',
   conclusion: 'For these reasons, every school should have a garden.',
 };
+const FROGS = /\bfrogs?\b/i, MICE = /\b(mouse|mice)\b/i, RECESS = /\brecess\b/i, GARDENS = /\bgardens?\b/i;
+/** What each model sentence is about: a lesson on that subject gets no model (it would be the learner's own topic). */
+const MODEL_SUBJECT: Record<StageJob, RegExp> = {
+  topic: FROGS, fact: FROGS, closing: FROGS, beginning: MICE, middle: MICE, end: MICE,
+  opinion: RECESS, reason: RECESS, restate: RECESS, example: RECESS,
+  claim: GARDENS, evidence: GARDENS, reasoning: GARDENS, conclusion: GARDENS,
+};
+/** The model sentence for a step, or null when the lesson's topic is the model's own subject. */
+export const modelStep = (stage: WritingStage): string | null =>
+  (MODEL_SUBJECT[stage.job].test(stage.topic) ? null : MODEL_STEPS[stage.job]);
 
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly WritingMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
+/** The blank practice: a starter with a blank (___ or a trailing ...), and only the blank typed. */
+export const blankStarter = (stage: WritingStage): string | null => {
+  const s = stage.starters.find(x => /_{2,}|\.\.\.|…/.test(x));
+  return s ? s.replace(/\.\.\.|…/, ' ___') : null;
+};
+const BLANK = '~blank';
+/** The simplify lever's practice step: the same step, one starter with a blank to fill. Null when no starter has one. */
+export const blankPractice = (stage: WritingStage): WritingStage | null =>
+  (stage.id.endsWith(BLANK) || !blankStarter(stage) ? null : { ...stage, id: `${stage.id}${BLANK}` });
+export const blankParent = (id: string) => id.replace(/~blank$/, '');
 
-export function writingLevers(stage: WritingStage | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!stage) return [];
-  return [
-    ...(stage.starters.length ? [lever(STARTERS_LEVER, 'help', ['too_short', 'wrong_job'],
-      'The learner cannot start the sentence, or writes one that does not do this step\'s job.',
-      'Shows sentence starters for this step under the box; tapping one puts it in the box to finish. Nothing is finished for them.',
-      pulled)] : []),
-    lever(MODEL_LEVER, 'help', ['not_sense', 'wrong_job'],
-      'The learner\'s sentence does not make sense or does a different job.',
-      'Shows one finished sentence that does this step\'s job for a different topic, so the learner sees what the step asks.', pulled),
-    ...(stage.starters.length ? [lever(BLANK_LEVER, 'simplify', ['too_short', 'not_sense', 'wrong_job'],
-      'The learner still cannot write the sentence with starters on screen.',
-      'Opens a practice step: one starter with a blank, and the learner types only the missing words. Ungraded; the full step comes back after it.',
-      pulled)] : []),
-  ];
-}
+/** When the model sentence comes, by the step's tier (`supportFact`). */
+export const WRITING_SUPPORT: LeverSupport<WritingStage> = {
+  tier: s => s.supportTier ?? 'medium', different: 'a finished sentence for this step on another topic',
+  own: 'a sentence for this step',
+};
+
+/**
+ * The writing steps' levers, as lever-set specs (`bossLevers.ts`). `modes` limits them to a family's writing modes when
+ * the set also holds other modes (paragraph-architect's build_paragraph, opinion-builder's build_opinion). No answer to leak: any sentence that does the job passes.
+ */
+export const writingLeverSpecs = (modes?: readonly string[]): LeverSpec<WritingStage, null>[] => [
+  { id: STARTERS_LEVER, type: 'clue', ...(modes ? { modes } : {}), answers: ['too_short', 'wrong_job'],
+    when: 'The learner cannot start the sentence, or writes one that does not do this step\'s job.',
+    does: 'Shows sentence starters for this step under the box; tapping one puts it in the box to finish. Nothing is finished for them.',
+    content: s => (s.starters.length ? s.starters : null),
+    fact: (starters: string[]) => `Sentence starters are shown under the box: ${starters.join(' | ')}` },
+  { id: MODEL_LEVER, type: 'model', ...(modes ? { modes } : {}), answers: ['too_short', 'not_sense', 'wrong_job'],
+    when: 'The learner\'s sentence does not make sense or does a different job.',
+    does: 'Shows one finished sentence that does this step\'s job for a different topic, so the learner sees what the step asks.',
+    content: modelStep,
+    fact: (model: string) => `A finished sentence for this step about another topic is shown: ${model}` },
+  { id: BLANK_LEVER, type: 'easier', ...(modes ? { modes } : {}), answers: ['too_short', 'not_sense', 'wrong_job'],
+    when: 'The learner still cannot write the sentence with starters on screen.',
+    does: 'Opens a practice step: one starter with a blank, and the learner types only the missing words. Ungraded; the full step comes back after it.',
+    content: blankPractice },
+];
 
 export function writingMissWords(miss: WritingMiss | undefined): string {
   switch (miss) {

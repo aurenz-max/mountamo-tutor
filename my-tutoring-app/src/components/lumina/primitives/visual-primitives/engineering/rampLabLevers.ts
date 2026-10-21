@@ -1,32 +1,33 @@
 /**
- * The in-item levers on ramp-lab, every mode (`/add-support-tiers`, class sweep 2026-10-08; table and evidence in
- * qa/eval-reports/ramp-lab-levers-2026-10-08.md). No real-learner evidence: the misses are what `rampMiss` and
+ * The in-item levers on ramp-lab, every mode, declared once as a lever set (`RAMP_LEVERS`, `bossLevers.ts`;
+ * /add-support-tiers class sweep 2026-10-08, evidence in qa/eval-reports/ramp-lab-levers-2026-10-08.md). No real-learner evidence: the misses are what `rampMiss` and
  * `rampSpokenMisses` name, the contract's refusal list (reversed comparison, one observation) and the catalog struggles.
  *
  * compare_conditions — which setup needs less push IS the answer, so help draws the setups as given or models a pair
  * on a condition the item does not change.
- * - `both_ramps` (help): both setups drawn side by side at one scale, each with its slope, surface texture and load.
+ * - `both_ramps` (layout): both setups drawn side by side at one scale, each with its slope, surface texture and load.
  *   No force, no arrow, no mark on either.
- * - `model_pair` (help): two measured ramps that differ in another condition, and what that change did to the push.
+ * - `model_pair` (model): two measured ramps that differ in another condition, and what that change did to the push.
  * find_threshold / design_with_budget
- * - `test_log` (help): every value the learner checked on this item, smallest first, with what the lab showed for it
- *   (moved / stayed still; climbs / too steep). Only values the learner tested; refused before the first check.
- * - `lighter_load` (simplify, find_threshold): an ungraded search for a small wheel on a gentle ramp in whole newtons.
- * - `fewer_angles` (simplify, design_with_budget): an ungraded design for another load with six angles to choose from.
+ * - `test_log` (layout): every value the learner checked on this item, smallest first, with what the lab showed for it
+ *   (moved / stayed still; climbs / too steep). Only values the learner tested; offered from the first check.
+ * - `lighter_load` (easier, find_threshold): an ungraded search for a small wheel on a gentle ramp in whole newtons.
+ * - `fewer_angles` (easier, design_with_budget): an ungraded design for another load with six angles to choose from.
  * plan_fair_test
- * - `same_or_changed` (help): beside each setting of setup B, a tag saying whether it matches setup A. All settings are
+ * - `same_or_changed` (marks): beside each setting of setup B, a tag saying whether it matches setup A. All settings are
  *   tagged alike; none is named as the one to change.
- * - `model_plan` (help): a fair plan for another condition, worked.
- * - `two_settings` (simplify): an ungraded plan for another condition where only two settings can be changed; a fair
+ * - `model_plan` (model): a fair plan for another condition, worked.
+ * - `two_settings` (easier): an ungraded plan for another condition where only two settings can be changed; a fair
  *   plan commits it. Then the full item.
  * explain_from_trials (spoken)
- * - `push_bars` (help): beside the notebook, one bar per recorded trial, its length the first moving push, labelled with
- *   that setup's value of the changed condition. No ranking words. Refused before both trials are recorded.
- * - `model_explain` (help): a worked explanation of two trials on another condition.
- * - no simplify: an explanation one step simpler (say only which setup needed less push) drops the link to the changed
+ * - `push_bars` (layout): beside the notebook, one bar per recorded trial, its length the first moving push, labelled with
+ *   that setup's value of the changed condition. No ranking words. Offered once both trials are recorded.
+ * - `model_explain` (model): a worked explanation of two trials on another condition.
+ * - no easier lever: an explanation one step simpler (say only which setup needed less push) drops the link to the changed
  *   condition, which is the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { RAMP_MISSES_BY_MODE } from './rampLab.card';
 import {
   changedRampVariables, maxWorkableAngle, minimumPushSetting, requiredPushForce,
   type CompareConditionsChallenge, type DesignWithBudgetChallenge, type FindThresholdChallenge, type InvestigationVariable,
@@ -43,7 +44,6 @@ export const MODEL_PLAN_LEVER = 'model_plan';
 export const TWO_SETTINGS_LEVER = 'two_settings';
 export const PUSH_BARS_LEVER = 'push_bars';
 export const MODEL_EXPLAIN_LEVER = 'model_explain';
-const SIMPLIFY = new Set([LIGHTER_LOAD_LEVER, FEWER_ANGLES_LEVER, TWO_SETTINGS_LEVER]);
 
 export const SIMPLER_SUFFIX = '~simpler';
 export const isPracticeRamp = (c: Pick<RampChallenge, 'id'>) => c.id.endsWith(SIMPLER_SUFFIX);
@@ -228,104 +228,105 @@ export function startLevers(c: RampChallenge | null | undefined, tier?: string):
   }
 }
 
+/** What the learner has done on the item the levers read: the values checked (`test_log`), the trials recorded (`push_bars`). */
+export interface RampLeverCtx { tested: readonly number[]; trials: readonly RampTrial[] }
+
 const FENCE = 'It is a different pair of ramps; never say which of the learner\'s setups needs less push or what the '
   + 'learner\'s condition does to the push.';
+const UNGRADED = ' It is not graded; the full item comes back after it.';
+const modelText = (m: RampModel) => `${describeSetup(m.one)} first moved at ${m.pushOne.toFixed(1)} N; ${describeSetup(m.two)} `
+  + `first moved at ${m.pushTwo.toFixed(1)} N.`;
+const logFact = (log: LoggedTest[], c: RampChallenge) => (log.length
+  ? `A log lists what the learner tested, smallest first: ${log.map(e => `${unit(c, e.value)} ${e.result}`).join('; ')}.`
+  : 'A log will list each value the learner tests; nothing is tested yet.');
+const investigation = (c: RampChallenge) => c as RampInvestigationChallenge;
 
-export function rampLevers(c: RampChallenge | null | undefined, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c) return [];
-  const lever = (id: string, carrier: WorkspaceLever['carrier'], answers: readonly string[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind: SIMPLIFY.has(id) ? 'simplify' : 'help', carrier, pulled: pulled.includes(id), answers, when, does });
-  const model = modelFor(c);
-  const simpler = simplerRamp(c);
-  const ungraded = ' It is not graded; the full item comes back after it.';
-  switch (c.mode) {
-    case 'compare_conditions': return [
-      lever(BOTH_RAMPS_LEVER, 'shown', ['harder_setup', 'same_for_different', 'one_for_same'],
-        'The learner sees only one setup at a time and does not compare the two ramps.',
-        'Draws both setups side by side at the same scale, each with its slope, surface texture and load. It draws no force, '
-          + 'no arrow and no mark on either setup.'),
-      ...(model ? [lever(MODEL_PAIR_LEVER, 'both', ['harder_setup', 'same_for_different'],
-        'The learner does not connect a change in a ramp to the push it needs.',
-        `Shows two measured model ramps beside the lab that differ only in ${VARIABLE_NAME[model.variable]}, and the push each `
-          + `needed. ${FENCE}`)] : []),
-    ];
-    case 'find_threshold': return [
-      lever(TEST_LOG_LEVER, 'shown', ['load_did_not_move', 'more_than_minimum'],
-        'The learner loses track of which pushes moved the load and which did not, so cannot narrow the search.',
-        'Under the slider, lists every push the learner tested on this item, smallest first, each marked moved or stayed still. '
-          + 'Never a push they have not tested.'),
-      ...(simpler ? [lever(LIGHTER_LOAD_LEVER, 'shown', ['load_did_not_move', 'more_than_minimum'],
-        'The search has too many steps for the learner yet.',
-        `Opens an easier search first: a small wheel or box on a gentle smooth ramp, the push in whole newtons.${ungraded}`)] : []),
-    ];
-    case 'design_with_budget': return [
-      lever(TEST_LOG_LEVER, 'shown', ['over_budget', 'not_steepest'],
-        'The learner loses track of which angles worked and which were too steep, so cannot find the boundary.',
-        'Under the angle slider, lists every angle the learner checked on this item, smallest first, each marked climbs or too '
-          + 'steep. Never an angle they have not checked.'),
-      ...(simpler ? [lever(FEWER_ANGLES_LEVER, 'shown', ['over_budget', 'not_steepest'],
-        'There are too many angles to search for the learner yet.',
-        `Opens an easier design first: another load with only six angles to choose from.${ungraded}`)] : []),
-    ];
-    case 'plan_fair_test': return [
-      lever(SAME_OR_CHANGED_LEVER, 'shown', ['nothing_changed', 'extra_condition', 'other_condition'],
-        'The learner does not compare every setting of setup B with setup A before committing.',
-        'Beside each setting of setup B, a tag says whether it is the same as setup A or changed, and updates as the learner '
-          + 'edits. Every setting is tagged the same way; it never says which setting to change.'),
-      ...(model ? [lever(MODEL_PLAN_LEVER, 'both', ['other_condition', 'extra_condition'],
-        'The learner does not know what a fair plan looks like.',
-        `Shows a worked fair plan for a different question, how the ${VARIABLE_NAME[model.variable]} affects the push: only `
-          + 'that setting differs between its two setups. Never say which setting the learner should change.')] : []),
-      ...(simpler ? [lever(TWO_SETTINGS_LEVER, 'shown', ['nothing_changed', 'extra_condition', 'other_condition'],
-        'Three settings are too many to keep track of yet.',
-        `Opens an easier plan first: a different condition to test, with only two settings that can change.${ungraded}`)] : []),
-    ];
-    default: return [
-      lever(PUSH_BARS_LEVER, 'shown', ['reversed_comparison', 'said_same', 'one_setup'],
-        'The learner does not link the two trial results to the changed condition.',
-        `Beside the trial notebook, draws one bar per trial, as long as its first moving push, labelled with that setup's `
-          + `${VARIABLE_NAME[c.variable]}. No words compare them. Only after both trials are recorded.`),
-      ...(model ? [lever(MODEL_EXPLAIN_LEVER, 'both', ['reversed_comparison', 'said_same', 'one_setup'],
-        'The learner does not know how to explain a result from two trials.',
-        `Shows a worked explanation of two model trials that differ only in ${VARIABLE_NAME[model.variable]}: both results and `
-          + `what the change did. ${FENCE}`)] : []),
-    ];
-  }
-}
-
-/** What the pulled levers put on screen, for the tutor and JEV. Describes what is drawn, never the key. */
-export function leverFacts(c: RampChallenge | null | undefined, pulled: readonly string[],
-  view: { tested?: readonly number[]; trials?: readonly RampTrial[] }): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id);
-  const model = modelFor(c);
-  const modelText = model ? `${describeSetup(model.one)} first moved at ${model.pushOne.toFixed(1)} N; ${describeSetup(model.two)} `
-    + `first moved at ${model.pushTwo.toFixed(1)} N.` : '';
-  const out: Array<string | false> = [];
-  if (c.mode === 'compare_conditions') {
-    out.push(on(BOTH_RAMPS_LEVER) && `Both setups are drawn side by side at the same scale: ${rampSketches(c)
-      .map(s => `${s.side.toUpperCase()}, a ${s.angle} degree ${s.surface} ramp with a ${s.mass} kg ${s.load}`).join('; ')}.`);
-    out.push(on(MODEL_PAIR_LEVER) && !!model && `Two model ramps are shown beside the lab: ${modelText} ${modelConclusion(model!)}`);
-  }
-  if (c.mode === 'find_threshold' || c.mode === 'design_with_budget') {
-    const log = testLog(c, view.tested ?? []);
-    out.push(on(TEST_LOG_LEVER) && (log.length
-      ? `A log lists what the learner tested, smallest first: ${log.map(e => `${unit(c, e.value)} ${e.result}`).join('; ')}.`
-      : 'A log will list each value the learner tests; nothing is tested yet.'));
-  }
-  if (c.mode === 'plan_fair_test') {
-    out.push(on(SAME_OR_CHANGED_LEVER) && 'Beside each setting of setup B, a tag says whether it is the same as setup A or changed.');
-    out.push(on(MODEL_PLAN_LEVER) && !!model && `A worked fair plan for how the ${VARIABLE_NAME[model.variable]} affects the push `
-      + `is shown: model setup 1 is ${describeSetup(model.one)}, model setup 2 is ${describeSetup(model.two)}.`);
-  }
-  if (c.mode === 'explain_from_trials') {
-    const bars = pushBars(c, view.trials ?? []);
-    out.push(on(PUSH_BARS_LEVER) && (bars.length
-      ? `Beside the notebook, a bar for each trial is as long as its first moving push: ${bars
-        .map(b => `${b.side.toUpperCase()} (${VARIABLE_NAME[c.variable]} ${b.label}) ${b.push.toFixed(1)} N`).join(', ')}.`
-      : 'Bars for the two trials will show beside the notebook once both trials are recorded.'));
-    out.push(on(MODEL_EXPLAIN_LEVER) && !!model && `A worked explanation of two model trials is shown: ${modelText} `
-      + modelConclusion(model!));
-  }
-  return out.filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`), in the order a miss reaches for them. None is offered on a practice
+ * item: the component declares nothing while one is on screen.
+ */
+export const RAMP_LEVERS = leverSet<RampChallenge, RampLeverCtx>({
+  modeOf: c => c.mode,
+  missesOf: mode => RAMP_MISSES_BY_MODE[mode as RampChallenge['mode']] ?? [],
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (c.mode === 'plan_fair_test' ? 'a fair plan for a different question, worked'
+      : 'a measured pair of different ramps, worked'),
+    own: c => (c.mode === 'plan_fair_test' ? 'which setting this plan changes'
+      : c.mode === 'explain_from_trials' ? 'what this item\'s two trials show' : 'which of this item\'s setups needs less push'),
+  },
+  specs: [
+    // compare_conditions: which setup needs less push IS the answer, so help draws the setups as given or models a pair.
+    { id: BOTH_RAMPS_LEVER, type: 'layout', modes: ['compare_conditions'], answers: ['harder_setup', 'same_for_different', 'one_for_same'],
+      when: 'The learner sees only one setup at a time and does not compare the two ramps.',
+      does: 'Draws both setups side by side at the same scale, each with its slope, surface texture and load. It draws no force, '
+        + 'no arrow and no mark on either setup.',
+      content: c => (c.mode === 'compare_conditions' ? rampSketches(c) : null),
+      fact: (sketches: RampSketch[]) => `Both setups are drawn side by side at the same scale: ${sketches
+        .map(s => `${s.side.toUpperCase()}, a ${s.angle} degree ${s.surface} ramp with a ${s.mass} kg ${s.load}`).join('; ')}.` },
+    { id: MODEL_PAIR_LEVER, type: 'model', modes: ['compare_conditions'], answers: ['harder_setup', 'same_for_different'],
+      when: 'The learner does not connect a change in a ramp to the push it needs.',
+      does: c => `Shows two measured model ramps beside the lab that differ only in ${VARIABLE_NAME[modelFor(c)!.variable]}, and `
+        + `the push each needed. ${FENCE}`,
+      content: c => modelFor(c),
+      fact: (m: RampModel) => `Two model ramps are shown beside the lab: ${modelText(m)} ${modelConclusion(m)}` },
+    // find_threshold / design_with_budget: the log is the learner's own tests; offered once there is one.
+    { id: TEST_LOG_LEVER, type: 'layout', modes: ['find_threshold'], answers: ['load_did_not_move', 'more_than_minimum'],
+      when: 'The learner loses track of which pushes moved the load and which did not, so cannot narrow the search.',
+      does: 'Under the slider, lists every push the learner tested on this item, smallest first, each marked moved or stayed still. '
+        + 'Never a push they have not tested.',
+      offer: (_c, ctx) => ctx.tested.length > 0,
+      content: (c, ctx) => testLog(c, ctx.tested),
+      fact: (log: LoggedTest[], c) => logFact(log, c) },
+    { id: LIGHTER_LOAD_LEVER, type: 'easier', modes: ['find_threshold'], answers: ['load_did_not_move', 'more_than_minimum'],
+      when: 'The search has too many steps for the learner yet.',
+      does: `Opens an easier search first: a small wheel or box on a gentle smooth ramp, the push in whole newtons.${UNGRADED}`,
+      content: c => lighterLoad(c) },
+    { id: TEST_LOG_LEVER, type: 'layout', modes: ['design_with_budget'], answers: ['over_budget', 'not_steepest'],
+      when: 'The learner loses track of which angles worked and which were too steep, so cannot find the boundary.',
+      does: 'Under the angle slider, lists every angle the learner checked on this item, smallest first, each marked climbs or too '
+        + 'steep. Never an angle they have not checked.',
+      offer: (_c, ctx) => ctx.tested.length > 0,
+      content: (c, ctx) => testLog(c, ctx.tested),
+      fact: (log: LoggedTest[], c) => logFact(log, c) },
+    { id: FEWER_ANGLES_LEVER, type: 'easier', modes: ['design_with_budget'], answers: ['over_budget', 'not_steepest'],
+      when: 'There are too many angles to search for the learner yet.',
+      does: `Opens an easier design first: another load with only six angles to choose from.${UNGRADED}`,
+      content: c => fewerAngles(c) },
+    // plan_fair_test
+    { id: SAME_OR_CHANGED_LEVER, type: 'marks', modes: ['plan_fair_test'], answers: ['nothing_changed', 'extra_condition', 'other_condition'],
+      when: 'The learner does not compare every setting of setup B with setup A before committing.',
+      does: 'Beside each setting of setup B, a tag says whether it is the same as setup A or changed, and updates as the learner '
+        + 'edits. Every setting is tagged the same way; it never says which setting to change.',
+      fact: 'Beside each setting of setup B, a tag says whether it is the same as setup A or changed.' },
+    { id: MODEL_PLAN_LEVER, type: 'model', modes: ['plan_fair_test'], answers: ['other_condition', 'extra_condition'],
+      when: 'The learner does not know what a fair plan looks like.',
+      does: c => `Shows a worked fair plan for a different question, how the ${VARIABLE_NAME[modelFor(c)!.variable]} affects the `
+        + 'push: only that setting differs between its two setups. Never say which setting the learner should change.',
+      content: c => modelFor(c),
+      fact: (m: RampModel) => `A worked fair plan for how the ${VARIABLE_NAME[m.variable]} affects the push is shown: model setup 1 `
+        + `is ${describeSetup(m.one)}, model setup 2 is ${describeSetup(m.two)}.` },
+    { id: TWO_SETTINGS_LEVER, type: 'easier', modes: ['plan_fair_test'], answers: ['nothing_changed', 'extra_condition', 'other_condition'],
+      when: 'Three settings are too many to keep track of yet.',
+      does: `Opens an easier plan first: a different condition to test, with only two settings that can change.${UNGRADED}`,
+      content: c => twoSettings(c) },
+    // explain_from_trials (spoken): the bars need both trials. No simplify: saying only which setup needed less push
+    // drops the link to the changed condition, which is the mode.
+    { id: PUSH_BARS_LEVER, type: 'layout', modes: ['explain_from_trials'], answers: ['reversed_comparison', 'said_same', 'one_setup'],
+      when: 'The learner does not link the two trial results to the changed condition.',
+      does: c => 'Beside the trial notebook, draws one bar per trial, as long as its first moving push, labelled with that setup\'s '
+        + `${VARIABLE_NAME[investigation(c).variable]}. No words compare them.`,
+      offer: (c, ctx) => pushBars(investigation(c), ctx.trials).length > 0,
+      content: (c, ctx) => pushBars(investigation(c), ctx.trials),
+      fact: (bars: PushBar[], c) => (bars.length
+        ? `Beside the notebook, a bar for each trial is as long as its first moving push: ${bars
+          .map(b => `${b.side.toUpperCase()} (${VARIABLE_NAME[investigation(c).variable]} ${b.label}) ${b.push.toFixed(1)} N`).join(', ')}.`
+        : 'Bars for the two trials will show beside the notebook once both trials are recorded.') },
+    { id: MODEL_EXPLAIN_LEVER, type: 'model', modes: ['explain_from_trials'], answers: ['reversed_comparison', 'said_same', 'one_setup'],
+      when: 'The learner does not know how to explain a result from two trials.',
+      does: c => `Shows a worked explanation of two model trials that differ only in ${VARIABLE_NAME[modelFor(c)!.variable]}: both `
+        + `results and what the change did. ${FENCE}`,
+      content: c => modelFor(c),
+      fact: (m: RampModel) => `A worked explanation of two model trials is shown: ${modelText(m)} ${modelConclusion(m)}` },
+  ],
+});

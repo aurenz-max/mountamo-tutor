@@ -7,10 +7,12 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { RegroupingChallenge } from './RegroupingWorkbench';
 import {
-  COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_MARKS_LEVER, SMALLER_LEVER, TRADE_MODEL_LEVER,
-  leverFacts, leverTextLeaks, problemShape, regroupLevers, simplerLeaks, smallerProblem,
+  COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_LEVERS, REGROUP_MARKS_LEVER, SMALLER_LEVER, TRADE_MODEL_LEVER,
+  leverTextLeaks, problemShape, simplerLeaks, smallerProblem, type RegroupLeverContext,
 } from './regroupingWorkbenchLevers';
-import { REGROUP_MISSES_BY_MODE, operandsOf, regroupColumns, regroupMiss, resultOf, type RegroupOperation } from './regroupingWorkbenchWorkspace';
+import {
+  REGROUP_MISSES_BY_MODE, modeOf, operandsOf, regroupColumns, regroupMiss, resultOf, type RegroupOperation,
+} from './regroupingWorkbenchWorkspace';
 
 const FALLBACK = { operand1: 10, operand2: 10 };
 const MODES: Array<[string, RegroupOperation, boolean]> = [
@@ -81,30 +83,50 @@ describe('simplify builder', () => {
   });
 });
 
-describe('declarations', () => {
-  const ctx = (operation: RegroupOperation, marksShown = false) => ({ operation, fallback: FALLBACK, marksShown });
+describe('the lever set', () => {
+  const ctx = (operation: RegroupOperation, marksShown = false, tradeNeeded?: boolean): RegroupLeverContext =>
+    ({ operation, fallback: FALLBACK, marksShown, ...(tradeNeeded === undefined ? {} : { tradeNeeded }) });
+  const declare = (c: RegroupingChallenge, pulled: string[], context: RegroupLeverContext) => REGROUP_LEVERS.declare(c, context, pulled);
 
   it.each(MODES)('%s: every catalog miss is answered by a help lever on every item; no lever text carries a digit', (mode, op, regroup) => {
     const misses = getComponentById('regrouping-workbench')!.teachingWorkspace!.misses![mode];
-    expect(misses).toEqual(REGROUP_MISSES_BY_MODE[mode]);
+    expect(misses).toEqual(REGROUP_MISSES_BY_MODE[mode as keyof typeof REGROUP_MISSES_BY_MODE]);
     for (const c of items(mode, op, regroup).slice(0, 40)) for (const marksShown of [false, true]) {
-      const levers = regroupLevers(c, [], ctx(op, marksShown));
+      expect(modeOf(c)).toBe(mode);
+      const levers = declare(c, [], ctx(op, marksShown));
       const help = levers.filter(l => l.kind === 'help');
       for (const miss of misses) expect(help.some(l => l.answers?.includes(miss)), `${c.problem} ${miss}`).toBe(true);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
       const pulled = levers.map(l => l.id);
-      expect(leverTextLeaks(leverFacts(c, pulled, op))).toBe(false);
+      expect(leverTextLeaks(REGROUP_LEVERS.onScreen(c, ctx(op, marksShown), pulled))).toBe(false);
+      expect(leverTextLeaks(REGROUP_LEVERS.support(c, ctx(op, marksShown)))).toBe(false);
     }
   });
 
-  it('regroup marks are offered only where the session hides them, and only on a regroup item', () => {
+  it('regroup marks are offered only where the session hides them, a column still needs a trade, and on a regroup item', () => {
     const add = ch('a', 'addition', 27, 45, 'add_regroup');
-    expect(regroupLevers(add, [], ctx('addition')).map(l => l.id))
+    expect(declare(add, [], ctx('addition')).map(l => l.id))
       .toEqual([COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_MARKS_LEVER, TRADE_MODEL_LEVER, SMALLER_LEVER]);
-    expect(regroupLevers(add, [], ctx('addition', true)).map(l => l.id)).not.toContain(REGROUP_MARKS_LEVER);
-    expect(regroupLevers(ch('n', 'addition', 23, 14, 'add_no_regroup'), [], ctx('addition')).map(l => l.id))
+    expect(declare(add, [], ctx('addition', true)).map(l => l.id)).not.toContain(REGROUP_MARKS_LEVER);
+    expect(declare(add, [], ctx('addition', false, false)).map(l => l.id)).not.toContain(REGROUP_MARKS_LEVER);
+    expect(declare(ch('n', 'addition', 23, 14, 'add_no_regroup'), [], ctx('addition')).map(l => l.id))
       .toEqual([COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, SMALLER_LEVER]);
-    expect(regroupLevers({ ...add, id: 'a~simpler' }, [], ctx('addition'))).toEqual([]);
+    expect(declare({ ...add, id: 'a~simpler' }, [], ctx('addition'))).toEqual([]);
+  });
+
+  it('the mode is the item\'s structure, so an untyped or mistyped challenge gets its own levers', () => {
+    expect(modeOf({ problem: '27 + 45' })).toBe('add_regroup');
+    expect(modeOf({ problem: '23 + 14' })).toBe('add_no_regroup');
+    expect(modeOf({ problem: '52 - 17' })).toBe('subtract_regroup');
+    expect(modeOf({ problem: '58 − 23' })).toBe('subtract_no_regroup');
+  });
+
+  it('the trade model is the model lever: its support fact follows the item\'s tier, and a no-regroup item has none', () => {
+    const add = ch('a', 'addition', 27, 45, 'add_regroup');
+    expect(REGROUP_LEVERS.support({ ...add, supportTier: 'easy' }, ctx('addition'))).toMatch(/pull the model lever \(trade_model\)/);
+    expect(REGROUP_LEVERS.support(add, ctx('addition'))).toMatch(/after a miss, model one trade on blocks/);
+    expect(REGROUP_LEVERS.support({ ...add, supportTier: 'hard' }, ctx('addition'))).toMatch(/model nothing before/);
+    expect(REGROUP_LEVERS.support(ch('n', 'addition', 23, 14, 'add_no_regroup'), ctx('addition'))).toBe('');
   });
 
   // "This wrong answer, then this lever": the typed digits, the miss they show, the first open lever for it.
@@ -121,9 +143,9 @@ describe('declarations', () => {
     const typed = [...digits, ...Array(places - digits.length).fill(null)];
     expect(regroupMiss({ operation: op, a, b, places, digits: typed, blocks: [], trades: 0, regroupMarks: false,
       placeLabels: true, carryRow: true, columnBadges: false, algorithmShown: true })).toBe(miss);
-    const levers = regroupLevers(ch('x', op, a, b, 'mode'), [], ctx(op));
-    expect(nextLever(levers, miss)).toBe(lever);
+    const item = ch('x', op, a, b, 'mode');
+    expect(nextLever(declare(item, [], ctx(op)), miss)).toBe(lever);
     // With the marks pulled, the trade picture comes next.
-    if (lever === REGROUP_MARKS_LEVER) expect(nextLever(regroupLevers(ch('x', op, a, b, 'mode'), [lever], ctx(op)), miss)).toBe(TRADE_MODEL_LEVER);
+    if (lever === REGROUP_MARKS_LEVER) expect(nextLever(declare(item, [lever], ctx(op)), miss)).toBe(TRADE_MODEL_LEVER);
   });
 });

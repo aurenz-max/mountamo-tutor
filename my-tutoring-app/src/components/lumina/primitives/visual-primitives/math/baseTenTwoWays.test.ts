@@ -4,8 +4,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { baseTenLevers, leverFacts, smallerTwoWaysNumber, startLevers, COUNTS_LEVER, SMALLER_LEVER, TEN_MODEL_LEVER }
+import { BASE_TEN_LEVERS, baseTenLeverContext, smallerTwoWaysNumber, startLevers, COUNTS_LEVER, SMALLER_LEVER, TEN_MODEL_LEVER }
   from './baseTenLevers';
+import type { BaseTenClickItem } from './baseTenWorkspace';
 import { describeTwoWaysCheck, sameWay, twoWaysInstruction, twoWaysMiss, twoWaysScene } from './baseTenWorkspace';
 import { normalizeTwoWaysTargets } from '../../../service/math/gemini-base-ten-blocks';
 import type { BaseTenBlocksChallenge } from './BaseTenBlocks';
@@ -53,7 +54,9 @@ describe('the check: the value, then different from the first way', () => {
 });
 
 describe('levers', () => {
-  const item = { type: 'build_two_ways', targetNumber: 34 };
+  const item = { id: 'build_two_ways-0', type: 'build_two_ways', targetNumber: 34, instruction: twoWaysInstruction(34), hint: '' } as BaseTenClickItem;
+  const ctx = baseTenLeverContext();
+  const baseTenLevers = (i: BaseTenClickItem, pulled: string[]) => BASE_TEN_LEVERS.declare(i, ctx, pulled);
   it('start bare at every tier, whatever the flags say', () => {
     expect(startLevers('build_two_ways', {})).toEqual([]);
     expect(startLevers('build_two_ways', { showColumnCounts: true, showBlocksTotal: true })).toEqual([]);
@@ -75,7 +78,7 @@ describe('levers', () => {
       expect(`${l.when} ${l.does}`).toMatch(/\b(builds?|blocks|mat)\b/i);
     }
     expect(baseTenLevers(item, []).map(l => l.id)).not.toContain('blocks_total');
-    expect(leverFacts([COUNTS_LEVER, TEN_MODEL_LEVER], [])).not.toMatch(/\d/);
+    expect(BASE_TEN_LEVERS.onScreen(item, ctx, [COUNTS_LEVER, TEN_MODEL_LEVER])).not.toMatch(/\d/);
   });
   it('smaller_number over every number to 999: at least ten, smaller, never the number or its reversal', () => {
     for (let t = 10; t <= 999; t++) {

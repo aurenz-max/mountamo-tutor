@@ -10,8 +10,8 @@ const session = vi.hoisted(() => ({
   tutorSpeaking: true,
 }));
 
-// Keep the real helper, Ten Frame (a runner-era board that still wires Pip itself; counting-board is a boss whose
-// Pip comes from the runner on a bound mount), surface registry, companion and actor.
+// Keep the real helper, Number Sequencer (a runner-era board that still wires Pip itself; counting-board, ten-frame and
+// number-bond are bosses whose Pip comes from the runner on a bound mount), surface registry, companion and actor.
 // Only the network/audio session, judged runner and evaluation services are faked.
 // Like the real provider, a connection is one more claim on Pip, never a gate.
 vi.mock('@/contexts/LuminaAIContext', async () => {
@@ -27,7 +27,7 @@ vi.mock('@/contexts/LuminaAIContext', async () => {
       session.connect = (id) => { setActiveId(id); store.setActive(id); };
       return <Context.Provider value={{
         isConnected: activeId !== null, activePrimitiveId: activeId,
-        activePrimitiveType: activeId ? 'ten-frame' : null,
+        activePrimitiveType: activeId ? 'number-sequencer' : null,
         activePrimitiveData: null, isAIResponding: false, isAudioPlaying: false,
         isListening: false, sessionEnded: false, conversation: [], disconnect,
       }}><PipSurfaceContext.Provider value={store}>{children}</PipSurfaceContext.Provider></Context.Provider>;
@@ -60,8 +60,9 @@ vi.mock('../config/primitiveRegistry', () => ({ getPrimitive: () => undefined })
 vi.mock('../components/live-activity/TesterWorkspace', () => ({ TesterWorkspace: ({ children }: any) => children, testerBinds: () => false }));
 
 const data = {
-  title: 'Build three', mode: 'single', counters: { count: 0, color: 'red', positions: [] },
-  challenges: [{ id: 'first', type: 'build', targetCount: 3, instruction: 'Put 3 counters on the ten frame!', hint: '', narration: '' }],
+  title: 'Before and after', gradeBand: 'K',
+  challenges: [{ id: 'first', type: 'before-after', instruction: 'Can you find the missing number?', sequence: [4, null],
+    correctAnswers: [5], rangeMin: 4, rangeMax: 5 }],
 };
 
 beforeEach(() => {
@@ -79,7 +80,7 @@ async function generate() {
 describe('Math helper Pip integration', () => {
   it('puts one Pip in the real board from the board’s own phase, with no tutor session', async () => {
     const { container } = render(<MathPrimitivesTester onBack={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Ten Frame/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Number Sequencer/ }));
     await generate();
     const dock = container.querySelector<HTMLElement>('[data-pip-dock]')!;
     const instanceId = dock.dataset.pipDock!;
@@ -90,7 +91,7 @@ describe('Math helper Pip integration', () => {
     session.tutorSpeaking = false;
     fireEvent.click(screen.getByRole('button', { name: /Raw JSON/ }));
     expect(container.querySelector('[data-pip-dock]')).toBe(dock);
-    fireEvent.click(container.querySelector('[data-pip-object="cell-1"]')!);
+    fireEvent.pointerDown(container.querySelector('[data-pip-object="car-1"]')!);
     expect(dock.querySelector('[data-pip-surface-body]')?.getAttribute('data-pip-gesture')).toBe('look');
 
     // A session that starts later changes nothing about where Pip is.
@@ -101,7 +102,7 @@ describe('Math helper Pip integration', () => {
 
   it('replaces the actor and ends the old session on regeneration or primitive selection', async () => {
     const { container } = render(<MathPrimitivesTester onBack={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: /Ten Frame/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Number Sequencer/ }));
     await generate();
     const firstDock = container.querySelector<HTMLElement>('[data-pip-dock]')!;
     act(() => session.connect(firstDock.dataset.pipDock!));

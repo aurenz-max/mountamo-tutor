@@ -13,6 +13,8 @@ Built 2026-09-10. This extends the existing primitive with `plan_fair_test` and
 
 Priors are mirrored in the backend; they are not empirical calibration.
 
+**Boss:** `rampLab.card.ts` + `rampLab.boss.ts` (spoken preset; was `adapters/rampLabLive.ts` and the `DI_PORTS` row).
+
 ## Learning and evidence boundaries
 
 - A fair plan changes exactly the requested variable: ramp angle, surface, or box
@@ -68,12 +70,12 @@ audio recognition reliability.
 
 ## In-item levers (2026-10-08, `/add-support-tiers`)
 
-`rampLabLevers.ts` declares the levers; `RampLab.levers.workspace.test.tsx` and `rampLabLevers.test.ts` hold each rule.
+`rampLabLevers.ts` declares the levers as one lever set (`RAMP_LEVERS`); `RampLab.levers.workspace.test.tsx` and `rampLabLevers.test.ts` hold each rule.
 
 - Help levers describe what is drawn, never the key: `both_ramps` draws both compare setups at one scale with no force,
-  arrow or mark; `test_log` lists only values the learner checked (refused before the first check); `same_or_changed`
-  tags every setting of setup B alike; `push_bars` draws the two recorded trials with no ranking words (refused before
-  both trials). Model levers (`model_pair`, `model_plan`, `model_explain`) use a condition the item does not touch, and
+  arrow or mark; `test_log` lists only values the learner checked (offered from the first check); `same_or_changed`
+  tags every setting of setup B alike; `push_bars` draws the two recorded trials with no ranking words (offered once
+  both trials are recorded). Model levers (`model_pair`, `model_plan`, `model_explain`) use a condition the item does not touch, and
   their `does` text forbids carrying the model over to the learner's setups.
 - Simplify levers (`lighter_load`, `fewer_angles`, `two_settings`) open an ungraded `<id>~simpler` item of the same mode
   built by code, never the parent's setup or answer. A practice plan is checked at the plan (a fair plan is its success)
@@ -89,3 +91,4 @@ audio recognition reliability.
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-27 — handoff 20 A4 (`/add-support-tiers`, misses): the lab's checks name what a wrong answer shows (`rampMiss` in `rampLabWorkspace.ts`: compare_conditions 3, find_threshold 2, design_with_budget 2, plan_fair_test 3), listed in the catalog `teachingWorkspace.misses`. The verdicts, feedback text and the key the tutor is never told are unchanged; explain_from_trials stays spoken. Compatible: no requirement changed.
 - 2026-10-08 — `/add-support-tiers` (class sweep): levers on all five modes (section above), step buttons beside the push and angle sliders, explain spoken misses, `editable` on an investigation challenge (absent = all three settings, so existing payloads are unchanged). Verdicts, feedback, keys and the investigation record of an unassisted session are unchanged. Compatible: no requirement changed. Report: qa/eval-reports/ramp-lab-levers-2026-10-08.md.
+- 2026-10-20 — moved onto a boss (wave 3): `rampLab.card.ts` + `rampLab.boss.ts` on the spoken preset replace `adapters/rampLabLive.ts`, the catalog `teachingWorkspace`/`tutoring` blocks, the `DI_PORTS` row and the scripted `rampExplanationScript.ts` pack. explain_from_trials keeps its key as a meaning `SpokenKey` (`rampKey`; numbers optional) and its known misses; the other four modes stay checked by the lab. Levers became one lever set (model levers now get the tier `support` fact from a per-item `supportTier` the generator stamps; `test_log`/`push_bars` are offered once there is something to show instead of refused at pull). Pip moved to `<PipDock />`/`<PipWorkspace>`; Hear the question goes through the runner's `requestHear`. Verdicts, feedback, keys and the investigation record are unchanged. Compatible: no requirement changed.

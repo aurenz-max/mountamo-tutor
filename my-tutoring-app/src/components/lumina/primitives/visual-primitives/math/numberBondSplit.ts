@@ -1,5 +1,5 @@
-import { type NumberBondItem, type NumberBondCueOptions } from './numberBondScript';
-import { numberWordFor } from './countingBoardScript';
+import type { NumberBondItem } from './numberBondDomain';
+import { numberWordFor } from './countingBoardDomain';
 import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 
 export type BondPlace = 'whole' | 'left' | 'right';
@@ -45,30 +45,6 @@ export const expandSplitAndSay = (items: NumberBondItem[]): NumberBondItem[] => 
     { ...item, id: `${item.id}::say`, splitPhase: 'say' as const, answerKind: 'voice' as const,
       responseClass: 'number_word_to_20' as const, action: 'say-your-part' },
   ] : [item]);
-const WAIT = 'Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. ';
-export function splitAndSayCue(item: NumberBondItem, opts: NumberBondCueOptions, counters: BondCounters, found: readonly BondPair[], moveOn = false): string {
-  if (item.splitPhase === 'build') {
-    const how = opts.opening || opts.howToPlay ? 'Tap a counter, then where it should go, or drag it. You can move counters between the parts or bring them back together. ' : '';
-    const ask = item.kind === 'ten-and-ones' ? `Split ${numberWordFor(item.whole)} into a ten and some ones.`
-      : item.pairIndex === 0 ? `Split ${numberWordFor(item.whole)} into two parts.` : `Move the counters to make a different way to split ${numberWordFor(item.whole)}.`;
-    return `[NS_ITEM] Say exactly: "${opts.opening ? 'Let us split and say. ' : ''}${how}${ask}" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. ` + WAIT;
-  }
-  const prepared = prepareSplit(item, counters, found);
-  const question = splitQuestion(item, prepared.counters);
-  return `[NS_ITEM] Highlighted answer side: ${question.answerSide}. Say exactly: "${moveOn && prepared.modeled ? 'I have shown a split. Use my example. ' : ''}${question.ask}" `
-    + `Private expected number: ${question.answer}. Judge only fresh speech for this turn. Accept number words or short sentences such as "${numberWordFor(question.answer)} in that part". `
-    + 'Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. '
-    + `If correct say exactly "Yes, ${numberWordFor(question.answer)} in that part." If incorrect say exactly "My turn: this part has ${numberWordFor(question.answer)}. Your turn. ${question.ask}" ` + WAIT;
-}
-export function splitAndSayVerdict(item: NumberBondItem, counters: BondCounters, found: readonly BondPair[]) {
-  const valid = validSplit(item, counters, found);
-  const { left, right, whole } = splitCounts(counters);
-  return `[NS_SPLIT] Code-computed valid=${valid}; left=${left}, right=${right}, unplaced=${whole}. Say exactly: "${valid
-    ? item.kind === 'ten-and-ones' ? 'Yes, a full ten and some ones.' : 'Yes, you made two parts.'
-    : whole > 0 ? 'My turn: move all the counters into the parts, then we can look at your split.'
-      : item.kind === 'ten-and-ones' ? 'My turn: make a full ten in one part, and put the rest in the other.'
-        : 'My turn: that is a way you already made. Move a counter to make a different pair.'}" Do not name the other part before the spoken turn. ` + WAIT;
-}
 /** Score each construction + spoken interpretation once, without doubling the pair count. */
 export function splitAndSaySummary(items: NumberBondItem[], summary: JudgedRunSummary): JudgedRunSummary {
   const outcomes = items.filter((item) => item.splitPhase !== 'build').map((item) => {

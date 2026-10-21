@@ -49,11 +49,11 @@ try {
       const question = split.splitQuestion(item, board);
       if (question.answer < 1 || question.answer > 20) throw new Error('Unsupported spoken answer');
       traces.push({ id: item.id, phase: item.splitPhase, counters: board, question,
-        cue: split.splitAndSayCue(item, {}, board, found.get(source)) });
+        cue: original.splitAndSayCue(item, {}, board, found.get(source)) });
       if (item.splitPhase === 'say') found.get(source).push(split.sortedPair(board));
     }
     const issues = validateJudgedScriptPack({ ...original.numberBondPackBase(items),
-      itemCue: (item, opts) => split.splitAndSayCue(item, opts, split.wholeCounters(item.whole), []) });
+      itemCue: (item, opts) => original.splitAndSayCue(item, opts, split.wholeCounters(item.whole), []) });
     if (issues.length) throw new Error(issues.join('; '));
     writeFileSync(resolve(out, `${mode}-${difficulty}.json`), clean(JSON.stringify({ generatedAt: new Date().toISOString(), data, traces, issues }, null, 2)) + '\n');
     process.stdout.write(JSON.stringify({ mode, difficulty, challenges: data.challenges.length, turns: items.length, issues }) + '\n');

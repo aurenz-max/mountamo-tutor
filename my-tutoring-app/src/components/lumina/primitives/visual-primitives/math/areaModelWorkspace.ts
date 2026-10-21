@@ -1,14 +1,21 @@
 /**
- * Area model on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, row C12).
+ * Area model's domain: the activity's check and its misses, and the scene the tutor reads. The boss
+ * (`areaModel.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Every answer is typed on the screen and
- * checked by the activity's own check, so the tutor is never handed a cell product, the total, the perimeter or the
- * parts the factor mode asks for. A forward item (build_model, find_area, multiply) has two steps: each cell, then
- * the sum. A right cell is kept and is not a commit; a wrong cell, and the sum either way, commit.
+ * Pure: the component and any probe read the same scene. Every answer is typed on the screen and checked by the
+ * activity's own check, so the tutor is never handed a cell product, the total, the perimeter or the parts the factor
+ * mode asks for. A forward item (build_model, find_area, multiply) has two steps: each cell, then the sum. A right cell
+ * is kept and is not a commit; a wrong cell, and the sum either way, commit.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { AreaModelChallenge, AreaModelChallengeType } from './AreaModel';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { AreaModelChallenge, AreaModelChallengeType, AreaModelData } from './AreaModel';
+import type { AreaModelMiss } from './areaModel.card';
+
+/** One item as the boss, the levers and the workspace see it: the challenge with the session's mode on it. */
+export type AreaItem = AreaModelChallenge & { mode: AreaModelChallengeType };
+/** The lesson's items: the generator pins one mode per session, so each item carries the session's. */
+export const areaItems = (d: Pick<AreaModelData, 'challenges' | 'challengeType'>): AreaItem[] =>
+  (d.challenges ?? []).map(c => ({ ...c, mode: d.challengeType }));
 
 const sum = (parts: readonly number[]) => parts.reduce((s, v) => s + v, 0);
 const factorText = (parts: readonly number[]) => (parts.length > 1 ? `(${parts.join(' + ')})` : String(parts[0]));
@@ -25,10 +32,6 @@ export function workspaceTask(c: AreaModelChallenge, mode: AreaModelChallengeTyp
   if (mode === 'factor') return `Find the column parts and the row parts whose products make every cell. The total area is ${w * h}.`;
   return `Find ${modelText(c)} with the area model: multiply each cell's column part by its row part, then add the cell products.`;
 }
-
-/** The task for an item, its mode read from the item (the generator pins one mode per session). */
-export const workspaceAssignmentFor = (mode: AreaModelChallengeType) =>
-  (c: AreaModelChallenge): TeachingAssignment => ({ id: c.id, task: workspaceTask(c, mode), response: 'gesture' });
 
 /** One checked entry: a cell, the sum of the cells, the perimeter, or the parts. */
 export type AreaCheck =
@@ -90,26 +93,7 @@ export function areaCheckCorrect(c: AreaModelChallenge, check: AreaCheck): boole
   }
 }
 
-/**
- * What a wrong entry shows (`TeachingAttempt.miss`, handoff 20), from the entry the check reads. Only the observable
- * pattern, drawn from the catalog's commonStruggles (wrong partial product, place-value errors) and the perimeter
- * remediation (adding only two sides, area for perimeter):
- * - a cell: `added_not_multiplied` (the two parts added), `dropped_zeros` / `extra_zeros` (the product with a power of
- *   ten too few or too many), `one_group_off` (one column part or one row part away), `wrong_product`;
- * - the sum: `left_out_part` (the total less one cell), `carry_slip` (off by 10, 100 or 1000), `sum_off`;
- * - the perimeter: `gave_area` (length times width), `two_sides_only` (length plus width), `three_sides`,
- *   `perimeter_off`;
- * - the parts: `swapped` (the column parts typed as the row parts and back), `one_part_wrong`, `parts_wrong`.
- */
-export type AreaModelMiss = 'added_not_multiplied' | 'dropped_zeros' | 'extra_zeros' | 'one_group_off' | 'wrong_product'
-  | 'left_out_part' | 'carry_slip' | 'sum_off'
-  | 'gave_area' | 'two_sides_only' | 'three_sides' | 'perimeter_off'
-  | 'swapped' | 'one_part_wrong' | 'parts_wrong';
-
-export const CELL_MISSES: readonly AreaModelMiss[] = ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product'];
-export const SUM_MISSES: readonly AreaModelMiss[] = ['left_out_part', 'carry_slip', 'sum_off'];
-export const PERIMETER_MISSES: readonly AreaModelMiss[] = ['gave_area', 'two_sides_only', 'three_sides', 'perimeter_off'];
-export const FACTOR_MISSES: readonly AreaModelMiss[] = ['swapped', 'one_part_wrong', 'parts_wrong'];
+export { AREA_MISSES_BY_MODE, CELL_MISSES, FACTOR_MISSES, PERIMETER_MISSES, SUM_MISSES, type AreaModelMiss } from './areaModel.card';
 
 const powerOfTen = (n: number) => Number.isInteger(n) && n >= 10 && /^10+$/.test(String(n));
 
@@ -162,7 +146,7 @@ export function describeAreaWork(c: AreaModelChallenge, mode: AreaModelChallenge
 }
 
 /** What is drawn and asked. Every number here is printed on the screen; no product, total, perimeter or part is. */
-export function workspaceScene(c: AreaModelChallenge, mode: AreaModelChallengeType, view: AreaView): WorkspaceScene {
+export function workspaceScene(c: AreaModelChallenge, mode: AreaModelChallengeType, view: AreaView): SceneOf {
   const drawn: Record<string, string | number> = {};
   if (mode === 'perimeter') {
     drawn.rectangle = `sides ${sum(c.factor1Parts)} (top) and ${sum(c.factor2Parts)} (left) are labelled`;
@@ -183,10 +167,9 @@ export function workspaceScene(c: AreaModelChallenge, mode: AreaModelChallengeTy
     facts: {
       kind: mode, ...drawn,
       learnerWork: describeAreaWork(c, mode, view),
-      constraints: isForward(mode)
-        ? 'The learner taps a cell, types its product and presses Check; once every cell is right they type the sum and '
-          + 'press Submit Final Answer. The activity checks each entry itself. You cannot tap or type for the learner.'
-        : 'The learner types the answer and presses its button; the activity checks it itself. You cannot type for the learner.',
+      // How the learner answers is the card's `moves`; only what is this model's own is said here.
+      ...(isForward(mode) ? { constraints: 'A right cell stays on screen; a wrong cell, or the sum, is checked as an answer.' }
+        : mode === 'factor' ? { constraints: 'Any parts that make every cell are right, not only one split.' } : {}),
     },
   };
 }

@@ -1,7 +1,7 @@
 # Contract: function-sketch
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C20) for the workspace requirements only. A full `/primitive-contract function-sketch` derivation (consumers per skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/FunctionSketch.tsx` · **Workspace:** `functionSketchWorkspace.ts` · **Generator:** `service/math/gemini-function-sketch.ts` · **Oracle:** `service/qa/oracles/function-sketch.ts` · **Adapter:** `components/live-activity/adapters/functionSketchLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`function-sketch`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/FunctionSketch.tsx` · **Workspace:** `functionSketchWorkspace.ts` · **Generator:** `service/math/gemini-function-sketch.ts` · **Oracle:** `service/qa/oracles/function-sketch.ts` · **Boss:** `primitives/visual-primitives/math/functionSketch.card.ts` + `functionSketch.boss.ts` (levers: `functionSketchLevers.ts`) · **Catalog:** `service/manifest/catalog/math.ts` (`function-sketch`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R2 (W1 plain-shape binding, C20); R3 levers.
+- 2026-10-20 — moved onto a boss (wave 3): `functionSketch.card.ts` + `functionSketch.boss.ts` (bespoke: three tap modes and a sketch), levers as one lever set (`FUNCTION_SKETCH_LEVERS`), workspace-only component; adapter and catalog guidance/tutoring deleted. R1-R3 unchanged.

@@ -8,10 +8,17 @@ import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { itemsFromChallenges, splitKey, waysToSplit, type TenFrameBand, type TenFrameChallengeLike, type TenFrameItem } from './tenFrameScript';
+import { itemsFromChallenges, splitKey, waysToSplit, type TenFrameBand, type TenFrameChallengeLike, type TenFrameItem } from './tenFrameDomain';
 import { evalModeForKind } from './tenFrameWorkspace';
-import { FIVE_LEVER, SIMPLIFY_LEVERS, TEN_MODEL, fillModel, leverFacts, leverView, operationModel, practiceItem, splitModel,
-  tenFrameLevers, waysShown } from './tenFrameLevers';
+import { FIVE_LEVER, TEN_FRAME_LEVERS, TEN_MODEL, fillModel, leverView, operationModel, practiceItem, splitModel,
+  waysShown, type TenFrameLeverContext } from './tenFrameLevers';
+
+/** The set's levers, scene facts and view on one item, in the old call shape: pulled, band, then the lesson context. */
+const ctxOf = (band: TenFrameBand, ctx: Partial<TenFrameLeverContext>): TenFrameLeverContext => ({ band, session: [], ...ctx });
+const tenFrameLevers = (item: TenFrameItem, pulled: readonly string[] = [], band: TenFrameBand = 'K',
+  ctx: Partial<TenFrameLeverContext> = {}) => TEN_FRAME_LEVERS.declare(item, ctxOf(band, ctx), pulled);
+const leverFacts = (item: TenFrameItem, pulled: readonly string[], band: TenFrameBand, ctx: Partial<TenFrameLeverContext> = {}) =>
+  TEN_FRAME_LEVERS.onScreen(item, ctxOf(band, ctx), pulled);
 
 const MODES = ['decompose', 'decompose_teen', 'make_ten', 'subitize', 'operate'] as const;
 const payload = (mode: string) => JSON.parse(readFileSync(join(__dirname,
@@ -48,7 +55,7 @@ describe('simplify: the same mode, a new item, answer recomputed, never the item
     const { items, band } = sessionOf(mode);
     for (const item of items) {
       const easier = practiceItem(item, band, items);
-      const declared = tenFrameLevers(item, [], band, { session: items }).some(l => SIMPLIFY_LEVERS.has(l.id));
+      const declared = tenFrameLevers(item, [], band, { session: items }).some(l => l.kind === 'simplify');
       expect(!!easier).toBe(declared);
       if (!easier) continue;
       expect(easier).toMatchObject({ id: `${item.id}~smaller`, kind: item.kind, answerKind: item.answerKind, capacity: item.capacity });
@@ -109,7 +116,7 @@ describe('help: each lever\'s leak rule', () => {
     const teen = one({ type: 'decompose_teen', targetCount: 14 }, 'K', 20);
     const facts = leverFacts(teen, ['running_count', 'ten_model'], 'K');
     expect(facts).not.toMatch(/\b4\b|four|left over:/i);
-    expect(leverView(teen, ['running_count'], 'K').yellowCount).toBe(true);
+    expect(leverView(teen, ['running_count'], ctxOf('K', {})).yellowCount).toBe(true);
   });
 
   it('make_ten: the fill model is a five-frame, none of its numbers the item\'s, none on five', () => {

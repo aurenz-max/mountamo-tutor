@@ -6,7 +6,6 @@ import fixtures from './testing/workspaceFixtures.json';
 import { expectClassicWorkspace, mountWithStore } from './testing/classicSurface';
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 import BridgeBuilder from '../primitives/visual-primitives/engineering/BridgeBuilder';
-import TowerStacker from '../primitives/visual-primitives/engineering/TowerStacker';
 import ShapeStrengthTester from '../primitives/visual-primitives/engineering/ShapeStrengthTester';
 import DumpTruckLoader from '../primitives/visual-primitives/engineering/DumpTruckLoader';
 import ExcavatorArmSimulator from '../primitives/visual-primitives/engineering/ExcavatorArmSimulator';
@@ -18,12 +17,10 @@ import PropulsionTimeline from '../primitives/visual-primitives/engineering/Prop
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 import BlueprintCanvas from '../primitives/visual-primitives/engineering/BlueprintCanvas';
-import DigitalSkillsSim from '../primitives/visual-primitives/core/DigitalSkillsSim';
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComparisonPanel } from '../primitives/ComparisonPanel';
 import { FeatureExhibit } from '../primitives/FeatureExhibit';
 import ImagePanel from '../primitives/ImagePanel';
-import DistributionExplorer from '../primitives/DistributionExplorer';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 
 const tutor = vi.hoisted(() => ({ isAudioPlaying: false, activePrimitiveId: null as string | null }));
@@ -54,11 +51,11 @@ const SPEAKING: Array<[string, AnyPrimitive]> = [
   ['paper-airplane-designer', PaperAirplaneDesigner],
   ['propulsion-timeline', PropulsionTimeline], ['engine-explorer', EngineExplorer],
   ['vehicle-design-studio', VehicleDesignStudio],
-  ['digital-skills-sim', DigitalSkillsSim], ['foundation-explorer', FoundationExplorer],
-  ['distribution-explorer', DistributionExplorer], ['tape-diagram', TapeDiagram],
+  ['foundation-explorer', FoundationExplorer],
+  ['tape-diagram', TapeDiagram],
 ];
 const SILENT: Array<[string, AnyPrimitive]> = [
-  ['motion-diagram', MotionDiagram], ['bridge-builder', BridgeBuilder], ['tower-stacker', TowerStacker],
+  ['motion-diagram', MotionDiagram], ['bridge-builder', BridgeBuilder],
   ['shape-strength-tester', ShapeStrengthTester], ['dump-truck-loader', DumpTruckLoader], ['foundation-builder', FoundationBuilder],
   ['blueprint-canvas', BlueprintCanvas],
 ];

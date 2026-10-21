@@ -25,7 +25,8 @@ import combinePayload from '../../../components/live-activity/runtime/testing/w1
 import orderPayload from '../../../components/live-activity/runtime/testing/w1-payloads/revision-workshop.reorganize.json';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { orderMiss, revisionItems, revisionLevers, revisionShapeMiss } from './revisionSteps';
+import { boardOrder, orderMiss, revisionItems, revisionScene, revisionShapeMiss } from './revisionSteps';
+import { REVISION_LEVERS } from './revisionWorkshopLevers';
 
 const details = (detailsPayload as unknown as { data: RevisionWorkshopData }).data;
 const combine = (combinePayload as unknown as { data: RevisionWorkshopData }).data;
@@ -59,10 +60,32 @@ describe('revision rules (pure)', () => {
     const tw = getComponentById('revision-workshop')!.teachingWorkspace!;
     for (const [mode, data] of MODES) {
       expect(workspaceBinding({ instanceId: mode, primitiveId: 'revision-workshop', pin: mode, objectiveIds: ['o'], data }), mode).not.toBeNull();
-      const answered = new Set(revisionLevers(revisionItems(data)[0], []).flatMap(l => l.answers ?? []));
+      const answered = new Set(REVISION_LEVERS.declare(revisionItems(data)[0], null, []).flatMap(l => l.answers ?? []));
       const unanswered = new Set(tw.unanswered?.[mode] ?? []);
       for (const m of tw.misses![mode]) expect(answered.has(m) || unanswered.has(m), `${mode} ${m}`).toBe(true);
     }
+  });
+
+  it('reorganize: the cards and the scene never list the answer order, nor three sentences as the answer has them', () => {
+    const [item] = revisionItems(order);
+    const answer = item.sentences.map(s => s.id);
+    const board = boardOrder(item).map(s => s.id);
+    expect(board).not.toEqual(answer);
+    for (let i = 0; i + 2 < board.length; i++) {
+      const at = answer.indexOf(board[i]);
+      expect(answer[at + 1] === board[i + 1] && answer[at + 2] === board[i + 2], board.join(' ')).toBe(false);
+    }
+    const listed = String(revisionScene(item, order.draft, '', 0).facts.sentences);
+    expect(listed).toBe(boardOrder(item).map(s => s.text).join(' | '));
+    expect(revisionScene(item, order.draft, '', 0).facts).not.toHaveProperty('draft');
+  });
+
+  it('a clue that names one of the item revisions is not offered', () => {
+    const [d] = revisionItems(details);
+    expect(REVISION_LEVERS.declare(d, null, []).map(l => l.id)).toContain('revision_hint');
+    const leaky = { ...d, suggestion: `Try: ${d.ideal[0]}` };
+    expect(REVISION_LEVERS.declare(leaky, null, []).map(l => l.id)).not.toContain('revision_hint');
+    expect(REVISION_LEVERS.onScreen(d, null, ['revision_hint'])).toContain(d.suggestion);
   });
 
   it('the model answer is never on screen', () => {

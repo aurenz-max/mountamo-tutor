@@ -1,26 +1,71 @@
 /**
- * spelling-pattern-explorer on the shared tutor/JEV teaching workspace, W1 minimal binding (plain shape). The five
- * classic modes keep their flow: look at the pattern words, write the rule in your own words (not checked), then spell
- * each dictation word. On the workspace each dictation word is one item: the tutor says the word, the learner types
- * it and presses Check, and the spelling is checked in code against the word, so the spelling never reaches the
- * tutor as a key. The open build (`pattern_build`) runs on the shared letter build surface (`letterBuild.ts`).
+ * spelling-pattern-explorer's items and scene (the boss: `spellingPatternExplorer.card.ts` +
+ * `spellingPatternExplorer.boss.ts`). The five classic modes: look at the pattern words, write the rule in your own
+ * words (not checked), then spell each dictation word. Each dictation word is one item: the tutor says the word, the
+ * learner types it and presses Check spelling, and the spelling is checked in code, so it never reaches the tutor as a
+ * key. The open build (`pattern_build`) runs on the shared letter build surface (`letterBuild.ts`).
  *
- * Pure: the component, the adapter and the journey read the same items, assignment and scene.
+ * Pure: the component, the boss and the journey read the same items and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import { letterAssignment, letterItemsFrom, type LetterBuildItem } from './letterBuild';
+import type { SpellingMiss } from './spellingPatternExplorer.card';
+
+export { SPELLING_MISSES, type SpellingMiss } from './spellingPatternExplorer.card';
+
+export type ClassicMode = 'short_vowel' | 'long_vowel' | 'r_controlled' | 'silent_letter' | 'morphological';
+type SupportTier = 'easy' | 'medium' | 'hard';
 
 export interface DictationItem { id: string; word: string; hint?: string }
+/** A dictation word in its eval mode. */
+export type SpellingWord = DictationItem & { mode: ClassicMode };
+/** A pattern_build ask, stamped with its mode and the lesson's tier (the model lever's timing reads it). */
+export type PatternBuild = LetterBuildItem & { mode: 'pattern_build'; supportTier: SupportTier };
+export type SpellingItem = SpellingWord | PatternBuild;
+
+export const isPatternBuild = (item: SpellingItem): item is PatternBuild => item.mode === 'pattern_build';
 
 export type SpellingPhase = 'observe' | 'rule' | 'apply' | 'review';
+
+/** What the boss reads from a lesson. */
+export interface SpellingLesson {
+  title: string;
+  patternType?: string;
+  patternWords?: string[];
+  highlightPattern?: string;
+  dictationWords?: string[];
+  dictationHints?: string[];
+  supportTier?: SupportTier;
+  task?: 'letter_build';
+  buildItems?: LetterBuildItem[];
+}
+
+const MODE_OF_PATTERN: Record<string, ClassicMode> = {
+  'short-vowel': 'short_vowel', 'long-vowel': 'long_vowel', 'r-controlled': 'r_controlled', 'silent-letter': 'silent_letter',
+  'suffix-change': 'morphological', 'latin-root': 'morphological',
+};
+export const classicModeOf = (patternType: string | undefined): ClassicMode => MODE_OF_PATTERN[patternType ?? ''] ?? 'short_vowel';
 
 export function dictationItems(words: readonly string[] | undefined, hints?: readonly string[]): DictationItem[] {
   return (words ?? []).map((w, i) => ({ id: `w${i + 1}`, word: String(w ?? '').trim(), ...(hints?.[i] ? { hint: hints[i] } : {}) }))
     .filter(d => /^[a-z][a-z' -]*$/i.test(d.word));
 }
 
+export const spellingWords = (d: SpellingLesson): SpellingWord[] =>
+  dictationItems(d.dictationWords, d.dictationHints).map(i => ({ ...i, mode: classicModeOf(d.patternType) }));
+
+export const asPatternBuild = (item: LetterBuildItem, supportTier: SupportTier | undefined): PatternBuild =>
+  ({ ...item, mode: 'pattern_build', supportTier: supportTier ?? 'medium' });
+
+export const patternBuilds = (d: SpellingLesson): PatternBuild[] =>
+  letterItemsFrom(d.buildItems ?? [], d.supportTier).map(i => asPatternBuild(i, d.supportTier));
+
+/** The graded items of one lesson: the build's asks, or the dictation words. */
+export const spellingItems = (d: SpellingLesson): SpellingItem[] => (d.task === 'letter_build' ? patternBuilds(d) : spellingWords(d));
+
 /** The task names the word to dictate: the tutor says it. The spelling is the answer and is checked in code. */
-export const dictationAssignment = (item: DictationItem): TeachingAssignment =>
-  ({ id: item.id, task: `Listen to the word "${item.word}" and type how it is spelled, using the spelling pattern.`, response: 'gesture' });
+export const spellingAsk = (item: SpellingItem): string => (isPatternBuild(item) ? letterAssignment(item).task
+  : `Listen to the word "${item.word}" and type how it is spelled, using the spelling pattern.`);
 
 export const spellingMatches = (item: DictationItem, typed: string) => typed.trim().toLowerCase() === item.word.toLowerCase();
 
@@ -33,13 +78,6 @@ export function patternRegex(highlightPattern: string): RegExp | null {
     .filter(k => k && k.length <= 6 && !/^silent|^vowel|^long|^short/.test(k));
   return keys.length ? new RegExp(keys.map(k => k.split('_').join('[a-z]')).join('|')) : null;
 }
-
-/**
- * What a checked wrong spelling shows: the word's pattern spelled wrong (`pattern_missing`), the pattern right and other
- * letters wrong (`other_letters`), or, when the pattern names no letters to look for, `misspelled`.
- */
-export type SpellingMiss = 'pattern_missing' | 'other_letters' | 'misspelled';
-export const SPELLING_MISSES: readonly SpellingMiss[] = ['pattern_missing', 'other_letters', 'misspelled'];
 
 export function spellingMiss(item: DictationItem, typed: string, highlightPattern: string): SpellingMiss | undefined {
   if (spellingMatches(item, typed)) return undefined;
@@ -68,20 +106,16 @@ export interface SpellingView {
   hintShown?: string;
 }
 
-export function spellingScene(item: DictationItem, view: SpellingView): WorkspaceScene {
-  const before = view.phase === 'observe' || view.phase === 'rule';
+/** What the tutor reads: the phase, what is on screen and the learner's typing. Never the spelling. */
+export function spellingScene(view: SpellingView): SceneOf {
   return { objects: [], facts: {
     phase: view.phase,
     ...(view.phase === 'observe' ? { patternWordsOnScreen: view.patternWords.join(', ') } : {}),
     ...(view.patternShown ? { patternShown: view.patternShown } : {}),
     ...(view.phase === 'rule' ? { ruleWritten: view.ruleWritten ? 'yes' : 'not yet' } : {}),
-    ...(view.phase === 'apply' ? { typed: view.typed || '(nothing yet)', lettersTyped: view.typed.trim().length } : {}),
+    ...(view.phase === 'apply' ? { typed: view.typed || '(nothing yet)', lettersTyped: view.typed.trim().length,
+      constraints: 'The screen does not show the word to spell: say it aloud for the learner.' } : {}),
     ...(view.hintShown ? { hintOnScreen: view.hintShown } : {}),
-    constraints: before
-      ? 'First the learner looks at the pattern words and finds what they share, then writes the spelling rule in their '
-        + 'own words (it is not checked). Spelling starts after that.'
-      : 'Say the word for the learner to spell. The learner types it and presses Check; the activity checks the spelling '
-        + 'itself. You cannot type for them.',
   } };
 }
 

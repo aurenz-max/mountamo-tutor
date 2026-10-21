@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildFractionTouchItems, describeTouch, touchAssignment, touchMatches } from './fractionCirclesWorkspace';
+import { buildFractionTouchItems, describeTouch, touchMatches } from './fractionCirclesWorkspace';
+import { fractionCirclesBoss } from './fractionCircles.boss';
 import type { FractionCirclesChallenge } from './FractionCircles';
 
 const challenges: FractionCirclesChallenge[] = [2, 3, 4].flatMap(d => Array.from({ length: d - 1 }, (_, i) => ({
@@ -22,7 +23,7 @@ describe('touch_fraction items', () => {
   });
   it('the tutor is told the spoken fraction only, never which picture matches', () => {
     for (const item of buildFractionTouchItems(challenges)) {
-      const assignment = touchAssignment(item);
+      const assignment = fractionCirclesBoss.assignment!(item);
       expect(assignment).toEqual({ id: item.id, task: item.actionContract.instruction, response: 'gesture' });
       expect(JSON.stringify(assignment)).not.toMatch(/picture-\d|correctChoice/);
     }

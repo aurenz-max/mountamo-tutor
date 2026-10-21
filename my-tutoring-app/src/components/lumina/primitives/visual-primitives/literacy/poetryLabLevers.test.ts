@@ -1,5 +1,5 @@
 /**
- * poetry-lab levers: leak rules per mode on every saved payload and the hand-built items, the practice builders (never
+ * poetry-lab levers (`POETRY_LEVERS`): leak rules per mode on every saved payload and the hand-built items, the practice builders (never
  * the session's item, same kind, solvable), and "this wrong answer, then this lever" as code.
  */
 import { readFileSync, readdirSync } from 'fs';
@@ -8,10 +8,11 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { PoetryLabData } from './PoetryLab';
 import {
-  END_WORDS_LEVER, FEWER_CARDS_LEVER, FIGURE_MODELS_LEVER, FIRST_LETTERS_LEVER, MODEL_POEM_LEVER, MODE_MISSES, MOOD_FACES_LEVER,
-  ONE_LINE_LEVER, PHRASE_COUNT_LEVER, RHYME_MODEL_LEVER, SYLLABLE_BEATS_LEVER, figureModelLeaks, figureModels, modelPoem,
-  modelPoemLeaks, moodFacesLeak, poetryLeverFacts, poetryLevers, practiceFor, practiceLeaks, rhymeModel, rhymes,
+  END_WORDS_LEVER, FEWER_CARDS_LEVER, FIGURE_MODELS_LEVER, FIRST_LETTERS_LEVER, MODEL_POEM_LEVER, MOOD_FACES_LEVER,
+  ONE_LINE_LEVER, PHRASE_COUNT_LEVER, POETRY_LEVERS, RHYME_MODEL_LEVER, SYLLABLE_BEATS_LEVER, figureModelLeaks, figureModels,
+  modelPoem, modelPoemLeaks, moodFacesLeak, practiceFor, practiceLeaks, rhymeModel, rhymes,
 } from './poetryLabLevers';
+import { COMPOSITION_MISSES, RHYME_HUNT_MISSES } from './poetryLab.card';
 import { EMPTY_VIEW, poetryCorrect, poetryHarnessWork, poetryItems, poetryMiss, type PoetryItem } from './poetryLabWorkspace';
 import { rimeOfWord } from './rhymeModels';
 
@@ -35,8 +36,9 @@ function keyWords(item: PoetryItem, d: PoetryLabData): string[] {
   if (item.kind === 'figurative') return (d.figurativeInstances ?? []).map(f => f.text);
   return [];
 }
+const levers = (item: PoetryItem, d: PoetryLabData, pulled: readonly string[] = []) => POETRY_LEVERS.declare(item, { data: d }, pulled);
 const said = (item: PoetryItem, d: PoetryLabData) => [
-  ...poetryLevers(item, d, []).map(l => `${l.when} ${l.does}`), poetryLeverFacts(item, d, ALL_HELP),
+  ...levers(item, d).map(l => `${l.when} ${l.does}`), POETRY_LEVERS.onScreen(item, { data: d }, ALL_HELP),
 ].join(' ').toLowerCase();
 
 describe('leak rules, per mode', () => {
@@ -70,7 +72,7 @@ describe('leak rules, per mode', () => {
     const d = PAYLOADS.find(p => p.evalMode === 'analysis')!.data;
     expect(moodFacesLeak(d)).toBe(false);
     expect(moodFacesLeak({ ...d, moodOptions: [...(d.moodOptions ?? []), 'bittersweet'] })).toBe(true);
-    expect(poetryLevers({ id: 'mood', kind: 'mood' }, { ...d, moodOptions: ['bittersweet', 'happy'] }, []).map(l => l.id)).not.toContain(MOOD_FACES_LEVER);
+    expect(levers({ id: 'mood', kind: 'mood' }, { ...d, moodOptions: ['bittersweet', 'happy'] }).map(l => l.id)).not.toContain(MOOD_FACES_LEVER);
   });
 });
 
@@ -78,10 +80,10 @@ describe('practice builders', () => {
   it.each(ITEMS)('%s %s: a practice item of the same kind, not the session\'s, solvable', (_m, _id, item, d) => {
     const p = practiceFor(item, d)!;
     expect(p).toBeTruthy();
-    expect(p.item.kind).toBe(item.kind);
-    expect(p.item.id).not.toBe(item.id);
+    expect(p.kind).toBe(item.kind);
+    expect(p.id).not.toBe(item.id);
     if (item.kind === 'rhyme_hunt') {
-      const r = p.item.round!;
+      const r = p.round!;
       expect(r.candidates).toHaveLength(3);
       expect(rhymes(r.rhymeWordA, r.rhymeWordB)).toBe(true);
       const foil = r.candidates.find(c => c.word !== r.rhymeWordA && c.word !== r.rhymeWordB)!;
@@ -89,24 +91,25 @@ describe('practice builders', () => {
       const used = (d.rounds ?? []).flatMap(x => x.candidates.map(c => c.word.toLowerCase()));
       for (const c of r.candidates) expect(used).not.toContain(c.word);
     } else if (item.kind !== 'compose') {
-      expect(practiceLeaks(p.data, d)).toBe(false);
+      expect(practiceLeaks(p.practice!, d)).toBe(false);
     } else {
-      expect(p.data.templateConstraints!.lineCount).toBe(1);
-      expect(p.data.compositionPrompt).not.toBe(d.compositionPrompt);
+      expect(p.practice!.templateConstraints!.lineCount).toBe(1);
+      expect(p.practice!.compositionPrompt).not.toBe(d.compositionPrompt);
     }
     // The harness' right work passes it and its wrong work names a miss.
-    expect(poetryCorrect(p.item, p.data, poetryHarnessWork(p.item, p.data, false))).toBe(true);
-    if (item.kind !== 'compose') expect(poetryMiss(p.item, p.data, poetryHarnessWork(p.item, p.data, true))).toBeTruthy();
-    // A practice item carries no levers of its own (the component publishes none on it).
+    expect(poetryCorrect(p, p.practice!, poetryHarnessWork(p, p.practice!, false))).toBe(true);
+    if (item.kind !== 'compose') expect(poetryMiss(p, p.practice!, poetryHarnessWork(p, p.practice!, true))).toBeTruthy();
+    // A practice item opens no practice of its own (the component publishes no levers on it).
+    expect(practiceFor(p, d)).toBeNull();
   });
 });
 
 describe('this wrong answer, then this lever', () => {
   it.each(ITEMS)('%s %s: every miss of the mode is answered by a lever on the item', (mode, _id, item, d) => {
-    const levers = poetryLevers(item, d, []);
-    const kinds: Record<string, readonly string[]> = { rhyme_hunt: MODE_MISSES.rhyme_hunt, mood: ['other_mood'],
-      figurative: ['literal_picked', 'missed_some'], rhyme: ['aabb_abab', 'other_scheme'], compose: MODE_MISSES.composition };
-    for (const miss of kinds[item.kind]) expect(levers.some(l => l.answers?.includes(miss)), `${mode} ${item.id} ${miss}`).toBe(true);
+    const offered = levers(item, d);
+    const kinds: Record<string, readonly string[]> = { rhyme_hunt: RHYME_HUNT_MISSES, mood: ['other_mood'],
+      figurative: ['literal_picked', 'missed_some'], rhyme: ['aabb_abab', 'other_scheme'], compose: COMPOSITION_MISSES };
+    for (const miss of kinds[item.kind]) expect(offered.some(l => l.answers?.includes(miss)), `${mode} ${item.id} ${miss}`).toBe(true);
   });
   it.each([
     ['rhyme_hunt', 'same_start', RHYME_MODEL_LEVER], ['mood', 'other_mood', MOOD_FACES_LEVER],
@@ -114,12 +117,12 @@ describe('this wrong answer, then this lever', () => {
     ['compose', 'syllables_off', MODEL_POEM_LEVER],
   ])('%s: %s pulls %s first', (kind, miss, lever) => {
     const [, , item, d] = ITEMS.find(([, , i]) => i.kind === kind)!;
-    expect(nextLever(poetryLevers(item, d, []), miss)).toBe(lever);
+    expect(nextLever(levers(item, d), miss)).toBe(lever);
   });
   it('once the help is pulled, the simplify comes next', () => {
     const [, , item, d] = ITEMS.find(([, , i]) => i.kind === 'rhyme_hunt')!;
-    expect(nextLever(poetryLevers(item, d, [RHYME_MODEL_LEVER]), 'one_of_pair')).toBe(FEWER_CARDS_LEVER);
-    expect(nextLever(poetryLevers({ id: 'compose', kind: 'compose' }, ACROSTIC, [MODEL_POEM_LEVER]), 'wrong_first_letter')).toBe(FIRST_LETTERS_LEVER);
-    expect(nextLever(poetryLevers({ id: 'compose', kind: 'compose' }, ACROSTIC, [MODEL_POEM_LEVER, FIRST_LETTERS_LEVER]), 'line_missing')).toBe(ONE_LINE_LEVER);
+    expect(nextLever(levers(item, d, [RHYME_MODEL_LEVER]), 'one_of_pair')).toBe(FEWER_CARDS_LEVER);
+    expect(nextLever(levers({ id: 'compose', kind: 'compose' }, ACROSTIC, [MODEL_POEM_LEVER]), 'wrong_first_letter')).toBe(FIRST_LETTERS_LEVER);
+    expect(nextLever(levers({ id: 'compose', kind: 'compose' }, ACROSTIC, [MODEL_POEM_LEVER, FIRST_LETTERS_LEVER]), 'line_missing')).toBe(ONE_LINE_LEVER);
   });
 });

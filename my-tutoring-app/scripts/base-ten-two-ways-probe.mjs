@@ -34,7 +34,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateBaseTenBlocks } = await loader.import('/src/components/lumina/service/math/gemini-base-ten-blocks.ts');
   const { twoWaysInstruction } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenWorkspace.ts');
-  const { baseTenLevers, startLevers } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenLevers.ts');
+  const { BASE_TEN_LEVERS, baseTenLeverContext, startLevers } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenLevers.ts');
   const cases = [
     ['g1', '1', undefined, 'Show a teen number with tens and ones in more than one way', { min: 1, max: 20 }],
     ['g2', '2', undefined, 'A number can be made with tens and ones in different ways', { min: 1, max: 999 }],
@@ -57,7 +57,7 @@ try {
       if (/\d|\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/i.test(c.hint)) issues.push(`hint would be hidden: "${c.hint}"`);
       if (c.showBlocksTotal || c.showColumnCounts) issues.push(`aid on: ${JSON.stringify({ t: c.showBlocksTotal, c: c.showColumnCounts })}`);
       if (startLevers(c.type, c).length) issues.push('a lever starts pulled');
-      if (!baseTenLevers(c, []).length) issues.push(`no levers on ${c.targetNumber}`);
+      if (!BASE_TEN_LEVERS.declare({ ...c, id: 'probe' }, baseTenLeverContext(), []).length) issues.push(`no levers on ${c.targetNumber}`);
     }
     if (data.decimalMode) issues.push('decimalMode on');
     runs.push({ name, grade, difficulty: difficulty ?? null, intent, issues,

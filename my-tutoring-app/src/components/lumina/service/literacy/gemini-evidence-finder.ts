@@ -175,7 +175,7 @@ const evidenceFinderSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns EvidenceFinderData with passage, claims, and evidence-tagged sentences
  */
-type EvidenceFinderConfig = Partial<EvidenceFinderData> & { targetEvalMode?: string };
+type EvidenceFinderConfig = Partial<EvidenceFinderData> & { targetEvalMode?: string; difficulty?: string };
 
 export const generateEvidenceFinder = async (
   ctx: GenerationContext,
@@ -362,9 +362,13 @@ Now generate an evidence finding activity about "${topic}" at grade level ${grad
     // Exclude targetEvalMode from the config spread (it's a routing key, not data).
     const { targetEvalMode: _unused, ...configRest } = config ?? {};
     void _unused;
+    // The lesson's tier (config.difficulty) says when the tutor's model lever comes (`EVIDENCE_LEVERS.support`).
+    const tier = String(config?.difficulty ?? '').toLowerCase().trim();
+    const supportTier = (['easy', 'medium', 'hard'] as const).find(t => t === tier);
     const finalData: EvidenceFinderData = {
       ...result,
       ...configRest,
+      ...(supportTier ? { supportTier } : {}),
     };
     // claimIndex is required in the schema, so a non-evidence sentence carries -1: drop it there. A one-claim
     // passage's evidence always supports claim 0.

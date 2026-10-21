@@ -42,7 +42,7 @@ try {
   const { generateBaseTenBlocks } = await loader.import('/src/components/lumina/service/math/gemini-base-ten-blocks.ts');
   const { usesBaseTenDi, itemsFromChallenges, baseTenHarnessAnswers } =
     await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenScript.ts');
-  const { diWorkspaceAssignment } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenWorkspace.ts');
+  const { baseTenBlocksBoss } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/baseTenBlocks.boss.ts');
 
   const cases = [
     ['read-easy', 'read_blocks', 'easy', 'Read a place on the block mat and say what it is worth'],
@@ -78,7 +78,7 @@ try {
     }
 
     const plan = { items: items.map((item) => ({ id: item.id, step: item.step, answerKind: item.answerKind,
-      assignment: diWorkspaceAssignment(item), answers: baseTenHarnessAnswers(item) })) };
+      assignment: baseTenBlocksBoss.assignment(item), answers: baseTenHarnessAnswers(item) })) };
     for (const item of plan.items) {
       if (!item.assignment.task) issues.push(`${item.id}: empty ask`);
       if (item.answerKind === 'voice') {

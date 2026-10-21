@@ -56,7 +56,8 @@ describe('find_threshold', () => {
 
   it('a refused pull changes nothing; after a miss test_log shows the learner\'s tests in the same commit, recorded on the next try', () => {
     const h = mount(c);
-    expect(levers(h).map(l => [l.id, l.pulled])).toEqual([[TEST_LOG_LEVER, false], [LIGHTER_LOAD_LEVER, false]]);
+    // The log is offered from the first check: before it there is nothing to list.
+    expect(levers(h).map(l => [l.id, l.pulled])).toEqual([[LIGHTER_LOAD_LEVER, false]]);
     const before = { html: h.view.container.innerHTML, levers: JSON.stringify(levers(h)), attempts: attempts(h).length };
     expect(h.dispatch('pull_lever', { lever: TEST_LOG_LEVER }).status).not.toBe('committed');
     expect(h.view.container.innerHTML).toBe(before.html);
@@ -113,8 +114,8 @@ describe('find_threshold', () => {
 
   it('easy starts with the log shown, and that is not a pull', () => {
     const h = mount(c, { supportTier: 'easy' });
-    expect(levers(h).find(l => l.id === TEST_LOG_LEVER)!.pulled).toBe(true);
     expect(q(h, '[data-lever="test-log"]')).toHaveLength(1);
+    expect(onScreen(h)).toContain('nothing is tested yet');
     testPush(h, answer, c.forceStep);
     expect(last(h)).toMatchObject({ correct: true });
     expect(last(h).levers).toBeUndefined();

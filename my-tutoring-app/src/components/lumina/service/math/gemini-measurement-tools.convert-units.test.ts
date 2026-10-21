@@ -31,7 +31,7 @@ describe('convert units from the lesson', () => {
     const data = { title: 't', challengeType: 'convert', unit: 'feet', convertToUnit: 'inches', rulerLengthInches: 12, precision: 'whole',
       challenges: [{ id: 'a', shapeType: 'rectangle', widthInches: 3, heightInches: 1, color: '', label: 'Red Rectangle', hint: '' }] } as MeasurementToolsData;
     const lesson = lessonOf(data);
-    const [item] = measurementItems('convert', data.challenges);
+    const [item] = measurementItems(lesson);
     const c = data.challenges[0];
     expect(conversionRule('feet', 'inches')).toBe('1 foot = 12 inches');
     expect(convertValue(3, 'feet', 'inches')).toBe(36);

@@ -1,7 +1,7 @@
 # Contract: slope-triangle
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C20) for the workspace and lever requirements only. A full `/primitive-contract slope-triangle` derivation (consumers per skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/SlopeTriangle.tsx` · **Workspace:** `slopeTriangleWorkspace.ts` · **Levers:** `slopeTriangleLevers.ts` · **Generator:** `service/math/gemini-slope-triangle.ts` · **Oracle:** `service/qa/oracles/slope-triangle.ts` · **Adapter:** `components/live-activity/adapters/slopeTriangleLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`slope-triangle`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/SlopeTriangle.tsx` · **Workspace:** `slopeTriangleWorkspace.ts` · **Levers:** `slopeTriangleLevers.ts` · **Generator:** `service/math/gemini-slope-triangle.ts` · **Oracle:** `service/qa/oracles/slope-triangle.ts` · **Boss:** `slopeTriangle.card.ts` + `slopeTriangle.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`slope-triangle`)
 
 ## Requirements
 
@@ -29,3 +29,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R5 (W1 plain-shape binding, C20; levers). Same day: draw_triangle credits any triangle that fits the line, with no target on screen; half-step rises rejected by the adapter and the oracle.
+- 2026-10-20 — moved onto a boss (wave 3): card (typed identify/calculate, manipulated draw) + bespoke `defineBoss`, levers as a lever set (count_ticks/leg_names/leg_labels marks, sign/formula/build frame clues, model, easier), workspace-only export; the scripted path, hint button, Pip hand wiring, adapter (validation moved to the boss) and catalog guidance/tutoring prose deleted. R1-R5 unchanged.

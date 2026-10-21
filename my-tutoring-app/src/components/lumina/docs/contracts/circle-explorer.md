@@ -1,7 +1,7 @@
 # Contract: circle-explorer
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C18) for the workspace and lever requirements only. A full `/primitive-contract circle-explorer` derivation (consumers per 7.G.B.4 skill) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/CircleExplorer.tsx` · **Workspace:** `circleExplorerWorkspace.ts` · **Levers:** `circleExplorerLevers.ts` · **Generator:** `service/math/gemini-circle-explorer.ts` · **Oracle:** `service/qa/oracles/circle-explorer.ts` · **Adapter:** `components/live-activity/adapters/circleExplorerLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`circle-explorer`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/CircleExplorer.tsx` · **Workspace:** `circleExplorerWorkspace.ts` · **Levers:** `circleExplorerLevers.ts` · **Generator:** `service/math/gemini-circle-explorer.ts` · **Oracle:** `service/qa/oracles/circle-explorer.ts` · **Boss:** `circleExplorer.card.ts` + `circleExplorer.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`circle-explorer`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C18).
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (formula_labels, ratio_frame and undo_chain clues; diameters_around layout; the figure pictures marks, other_length one spec per mode; simpler_problem easier, not on discover π), workspace-only export; the scripted path, hint button, adapter and catalog guidance/tutoring prose deleted; scene `constraints` dropped for the card's `moves`. R1-R3 unchanged (R1's scripted-path clause is moot: there is no scripted path).

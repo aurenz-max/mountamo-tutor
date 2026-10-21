@@ -1,7 +1,7 @@
 # Contract: fraction-circles
 
 - **Derived:** 2026-09-27 · evidence window: 2026-03-17 to 2026-09-27 (eval reports, misconception, fraction-touch, workspace rollout, lever brief); census 2026-09-27 (8 objectives, manifestOnly)
-- **Component:** `primitives/visual-primitives/math/FractionCircles.tsx` · **Generator:** `service/math/gemini-fraction-circles.ts` · **Workspace domain:** `primitives/visual-primitives/math/fractionCirclesWorkspace.ts` · **Catalog:** `service/manifest/catalog/math.ts:373`
+- **Component:** `primitives/visual-primitives/math/FractionCircles.tsx` · **Generator:** `service/math/gemini-fraction-circles.ts` · **Boss:** `primitives/visual-primitives/math/fractionCircles.card.ts` + `fractionCircles.boss.ts` (levers `fractionCirclesLevers.ts`, scene `fractionCirclesWorkspace.ts`) · **Catalog:** `service/manifest/catalog/math.ts:373`
 - **Status:** ACTIVE (no open conflict)
 
 ## Consumers (blast radius)
@@ -84,8 +84,8 @@ Authored curriculum map (channel 3): no fraction-circles subskills (2026-09-27).
 ### R11 — Pip targets are the slices · OBSERVED
 - **Property:** slices carry `data-pip-object="slice-i"`; touch pictures `picture-{n}-of-{d}`, which describe the picture, not its correctness.
 - **Demanded by:** Pip shared surface; the live journey driver.
-- **Evidence:** commit `21c70759`; `pip/FractionCircles.surface.test.tsx`.
-- **Probe:** `npm test -- src/components/lumina/pip/FractionCircles`.
+- **Evidence:** commit `21c70759`; Pip itself now comes from the workspace runner (`pip/WorkspacePip.surface.test.tsx`).
+- **Probe:** `npm run test:primitive -- fraction-circles` (the journey drives `slice-i` and `picture-{n}-of-{d}`).
 
 ### R12 — Help levers change the screen and state no answer · OBSERVED
 - **Property:** `mark_pieces`, `part_whole`, `running_count`, `split_reference` and `overlay` each change the circle in the pull's commit, carry no digit in their drawing, lever text or scene fact, and never state the shaded count (R5) or which side is larger. `split_reference` is offered only when each reference slice splits into a whole number; `running_count` counts only the learner's own shading.
@@ -113,7 +113,7 @@ None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints 
 
 - **description:** faithful. It leads with `touch_fraction`, which is one of five modes; leave as is unless routing evidence shows the curator under-picks identify/build.
 - **constraints:** "Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12." → "4-6 challenges; one task type when an eval mode is pinned. Denominators 2-4 in K-2, up to 12 in grades 3-5." (The current text is false for pinned modes and for K-2.)
-- **tutoring block:** dead on the workspace path (the adapter sets `tutoring: null`), but `scaffoldingLevels.level3` ("So the fraction is shaded/{{denominator}}") and the build directive give the answer. Delete when the legacy scripted path is retired.
+- **tutoring block:** deleted 2026-10-20 with the boss move.
 
 ## Changelog
 
@@ -132,3 +132,4 @@ None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints 
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-10-07 — R14 added: `build_equal` open build (β 4.6), a fork beside the five modes. Existing modes untouched: their checks, levers, misses and Try again behaviour are unchanged, and the mixed session's types are the same five (generator probe `mixed-3-5`). R1-R13 probes re-run (vitest), COMPATIBLE.
 - 2026-10-14 — `/add-item-space` compare: with a tier, code picks each compare pair from `fraction-compare` at the tier's band (before, the model's pairs did not move with the tier: easy held 6/10 vs 10/12, hard 1/3 vs 1/2). Grades K-3 draw same-numerator and same-denominator pairs only (3.NF.3d; equal pairs left out, they were the only hard structure and made every hard answer "equal"), grade 4+ every pair. R1 (band denominators) and R2 (a named family, via `legalDenominators`) hold on the space path; R3 holds (instruction rebuilt from the picked pair). R9: the adaptation still rewrites at most two pairs at medium, and a rewritten pair drops its `itemSpace` stamp. No tier, or a resolver miss: the model's pairs, as before.
+- 2026-10-20 — moved onto a boss (wave 3): `fractionCircles.card.ts` + `fractionCircles.boss.ts` replace `adapters/fractionCirclesLive.ts`, the catalog `teachingWorkspace` guidance and the dead `tutoring` block; the levers are one lever set (`FRACTION_CIRCLES_LEVERS`, both surfaces); Pip comes from the runner (`<PipDock />`/`<PipWorkspace>`, the per-primitive surface test deleted); the plain surface no longer shows the generator's hint after two misses. `audioInputByMode` stays on the catalog entry (a card's audio is session-wide). Checks, misses, lever ids, drawings and data attributes unchanged: R1-R14 hold (`test:primitive fraction-circles` green).

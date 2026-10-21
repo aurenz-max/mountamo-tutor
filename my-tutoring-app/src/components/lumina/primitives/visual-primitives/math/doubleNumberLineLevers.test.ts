@@ -7,8 +7,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { DoubleNumberLineChallenge, DoubleNumberLineChallengeType, LinkedPoint } from './DoubleNumberLine';
 import {
-  GROW_MODEL_CAPTION, SMALLER_ASK_LEVER, SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER, GROW_MODEL_LEVER,
-  leverFacts, leverTextLeaks, practiceLeaks, ratioLineLevers, simplerLine,
+  GROW_MODEL_CAPTION, RATIO_LINE_LEVERS, SMALLER_ASK_LEVER, SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER, GROW_MODEL_LEVER,
+  leverTextLeaks, practiceLeaks, simplerLine,
 } from './doubleNumberLineLevers';
 import { RATIO_LINE_MISSES_BY_MODE, asksForRate, ratioLineMiss, valuesCorrect } from './doubleNumberLineWorkspace';
 
@@ -79,7 +79,7 @@ describe('simplify builder', () => {
 describe('declarations', () => {
   it.each(MODES)('%s: every miss the check can name on an item is answered by a lever on that item', mode => {
     for (const c of items(mode)) {
-      const levers = ratioLineLevers(c, [], LABELS);
+      const levers = RATIO_LINE_LEVERS.declare(c, LABELS, []);
       const answered = new Set(levers.flatMap(l => l.answers ?? []));
       const t = c.targetPoints[0], r = t.bottomValue / t.topValue;
       // Every number the check could see, from 0 to past the line: whichever miss it names is answered.
@@ -93,15 +93,15 @@ describe('declarations', () => {
 
   it.each(MODES)('%s: no lever text, caption or fact carries a digit', mode => {
     for (const c of items(mode)) {
-      const levers = ratioLineLevers(c, [], LABELS);
+      const levers = RATIO_LINE_LEVERS.declare(c, LABELS, []);
       for (const l of levers) { expect(leverTextLeaks(l.does), l.id).toBe(false); expect(leverTextLeaks(l.when), l.id).toBe(false); }
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id)))).toBe(false);
+      expect(leverTextLeaks(RATIO_LINE_LEVERS.onScreen(c, LABELS, levers.map(l => l.id)))).toBe(false);
     }
     expect(leverTextLeaks(GROW_MODEL_CAPTION)).toBe(false);
   });
 
   it('which levers each item shape offers', () => {
-    const ids = (c: DoubleNumberLineChallenge) => ratioLineLevers(c, [], LABELS).map(l => l.id);
+    const ids = (c: DoubleNumberLineChallenge) => RATIO_LINE_LEVERS.declare(c, LABELS, []).map(l => l.id);
     const eq = items('equivalent_ratios').find(c => c.targetPoints[0].topValue === 5)!;
     const fm = items('find_missing').find(c => c.targetPoints[0].topValue === 3 && c.topScale.max === 10)!;
     const rate = items('unit_rate').find(asksForRate)!;
@@ -110,7 +110,7 @@ describe('declarations', () => {
     expect(ids(fm)).toEqual([SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER, GROW_MODEL_LEVER, SMALLER_ASK_LEVER]);
     expect(ids(rate)).toEqual([SPLIT_GIVEN_LEVER, GROW_MODEL_LEVER]);
     expect(ids(later)).toEqual([SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER, GROW_MODEL_LEVER, SMALLER_ASK_LEVER]);
-    expect(ratioLineLevers(simplerLine(eq, LABELS), [], LABELS)).toEqual([]);
+    expect(RATIO_LINE_LEVERS.declare(simplerLine(eq, LABELS), LABELS, [])).toEqual([]);
   });
 
   it('the catalog declares levers on the workspace', () => {
@@ -134,10 +134,10 @@ describe('this wrong answer, then this lever', () => {
     ['unit_rate', rate, '4', 'subtracted', SPLIT_GIVEN_LEVER],
   ] as const)('%s typed %s → %s → %s', (_mode, c, typed, miss, lever) => {
     expect(ratioLineMiss(c, [typed])).toBe(miss);
-    expect(nextLever(ratioLineLevers(c, [], LABELS), miss)).toBe(lever);
+    expect(nextLever(RATIO_LINE_LEVERS.declare(c, LABELS, []), miss)).toBe(lever);
   });
   it('a pulled lever is skipped: the next one that answers the miss, else help before simplify', () => {
-    expect(nextLever(ratioLineLevers(eq, [UNIT_JUMPS_LEVER], LABELS), 'added_rate')).toBe(GROW_MODEL_LEVER);
-    expect(nextLever(ratioLineLevers(eq, [UNIT_JUMPS_LEVER, GROW_MODEL_LEVER], LABELS), 'added_rate')).toBe(SMALLER_ASK_LEVER);
+    expect(nextLever(RATIO_LINE_LEVERS.declare(eq, LABELS, [UNIT_JUMPS_LEVER]), 'added_rate')).toBe(GROW_MODEL_LEVER);
+    expect(nextLever(RATIO_LINE_LEVERS.declare(eq, LABELS, [UNIT_JUMPS_LEVER, GROW_MODEL_LEVER]), 'added_rate')).toBe(SMALLER_ASK_LEVER);
   });
 });

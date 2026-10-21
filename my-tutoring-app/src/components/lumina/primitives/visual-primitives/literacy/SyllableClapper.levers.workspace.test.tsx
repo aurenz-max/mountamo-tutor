@@ -53,7 +53,7 @@ it('delete: the model pictures another compound with its first part faded', () =
   const h = mountWorkspace({ primitiveId: 'syllable-clapper', evalMode: 'delete_compound', data: data(DEL) });
   h.dispatch('pull_lever', { lever: 'delete_model' });
   expect(q(h, '[data-lever="delete-model"] [role="img"]').map(p => p.getAttribute('aria-label'))).toEqual(['sun', 'hat', 'hat left']);
-  expect(String(h.state().task!.demand.levers_on_screen)).toMatch(/sunhat is sun and hat; sun fades, and hat is left/);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/sunhat is sun and hat; sun fades, and hat is left/);
   expect(text(h)).not.toMatch(/cowboy|boy/);
   h.close();
 });

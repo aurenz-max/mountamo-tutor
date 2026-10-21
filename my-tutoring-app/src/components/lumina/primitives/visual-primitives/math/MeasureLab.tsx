@@ -20,14 +20,14 @@
  * prediction modes will not run the test until the child has committed, and the
  * score is the prediction, never the pouring.
  *
- * Shared teaching workspace (W1, plain shape): `measureLabWorkspace.ts` holds the
- * assignment, the scene, the learner's work in words and the named miss. Under a
- * live runtime the tutor owns the item; the activity's own check commits through
- * `progress.commitCheck`, and the runtime owns Try again and Next.
+ * Taught only on the shared teaching workspace (the boss is `measureLab.boss.ts`):
+ * `measureLabWorkspace.ts` holds the scene, the learner's work in words and the
+ * named miss; `measureLabLevers.ts` the lever set. The tutor owns the item; the
+ * activity's own check commits through `progress.commitCheck`, and the runtime
+ * owns Try again and Next.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -51,19 +51,18 @@ import {
   type MeasureLabMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { measureLabPipPose } from '../../../pip/measureLabPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeMeasureWork, measureMiss, workspaceAssignment, workspaceScene, type MeasureView } from './measureLabWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { describeMeasureWork, measureMiss, workspaceScene, type MeasureView } from './measureLabWorkspace';
 import {
-  CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, LEVEL_LINES, LEVEL_LINES_LEVER, ORDER_STEPS, ORDER_STEPS_LEVER,
-  POURED_SHELF_LEVER, PRACTICE_NOTE, leverFacts, measureLabLevers, practiceItem, shelfCups,
+  CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, LEVEL_LINES, LEVEL_LINES_LEVER, MEASURE_LEVERS, ORDER_STEPS,
+  ORDER_STEPS_LEVER, POURED_SHELF_LEVER, PRACTICE_NOTE, shelfCups,
 } from './measureLabLevers';
+import { measureLabBoss } from './measureLab.boss';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -103,6 +102,9 @@ export interface MeasureLabChallenge {
   type: MeasureLabChallengeType;
   prompt: string;
   hint?: string;
+  /** When the model lever comes (`MEASURE_LEVERS.support`), stamped by the generator from `config.difficulty`.
+   *  Absent on older payloads: medium. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   /** balance_predict */
   left?: MeasureObject;
@@ -192,15 +194,12 @@ interface ContainerViewProps {
   state?: 'idle' | 'selected' | 'correct' | 'incorrect';
   badge?: string;
   onClick?: () => void;
-  /** Pip's registry id for this container; presentation only. */
-  pipId?: string;
-  pipRef?: (element: Element | null) => void;
   /** level_lines lever: even lines across the glass, as fractions of its height (the same on every jar). */
   levelLines?: readonly number[];
 }
 
 const ContainerView: React.FC<ContainerViewProps> = ({
-  container, poured, capacity, state = 'idle', badge, onClick, pipId, pipRef, levelLines,
+  container, poured, capacity, state = 'idle', badge, onClick, levelLines,
 }) => {
   const { w, h } = shapeBox(container.shape, container.scale);
   const fillFrac = capacity > 0 ? Math.max(0, Math.min(1, poured / capacity)) : 0;
@@ -209,8 +208,6 @@ const ContainerView: React.FC<ContainerViewProps> = ({
 
   return (
     <button
-      ref={pipRef}
-      data-pip-object={pipId}
       type="button"
       disabled={!onClick}
       onClick={onClick}
@@ -291,8 +288,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 // Main component
 // ---------------------------------------------------------------------------
 
-const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MeasureLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MeasureLabChallenge>) => Progress }) => {
+const useMeasureProgress = useWorkspaceProgressFor('measure-lab');
+
+const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -309,28 +307,28 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const stableInstanceIdRef = useRef(instanceId || `measure-lab-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // On the workspace path the runtime moves the index; a fresh item and Try again clear the bench (bound below).
+  // The runtime moves the index; a fresh item and Try again clear the bench (bound below).
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useMeasureProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: measureLabBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
   });
-  const { currentIndex, currentAttempts, results, isComplete, advance } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const { currentIndex, results, isComplete } = progress;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the delayed verdicts read the latest.
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
 
   const sessionChallenge = challenges[currentIndex] ?? null;
-  // In-item levers (`measureLabLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // In-item levers (`MEASURE_LEVERS`), keyed by the session item they were pulled on, and the easier item a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<MeasureLabChallenge | null>(null);
@@ -372,24 +370,15 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [showHint, setShowHint] = useState(false);
   const recordedRef = useRef(false);
-  const completeFiredRef = useRef(false);
   /**
-   * The beam-settling delay, owned by a ref rather than by an effect.
-   *
-   * The first version put the `setTimeout` inside a `useEffect` keyed on
-   * [bothPlaced, prediction, currentChallenge, feedback, submit]. `submit` is
-   * rebuilt whenever the tutor hook re-renders, so any re-render inside the
-   * 900ms window would have cleared the pending timer and swallowed the verdict.
-   * It was not observed failing in the Chrome drive, but a delay that any
-   * unrelated re-render can cancel is a race waiting for a slower machine, so
-   * the timer is owned here where nothing else can reach it. The capacity pour
-   * uses the same timer.
+   * The beam-settling delay, owned by a ref rather than by an effect: a delay that any unrelated re-render can
+   * cancel would swallow the verdict on a slower machine. The capacity pour uses the same timer.
    */
   const verdictTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Always the latest `submit`, so the timer never fires a stale closure. */
   const submitRef = useRef<(correct: boolean, work?: Partial<MeasureView>) => void>(() => {});
 
-  /** The bench blank: a fresh challenge, Try again on the workspace path, or the scripted Try again. */
+  /** The bench blank: a fresh challenge or Try again. */
   const clearWork = useCallback(() => {
     setPrediction(null);
     setPlaced({ left: false, right: false });
@@ -419,134 +408,28 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const viewRef = useRef(view);
   viewRef.current = view;
 
-  // ── AI tutoring ───────────────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: currentChallenge?.type,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    currentPrompt: currentChallenge?.prompt,
-    attemptNumber: currentAttempts,
-    // Stimulus only — no weight, no capacity, no answer.
-    objects: currentChallenge?.left && currentChallenge?.right
-      ? `${currentChallenge.left.name} and ${currentChallenge.right.name}`
-      : undefined,
-    containers: [
-      currentChallenge?.containerA?.name,
-      currentChallenge?.containerB?.name,
-      ...(currentChallenge?.containers ?? []).map((c) => c.name),
-      currentChallenge?.container?.name,
-    ].filter(Boolean).join(', '),
-    unitName: currentChallenge?.unitName,
-  }), [title, currentChallenge, currentIndex, challenges.length, currentAttempts]);
-
-  // The scripted tutor's context and cues: off on the workspace path, and its cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'measure-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const introducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || introducedRef.current || !currentChallenge) return;
-    introducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] ${title}. ${challenges.length} measuring challenges. First: ${currentChallenge.prompt}`,
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, challenges.length, title, sendText]);
-
-  const announcedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge || !introducedRef.current) return;
-    if (announcedRef.current === null) { announcedRef.current = currentChallenge.id; return; }
-    if (announcedRef.current === currentChallenge.id) return;
-    announcedRef.current = currentChallenge.id;
-    sendText(
-      `[NEXT_ITEM] Challenge ${currentIndex + 1} of ${challenges.length}. ${currentChallenge.prompt}`,
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, currentIndex, challenges.length, sendText]);
-
   // ── Judging ───────────────────────────────────────────────────────────────
   // `work` carries what the triggering tap changed before it renders; the rest is read from the last render.
   const submit = useCallback((correct: boolean, work: Partial<MeasureView> = {}) => {
     if (!currentChallenge || recordedRef.current) return;
     const seen = { ...viewRef.current, ...work };
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records the verdict with its named miss.
     commitCheck.current(describeMeasureWork(currentChallenge, seen), correct,
       correct ? undefined : measureMiss(currentChallenge, seen));
     setFeedback(correct ? 'correct' : 'incorrect');
     if (!correct) {
       SoundManager.playIncorrect();
       setShowHint(true);
-      sendText(
-        `[ANSWER_INCORRECT] ${currentChallenge.type}: the child's answer was wrong on attempt ${currentAttempts + 1}. Give one short hint — never the answer.`,
-        { silent: true },
-      );
       return;
     }
     SoundManager.playCorrect();
     recordedRef.current = true;
-    sendText(
-      `[ANSWER_CORRECT] ${currentChallenge.type} solved on attempt ${currentAttempts + 1}. Congratulate briefly.`,
-      { silent: true },
-    );
-  }, [currentChallenge, currentAttempts, sendText]);
+  }, [currentChallenge]);
 
   submitRef.current = submit;
 
-  // ── Session complete ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isComplete || completeFiredRef.current || challenges.length === 0) return;
-    completeFiredRef.current = true;
-
-    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => r.correct && r.attempts === 1).length;
-    const perChallenge = (r: typeof results[number]) =>
-      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
-    const overallAccuracy = Math.round(
-      results.reduce((s, r) => s + perChallenge(r), 0) / Math.max(1, results.length),
-    );
-
-    const metrics: MeasureLabMetrics = {
-      type: 'measure-lab',
-      challengeType: challenges[0].type,
-      totalChallenges: challenges.length,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed: results.filter((r) => r.attempts > 1).length,
-      overallAccuracy,
-      averageAttemptsPerChallenge:
-        Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10,
-    };
-
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseResults.map((p) => `${p.label} ${p.score}%`).join(', ')}. Overall ${overallAccuracy}%. Celebrate the measuring work.`,
-      { silent: true },
-    );
-
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (!evaluation.hasSubmitted && !tutorOwned) {
-      evaluation.submitResult(correctCount === challenges.length, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          prompts: challenges.map((c) => c.prompt),
-        },
-      });
-    }
-  }, [isComplete, results, challenges, phaseResults, sendText, evaluation, tutorOwned]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (evaluation.hasSubmitted || challenges.length === 0) return;
     const metrics: MeasureLabMetrics = {
@@ -640,18 +523,18 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     submit(n === currentChallenge.expectedCount, { chosenCount: n });
   };
 
-  const advanceToNext = () => { advance(); };
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation. Every mode declares its levers.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, viewRef.current);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : measureLabLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : MEASURE_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : MEASURE_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : MEASURE_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -659,45 +542,17 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = MEASURE_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); clearWork(); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: measureLabBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { clearWork(); setPractice(null); },
     };
-  });
-
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of this challenge's own state, the tutor's speech on it, and
-  // the child's last touch; Pip never predicts, pours, places, or advances.
-  // Tutor audio counts only while the tutor is on this block and began on this challenge.
-  const pip = usePipTargets(currentChallenge?.id ?? null, feedback !== 'correct');
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || isComplete || evaluation.hasSubmitted) return null;
-    const { type, id, container, containerA, containerB } = currentChallenge;
-    const pouredBoth = !!containerA && !!containerB
-      && poured[containerA.id] !== undefined && poured[containerB.id] !== undefined;
-    const targets = pip.targets();
-    const pose = measureLabPipPose({
-      running: true, preparing: false, currentSolved: feedback === 'correct', revealHeld: false,
-      judging: feedback === null
-        && ((type === 'balance_predict' && bothPlaced) || (type === 'capacity_predict' && pouredBoth)),
-      tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      type,
-      committed: type === 'pour_count'
-        ? !!container && (poured[container.id] ?? 0) >= container.capacity
-        : prediction !== null,
-      visibleIds: targets.map((target) => target.id),
-      lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: id, label: 'Measure lab', dock: pip.dock.current, targets, pose };
   });
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -714,9 +569,6 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const ch = currentChallenge;
   const unitEmoji = ch?.unitEmoji || '🥤';
   const unitName = ch?.unitName || 'cups';
-  /** The prediction modes run their test once; after a wrong guess the scripted path offers Try again. */
-  const scriptedRetry = !tutorOwned && feedback === 'incorrect'
-    && (ch?.type === 'balance_predict' || ch?.type === 'capacity_predict');
 
   return (
     <div className={`w-full max-w-4xl mx-auto my-12 animate-fade-in ${className || ''}`}>
@@ -728,9 +580,12 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
               <p className="text-slate-400 text-sm mt-1">{description}</p>
             </div>
             {ch ? (
-              <LuminaBadge accent="cyan" className="text-xs">
-                {PHASE_TYPE_CONFIG[ch.type]?.icon} {PHASE_TYPE_CONFIG[ch.type]?.label}
-              </LuminaBadge>
+              <div className="flex items-center gap-2">
+                {practice ? <LuminaBadge accent="amber" className="text-xs">Practice</LuminaBadge> : null}
+                <LuminaBadge accent="cyan" className="text-xs">
+                  {PHASE_TYPE_CONFIG[ch.type]?.icon} {PHASE_TYPE_CONFIG[ch.type]?.label}
+                </LuminaBadge>
+              </div>
             ) : null}
           </div>
         </LuminaCardHeader>
@@ -749,17 +604,13 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
           {!isComplete && ch ? (
             <>
-              {practice ? <div className="text-center text-xs text-amber-300" data-practice>Practice</div> : null}
               <LuminaPrompt accent="cyan" center>
                 <span className="text-base">{ch.prompt}</span>
               </LuminaPrompt>
 
-              {/* Pip's dock sits above the bench: every cue target (the pair, the
-                  scale, the containers, the cups) is below it and is a region, so
-                  no pointer line reaches toward a single choice. */}
-              {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-                className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
-
+              {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the bench as one region. */}
+              <PipDock />
+              <PipWorkspace className="space-y-5">
               {/* ── balance_predict ───────────────────────────────────────── */}
               {ch.type === 'balance_predict' && ch.left && ch.right ? (
                 <div className="space-y-4">
@@ -770,13 +621,13 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                           First — which one do you think is heavier?
                         </LuminaSectionLabel>
                       </div>
-                      <div ref={pip.ref('objects')} data-pip-object="objects" className="flex justify-center gap-4">
+                      <div className="flex justify-center gap-4">
                         {[ch.left, ch.right].map((obj) => (
                           <button
                             key={obj.id}
                             type="button"
                             aria-label={obj.name}
-                            onClick={() => { pip.look('scale'); handlePredict(obj.id); }}
+                            onClick={() => handlePredict(obj.id)}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-4 transition ${answerStateClass('idle')}`}
                           >
                             <span className="text-4xl leading-none">{obj.emoji}</span>
@@ -795,8 +646,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
                   {/* The bench. The beam tips because of what is on it. */}
                   <div className="flex justify-center">
-                    <svg ref={pip.ref('scale')} data-pip-object="scale"
-                      width={STAGE_W} height={STAGE_H} viewBox={`0 0 ${STAGE_W} ${STAGE_H}`} className="max-w-full h-auto">
+                    <svg width={STAGE_W} height={STAGE_H} viewBox={`0 0 ${STAGE_W} ${STAGE_H}`} className="max-w-full h-auto">
                       {(() => {
                         const cx = STAGE_W / 2;
                         const beamY = 96;
@@ -848,7 +698,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                             key={side}
                             type="button"
                             aria-label={`Put ${obj.name} on`}
-                            onClick={() => { pip.look('scale'); handlePlace(side); }}
+                            onClick={() => handlePlace(side)}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-3 transition ${answerStateClass('idle')}`}
                           >
                             <span className="text-4xl leading-none">{obj.emoji}</span>
@@ -871,30 +721,25 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                         : `Now fill them both with ${unitName} and see`}
                     </LuminaSectionLabel>
                   </div>
-                  <div ref={pip.ref('containers')} data-pip-object="containers" className="flex flex-wrap justify-center items-end gap-4 sm:gap-8">
+                  <div className="flex flex-wrap justify-center items-end gap-4 sm:gap-8">
                     {[ch.containerA, ch.containerB].map((c) => (
                       <div key={c.id} className="flex flex-col items-center gap-2">
-                      <ContainerView
-                        pipId={`container-${c.id}`}
-                        pipRef={pip.ref(`container-${c.id}`)}
-                        container={c}
-                        poured={poured[c.id] ?? 0}
-                        capacity={c.capacity}
-                        state={prediction === c.id ? 'selected' : 'idle'}
-                        badge={poured[c.id] ? `${poured[c.id]} ${unitName}` : undefined}
-                        onClick={prediction === null && feedback === null
-                          ? () => { pip.look(`container-${c.id}`); handlePredict(c.id); }
-                          : undefined}
-                      />
-                      {leverOn(CUP_LINES_LEVER)
-                        ? <CupShelf id={c.id} cups={shelfCups(ch, view)[c.id] ?? 0} emoji={unitEmoji} /> : null}
+                        <ContainerView
+                          container={c}
+                          poured={poured[c.id] ?? 0}
+                          capacity={c.capacity}
+                          state={prediction === c.id ? 'selected' : 'idle'}
+                          badge={poured[c.id] ? `${poured[c.id]} ${unitName}` : undefined}
+                          onClick={prediction === null && feedback === null ? () => handlePredict(c.id) : undefined}
+                        />
+                        {leverOn(CUP_LINES_LEVER)
+                          ? <CupShelf id={c.id} cups={shelfCups(ch, view)[c.id] ?? 0} emoji={unitEmoji} /> : null}
                       </div>
                     ))}
                   </div>
                   {prediction !== null && !Object.keys(poured).length ? (
                     <div className="flex justify-center">
-                      <LuminaActionButton action="check"
-                        onClick={() => { pip.look('containers'); handleCapacityTest(); }}>
+                      <LuminaActionButton action="check" onClick={handleCapacityTest}>
                         Pour {unitName} into both
                       </LuminaActionButton>
                     </div>
@@ -907,8 +752,6 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                 <div className="space-y-4">
                   <div className="flex justify-center">
                     <ContainerView
-                      pipId="container"
-                      pipRef={pip.ref('container')}
                       container={ch.container}
                       poured={poured[ch.container.id] ?? 0}
                       capacity={ch.container.capacity}
@@ -923,7 +766,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                     <LuminaSectionLabel accent="emerald" size="sm">
                       Tap a {unitName.replace(/s$/, '')} to pour it in
                     </LuminaSectionLabel>
-                    <div ref={pip.ref('cups')} data-pip-object="cups" className="flex flex-wrap justify-center gap-2">
+                    <div className="flex flex-wrap justify-center gap-2">
                       {Array.from({ length: ch.container.capacity + 2 }).map((_, i) => {
                         const used = i < (poured[ch.container!.id] ?? 0);
                         // A poured cup is spent: drawn faded, no longer a control, so every "Pour one in" is a live one.
@@ -934,7 +777,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                             key={i}
                             type="button"
                             disabled={feedback === 'correct'}
-                            onClick={() => { pip.look('container'); handlePour(ch.container!.id, ch.container!.capacity); }}
+                            onClick={() => handlePour(ch.container!.id, ch.container!.capacity)}
                             className="text-3xl leading-none transition hover:scale-110"
                             aria-label="Pour one in"
                           >
@@ -951,15 +794,13 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                         {(ch.options ?? []).map((opt) => (
                           <LuminaAnswerChoice
                             key={opt}
-                            ref={pip.ref(`count-${opt}`)}
-                            data-pip-object={`count-${opt}`}
                             state={
                               chosenCount === opt
                                 ? (feedback === 'correct' ? 'correct' : 'incorrect')
                                 : feedback === 'correct' && opt === ch.expectedCount ? 'correct' : 'idle'
                             }
                             disabled={feedback === 'correct'}
-                            onClick={() => { pip.look(`count-${opt}`); handleCountChoice(opt); }}
+                            onClick={() => handleCountChoice(opt)}
                             className="w-auto min-w-[64px] pl-5 pr-9 py-3 text-center font-mono text-lg"
                           >
                             {opt}
@@ -979,21 +820,19 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                       Tap them in order — the least first
                     </LuminaSectionLabel>
                   </div>
-                  <div ref={pip.ref('containers')} data-pip-object="containers" className="flex flex-wrap justify-center items-end gap-4 sm:gap-6">
+                  <div className="flex flex-wrap justify-center items-end gap-4 sm:gap-6">
                     {ch.containers.map((c) => {
                       const pos = order.indexOf(c.id);
                       return (
                         <ContainerView
                           key={c.id}
-                          pipId={`container-${c.id}`}
-                          pipRef={pip.ref(`container-${c.id}`)}
                           container={c}
                           poured={c.filled ?? 0}
                           capacity={c.capacity}
                           state={pos >= 0 ? 'selected' : 'idle'}
                           badge={pos >= 0 ? `#${pos + 1}` : undefined}
                           levelLines={leverOn(LEVEL_LINES_LEVER) ? LEVEL_LINES : undefined}
-                          onClick={feedback === 'correct' ? undefined : () => { pip.look(`container-${c.id}`); handleOrderTap(c.id); }}
+                          onClick={feedback === 'correct' ? undefined : () => handleOrderTap(c.id)}
                         />
                       );
                     })}
@@ -1010,6 +849,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                   ) : null}
                 </div>
               ) : null}
+              </PipWorkspace>
 
               {feedback ? (
                 <LuminaFeedbackCard
@@ -1019,20 +859,6 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                 >
                   {feedback === 'correct' ? 'You tested it and you were right.' : 'Look at what happened, then try again.'}
                 </LuminaFeedbackCard>
-              ) : null}
-
-              {scriptedRetry ? (
-                <div className="text-center">
-                  <LuminaActionButton action="retry" onClick={clearWork}>Try again</LuminaActionButton>
-                </div>
-              ) : null}
-
-              {feedback === 'correct' && !tutorOwned ? (
-                <div className="text-center">
-                  <LuminaActionButton action="next" onClick={advanceToNext}>
-                    {currentIndex + 1 < challenges.length ? 'Next →' : 'Finish'}
-                  </LuminaActionButton>
-                </div>
               ) : null}
             </>
           ) : null}
@@ -1053,8 +879,6 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const MeasureLab = withWorkspaceController<MeasureLabProps, ProgressOptions<MeasureLabChallenge>, Progress>(
-  'measure-lab', MeasureLabSurface, useScriptedProgress, useWorkspaceProgressFor('measure-lab'));
+const MeasureLab = withWorkspaceOnly<MeasureLabProps>('measure-lab', MeasureLabSurface, props => props.data.title);
 
 export default MeasureLab;

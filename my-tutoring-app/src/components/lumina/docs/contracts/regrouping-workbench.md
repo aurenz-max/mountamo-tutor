@@ -3,7 +3,8 @@
 - **Derived:** 2026-10-09 (W1 binding + levers, batch C12) · evidence: git log to `ae5f83bc`, oracle
   `service/qa/oracles/regrouping-workbench.ts`, W1 payloads 2026-10-09
 - **Component:** `primitives/visual-primitives/math/RegroupingWorkbench.tsx` · **Domain:** `regroupingWorkbenchWorkspace.ts`,
-  `regroupingWorkbenchLevers.ts` · **Generator:** `service/math/gemini-regrouping-workbench.ts` · **Catalog:** `catalog/math.ts`
+  `regroupingWorkbenchLevers.ts` · **Boss:** `regroupingWorkbench.card.ts` + `regroupingWorkbench.boss.ts` · **Generator:**
+  `service/math/gemini-regrouping-workbench.ts` · **Catalog:** `catalog/math.ts`
 - **Modes:** `add_no_regroup` (β1.5), `subtract_no_regroup` (β2.5), `add_regroup` (β3.5), `subtract_regroup` (β4.5). The
   component grades on the session `operation` with operands parsed from each `problem` string.
 
@@ -18,18 +19,19 @@
 
 ### R2 — a wrong check never states the right number · OBSERVED
 - **Property:** wrong feedback is "Your answer is N. Not quite. Check each column again." (it printed the correct answer
-  before 2026-10-09). The generated `hint` (can carry a column sum) shows only on the scripted path.
+  before 2026-10-09). The generated `hint` (can carry a column sum) is never shown (the scripted path is gone).
 
 ### R3 — shared teaching workspace, W1 plain shape · OBSERVED
-- **Property:** `withWorkspaceController`; the typed digits are checked by `regroupingMatches` (empty box = 0, the rule
+- **Property:** `withWorkspaceOnly`; the typed digits are checked by `regroupingMatches` (empty box = 0, the rule
   since birth); no key in the packet; misses from `regroupMiss`: left_blank, wrong_operation, no_carry,
   smaller_from_larger, forgot_to_reduce, misplaced_digits, column_slip, other_answer (per mode in the catalog). Try again
   clears the typed digits and keeps the trades (never checked).
 - **Probe:** workspace test, journey sweep on `w1-payloads/regrouping-workbench.*.json`.
 
 ### R4 — levers leave the answer to the learner · OBSERVED
-- **Property:** help levers carry no digit (`leverTextLeaks`); `regroup_marks` is the tier's own mark, offered only where the
-  session hides it and refused once no column needs a trade; `trade_model` and `operation_model` are pictures outside the
+- **Property:** one lever set (`REGROUP_LEVERS`); an item's mode is its structure (`modeOf`). Help levers carry no digit
+  (`leverTextLeaks`); `regroup_marks` is the tier's own mark, offered only where the session hides it and while a column
+  still needs a trade; `trade_model` and `operation_model` are pictures outside the
   item; `column_colors` adds colour and place names. `smaller_problem` shares no operand or result with the item, keeps the
   mode (a trade where the item has one, none otherwise), is strictly smaller, and is ungraded.
 - **Probe:** `regroupingWorkbenchLevers.test.ts`, `RegroupingWorkbench.levers.workspace.test.tsx`, sweep J12/J13.
@@ -47,6 +49,10 @@
 
 ## Changelog
 
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (column_colors marks,
+  operation_model meaning, regroup_marks marks, trade_model model with per-item tier support, smaller_problem easier),
+  workspace-only export; the scripted path (useLuminaAI cues, Next, hint panel), hand-wired Pip, the adapter and the
+  catalog guidance/tutoring prose deleted. The regroup-marks pull refusal is now an offer condition. R1-R5 unchanged.
 - 2026-10-13 — `/add-item-space`, all four modes wired (`qa/difficulty-demo/2026-10-13/rw/`). Before: add_regroup gave
   27 + 45, 38 + 24, 19 + 36 in 12 of 12 runs at every tier; the code lever capped a 2-digit problem at one regroup
   (hard = easy), and a Grade-3 "within 1000" lesson drew 2-digit problems because the LLM set maxPlace. Now, with a

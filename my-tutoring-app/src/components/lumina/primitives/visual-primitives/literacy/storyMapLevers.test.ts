@@ -1,6 +1,7 @@
 /**
- * story-map levers: leak rules per mode on every saved payload story, the practice builders (never the session's
- * story, its names or events; same structure; solvable), and "this wrong answer, then this lever" as code.
+ * story-map levers (`STORY_MAP_LEVERS`): leak rules per mode on every saved payload story, the practice builders
+ * (never the session's story, its names or events; same structure; solvable), and "this wrong answer, then this
+ * lever" as code.
  */
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -9,11 +10,11 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { StoryMapData } from './StoryMap';
 import {
   ARROW_LEVER, CONFLICT_PICTURES, CONFLICT_PICTURES_LEVER, CONFLICT_STORY_LEVER, COUNT_LEVER, PARTS_LEVER, STORY_LEVER,
-  countLeaks, helpLeaks, partPicture, practiceConflict, practiceLeaks, practiceStory, storyMapLeverFacts, storyMapLevers,
+  STORY_MAP_LEVERS, countLeaks, helpLeaks, partPicture, practiceConflict, practiceItem, practiceLeaks, practiceStory,
 } from './storyMapLevers';
 import {
   CONFLICT_LABELS, EMPTY_VIEW, FALLBACK_NAMES, arcLabels, characterChoices, conflictOptions, storyMapCorrect, storyMapItems, storyMapMiss,
-  type StoryMapItem, type StoryMapMiss,
+  type StoryMapItem, type StoryMapMiss, type StoryPhase,
 } from './storyMapWorkspace';
 
 const DIR = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
@@ -22,8 +23,10 @@ const PAYLOADS = readdirSync(DIR).filter(f => f.startsWith('story-map.')).map(f 
 const ITEMS = PAYLOADS.flatMap(p => storyMapItems(p.data).map(item => [p.evalMode, item.id, item, p.data] as const));
 
 const ALL_HELP = [COUNT_LEVER, PARTS_LEVER, ARROW_LEVER, CONFLICT_PICTURES_LEVER];
+const declare = (item: StoryMapItem, d: StoryMapData, pulled: string[] = []) => STORY_MAP_LEVERS.declare(item, d, pulled);
+const step = (phase: StoryPhase, d: StoryMapData): StoryMapItem => ({ id: phase, phase, structureType: d.structureType });
 const said = (item: StoryMapItem, d: StoryMapData) => [
-  ...storyMapLevers(item, d, []).map(l => `${l.when} ${l.does}`), storyMapLeverFacts(item, d, ALL_HELP),
+  ...declare(item, d).map(l => `${l.when} ${l.does}`), STORY_MAP_LEVERS.onScreen(item, d, ALL_HELP),
   ...arcLabels(d).map(z => partPicture(d, z.key).words), ...Object.values(CONFLICT_PICTURES).map(p => p.words),
 ].join(' ');
 
@@ -35,15 +38,15 @@ describe('leak rules, per mode', () => {
     expect(helpLeaks(d, said(item, d))).toBe(false);
   });
   it.each(ITEMS.filter(([, id]) => id === 'analyze'))('%s analyze: the pictures fact never names a choice', (_m, _id, item, d) => {
-    const fact = storyMapLeverFacts(item, d, [CONFLICT_PICTURES_LEVER]);
+    const fact = STORY_MAP_LEVERS.onScreen(item, d, [CONFLICT_PICTURES_LEVER]);
     for (const label of Object.values(CONFLICT_LABELS)) expect(fact).not.toContain(label);
     expect(fact).not.toMatch(/person-vs/);
   });
   it.each(PAYLOADS.map(p => [p.evalMode, p.data] as const))('%s: identify always prints a non-character, so the count is always offered', (_m, d) => {
     expect(characterChoices(d).some(c => !c.inStory)).toBe(true);
     expect(countLeaks(d)).toBe(false);
-    expect(storyMapLevers({ id: 'identify' }, d, []).map(l => l.id)).toEqual([COUNT_LEVER, STORY_LEVER]);
-    expect(storyMapLeverFacts({ id: 'identify' }, d, [COUNT_LEVER])).toMatch(/\d+ empty person spaces/);
+    expect(declare(step('identify', d), d).map(l => l.id)).toEqual([COUNT_LEVER, STORY_LEVER]);
+    expect(STORY_MAP_LEVERS.onScreen(step('identify', d), d, [COUNT_LEVER])).toMatch(/\d+ empty person spaces/);
   });
   it('a story with no generated distractor gets a pool name none of whose words the story uses', () => {
     const d = { ...PAYLOADS[0].data, distractorCharacters: undefined };
@@ -68,8 +71,12 @@ describe('practice builders', () => {
     expect(p.passage.text.length).toBeLessThan(d.passage.text.length + 1);
     const right = { ...EMPTY_VIEW, selectedCharacters: p.elements.characters.map(c => c.name), selectedSetting: 'correct',
       placed: Object.fromEntries(p.events.map(e => [e.id, e.arcPosition])) };
-    expect(storyMapCorrect({ id: 'identify' }, p, right)).toBe(true);
-    expect(storyMapCorrect({ id: 'sequence' }, p, right)).toBe(true);
+    expect(storyMapCorrect({ phase: 'identify' }, p, right)).toBe(true);
+    expect(storyMapCorrect({ phase: 'sequence' }, p, right)).toBe(true);
+    // The simplify lever opens it as its own item: the same step, its own id, ungraded.
+    expect(STORY_MAP_LEVERS.simpler(step('sequence', d), d, STORY_LEVER)).toEqual({ id: 'sequence~simpler', phase: 'sequence',
+      structureType: d.structureType, story: p });
+    expect(practiceItem(practiceItem(step('identify', d), d)!, d)).toBeNull();
   });
   it('a session story that uses a pool name gets another pool story', () => {
     const d = PAYLOADS[0].data;
@@ -91,7 +98,7 @@ describe('practice builders', () => {
 
 describe('this wrong answer, then this lever', () => {
   const withNames = PAYLOADS.find(p => p.data.distractorCharacters?.length && p.data.elements.conflict)!.data;
-  const at = (id: StoryMapItem['id']) => storyMapLevers({ id }, withNames, []);
+  const at = (phase: StoryPhase) => declare(step(phase, withNames), withNames);
   it.each([
     ['identify', 'picked_not_in_story', COUNT_LEVER], ['identify', 'missed_character', COUNT_LEVER], ['identify', 'wrong_setting', STORY_LEVER],
     ['sequence', 'one_part', PARTS_LEVER], ['sequence', 'next_part', PARTS_LEVER], ['sequence', 'far_part', PARTS_LEVER],
@@ -101,16 +108,18 @@ describe('this wrong answer, then this lever', () => {
     expect(nextLever(at(phase), miss)).toBe(lever);
   });
   it('after the help is pulled, the same miss opens the practice story', () => {
-    expect(nextLever(storyMapLevers({ id: 'sequence' }, withNames, [PARTS_LEVER, ARROW_LEVER]), 'next_part')).toBe(STORY_LEVER);
-    expect(nextLever(storyMapLevers({ id: 'analyze' }, withNames, [CONFLICT_PICTURES_LEVER]), 'inside_outside')).toBe(CONFLICT_STORY_LEVER);
+    expect(nextLever(declare(step('sequence', withNames), withNames, [PARTS_LEVER, ARROW_LEVER]), 'next_part')).toBe(STORY_LEVER);
+    expect(nextLever(declare(step('analyze', withNames), withNames, [CONFLICT_PICTURES_LEVER]), 'inside_outside')).toBe(CONFLICT_STORY_LEVER);
   });
   it.each(ITEMS)('%s %s: every miss the check can name is answered by a lever on the item', (_m, _id, item, d) => {
     const misses: Record<string, StoryMapMiss[]> = { identify: ['picked_not_in_story', 'missed_character', 'wrong_setting'],
       sequence: ['one_part', 'reversed', 'next_part', 'far_part'], analyze: ['inside_outside', 'other_outside'] };
-    const levers = storyMapLevers(item, d, []);
-    for (const miss of misses[item.id]) expect(levers.some(l => l.answers?.includes(miss)), miss).toBe(true);
+    const levers = declare(item, d);
+    for (const miss of misses[item.phase]) expect(levers.some(l => l.answers?.includes(miss)), miss).toBe(true);
+    // Each lever answers only its own step's misses on the item.
+    for (const l of levers) expect(l.answers?.every(m => misses[item.phase].includes(m as StoryMapMiss)), l.id).toBe(true);
     // The miss function and the table agree on a wrong placement of the first event.
-    if (item.id === 'sequence') {
+    if (item.phase === 'sequence') {
       const first = [...d.events].sort((a, b) => a.order - b.order)[0];
       const placed = Object.fromEntries(d.events.map(e => [e.id, e.id === first.id ? arcLabels(d).at(-1)!.key : e.arcPosition]));
       expect(storyMapMiss(item, d, { ...EMPTY_VIEW, placed })).toBe('reversed');

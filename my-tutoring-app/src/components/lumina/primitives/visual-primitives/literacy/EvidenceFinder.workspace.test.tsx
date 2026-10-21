@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Evidence finder on the teaching workspace (W1, plain shape): what is its own. Each phase of the one passage is a
+ * Evidence finder on its boss (`evidenceFinder.boss.ts`): what is its own. Each step of the one passage is a
  * checked item (find, and rate on a CER passage); no answer (which sentences are evidence, which claim each supports,
  * how strong each is) reaches the tutor; a wrong check commits its named miss, stays closed, and Try again clears only
  * that phase; the last right check completes once. The generic W1 contract runs in `runtime/workspaceContract.test.tsx`.
@@ -15,7 +15,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { validateEvidenceFinderData } from '../../../components/live-activity/adapters/evidenceFinderLive';
+import { validateEvidenceFinderData } from './evidenceFinder.boss';
 import type { EvidenceFinderData } from './EvidenceFinder';
 import { EMPTY_VIEW, claimOf, evidenceFinderMiss, findCorrect, type Strength } from './evidenceFinderWorkspace';
 
@@ -93,7 +93,7 @@ it.each(Object.keys(BY_MODE))('%s binds every phase with no scripted cue and no 
   }
   expect(h.state().status).toBe('completed');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  // No scripted reasoning box and no Finish on the workspace.
+  // No reasoning box and no Finish: the CER reasoning box was the scripted path's.
   expect(h.view.container.querySelector('textarea')).toBeNull();
   expect(h.view.container.textContent).not.toMatch(/Next: Reasoning/);
   h.close();
@@ -147,12 +147,12 @@ it('match: evidence under the wrong claim is wrong_claim, and the screen never s
 it('evidenceFinderMiss names each phase\'s error; the validator refuses an unanswerable passage', () => {
   const m = BY_MODE.match_evidence_to_claim, e = BY_MODE.evaluate_evidence_strength;
   const v = EMPTY_VIEW;
-  expect(evidenceFinderMiss({ id: 'find' }, m, { ...v, highlighted: { s2: 0 } })).toBe('missed_evidence');
-  expect(evidenceFinderMiss({ id: 'find' }, m, { ...v, highlighted: { s2: 0, s3: 1, s5: 1, s1: 0 } })).toBe('not_evidence');
-  expect(evidenceFinderMiss({ id: 'find' }, m, { ...v, highlighted: { s2: 1, s3: 1, s5: 1 } })).toBe('wrong_claim');
+  expect(evidenceFinderMiss('find', m, { ...v, highlighted: { s2: 0 } })).toBe('missed_evidence');
+  expect(evidenceFinderMiss('find', m, { ...v, highlighted: { s2: 0, s3: 1, s5: 1, s1: 0 } })).toBe('not_evidence');
+  expect(evidenceFinderMiss('find', m, { ...v, highlighted: { s2: 1, s3: 1, s5: 1 } })).toBe('wrong_claim');
   expect(findCorrect(m, { s2: 0, s3: 1, s5: 1 })).toBe(true);
   expect(findCorrect(e, {})).toBe(false);
-  const rated = (r: Record<string, Strength>) => evidenceFinderMiss({ id: 'rate' }, e, { ...v, ratings: r });
+  const rated = (r: Record<string, Strength>) => evidenceFinderMiss('rate', e, { ...v, ratings: r });
   expect(rated({ s2: 'strong', s3: 'strong', s5: 'weak' })).toBe('rated_too_strong');
   expect(rated({ s2: 'moderate', s3: 'weak', s5: 'weak' })).toBe('rated_too_weak');
   expect(rated({ s2: 'moderate', s3: 'strong', s5: 'weak' })).toBe('mixed_ratings');

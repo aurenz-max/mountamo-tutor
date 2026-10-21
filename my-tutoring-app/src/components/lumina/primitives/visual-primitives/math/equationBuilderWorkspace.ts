@@ -1,8 +1,6 @@
 /**
- * Equation builder on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C9), plain shape: `useWorkspaceProgress` in place of
- * `useChallengeProgress`. Every challenge is one checked gesture; the builder's own Check is the
- * judge and no key reaches the tutor:
+ * Equation builder's domain on the shared tutor/JEV teaching workspace (the boss is `equationBuilder.boss.ts`). Every
+ * challenge is one checked gesture; the builder's own Check is the judge and no key reaches the tutor:
  *   - build / rewrite: tiles placed in the slot row, then Check;
  *   - missing-value: a number option tapped, then Check;
  *   - true-false: True or False tapped, then Check;
@@ -10,8 +8,11 @@
  *   - make-n (open build): tiles from an unlimited bank into the row, then "I'm done!". Any number sentence that
  *     makes the total passes; a two-way item asks for a different one after the first. Try again keeps the row.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { EquationBuilderChallenge } from './EquationBuilder';
+import type { EquationBuilderMiss } from './equationBuilder.card';
+
+export { EQUATION_BUILDER_MISSES_BY_MODE, type EquationBuilderMiss } from './equationBuilder.card';
 
 /** Parse a display equation like "3 + 2 = 5" into tokens. */
 export function parseEquationTokens(eq: string): string[] {
@@ -122,10 +123,6 @@ export interface EquationBuilderView {
   made?: string[][];
 }
 
-export function equationBuilderAssignment(c: EquationBuilderChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
-
 /** The builder's own check. */
 export function equationBuilderMatches(c: EquationBuilderChallenge, v: EquationBuilderView): boolean {
   switch (c.type) {
@@ -138,25 +135,6 @@ export function equationBuilderMatches(c: EquationBuilderChallenge, v: EquationB
       && (v.made?.length ?? 0) + 1 >= waysAsked(c);
   }
 }
-
-/**
- * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
- * - tiles (build, rewrite): `unfinished_equation` (not two sides around one =), `false_equation` (the sides
- *   differ), `other_operation` (true, the target's numbers with the other sign), `other_numbers` (true, other
- *   numbers); rewrite also `same_as_printed` (the printed equation again) and `other_form` (true, the printed
- *   numbers, not a form this item accepts);
- * - a number (missing-value, balance): `printed_number` (one already in the equation), `sum_of_printed`
- *   (missing-value: the printed numbers added), `other_side_total` (balance: the value of the side with no ?),
- *   then `one_short` / `one_over` / `short_by_more` / `over_by_more`;
- * - true-false: `said_true` (True for a false equation), `said_false`;
- * - make-n: `bare_number` (one number tile, no sign), `unfinished_sentence` (not number, sign, number...), then the
- *   sentence's value against the total (`one_short` / `one_over` / `short_by_more` / `over_by_more`), and on a two-way
- *   item `same_way` (the numbers of a way already made, in any order).
- */
-export type EquationBuilderMiss = 'unfinished_equation' | 'false_equation' | 'other_operation' | 'other_numbers'
-  | 'same_as_printed' | 'other_form' | 'printed_number' | 'sum_of_printed' | 'other_side_total'
-  | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'said_true' | 'said_false'
-  | 'bare_number' | 'unfinished_sentence' | 'same_way';
 
 const numbersIn = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
 const sameNumbers = (a: string, b: string) => numbersIn(a).sort((x, y) => x - y).join() === numbersIn(b).sort((x, y) => x - y).join();
@@ -226,20 +204,11 @@ export function printedEquation(c: EquationBuilderChallenge): string | undefined
   }
 }
 
-const CONSTRAINTS: Record<EquationBuilderChallenge['type'], string> = {
-  build: 'The learner taps tiles into the slot row to build the equation the instruction asks for and presses Check; '
-    + 'the builder checks it. The equation is the answer: never say it or which tiles go where.',
-  'missing-value': 'The learner taps the number that replaces the "?" and presses Check; the builder checks it. '
-    + 'The missing number is the answer: never say it or point to its choice.',
-  'true-false': 'The learner taps True or False and presses Check; the builder checks it. Whether the equation is '
-    + 'true is the answer: never say it, or the value of either side.',
-  balance: 'The learner types the number that replaces the "?" and presses Check; the builder checks it. The missing '
-    + 'number is the answer: never say it.',
-  rewrite: 'The learner taps tiles into the slot row to write the printed equation another way and presses Check; '
-    + 'the builder checks it. A rewritten equation is the answer: never say one or which tiles go where.',
-  'make-n': 'The learner makes their own number sentence for the total from the tile bank and presses "I\'m done!"; '
-    + 'the builder checks it, and any sentence that makes the total passes. Never say what the learner\'s sentence '
-    + 'makes, whether it is right before they check, a sentence that works, or which tile to add or take out.',
+/** What counts as right beyond the one key, where the check takes more than one answer. Never the answer itself. */
+const CONSTRAINTS: Partial<Record<EquationBuilderChallenge['type'], string>> = {
+  build: 'Any order of the asked equation\'s tiles that keeps it true counts.',
+  rewrite: 'Another way of writing the same equation counts; the printed equation again does not.',
+  'make-n': 'Any sentence that makes the total passes; on a two-way item the second must use different numbers.',
 };
 
 /** How far the tutor may coach at this support tier, so it never says what the tier withheld on screen. */
@@ -279,7 +248,7 @@ export const bankOrder = (tiles: readonly string[]) => [...tiles.filter(isNumber
   ...tiles.filter(t => !isNumberTile(t))];
 
 export function equationBuilderScene(c: EquationBuilderChallenge, view: { supportTier?: EquationBuilderTier;
-  work?: Pick<EquationBuilderView, 'slots' | 'made'> }): WorkspaceScene {
+  work?: Pick<EquationBuilderView, 'slots' | 'made'> }): SceneOf {
   const printed = printedEquation(c);
   const tip = coaching(c, view.supportTier);
   const tiles = c.type === 'build' || c.type === 'rewrite' ? c.availableTiles ?? [] : [];
@@ -293,7 +262,7 @@ export function equationBuilderScene(c: EquationBuilderChallenge, view: { suppor
     ...(c.type === 'true-false' ? { choices: 'True | False' } : {}),
     ...(view.supportTier ? { supportTier: view.supportTier } : {}),
     ...(tip ? { coaching: tip } : {}),
-    constraints: CONSTRAINTS[c.type],
+    ...(CONSTRAINTS[c.type] ? { constraints: CONSTRAINTS[c.type] } : {}),
   } };
 }
 
@@ -340,4 +309,20 @@ export function equationBuilderHarnessInputs(c: EquationBuilderChallenge, wrong:
   }
   if (c.type === 'true-false') return [{ type: 'touch', target: `truth-${wrong ? !c.isTrue : !!c.isTrue}` }, check];
   return [{ type: 'write', label: ENTRY_LABEL, text: String(c.correctAnswer! + (wrong ? 1 : 0)) }, check];
+}
+
+/**
+ * The item's eval mode, read from the item (a lesson may mix modes): a missing value whose ? stands alone on its side
+ * is missing-result ("4 + 3 = ?", "? = 4 + 3"), else missing-operand.
+ */
+export function equationBuilderMode(c: EquationBuilderChallenge): string {
+  switch (c.type) {
+    case 'build': return 'build-simple';
+    case 'balance': return 'balance-both-sides';
+    case 'missing-value': {
+      const sides = (c.equation ?? '').split('=').map(parseEquationTokens);
+      return sides.some(s => s.length === 1 && s[0] === '?') ? 'missing-result' : 'missing-operand';
+    }
+    default: return c.type;
+  }
 }

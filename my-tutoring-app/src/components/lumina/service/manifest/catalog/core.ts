@@ -12,8 +12,7 @@ import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/co
 import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
 import { timelineExplorerCard } from '../../../primitives/visual-primitives/core/timelineExplorer.card';
 import { howItWorksCard } from '../../../primitives/visual-primitives/core/howItWorks.card';
-import { missLists } from './missLists';
-import type { SkillMiss } from '../../../primitives/visual-primitives/core/digitalSkillsWorkspace';
+import { digitalSkillsSimCard } from '../../../primitives/visual-primitives/core/digitalSkillsSim.card';
 
 export const CORE_CATALOG: ComponentDefinition[] = [
   {
@@ -546,45 +545,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Find and press a letter on an on-screen keyboard (easy: a capital letter; medium: a small letter on a capital key; hard: a three-letter word in order)',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Student is practicing basic digital skills: {{currentPhase}} phase, challenge {{challengeIndex}} of {{totalChallenges}}. Current instruction: "{{instruction}}".',
-      contextKeys: ['title', 'currentPhase', 'challengeIndex', 'totalChallenges', 'instruction'],
-      scaffoldingLevels: {
-        level1:
-          '"Listen again: what are we looking for? Look at every picture before you click."',
-        level2:
-          '"Move the pointer slowly until it sits right on the picture, keep your hand still, then click."',
-        level3:
-          '"Say the name of each picture you see, one by one. Which one did I ask for?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student clicks but misses the pictures', response: 'Encourage slower, more deliberate mouse movement: the pointer touches the picture before clicking.' },
-        { pattern: 'Student cannot complete drag — lets go before reaching a box', response: 'Remind the student to hold the button down while moving, and let go only when the picture is over the box.' },
-        { pattern: 'Student presses wrong keys repeatedly', response: 'Ask the student to look along each row of keys, one row at a time, without naming the row.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Code builds and checks every item; you are not told where the target is. The learner may not read yet, so say '
-        + 'the question in your own words. CLICK: pictures with no words spread across a play area; the learner clicks the one '
-        + 'the question names. DRAG: the learner presses on the picture, holds, moves it and lets go over the box the question '
-        + 'names; the boxes are pictures with no words. TYPE: an on-screen keyboard of capital letters; the learner presses the '
-        + 'letter on the card (a small letter is pressed on its capital key), or the letters of a word in order. Coach the movement: '
-        + 'move the pointer onto a picture before clicking, keep the hand still when clicking, hold the button down while moving, '
-        + 'let go only over a box, look along each row of keys. Never say where a picture, box or key is (left, right, top, bottom, '
-        + 'which row, next to; a row that glows may be named), never describe the right one beyond the name the question uses, and never say which one is right '
-        + 'or which one the learner should have chosen. For a small letter, never say or spell its capital: matching it to the '
-        + 'capital key is the task. Describe a lever card only by what the scene says it shows. You cannot '
-        + 'click, drag or press keys for the learner.',
-      // click publishes show_picture, big_targets and fewer_pictures (3 or more pictures); drag show_picture, big_boxes and
-      // fewer_boxes (3 or more boxes); type glow_row, big_keys, capital_card (small letters) and one_letter (words)
-      // (`digitalSkillsLevers.ts`). Every miss is answered by a help lever first.
-      levers: true,
-      // The activity's own check (`skillMiss`) on a click, a drop or a key.
-      misses: missLists<SkillMiss>({ click: ['wrong_picture', 'missed_picture'], drag: ['wrong_box', 'let_go_outside'],
-        type: ['neighbour_key', 'mirror_letter', 'wrong_key'] }),
-    },
+    ...bossEntry(digitalSkillsSimCard),
     supportsEvaluation: true,
   },
   {

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
-import { itemsFromChallenges, type PlaceValueItem } from './placeValueScript';
-import { placeValueMiss, placeValueSpokenMisses, workspaceAssignment } from './placeValueWorkspace';
+import { itemsFromChallenges, type PlaceValueItem } from './placeValueDomain';
+import { placeValueKey, placeValueMiss, placeValueSpokenMisses } from './placeValueWorkspace';
+import { placeValueChartBoss } from './placeValueChart.boss';
 
 /** A dictated item: the rotation dictates the first challenge and prints the second. */
 const dictated = (targetNumber: number) => itemsFromChallenges([{ id: 'b', targetNumber }], { mode: 'build', tier: 'medium' })
@@ -33,8 +34,22 @@ it.each([
   [spoken('say_value', 47, 1, 4, 'forty'), ['said_digit', 'said_place', 'shifted_place', 'said_number', 'next_digit_value']],
   [spoken('say_value', 32, 0, 2, 'two'), ['shifted_place', 'said_number', 'next_digit_value']],
 ] as const)('spoken %#: known misses in order, none of them the answer', (item, ids) => {
-  expect(workspaceAssignment(item).expectedAnswer).toBe(item.answerText);
+  expect(placeValueKey(item)!.answer).toBe(item.answerText);
   const misses = placeValueSpokenMisses(item);
   expect(misses.map(m => m.id)).toEqual(ids);
   expect(misses.flatMap(m => m.examples ?? []).filter(e => e === item.answerText)).toEqual([]);
+});
+
+it('the boss assigns a printed number a spoken key and a dictated one a gesture the chart checks', () => {
+  const [build, place, value] = itemsFromChallenges([{ id: 'b', targetNumber: 406 }, { id: 'a', targetNumber: 2345, highlightedDigitPlace: 1 }],
+    { mode: 'build', tier: 'medium' }).items;
+  expect(placeValueChartBoss.assignment(build)).toMatchObject({ response: 'gesture' });
+  expect(placeValueChartBoss.assignment(build).expectedAnswer).toBeUndefined();
+  expect(placeValueChartBoss.assignment(place)).toMatchObject({ response: 'speech' });
+  expect(placeValueChartBoss.assignment(place).expectedAnswer).toContain('"tens"');
+  // The menu the ask says at medium is the key's menu; a hard tier says none.
+  expect(placeValueKey(place)!.menu).toEqual(['ones', 'tens', 'hundreds', 'thousands']);
+  expect(placeValueKey({ ...place, tier: 'hard' })!.menu).toBeUndefined();
+  expect(placeValueKey(value)).toMatchObject({ answer: 'forty', alsoAccept: ['40', 'four tens'] });
+  expect(placeValueChartBoss.stepOf(place)).toBe('find_place');
 });

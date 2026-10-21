@@ -49,9 +49,10 @@ const levers = (h: WorkspaceHarness) => (h.state().task!.workspace!.levers ?? []
 const attempts = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts;
 const onScreen = (h: WorkspaceHarness) => String((h.state().task!.demand as Record<string, unknown>).onScreen ?? '');
 
-it('find_area: zeros dropped → tens_split, drawn in the same commit with no product; a repeat pull and an early stack change nothing', () => {
+it('find_area: zeros dropped → tens_split, drawn in the same commit with no product; a repeat pull changes nothing and the stack waits for every cell', () => {
   const h = mount('find_area', [FIND]);
-  expect(levers(h)).toEqual([['cell_labels', false], ['tens_split', false], ['cell_dots', false], ['stack_products', false], ['easier_model', false]]);
+  // The stack is the learner's right cells: it is not offered before every cell is right.
+  expect(levers(h)).toEqual([['cell_labels', false], ['tens_split', false], ['cell_dots', false], ['easier_model', false]]);
   cell(h, 0, 0, 120);
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'dropped_zeros' });
   expect(nextLever(h.state().task!.workspace!.levers!, 'dropped_zeros')).toBe('tens_split');
@@ -71,6 +72,7 @@ it('find_area: zeros dropped → tens_split, drawn in the same commit with no pr
   h.dispatch('retry');
   expect(q(h, '[data-lever="tens_split"]')).toHaveLength(3);
   cells(h, FIND);
+  expect(levers(h).map(([id]) => id)).toContain('stack_products');
   // At the sum, the stack stands the right products in one column, no total.
   expect(h.dispatch('pull_lever', { lever: 'stack_products' }).status).toBe('committed');
   const stack = q(h, '[data-lever="stack_products"]')[0];

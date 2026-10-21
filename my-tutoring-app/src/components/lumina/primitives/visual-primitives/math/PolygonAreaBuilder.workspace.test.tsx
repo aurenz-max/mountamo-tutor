@@ -14,7 +14,8 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { buildAreaAsk, buildAreaLevers, buildPerimeterAsk } from './polygonAreaBuild';
+import { buildAreaAsk, buildPerimeterAsk } from './polygonAreaBuild';
+import { POLYGON_LEVERS } from './polygonAreaLevers';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -232,7 +233,8 @@ it('every catalog miss of the build is answered by a lever, and no lever text na
   const entry = getComponentById('polygon-area-builder')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'build_area')).toMatchObject({ beta: 1.6, challengeTypes: ['build_area'],
     affordances: { answers: ['build'] } });
-  const levers = buildAreaLevers(build('a', 14, 2), []);
+  // A two-shape item once its first shape is made: every lever of the mode is on offer.
+  const levers = POLYGON_LEVERS.declare(build('a', 14, 2), { leftOut: null, rearranged: false, firstShape: true }, []);
   for (const m of entry.teachingWorkspace!.misses!.build_area) expect(levers.some(l => l.answers?.includes(m)), m).toBe(true);
   for (const l of levers) {
     expect(`${l.when} ${l.does}`).not.toMatch(/\b14\b|type|hand|drag/i);

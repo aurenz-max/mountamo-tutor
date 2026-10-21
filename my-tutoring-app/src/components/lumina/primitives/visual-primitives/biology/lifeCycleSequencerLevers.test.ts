@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { LifeCycleSequencerData } from './LifeCycleSequencer';
 import { CYCLE_MISSES, cycleMiss, lifeCycleItem, type CycleMiss } from './lifeCycleSequencerWorkspace';
-import { ARROW_LEVER, FEWER_LEVER, KEEP_LEVER, cycleLeverFacts, cycleLevers, keptLeaks, keptSlots, lifeCycleJourneyItem,
-  practiceCycle, practiceLeaks } from './lifeCycleSequencerLevers';
+import { ARROW_LEVER, FEWER_LEVER, KEEP_LEVER, LIFE_CYCLE_LEVERS, keptLeaks, keptSlots, lifeCycleJourneyItem,
+  practiceCycle, practiceLeaks, type CycleLeverContext } from './lifeCycleSequencerLevers';
 
 const data = (cycleType: LifeCycleSequencerData['cycleType'], labels: string[], title = 'Life of a frog'): LifeCycleSequencerData => ({
   title, instructions: 'Put the pictures in order.', cycleType, gradeBand: 'K-2', scaleContext: '',
@@ -18,10 +18,22 @@ const FROG = lifeCycleItem(data('linear', ['Frog Eggs', 'Tadpole', 'Froglet', 'A
 const WATER = lifeCycleItem(data('circular', ['Evaporation', 'Condensation', 'Precipitation', 'Collection'], 'The water cycle'));
 const THREE = lifeCycleItem(data('linear', ['Seed', 'Sprout', 'Plant'], 'A bean'));
 
+/** A board before any check, and one checked with the first two stages swapped (slots 3 and 4 right). */
+const BLANK: CycleLeverContext = { slots: [], marked: null, kept: {} };
+const swapped = (item: typeof FROG): CycleLeverContext => {
+  const seq = [1, 0, ...item.stages.slice(2).map((_, i) => i + 2)];
+  return { slots: seq.map(p => `s${p}`), marked: { right: seq.flatMap((p, i) => (p === i ? [i] : [])),
+    wrong: seq.flatMap((p, i) => (p === i ? [] : [i])) }, kept: {} };
+};
+const declared = (item: typeof FROG | null, ctx: CycleLeverContext = BLANK, pulled: string[] = []) =>
+  LIFE_CYCLE_LEVERS.declare(item, ctx, pulled);
+const facts = (item: typeof FROG, pulled: string[], kept: Record<number, string> = {}) =>
+  LIFE_CYCLE_LEVERS.onScreen(item, { ...BLANK, kept }, pulled);
+
 describe('declarations', () => {
-  it('every order miss is answered by a lever; cycle_rotated by none (catalog unanswered)', () => {
+  it('every order miss is answered by a lever; cycle_rotated by none (card unanswered)', () => {
     for (const item of [FROG, WATER]) {
-      const levers = cycleLevers(item, []);
+      const levers = declared(item, swapped(item));
       expect(levers.map(l => l.id)).toEqual([ARROW_LEVER, KEEP_LEVER, FEWER_LEVER]);
       for (const miss of CYCLE_MISSES.filter(m => m !== 'cycle_rotated'))
         expect(levers.some(l => l.answers?.includes(miss))).toBe(true);
@@ -29,25 +41,35 @@ describe('declarations', () => {
     }
   });
 
+  it('keep_right is offered only after a check with some right and some wrong', () => {
+    expect(declared(FROG).map(l => l.id)).toEqual([ARROW_LEVER, FEWER_LEVER]);
+    const seq = [3, 2, 1, 0];
+    const none = { slots: seq.map(p => `s${p}`), marked: { right: [], wrong: [0, 1, 2, 3] }, kept: {} };
+    expect(declared(FROG, none).map(l => l.id)).not.toContain(KEEP_LEVER);
+    // Once pulled, the locked stages stay on offer (pulled) though the marks have cleared.
+    expect(declared(FROG, { ...BLANK, kept: { 2: 's2', 3: 's3' } }, [KEEP_LEVER]).find(l => l.id === KEEP_LEVER))
+      .toMatchObject({ pulled: true, kind: 'help' });
+  });
+
   it.each<[CycleMiss, string]>([
     ['reversed', ARROW_LEVER], ['mixed_order', ARROW_LEVER], ['adjacent_swap', KEEP_LEVER],
     ['two_swapped', KEEP_LEVER], ['one_moved', KEEP_LEVER],
   ])('after %s the next lever is %s', (miss, lever) => {
-    expect(nextLever(cycleLevers(FROG, []), miss)).toBe(lever);
+    expect(nextLever(declared(FROG, swapped(FROG)), miss)).toBe(lever);
   });
 
   it('a 3-stage item offers no simplify; a practice item carries no levers', () => {
-    expect(cycleLevers(THREE, []).map(l => l.id)).toEqual([ARROW_LEVER, KEEP_LEVER]);
-    expect(cycleLevers(practiceCycle(FROG), [])).toEqual([]);
+    expect(declared(THREE, swapped(THREE)).map(l => l.id)).toEqual([ARROW_LEVER, KEEP_LEVER]);
+    expect(declared(practiceCycle(FROG))).toEqual([]);
   });
 
   it('the arrow fact names no stage; a circle adds the way back', () => {
     for (const item of [FROG, WATER]) {
-      const fact = cycleLeverFacts(item, [ARROW_LEVER], {});
+      const fact = facts(item, [ARROW_LEVER]);
       expect(item.stages.some(s => fact.includes(s.label))).toBe(false);
     }
-    expect(cycleLeverFacts(WATER, [ARROW_LEVER], {})).toMatch(/back to slot 1/);
-    expect(cycleLeverFacts(FROG, [ARROW_LEVER], {})).not.toMatch(/back to slot 1/);
+    expect(facts(WATER, [ARROW_LEVER])).toMatch(/back to slot 1/);
+    expect(facts(FROG, [ARROW_LEVER])).not.toMatch(/back to slot 1/);
   });
 });
 
@@ -76,7 +98,7 @@ describe('keep_right', () => {
   });
 
   it('the fact names only kept stages', () => {
-    const fact = cycleLeverFacts(FROG, [KEEP_LEVER], { 2: 's2', 3: 's3' });
+    const fact = facts(FROG, [KEEP_LEVER], { 2: 's2', 3: 's3' });
     expect(fact).toMatch(/slot 3 "Froglet", slot 4 "Adult Frog"/);
     expect(fact).not.toMatch(/Tadpole|Frog Eggs/);
   });
@@ -114,6 +136,7 @@ describe('fewer_stages', () => {
     const d = data('linear', ['Frog Eggs', 'Tadpole', 'Froglet', 'Adult Frog']);
     expect(lifeCycleJourneyItem(d, 'cycle')!.id).toBe('cycle');
     expect(lifeCycleJourneyItem(d, 'cycle~simpler')).toEqual(practiceCycle(FROG));
+    expect(LIFE_CYCLE_LEVERS.simpler(FROG, BLANK, FEWER_LEVER)).toEqual(practiceCycle(FROG));
     expect(lifeCycleJourneyItem(d, 'other')).toBeNull();
   });
 

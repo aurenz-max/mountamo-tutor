@@ -2,7 +2,7 @@
  * circle-explorer's in-item levers (/add-support-tiers; report qa/eval-reports/circle-explorer-levers-2026-10-09.md).
  * The misses are what `circleMiss` observes in the number typed; there is no real-learner evidence.
  *
- * - `formula_labels` (help, every mode, only where the hard tier withheld them): the figure's formula labels back on.
+ * - `formula_labels` (clue, every mode, only where the hard tier withheld them): the figure's formula labels back on.
  * - discover π: `ratio_frame` (help) "C ÷ d = <C> ÷ <d> = ?" under the figure, the item's own labels (or words when
  *   the circumference is not labelled); `tenth_marks` (help) the unrolled length's piece past the whole diameters
  *   measured against a diameter cut into ten equal, unlabelled parts. No simplify: π is every circle's answer, so any
@@ -20,12 +20,16 @@
  *   corners shaded and the inner radius drawn as half the side; `simpler_problem` (simplify) the same figure on round
  *   numbers.
  *
+ * Declared once as a lever set (`CIRCLE_LEVERS`, `bossLevers.ts`): formula_labels, ratio_frame and undo_chain are
+ * clues (worded, leak-checked against the answer); diameters_around is a layout (the circumference laid straight); the
+ * other pictures are marks on the figure; simpler_problem is the easier practice item.
+ *
  * Leak rules (code): no lever's `when`/`does` text or scene fact carries a digit; no lever picture's text carries the
  * item's answer as the screen would print it; a practice problem has its own id, a different radius and answer, and
  * keeps the mode (and the composite figure).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { CircleExplorerChallenge } from './CircleExplorer';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { CircleExplorerChallenge, CircleExplorerChallengeType } from './CircleExplorer';
 import { CIRCLE_MISSES_BY_MODE, PI_APPROX, fmt, withinKey, type CircleMiss } from './circleExplorerWorkspace';
 
 export const FORMULA_LEVER = 'formula_labels';
@@ -157,122 +161,132 @@ export function practiceLeaks(parent: CircleExplorerChallenge, practice: CircleE
     || `${practice.narration} ${practice.instruction}`.includes(fmt(parent.expectedAnswer));
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
+
+/** What the screen shows that a lever's offer reads: whether the circumference is unrolled (discover π's tenths). */
+export interface CircleLeverCtx { unrolled: boolean }
 
 const SIZE: readonly CircleMiss[] = ['near_miss', 'too_high', 'too_low'];
 
-export function circleLevers(c: CircleExplorerChallenge | null, pulled: readonly string[], unrolled = true): WorkspaceLever[] {
-  if (!c || isPracticeCircle(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly CircleMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const all = CIRCLE_MISSES_BY_MODE[c.type];
-  const out: WorkspaceLever[] = [];
-  if (c.showFormulaReveal === false) {
-    out.push(lever(FORMULA_LEVER, 'help', 'shown', all,
-      'The learner cannot recall which formula the figure shows.',
-      'Turns the figure\'s formula labels back on (the ones its reveals print at an easier level). Formulas only, never '
-        + 'the answer.'));
-  }
-  switch (c.type) {
-    case 'discover_pi':
-      out.push(lever(RATIO_FRAME_LEVER, 'help', 'shown', ['inverse_ratio', 'typed_length', 'too_high', 'too_low'],
-        'The learner divides the wrong way round, or types a length instead of the ratio.',
-        'Writes "C divided by d equals ?" under the figure with the circumference and the diameter as the figure labels '
-          + 'them (words for a circumference the figure does not label). The result is not written.'));
-      if (unrolled) {
-        out.push(lever(TENTHS_LEVER, 'help', 'shown', ['near_miss', 'too_high', 'too_low'],
-          'The learner\'s ratio is off because they cannot see how much is left past the whole diameters.',
-          'Under the figure, puts the piece of the unrolled length past the whole diameters beside one diameter cut into '
-            + 'ten equal, unlabelled parts, so the leftover can be read in tenths. No number is written.'));
-      }
-      break;
-    case 'circumference':
-      out.push(lever(OTHER_LENGTH_LEVER, 'help', 'shown', ['pi_times_radius', 'two_pi_times_diameter', 'no_pi'],
-        'The learner uses the radius where the diameter goes, or the other way round.',
-        c.given === 'radius'
-          ? 'Draws the diameter all the way across the circle, named "d equals r plus r". No number is written.'
-          : 'Draws a radius from the center, named "r equals half of d". No number is written.'));
-      out.push(lever(AROUND_LEVER, 'help', 'shown', ['no_pi', 'area_formula', 'pi_times_radius', 'two_pi_times_diameter', ...SIZE],
-        'The learner does not see that the circumference is a little more than three diameters long.',
-        'Lays the circumference out straight under the figure with diameter-length bars along it: three whole ones and a '
-          + 'little more. Nothing is labelled with a number.'));
-      break;
-    case 'area':
-      out.push(lever(SQUARE_LEVER, 'help', 'shown', ['circumference_formula', 'pi_times_radius', 'no_pi', 'diameter_squared', ...SIZE],
-        'The learner does not square the radius, uses the diameter, or uses the distance around.',
-        'Draws a square on the radius, r by r, captioned that the circle covers a little more than three of these squares. '
-          + 'No number is written.'));
-      if (c.given === 'diameter') {
-        out.push(lever(OTHER_LENGTH_LEVER, 'help', 'shown', ['diameter_squared', 'circumference_formula'],
-          'The learner uses the diameter where the radius goes.',
-          'Draws a radius from the center, named "r equals half of d". No number is written.'));
-      }
-      break;
-    case 'reverse':
-      out.push(lever(CHAIN_LEVER, 'help', 'both', all,
-        'The learner multiplies where the reverse divides, stops a step early, or skips a step.',
-        c.reverseGiven === 'area'
-          ? 'Writes the area formula\'s steps under the figure, from r to the area (square it, times pi) and the way back '
-            + '(divide by pi, square root). Symbols only; read it aloud.'
-          : 'Writes the circumference formula\'s steps under the figure, from r to the circumference (times two, times pi) '
-            + 'and the way back (divide by pi, divide by two). Symbols only; read it aloud.'));
-      out.push(lever(OTHER_LENGTH_LEVER, 'help', 'shown', ['diameter_not_radius', 'divided_by_two_only'],
-        'The learner stops at the diameter.',
-        'Draws a dashed diameter across the circle, named "d equals r plus r". No number is written.'));
-      break;
-    case 'composite':
-      if (c.compositeShape === 'circle_in_square') {
-        out.push(lever(CORNERS_LEVER, 'help', 'shown', ['circle_area', 'square_area', 'added', ...SIZE],
-          'The learner gives the circle or the square, or adds them, instead of what is left over.',
-          'Shades the four corners of the square the circle does not cover and draws the circle\'s radius as half the side, '
-            + 'captioned "the square without the circle". No number is written.'));
-      } else if (c.compositeShape === 'semicircle_perimeter') {
-        out.push(lever(EDGES_LEVER, 'help', 'shown', ['curve_only', 'full_circle_edge', 'radius_edge', ...SIZE],
-          'The learner leaves out the straight edge, uses the whole circle, or adds the radius.',
-          'Traces the curved edge and the straight edge in two colours, named "half of the whole circle\'s distance around" '
-            + 'and "the diameter, two radii". No number is written.'));
-      } else {
-        out.push(lever(WHOLE_LEVER, 'help', 'shown', ['whole_circle', 'diameter_as_radius', 'half_circumference', ...SIZE],
-          'The learner gives the whole circle\'s area, or does not see the shape as half of one.',
-          'Draws the missing half of the circle dashed, captioned "the whole circle; the shape is half of it". No number is '
-            + 'written.'));
-      }
-      break;
-  }
-  const easier = simplerCircle(c);
-  if (easier) {
-    out.push(lever(SIMPLER_LEVER, 'simplify', 'shown', all,
-      'These numbers, or this many steps, are too hard yet.',
-      c.type === 'circumference' && c.given === 'radius' ? 'Opens an easier problem of the same kind first, with the diameter given '
-        + 'instead of the radius, on a round number. It is not graded; the full item comes back after it.'
+/** The misses each help lever answers, by mode (other_length has one spec per mode: its words differ by mode). */
+const ANSWERS: Record<string, Partial<Record<CircleExplorerChallengeType, readonly CircleMiss[]>>> = {
+  [RATIO_FRAME_LEVER]: { discover_pi: ['inverse_ratio', 'typed_length', 'too_high', 'too_low'] },
+  [TENTHS_LEVER]: { discover_pi: SIZE },
+  [OTHER_LENGTH_LEVER]: {
+    circumference: ['pi_times_radius', 'two_pi_times_diameter', 'no_pi'],
+    area: ['diameter_squared', 'circumference_formula'],
+    reverse: ['diameter_not_radius', 'divided_by_two_only'],
+  },
+  [AROUND_LEVER]: { circumference: ['no_pi', 'area_formula', 'pi_times_radius', 'two_pi_times_diameter', ...SIZE] },
+  [SQUARE_LEVER]: { area: ['circumference_formula', 'pi_times_radius', 'no_pi', 'diameter_squared', ...SIZE] },
+  [CHAIN_LEVER]: { reverse: CIRCLE_MISSES_BY_MODE.reverse },
+  [CORNERS_LEVER]: { composite: ['circle_area', 'square_area', 'added', ...SIZE] },
+  [EDGES_LEVER]: { composite: ['curve_only', 'full_circle_edge', 'radius_edge', ...SIZE] },
+  [WHOLE_LEVER]: { composite: ['whole_circle', 'diameter_as_radius', 'half_circumference', ...SIZE] },
+};
+const everyMode = (id: string) => Array.from(new Set(Object.values(ANSWERS[id]).flat())) as CircleMiss[];
+const modesOf = (id: string) => Object.keys(ANSWERS[id]) as CircleExplorerChallengeType[];
+/** A picture lever offered only on some items of its mode (one composite figure, a given diameter). */
+const onlyWhere = (ok: (c: CircleExplorerChallenge) => boolean) => (c: CircleExplorerChallenge) => (ok(c) ? true : null);
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice problem: the component declares nothing
+ * while one is on screen.
+ */
+export const CIRCLE_LEVERS = leverSet<CircleExplorerChallenge, CircleLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => CIRCLE_MISSES_BY_MODE[mode as CircleExplorerChallengeType] ?? [],
+  answersOf: c => [fmt(c.expectedAnswer)],
+  specs: [
+    { id: FORMULA_LEVER, type: 'clue', answers: 'all',
+      when: 'The learner cannot recall which formula the figure shows.',
+      does: 'Turns the figure\'s formula labels back on (the ones its reveals print at an easier level). Formulas only, never '
+        + 'the answer.',
+      // Only where the hard tier withheld them.
+      content: onlyWhere(c => c.showFormulaReveal === false),
+      fact: 'The figure\'s formula labels are shown.' },
+    { id: RATIO_FRAME_LEVER, type: 'clue', modes: modesOf(RATIO_FRAME_LEVER), answers: everyMode(RATIO_FRAME_LEVER),
+      when: 'The learner divides the wrong way round, or types a length instead of the ratio.',
+      does: 'Writes "C divided by d equals ?" under the figure with the circumference and the diameter as the figure labels '
+        + 'them (words for a circumference the figure does not label). The result is not written.',
+      content: c => ratioFrame(c),
+      fact: 'Under the figure: "C divided by d equals ?", with the circumference and the diameter as labelled.' },
+    { id: TENTHS_LEVER, type: 'marks', modes: modesOf(TENTHS_LEVER), answers: everyMode(TENTHS_LEVER),
+      when: 'The learner\'s ratio is off because they cannot see how much is left past the whole diameters.',
+      does: 'Under the figure, puts the piece of the unrolled length past the whole diameters beside one diameter cut into '
+        + 'ten equal, unlabelled parts, so the leftover can be read in tenths. No number is written.',
+      // The ruler measures the unrolled line: offered once it is on screen.
+      offer: (_c, ctx) => ctx.unrolled,
+      fact: 'Under the figure, the piece of the unrolled length past the whole diameters sits beside one diameter cut into '
+        + 'ten equal, unlabelled parts.' },
+    { id: OTHER_LENGTH_LEVER, type: 'marks', modes: ['circumference'], answers: ANSWERS[OTHER_LENGTH_LEVER].circumference!,
+      when: 'The learner uses the radius where the diameter goes, or the other way round.',
+      does: c => (c.given === 'radius'
+        ? 'Draws the diameter all the way across the circle, named "d equals r plus r". No number is written.'
+        : 'Draws a radius from the center, named "r equals half of d". No number is written.'),
+      fact: (_content, c) => (c.given === 'radius' ? 'The diameter is drawn across the circle, named d equals r plus r.'
+        : 'A radius is drawn from the center, named r equals half of d.') },
+    { id: AROUND_LEVER, type: 'layout', modes: modesOf(AROUND_LEVER), answers: everyMode(AROUND_LEVER),
+      when: 'The learner does not see that the circumference is a little more than three diameters long.',
+      does: 'Lays the circumference out straight under the figure with diameter-length bars along it: three whole ones and a '
+        + 'little more. Nothing is labelled with a number.',
+      fact: 'Under the figure, the circumference is laid straight with diameter-length bars along it, unlabelled.' },
+    { id: SQUARE_LEVER, type: 'marks', modes: modesOf(SQUARE_LEVER), answers: everyMode(SQUARE_LEVER),
+      when: 'The learner does not square the radius, uses the diameter, or uses the distance around.',
+      does: 'Draws a square on the radius, r by r, captioned that the circle covers a little more than three of these squares. '
+        + 'No number is written.',
+      fact: 'A square is drawn on the radius, r by r, captioned that the circle covers a little more than three of these squares.' },
+    { id: OTHER_LENGTH_LEVER, type: 'marks', modes: ['area'], answers: ANSWERS[OTHER_LENGTH_LEVER].area!,
+      when: 'The learner uses the diameter where the radius goes.',
+      does: 'Draws a radius from the center, named "r equals half of d". No number is written.',
+      // Only where the figure gives the diameter.
+      content: onlyWhere(c => c.given === 'diameter'),
+      fact: 'A radius is drawn from the center, named r equals half of d.' },
+    { id: CHAIN_LEVER, type: 'clue', modes: modesOf(CHAIN_LEVER), answers: everyMode(CHAIN_LEVER),
+      when: 'The learner multiplies where the reverse divides, stops a step early, or skips a step.',
+      does: c => (c.reverseGiven === 'area'
+        ? 'Writes the area formula\'s steps under the figure, from r to the area (square it, times pi) and the way back '
+          + '(divide by pi, square root). Symbols only; read it aloud.'
+        : 'Writes the circumference formula\'s steps under the figure, from r to the circumference (times two, times pi) '
+          + 'and the way back (divide by pi, divide by two). Symbols only; read it aloud.'),
+      content: c => undoChain(c),
+      fact: 'Under the figure are the formula\'s steps from r to the given value and back, in symbols.' },
+    { id: OTHER_LENGTH_LEVER, type: 'marks', modes: ['reverse'], answers: ANSWERS[OTHER_LENGTH_LEVER].reverse!,
+      when: 'The learner stops at the diameter.',
+      does: 'Draws a dashed diameter across the circle, named "d equals r plus r". No number is written.',
+      fact: 'The diameter is drawn across the circle, named d equals r plus r.' },
+    { id: CORNERS_LEVER, type: 'marks', modes: modesOf(CORNERS_LEVER), answers: everyMode(CORNERS_LEVER),
+      when: 'The learner gives the circle or the square, or adds them, instead of what is left over.',
+      does: 'Shades the four corners of the square the circle does not cover and draws the circle\'s radius as half the side, '
+        + 'captioned "the square without the circle". No number is written.',
+      content: onlyWhere(c => c.compositeShape === 'circle_in_square'),
+      fact: 'The corners of the square outside the circle are shaded, and the circle\'s radius is drawn as half the side.' },
+    { id: EDGES_LEVER, type: 'marks', modes: modesOf(EDGES_LEVER), answers: everyMode(EDGES_LEVER),
+      when: 'The learner leaves out the straight edge, uses the whole circle, or adds the radius.',
+      does: 'Traces the curved edge and the straight edge in two colours, named "half of the whole circle\'s distance around" '
+        + 'and "the diameter, two radii". No number is written.',
+      content: onlyWhere(c => c.compositeShape === 'semicircle_perimeter'),
+      fact: 'The curved edge and the straight edge are traced in two colours and named.' },
+    { id: WHOLE_LEVER, type: 'marks', modes: modesOf(WHOLE_LEVER), answers: everyMode(WHOLE_LEVER),
+      when: 'The learner gives the whole circle\'s area, or does not see the shape as half of one.',
+      does: 'Draws the missing half of the circle dashed, captioned "the whole circle; the shape is half of it". No number is '
+        + 'written.',
+      content: onlyWhere(c => c.compositeShape !== 'circle_in_square' && c.compositeShape !== 'semicircle_perimeter'),
+      fact: 'The missing half of the circle is drawn dashed: the shape is half of the whole circle.' },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['circumference', 'area', 'reverse', 'composite'], answers: 'all',
+      when: 'These numbers, or this many steps, are too hard yet.',
+      does: c => (c.type === 'circumference' && c.given === 'radius' ? 'Opens an easier problem of the same kind first, with the '
+        + 'diameter given instead of the radius, on a round number. It is not graded; the full item comes back after it.'
         : c.type === 'area' && c.given === 'diameter' ? 'Opens an easier problem of the same kind first, with the radius given '
           + 'instead of the diameter, on a round number. It is not graded; the full item comes back after it.'
-          : c.type === 'reverse' && c.reverseGiven === 'area' ? 'Opens an easier problem of the same kind first, working back from '
-            + 'a circumference instead of an area. It is not graded; the full item comes back after it.'
+          : c.type === 'reverse' && c.reverseGiven === 'area' ? 'Opens an easier problem of the same kind first, working back '
+            + 'from a circumference instead of an area. It is not graded; the full item comes back after it.'
             : 'Opens an easier problem of the same kind first, on a round radius. It is not graded; the full item comes back '
-              + 'after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: CircleExplorerChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeCircle(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(FORMULA_LEVER) && 'The figure\'s formula labels are shown.',
-    on(RATIO_FRAME_LEVER) && 'Under the figure: "C divided by d equals ?", with the circumference and the diameter as labelled.',
-    on(TENTHS_LEVER) && 'Under the figure, the piece of the unrolled length past the whole diameters sits beside one diameter cut into ten equal, unlabelled parts.',
-    on(OTHER_LENGTH_LEVER) && (c.type === 'reverse' || c.given === 'radius'
-      ? 'The diameter is drawn across the circle, named d equals r plus r.' : 'A radius is drawn from the center, named r equals half of d.'),
-    on(AROUND_LEVER) && 'Under the figure, the circumference is laid straight with diameter-length bars along it, unlabelled.',
-    on(SQUARE_LEVER) && 'A square is drawn on the radius, r by r, captioned that the circle covers a little more than three of these squares.',
-    on(CHAIN_LEVER) && 'Under the figure are the formula\'s steps from r to the given value and back, in symbols.',
-    on(WHOLE_LEVER) && 'The missing half of the circle is drawn dashed: the shape is half of the whole circle.',
-    on(EDGES_LEVER) && 'The curved edge and the straight edge are traced in two colours and named.',
-    on(CORNERS_LEVER) && 'The corners of the square outside the circle are shaded, and the circle\'s radius is drawn as half the side.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+              + 'after it.'),
+      // Null for discover π (π is every circle's answer) and where the item is already the simpler problem.
+      content: c => simplerCircle(c) },
+  ],
+});
 
 /** Leak rule for the levers' words and facts: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

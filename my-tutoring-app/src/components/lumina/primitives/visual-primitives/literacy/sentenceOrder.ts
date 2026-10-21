@@ -5,16 +5,32 @@
  * in code; an order it did not list, with every tile used and the end mark last, goes to the shared literacy judge
  * (`unit: 'sentence'`), because tiles often have more than one good order.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
+import type { OrderMiss } from './sentenceBuilder.card';
+
+export { ORDER_MISSES, type OrderMiss } from './sentenceBuilder.card';
 
 export type TileRole = 'subject' | 'predicate' | 'object' | 'modifier' | 'conjunction' | 'punctuation';
+export type OrderMode = 'simple' | 'compound' | 'complex' | 'compound_complex';
 export interface OrderTile { id: string; text: string; role: TileRole }
-export interface OrderItem { id: string; targetMeaning?: string; tiles: OrderTile[]; validArrangements: string[][]; hint?: string }
+export interface OrderItem {
+  id: string;
+  targetMeaning?: string;
+  tiles: OrderTile[];
+  validArrangements: string[][];
+  hint?: string;
+  /** The eval mode, from the lesson's sentence type (stamped by the boss's `items`). */
+  mode?: OrderMode;
+  /** The lesson's support tier, stamped on each item (when the model lever comes). */
+  supportTier?: SupportTier;
+}
 
-export type OrderMiss = 'tiles_left' | 'end_mark_not_last' | 'not_sense';
-export const ORDER_MISSES: readonly OrderMiss[] = ['tiles_left', 'end_mark_not_last', 'not_sense'];
+/** The lesson's sentence type as its eval mode. */
+export const ORDER_MODE: Record<string, OrderMode> = {
+  simple: 'simple', compound: 'compound', complex: 'complex', 'compound-complex': 'compound_complex',
+};
 
 /** The end mark (. ? !); a comma is punctuation too, but sits inside the sentence. */
 export const isEndTile = (t: OrderTile | undefined) => !!t && t.role === 'punctuation' && /^[.?!]$/.test(t.text.trim());
@@ -48,40 +64,66 @@ export function askableOrder(item: OrderItem): OrderItem | null {
   return { ...item, validArrangements: arrangements };
 }
 
-/** The bank order: stable per item (the same on every render) and never a listed answer order. */
-export function bankOrder(item: OrderItem): OrderTile[] {
-  let h = 0;
-  for (const ch of item.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const out = item.tiles.map((t, i) => ({ t, k: ((h ^ (i * 2654435761)) >>> 0) % 997 })).sort((a, b) => a.k - b.k).map(x => x.t);
-  const isAnswer = (ts: OrderTile[]) => item.validArrangements.some(a => a.every((id, i) => id === ts[i]?.id));
-  for (let n = 0; n < out.length && isAnswer(out); n++) out.push(out.shift()!);
-  return out;
+/**
+ * A stable mixed order of a list (the same on every render) that is never an answer and holds no run of three that
+ * sits together, in that order, in an answer: listed that way, a bank of tiles would read out the sentence. Compared
+ * as lower-case text, so two "the" tiles are the same tile. When no salt finds such an order (a three-tile list has
+ * few), it keeps the one with the fewest runs that is not an answer. `tail` stays last, unmixed (the end marks).
+ */
+export function mixedOrder<T>(list: readonly T[], textOf: (t: T) => string, answers: readonly (readonly string[])[], seed: string,
+  tail: readonly T[] = []): T[] {
+  const said = answers.map(a => a.map(s => s.toLowerCase()));
+  const runs = new Set(said.flatMap(a => a.slice(0, -2).map((_, i) => a.slice(i, i + 3).join('\u0001'))));
+  const whole = new Set(said.map(a => a.join('\u0001')));
+  const score = (order: T[]) => {
+    const words = [...order, ...tail].map(t => textOf(t).toLowerCase());
+    if (whole.has(words.join('\u0001'))) return Infinity;
+    return words.slice(0, -2).filter((_, i) => runs.has(words.slice(i, i + 3).join('\u0001'))).length;
+  };
+  let best: T[] = [...list], bestScore = score(best);
+  for (let salt = 0; salt < 64 && bestScore > 0; salt++) {
+    let h = salt;
+    for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const order = list.map((t, i) => ({ t, k: ((h ^ (i * 2654435761)) >>> 0) % 997 })).sort((a, b) => a.k - b.k).map(x => x.t);
+    const s = score(order);
+    if (s < bestScore) { best = order; bestScore = s; }
+  }
+  // Still an answer (a list too short to mix): turn it until it is not one.
+  for (let n = 0; n < best.length && bestScore === Infinity; n++) { best = [...best.slice(1), best[0]]; bestScore = score(best); }
+  return [...best, ...tail];
 }
 
-export const ordersFrom =(items: readonly OrderItem[]) => items.map(askableOrder).filter((i): i is OrderItem => !!i);
+/** The bank order: never a listed answer order, and no three tiles together as an answer has them. */
+export const bankOrder = (item: OrderItem): OrderTile[] =>
+  mixedOrder(item.tiles, t => t.text, item.validArrangements.map(a => textOf(item, a)), item.id);
+
+export const ordersFrom = (items: readonly OrderItem[]) => items.map(askableOrder).filter((i): i is OrderItem => !!i);
 
 export const ORDER_ASK = 'Put all the tiles in order to make one sentence.';
-export const orderAssignment = (item: OrderItem): TeachingAssignment => ({ id: item.id, task: ORDER_ASK, response: 'gesture' });
 
 export const orderJudgeRequest = (item: OrderItem, ids: readonly string[], grade?: string): WordBuildJudgeRequest => ({
   ask: `Make one sentence that makes sense from these tiles: ${item.tiles.map(t => t.text).join(' | ')}`,
   made: orderText(item, ids), unit: 'sentence', ...(grade ? { grade } : {}),
 });
 
-export function orderScene(item: OrderItem, ids: readonly string[], inspectorSaid?: string): WorkspaceScene {
+/**
+ * What the tutor is told: the tiles in bank order (never an answer order, `bankOrder`) and the learner's row as text.
+ * The moves are the card's; this says what the builder checks and how to teach it.
+ */
+export function orderScene(item: OrderItem, ids: readonly string[], inspectorSaid?: string): SceneOf {
   return { objects: [], facts: {
     ask: ORDER_ASK,
-    tiles: item.tiles.map(t => t.text).join(' | '),
+    tiles: bankOrder(item).map(t => t.text).join(' | '),
     sentence: ids.length ? orderText(item, ids) : 'empty',
     tilesPlaced: ids.length,
     tilesTotal: item.tiles.length,
     ...(inspectorSaid ? { inspectorSaid } : {}),
-    constraints: 'The learner taps tiles into a row (tap one in the row to take it back) and presses "I\'m done!". Every '
-      + 'tile is used once. The builder checks the order; more than one order can be right. You cannot move a tile.',
+    constraints: 'Each tile is used once, and the sentence is never printed before. More than one order can be right. '
+      + 'Ask what the sentence is about, or which tile tells who.',
   } };
 }
 
-// ── Levers ───────────────────────────────────────────────────────────────────
+// ── Levers (declared in `sentenceBuilderLevers.ts`) ─────────────────────────────
 export const ROLES_LEVER = 'tile_roles';
 export const MODEL_LEVER = 'model_sentence';
 export const SHORTER_LEVER = 'shorter_sentence';
@@ -89,40 +131,30 @@ export const SHORTER_LEVER = 'shorter_sentence';
 export const ROLE_LABEL: Record<TileRole, string> = {
   subject: 'who or what', predicate: 'does what', object: 'to what', modifier: 'more about it', conjunction: 'joining word', punctuation: 'end mark',
 };
-const MODELS: Record<string, string> = {
+const MODELS: Record<OrderMode, string> = {
   simple: 'The bird sings a song.', compound: 'The sun came out, and the snow melted.',
-  complex: 'When the bell rang, the children went outside.', 'compound-complex': 'When it rained, we stayed in, and we read books.',
+  complex: 'When the bell rang, the children went outside.', compound_complex: 'When it rained, we stayed in, and we read books.',
 };
-export const modelFor = (sentenceType: string) => MODELS[sentenceType] ?? MODELS.simple;
+/** A finished sentence of the item's kind with other words; null when the item's own sentence is the model. */
+export function orderModelFor(item: OrderItem): string | null {
+  const model = MODELS[item.mode ?? 'simple'];
+  const own = item.validArrangements.map(a => orderText(item, a).toLowerCase());
+  return own.includes(model.toLowerCase()) ? null : model;
+}
 
+const SHORTER = '~shorter';
 /** The easier practice item: the first clause only (up to the joining word) with the end mark; null on a one-clause item. */
 export function shorterFor(item: OrderItem): OrderItem | null {
+  if (item.id.endsWith(SHORTER)) return null;
   const order = item.validArrangements[0];
   const cut = order.findIndex(id => item.tiles.find(t => t.id === id)?.role === 'conjunction');
   if (cut < 2) return null;
   const end = item.tiles.find(isEndTile);
   const keep = [...order.slice(0, cut), ...(end ? [end.id] : [])];
-  return { id: `${item.id}~shorter`, tiles: item.tiles.filter(t => keep.includes(t.id)), validArrangements: [keep] };
+  return { id: `${item.id}${SHORTER}`, tiles: item.tiles.filter(t => keep.includes(t.id)), validArrangements: [keep],
+    ...(item.mode ? { mode: item.mode } : {}), ...(item.supportTier ? { supportTier: item.supportTier } : {}) };
 }
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly OrderMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function orderLevers(item: OrderItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  return [
-    lever(ROLES_LEVER, 'help', ['not_sense', 'end_mark_not_last'],
-      'The learner\'s order does not make sense, or the end mark is not last.',
-      'Labels every tile with its job (who or what, does what, joining word, end mark). No tile is placed.', pulled),
-    lever(MODEL_LEVER, 'help', ['not_sense', 'tiles_left'],
-      'The learner still cannot make a sentence of this kind, or leaves tiles out.',
-      'Shows one finished sentence of the same kind with other words.', pulled),
-    ...(shorterFor(item) ? [lever(SHORTER_LEVER, 'simplify', ['not_sense', 'tiles_left'],
-      'The learner cannot order this many tiles.',
-      'Opens a practice item with the first part of the sentence only (up to the joining word) and the end mark, ungraded. The full item comes back after it.',
-      pulled)] : []),
-  ];
-}
+export const shorterParent = (id: string) => id.replace(/~shorter$/, '');
 
 export function orderMissWords(miss: OrderMiss | undefined): string {
   switch (miss) {

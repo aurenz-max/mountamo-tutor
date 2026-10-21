@@ -1,7 +1,7 @@
 # Contract: ten-frame
 
 - **Derived:** 2026-07-16 · evidence window: eval reports 2026-03-16 and 2026-05-28, difficulty sweeps 2026-06-11, topic traces through 2026-07-14, reader-fit direct-manipulation census 2026-07-16, catalog/generator/component/oracle source
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx` · **Generator:** `src/components/lumina/service/math/gemini-ten-frame.ts` · **Catalog:** `src/components/lumina/service/manifest/catalog/math.ts` (`id: 'ten-frame'`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/TenFrame.tsx` · **Boss:** `tenFrame.card.ts` + `tenFrame.boss.ts` (spoken preset; levers `tenFrameLevers.ts`) · **Generator:** `src/components/lumina/service/math/gemini-ten-frame.ts` · **Catalog:** `src/components/lumina/service/manifest/catalog/math.ts` (`id: 'ten-frame'`)
 - **Status:** ACTIVE (static derivation; runtime census was not repeated because the 2026-07-16 handoff declares the sibling census complete)
 
 ## Consumers (blast radius)
@@ -153,6 +153,7 @@ Item 12 is **COMPATIBLE / fork-by-band+mode**. It changes only R6's K `make_ten`
 
 ## Changelog
 
+- 2026-10-20 — moved onto a boss (wave 3). The workspace is the ONLY path: `tenFrame.card.ts` + `tenFrame.boss.ts` (spoken preset) describe the wiring. subitize, operate and Grades 1-2 make_ten are judged against `tenFrameKey` (the scripted pack's accept and signature clauses; a quick look accepts a count that ends on the answer, as the workspace always did); build, decompose, build_teen, build_pair, decompose_teen and K make_ten have no key and the frame checks them (R3, R6, R9, R10, R13 unchanged). A mount with no tutor shows the shared "needs the tutor" card; the scripted controller, `useTenFrameRuntime.ts`, the hand Pip pose, the catalog `tutoring` block, the `DI_PORTS` row and `adapters/tenFrameLive.ts` are deleted, and the scripted-path suites (`TenFrame.capture`, `.live-start`, `.runtime`, `__tests__/TenFrame.reader-fit`, `pip/TenFrame.surface`) with them; `tenFrameScript.ts` keeps its cue builders for `__tests__/TenFrame.di-script.test.ts` and the probes, and re-exports the new `tenFrameDomain.ts`. R12: one lever set (`TEN_FRAME_LEVERS`), same ids, answers, leak rules, offers and carriers; `split_model`, `fill_model` and `operation_model` are `model` levers, so the set's `support` fact now says when they come by the item's tier (`supportTier`, stamped per challenge by the generator; older payloads read medium); build and build_teen levers now publish an `onScreen` fact like every other mode. Changed on purpose: a spoken item's `expectedAnswer` is the key sentence, not the bare digit. No other requirement changed.
 - 2026-10-13 — `/add-item-space`, all eight modes measured (`qa/difficulty-demo/2026-10-13/tf/`). Before: operate
   gave 8 + 3, 7 + 6, 9 + 6, 12 − 6, 14 − 8 at every tier and nearly every run; decompose (split) easy = medium
   (3,3,4,4,5,5); build_pair totals ignored the tier. Now:

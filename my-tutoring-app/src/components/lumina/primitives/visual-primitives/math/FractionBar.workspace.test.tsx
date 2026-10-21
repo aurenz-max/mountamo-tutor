@@ -4,8 +4,7 @@
  * LiveLessonRuntime and rendering shell; only the Live context, evaluation writes and sound are substituted.
  * The three-step item (numerator, denominator, shade): each step's Check is the bar's own, a wrong check commits
  * a named miss and Try again keeps the step reached, a right numerator or denominator moves on without a commit,
- * and the right shading completes the item. Outside a runtime the scripted path is unchanged
- * (`FractionBar.capture.test.tsx`).
+ * and the right shading completes the item. The evidence submitted at the end is `FractionBar.capture.test.tsx`.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -77,7 +76,7 @@ it.each(['identify', 'build', 'larger_denominators', 'add_subtract'] as const)('
   expect(task.task).toMatch(/numerator and the denominator of 3\/4/);
   expect(task.demand).toMatchObject({ response: 'gesture', kind: mode, step: 'numerator', printedFraction: '3/4' });
   expect(task.workspace!.expectedAnswer).toBeUndefined();
-  // The pick step's levers (`fractionBarLevers.ts`); no Next or hint buttons on the workspace path.
+  // The pick step's levers (`FRACTION_BAR_LEVERS`); no Next or hint buttons.
   expect(task.workspace!.levers!.map(l => l.id)).toContain('model_fraction');
   expect(screen.queryByRole('button', { name: /show hint|next problem/i })).toBeNull();
   // Nothing goes to the tutor from the legacy path.

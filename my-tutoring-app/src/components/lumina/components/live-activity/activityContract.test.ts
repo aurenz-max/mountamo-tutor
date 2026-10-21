@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, validateShapeSorterData,
+import { parseActivityRequest, validateNumberLineData, validateTenFrameData, validateShapeSorterData,
   generatedActivityState, LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, type LiveActivityAdapter } from './activityContract';
 import { getComponentById, UNIVERSAL_CATALOG } from '../../service/manifest/catalog';
 
-const PROSE_GUIDANCE_FAMILIES = 77;
+const PROSE_GUIDANCE_FAMILIES = 6;
 import { OFFER_GUIDANCE_MAX } from './adapters/adapterContract';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },
@@ -68,17 +68,17 @@ describe('live activity boundary', () => {
     }
   });
   it('rejects malformed output and contradictory jump answer keys', () => {
-    expect(validateActivityData(fixture()).challenges).toHaveLength(1);
+    expect(validateNumberLineData(fixture()).challenges).toHaveLength(1);
     const bad = fixture(); bad.challenges[0].targetValues = [9];
-    expect(() => validateActivityData(bad)).toThrow('answer');
+    expect(() => validateNumberLineData(bad)).toThrow('answer');
     const outside = fixture(); outside.challenges[0].operations[0].changeValue = 20;
-    expect(() => validateActivityData(outside)).toThrow('leaves');
-    expect(() => validateActivityData({ ...fixture(), range: { min: NaN, max: 1 } })).toThrow();
+    expect(() => validateNumberLineData(outside)).toThrow('leaves');
+    expect(() => validateNumberLineData({ ...fixture(), range: { min: NaN, max: 1 } })).toThrow();
   });
-  it('grounds the tutor in the actual first challenge', () => {
-    const state = initialActivityState(fixture());
+  it('grounds the tutor in the actual first challenge, without its answer', () => {
+    const state = LIVE_ADAPTERS['number-line'].initialState(fixture());
     expect(state.instruction).toBe('Start at 7 and subtract 3.');
-    expect(state.targetValues).toEqual([4]);
-    expect(state.placedPoints).toEqual([]);
+    expect(state.totalChallenges).toBe(1);
+    expect(JSON.stringify(state)).not.toMatch(/targetValues|\b4\b/);
   });
 });

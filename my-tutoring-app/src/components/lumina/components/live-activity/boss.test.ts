@@ -61,7 +61,7 @@ describe('every boss on disk', () => {
   });
 
   it('carries no scripted cue builders: the boss is the only description of the activity', async () => {
-    const CUES = /^export (?:const|function) (itemCue|moveOnCue|completeCue|pronounceCue|judgingContract|correctionLines?|verifyLine|\w+PackBase)\b/m;
+    const CUES = /^export (?:const|function) (itemCue|moveOnCue|completeCue|pronounceCue|judgingContract|correctionLines?|verifyLine|\w+PackBase|\w+Cue)\b/m;
     for (const { file, values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
       const dir = join(PRIMITIVES, file, '..');
       const component = join(LUMINA, boss.drive.component);
@@ -438,11 +438,11 @@ describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 10, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-built spoken assignments', /response: 'speech'/, 3, 'spokenBoss builds the assignment from speech.ask/key/misses'],
     ['hand-written spoken key text', /also accept/i, 4, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 81, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
-    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 115, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
-    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 54, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 8, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 41, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
+    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 3, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
     ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
     expect(count(pattern), `more files than the ratchet allows; use ${instead}`).toBeLessThanOrEqual(ceiling);
@@ -455,6 +455,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(77);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(6);
   });
 });

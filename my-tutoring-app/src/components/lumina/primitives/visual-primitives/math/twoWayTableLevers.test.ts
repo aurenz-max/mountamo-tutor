@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { TwoWayTableChallenge, TwoWayTableChallengeType } from './TwoWayTable';
 import {
-  MODEL_LEVER, OUTLINE_LEVER, OUT_OF_LEVER, SIMPLER_LEVER, SUM_LEVER, leverFacts, leverTextLeaks, outOfFrame, outOfLeaks,
-  practiceLeaks, simplerTable, sumFrames, tableModel, twoWayLevers,
+  MODEL_LEVER, OUTLINE_LEVER, OUT_OF_LEVER, SIMPLER_LEVER, SUM_LEVER, leverTextLeaks, outOfFrame, outOfLeaks,
+  practiceLeaks, simplerTable, sumFrames, tableModel, TWO_WAY_LEVERS,
 } from './twoWayTableLevers';
 import {
   TWO_WAY_MISSES_BY_MODE, formatProbability, locateTarget, matchesKey, probabilityOf, signatureValues, twoWayCorrect, twoWayMiss,
@@ -70,9 +70,9 @@ describe('simplify builder', () => {
 describe('leak rules', () => {
   it.each(MODES)('%s: no lever text carries a digit, no frame writes a sum, the model never answers the item', (type) => {
     for (const c of items(type)) {
-      const levers = twoWayLevers(c, []);
+      const levers = TWO_WAY_LEVERS.declare(c, null, []);
       for (const l of levers) expect(leverTextLeaks(l.when + l.does), `${c.id} ${l.id}`).toBe(false);
-      expect(leverTextLeaks(leverFacts(c, levers.map(l => l.id)))).toBe(false);
+      expect(leverTextLeaks(TWO_WAY_LEVERS.onScreen(c, null, levers.map(l => l.id)))).toBe(false);
       const frame = outOfFrame(c)!;
       expect(outOfLeaks(c, frame), frame).toBe(false);
       for (const fr of sumFrames(c)) expect(fr.addends.length).toBeGreaterThan(1);
@@ -87,9 +87,9 @@ describe('leak rules', () => {
 
   it('the sum frame is offered only where a total the question needs is hidden', () => {
     const [shown] = items('joint_probability');
-    expect(twoWayLevers(shown, []).map(l => l.id)).toEqual([OUTLINE_LEVER, OUT_OF_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
+    expect(TWO_WAY_LEVERS.declare(shown, null, []).map(l => l.id)).toEqual([OUTLINE_LEVER, OUT_OF_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
     const hard = items('marginal_distribution').find(c => c.supportTier === 'hard')!;
-    expect(twoWayLevers(hard, []).map(l => l.id)).toEqual([OUTLINE_LEVER, SUM_LEVER, OUT_OF_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
+    expect(TWO_WAY_LEVERS.declare(hard, null, []).map(l => l.id)).toEqual([OUTLINE_LEVER, SUM_LEVER, OUT_OF_LEVER, MODEL_LEVER, SIMPLER_LEVER]);
     expect(sumFrames(hard).map(f => f.label)).toEqual(['Male row', 'Everyone']);
   });
 });
@@ -105,7 +105,7 @@ describe('this wrong answer, then this lever', () => {
     ['independence_test', 'added_factors', OUT_OF_LEVER],
     ['independence_test', 'observed_joint', OUTLINE_LEVER],
   ] as const)('%s %s -> %s', (type, miss, lever) => {
-    expect(nextLever(twoWayLevers(pet(type), []), miss)).toBe(lever);
+    expect(nextLever(TWO_WAY_LEVERS.declare(pet(type), null, []), miss)).toBe(lever);
   });
 
   it('a signature value is named as its miss', () => {

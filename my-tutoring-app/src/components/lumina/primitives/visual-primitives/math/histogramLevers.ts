@@ -2,32 +2,35 @@
  * histogram's in-item levers (/add-support-tiers; report qa/eval-reports/histogram-levers-2026-10-09.md).
  * The misses are what `histogramMiss` observes in the chip, the bar or the number; there is no real-learner evidence.
  *
- * - `outline_tops` (help, identify shape): a line joining the tops of the item's bars, so the peaks and the tail read
+ * Declared once as a lever set (`HISTOGRAM_LEVERS`, `bossLevers.ts`):
+ * - `outline_tops` (marks, identify shape): a line joining the tops of the item's bars, so the peaks and the tail read
  *   as one outline. It names no shape.
- * - `tail_model` (help, identify shape): a small model histogram OUTSIDE the item, a skewed shape that is never the
+ * - `tail_model` (model, identify shape): a small model histogram OUTSIDE the item, a skewed shape that is never the
  *   item's, its tail marked and captioned with its own name and the side its tail runs to.
- * - `peak_model` (help, identify shape): a model outside the item of one peak, two peaks or flat (never the item's
+ * - `peak_model` (model, identify shape): a model outside the item of one peak, two peaks or flat (never the item's
  *   shape), captioned with its name and what to look for.
- * - `level_line` (help, find modal bin): a level line across the chart at the top of the bar the learner tapped, so a
- *   taller bar visibly pokes above it. It follows the learner's tap, never the tallest bar.
- * - `isolate_bar` (help, read frequency): every bar but the outlined one faded.
- * - `axis_names` (help, read frequency / estimate center): the two axes captioned with what they count: values along
+ * - `level_line` (marks, find modal bin): a level line across the chart at the top of the bar the learner tapped, so a
+ *   taller bar visibly pokes above it. It follows the learner's tap (pulled before one, it appears at the next), never
+ *   the tallest bar.
+ * - `isolate_bar` (marks, read frequency): every bar but the outlined one faded.
+ * - `axis_names` (marks, read frequency / estimate center): the two axes captioned with what they count: values along
  *   the bottom (the bar edges), how many values up the side.
- * - `count_marks` (help, read frequency): a faint line across the outlined bar at every whole count, unnumbered, so the
+ * - `count_marks` (marks, read frequency): a faint line across the outlined bar at every whole count, unnumbered, so the
  *   height can be counted.
- * - `count_labels` (help, estimate center, only where the session withdrew them): each bar's count above it.
- * - `balance_model` (help, estimate center): a model histogram outside the item, no number on it, a long tail and a
+ * - `count_labels` (marks, estimate center, only where the session withdrew them): each bar's count above it.
+ * - `balance_model` (model, estimate center): a model histogram outside the item, no number on it, a long tail and a
  *   balance point drawn under it, captioned that the tail pulls the balance point toward it.
- * - `simpler_graph` (simplify, every mode): the same mode on a clean, smaller graph built here; ungraded practice.
+ *   When a model lever comes is the set's `support`, from the item's tier.
+ * - `simpler_graph` (easier, every mode): the same mode on a clean, smaller graph built here; ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` text or scene fact carries a digit or a shape name; a model's shape is
  * never the item's; the level line sits only at a tapped bar's height; the count marks and models carry no numbers; a
  * practice graph has its own id and ask, and its answer is not the item's (another shape, another modal position,
  * another count, a center outside the item's tolerance).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { HistogramChallenge, HistogramChallengeType, HistogramShapeKind } from './Histogram';
-import { SHAPE_LABEL, binRange, computeBins, histogramCorrect, type HistogramMiss } from './histogramWorkspace';
+import { HISTOGRAM_MISSES_BY_MODE, SHAPE_LABEL, binRange, computeBins, histogramCorrect } from './histogramWorkspace';
 
 export const OUTLINE_LEVER = 'outline_tops';
 export const TAIL_MODEL_LEVER = 'tail_model';
@@ -39,6 +42,9 @@ export const COUNT_MARKS_LEVER = 'count_marks';
 export const COUNT_LABELS_LEVER = 'count_labels';
 export const BALANCE_MODEL_LEVER = 'balance_model';
 export const SIMPLER_LEVER = 'simpler_graph';
+
+const AXIS_NAMES_DOES = 'Captions the two axes with what they count: values along the bottom (the bar edges), how many values up the side.';
+const AXIS_NAMES_FACT = 'The axes are captioned: values along the bottom, how many values up the side.';
 
 const SIMPLER = '~simpler';
 export const isPracticeGraph = (c: Pick<HistogramChallenge, 'id'>) => c.id.endsWith(SIMPLER);
@@ -157,96 +163,82 @@ export function practiceLeaks(parent: HistogramChallenge, practice: HistogramCha
   }
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 export interface HistogramLeverContext {
   /** The session already prints each bar's count (a starting position). */
   countLabelsShown: boolean;
+  /** A bar is tapped now (find modal bin): the level line has a height to sit at. */
+  barTapped?: boolean;
 }
 
-const ALL: Record<HistogramChallengeType, readonly HistogramMiss[]> = {
-  identify_shape: ['skew_reversed', 'missed_skew', 'called_skewed', 'peak_count', 'flat_vs_peaked'],
-  find_modal_bin: ['neighbor_bar', 'runner_up', 'shorter_bar'],
-  read_frequency: ['bin_edge', 'neighbor_bar', 'total_count', 'off_by_one', 'too_high', 'too_low'],
-  estimate_center: ['off_axis', 'tallest_bar', 'axis_middle', 'too_high', 'too_low'],
-};
+const MODEL_FACT = (m: ShapeModel) => `Beside the graph is a model graph outside the item: ${m.caption}`;
 
-export function histogramLevers(c: HistogramChallenge | null, pulled: readonly string[], ctx: HistogramLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeGraph(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly HistogramMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const t = c.challengeType, out: WorkspaceLever[] = [];
-  if (t === 'identify_shape') {
-    out.push(lever(OUTLINE_LEVER, 'help', 'shown', ALL.identify_shape,
-      'The learner does not see the overall form of the bars.',
-      'Draws a line joining the tops of the bars, so the peaks, dips and any long tail read as one outline. It names nothing.'));
-    out.push(lever(TAIL_MODEL_LEVER, 'help', 'both', ['skew_reversed', 'missed_skew', 'called_skewed'],
-      'The learner names a skew by the peak\'s side, or misses or invents a long tail.',
-      'Shows a small model graph beside the item, a skewed shape that is not this item\'s, its tail marked and captioned '
-        + 'with its own name and the side its tail runs to. Compare it with the item aloud.'));
-    out.push(lever(PEAK_MODEL_LEVER, 'help', 'both', ['peak_count', 'flat_vs_peaked'],
-      'The learner confuses one peak, two peaks and flat.',
-      'Shows a small model graph beside the item with a shape that is not this item\'s (one peak, or two), captioned with its '
-        + 'name and what to look for. Compare it with the item aloud.'));
-  }
-  if (t === 'find_modal_bin') {
-    out.push(lever(LEVEL_LINE_LEVER, 'help', 'shown', ALL.find_modal_bin,
-      'The learner picks a bar that is not the tallest, often a neighbor or a near twin.',
-      'Draws a level line across the whole chart at the top of the bar the learner tapped, so any taller bar pokes above '
-        + 'it. It follows the learner\'s tap and never marks the tallest bar itself.'));
-  }
-  if (t === 'read_frequency') {
-    out.push(lever(ISOLATE_LEVER, 'help', 'shown', ['neighbor_bar', 'total_count'],
-      'The learner reads a neighboring bar or counts the whole graph.',
-      'Fades every bar except the outlined one.'));
-  }
-  if (t === 'read_frequency' || t === 'estimate_center') {
-    out.push(lever(AXIS_NAMES_LEVER, 'help', 'shown', t === 'read_frequency' ? ['bin_edge', 'total_count'] : ['off_axis'],
-      t === 'read_frequency' ? 'The learner types a number from along the bottom instead of the bar\'s height.'
-        : 'The learner types a count, not a value along the bottom.',
-      'Captions the two axes with what they count: values along the bottom (the bar edges), how many values up the side.'));
-  }
-  if (t === 'read_frequency') {
-    out.push(lever(COUNT_MARKS_LEVER, 'help', 'shown', ['off_by_one', 'too_high', 'too_low'],
-      'The learner misreads the height by a little or a lot.',
-      'Draws a faint line across the outlined bar at every whole count, with no numbers, so its height can be counted.'));
-  }
-  if (t === 'estimate_center') {
-    if (!ctx.countLabelsShown) {
-      out.push(lever(COUNT_LABELS_LEVER, 'help', 'shown', ['axis_middle', 'too_high', 'too_low'],
-        'The learner ignores how many values each bar holds.',
-        'Prints each bar\'s count above it. The center is still not written anywhere.'));
-    }
-    out.push(lever(BALANCE_MODEL_LEVER, 'help', 'both', ['tallest_bar', 'axis_middle', 'too_high', 'too_low', 'off_axis'],
-      'The learner picks the tallest bar or the middle of the axis as the center.',
-      'Shows a small model graph beside the item with no numbers: a long tail, and a balance point drawn under it, '
-        + 'pulled toward the tail and away from the tallest bar. Read its caption aloud.'));
-  }
-  if (simplerHistogram(c)) {
-    out.push(lever(SIMPLER_LEVER, 'simplify', 'shown', ALL[t],
-      'This graph is too hard to read yet.',
-      'Opens a cleaner, smaller practice graph of the same kind first. It is not graded; the full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no shape name of the item. */
-export function leverFacts(c: HistogramChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeGraph(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const tail = tailModel(c), peak = peakModel(c);
-  return [
-    on(OUTLINE_LEVER) && 'A line joins the tops of the bars.',
-    on(TAIL_MODEL_LEVER) && tail && `Beside the graph is a model graph outside the item: ${tail.caption}`,
-    on(PEAK_MODEL_LEVER) && peak && `Beside the graph is a model graph outside the item: ${peak.caption}`,
-    on(LEVEL_LINE_LEVER) && 'A level line runs across the chart at the top of the bar the learner tapped.',
-    on(ISOLATE_LEVER) && 'Every bar except the outlined one is faded.',
-    on(AXIS_NAMES_LEVER) && 'The axes are captioned: values along the bottom, how many values up the side.',
-    on(COUNT_MARKS_LEVER) && 'The outlined bar has a faint unnumbered line at every whole count.',
-    on(COUNT_LABELS_LEVER) && 'Each bar\'s count is printed above it.',
-    on(BALANCE_MODEL_LEVER) && `Beside the graph is a model graph outside the item with no numbers: ${BALANCE_MODEL.caption}`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice graph: the component declares nothing
+ * while one is on screen.
+ */
+export const HISTOGRAM_LEVERS = leverSet<HistogramChallenge, HistogramLeverContext>({
+  modeOf: c => c.challengeType,
+  missesOf: mode => HISTOGRAM_MISSES_BY_MODE[mode as HistogramChallengeType] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium',
+    different: c => (c.challengeType === 'estimate_center' ? 'a different graph with its balance point drawn'
+      : 'a different graph of another shape, named and described'),
+    own: c => (c.challengeType === 'estimate_center' ? 'this graph\'s center' : 'this graph\'s shape') },
+  specs: [
+    { id: OUTLINE_LEVER, type: 'marks', modes: ['identify_shape'], answers: 'all',
+      when: 'The learner does not see the overall form of the bars.',
+      does: 'Draws a line joining the tops of the bars, so the peaks, dips and any long tail read as one outline. It names nothing.',
+      fact: 'A line joins the tops of the bars.' },
+    { id: TAIL_MODEL_LEVER, type: 'model', modes: ['identify_shape'], answers: ['skew_reversed', 'missed_skew', 'called_skewed'],
+      when: 'The learner names a skew by the peak\'s side, or misses or invents a long tail.',
+      does: 'Shows a small model graph beside the item, a skewed shape that is not this item\'s, its tail marked and captioned '
+        + 'with its own name and the side its tail runs to. Compare it with the item aloud.',
+      content: c => tailModel(c), fact: MODEL_FACT },
+    { id: PEAK_MODEL_LEVER, type: 'model', modes: ['identify_shape'], answers: ['peak_count', 'flat_vs_peaked'],
+      when: 'The learner confuses one peak, two peaks and flat.',
+      does: 'Shows a small model graph beside the item with a shape that is not this item\'s (one peak, or two), captioned with its '
+        + 'name and what to look for. Compare it with the item aloud.',
+      content: c => peakModel(c), fact: MODEL_FACT },
+    { id: LEVEL_LINE_LEVER, type: 'marks', modes: ['find_modal_bin'], answers: 'all',
+      when: 'The learner picks a bar that is not the tallest, often a neighbor or a near twin.',
+      does: 'Draws a level line across the whole chart at the top of the bar the learner taps (now, or next), so any taller bar '
+        + 'pokes above it. It follows the learner\'s tap and never marks the tallest bar itself.',
+      fact: (_on, _c, ctx) => (ctx.barTapped
+        ? 'A level line runs across the chart at the top of the bar the learner tapped.'
+        : 'A level line will run across the chart at the top of whichever bar the learner taps.') },
+    { id: ISOLATE_LEVER, type: 'marks', modes: ['read_frequency'], answers: ['neighbor_bar', 'total_count'],
+      when: 'The learner reads a neighboring bar or counts the whole graph.',
+      does: 'Fades every bar except the outlined one.',
+      fact: 'Every bar except the outlined one is faded.' },
+    { id: AXIS_NAMES_LEVER, type: 'marks', modes: ['read_frequency'], answers: ['bin_edge', 'total_count'],
+      when: 'The learner types a number from along the bottom instead of the bar\'s height.',
+      does: AXIS_NAMES_DOES, fact: AXIS_NAMES_FACT },
+    { id: COUNT_MARKS_LEVER, type: 'marks', modes: ['read_frequency'], answers: ['off_by_one', 'too_high', 'too_low'],
+      when: 'The learner misreads the height by a little or a lot.',
+      does: 'Draws a faint line across the outlined bar at every whole count, with no numbers, so its height can be counted.',
+      fact: 'The outlined bar has a faint unnumbered line at every whole count.' },
+    { id: AXIS_NAMES_LEVER, type: 'marks', modes: ['estimate_center'], answers: ['off_axis'],
+      when: 'The learner types a count, not a value along the bottom.',
+      does: AXIS_NAMES_DOES, fact: AXIS_NAMES_FACT },
+    // Only where the session withdrew the labels: where they are drawn there is nothing to add.
+    { id: COUNT_LABELS_LEVER, type: 'marks', modes: ['estimate_center'], answers: ['axis_middle', 'too_high', 'too_low'],
+      offer: (_c, ctx) => !ctx.countLabelsShown,
+      when: 'The learner ignores how many values each bar holds.',
+      does: 'Prints each bar\'s count above it. The center is still not written anywhere.',
+      fact: 'Each bar\'s count is printed above it.' },
+    { id: BALANCE_MODEL_LEVER, type: 'model', modes: ['estimate_center'],
+      answers: ['tallest_bar', 'axis_middle', 'too_high', 'too_low', 'off_axis'],
+      when: 'The learner picks the tallest bar or the middle of the axis as the center.',
+      does: 'Shows a small model graph beside the item with no numbers: a long tail, and a balance point drawn under it, '
+        + 'pulled toward the tail and away from the tallest bar. Read its caption aloud.',
+      fact: `Beside the graph is a model graph outside the item with no numbers: ${BALANCE_MODEL.caption}` },
+    { id: SIMPLER_LEVER, type: 'easier', answers: 'all',
+      when: 'This graph is too hard to read yet.',
+      does: 'Opens a cleaner, smaller practice graph of the same kind first. It is not graded; the full item comes back after it.',
+      content: c => simplerHistogram(c) },
+  ],
+});
 
 /** Leak rule for the levers' words: no digit; and for an identify item, never its own shape's name. */
 export function leverTextLeaks(c: HistogramChallenge, text: string): boolean {

@@ -17,10 +17,11 @@ import { ComponentDefinition } from '../../../types';
 import { SYLLABLE_CLAPPER_EVAL_MODES } from '../../../primitives/visual-primitives/literacy/syllableClapperModes';
 import { letterSpotterCard } from '../../../primitives/visual-primitives/literacy/letterSpotter.card';
 import { interactiveBookCard } from '../../../primitives/visual-primitives/literacy/interactiveBook.card';
-import type { LetterWorkshopMiss } from '../../../primitives/visual-primitives/literacy/letterWorkshopWorkspace';
+import { letterWorkshopCard } from '../../../primitives/visual-primitives/literacy/letterWorkshop.card';
 import { storyBridgeCard } from '../../../primitives/visual-primitives/literacy/storyBridge.card';
 import { rhymeStudioCard } from '../../../primitives/visual-primitives/literacy/rhymeStudio.card';
 import { bossEntry } from '../../../components/live-activity/boss';
+import { figurativeLanguageFinderCard } from '../../../primitives/visual-primitives/literacy/figurativeLanguageFinder.card';
 import { phonemeExplorerCard } from '../../../primitives/visual-primitives/literacy/phonemeExplorer.card';
 import { wordSorterCard } from '../../../primitives/visual-primitives/literacy/wordSorter.card';
 import { decodableReaderCard } from '../../../primitives/visual-primitives/literacy/decodableReader.card';
@@ -29,13 +30,12 @@ import { phonicsBlenderCard } from '../../../primitives/visual-primitives/litera
 import { soundSwapCard } from '../../../primitives/visual-primitives/literacy/soundSwap.card';
 import { cvcSpellerCard } from '../../../primitives/visual-primitives/literacy/cvcSpeller.card';
 import { wordWorkoutCard } from '../../../primitives/visual-primitives/literacy/wordWorkout.card';
-import type { SyllableMiss } from '../../../primitives/visual-primitives/literacy/syllableClapperLevers';
+import { syllableClapperCard } from '../../../primitives/visual-primitives/literacy/syllableClapper.card';
 import { wordFlipCard } from '../../../primitives/visual-primitives/literacy/wordFlip.card';
 import { pictureVocabularyCard } from '../../../primitives/visual-primitives/literacy/pictureVocabulary.card';
 import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import type { AffixBuildMiss } from '../../../primitives/visual-primitives/literacy/affixBuild';
-import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
-import type { SpellingMiss } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
+import { spellingPatternExplorerCard } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorer.card';
 import { spatialPathCard } from '../../../primitives/visual-primitives/math/spatialPath.card';
 import { youAndMeCard } from '../../../primitives/visual-primitives/literacy/youAndMe.card';
 import { oralSentenceStudioCard } from '../../../primitives/visual-primitives/literacy/oralSentenceStudio.card';
@@ -43,11 +43,16 @@ import { storyRibbonCard } from '../../../primitives/visual-primitives/literacy/
 import { genreExplorerCard } from '../../../primitives/visual-primitives/literacy/genreExplorer.card';
 import { textStructureAnalyzerCard } from '../../../primitives/visual-primitives/literacy/textStructureAnalyzer.card';
 import { sentenceAnalyzerCard } from '../../../primitives/visual-primitives/literacy/sentenceAnalyzer.card';
-import type { StoryMapMiss } from '../../../primitives/visual-primitives/literacy/storyMapWorkspace';
-import type { PoetryMiss } from '../../../primitives/visual-primitives/literacy/poetryLabWorkspace';
-import type { ContextClueMiss } from '../../../primitives/visual-primitives/literacy/contextCluesWorkspace';
-import type { EvidenceFinderMiss } from '../../../primitives/visual-primitives/literacy/evidenceFinderWorkspace';
-import { missLists, sameMisses } from './missLists';
+import { storyMapCard } from '../../../primitives/visual-primitives/literacy/storyMap.card';
+import { poetryLabCard } from '../../../primitives/visual-primitives/literacy/poetryLab.card';
+import { contextCluesCard } from '../../../primitives/visual-primitives/literacy/contextClues.card';
+import { paragraphArchitectCard } from '../../../primitives/visual-primitives/literacy/paragraphArchitect.card';
+import { sentenceBuilderCard } from '../../../primitives/visual-primitives/literacy/sentenceBuilder.card';
+import { opinionBuilderCard } from '../../../primitives/visual-primitives/literacy/opinionBuilder.card';
+import { revisionWorkshopCard } from '../../../primitives/visual-primitives/literacy/revisionWorkshop.card';
+import { evidenceFinderCard } from '../../../primitives/visual-primitives/literacy/evidenceFinder.card';
+import { storyPlannerCard } from '../../../primitives/visual-primitives/literacy/storyPlanner.card';
+import { missLists } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
@@ -206,47 +211,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'copy', label: 'Copy beside a model', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['copy'], description: 'Reproduce a separate visible letter model on blank writing lines. Provisional practice feedback.' },
       { evalMode: 'write', label: 'Write from listening', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['write'], description: 'Produce a letter from its spoken name and case without a visible model. Provisional practice feedback.' },
     ],
-    tutoring: {
-      taskDescription: 'Letter formation practice in {{challengeType}} mode, item {{challengeNumber}} of {{totalChallenges}}. Assistance: {{assistance}}. Current activity: {{interactionState}}. Results are provisional geometric feedback, not handwriting mastery.',
-      contextKeys: ['challengeType', 'letter', 'letterCase', 'assistance', 'challengeNumber', 'totalChallenges', 'instruction', 'interactionState', 'cueState', 'modelVisible', 'feedback', 'feedbackFocus', 'attemptCount', 'hintLevel', 'assessmentScope', 'supportTier', 'showStarts', 'showArrows', 'showLineLabels', 'showChecklist'],
-      scaffoldingLevels: {
-        level1: 'Offer one brief nudge. In trace, point to a starting dot only when showStarts is true; otherwise invite comparison with the visible path. In copy, invite comparison with the separate model. In write without a model, say "You can hear the letter name again." Never name, describe, or infer the hidden letter.',
-        level2: 'Offer one concrete action tied to the current support. Trace: follow one visible stroke, then lift. Copy: notice how the visible model meets the writing lines. Write without a model: replay the audio, then make your own marks; do not describe target strokes.',
-        level3: 'When a model is visible, coach one visible part at a time, then let the child draw. Do not draw for the child. Without a visible model, limit help to replaying the cue and using the paper; do not supply a letter shape, letter name, or stroke recipe.',
-      },
-      commonStruggles: [
-        { pattern: 'Submitted trace starts away from its numbered dot or follows the wrong stroke order', response: 'After submission, point to a numbered start only when showStarts is true; otherwise invite comparison with the visible path. Invite a retry from that dot.' },
-        { pattern: 'Submitted trace travels against its direction arrow', response: 'After submission, point to an arrow only when showArrows is true; otherwise invite comparison with the visible path and invite one stroke in that direction.' },
-        { pattern: 'Submitted work leaves part of a visible model incomplete', response: 'Invite comparison of the child\'s marks with one missing part of the visible model. Never infer missing parts before a write model is revealed.' },
-        { pattern: 'Submitted work contains extra strokes', response: 'With a model visible, compare its separate strokes and the child\'s marks. Suggest lifting between strokes. Do not diagnose from pointer movement alone.' },
-        { pattern: 'The spoken letter cue has not played or failed', response: 'Point to Hear the letter name and invite retry. Do not replace the cue with a written target or guess the letter.' },
-        { pattern: 'Repeated clearing or retries', response: 'Offer one small action using only visible support. Let the child try again or move on without pressure.' },
-      ],
-      aiDirectives: [
-        { title: 'SUPPORT TIER', instruction: 'Current support tier: {{supportTier}}. Never restore hidden starts, arrow directions, stroke recipes, or line labels through speech, including requested hints. Use showStarts/showArrows/showLineLabels to know which aids actually exist. Hard trace still has a guide; hard copy still has a model; write never receives a target shape. Do not infer the target from difficulty or structural complexity.' },
-        { title: 'DRAWING AND AUDIO', instruction: 'Stay silent while interactionState is drawing or cueState is speaking. Context updates and pen lifts are not requests for speech. Never narrate live ink, count strokes aloud, or speak over the letter cue. Give at most one short sentence per requested moment, then wait.' },
-        { title: 'MODE AND TARGET BOUNDARY', instruction: 'Trace has an intentional visible guide; copy has a separate model, never an overlaid guide. In write, letter and letterCase are withheld even after feedback. Never infer the target from lesson history, a previous item, or objective metadata. Only a [SAY_LETTER] message supplies the name: say its quoted line exactly, once, then stay silent. Never repeat that name, its sound, or its shape in any other turn. With no model visible, all hints stay procedural. Never claim unaided performance after a model was shown.' },
-        { title: 'MOMENTS', instruction: 'For [ACTIVITY_START] and [NEXT_ITEM], use only the current supplied instruction and assistance; never reuse a previous target. For [READ_ALOUD], read the supplied instruction once without elaboration. For [SAY_LETTER], say only its quoted line. For [ANSWER_CORRECT] or [ANSWER_INCORRECT], use the supplied provisional feedback without inventing a diagnosis. For [ALL_COMPLETE], acknowledge practice without claiming mastery or prompting another task. Bracketed tags are private and must never be spoken.' },
-      ],
-    },
-    // The scripted fallback (withWorkspaceController) still sends the tutoring block above.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The learner writes the letter on the writing paper with a finger, pen or mouse and presses Check; the paper '
-        + 'checks the writing itself, and talk about a half-written letter is teaching, not a verdict. On trace the dotted '
-        + 'letter is on the paper; on copy a model is beside it. On write nothing on the screen shows or names the letter: '
-        + 'the learner knows it only from you. Say its case and NAME as the task gives it, at the start and whenever asked, '
-        + 'never its sound, a word that starts with it, or how its strokes go. After a write check a model appears beside '
-        + 'the paper. You cannot draw, trace or clear.',
-      // Levers: `letterWorkshopLevers.ts`; every miss in every mode has a help lever, so nothing is unanswered.
-      levers: true,
-      // The paper's own check (`letterWorkshopMiss`). Trace is geometry alone; copy and write also read the vision judge.
-      misses: missLists<LetterWorkshopMiss>({
-        trace: ['stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
-        copy: ['other_letter', 'reversed', 'wrong_case', 'stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
-        write: ['other_letter', 'reversed', 'wrong_case', 'stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
-      }),
-    },
+    ...bossEntry(letterWorkshopCard),
     supportsEvaluation: true,
     affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
   },
@@ -739,52 +704,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // -signature-2026-08-16.md); the word is never printed at all, before or
     // after the answer, so there is nothing to read at any point.
     affordances: { reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Nothing is printed: you say each word and the learner answers out loud. On blend syllables you say the '
-        + 'parts one at a time and the learner says the whole word; on count parts you say the word joined and the '
-        + 'learner says how many parts (counting aloud is fine when the count lands on the number); on delete compound '
-        + 'you say a two-part word, name the part to take away, and the learner says the word left. Say the stimulus '
-        + 'exactly as the voicing fact tells you: splitting a count or delete word into parts before the learner has '
-        + 'tried hands over the answer. The learner claps with their own hands; there is nothing to tap. The '
-        + 'hear-again button asks you to repeat the question only. You cannot show the word or its parts. On build parts '
-        + '(the open build) the learner taps word-part cards, one clap each, into a word with the number of parts the task '
-        + 'names and presses "I am done"; many words pass, and a speaker on each card, the task and their word asks you to '
-        + 'say just that. Never say a word that would fit, which cards to use, or how many parts their word has.',
-      levers: true,
-      // Spoken misses (`syllableClapperLevers.ts`), emitted by `syllableSpokenMisses` on blend and count (delete names none yet).
-      // `unanswered` stays the levers' own list (`syllableClapperLevers.test.ts` pins it).
-      misses: { ...missLists<SyllableMiss>({ blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
-        delete_compound: ['whole_word', 'removed_part'] }),
-        // build_parts (`syllableBuild.ts`): the part count in code, then the word judge.
-        build_parts: ['too_few_parts', 'too_many_parts', 'counted_letters', 'same_word', 'pick_another', 'not_a_word'] },
-      unanswered: { blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
-        delete_compound: ['whole_word', 'removed_part'],
-        // build_parts: the word already made stays on screen; a word not for lessons has no smaller form.
-        build_parts: ['same_word', 'pick_another'] },
-    },
-    // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
-    // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
-    // button failed the costume test outright (a child who cannot hear a single
-    // boundary can press it three times) and the circles did the COUNTING, which
-    // is the one act the primitive exists to train. The clapping is not deleted
-    // — it moved off the screen and into the room, where the child's own hands
-    // are, exactly as at a teacher's table.
-    // ⭐ THE ENUNCIATION IS THE INSTRUMENT AND IT IS A LADDER: chanted in parts
-    // hands the count over (legal ONLY in the correction, and on a model word
-    // the session never asks about); stretched-but-joined supports; whole at
-    // natural pace is the real task. The click era had this backwards — its own
-    // reveal policy said "never state the NUMBER of parts before the student
-    // claps" while telling the easy tier to say the word "broken into its parts
-    // with clear pauses" as the scaffold. Three beats IS three.
-    // Cue lines and per-item judging contracts live in `syllableClapperScript.ts`
-    // (hand-authored, DISTAR); items a tutor could not honestly ask (parts that
-    // do not spell their word, a count outside 1..5, a dialect-variable word)
-    // are DROPPED at build, never degraded.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    ...bossEntry(syllableClapperCard),
     // ⭐ THE MODES ARE THE THREE ACTS, NOT THREE WORD LENGTHS (2026-09-11).
     // The 2026-08-16 port registered `easy` / `medium` / `hard` — word-length
     // bands — as eval modes, which made ONE act look like three skills and left
@@ -808,140 +728,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'a second word. Many words pass. Every card, the task and the made word can be heard. Code counts the parts; '
         + 'the shared word judge checks it is a real word. The count varies across the session. Beta = count_parts + 0.1.',
     }],
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction syllable work for a young child. Right now the act is '
-        + '"{{challengeType}}" and the thing you are voicing is "{{stimulus}}". There are three acts and '
-        + 'they ask for different answers: on "blend_syllables" you say the parts one at a time and the '
-        + 'child says the WHOLE WORD; on "count_parts" you say the word as one joined stream and the child '
-        + 'claps its parts and answers with a NUMBER; on "delete_compound" you say a two-part word and name '
-        + 'a part to take away, and the child says the WORD THAT IS LEFT. You judge the audio you heard. '
-        + 'You speak the exact scripted lines from each bracketed application message and nothing else. '
-        + 'Hearing the parts inside a spoken word — not reading them — is the entire skill being practiced, '
-        + 'so the word is never shown on screen and nothing prints an answer.',
-      // Exactly what the pack pushes through updateContext (and what the
-      // connect-time primitive_data also carries). The stimulus is ANSWER-FREE
-      // by construction, and ⭐ WHICH STRING IT IS DEPENDS ON THE ACT: on
-      // counting and deleting the WORD is the question (the answer is a count or
-      // a residue), while on blending the CHANT is the question and the word is
-      // the answer — so `stimulusFor` pushes the chant there and the word never
-      // crosses this channel. The old seven keys went with the improvised turns
-      // they served — there is no `studentClaps` any more because there is no
-      // clap button, and no `supportTier` directive because tier latitude now
-      // lives IN the scripted ask (the second saying, the clap invitation).
-      contextKeys: ['challengeType', 'stimulus'],
-      // 18d — ALL THREE RUNGS ROUTE THROUGH THE SCRIPTED CORRECTION. A re-spoken
-      // ask or a quoted hint opens with neither "Yes" nor "My turn:", so the
-      // reducer records no verdict, the correction counter freezes, and the child
-      // waits on a tutor that has already spoken. Authored correct at birth.
-      scaffoldingLevels: {
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already says the word, says its parts one at a time, names the count and asks again — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a re-spoken question, a slower saying of the word, a chin-drop tip or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next word to you.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses (script moves a
-      // tutor can speak or do — never meta-instructions, which get recited).
-      commonStruggles: [
-        {
-          pattern: 'Says a number that is one MORE than the parts - an extra beat on the last part',
-          response: 'Treat it as not yet answered: give the scripted correction for this word, which says the parts one at a time and names the count, then asks again.',
-        },
-        {
-          pattern: 'Counts out loud and keeps going past the total - "one, two, three, four" for a three-part word',
-          response: 'Judge the number they LAND on, not the numbers along the way. If they landed past the total, give the scripted correction for this word.',
-        },
-        {
-          pattern: 'Says the word back, or says its parts, without ever saying a number',
-          response: 'Treat it as not yet answered: give the scripted correction, which ends by asking how many parts.',
-        },
-        {
-          pattern: 'Counts the little sounds instead of the big parts - says "nine" for butterfly',
-          response: 'Treat it as not yet answered: the scripted correction says the parts as whole beats, names the count, then asks again.',
-        },
-        {
-          pattern: 'Blending: says the parts back one at a time instead of joining them into a word',
-          response: 'Treat it as not yet answered: give the scripted correction for this item, which says the parts once more, then says the whole word, then asks again.',
-        },
-        {
-          pattern: 'Deleting: says the whole word back, or says the part that was taken away',
-          response: 'Treat it as not yet answered: give the scripted correction, which states the word without that part and then asks again.',
-        },
-        {
-          pattern: 'Goes quiet after being asked',
-          response: 'Say the question once more, then wait for them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [SC_ITEM], [SC_MOVE], [SC_COMPLETE] or [SC_HEAR] contain the only lesson words '
-            + 'you may speak. The square-bracket label is private metadata: never speak, reproduce, or invent '
-            + 'it. Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin '
-            + 'with "My turn", using the exact quoted lines. Never begin any other sentence with those words. '
-            + 'Judge honestly from the audio: affirm a right answer, correct a wrong or missing one, and do '
-            + 'not praise to be kind. The application decides which word comes next; never introduce one '
-            + 'yourself.',
-        },
-        {
-          title: 'HOW YOU SAY THE WORD IS THE LESSON, AND IT FLIPS BETWEEN THE ACTS',
-          instruction:
-            'On "count_parts" and "delete_compound" the word is ONE JOINED STREAM every time you say it '
-            + 'in the ask — even, unhurried, and never broken into parts, because the parts are exactly '
-            + 'what the child is working out. Saying it in beats there gives the answer away just as '
-            + 'surely as saying the number would. On "blend_syllables" it is the reverse: the parts one '
-            + 'at a time with a clear pause between them IS the question, and the joined word is the '
-            + 'answer, so you never say the whole word in that ask. Follow the spaced dots in the quoted '
-            + 'line and you will always be right — where the line writes "but … ter … fly" say separate '
-            + 'beats, and where it writes the word say one stream. When a cue tells you to voice the '
-            + 'stimulus a second time, that repeat takes the same form as the first, just unhurried.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [SC_ITEM] of a session has the greeting, the rule, a worked example on a practice '
-            + 'word, and the question INSIDE its quoted line. Speak that quote exactly and add nothing of '
-            + 'your own: no separate greeting, no how-to-play of your own wording, no rephrased question. '
-            + 'The practice word in that example is deliberately not one of the words the child will be '
-            + 'asked about, so say it as written and do not substitute a word of your own. This OVERRIDES '
-            + 'any "keep it to one sentence" cap from a lesson switch.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER (and the answer law)',
-          instruction:
-            'The answer always comes from the child\'s own mouth, and what it is made of depends on the '
-            + 'act. On "count_parts" it is ONE NUMBER; counting the parts aloud counts too — judge the '
-            + 'number they LAND on, and a count that keeps going past the total is wrong even though the '
-            + 'right number was said along the way. On "blend_syllables" it is the WHOLE WORD; the parts '
-            + 'said back still separated are not it, because those parts were handed to them. On '
-            + '"delete_compound" it is the WORD THAT IS LEFT; the whole word repeated is not it, and '
-            + 'neither is the part that was taken away. An answer inside a little phrase counts on every '
-            + 'act. LAW: never speak the answer before the child has been affirmed — the microphone is '
-            + 'open the whole time; the scripted correction is the one place the answer is spoken, and '
-            + 'only because the attempt is already judged.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP and stay silent until the child answers. Do not re-ask, do not fill the '
-            + 'pause, do not voice the stimulus again unprompted, and do not answer for them. They are '
-            + 'holding the word in their own head — clapping it, joining it, or taking a part out of it — '
-            + 'and that IS the activity, so the pause is longer here than it feels. If they tap to hear '
-            + 'the question you will receive a separate [SC_HEAR] message: answer that and nothing more, '
-            + 'then go back to waiting.',
-        },
-        {
-          title: 'WORD OR PART ON DEMAND ([SC_HEAR])',
-          instruction:
-            'When you receive a message starting with [SC_HEAR], immediately and clearly say ONLY what it '
-            + 'quotes — the question again, or one single word part — and nothing else. Do NOT spell '
-            + 'anything, do NOT break a word into parts unless the quote itself writes them out, do NOT add '
-            + 'commentary, and do NOT treat anything you just heard as an attempt to judge. This is the '
-            + 'child tapping to re-hear the stimulus, which is how a pre-reader recovers it, and it is '
-            + 'answered at every grade, including while you are waiting for their answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
@@ -1613,7 +1399,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'story-map',
     description: 'Interactive plot structure diagram where students identify and place story elements on a visual arc. Supports beginning-middle-end (K-1), story mountain (2-3), full plot diagram (4-5), and hero\'s journey (5-6). Students drag event cards to arc positions. ESSENTIAL for reading comprehension K-6.',
     constraints: 'Requires narrative text. Structure type should match grade level.',
-    affordances: { representation: 'symbolic', answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 8 },
+    affordances: { representation: 'symbolic', answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       { evalMode: 'bme', label: 'BME (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['bme'], description: 'Beginning-Middle-End (K-1).' },
       { evalMode: 'story_mountain', label: 'Story Mountain (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['story-mountain'], description: '5-part narrative arc (2-3).' },
@@ -1621,48 +1407,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'heros_journey', label: 'Hero\'s Journey (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['heros-journey'], description: 'Complex narrative structure (5-6).' },
     ],
     supportsEvaluation: true,
-    // W1 plain shape (batch C13): each phase of the one story is a checked item (identify, sequence, and analyze at
-    // Grade 4+ with a conflict); `storyMapWorkspace.ts` owns the check, the scene and `storyMapMiss`.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The activity checks every answer itself, and you are not told the answers. First the learner taps every '
-        + 'printed name that is a character in the story (some printed names are not in it) and one setting, then '
-        + 'checks. Next they tap an event card and then a part of the story arc, and with every card placed they '
-        + 'check; the cards are listed mixed up on purpose. At Grade 4 and up they then pick the kind of conflict. '
-        + 'Never say which names are characters (reading the story is fine, but never say a printed name is or is not '
-        + 'in it), which setting is right, which part an event goes in, or the kind of conflict, before a check or '
-        + 'after a wrong one. After a sequence '
-        + 'check the screen marks each card green or red; you may say how many are right, not where the red ones go. '
-        + 'Teaching is asking about the story: who did something, where they were, what happened first or after the '
-        + 'problem, how it ended, who or what the main character struggles against. You may read the story and the '
-        + 'choices aloud, and must for a Kindergarten or Grade 1 learner. You cannot tap or place for the learner.',
-      // The activity's own check (`storyMapMiss`); the conflict phase is asked on the Grade 4+ structures only.
-      misses: missLists<StoryMapMiss>({
-        bme: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part'],
-        story_mountain: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part'],
-        plot_diagram: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part',
-          'inside_outside', 'other_outside'],
-        heros_journey: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part',
-          'inside_outside', 'other_outside'],
-      }),
-      // character_count, part_pictures, arc_arrow, conflict_pictures, easier_story, easier_conflict
-      // (`storyMapLevers.ts`); every miss answered on every mode.
-      levers: true,
-    },
-    tutoring: {
-      taskDescription: 'Map story elements to {{structureType}} structure. Current phase: {{currentPhase}}. Elements found: {{elementsIdentified}}.',
-      contextKeys: ['structureType', 'currentPhase', 'elementsIdentified'],
-      scaffoldingLevels: {
-        level1: 'Think about what happens at this part of the story.',
-        level2: 'Remember when [character] did [action]? Which part does that belong in?',
-        level3: 'The [element] usually comes here. Look for clues like [signal words].',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing parts', response: 'Point to visual structure, ask where event fits' },
-        { pattern: 'Missing elements', response: "What haven't we filled in yet?" },
-        { pattern: 'Wrong sequence', response: 'Think about what happened first, next, last' },
-      ],
-    },
+    ...bossEntry(storyMapCard),
   },
   {
     id: 'story-talk',
@@ -1983,76 +1728,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'analysis', affordances: { representation: 'symbolic', answers: ['tap'] }, label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
       { evalMode: 'composition', affordances: { representation: 'symbolic', answers: ['type'] }, label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
     ],
-    // W1 (C22, `poetryLabWorkspace.ts`): every item is checked by the activity's own code. The scripted fallback still
-    // reads the `tutoring` block below.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The activity checks every answer itself, and you are not told the answers. Rhyme hunt (Kindergarten and '
-        + 'Grade 1): read the poem aloud slowly, every line ending alike, and read the word cards; the learner taps the two '
-        + 'cards that rhyme. Never say which two rhyme, never say two of the endings together, and never say a word that '
-        + 'rhymes with one of them. After a wrong pair you may stretch the two words they tapped and ask whether the ends '
-        + 'sound the same. Analysis, one step at a time: the learner picks the mood, taps a word of each figurative phrase '
-        + '(every word is a button; a word in no figurative phrase makes it wrong), and picks the rhyme scheme. Never say '
-        + 'the mood or a word that means it, never narrow the moods to the right one, never say which words are figurative, which lines rhyme or the scheme\'s letters; ask which words make them feel '
-        + 'that way, whether a phrase means exactly what it says, and which last words sound alike. Composition: the '
-        + 'learner types each line, then checks; the activity checks the form only (every line written, no line repeated, '
-        + 'acrostic letters, syllables within one of the target). Never write a line or a word for them; ask what they '
-        + 'picture, and help them clap the syllables of their own line. You may read the poem and the choices aloud. You '
-        + 'cannot tap, pick or type for the learner.',
-      // rhyme_model, fewer_cards; mood_faces, easier_mood, figure_models, phrase_count, easier_figures, end_words,
-      // easier_scheme; model_poem, syllable_beats, first_letters, one_line (`poetryLabLevers.ts`). Every miss answered.
-      levers: true,
-      misses: missLists<PoetryMiss>({
-        rhyme_hunt: ['same_start', 'one_of_pair', 'neither_of_pair'],
-        analysis: ['other_mood', 'literal_picked', 'missed_some', 'aabb_abab', 'other_scheme'],
-        composition: ['line_missing', 'line_too_short', 'line_repeated', 'wrong_first_letter', 'syllables_off'],
-      }),
-    },
-    tutoring: {
-      taskDescription:
-        'You are the rhyme and poetry coach for "{{title}}" at Grade {{gradeLevel}}. '
-        + 'Mode: {{mode}}. In rhyme_hunt, this is round {{currentRound}} of {{roundsTotal}}. '
-        + 'The poem for this round is: {{roundPoem}}. The candidate ending words are {{candidateWords}}. '
-        + 'The rhyming pair is {{rhymeWordA}}/{{rhymeWordB}} — this is the answer the student must discover by EAR. '
-        + 'Never name the pair outright; stretch word endings so the student hears the relationship. '
-        + 'Attempts: {{attempts}}. First-try correct so far: {{firstTryCorrect}}.',
-      contextKeys: [
-        'title', 'gradeLevel', 'mode', 'currentRound', 'roundsTotal', 'roundPoem',
-        'candidateWords', 'rhymeWordA', 'rhymeWordB', 'attempts', 'firstTryCorrect',
-      ],
-      scaffoldingLevels: {
-        level1: 'Ask the student to listen again for the sounds at the very ends of the lines. Do not name either answer word.',
-        level2: 'Slowly stretch the endings of the two words the student tapped and ask whether those ending sounds match. Do not offer a replacement word.',
-        level3: 'Re-read the four line endings with equal emphasis, then invite the student to compare two choices at a time. Never say which pair is correct.',
-      },
-      commonStruggles: [
-        { pattern: 'The student taps words that share a beginning sound', response: 'Contrast beginning and ending sounds, then re-read the tapped words with their endings stretched.' },
-        { pattern: 'The student misses the same round more than once', response: 'Re-read the stanza slowly and isolate all four line endings without grouping or naming the answer pair.' },
-        { pattern: 'The student waits without choosing', response: 'Repeat the tap-two protocol in ear terms and encourage one exploratory pair without narrowing the choices.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ORIENT',
-          instruction: 'On [ACTIVITY_START], greet once and frame the activity: "We\'re going to listen to a little poem and find the two words that rhyme."',
-        },
-        {
-          title: 'STIMULUS',
-          instruction: 'On [ACTIVITY_START] or [ROUND_START] in rhyme_hunt, read {{roundPoem}} aloud slowly with playful prosody, emphasizing every line-ending word equally. Do not group, repeat, or name {{rhymeWordA}} and {{rhymeWordB}} as a pair. In analysis mode, offer to read the poem aloud on request.',
-        },
-        {
-          title: 'DISAMBIGUATE',
-          instruction: 'For rhyme_hunt, explain once that rhyming words sound the same at the end, using an unrelated example such as cat/hat, then say: "Tap the two words that rhyme." For analysis, enact rhyme notation in sound terms before using letters such as AABB.',
-        },
-        {
-          title: 'RECOVER',
-          instruction: 'On [RHYME_MISS], stretch only the two words the student tapped and ask whether their endings match. Never name, contrast with, or hint {{rhymeWordA}}/{{rhymeWordB}}.',
-        },
-        {
-          title: 'QUIET CELEBRATION',
-          instruction: 'On [RHYME_CORRECT], celebrate only for the first round, a comeback, or the final round. On [ACTIVITY_COMPLETE], close in one short sentence. Never repeat the answer pair.',
-        },
-      ],
-    },
+    // Every item is checked by the activity's own code; wiring: `poetryLab.card.ts` + `poetryLab.boss.ts`.
+    ...bossEntry(poetryLabCard),
     supportsEvaluation: true,
   },
   {
@@ -2142,48 +1819,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       { evalMode: 'locate_evidence', label: 'Locate Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['locate_evidence'], description: 'Find explicit, directly-stated evidence for one claim.' },
       { evalMode: 'match_evidence_to_claim', label: 'Match Evidence to Claim (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['match_evidence_to_claim'], description: 'Assign each evidence sentence to the correct of two claims.' },
-      { evalMode: 'evaluate_evidence_strength', label: 'Evaluate Evidence Strength (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['evaluate_evidence_strength'], description: 'Rate evidence strength and justify it (CER framework).' },
+      { evalMode: 'evaluate_evidence_strength', label: 'Evaluate Evidence Strength (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['evaluate_evidence_strength'], description: 'Find the evidence, then rate how strong each piece is (CER framework).' },
     ],
     supportsEvaluation: true,
-    // W1 C21 (`evidenceFinderWorkspace.ts`): find is checked on every mode, the strength rating on CER passages.
-    // The CER reasoning box is open writing with no check and stays on the scripted path (contract G1).
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The activity checks every answer itself, and you are not told the answers. The learner reads a short '
-        + 'informational passage and highlights every sentence that is evidence for the claim: they tap a sentence to '
-        + 'highlight it (with two claims, they first tap the claim it supports), then press Check Evidence. Evidence '
-        + 'states a fact that proves the claim; a sentence that is only about the topic, or is someone\'s opinion, is '
-        + 'not evidence. On a passage with strength ratings they then rate each evidence sentence Strong, Moderate or '
-        + 'Weak and check: strong evidence gives a specific fact that proves the claim, weak evidence only mentions the '
-        + 'idea. Never say which sentences are evidence, which claim one supports, or how strong one is, before a check '
-        + 'or after a wrong one. Teaching is asking about the claim: what would prove it, does this sentence prove it '
-        + 'or only talk about the topic, is it a fact or an opinion. You may read the passage, the claims and the '
-        + 'sentences aloud. You cannot highlight or rate for the learner.',
-      // The activity's own check (`evidenceFinderMiss`); `wrong_claim` needs two claims, the ratings a CER passage.
-      misses: missLists<EvidenceFinderMiss>({
-        locate_evidence: ['not_evidence', 'missed_evidence'],
-        match_evidence_to_claim: ['not_evidence', 'wrong_claim', 'missed_evidence'],
-        evaluate_evidence_strength: ['not_evidence', 'wrong_claim', 'missed_evidence',
-          'weak_as_strong', 'rated_too_strong', 'rated_too_weak', 'mixed_ratings'],
-      }),
-      // evidence_count, proof_example, practice_passage (find); strength_guide, practice_ratings (rate)
-      // (`evidenceFinderLevers.ts`); every miss answered on every mode.
-      levers: true,
-    },
-    tutoring: {
-      taskDescription: 'Find textual evidence for claims. Claim: {{currentClaim}}.',
-      contextKeys: ['currentClaim'],
-      scaffoldingLevels: {
-        level1: 'What part of the text talks about this idea?',
-        level2: 'Look for sentences with words like [keywords].',
-        level3: 'The evidence is in paragraph X. Highlight the sentence that proves the claim.',
-      },
-      commonStruggles: [
-        { pattern: 'Opinion vs evidence', response: 'Did the author say that, or is it your idea?' },
-        { pattern: 'Weak evidence', response: 'Does this PROVE the claim or just mention it?' },
-        { pattern: 'Wrong section', response: 'Direct to correct paragraph' },
-      ],
-    },
+    // Every mode is on the teaching workspace, wired from its boss (`evidenceFinder.boss.ts`): find on every mode,
+    // the strength rating on CER passages.
+    ...bossEntry(evidenceFinderCard),
   },
 
   // ===== WRITING (W) =====
@@ -2210,29 +1851,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    // Every mode is on the teaching workspace (R12, user ruling 2026-10-08): the writing modes write one sentence per
-    // step (`writingStages.ts`), build_paragraph orders cards (`paragraphBuild.ts`).
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'On the writing modes the learner writes a paragraph one sentence per step (the topic sentence, a fact, '
-        + 'another fact, the closing; or a story\'s beginning, middle and end; or an opinion, two reasons, the opinion '
-        + 'again), typing each and pressing "I am done"; the builder checks each sentence makes sense and does its '
-        + 'step\'s job, and spelling is not judged. Never write or say a sentence for them; ask what they want to say '
-        + 'and let them type it. Build a paragraph: sentence cards are on screen and the learner taps them into a paragraph in order, then '
-        + 'presses "I am done". A paragraph passes with the sentence that tells the topic first, two or more facts that '
-        + 'belong in any order, and the sentence that wraps it up last; the two facts about something else stay out. Many '
-        + 'paragraphs pass. A card speaker asks you to read that card only. Never say which card goes first or last or '
-        + 'which facts do not belong; ask what the paragraph is about and whether each fact tells about it. You cannot '
-        + 'move a card.',
-      levers: true,
-      misses: { build_paragraph: ['topic_not_first', 'closing_not_last', 'too_few_details', 'off_topic_detail'],
-        ...Object.fromEntries(['informational', 'narrative', 'opinion'].map(m => [m, ['too_short', 'blank_left', 'repeat',
-          'not_sense', 'wrong_job']])) },
-      // blank_left and repeat need no lever: the box keeps the sentence and the words say what to change.
-      unanswered: Object.fromEntries(['informational', 'narrative', 'opinion'].map(m => [m, ['blank_left', 'repeat']])),
-    },
-    // tutoring removed 2026-10-08 (R12): every mode is workspace-only, and bound sessions send `tutoring: null`.
-
+    // Every mode is on the teaching workspace, wired from its boss (`paragraphArchitect.boss.ts`).
+    ...bossEntry(paragraphArchitectCard),
   },
   {
     id: 'story-planner',
@@ -2244,27 +1864,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // conflict_resolution/theme_craft are grade 2-6 typed-card identities, untested.
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 9 },
     evalModes: [
-      { evalMode: 'story_structure', affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] }, label: 'Story Structure (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['story_structure'], description: 'Sequence the narrative arc: beginning-middle-end.' },
+      { evalMode: 'story_structure', affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'type'] }, label: 'Story Structure (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['story_structure'], description: 'Sequence the narrative arc: beginning-middle-end.' },
       { evalMode: 'character_setting', label: 'Character & Setting (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['character_setting'], description: 'Develop a believable character and a vivid setting.' },
       { evalMode: 'conflict_resolution', label: 'Conflict & Resolution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['conflict_resolution'], description: 'Plan a central conflict and a connected resolution.' },
       { evalMode: 'theme_craft', label: 'Theme & Craft (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['theme_craft'], description: 'Weave theme, dialogue, and craft into the plan.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'At K-1 the learner cannot read: read the story idea, each question and every picture\'s words aloud; '
-        + 'one tap picks a picture (every picture is a fine choice) and moves on. Then they tap the story\'s event '
-        + 'pictures into numbered slots and press "I am done"; describe the pictures when asked, but never say which '
-        + 'comes first or which cannot (ruling one out tells the order). At grade 2 and up the learner types each planning card and presses "I am done"; the builder '
-        + 'checks it answers the card\'s question for this story and makes sense, and spelling is not judged. Any idea '
-        + 'that fits passes. Never write a card for them. You cannot tap or type.',
-      levers: true,
-      // Only story_structure orders events (the K-1 picture band); every mode writes cards at grade 2+.
-      misses: Object.fromEntries(['story_structure', 'character_setting', 'conflict_resolution', 'theme_craft']
-        .map(m => [m, ['too_short', 'repeat', 'not_sense', 'wrong_job', ...(m === 'story_structure' ? ['wrong_order'] : [])]])),
-      // repeat needs no lever: the words say to write something new.
-      unanswered: Object.fromEntries(['story_structure', 'character_setting', 'conflict_resolution', 'theme_craft'].map(m => [m, ['repeat']])),
-    },
+    ...bossEntry(storyPlannerCard),
   },
   {
     id: 'opinion-builder',
@@ -2288,22 +1894,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    // Every mode is on the teaching workspace (OB-7L, following R12): OREO and CER write one sentence per step
-    // (`writingStages.ts`), build_opinion orders cards (`opinionBuild.ts`).
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'On OREO and CER the learner writes an answer to the question one sentence per step (opinion, reason, '
-        + 'example, opinion again; or claim, evidence, reasoning, conclusion), typing each and pressing "I am done"; the '
-        + 'builder checks each sentence makes sense and does its step\'s job, and spelling is not judged. Either side of '
-        + 'the question is fine. Never write a sentence for them or pick their side. On build an opinion the learner taps '
-        + 'cards for one side into an answer in order and presses "I am done"; never say which cards go together or which '
-        + 'side to take. You cannot type or move a card.',
-      levers: true,
-      misses: { ...Object.fromEntries(['oreo', 'cer'].map(m => [m, ['too_short', 'blank_left', 'repeat', 'not_sense', 'wrong_job']])),
-        build_opinion: ['opinion_not_first', 'restate_not_last', 'no_reason', 'no_example', 'other_side', 'off_topic', 'out_of_order'] },
-      // blank_left and repeat need no lever: the box keeps the sentence and the words say what to change.
-      unanswered: Object.fromEntries(['oreo', 'cer'].map(m => [m, ['blank_left', 'repeat']])),
-    },
+    // Every mode is on the teaching workspace, wired from its boss (`opinionBuilder.boss.ts`).
+    ...bossEntry(opinionBuilderCard),
   },
   {
     id: 'revision-workshop',
@@ -2319,19 +1911,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'concision', label: 'Concision (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['concision'], description: 'Eliminate wordiness.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The draft is on screen with one sentence marked. The learner types a revision of that sentence and presses '
-        + '"I am done"; the builder checks it changed and does the job of this revision (add a detail, a stronger word, one '
-        + 'joined sentence, a transition, fewer words), and spelling is not judged. Many revisions pass. Never say a revised '
-        + 'sentence for them. On reorganize the learner taps the sentences of the draft into the order that makes sense; never '
-        + 'say which sentence goes first. You cannot type or move a sentence.',
-      levers: true,
-      misses: { ...Object.fromEntries(['add_details', 'word_choice', 'transitions'].map(m => [m, ['unchanged', 'too_short', 'not_sense', 'wrong_job']])),
-        combine_sentences: ['unchanged', 'too_short', 'not_combined', 'not_sense', 'wrong_job'],
-        concision: ['unchanged', 'too_short', 'not_shorter', 'not_sense', 'wrong_job'],
-        reorganize: ['wrong_order'] },
-    },
+    // Every mode is on the teaching workspace, wired from its boss (`revisionWorkshop.boss.ts`).
+    ...bossEntry(revisionWorkshopCard),
   },
 
   // ===== SPEAKING & LISTENING (SL) =====
@@ -2627,26 +2208,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'and is about the thing. Beta = simple + 0.1.',
       },
     ],
-    // Every mode is on the teaching workspace (R12, user ruling 2026-10-08): the tile modes order given tiles
-    // (`sentenceOrder.ts`), build_sentence makes a sentence from word tiles (`sentenceBuild.ts`).
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'On the tile modes the learner puts ALL the given tiles in order to make one sentence and presses "I am '
-        + 'done"; more than one order can be right, and the sentence is never printed before. Never say the sentence or '
-        + 'which tile goes next; ask what the sentence is about, or which tile tells who. Make a sentence: word tiles and the end marks . and ? are on screen; the learner taps them into a row to '
-        + 'make a question or a telling sentence about the thing named, and presses "I am done". Many sentences pass. A '
-        + 'question starts with an asking word and ends with ?; a telling sentence ends with a period. Never say a '
-        + 'sentence that would work or which tile goes next; ask the learner to read their sentence aloud. You cannot '
-        + 'move a tile.',
-      levers: true,
-      misses: { ...Object.fromEntries(['simple', 'compound', 'complex', 'compound_complex'].map(m => [m,
-          ['tiles_left', 'end_mark_not_last', 'not_sense']])),
-        build_sentence: ['no_end_mark', 'end_mark_inside', 'wrong_end_mark', 'too_short', 'not_question_start',
-        'question_start', 'same_sentence', 'not_sense', 'off_topic'] },
-      // same_sentence has no lever: the sentence already made stays on screen.
-      unanswered: { build_sentence: ['same_sentence'] },
-    },
-    // tutoring removed 2026-10-08 (R12): every mode is workspace-only, and bound sessions send `tutoring: null`.
+    ...bossEntry(sentenceBuilderCard),
     supportsEvaluation: true,
   },
   {
@@ -2688,95 +2250,15 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'Meaning from broader context.',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'Each word is a few steps, each checked by the activity, and you are not told the answers: the learner taps '
-        + 'sentences and presses Check Clue, then (only when the lesson mixes clue types) taps one of five clue types and '
-        + 'presses Check Type, then taps (or types) a meaning and presses Check Meaning. Until a step is credited, never say which sentence holds the clue, which clue '
-        + 'type it is, or what the word means, and never say which option to tap. On the find step, do not name, number, '
-        + 'quote or point to any sentence or line for the learner to look at, the word\'s own one included (on many words '
-        + 'the clue is inside it), also when a lever changed the passage; ask what the passage tells us about the word and '
-        + 'let the learner choose. On a type step, the lesson\'s mode names the clue types in play: do not say which one '
-        + 'this word has. Reading the whole passage aloud, reading the five type '
-        + 'names as a list, and asking what a sentence the learner tapped tells us about the word is teaching. The find step passes when the tapped '
-        + 'sentences are clues (the word\'s own sentence may be among them, but alone it passes only when the clue is inside '
-        + 'it), so tapping every sentence does not pass. The dictionary '
-        + 'definition appears only after the meaning is credited. A wrong check\'s miss names the confusion: extra_sentence, '
-        + 'a clue tapped with sentences that are not; similar_opposite, synonym against antonym; definition_synonym, a meaning '
-        + 'spelled out against one similar word; said_inference, inference for a clue the text states; teach that contrast. '
-        + 'A definition clue says what the word means in the text; a synonym is a similar word nearby; an antonym is an '
-        + 'opposite set against it (unlike, but, however); an example clue lists cases (such as, for example); an inference '
-        + 'is pieced together from several sentences. You cannot tap, type or press Check.',
-      // Every step declares help levers (`contextCluesLevers.ts`); every miss is answered by one on every step it occurs.
-      levers: true,
-      // The activity's own check (`clueMiss`), every mode: three steps per word.
-      misses: missLists<ContextClueMiss>({
-        // One clue type per session in these three modes: no classify step, so no type misses.
-        definition: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
-        synonym_antonym: ['target_sentence_only', 'extra_sentence', 'no_clue', 'similar_opposite', 'definition_synonym', 'said_inference', 'other_type', 'other_meaning'],
-        example: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
-        inference: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
-      }),
-    },
+    ...bossEntry(contextCluesCard),
     supportsEvaluation: true,
-    tutoring: {
-      taskDescription:
-        'You ARE the detective coach for this context-clues activity. '
-        + 'The student is figuring out what an unfamiliar word means using clues in the passage — '
-        + 'NEVER reveal the meaning, the clue type, or which sentence is the clue; coach the strategy instead. '
-        + 'Grade {{gradeLevel}}. Mystery word {{itemIndex}}/{{totalItems}}: "{{targetWord}}". '
-        + 'Phase: {{currentPhase}} (find the clue sentence -> classify the clue type -> define the word). '
-        + 'Student has highlighted {{highlightCount}} sentence(s); their current clue-type guess is "{{selectedClueType}}".',
-      contextKeys: [
-        'gradeLevel', 'targetWord', 'currentPhase', 'clueType',
-        'itemIndex', 'totalItems', 'selectedClueType', 'highlightCount',
-      ],
-      scaffoldingLevels: {
-        level1:
-          'FIND phase: "Which sentence tells you something about {{targetWord}}?" '
-          + 'CLASSIFY phase: "What is that clue sentence DOING for {{targetWord}}?" '
-          + 'DEFINE phase: "Use the clue — what could {{targetWord}} mean?"',
-        level2:
-          'FIND phase: "Read the sentence right next to {{targetWord}} — does it hint at the meaning?" '
-          + 'CLASSIFY phase: "Does the clue define it, give a similar or opposite word, give an example, or make you infer?" '
-          + 'DEFINE phase: "Put the clue in your own words — that is close to what {{targetWord}} means."',
-        level3:
-          'FIND phase: "Look for the sentence that explains or hints at {{targetWord}}, then click it." '
-          + 'CLASSIFY phase: "Compare the clue to {{targetWord}}: a matching word is a synonym, an opposite is an antonym, a meaning spelled out is a definition." '
-          + 'DEFINE phase: "Re-read the clue sentence and say the meaning of {{targetWord}} using those words."',
-      },
-      commonStruggles: [
-        { pattern: 'Highlights a sentence with no clue', response: 'A clue sentence helps explain {{targetWord}} — does this one do that, or is it just part of the story?' },
-        { pattern: 'Cannot tell which clue type it is', response: 'Ask: does the clue sentence DEFINE {{targetWord}}, give a similar/opposite word, give an example, or make you figure it out?' },
-        { pattern: 'Confuses synonym and antonym clues', response: 'Is the nearby word similar to {{targetWord}} or the opposite of it?' },
-        { pattern: 'Guesses the meaning without using the clue', response: 'Point back to the clue sentence — what does it tell you {{targetWord}} is about?' },
-        { pattern: 'Repeated wrong attempts on the meaning', response: 'Read just the clue sentence again slowly and say the meaning of {{targetWord}} in your own words.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ACTIVITY INTRODUCTION',
-          instruction:
-            'When you receive [ACTIVITY_START], warmly introduce the context-clues detective activity. '
-            + 'Frame the student as a detective who figures out word meanings from clues in the passage, '
-            + 'then point them to the first mystery word and tell them to click the sentence that gives a clue. '
-            + 'NEVER reveal the meaning or which sentence is the clue. Keep it brief (2-3 sentences), warm, and enthusiastic. '
-            + 'Use age-appropriate language for the grade level.',
-        },
-        {
-          title: 'NEVER REVEAL THE ANSWER',
-          instruction:
-            'Across all phases, you must never state what {{targetWord}} means, never name the correct clue type, '
-            + 'and never point to the exact clue sentence. Coach the strategy (find -> classify -> define) and nudge with questions. '
-            + 'The on-screen dictionary definition appears only AFTER the student answers — do not preempt it.',
-        },
-      ],
-    },
   },
   {
     id: 'figurative-language-finder',
     description: 'Students identify and classify figurative language in passages: simile, metaphor, personification, hyperbole, idiom, alliteration, onomatopoeia, imagery. Color-coded highlighting by type. Literal translation mode. Connects to poetry-lab. Perfect for grades 3-6.',
     constraints: 'Best for grades 3-6. Requires passage rich in figurative language.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
+    ...bossEntry(figurativeLanguageFinderCard),
     evalModes: [
       {
         evalMode: 'sound_devices',
@@ -2821,87 +2303,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'On the find steps the learner taps a sentence of the passage, taps the kind of figure of speech in it and '
-        + 'presses "I am done"; any figure the passage holds passes, in any order. Never say which sentence holds one or '
-        + 'what kind it is. On the meaning steps the learner types what a marked phrase really means; on make a figure '
-        + 'the learner writes their own. Those are checked for doing the job and making sense; spelling is not judged and '
-        + 'many answers pass. Never write it for them. You cannot tap or type.',
-      levers: true,
-      misses: { ...Object.fromEntries(['sound_devices', 'comparison', 'advanced', 'idiom'].map(m => [m,
-        ['wrong_type', 'no_device', 'already_found', 'too_short', 'unchanged', 'not_sense', 'wrong_job']])),
-        build_figurative: ['too_short', 'not_sense', 'wrong_job'] },
-      // already_found and too_short need no lever: the words say what to do next.
-      unanswered: Object.fromEntries(['sound_devices', 'comparison', 'advanced', 'idiom'].map(m => [m, ['already_found', 'too_short']])),
-    },
-    tutoring: {
-      taskDescription:
-        'You coach a student through a figurative-language activity. '
-        + 'They progress through phases: FIND (tap figurative phrases in the passage), '
-        + 'CLASSIFY (label each phrase by type), INTERPRET (write the literal meaning), and REVIEW. '
-        + 'Grade {{gradeLevel}}. Phase: {{currentPhase}}. '
-        + 'Found {{instancesFound}} of {{totalInstances}} phrases; {{classifiedCount}} labeled so far. '
-        + 'Types present in this passage: {{typesPresent}}. '
-        + 'NEVER name which phrases are figurative or what type they are — guide with signal words and the literal-vs-figurative distinction only.',
-      contextKeys: [
-        'gradeLevel', 'currentPhase', 'totalInstances',
-        'instancesFound', 'typesPresent', 'classifiedCount',
-      ],
-      scaffoldingLevels: {
-        level1:
-          'FIND: "Read slowly — which words paint a picture or do not mean exactly what they say?" '
-          + 'CLASSIFY: "How does this phrase work — is it comparing, exaggerating, or making a sound?" '
-          + 'INTERPRET: "If you said this in plain words, what would it really mean?"',
-        level2:
-          'FIND: "Look for comparisons (like/as), exaggerations, or human actions given to objects." '
-          + 'CLASSIFY: "Does it use \'like\' or \'as\'? Does it give an object a human action? That tells you the type." '
-          + 'INTERPRET: "Picture what is literally happening, then write it as a plain fact."',
-        level3:
-          'FIND: "Scan each sentence for a phrase that cannot be literally true — that is your figurative phrase." '
-          + 'CLASSIFY: "Match the signal: \'like/as\' = comparison, an action only people do = personification, a wild overstatement = exaggeration." '
-          + 'INTERPRET: "Restate it directly: drop the imagery and say the underlying meaning in one plain sentence."',
-      },
-      commonStruggles: [
-        { pattern: 'Cannot find any figurative phrases', response: 'Read one sentence at a time — does any part stretch the truth or compare two things?' },
-        { pattern: 'Confuses simile and metaphor', response: 'Check for the words "like" or "as" — that is the difference between the two comparison types.' },
-        { pattern: 'Labels literal language as figurative', response: 'Could this sentence be literally true? If yes, it may not be figurative.' },
-        { pattern: 'Literal interpretation just repeats the phrase', response: 'Do not reuse the figurative words — say what actually, plainly happens.' },
-        { pattern: 'Repeated wrong classification', response: 'Think about HOW the phrase works — comparing, exaggerating, making a sound, or giving human traits?' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ACTIVITY INTRODUCTION',
-          instruction:
-            'When you receive [ACTIVITY_START], warmly introduce the figurative-language activity in 2 sentences max. '
-            + 'Mention we will find, classify, and interpret figurative language, and encourage the student to tap each figurative phrase they spot. '
-            + 'Never reveal which phrases are figurative or their types. Use age-appropriate language for the grade level.',
-        },
-        {
-          title: 'PHASE TRANSITIONS',
-          instruction:
-            'When you receive [PHASE_CLASSIFY], [PHASE_INTERPRET], or [PHASE_REVIEW], give one brief sentence orienting the student to the new step. '
-            + 'Do not reveal any answer or correct type.',
-        },
-        {
-          title: 'CLASSIFICATION FEEDBACK',
-          instruction:
-            'When you receive [CLASSIFY_CORRECT], affirm in one short sentence and name the signal that makes the phrase that type. '
-            + 'When you receive [CLASSIFY_INCORRECT], give a brief hint about what to look for WITHOUT naming the correct type.',
-        },
-        {
-          title: 'COMPLETION',
-          instruction:
-            'When you receive [ACTIVITY_COMPLETE], give a brief, warm wrap-up (one or two sentences) acknowledging their results, plus one tip for spotting figurative language next time.',
-        },
-      ],
-    },
   },
   {
     id: 'spelling-pattern-explorer',
     description: 'Students investigate word groups sharing spelling patterns, discover underlying rules, then apply via audio dictation practice. Supports word families, vowel patterns, suffix rules, Latin/Greek roots. TTS pronunciation and slow syllable mode. Perfect for grades 1-6 spelling.',
     constraints: 'Best for grades 1-6. Pattern complexity should match grade level.',
     affordances: { representation: 'symbolic', answers: ['type', 'build'], role: ['visualize', 'apply'], minutes: 5 },
+    ...bossEntry(spellingPatternExplorerCard),
     evalModes: [
       {
         evalMode: 'short_vowel',
@@ -2962,25 +2370,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      levers: true,
-      guidance: 'On the classic modes the learner first looks at the pattern words and writes the rule in their own words '
-        + '(not checked), then spells one dictation word at a time: say the word, the learner types it and presses Check, '
-        + 'and the activity checks the spelling itself. Never spell the word, name its letters or say the pattern before '
-        + 'the learner has tried; when the pattern panel is hidden the learner finds the pattern. You cannot type for them. '
-        + 'On make a pattern word the learner puts letters from the bank into the boxes to make any real word with the '
-        + 'spelling the ask names and presses "I am done"; many words pass, and some items ask for a second word. Never say '
-        + 'a word that would fit or a letter to add. You cannot place or remove a letter.',
-      // Classic: the typed spelling's own check (`spellingMiss`). The build: what the ask states, in code
-      // (`spellingPatternBuild.ts`), then the word judge's not_a_word.
-      misses: missLists<SpellingMiss | LetterBuildMiss>({
-        ...sameMisses<SpellingMiss>(['short_vowel', 'long_vowel', 'r_controlled', 'silent_letter', 'morphological'],
-          ['pattern_missing', 'other_letters', 'misspelled']),
-        pattern_build: ['other_spelling', 'wrong_place', 'no_pattern', 'not_the_sound', 'same_word', 'pick_another', 'not_a_word'] }),
-      // pattern_build: the word already made stays on screen; a word not for lessons has no smaller form.
-      unanswered: { pattern_build: ['same_word', 'pick_another'] },
-    },
   },
   {
     id: 'word-sorter',

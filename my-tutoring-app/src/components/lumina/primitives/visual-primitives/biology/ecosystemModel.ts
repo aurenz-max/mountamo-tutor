@@ -21,6 +21,7 @@ import {
   countWeather, drawMonth, mostCommon, pickWinterAnimals, plantGrows, plantMissing, plantNeedsMiss,
   type Animal, type AnimalThing, type PlantKind, type PlantSetup, type Season, type Weather, type WinterPlace,
 } from './ecosystemLife';
+import { ECOSYSTEM_MISSES_BY_MODE } from './ecosystemDiorama.card';
 
 /** The ladder, easiest first (β order in the catalog). */
 export const ECOSYSTEM_TASKS = ['plant_needs', 'sun_test', 'season_behavior', 'season_from_log', 'compare_logs', 'keep_it_cool'] as const;
@@ -201,7 +202,7 @@ export function pickSunTests(count: number, rng: () => number = Math.random): Su
 
 // ── The check ───────────────────────────────────────────────────────────────────────────────────────────────
 
-export const SUN_TEST_MISSES = ['picked_cooler'] as const;
+export const SUN_TEST_MISSES = ECOSYSTEM_MISSES_BY_MODE.sun_test;
 
 export const thingOn = (c: SunTestChallenge, side: Side) => (side === 'left' ? c.left : c.right);
 export const readMatches = (c: SunTestChallenge, picked: Side) => picked === c.warmer;
@@ -257,7 +258,7 @@ export interface SeasonLogChallenge {
   instruction: string;
 }
 
-export const SEASON_LOG_MISSES = ['wrong_season', 'present_not_most'] as const;
+export const SEASON_LOG_MISSES = ECOSYSTEM_MISSES_BY_MODE.season_from_log;
 
 export function buildSeasonLog(season: Season, id: string, rng: () => number = Math.random): SeasonLogChallenge {
   return { id, type: 'season_from_log', season, days: drawMonth(season, rng),
@@ -308,7 +309,7 @@ export interface CompareLogsChallenge {
   instruction: string;
 }
 
-export const COMPARE_LOGS_MISSES = ['picked_fewer', 'picked_colder'] as const;
+export const COMPARE_LOGS_MISSES = ECOSYSTEM_MISSES_BY_MODE.compare_logs;
 
 const COMPARE_PAIRS: readonly { a: [string, Season]; b: [string, Season] }[] = [
   { a: ['January in our town', 'winter'], b: ['July in our town', 'summer'] },
@@ -487,7 +488,7 @@ export interface KeepCoolChallenge {
   instruction: string;
 }
 
-export const KEEP_COOL_MISSES = ['no_shade', 'clear_cover'] as const;
+export const KEEP_COOL_MISSES = ECOSYSTEM_MISSES_BY_MODE.keep_it_cool;
 
 export function buildKeepCool(thing: CoolThing, id: string, rng: () => number = Math.random): KeepCoolChallenge {
   const works = shuffle(['umbrella', 'leaf roof', 'hut'] as Cover[], rng).slice(0, 2);
@@ -517,10 +518,7 @@ export function coolFeedback(c: KeepCoolChallenge, cover: Cover | null): string 
 export type EcosystemChallenge =
   | SunTestChallenge | SeasonLogChallenge | CompareLogsChallenge | PlantNeedsChallenge | SeasonBehaviorChallenge | KeepCoolChallenge;
 
-export const ECOSYSTEM_MISSES = [
-  ...SUN_TEST_MISSES, ...SEASON_LOG_MISSES, ...COMPARE_LOGS_MISSES, ...PLANT_NEEDS_MISSES, ...SEASON_BEHAVIOR_MISSES, ...KEEP_COOL_MISSES,
-] as const;
-export type EcosystemMiss = typeof ECOSYSTEM_MISSES[number];
+export { ECOSYSTEM_MISSES_BY_MODE, type EcosystemMiss } from './ecosystemDiorama.card';
 
 /** `count` items of one task, varied: seasons, pairs, plants and animals each before any repeat. */
 export function pickChallenges(task: EcosystemTask, count: number, startId = 1, rng: () => number = Math.random): EcosystemChallenge[] {

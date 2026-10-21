@@ -40,7 +40,7 @@ it('read_blocks: after a wrong count the observer pulls the worth key; the mat i
   expect(q(h, '[data-lever="block-worth"]')[0].getAttribute('aria-label')).toBe('One ten-stick is worth 10');
   expect(mat(h)).toEqual(before);
   const fact = String(receipt.state.task!.demand.onScreen);
-  expect(fact).toMatch(/one ten-stick, worth 10/);
+  expect(fact).toMatch(/a single ten-stick, worth 10/);
   expect(JSON.stringify(receipt.state.task!.demand)).not.toMatch(/\b7\b|\b70\b/);
   h.say('seven'); h.feedback('correct');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['block_worth'] });
@@ -67,7 +67,7 @@ it('read_blocks: fewer_blocks is an ungraded practice mat judged from speech, th
   const task = h.state().task!;
   expect(task.itemId).toBe(`${full}~simpler`);
   expect(task.workspace!.practice).toEqual({ returnsTo: full });
-  expect(task.workspace!.expectedAnswer).toBe('4');
+  expect(task.workspace!.expectedAnswer).toMatch(/^"four" \(also accept "4"\)/);
   expect(mat(h)).toEqual([4, 6]);
   h.say('five'); h.feedback('incorrect', 'retry');
   expect(h.state().task!.itemId).toBe(`${full}~simpler`);
@@ -109,7 +109,7 @@ it('regroup: small_start opens a prediction with one ones cube, then the full pr
   h.dispatch('pull_lever', { lever: 'small_start' });
   const task = h.state().task!;
   expect(task).toMatchObject({ itemId: `${full}~simpler`, task: expect.stringMatching(/^You have 1 ones cube\./) });
-  expect(task.workspace!.expectedAnswer).toBe('11');
+  expect(task.workspace!.expectedAnswer).toMatch(/^"eleven" \(also accept "11"\)/);
   expect(mat(h)).toEqual([2, 1]);
   h.say('eleven'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe(full);

@@ -150,8 +150,8 @@ Judged primitives whose question side is one panel use `useStimulusPipSurface` (
 `stimulusPipPose`): Pip points at the stimulus region (or at an object the ask already
 marks), looks at it while the child answers, receives it only when the tapped work is a
 hands answer, and celebrates the held reveal. Surface tests use
-`pip/testing/runnerSurface.tsx` (`expectStimulusSurface`). Place Value Chart and 3D Shape
-Explorer have their own policies (`placeValueChartPipPose`, `stimulusPipPose`).
+`pip/testing/runnerSurface.tsx` (`expectStimulusSurface`). 3D Shape Explorer has its own
+policy (`stimulusPipPose`).
 
 | Stimulus primitives | Stimulus (cue target) | Never a target |
 | --- | --- | --- |

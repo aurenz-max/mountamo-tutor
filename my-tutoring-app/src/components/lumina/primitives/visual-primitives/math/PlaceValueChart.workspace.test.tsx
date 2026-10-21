@@ -95,7 +95,7 @@ it.each(['identify', 'build', 'compare', 'expanded_form'] as const)(
 
 it('a printed number publishes its spoken key; a dictated number never publishes its digits', () => {
   const h = mount('identify');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('tens');
+  expect(h.state().task!.workspace!.expectedAnswer).toContain('"tens"');
   expect(h.state().task!.demand).toMatchObject({ printedNumber: 45, glowingDigit: 4 });
   cleanup();
   const b = mount('build');
@@ -141,7 +141,7 @@ it('identify: the place name reveal waits for the credited answer, then the valu
   expect(h.state().task!.itemId).toBe(first);
   h.say('tens'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).not.toBe(first);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('forty');
+  expect(h.state().task!.workspace!.expectedAnswer).toContain('"forty"');
 });
 
 it('build: an empty column reads back as a gap, never a zero, and the expanded form waits for a full chart (R8)', () => {

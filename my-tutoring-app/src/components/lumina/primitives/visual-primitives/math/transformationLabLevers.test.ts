@@ -7,8 +7,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { GridPoint, TransformationLabChallenge, TransformationLabChallengeType } from './TransformationLab';
 import {
   CORNER_LETTERS_LEVER, MODEL_FLAG, MODEL_POINT_LEVER, MOTION_MODELS_LEVER, ORIGIN_RAYS_LEVER, PRE_COORDS_LEVER, RULE_CARD_LEVER,
-  SIMPLER_FIGURE_LEVER, SIMPLER_TARGET_LEVER, TARGET_COORDS_LEVER, TWO_CHOICES_LEVER, leverFacts, leverTextLeaks, modelPoint,
-  modelPointLeaks, motionModels, practiceLeaks, ruleFor, simplerItem, transformLevers,
+  SIMPLER_FIGURE_LEVER, SIMPLER_TARGET_LEVER, TARGET_COORDS_LEVER, TRANSFORM_LEVERS, TWO_CHOICES_LEVER, leverTextLeaks, modelPoint,
+  modelPointLeaks, motionModels, practiceLeaks, ruleFor, simplerItem,
 } from './transformationLabLevers';
 import {
   TRANSFORM_MISSES_BY_MODE, applySpec, composeOf, fmtPoint, inGrid, mapSpec, polygonsMatch, specFromLabel, specOf,
@@ -115,9 +115,9 @@ describe('simplify builders', () => {
 describe('help levers: leak rules', () => {
   it.each(MODES)('%s: with every help lever pulled, no lever word, fact or rule names an image corner or the right option', (mode) => {
     for (const c of items(mode)) {
-      const levers = transformLevers(c, [], ALL(false, false));
+      const levers = TRANSFORM_LEVERS.declare(c, ALL(false, false), []);
       const help = levers.filter(l => l.kind === 'help').map(l => l.id);
-      const facts = leverFacts(c, help);
+      const facts = TRANSFORM_LEVERS.onScreen(c, ALL(false, false), help);
       expect(leverTextLeaks(c, facts), `${c.id}: ${facts}`).toBe(false);
       for (const l of levers) expect(leverTextLeaks(c, `${l.when} ${l.does}`)).toBe(false);
       const rule = ruleFor(c);
@@ -150,18 +150,17 @@ describe('help levers: leak rules', () => {
 
   it('the rule card and the pre-image labels are offered only where the screen does not already show them', () => {
     const c = items('apply_rotation')[0];
-    const ids = (pre: boolean, rule: boolean) => transformLevers(c, [], ALL(pre, rule)).map(l => l.id);
+    const ids = (pre: boolean, rule: boolean) => TRANSFORM_LEVERS.declare(c, ALL(pre, rule), []).map(l => l.id);
     expect(ids(false, false)).toEqual(expect.arrayContaining([PRE_COORDS_LEVER, RULE_CARD_LEVER]));
     expect(ids(true, true)).not.toContain(PRE_COORDS_LEVER);
     expect(ids(true, true)).not.toContain(RULE_CARD_LEVER);
-    expect(transformLevers({ ...c, id: `${c.id}~simpler` }, [], ALL(false, false))).toEqual([]);
   });
 });
 
 describe('this wrong answer, then this lever', () => {
   it.each(MODES)('%s: every catalog miss is answered by a lever on every item, with the labels and rule card shown or not', (mode) => {
     for (const c of items(mode)) for (const ctx of [ALL(true, true), ALL(false, false)]) {
-      const levers = transformLevers(c, [], ctx);
+      const levers = TRANSFORM_LEVERS.declare(c, ctx, []);
       for (const miss of TRANSFORM_MISSES_BY_MODE[mode])
         expect(levers.some(l => l.kind === 'help' && l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
     }
@@ -179,24 +178,24 @@ describe('this wrong answer, then this lever', () => {
     ['compose_sequence', 'orientation_off', MOTION_MODELS_LEVER],
     ['compose_sequence', 'position_off', TARGET_COORDS_LEVER],
   ] as const)('%s: %s → %s', (mode, miss, lever) => {
-    expect(nextLever(transformLevers(first(mode), [], ALL(true, true)), miss)).toBe(lever);
+    expect(nextLever(TRANSFORM_LEVERS.declare(first(mode), ALL(true, true), []), miss)).toBe(lever);
   });
 
   it('once the help levers for a miss are pulled, the next is the simplify lever', () => {
     const c = first('apply_rotation');
-    const help = transformLevers(c, [], ALL(true, true)).filter(l => l.kind === 'help').map(l => l.id);
-    expect(nextLever(transformLevers(c, help, ALL(true, true)), 'wrong_direction')).toBe(SIMPLER_FIGURE_LEVER);
+    const help = TRANSFORM_LEVERS.declare(c, ALL(true, true), []).filter(l => l.kind === 'help').map(l => l.id);
+    expect(nextLever(TRANSFORM_LEVERS.declare(c, ALL(true, true), help), 'wrong_direction')).toBe(SIMPLER_FIGURE_LEVER);
     const id = first('identify_transformation');
-    const idHelp = transformLevers(id, [], ALL(true, true)).filter(l => l.kind === 'help').map(l => l.id);
-    expect(nextLever(transformLevers(id, idHelp, ALL(true, true)), 'wrong_axis')).toBe(TWO_CHOICES_LEVER);
+    const idHelp = TRANSFORM_LEVERS.declare(id, ALL(true, true), []).filter(l => l.kind === 'help').map(l => l.id);
+    expect(nextLever(TRANSFORM_LEVERS.declare(id, ALL(true, true), idHelp), 'wrong_axis')).toBe(TWO_CHOICES_LEVER);
     const co = first('compose_sequence');
-    const coHelp = transformLevers(co, [], ALL(true, true)).filter(l => l.kind === 'help').map(l => l.id);
-    expect(nextLever(transformLevers(co, coHelp, ALL(true, true)), 'position_off')).toBe(SIMPLER_TARGET_LEVER);
+    const coHelp = TRANSFORM_LEVERS.declare(co, ALL(true, true), []).filter(l => l.kind === 'help').map(l => l.id);
+    expect(nextLever(TRANSFORM_LEVERS.declare(co, ALL(true, true), coHelp), 'position_off')).toBe(SIMPLER_TARGET_LEVER);
   });
 
   it('a lever fact names only what is drawn: P and P′, never an image corner', () => {
     const c = first('apply_rotation'), p = modelPoint(c)!;
-    const facts = leverFacts(c, [MODEL_POINT_LEVER, RULE_CARD_LEVER]);
+    const facts = TRANSFORM_LEVERS.onScreen(c, ALL(false, false), [MODEL_POINT_LEVER, RULE_CARD_LEVER]);
     expect(facts).toContain(`P at ${fmtPoint(p.from)}`);
     expect(facts).toMatch(/A rule card reads \(x, y\) →/);
     for (const e of c.expectedImage) expect(facts).not.toContain(fmtPoint(e));

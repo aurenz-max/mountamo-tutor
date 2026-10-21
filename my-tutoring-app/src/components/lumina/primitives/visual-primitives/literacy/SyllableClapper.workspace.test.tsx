@@ -38,7 +38,7 @@ it.each(Object.keys(BY_MODE))('%s binds: one spoken answer, and nothing on scree
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'syllable-clapper', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'syllable-clapper', evalMode: mode, data: d });
   const assignment = h.state().task!.workspace!;
-  expect(assignment.expectedAnswer).toMatch(new RegExp(`^${answer}\\b`));
+  expect(assignment.expectedAnswer).toMatch(new RegExp(`^"${answer}"`));
   // The ask states the stimulus (a compound contains its residue) but never the answer as a word of its own.
   expect(h.state().task!.task).not.toMatch(new RegExp(`\\b${answer}\\b`));
   for (const text of hidden) expect(bodyText()).not.toMatch(new RegExp(`\\b${text}\\b`, 'i'));

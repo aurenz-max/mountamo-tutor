@@ -22,7 +22,7 @@
  *   delete_compound  β3.5  "say cupcake without cup" — the child says what is LEFT
  *
  * ⭐ THE CHANT CHANGES SIDES, AND THAT IS THE WHOLE DESIGN OF `blend_syllables`.
- * `syllableClapperScript` bans a chanted ask in the strongest terms it has —
+ * `syllableClapperDomain` bans a chanted ask in the strongest terms it has —
  * saying "but … ter … fly" hands the count over, because three beats IS three,
  * and the port's headline finding was that the click era used the chant AS the
  * easy-tier scaffold. None of that applies when the answer is the WORD: the
@@ -46,7 +46,7 @@
  * two beats. A mode whose content contradicts its name mis-files every attempt
  * it measures, so the name changed rather than the content. Its parts are the
  * compound's two WORDS, gated positively against `COMPOUND_PART_WORDS` in
- * `syllableClapperScript` so that "peanut → pe|anut" — the same probe's other
+ * `syllableClapperDomain` so that "peanut → pe|anut" — the same probe's other
  * finding — cannot ship.
  *
  * βs are unchanged in MAGNITUDE from the shipped registry (1.5 / 2.5 / 3.5) —
@@ -88,7 +88,7 @@ export interface SyllableTaskShape {
 export interface SyllablePlanItem {
   id: string;
   challengeType: string;
-  /** The fully built child-directed ask, composed by `syllableClapperScript`. */
+  /** The fully built child-directed ask, composed by `syllableClapperDomain`. */
   ask: string;
   /** What the child says: a count word, the blended word, or the residue. */
   answer: string;

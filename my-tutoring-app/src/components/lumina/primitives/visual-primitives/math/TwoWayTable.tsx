@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -10,7 +10,6 @@ import {
   LuminaPrompt,
   LuminaFeedbackCard,
   LuminaActionButton,
-  LuminaButton,
   LuminaCallout,
   LuminaChallengeCounter,
   LuminaInput,
@@ -20,24 +19,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TwoWayTableMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   colSum, describeTwoWayWork, formatProbability, grandSum, parseProbabilityInput, rowSum, totalsVisibility,
-  twoWayCorrect, twoWayMiss, workspaceAssignment, workspaceScene, type TableTarget,
+  twoWayCorrect, twoWayMiss, workspaceScene, type TableTarget,
 } from './twoWayTableWorkspace';
 import {
-  MODEL_LEVER, OUTLINE_LEVER, OUT_OF_LEVER, SIMPLER_LEVER, SUM_LEVER, isPracticeTable, leverFacts, outOfFrame,
-  outlineCells, simplerTable, sumFrames, tableModel, twoWayLevers,
+  MODEL_LEVER, OUTLINE_LEVER, OUT_OF_LEVER, SUM_LEVER, TWO_WAY_LEVERS, isPracticeTable, outOfFrame, outlineCells,
+  sumFrames, tableModel,
 } from './twoWayTableLevers';
+import { twoWayTableBoss } from './twoWayTable.boss';
 
 // ============================================================================
 // Data Types — canonical interface re-exported from the generator
@@ -215,24 +214,6 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge, outline }) =
 };
 
 // ============================================================================
-// Tutor reveal policy (scripted path) — keep the AI tutor in sync with the
-// on-screen scaffold so a hard tier (every total hidden) isn't undone by the
-// tutor naming a total or the answer.
-// ============================================================================
-function tutorRevealClause(tier?: TwoWayTableSupportTier): string {
-  switch (tier) {
-    case 'easy':
-      return ' [TIER:easy] Max scaffolding — the non-answer totals are pre-summed on screen. You may name which cell and which total to divide, and walk the setup step by step. Never state the final probability.';
-    case 'medium':
-      return ' [TIER:medium] Only the grand total is shown. Nudge which row or column the student must add up themselves; do not pre-sum it for them and do not give the answer.';
-    case 'hard':
-      return ' [TIER:hard] EVERY total is hidden — do NOT state any row, column, or grand total, and do NOT name the answer. Ask the student WHICH counts they need to add for this question, and let them compute each sum.';
-    default:
-      return '';
-  }
-}
-
-// ============================================================================
 // Component
 // ============================================================================
 
@@ -245,8 +226,10 @@ interface TwoWayTableProps {
   runtimeEvalMode?: string;
 }
 
-const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TwoWayTableProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TwoWayTableChallenge>) => Progress }) => {
+const useTwoWayProgress = useWorkspaceProgressFor('two-way-table');
+const PRACTICE_NOTE = 'An easier practice table is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const TwoWayTableSurface = ({ data, className, runtimePlanItemId }: TwoWayTableProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -254,7 +237,6 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     challenges = [],
     challengeType: sessionChallengeType,
     educationalContext,
-    gradeBand = '7-8',
     instanceId,
     skillId,
     subskillId,
@@ -277,15 +259,15 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Challenge progression. On the workspace path the runtime moves the index. ──
+  // ── Challenge progression: the teaching workspace owns it. ──
   /** Bound below, once the setters exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useTwoWayProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: twoWayTableBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -294,17 +276,15 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
 
-  // In-item levers (`twoWayTableLevers.ts`), keyed by the session item they were pulled on, and the easier table a
+  // In-item levers (`TWO_WAY_LEVERS`), keyed by the session item they were pulled on, and the easier table a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<TwoWayTableChallenge | null>(null);
@@ -318,74 +298,20 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // ── Per-challenge state ───────────────────────────────────────────
   const [answerInput, setAnswerInput] = useState<string>('');
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showHint, setShowHint] = useState<boolean>(false);
 
-  const hintViewedRef = useRef(false);
   const submittedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
 
-  /** A fresh item (both paths) or Try again (workspace): the answer box empty, the feedback gone. */
-  const resetWork = (keepHint: boolean) => {
+  /** A fresh item or Try again: the answer box empty, the feedback gone. */
+  const resetWork = () => {
     setAnswerInput('');
     setFeedback(null);
-    if (!keepHint) { setShowHint(false); hintViewedRef.current = false; }
   };
   openItem.current = (_index, retry) => {
     // Try again on a practice table keeps it; a fresh item (or the full item back after practice) drops it.
-    if (retry) { resetWork(true); return; }
-    setPractice(null);
-    resetWork(false);
+    if (!retry) setPractice(null);
+    resetWork();
   };
-
-  // ── AI Tutoring (scripted path). The legacy context carries the answer; on the workspace path the tutor reads the
-  // scene instead. ──
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    challengeType: currentChallenge?.challengeType ?? sessionChallengeType,
-    scenario: currentChallenge?.scenario ?? '',
-    question: currentChallenge?.question ?? '',
-    rowLabel: currentChallenge?.rowLabel ?? '',
-    columnLabel: currentChallenge?.columnLabel ?? '',
-    supportTier: currentChallenge?.supportTier ?? null,
-    // Answer for the tutor's internal reasoning ONLY — the reveal clause forbids naming it.
-    correctAnswer: currentChallenge ? formatProbability(currentChallenge.expectedProbability) : '',
-    totalChallenges: challenges.length,
-    currentChallengeIndex: currentIndex + 1,
-    attemptNumber: currentAttempts + 1,
-    gradeBand,
-  }), [title, currentChallenge, sessionChallengeType, challenges.length, currentIndex, currentAttempts, gradeBand]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'two-way-table',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'statistics' ? 'Statistics' : 'Grade 7-8',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction (once, when connected; scripted path)
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Two-Way Table probability session. Concept: ${sessionChallengeType}. `
-      + `${challenges.length} contingency-table problems, surfaced one at a time. `
-      + `First table: "${currentChallenge?.scenario}" — "${currentChallenge?.question}". `
-      + `Introduce warmly and orient the student to reading the table.`
-      + tutorRevealClause(currentChallenge?.supportTier),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, sessionChallengeType, currentChallenge, sendText]);
-
-  // ── Scripted path: reset per-challenge state on advance ───────────
-  useEffect(() => {
-    if (tutorOwned || !sessionChallenge) return;
-    resetWork(false);
-  }, [sessionChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Aggregate score (live preview) ────────────────────────────────
   const localOverallScore = useMemo(() => {
@@ -410,47 +336,8 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const [submittedResult, setSubmittedResult] =
     useState<PrimitiveEvaluationResult<TwoWayTableMetrics> | null>(null);
 
-  // ── Scripted path: submit the aggregate evaluation exactly once ────
-  useEffect(() => {
-    if (tutorOwned || !allChallengesComplete || submittedRef.current || hasSubmitted) return;
-    submittedRef.current = true;
-
-    const totalChallenges = challengeResults.length;
-    const overallAccuracy = totalChallenges > 0
-      ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / totalChallenges)
-      : 0;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const hintsViewed = challengeResults.filter((r) => Boolean(r.hintViewed)).length;
-    const averageAttemptsPerChallenge = totalChallenges > 0
-      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
-      : 0;
-
-    const metrics: TwoWayTableMetrics = {
-      type: 'two-way-table',
-      challengeType: sessionChallengeType,
-      totalChallenges,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    const result = submitResult(overallAccuracy >= 60, overallAccuracy, metrics);
-    setSubmittedResult(result);
-
-    sendText(
-      `[ALL_COMPLETE] Session done. Overall accuracy ${overallAccuracy}% across ${totalChallenges} tables. `
-      + `Give brief encouraging feedback about their two-way-table reasoning.`,
-      { silent: true },
-    );
-  }, [tutorOwned, allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || submittedRef.current || challenges.length === 0) return;
     submittedRef.current = true;
@@ -492,28 +379,16 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         message: `Correct! P = ${formatProbability(currentChallenge.expectedProbability)}`
           + (isPracticeTable(currentChallenge) ? '' : ` (+${score} points)`),
       });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly answered the ${currentChallenge.challengeType} table `
-        + `("${currentChallenge.scenario}"). Congratulate briefly and, if more tables remain, encourage them onward.`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: attempts === 1
           ? 'Not quite — re-check which counts go into the numerator and denominator.'
-          : tutorOwned ? 'Still off. Check which group the probability is out of.' : 'Still off. Try the hint, or check your division.',
+          : 'Still off. Check which group the probability is out of.',
       });
-      sendText(
-        `[ANSWER_INCORRECT] Student answered "${answerInput}" on the ${currentChallenge.challengeType} table `
-        + `("${currentChallenge.scenario}", question: "${currentChallenge.question}"). `
-        + `Point them at the specific cell or sum to re-examine for THIS concept — do not just repeat the formula.`
-        + tutorRevealClause(currentChallenge.supportTier),
-        { silent: true },
-      );
     }
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own fields.
     progress.commitCheck(describeTwoWayWork(answerInput), correct, twoWayMiss(currentChallenge, answerInput));
     // An easier practice table (a simplify lever) is not the session's challenge: it records nothing of its own.
     if (correct && !isPracticeTable(currentChallenge)) {
@@ -523,56 +398,23 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         attempts,
         score: phaseScore(attempts),
         challengeType: currentChallenge.challengeType,
-        hintViewed: hintViewedRef.current,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, currentAttempts, feedback, answerInput, mergeResult, sendText, progress.commitCheck, tutorOwned]);
+  }, [currentChallenge, currentAttempts, feedback, answerInput, mergeResult, progress.commitCheck]);
 
-  const handleShowHint = useCallback(() => {
-    if (learnerBlocked()) return;
-    SoundManager.pop();
-    setShowHint(true);
-    hintViewedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Advance to next challenge (scripted path; the workspace path hides Next and the runtime advances) ──
-  const handleNext = useCallback(() => {
-    if (!currentChallenge || tutorOwned) return;
-    const solved = challengeResults.some((r) => r.challengeId === currentChallenge.id && r.correct);
-    if (!solved) {
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: false,
-        attempts: Math.max(1, currentAttempts),
-        score: 0,
-        challengeType: currentChallenge.challengeType,
-        hintViewed: hintViewedRef.current,
-      });
-    }
-    const advanced = advanceProgress();
-    if (advanced) {
-      const nextChallenge = challenges[currentIndex + 1];
-      sendText(
-        `[NEXT_ITEM] Moving to table ${currentIndex + 2} of ${challenges.length}: `
-        + `"${nextChallenge?.scenario}" — "${nextChallenge?.question}". Introduce it briefly.`
-        + tutorRevealClause(nextChallenge?.supportTier),
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentAttempts, currentChallenge, challengeResults, recordResult, challenges, currentIndex, sendText, tutorOwned]);
-
-  // ── Workspace path: what the tutor and the observer are shown, republished every render. ──
+  // ── What the tutor and the observer are shown, republished every render. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { typed: answerInput });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : twoWayLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : TWO_WAY_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : TWO_WAY_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : TWO_WAY_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice table is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -580,29 +422,16 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerTable(sessionChallenge);
+          const easier = TWO_WAY_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
-          setLeverState(pulled); setPractice(easier); resetWork(true);
-          return { practice: workspaceAssignment(easier) };
+          setLeverState(pulled); setPractice(easier); resetWork();
+          return { practice: twoWayTableBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
       },
-      endPractice: () => { setPractice(null); resetWork(true); },
+      endPractice: () => { setPractice(null); resetWork(); },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const isCurrentChallengeComplete = !practice && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct);
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
-    label: 'The two-way table and your answer',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   if (!challenges || challenges.length === 0) {
@@ -664,9 +493,10 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
             </LuminaPrompt>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the table and the answer
+                box as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               {/* Frequency table (tier-gated totals) — bespoke painting */}
               <FrequencyTable challenge={currentChallenge} outline={outline} />
 
@@ -726,38 +556,19 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   A decimal from 0 to 1, to 2 places. A percent works with %.
                 </span>
               </div>
-            </div>
+            </PipWorkspace>
 
             {/* Feedback */}
             {feedback && (
               <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>{feedback.message}</LuminaFeedbackCard>
             )}
 
-            {/* Hint reveal (scripted path; with the tutor, help is the tutor's) */}
-            {!tutorOwned && showHint && (
-              <div className="p-3 bg-slate-950/40 rounded-lg border border-purple-500/30 text-xs text-slate-300">
-                <span className="font-mono uppercase tracking-wider text-purple-400 mr-2">Hint:</span>
-                {currentChallenge.hint}
+            {/* Check; the runtime retries and advances. */}
+            {!feedback?.correct && (
+              <div className="flex flex-wrap items-center gap-2">
+                <LuminaActionButton action="check" onClick={handleCheck} disabled={!canSubmit} />
               </div>
             )}
-
-            {/* Controls */}
-            <div className="flex flex-wrap items-center gap-2">
-              {!feedback?.correct && (
-                <LuminaActionButton action="check" onClick={handleCheck} disabled={!canSubmit} />
-              )}
-              {!tutorOwned && !showHint && !feedback?.correct && (
-                <LuminaButton tone="ghost" onClick={handleShowHint}>Show hint</LuminaButton>
-              )}
-              {!tutorOwned && feedback?.correct && (
-                <LuminaActionButton action="next" onClick={handleNext}>
-                  {currentIndex + 1 < challenges.length ? 'Next Table →' : 'Finish'}
-                </LuminaActionButton>
-              )}
-              {!tutorOwned && !feedback?.correct && currentAttempts >= 3 && (
-                <LuminaButton tone="subtle" onClick={handleNext}>Skip →</LuminaButton>
-              )}
-            </div>
           </>
         )}
 
@@ -770,8 +581,7 @@ const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TwoWayTable = withWorkspaceController<TwoWayTableProps, ProgressOptions<TwoWayTableChallenge>, Progress>(
-  'two-way-table', TwoWayTableSurface, useScriptedProgress, useWorkspaceProgressFor('two-way-table'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const TwoWayTable = withWorkspaceOnly<TwoWayTableProps>('two-way-table', TwoWayTableSurface, props => props.data.title);
 
 export default TwoWayTable;

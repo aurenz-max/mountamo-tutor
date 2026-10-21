@@ -1,14 +1,15 @@
 /**
- * atom-builder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md row C26; report qa/tutor-reports/atom-builder-w1-2026-10-15.md).
- *
- * Pure: the component, the journey row and the tests read the same assignment, scene, check and misses. Every item is
- * a build on the particle tray, checked by code: the classic types against the item's target counts, `make_atom`
- * against its code-owned ask (`judgeAtomBuild`). No count the instruction does not state reaches the tutor.
+ * atom-builder's pure workspace pieces: the check, the scene and the harness's learner. The boss
+ * (`atomBuilder.boss.ts`), the component and the tests read the same scene, check and misses. Every item is a build on
+ * the particle tray, checked by code: the classic types against the item's target counts, `make_atom` against its
+ * code-owned ask (`judgeAtomBuild`). No count the instruction does not state reaches the tutor.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { AtomBuilderChallenge } from './AtomBuilder';
-import { ELEMENTS, judgeAtomBuild, passingBuilds, type AtomAsk, type AtomBuildMiss, type BuiltAtom } from './atomBuild';
+import { ELEMENTS, judgeAtomBuild, passingBuilds, type AtomAsk, type BuiltAtom } from './atomBuild';
+import type { AtomMiss, ClassicAtomMiss } from './atomBuilder.card';
+
+export { ATOM_MISSES_BY_MODE, CLASSIC_ATOM_MISSES, MAKE_ATOM_MISSES, type AtomMiss, type ClassicAtomMiss } from './atomBuilder.card';
 
 /** What the component reads off the board for the check, the description and the scene. */
 export interface AtomView extends BuiltAtom {
@@ -21,20 +22,6 @@ export interface AtomView extends BuiltAtom {
 /** The item's own ask: make_atom with an ask is the open build; anything else is a classic target check. */
 export const openAskOf = (c: Pick<AtomBuilderChallenge, 'type' | 'ask'> | null): AtomAsk | null =>
   c?.type === 'make_atom' ? c.ask ?? null : null;
-
-export function workspaceAssignment(c: AtomBuilderChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
-
-/**
- * What a wrong classic check shows, first that applies: the protons are not the target's (`protons_off`), then the
- * neutrons (`neutrons_off`), then the electrons (`electrons_off`). make_atom's misses are `AtomBuildMiss`.
- */
-export type ClassicAtomMiss = 'protons_off' | 'neutrons_off' | 'electrons_off';
-export type AtomMiss = ClassicAtomMiss | AtomBuildMiss;
-export const CLASSIC_ATOM_MISSES: readonly ClassicAtomMiss[] = ['protons_off', 'neutrons_off', 'electrons_off'];
-export const MAKE_ATOM_MISSES: readonly AtomBuildMiss[] = ['no_protons', 'nucleus_off', 'not_neutral', 'shell_not_full',
-  'valence_off', 'still_neutral', 'charge_sign', 'charge_size', 'need_two', 'different_element', 'same_neutrons'];
 
 /** Every classic count that is off, in check order. A null target accepts any count. */
 export function classicMisses(c: AtomBuilderChallenge, atom: BuiltAtom): ClassicAtomMiss[] {
@@ -71,26 +58,25 @@ export function describeAtom(view: AtomView): string {
   return view.kept ? `Kept an atom of ${counts(view.kept)}; ${now.charAt(0).toLowerCase()}${now.slice(1)}` : now;
 }
 
-const BOARD = 'a particle tray with + and - buttons for protons, neutrons and electrons; the atom is drawn as the learner adds them';
+const BOARD = 'a particle tray of protons, neutrons and electrons; the atom is drawn as the learner adds them';
 
 /** What is drawn and asked. The item's target counts and the ask's passing atoms are never published. */
-export function workspaceScene(c: AtomBuilderChallenge, view: AtomView): WorkspaceScene {
+export function workspaceScene(c: AtomBuilderChallenge, view: AtomView): SceneOf {
   const ask = openAskOf(c);
   const facts: Record<string, string | number> = {
     kind: ask ? `make_atom (${ask.kind})` : c.type,
-    board: ask ? `${BOARD}; an empty board, and many atoms pass the ask` : BOARD,
+    board: ask ? `${BOARD}; the board starts empty` : BOARD,
     // The board is what the item asks about, so its counts are the learner's own work.
     protons: view.protons, neutrons: view.neutrons, electrons: view.electrons,
   };
   if (view.identityCard && view.protons > 0 && ELEMENTS[view.protons]) facts.identityCard = ELEMENTS[view.protons].name;
   if (view.kept) facts.keptAtom = counts(view.kept);
   facts.learnerWork = describeAtom(view);
-  facts.constraints = ask
-    ? 'The learner builds on the tray and presses "I\'m done!"; the activity checks the atom against the ask itself. '
-      + 'You cannot add or remove particles for the learner.'
-    : 'The learner builds on the tray and asks the activity to check it; the activity checks the particle counts itself. '
-      + 'You cannot add or remove particles for the learner.';
-  return { objects: [], facts };
+  // The check reads only the three counts: an item that asks what element an atom is checks the build, not a name.
+  if (!ask) facts.checks = c.type === 'identify' || c.type === 'find_on_table'
+    ? 'The check reads only the three particle counts on the tray: this item asks what element the atom is, and the learner answers by building it, not by naming it.'
+    : 'The check reads only the three particle counts on the tray.';
+  return { objects: [], facts } as SceneOf;
 }
 
 // ── The journey row's learner (liveJourneySpec.ts) ──────────────────────────

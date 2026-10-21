@@ -1,19 +1,17 @@
 /**
- * Shape composer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C11).
+ * Shape composer on the shared tutor/JEV teaching workspace (boss: `shapeComposer.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the
- * screen (pieces dragged onto the board, shapes tapped, a number typed, or an open build) and checked by the
- * activity's own check, so the tutor is never handed piece targets, picture slots, `expectedComponents`,
- * `compositeDescription` or `minimumPiecesNeeded`.
+ * Pure: the component and any probe read the same scene. Every challenge is answered on the screen (pieces dragged
+ * onto the board, shapes tapped, a number typed, or an open build) and checked by the activity's own check, so the
+ * tutor is never handed piece targets, picture slots, `expectedComponents`, `compositeDescription` or
+ * `minimumPiecesNeeded`.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ShapeComposerChallenge } from './ShapeComposer';
-import { judgeShapeBuild, recipeText, SHAPE_BUILD_MISS_WORDS, type BoardPiece, type ShapeBuildMiss } from './shapeComposerBuild';
+import type { ShapeComposerMiss } from './shapeComposer.card';
+import { judgeShapeBuild, recipeText, SHAPE_BUILD_MISS_WORDS, type BoardPiece } from './shapeComposerBuild';
 
-export function workspaceAssignment(challenge: ShapeComposerChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+export { SHAPE_COMPOSER_MISSES_BY_MODE, type ShapeComposerMiss } from './shapeComposer.card';
 
 export interface ShapeView {
   /** The pieces on the board for this challenge, in canvas units. */
@@ -98,21 +96,6 @@ export function shapeComposerMatches(c: ShapeComposerChallenge, view: ShapeView)
   }
 }
 
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads:
- * - compose-match: `pieces_left` (pieces still in the palette), `piece_off_outline` (all out, one not on its spot);
- * - compose-picture: `shape_missing` (a shape the picture needs is not on the board), `shape_off_spot`;
- * - decompose: `not_a_part` (tapped a shape the big shape is not made of), `missed_part` (fewer parts than it has),
- *   `extra_part` (more), `wrong_mix` (as many parts, the wrong kinds of each);
- * - how-many-ways: `too_few` (fewer than the fewest pieces that build it), `too_many` (more than the fewest);
- * - free-create: the open build's own misses (`ShapeBuildMiss`), or `too_few_shapes` on an older payload with no recipe.
- */
-export type ShapeComposerMiss = 'pieces_left' | 'piece_off_outline'
-  | 'shape_missing' | 'shape_off_spot'
-  | 'not_a_part' | 'missed_part' | 'extra_part' | 'wrong_mix'
-  | 'too_few' | 'too_many'
-  | ShapeBuildMiss | 'too_few_shapes';
-
 export function shapeComposerMiss(c: ShapeComposerChallenge | null, view: ShapeView): ShapeComposerMiss | undefined {
   if (!c || shapeComposerMatches(c, view)) return undefined;
   switch (c.type) {
@@ -184,46 +167,34 @@ export function describeShapeWork(c: ShapeComposerChallenge, view: ShapeView): s
 }
 
 /** What is drawn and asked. Shapes on screen are named; no target spot, part list or piece count is. */
-export function workspaceScene(c: ShapeComposerChallenge, view: ShapeView): WorkspaceScene {
+export function workspaceScene(c: ShapeComposerChallenge, view: ShapeView): SceneOf {
   const drawn: Record<string, string | number> = {};
   if (c.type === 'compose-match') {
     drawn.target = `the outline of a ${(c.targetShape ?? 'shape').replace(/-/g, ' ')}, dashed`;
     drawn.palette = kindsText((c.pieces ?? []).map(p => p.shape));
     drawn.pieceSpots = c.showSeams !== false ? 'shown: each piece’s spot is outlined inside the target' : 'hidden';
-    drawn.howToAnswer = 'tap a palette piece to put it on the board, drag it into the outline (it snaps when close), '
-      + 'select it and press the turn button to rotate it, then Check Answer';
   } else if (c.type === 'compose-picture') {
     drawn.picture = (c.targetPicture ?? 'picture').replace(/-/g, ' ');
     drawn.palette = (c.availableShapes ?? []).map(s => plural(s.shape, s.count)).join(', ');
     drawn.pictureSpots = c.showSnapGuides !== false ? 'shown: faint outlines mark where shapes go' : 'hidden';
-    drawn.howToAnswer = 'tap a palette shape to put it on the board, drag it into place (it snaps when close), then Check Answer';
   } else if (c.type === 'decompose') {
     drawn.bigShape = 'one composite shape, filled purple';
     drawn.splitLines = c.showSeams !== false ? 'shown: dashed lines inside it' : 'hidden';
     drawn.choices = decomposeChoices(c).join(' | ');
-    drawn.howToAnswer = 'tap a shape once for each part of that kind, then Check Answer; Reset Selections clears the taps';
+    // How the skill is done, naming no part (the old catalog guidance).
+    drawn.lookingForParts = 'the learner can trace each part with a finger and say what shape it is';
   } else if (c.type === 'how-many-ways') {
     drawn.build = (c.targetForComposition ?? 'shape').replace(/-/g, ' ');
     drawn.pieces = (c.allowedPieces ?? []).join(', ');
     // The board has no outline of the shape to build: a tutor once asked how much of "the square on your board" a piece covered.
     drawn.board = 'empty: the shape to build is named in the ask, not drawn; palette pieces land in the middle and are for '
       + 'trying, and may not fit together into the named shape exactly';
-    drawn.howToAnswer = 'type how many pieces, then Check Answer; the learner may add pieces to the board to try it first';
-  } else if (c.type === 'free-create') {
-    if (c.recipe?.length) {
-      drawn.shapesToUse = `${recipeText(c.recipe)} (also drawn as shape icons under the ask)`;
-      drawn.checkedAtDone = 'exactly the listed shapes, none on top of another, every shape touching another';
-    }
-    drawn.howToAnswer = 'tap palette shapes onto the board (the palette has more kinds than the list), drag and turn them, '
-      + 'Start over clears the board, then I’m done!';
+    drawn.picturingPieces = 'the learner can picture the small pieces fitting inside the named shape one at a time and '
+      + 'count them; how the shape splits (such as corner to corner) is part of the answer';
+  } else if (c.type === 'free-create' && c.recipe?.length) {
+    drawn.shapesToUse = `${recipeText(c.recipe)} (also drawn as shape icons under the ask)`;
+    drawn.checkedAtDone = 'exactly the listed shapes, none on top of another, every shape touching another; the '
+      + 'palette has more kinds than the list';
   }
-  return {
-    objects: [],
-    facts: {
-      kind: c.type, ...drawn,
-      learnerWork: describeShapeWork(c, view),
-      constraints: 'The learner answers on the screen: drags pieces onto the board, taps shapes, or types a number, then '
-        + 'checks; the activity checks the work itself. You cannot drag, tap or type for the learner.',
-    },
-  };
+  return { objects: [], facts: { kind: c.type, ...drawn, learnerWork: describeShapeWork(c, view) } };
 }

@@ -336,7 +336,10 @@ export const generateFigurativeLanguageFinder = async (
   const config = ctx.raw as FigurativeLanguageFinderConfig;
   // build_figurative (open build, OB-7L): the learner writes the figures; code picks them, the model names subjects.
   if (config?.targetEvalMode === 'build_figurative') {
-    return generateFigurativeBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade }) as unknown as Promise<FigurativeLanguageFinderData>;
+    // The tier says when the tutor's model lever comes (FIG_LEVERS.support); old payloads fall back to medium.
+    const buildTier = normalizeSupportTier(config?.difficulty);
+    const built = await generateFigurativeBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade });
+    return { ...built, ...(buildTier ? { supportTier: buildTier } : {}) } as unknown as FigurativeLanguageFinderData;
   }
   const evalConstraint = resolveEvalModeConstraint(
     'figurative-language-finder',
@@ -460,6 +463,7 @@ Rules:
       const sc = resolveSupportStructure(supportTier);
       const shape = resolveProblemShape(supportTier, instanceCap);
       merged.prehighlightInstances = sc.prehighlightInstances;
+      merged.supportTier = supportTier; // when the tutor's model lever comes (FIG_LEVERS.support)
       merged.nameStrategyInHints = sc.nameStrategyInHints;
 
       // ── AXIS 2 lever A — instanceCount (structural). COUNT the LLM's actual

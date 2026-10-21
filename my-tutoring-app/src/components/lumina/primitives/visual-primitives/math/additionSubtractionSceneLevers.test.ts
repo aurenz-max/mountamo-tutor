@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { itemFromChallenge, publicValuesFor, storyLeaksAnswer, type AddSubSceneItem } from './additionSubtractionSceneScript';
+import { itemFromChallenge, publicValuesFor, storyLeaksAnswer, type AddSubSceneItem } from './additionSubtractionSceneDomain';
 import { addSubMiss } from './additionSubtractionSceneWorkspace';
 import {
-  FRAME_LEVER, GROUPS_LEVER, SIMPLER_LEVER, addSubLevers, departedSlots, frameBoxes, groupLayout, groupsFact, groupsLeak,
+  ADD_SUB_LEVERS, FRAME_LEVER, GROUPS_LEVER, SIMPLER_LEVER, departedSlots, frameBoxes, groupLayout, groupsFact, groupsLeak,
   isPlainest, practiceLeaks, practiceParent, smallerStory,
 } from './additionSubtractionSceneLevers';
 
@@ -18,10 +18,10 @@ describe('story_groups', () => {
     for (const unknownPosition of ['change', 'start'] as const) {
       const it_ = item({ type: 'solve-story', unknownPosition, storyText: 'Some ducks swim. Some more come. Now there are five ducks.' }, '1');
       expect(groupsLeak(it_)).toBe(true);
-      expect(addSubLevers(it_, [], ctx([it_], 10)).map(l => l.id)).not.toContain(GROUPS_LEVER);
+      expect(ADD_SUB_LEVERS.declare(it_, ctx([it_], 10), []).map(l => l.id)).not.toContain(GROUPS_LEVER);
     }
     const result = item({ type: 'solve-story', unknownPosition: 'result' }, '1');
-    expect(addSubLevers(result, [], ctx([result], 10)).map(l => l.id)).toContain(GROUPS_LEVER);
+    expect(ADD_SUB_LEVERS.declare(result, ctx([result], 10), []).map(l => l.id)).toContain(GROUPS_LEVER);
   });
 
   it('lays out exactly the start group inside the pen and the rest to its right', () => {
@@ -67,8 +67,8 @@ describe('sentence_frame', () => {
   });
   it('is offered on build_equation only', () => {
     const eq = item({ type: 'build-equation' }, '1');
-    expect(addSubLevers(eq, [], ctx([eq], 10)).map(l => l.id)).toContain(FRAME_LEVER);
-    expect(addSubLevers(item({}), [], ctx([item({})])).map(l => l.id)).not.toContain(FRAME_LEVER);
+    expect(ADD_SUB_LEVERS.declare(eq, ctx([eq], 10), []).map(l => l.id)).toContain(FRAME_LEVER);
+    expect(ADD_SUB_LEVERS.declare(item({}), ctx([item({})]), []).map(l => l.id)).not.toContain(FRAME_LEVER);
   });
 });
 
@@ -119,7 +119,7 @@ describe('smaller_story', () => {
 
   it('is not offered on the plainest shape', () => {
     const plain = item({ startCount: 2, changeCount: 1, resultCount: 3, storyText: 'Two ducks swim. One more comes.' });
-    expect(addSubLevers(plain, [], ctx([plain])).map(l => l.id)).toEqual([GROUPS_LEVER]);
+    expect(ADD_SUB_LEVERS.declare(plain, ctx([plain]), []).map(l => l.id)).toEqual([GROUPS_LEVER]);
   });
 });
 
@@ -129,7 +129,7 @@ describe('the miss, then the lever', () => {
     [1, 'wrong_way'], [2, 'no_change'], [4, 'one_short'], [6, 'one_over'], [3, 'short_by_more'],
   ] as const)('a K picture of %i names %s, and story_groups answers it', (placed, miss) => {
     expect(addSubMiss(k, { placed })).toBe(miss);
-    expect(nextLever(addSubLevers(k, [], ctx([k])), miss)).toBe(GROUPS_LEVER);
+    expect(nextLever(ADD_SUB_LEVERS.declare(k, ctx([k]), []), miss)).toBe(GROUPS_LEVER);
   });
 
   const eq = item({ type: 'build-equation', startCount: 2, changeCount: 3, resultCount: 5 }, '1');
@@ -138,17 +138,17 @@ describe('the miss, then the lever', () => {
     [['2', '+', '3', '=', '6'], 'false_equation', GROUPS_LEVER], [['1', '+', '4', '=', '5'], 'other_numbers', GROUPS_LEVER],
   ] as const)('a number sentence %j names %s, and %s answers it', (tiles, miss, lever) => {
     expect(addSubMiss(eq, { tiles })).toBe(miss);
-    expect(nextLever(addSubLevers(eq, [], ctx([eq], 10)), miss)).toBe(lever);
+    expect(nextLever(ADD_SUB_LEVERS.declare(eq, ctx([eq], 10), []), miss)).toBe(lever);
   });
 
   it('a spoken story asking for the change answers its misses with the smaller story', () => {
     const src = item({ type: 'solve-story', unknownPosition: 'change', startCount: 4, changeCount: 3, resultCount: 7,
       storyText: 'Four ducks swim. Some more come. Now there are seven ducks.' }, '1');
     for (const miss of ['said_start', 'said_result', 'other_operation', 'one_short'])
-      expect(nextLever(addSubLevers(src, [], ctx([src], 10)), miss)).toBe(SIMPLER_LEVER);
+      expect(nextLever(ADD_SUB_LEVERS.declare(src, ctx([src], 10), []), miss)).toBe(SIMPLER_LEVER);
   });
 
   it('a pulled lever is not offered again', () => {
-    expect(nextLever(addSubLevers(k, [GROUPS_LEVER], ctx([k])), 'one_short')).toBe(SIMPLER_LEVER);
+    expect(nextLever(ADD_SUB_LEVERS.declare(k, ctx([k]), [GROUPS_LEVER]), 'one_short')).toBe(SIMPLER_LEVER);
   });
 });

@@ -1,17 +1,15 @@
 /**
- * Timeline builder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
+ * Timeline builder's domain on the boss (`timelineBuilder.boss.ts`): the bank order, the check, the miss and the scene.
  *
- * Pure: the component, the journey row and any probe read the same bank order, assignment and scene. The
- * learner places every event in a slot and presses Check Order; the activity's own check is the judge, so the
- * tutor is never handed `correctPosition` or the order.
+ * Pure: the component, the boss and any probe read the same bank order and scene. The learner places every event in a
+ * slot and presses Check Order; the activity's own check is the judge, so the tutor is never handed
+ * `correctPosition` or the order.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { TimelineBuilderChallenge, TimelineEvent } from './TimelineBuilder';
+import type { TimelineMiss } from './timelineBuilder.card';
 
-export function workspaceAssignment(challenge: TimelineBuilderChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+export { TIMELINE_MISSES, type TimelineMiss } from './timelineBuilder.card';
 
 /**
  * The order the event bank shows. The generator sorts `events` by `correctPosition`, so drawing them as given
@@ -37,8 +35,6 @@ export interface TimelineView {
   placements: Readonly<Record<number, string>>;
   /** After a check, until Try again: the slots the screen marks right and wrong. */
   marked: { right: readonly number[]; wrong: readonly number[] } | null;
-  /** The challenge's hint, once the learner opened it. */
-  hintShown: boolean;
 }
 
 const labelOf = (challenge: TimelineBuilderChallenge, id: string | undefined) =>
@@ -51,17 +47,6 @@ export function describeTimelineWork(challenge: TimelineBuilderChallenge, view: 
   return `Placed, from ${challenge.scaleStart} to ${challenge.scaleEnd}: `
     + slots.map((s, i) => `slot ${i + 1} ${s ? `"${s}"` : 'empty'}`).join(', ');
 }
-
-/**
- * What a wrong order shows (`TeachingAttempt.miss`, handoff 20), read from the placed order alone:
- * - `reversed`: latest to earliest, every event mirrored;
- * - `adjacent_swap`: two neighbouring events traded places, the rest right (events close in time);
- * - `two_swapped`: two events further apart traded places, the rest right;
- * - `one_moved`: one event put in the wrong place, the others in the right order around it;
- * - `mixed_order`: anything else.
- */
-export type TimelineMiss = 'reversed' | 'adjacent_swap' | 'two_swapped' | 'one_moved' | 'mixed_order';
-export const TIMELINE_MISSES: readonly TimelineMiss[] = ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'];
 
 /** The correct position of the event in each slot, left to right; null while a slot is empty. */
 function placedPositions(challenge: TimelineBuilderChallenge, placements: TimelineView['placements']): number[] | null {
@@ -89,7 +74,7 @@ export function timelineMiss(challenge: TimelineBuilderChallenge | null, placeme
 }
 
 /** What is drawn and asked. The events are listed in the bank's order; the timeline's order is not. */
-export function workspaceScene(challenge: TimelineBuilderChallenge, view: TimelineView): WorkspaceScene {
+export function workspaceScene(challenge: TimelineBuilderChallenge, view: TimelineView): SceneOf {
   const bank = bankOrder(challenge);
   const facts: Record<string, string | number> = {
     kind: `${challenge.type} timeline`,
@@ -99,14 +84,11 @@ export function workspaceScene(challenge: TimelineBuilderChallenge, view: Timeli
   };
   // Each card's own line, one fact per card so a long line stays one short fact.
   bank.forEach((e, i) => { if (e.description) facts[`card${i + 1}`] = `${e.label}: ${e.description}`; });
-  if (view.hintShown && challenge.hint) facts.hintOnScreen = challenge.hint;
   facts.learnerWork = describeTimelineWork(challenge, view);
   if (view.marked) {
     const slots = (s: readonly number[]) => (s.length ? `: slot ${s.map(i => i + 1).join(', ')}` : '');
     facts.checkedMarks = `The screen marks ${view.marked.right.length} of ${challenge.events.length} slots right (green`
       + `${slots(view.marked.right)}) and ${view.marked.wrong.length} wrong (red${slots(view.marked.wrong)})`;
   }
-  facts.constraints = 'The learner taps an event, then taps a slot to place it (tapping a filled slot empties it); with every '
-    + 'slot filled they press Check Order and the activity checks the order itself. You cannot place events for the learner.';
   return { objects: [], facts };
 }

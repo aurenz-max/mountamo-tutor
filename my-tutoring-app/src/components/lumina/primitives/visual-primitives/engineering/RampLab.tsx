@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -13,7 +12,10 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult, type WorkspaceRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { describeRampCheck, hearQuestionRequest, rampAssignment, rampItems, rampMiss, rampScene } from './rampLabWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { rampLabBoss } from './rampLab.boss';
+import { describeRampCheck, hearQuestionRequest, rampItems, rampMiss, rampScene } from './rampLabWorkspace';
 import {
   LuminaButton,
   LuminaCard,
@@ -38,11 +40,10 @@ import {
   type RampInvestigationChallenge,
   type RampInvestigationResult,
 } from './rampChallenges';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import {
-  BOTH_RAMPS_LEVER, MODEL_EXPLAIN_LEVER, MODEL_PAIR_LEVER, MODEL_PLAN_LEVER, PUSH_BARS_LEVER, SAME_OR_CHANGED_LEVER, TEST_LOG_LEVER,
-  VARIABLE_NAME, describeSetup, isPracticeRamp, leverFacts, modelConclusion, modelFor, rampLevers, rampSketches, simplerRamp,
-  startLevers, testLog, type RampSketch,
+  BOTH_RAMPS_LEVER, MODEL_EXPLAIN_LEVER, MODEL_PAIR_LEVER, MODEL_PLAN_LEVER, PUSH_BARS_LEVER, RAMP_LEVERS, SAME_OR_CHANGED_LEVER,
+  TEST_LOG_LEVER, VARIABLE_NAME, describeSetup, isPracticeRamp, modelConclusion, modelFor, rampSketches, startLevers, testLog,
+  type RampLeverCtx, type RampSketch,
 } from './rampLabLevers';
 
 export { selectMixedRampChallenges, selectRampChallenges } from './rampChallenges';
@@ -213,7 +214,6 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   const fallback = useMemo(() => fallbackScenario(data), [data]);
   const challenges = useMemo(() => rampItems({ freeExplore, challenges: data.challenges }), [data.challenges, freeExplore]);
   const isChallengeSession = challenges.length > 0;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** The investigation's step and record, reported up by RampInvestigation. */
   /** The step RampInvestigation last reported, tagged with its item: a new item's step is derived, never reset in an
@@ -231,7 +231,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   /** A plan item's rejected plans, kept while a practice item replaces it (the record keeps every rejected attempt). */
   const [carriedPlans, setCarriedPlans] = useState<Record<string, InvestigationEvidence['planAttempts']>>({});
   const run = useRun({
-    primitiveId: 'ramp-lab', assignment: rampAssignment, items: challenges, workspace,
+    primitiveId: 'ramp-lab', assignment: rampLabBoss.assignment, items: challenges, workspace,
     objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: instanceId || `ramp-lab-${challenges.map(c => c.id).join('-')}`,
@@ -523,18 +523,6 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
     if ('variable' in challenge) variablesExploredRef.current.add(challenge.variable);
   }
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: instanceId || fallbackInstanceIdRef.current,
-    scopeId: hasSubmitted || !currentChallenge || isInvestigation ? null : currentChallenge.id,
-    label: 'The ramp and its controls',
-    solved: currentSolved,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === instanceId),
-  });
-
   // What the tutor and the observer are shown, republished every render. W1 offers no demonstration
   // targets and no presentation. A spoken explanation can be heard only once both trials are recorded.
   useLayoutEffect(() => {
@@ -543,10 +531,12 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
     // read from them would publish a revision that supersedes the advance. The checked response names the setting.
     const scene = rampScene(currentChallenge, { phase: investigationPhase ?? undefined });
     const session = sessionChallenge!;
-    const onScreen = practice ? '' : leverFacts(session, pulledLevers, { tested: testedHere, trials: trialsHere });
-    const levers = practice ? [] : rampLevers(session, pulledLevers);
-    workspace.current = { ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+    const leverCtx: RampLeverCtx = { tested: testedHere, trials: trialsHere };
+    const levers = practice ? [] : RAMP_LEVERS.declare(session, leverCtx, pulledLevers);
+    workspace.current = { ...leverScene(scene, {
+        support: practice ? '' : RAMP_LEVERS.support(session, leverCtx),
+        onScreen: practice ? '' : RAMP_LEVERS.onScreen(session, leverCtx, pulledLevers),
+      }),
       readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain',
       levers,
       // A synchronous commit: the screen changes before this returns, or nothing changes and it says why.
@@ -554,16 +544,14 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === TEST_LOG_LEVER && !testedHere.length) return 'The learner has not checked anything on this item yet, so the log would be empty. Let them test a value first.';
-        if (id === PUSH_BARS_LEVER && trialsHere.length < 2) return 'Both trials are not recorded yet, so there is nothing to draw. Let the learner run both trials first.';
         const pulled = { item: session.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerRamp(session);
+          const easier = RAMP_LEVERS.simpler(session, leverCtx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           const evidence = evidenceRef.current;
           if (evidence?.challengeId === session.id) setCarriedPlans(previous => ({ ...previous, [session.id]: evidence.planAttempts }));
           setLeverState(pulled); setPractice(easier); setFeedback(null);
-          return { practice: rampAssignment(easier) };
+          return { practice: rampLabBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -663,7 +651,9 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
             </LuminaPanel>
           )}
 
-          {isInvestigation && <>
+          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+          <PipDock />
+          {isInvestigation && <PipWorkspace>
             <RampInvestigation key={currentChallenge.id} challenge={currentChallenge as RampInvestigationChallenge}
               supportTier={data.supportTier} canAttempt={run.canAttempt} credited={run.revealHeld}
               showMarks={leverOn(SAME_OR_CHANGED_LEVER)} showBars={leverOn(PUSH_BARS_LEVER)}
@@ -689,13 +679,10 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
                 run.commitGesture({ response: describeRampCheck('plan_fair_test', { prediction: evidence.prediction,
                   trials: evidence.trials.length }), correct: true, cue: () => '' });
               }}
-              onHearQuestion={() => ctx.sendText(hearQuestionRequest(currentChallenge as RampInvestigationChallenge),
-                { silent: true, author: 'host' })} />
-          </>}
+              onHearQuestion={() => run.requestHear(hearQuestionRequest(currentChallenge as RampInvestigationChallenge))} />
+          </PipWorkspace>}
           {!isInvestigation && <>
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace} className="space-y-6">
+          <PipWorkspace className="space-y-6">
           <div className="relative overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-950/60">
             <div className={`absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border px-4 py-2 font-mono text-xs ${
               diagnosticsRevealed
@@ -820,7 +807,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
             <LuminaStat label="Force evidence" value={diagnosticsRevealed ? `${thresholdForce.toFixed(1)} N threshold` : 'hidden until check'} accent={diagnosticsRevealed ? 'purple' : undefined} />
           </div>
 
-          </div>
+          </PipWorkspace>
 
           {currentChallenge?.mode === 'compare_conditions' && feedback && (
             <div className="grid gap-3 md:grid-cols-2">

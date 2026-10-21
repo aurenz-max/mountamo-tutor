@@ -47,6 +47,8 @@ export interface GenerateDistributionExplorerInput {
   family?: DistributionFamily;
   /** Optional: free-text steering for the orchestrator. */
   intent?: string;
+  /** The lesson's support tier (`ctx.supportTier`, from config.difficulty), stamped on every challenge for the levers. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 function resolveEvalMode(input: GenerateDistributionExplorerInput): DistributionEvalMode {
@@ -66,11 +68,13 @@ function resolveEvalMode(input: GenerateDistributionExplorerInput): Distribution
 export async function generateDistributionExplorer(
   input: GenerateDistributionExplorerInput,
 ): Promise<DistributionExplorerData> {
-  return runDistributionOrchestrator({
+  const data = await runDistributionOrchestrator({
     topic: input.topic,
     gradeLevel: input.gradeContext,
     evalMode: resolveEvalMode(input),
     family: input.family,
     context: input.intent,
   });
+  const { supportTier } = input;
+  return supportTier ? { ...data, challenges: data.challenges.map(c => ({ ...c, supportTier })) } : data;
 }

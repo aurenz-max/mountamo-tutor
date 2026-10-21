@@ -29,7 +29,9 @@ vi.mock('../../../evaluation', async () => {
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
 import FractionBar, { type FractionBarChallenge } from './FractionBar';
-import { barLevers, equalBarInstruction, smallerBarTarget, workspaceAssignment } from './fractionBarWorkspace';
+import { equalBarInstruction, type FractionBarItem } from './fractionBarWorkspace';
+import { FRACTION_BAR_LEVERS, smallerBarTarget } from './fractionBarLevers';
+import { fractionBarBoss } from './fractionBar.boss';
 import { equalWays } from './fractionEqualBuild';
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -158,24 +160,28 @@ it('levers: show_reference draws the target under the bar; running_count counts;
 
 describe('pure rules', () => {
   it('levers start bare, name the build, and every build_equal miss has a lever', () => {
-    const levers = barLevers('build_equal', item(), [], '3-5');
+    const open = (over: Partial<FractionBarChallenge> = {}): FractionBarItem => ({ ...item(over), type: 'build_equal' });
+    const levers = FRACTION_BAR_LEVERS.declare(open(), { band: '3-5', phase: 'build-fraction' }, []);
     expect(levers.map(l => [l.id, l.kind, l.pulled])).toEqual([['running_count', 'help', false], ['show_reference', 'help', false],
       ['smaller_target', 'simplify', false]]);
     const answered = new Set(levers.flatMap(l => l.answers ?? []));
     for (const miss of ['unequal_pieces', 'same_pieces', 'shaded_the_rest', 'cut_cannot_make', 'one_off', 'off_by_more'])
       expect(answered.has(miss), miss).toBe(true);
     for (const l of levers) expect(l.does).not.toMatch(/\d/);
-    expect(barLevers('build', item(), [], '3-5')).toEqual([]);
+    // The three-step item has its own levers: show_reference and smaller_target are build_equal's alone.
+    expect(FRACTION_BAR_LEVERS.declare({ ...item(), type: 'build' }, { band: '3-5', phase: 'build-fraction' }, []).map(l => l.id))
+      .not.toContain('show_reference');
   });
 
   it('smaller_target: fewer parts, never the same value, another way to make it, none for halves', () => {
     for (const [n, d] of [[3, 4], [2, 3], [5, 10], [8, 12], [1, 3]]) {
-      const easier = smallerBarTarget(item({ numerator: n, denominator: d }), '3-5')!;
+      const easier = smallerBarTarget({ ...item({ numerator: n, denominator: d }), type: 'build_equal' }, '3-5')!;
       expect(easier.denominator).toBeLessThan(d);
       expect(easier.numerator * d).not.toBe(n * easier.denominator);
       expect(equalWays(easier.numerator, easier.denominator, '3-5').length).toBeGreaterThan(0);
-      expect(workspaceAssignment(easier, 'build_equal').task).toBe(equalBarInstruction(easier.numerator, easier.denominator));
+      expect(fractionBarBoss.assignment!(easier)).toEqual({ id: easier.id, task: equalBarInstruction(easier.numerator, easier.denominator),
+        response: 'gesture' });
     }
-    expect(smallerBarTarget(item({ numerator: 1, denominator: 2 }), '3-5')).toBeNull();
+    expect(smallerBarTarget({ ...item({ numerator: 1, denominator: 2 }), type: 'build_equal' }, '3-5')).toBeNull();
   });
 });

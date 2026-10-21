@@ -65,7 +65,6 @@ import {
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
-  checkDiCatalogEntry,
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
@@ -441,14 +440,9 @@ describe('place-value-chart · verdict wording', () => {
 });
 
 describe('place-value-chart · catalog', () => {
-  it('the catalog keeps its side of the contract', () => {
-    expect(checkDiCatalogEntry(catalogEntry, pack, COMPARE_SESSION.items[0])).toEqual([]);
-  });
-
   it('the steering names the microphone and the DI frame, not buttons', () => {
     expect(catalogEntry.constraints).toContain('microphone');
     expect(catalogEntry.constraints).not.toContain('multiple choice');
-    expect(catalogEntry.description).toContain('DI modality');
   });
 });
 

@@ -9,8 +9,8 @@ import type { NetFolderChallenge } from './NetFolder';
 import { NET_MISSES_BY_MODE, matchItem, matchTarget, netFolds, surfaceTotal, validItem, type NetFolderMode } from './netFolderWorkspace';
 import { CROSS_NET, INVALID_CUBE_NETS, VALID_CUBE_NETS, cellsOf, shapeKey, type Cell } from './netFolderGeometry';
 import {
-  EASIER_NET, FAMILY_MODEL, SEE_THROUGH, SMALLER_BOX, TWO_CHOICES, isPracticeNet, leverFacts, leverTextLeaks, netLevers,
-  practiceLeaks, simplerNet, solidOf, thirdLabelCell,
+  EASIER_NET, FAMILY_MODEL, NET_LEVERS, SEE_THROUGH, SMALLER_BOX, TWO_CHOICES, isPracticeNet, leverTextLeaks, practiceLeaks,
+  simplerNet, solidOf, thirdLabelCell,
 } from './netFolderLevers';
 import { countsOf, itemSolid } from './netFolderWorkspace';
 
@@ -37,15 +37,16 @@ for (let l = 1; l <= 10; l++) for (let w = 1; w <= l; w++) for (let h = 1; h <= 
 const SESSION = solidOf('cube');
 const ALL = [...counts, ...identifies, ...matches, ...valids, ...surfaces];
 const solidFor = (c: NetFolderChallenge) => itemSolid(SESSION, c);
+const ctxFor = (c: NetFolderChallenge, foldGuidesShown = false) => ({ solid: solidFor(c), foldGuidesShown });
 const levers = (c: NetFolderChallenge, pulled: string[] = [], foldGuidesShown = false) =>
-  netLevers(c, pulled, { solid: solidFor(c), foldGuidesShown });
+  NET_LEVERS.declare(c, ctxFor(c, foldGuidesShown), pulled);
 
 describe('leak rules', () => {
   it('no lever word, caption fact or refusal names the item\'s answer, on every item of every mode', () => {
     for (const c of ALL) {
       const ls = levers(c);
       for (const l of ls) expect(leverTextLeaks(c, `${l.when} ${l.does}`), `${c.id} ${l.id}`).toBe(false);
-      expect(leverTextLeaks(c, leverFacts(c, ls.map(l => l.id))), c.id).toBe(false);
+      expect(leverTextLeaks(c, NET_LEVERS.onScreen(c, ctxFor(c), ls.map(l => l.id))), c.id).toBe(false);
     }
   });
   it('third_label never names the yellow square or its face, and leaves at least three options unnamed', () => {
@@ -162,6 +163,11 @@ describe('this wrong answer, then this lever', () => {
     expect(levers(valids[0]).map(l => l.id)).toContain(EASIER_NET);
     expect(levers(box(4, 3, 2)).map(l => l.id)).toContain(SMALLER_BOX);
     expect(levers(identifies[0]).map(l => l.id)).toContain(FAMILY_MODEL);
+  });
+  it('net_beside is not offered once the learner has opened the net; a pulled one stays declared', () => {
+    const c = counts[3];
+    expect(NET_LEVERS.declare(c, { ...ctxFor(c), netShown: true }, []).map(l => l.id)).not.toContain('net_beside');
+    expect(NET_LEVERS.declare(c, ctxFor(c), ['net_beside']).find(l => l.id === 'net_beside')?.pulled).toBe(true);
   });
   it('every catalog miss of every mode is answered by a lever on every item (J12 on the builders)', () => {
     const declared = getComponentById('net-folder')!.teachingWorkspace!.misses!;

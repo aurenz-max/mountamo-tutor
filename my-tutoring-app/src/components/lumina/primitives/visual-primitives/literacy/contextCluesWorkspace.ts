@@ -1,15 +1,19 @@
 /**
- * Context clues detective on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape.
+ * Context clues detective on the shared tutor/JEV teaching workspace, wired by its boss (`contextClues.card.ts`,
+ * `contextClues.boss.ts`).
  *
- * Pure: the component, the adapter and the journey read the same steps, assignment, scene and check. Each
+ * Pure: the component and the boss read the same steps, ask, scene and check. Each
  * generated word is three checked steps, one workspace item each: find a clue sentence (tap sentences, Check
  * Clue), name the clue type (tap one of five types, Check Type), give the meaning (tap an option or type it,
  * Check Meaning). The activity's own check is the judge, so the tutor is never handed `clueSentenceIds`,
  * `clueType` or `correctMeaning` before the step that asks for it is credited.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ContextClueChallenge } from './ContextCluesDetective';
+import type { ContextClueMiss } from './contextClues.card';
+
+export { CONTEXT_CLUE_MISSES_BY_MODE, FIND_MISSES, type ContextClueMiss } from './contextClues.card';
 
 export type CluePhase = 'find' | 'classify' | 'define';
 export const CLUE_PHASES: readonly CluePhase[] = ['find', 'classify', 'define'];
@@ -40,11 +44,6 @@ export function clueSteps(challenges: readonly ContextClueChallenge[]): ClueStep
     phases.map(phase => ({ id: stepId(challenge.id, phase), phase, challenge, challengeIndex, phases })));
 }
 
-/** The step a workspace item id names, from the generated challenges (null for a step the session does not build). */
-export function stepFor(challenges: readonly ContextClueChallenge[], itemId: string): ClueStep | null {
-  return clueSteps(challenges).find(s => s.id === itemId) ?? null;
-}
-
 /** 1-based sentence number on screen. */
 export const sentenceNumber = (c: ContextClueChallenge, sentenceId: string) =>
   c.passage.sentences.findIndex(s => s.id === sentenceId) + 1;
@@ -61,10 +60,6 @@ export function clueAsk(step: ClueStep): string {
   }
 }
 
-export function clueAssignment(step: ClueStep): TeachingAssignment {
-  return { id: step.id, task: clueAsk(step), response: 'gesture' };
-}
-
 /** The learner's work the check and the tutor read. */
 export interface ClueView {
   /** Tapped sentence ids, in passage order. */
@@ -75,7 +70,7 @@ export interface ClueView {
 }
 
 // ---------------------------------------------------------------------------
-// The checks (both paths)
+// The checks
 // ---------------------------------------------------------------------------
 
 /**
@@ -119,19 +114,7 @@ export function stepAnswered(step: ClueStep, view: ClueView): boolean {
   return step.phase === 'find' ? view.picked.length > 0 : step.phase === 'classify' ? !!view.clueType : !!view.meaning.trim();
 }
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), only the observable pattern:
- * - find: `target_sentence_only` (only the sentence that holds the word, when the clue is elsewhere), `extra_sentence`
- *   (a clue sentence plus one that is not), `no_clue` (no clue sentence to find tapped);
- * - classify: `similar_opposite` (synonym and antonym swapped), `definition_synonym` (definition and synonym
- *   swapped), `said_inference` (inference for a clue the text states), `stated_for_inference` (a stated type for
- *   an inference clue), `other_type`;
- * - define: `other_meaning` (another option, or a typed meaning the item does not accept).
- */
-export type ContextClueMiss = 'target_sentence_only' | 'extra_sentence' | 'no_clue'
-  | 'similar_opposite' | 'definition_synonym' | 'said_inference' | 'stated_for_inference' | 'other_type'
-  | 'other_meaning';
-
+/** What a wrong check shows (`TeachingAttempt.miss`): the card lists them (`contextClues.card.ts`). */
 export function clueMiss(step: ClueStep, view: ClueView): ContextClueMiss | undefined {
   if (stepCorrect(step, view)) return undefined;
   const c = step.challenge;
@@ -151,17 +134,6 @@ export function clueMiss(step: ClueStep, view: ClueView): ContextClueMiss | unde
     case 'define': return 'other_meaning';
   }
 }
-
-const FIND_MISSES: readonly ContextClueMiss[] = ['target_sentence_only', 'extra_sentence', 'no_clue'];
-/** The catalog's miss list per eval mode: what `clueMiss` can name on that mode's clue types. */
-export const CONTEXT_CLUE_MISSES_BY_MODE: Readonly<Record<string, readonly ContextClueMiss[]>> = {
-  // One clue type per session: no classify step (`cluePhases`), so no type misses.
-  definition: [...FIND_MISSES, 'other_meaning'],
-  // Synonym and antonym words mixed: the classify step is built.
-  synonym_antonym: [...FIND_MISSES, 'similar_opposite', 'definition_synonym', 'said_inference', 'other_type', 'other_meaning'],
-  example: [...FIND_MISSES, 'other_meaning'],
-  inference: [...FIND_MISSES, 'other_meaning'],
-};
 
 // ---------------------------------------------------------------------------
 // What the tutor is told
@@ -191,14 +163,15 @@ export function describeClueWork(step: ClueStep, view: ClueView): string {
 
 export interface ClueSceneView extends ClueView {
   total: number;
-  /** Whether each clue-type button prints its one-line description (the support tier). */
-  typeDescriptionsShown: boolean;
 }
 
-export function clueScene(step: ClueStep, view: ClueSceneView): WorkspaceScene {
+/** What is drawn and asked, never a key before its step is credited. `kind` names the step. What a lever or the
+ *  support tier adds (the list, the descriptions, the strategy) is the lever set's `onScreen` fact. */
+export function clueScene(step: ClueStep, view: ClueSceneView): SceneOf {
   const c = step.challenge;
   const numbered = c.passage.sentences.map((s, i) => `(${i + 1}) ${s.text.trim()}`).join(' ');
   const facts: Record<string, string> = {
+    kind: step.phase,
     ...textFacts('passage', numbered),
     word: `The mystery word "${c.targetWord}" is highlighted where it appears in the passage.`,
     step: `Word ${step.challengeIndex + 1} of ${view.total}, step ${step.phases.indexOf(step.phase) + 1} of ${step.phases.length}: `
@@ -206,22 +179,19 @@ export function clueScene(step: ClueStep, view: ClueSceneView): WorkspaceScene {
   };
   if (step.phase !== 'find')
     facts.clueSentences = `Found in the find step: the clue is in ${sentenceList(numbers(c, c.clueSentenceIds))}, shaded green.`;
-  if (step.phase === 'classify')
-    facts.menu = `Clue-type buttons: ${CLUE_TYPES.map(t => CLUE_TYPE_LABEL[t]).join(', ')}`
-      + (view.typeDescriptionsShown ? ', each with a one-line description.' : ', names only.');
+  if (step.phase === 'classify') facts.menu = `Clue-type buttons: ${CLUE_TYPES.map(t => CLUE_TYPE_LABEL[t]).join(', ')}.`;
   if (step.phase === 'define') {
     facts.clueType = step.phases.includes('classify')
       ? `Named in the type step: the clue type is ${CLUE_TYPE_LABEL[c.clueType]}.`
       : `Every word in this lesson has a ${CLUE_TYPE_LABEL[c.clueType]} clue (there is no type step).`;
-    if (c.meaningOptions?.length) facts.menu = `Meaning choices: ${quoteList(c.meaningOptions)}.`;
-    if (c.strategyHint) facts.strategy = `Printed under the question: "${c.strategyHint}"`;
+    facts.menu = c.meaningOptions?.length ? `Meaning choices: ${quoteList(c.meaningOptions)}.`
+      : 'No meanings are printed: the learner types the meaning in the box.';
+    facts.dictionary = 'The dictionary definition appears only once the meaning is credited.';
   }
+  if (step.phase === 'find') facts.check = 'The check passes when the tapped sentences hold a clue and every one is a clue or '
+    + "the word's own sentence; the word's own sentence alone passes only when the clue is inside it, and tapping every "
+    + 'sentence does not pass.';
   facts.learnerWork = describeClueWork(step, view);
-  facts.constraints = step.phase === 'find'
-    ? 'The learner taps sentences (a tap again lifts one), then presses Check Clue; the activity checks it.'
-    : step.phase === 'classify' ? 'The learner taps one clue type, then presses Check Type; the activity checks it.'
-    : c.meaningOptions?.length ? 'The learner taps one meaning, then presses Check Meaning; the activity checks it.'
-    : 'The learner types the meaning, then presses Check Meaning; the activity checks it.';
   return { objects: [], facts };
 }
 
@@ -261,16 +231,4 @@ export function clueHarnessInputs(step: ClueStep, intent: 'correct' | 'wrong'): 
       return [{ kind: 'write', label: MEANING_INPUT_LABEL, text: intent === 'correct' ? c.correctMeaning : 'a kind of food' }, check];
     }
   }
-}
-
-/**
- * The scripted path's session score, over the steps actually built: find 30, classify 30, define 40 when the session
- * has a type step; find and define rescaled to 100 (3/7, 4/7) when it has none. A step never asked earns nothing.
- */
-export function scriptedScore(results: ReadonlyArray<{ clueCorrect: boolean; typeCorrect: boolean; meaningCorrect: boolean }>,
-  hasClassify: boolean): number {
-  if (!results.length) return 0;
-  const share = (pick: (r: typeof results[number]) => boolean) => results.filter(pick).length / results.length;
-  const [find, type, define] = hasClassify ? [30, 30, 40] : [300 / 7, 0, 400 / 7];
-  return Math.round(share(r => r.clueCorrect) * find + share(r => r.typeCorrect) * type + share(r => r.meaningCorrect) * define);
 }

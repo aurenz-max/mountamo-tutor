@@ -20,10 +20,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { expectClassicWorkspace, mountWithStore } from '../../../pip/testing/classicSurface';
-import { LiveLessonRuntime } from '../../../components/live-activity/runtime/LiveLessonRuntime';
-import { LiveRuntimeContext } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import RampLab, { type RampLabData } from './RampLab';
 import { easierComparisonChoice, selectRampChallenges, type RampChallenge, type RampInvestigationChallenge } from './rampChallenges';
 
@@ -125,21 +121,6 @@ describe('ramp lab on the workspace', () => {
     expect(text).toContain('Use your two trial results');
     expect(text).not.toMatch(/needed less push/);
     expect(options).toMatchObject({ silent: true, author: 'host' });
-  });
-
-  it('keeps the shared Pip workspace contract under the runtime', () => {
-    const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
-    const data = { ...lab([one('compare_conditions')]), instanceId: 'ramp' };
-    seam.activePrimitiveId = 'ramp';
-    // The shared contract drives the tutor's speech and the active block through these two fields.
-    const tutor = {
-      get isAudioPlaying() { return seam.audio; }, set isAudioPlaying(on: boolean) { seam.audio = on; },
-      get activePrimitiveId() { return seam.activePrimitiveId; }, set activePrimitiveId(id: string | null) { seam.activePrimitiveId = id ?? ''; },
-    };
-    const mounted = mountWithStore(() => <LiveRuntimeContext.Provider value={runtime}><LiveRuntimeSurface runtime={runtime}>
-      <RampLab data={data} runtimePlanItemId="plan-ramp" runtimeEvalMode="compare_conditions" />
-    </LiveRuntimeSurface></LiveRuntimeContext.Provider>);
-    expectClassicWorkspace({ mounted, tutor, instanceId: 'ramp' });
   });
 
   it('the adapter refuses free exploration and a challenge with no brief', () => {

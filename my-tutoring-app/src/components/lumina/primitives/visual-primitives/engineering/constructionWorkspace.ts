@@ -1,20 +1,15 @@
 /**
- * Construction site diorama on the shared tutor/JEV teaching workspace (born bound, plain shape).
+ * Construction site diorama's scene on the shared tutor/JEV teaching workspace. Every item is one load the activity
+ * checks when the truck is sent (the card, `constructionSiteDiorama.card.ts`, names the moves; the boss gives the
+ * assignment). The scene carries only this site's own facts, never the moves the card says.
  *
- * Every item is one gesture item.
- * - load_truck: the learner works the excavator (tap the pile to dig, tap the truck to dump) and presses Send;
- *   sending the truck is the check. A scoops ask names the count (counting while loading is the task); a tons
- *   ask gives the limit and one scoop's weight, and the number of scoops never reaches the tutor.
+ * - load_truck: a scoops ask names the count (counting while loading is the task); a tons ask gives the limit and one
+ *   scoop's weight, and the number of scoops never reaches the tutor.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { sendFeedback, scoopWord, tonWord, type ConstructionChallenge } from './constructionModel';
 
-export {
-  loadMatches, loadMiss, describeLoad, CONSTRUCTION_MISSES, type ConstructionMiss,
-} from './constructionModel';
-
-export const constructionAssignment = (c: ConstructionChallenge): TeachingAssignment =>
-  ({ id: c.id, task: c.instruction, response: 'gesture' });
+export { CONSTRUCTION_MISSES_BY_MODE, type ConstructionMiss } from './constructionSiteDiorama.card';
 
 export interface ConstructionView {
   /** Scoops in the bed now. */
@@ -29,7 +24,7 @@ export interface ConstructionView {
   lastSent: number | null;
 }
 
-export function constructionScene(c: ConstructionChallenge, view: ConstructionView): WorkspaceScene {
+export function constructionScene(c: ConstructionChallenge, view: ConstructionView): SceneOf {
   return { objects: [], facts: {
     site: `a work site drawn in 3D: an excavator, a pile of ${c.material}, and an empty dump truck parked beside it`,
     ...(c.units === 'tons'
@@ -38,12 +33,19 @@ export function constructionScene(c: ConstructionChallenge, view: ConstructionVi
     scoopsInTruck: view.loaded,
     bucket: view.holding ? `full of ${c.material}` : 'empty',
     ...(view.spilled ? { spilledOnTheGround: scoopWord(view.spilled) } : {}),
+    // Counting or working out the scoops is the task: the count is the learner's step, not the tutor's.
+    workingOut: c.units === 'tons'
+      ? 'the learner works out how many scoops fill the truck from the limit and one scoop\'s weight; never say that '
+        + 'number, and never add up the weight in the bed while loading; ask what one scoop weighs and how they will '
+        + 'know when the truck is full'
+      : 'the learner counts the mounds in the bed; never say how many scoops are in the truck or how many more are '
+        + 'needed; ask them to count the mounds, and count along only after they start',
     sendsSoFar: view.sends,
     ...(view.lastSent != null ? { lastSendShowed: sendFeedback(c, view.lastSent) } : {}),
-    constraints: 'The learner taps the pile to dig a scoop and taps the truck to dump it; with an empty bucket, a tap on the '
-      + 'truck takes a scoop back out. Each scoop lands as its own mound in the truck bed. Pressing Send is the check. '
+    constraints: 'Each scoop lands as its own mound in the truck bed. '
       + (c.units === 'tons'
         ? 'The screen shows no weight while loading; after Send the scale shows the weight in the bed.'
-        : 'No number on screen counts the scoops; the learner counts the mounds.'),
+        : 'No number on screen counts the scoops.')
+      + ' After Send the screen says what was in the truck; the tutor may talk about that.',
   } };
 }

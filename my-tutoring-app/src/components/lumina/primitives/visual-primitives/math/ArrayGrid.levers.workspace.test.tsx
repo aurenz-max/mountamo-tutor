@@ -91,13 +91,13 @@ it('count: the smaller array is ungraded practice of the same mode; the full ite
   expect(receipt.status).toBe('committed');
   expect(receipt.state.task!.itemId).toBe('a0~smaller');
   expect(receipt.state.task!.workspace!.practice).toEqual({ returnsTo: 'a0' });
-  expect(receipt.state.task!.demand).toMatchObject({ kind: 'count_array', array: '2 rows of 4 stars' });
+  expect(receipt.state.task!.demand).toMatchObject({ kind: 'count_array', array: 'stars in equal rows' });
   expect((h.view.container.querySelector('input[aria-label="Total"]') as HTMLInputElement).value).toBe('');
   write(h, 'Total', '8'); check(h);
   expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('a0');
-  expect(h.state().task!.demand).toMatchObject({ array: '3 rows of 4 stars' });
+  expect(h.state().task!.demand).toMatchObject({ array: 'stars in equal rows' });
   expect((h.view.container.querySelector('input[aria-label="Total"]') as HTMLInputElement).value).toBe('');
   write(h, 'Total', '12'); check(h);
   expect(attempts(h).map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([

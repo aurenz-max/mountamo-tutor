@@ -1,7 +1,7 @@
 # Contract: double-number-line
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C15) for the workspace, leak and lever requirements only. A full `/primitive-contract double-number-line` derivation (consumers per ratio skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/DoubleNumberLine.tsx` · **Workspace:** `doubleNumberLineWorkspace.ts` · **Levers:** `doubleNumberLineLevers.ts` · **Generator:** `service/math/gemini-double-number-line.ts` · **Oracle:** `service/qa/oracles/double-number-line.ts` · **Adapter:** `components/live-activity/adapters/doubleNumberLineLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`double-number-line`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/DoubleNumberLine.tsx` · **Workspace:** `doubleNumberLineWorkspace.ts` · **Levers:** `doubleNumberLineLevers.ts` · **Generator:** `service/math/gemini-double-number-line.ts` · **Oracle:** `service/qa/oracles/double-number-line.ts` · **Boss:** `doubleNumberLine.card.ts` + `doubleNumberLine.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`double-number-line`)
 
 ## Requirements
 
@@ -27,3 +27,4 @@
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C15).
 - 2026-10-14 — R-IS added. Before: every tier and run gave a given of 2 with asks 3, 4, 5, 6 in order (each answer the last one plus the rate). Compatible with the existing requirements.
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (split and jumps marks, grow-model clue, smaller-ask easier), workspace-only export with a Practice badge; the scripted path (legacy AI cues, tier reveal clauses, hint note, Next button), adapter and catalog guidance/tutoring prose deleted. R1-R3 unchanged.

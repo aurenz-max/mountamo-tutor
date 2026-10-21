@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { FormulaLabChallenge, FormulaLabChallengeType, FormulaLabData } from './FormulaLab';
+import { formulaCheck, formulaHarnessInput, formatNumber, observedPosition, type FormulaWork } from './formulaLabWorkspace';
+import { FORMULA_MISSES_BY_MODE } from './formulaLab.card';
 import {
-  FORMULA_MISSES_BY_MODE, formulaCheck, formulaHarnessInput, formatNumber, observedPosition, type FormulaWork,
-} from './formulaLabWorkspace';
-import {
-  formulaLevers, leverFacts, leverTextLeaks, modelPair, orderCard, practiceLeaks, simplerFormula, substitutionLeaks,
-  substitutionText,
+  FORMULA_LEVERS, leverTextLeaks, modelPair, orderCard, practiceLeaks, simplerFormula, substitutionLeaks, substitutionText,
 } from './formulaLabLevers';
 import { evaluateFormulaExpression } from './formulaLabMath';
 
@@ -25,7 +23,13 @@ const item = (d: FormulaLabData, type: FormulaLabChallengeType, changed: string,
 };
 const ke = lab('0.5 * m * v ^ 2', [v('m', 'mass', 1, 50), v('v', 'speed', 1, 20, 0.5)]);
 const speed = lab('d / t', [v('d', 'distance', 1, 100), v('t', 'time', 1, 20)]);
-const NONE = { tokensGrouped: false, substitutionShown: false };
+/** The lever set, read as the component reads it: the session item against its lab. A starting position (tokens already
+ *  grouped, the substitution already shown) is a field of the item. */
+type Start = { tokensGrouped: boolean; substitutionShown: boolean };
+const NONE: Start = { tokensGrouped: false, substitutionShown: false };
+const formulaLevers = (d: FormulaLabData, c: FormulaLabChallenge, pulled: string[], start: Start) =>
+  FORMULA_LEVERS.declare({ ...c, groupFormulaTokens: start.tokensGrouped, showSubstitutionSetup: start.substitutionShown }, d, pulled);
+const leverFacts = (d: FormulaLabData, c: FormulaLabChallenge, pulled: string[]) => FORMULA_LEVERS.onScreen(c, d, pulled);
 const ids = (levers: { id: string }[]) => levers.map(l => l.id);
 
 describe('declarations', () => {
@@ -41,7 +45,7 @@ describe('declarations', () => {
       const d = c.changedVariableSymbol === 'm' || c.changedVariableSymbol === 'v' ? ke : speed;
       for (const ctx of [NONE, { tokensGrouped: true, substitutionShown: true }]) {
         const levers = formulaLevers(d, c, [], ctx);
-        for (const miss of FORMULA_MISSES_BY_MODE[c.type]) {
+        for (const miss of FORMULA_MISSES_BY_MODE[c.type] as readonly string[]) {
           expect(levers.filter(l => l.kind === 'help').some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
           expect(nextLever(levers, miss), `${c.id} ${miss}`).toBeTruthy();
         }

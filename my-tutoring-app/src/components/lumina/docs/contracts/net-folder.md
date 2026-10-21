@@ -1,7 +1,7 @@
 # Contract: net-folder
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C18) for the workspace, content and lever requirements only. A full `/primitive-contract net-folder` derivation (consumers per geometry skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/NetFolder.tsx` · **Geometry:** `netFolderGeometry.ts` · **Workspace:** `netFolderWorkspace.ts` · **Levers:** `netFolderLevers.ts` · **Generator:** `service/math/gemini-net-folder.ts` · **Adapter:** `components/live-activity/adapters/netFolderLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`net-folder`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/NetFolder.tsx` · **Geometry:** `netFolderGeometry.ts` · **Workspace:** `netFolderWorkspace.ts` · **Levers:** `netFolderLevers.ts` · **Generator:** `service/math/gemini-net-folder.ts` · **Boss:** `netFolder.card.ts` (card: wiring, misses, words) + `netFolder.boss.ts` (validate, items, ask, levers, harness) · **Catalog:** `service/manifest/catalog/math.ts` (`net-folder`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding, content repair and levers, C18).
+- 2026-10-20 — moved onto a boss (wave 3): `netFolder.card.ts` + `netFolder.boss.ts` (bespoke: typed and tapped modes), levers declared once as `NET_LEVERS` (`leverSet`), `adapters/netFolderLive.ts` deleted, the catalog `tutoring` block and guidance prose dropped, the component workspace-only (`withWorkspaceOnly`) with Pip from the runner. net_beside is no longer refused at pull time once the learner has pressed Unfold: it is not offered. R1-R3 unchanged.

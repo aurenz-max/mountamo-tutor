@@ -1,33 +1,32 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { LuminaBadge } from '../ui';
 import { KaTeX } from './annotated-example/StepContentRenderer';
 import { getFamily, resolveParameters } from '../lib/probability';
-import { useLuminaAI } from '../hooks/useLuminaAI';
-import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../pip/WorkspacePip';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../evaluation';
 import type { DistributionExplorerMetrics } from '../evaluation/types';
 import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../components/live-activity/bossLevers';
 import { DistributionPlot } from './distribution-explorer/DistributionPlot';
 import { ParameterPanel } from './distribution-explorer/ParameterPanel';
 import { MomentReadout } from './distribution-explorer/MomentReadout';
 import { FamilySelector } from './distribution-explorer/FamilySelector';
 import { ChallengeStrip } from './distribution-explorer/ChallengeStrip';
 import {
-  describeDistributionWork, distributionCorrect, distributionMiss, workspaceAssignment, workspaceScene,
-  type DistributionWork,
+  describeDistributionWork, distributionCorrect, distributionMiss, workspaceScene, type DistributionWork,
 } from './distribution-explorer/distributionExplorerWorkspace';
 import {
-  EVENT_STRIP_LEVER, FAMILY_FACTS, FAMILY_FACTS_LEVER, SHAPE_GUIDE, SHAPE_GUIDE_LEVER, SLIDER_GLOW_LEVER, WORKED_MODEL_LEVER,
-  distributionLevers, eventStrip, leverFacts, namedSliders, practiceItem, stripText, workedModel,
+  DISTRIBUTION_LEVERS, EVENT_STRIP_LEVER, FAMILY_FACTS, FAMILY_FACTS_LEVER, PRACTICE_NOTE, SHAPE_GUIDE, SHAPE_GUIDE_LEVER,
+  SLIDER_GLOW_LEVER, WORKED_MODEL_LEVER, eventStrip, namedSliders, stripText, workedModel,
 } from './distribution-explorer/distributionExplorerLevers';
+import { distributionExplorerBoss } from './distribution-explorer/distributionExplorer.boss';
 import type {
   DistributionChallenge,
   DistributionExplorerData,
@@ -37,15 +36,12 @@ import type {
 // ═══════════════════════════════════════════════════════════════════════
 // DistributionExplorer — the master distribution workbench.
 //
-// Wave-1 scope: discrete + continuous families with interactive parameter
-// sliders, live moment readout, PDF/CDF view toggle, and a phase-gated
-// challenge strip authored by the orchestrator. The math engine in
-// `lumina/lib/probability` evaluates the chosen family at the current
-// parameters — Gemini never invents PMF values, only narrative + challenges.
+// Discrete + continuous families with interactive parameter sliders, live moment readout, PDF/CDF view toggle, and
+// a challenge strip authored by the orchestrator. The math engine in `lumina/lib/probability` evaluates the chosen
+// family at the current parameters — Gemini never invents PMF values, only narrative + challenges.
 //
-// Two controllers (`withWorkspaceController`): the scripted one (its own Next,
-// scripted tutor messages), and the shared tutor/JEV workspace, where the
-// runtime advances and the checks in `distributionExplorerWorkspace.ts` commit.
+// Taught only on the shared tutor/JEV workspace (its boss is `distribution-explorer/distributionExplorer.boss.ts`):
+// the runtime advances, and the checks in `distributionExplorerWorkspace.ts` commit.
 // ═══════════════════════════════════════════════════════════════════════
 
 interface DistributionExplorerProps {
@@ -57,29 +53,30 @@ interface DistributionExplorerProps {
   runtimeEvalMode?: string;
 }
 
-const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  DistributionExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DistributionChallenge>) => Progress }) => {
+const useDistributionProgress = useWorkspaceProgressFor('distribution-explorer');
+
+const DistributionExplorerSurface = ({ data, className, runtimePlanItemId }: DistributionExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const challenges = data.challenges;
 
   const stableInstanceIdRef = useRef(data.instanceId || `distribution-explorer-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
 
-  // ── Progression. On the workspace path the runtime moves the index. ──
+  // ── Progression: the runtime moves the index. ──
   /** Bound below; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useDistributionProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: distributionExplorerBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const activeChallengeIdx = progress.currentIndex;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -91,15 +88,15 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   );
   const [view, setView] = useState<'pdf' | 'cdf'>('pdf');
 
-  // Per-challenge results: undefined = not yet committed, true/false = correct/incorrect. With the tutor only a
-  // correct check is written here (a wrong one reopens through Try again, and must not show the rationale or the key).
+  // Per-challenge results: only a correct check is written here (a wrong one reopens through Try again, and must not
+  // show the rationale or the key).
   const [results, setResults] = useState<Record<string, boolean>>({});
   /** The choice picked on the active challenge, and whether the workbench moved since it opened (explore's check). */
   const [selected, setSelected] = useState<string | null>(null);
   const [explored, setExplored] = useState(false);
 
-  // In-item levers (`distributionExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier item
-  // a simplify lever put on screen in its place (ungraded practice; the session item comes back after it).
+  // In-item levers (`DISTRIBUTION_LEVERS`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place (ungraded practice; the session item comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<DistributionChallenge | null>(null);
 
@@ -114,9 +111,8 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const activeChallenge: DistributionChallenge | undefined = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
-  /** The pulls drawn on screen now: never on a practice item. */
-  const onScreenLevers = practice ? [] : pulledLevers;
-  const leverOn = (id: string) => onScreenLevers.includes(id);
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const shownChallenges = practice ? challenges.map((c, i) => (i === activeChallengeIdx ? practice : c)) : challenges;
   // While an identify challenge is pending the workbench must not name a family: the selector is locked and the
   // family's name, formula, description and sliders are hidden, so the chart cannot be read for the answer.
@@ -127,7 +123,7 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
   const computePending =
     activeChallenge?.type === 'compute' && results[activeChallenge.id] === undefined;
 
-  // ── Evaluation (workspace path, under a lesson's evaluation provider) ──
+  // ── Evaluation (under a lesson's evaluation provider) ──
   const { submitResult: submitEvaluation, hasSubmitted: hasSubmittedEvaluation } =
     usePrimitiveEvaluation<DistributionExplorerMetrics>({
       primitiveType: 'distribution-explorer',
@@ -156,47 +152,6 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
       undefined, result.diagnosisEvidence);
   };
 
-  // ── AI tutoring (scripted path) ────────────────────────────────
-  // aiPrimitiveData mirrors the catalog contextKeys (family, evalMode, parameters, current prompt/type, a moment
-  // snapshot). It carries NO correct answer. On the workspace path the tutor reads the scene instead.
-  const aiPrimitiveData = useMemo(() => ({
-    family,
-    evalMode: data.evalMode,
-    parameters: params,
-    currentPrompt: activeChallenge?.prompt ?? null,
-    currentChallengeType: activeChallenge?.type ?? null,
-    momentSnapshot: {
-      mean: Number(evaluated.moments.mean.toFixed(3)),
-      variance: Number(evaluated.moments.variance.toFixed(3)),
-      skewness: Number(evaluated.moments.skewness.toFixed(3)),
-    },
-  }), [family, data.evalMode, params, activeChallenge, evaluated]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'distribution-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Introduce the workbench once the tutor connects (one end_of_turn message
-  // carrying the first challenge's prompt so the tutor reads a real task).
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const first = challenges[0];
-    sendText(
-      `[ACTIVITY_START] Distribution-explorer session — ${data.evalMode.replace(/_/g, ' ')} mode on the ${family} family, ${challenges.length} challenge(s). `
-      + `Introduce the workbench briefly (sliders change parameters; the chart, moments, and CDF update live), then read the first challenge: "${first.prompt}".`,
-      { silent: true },
-    );
-  }, [isConnected, challenges, data.evalMode, family, sendText]);
-
   const handleFamilyChange = useCallback(
     (next: DistributionFamily) => {
       if (learnerBlocked()) return;
@@ -224,72 +179,29 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
 
   const work: DistributionWork = { picked: selected, explored, family, params };
 
+  // Check (or Got it): the activity's own check commits; only a correct one is shown as answered.
   const handleCheck = useCallback(() => {
     const ch = activeChallenge;
     if (!ch || learnerBlocked() || results[ch.id] !== undefined) return;
     if (ch.type !== 'guided_exploration' && selected === null) return;
-    // The scripted path credits Got it as it always has; with the tutor, Got it is checked (the workbench moved).
-    const correct = ch.type === 'guided_exploration' && !tutorOwned ? true : distributionCorrect(ch, work);
+    const correct = distributionCorrect(ch, work);
     progress.commitCheck(describeDistributionWork(ch, work), correct, distributionMiss(ch, work));
-    if (!tutorOwned || correct) setResults((prev) => ({ ...prev, [ch.id]: correct }));
-    if (ch.type === 'guided_exploration') {
-      // Explore phase has no graded answer — affirm the observation, don't grade.
-      sendText(
-        `[EXPLORATION_DONE] The student finished the guided exploration: "${ch.prompt}". `
-        + `Affirm their observation in one sentence and invite them onward — no grading.`,
-        { silent: true },
-      );
-    } else if (correct) {
-      sendText(
-        `[ANSWER_CORRECT] The student answered the ${ch.type} challenge correctly: "${ch.prompt}". `
-        + `Congratulate briefly and reinforce WHY it's right in one sentence (shape / support / the mean-variance relationship).`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[ANSWER_INCORRECT] The student answered the ${ch.type} challenge "${ch.prompt}" incorrectly. `
-        + `Give a structural hint that points at shape, support, or the mean-variance relationship. `
-        + `Do NOT reveal the correct family or value — they can re-read the rationale on screen.`,
-        { silent: true },
-      );
-    }
+    if (correct) setResults((prev) => ({ ...prev, [ch.id]: true }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeChallenge, results, selected, explored, family, params, tutorOwned, progress.commitCheck, sendText]);
+  }, [activeChallenge, results, selected, explored, family, params, progress.commitCheck]);
 
-  // Scripted path only: send exactly one end_of_turn message per advance, carrying the NEXT challenge's data (or the
-  // session summary). The workspace path hides Next and the runtime advances.
-  const handleAdvance = useCallback(() => {
-    const nextIdx = activeChallengeIdx + 1;
-    const next = challenges[nextIdx];
-    if (next) {
-      sendText(
-        `[NEXT_CHALLENGE] Challenge ${nextIdx + 1} of ${challenges.length} (${next.type}): "${next.prompt}". `
-        + `Introduce it briefly — what should the student focus on?`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[ALL_COMPLETE] The student finished all ${challenges.length} distribution challenges. `
-        + `Give a brief, encouraging summary tied to the ${family} family.`,
-        { silent: true },
-      );
-    }
-    setSelected(null);
-    setExplored(false);
-    progress.advance();
-  }, [activeChallengeIdx, challenges, family, sendText, progress]);
-
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !activeChallenge || !sessionChallenge) return;
+    if (!activeChallenge || !sessionChallenge) return;
     const scene = workspaceScene(activeChallenge, work, identifyPending, computePending);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : distributionLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : DISTRIBUTION_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : DISTRIBUTION_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : DISTRIBUTION_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -297,10 +209,10 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = DISTRIBUTION_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); setSelected(null); setExplored(false);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: distributionExplorerBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -317,19 +229,6 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
     : undefined;
   const notes = leverOn(FAMILY_FACTS_LEVER) ? FAMILY_FACTS : undefined;
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // Pip outlines the workbench (family, sliders, chart and challenge strip) as one
-  // region during the tutor's speech, looks at what the child moves, and celebrates
-  // only a committed correct answer. Guided exploration has no graded answer, so it
-  // never celebrates.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: activeChallenge?.id ?? null,
-    label: 'The distribution workbench',
-    solved: !!activeChallenge && activeChallenge.type !== 'guided_exploration' && results[activeChallenge.id] === true,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   const plotName = identifyPending ? 'Mystery distribution' : familyDef.label;
 
   return (
@@ -339,6 +238,7 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
         <div className="flex items-baseline gap-3 flex-wrap">
           <LuminaBadge accent="blue">{data.subject}</LuminaBadge>
           <LuminaBadge accent="pink">{data.evalMode.replace(/_/g, ' ')}</LuminaBadge>
+          {practice && <LuminaBadge accent="amber">Practice</LuminaBadge>}
         </div>
         <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
         {data.lessonContext && (
@@ -348,9 +248,10 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
         )}
       </div>
 
-      {/* ── Workbench grid ─────────────────────────────────────── */}
-      {pip.store && activeChallenge && <div {...pip.dock} className={`${pip.dock.className} mb-4`} />}
-      <div {...pip.workspace} className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workbench (family, sliders,
+          chart and challenge strip) as one region. */}
+      <div className="mb-4"><PipDock /></div>
+      <PipWorkspace className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left rail — family + params + moments */}
         <div className="lg:col-span-4 space-y-4">
           {identifyPending ? (
@@ -421,8 +322,6 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
             selected={selected}
             onSelect={handleSelect}
             onCheck={handleCheck}
-            onAdvance={handleAdvance}
-            tutorOwned={tutorOwned}
             blocked={blocked}
             notes={notes}
           />
@@ -448,13 +347,13 @@ const DistributionExplorerSurface = ({ data, className, runtimePlanItemId, tutor
             </Card>
           )}
         </div>
-      </div>
+      </PipWorkspace>
     </div>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-export const DistributionExplorer = withWorkspaceController<DistributionExplorerProps, ProgressOptions<DistributionChallenge>, Progress>(
-  'distribution-explorer', DistributionExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('distribution-explorer'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+export const DistributionExplorer = withWorkspaceOnly<DistributionExplorerProps>(
+  'distribution-explorer', DistributionExplorerSurface, props => props.data.title);
 
 export default DistributionExplorer;

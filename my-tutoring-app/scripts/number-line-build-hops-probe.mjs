@@ -38,7 +38,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateNumberLine } = await loader.import('/src/components/lumina/service/math/gemini-number-line.ts');
   const hopsMod = await loader.import('/src/components/lumina/primitives/visual-primitives/math/numberLineBuildHops.ts');
-  const { validateActivityData } = await loader.import('/src/components/lumina/components/live-activity/adapters/numberLineLive.ts');
+  const { validateNumberLineData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/numberLine.boss.ts');
   const { numberLineOracle } = await loader.import('/src/components/lumina/service/qa/oracles/number-line.ts');
   const cases = [
     ['k', 'K', 'kindergarten', 'Kindergarten', undefined, 'Addition within 10', 'Put together two numbers to make a number within 10'],
@@ -71,7 +71,7 @@ try {
         issues.push(`${c.id}: judge first=${first} second=${second} again=${again} wrong=${wrong}`);
     }
     if (new Set(ch.map(c => c.targetValues[0])).size !== ch.length) issues.push('repeated target');
-    try { validateActivityData(data); } catch (e) { issues.push(`adapter: ${e.message}`); }
+    try { validateNumberLineData(data); } catch (e) { issues.push(`boss: ${e.message}`); }
     const oracle = numberLineOracle.verify(data, { topic });
     if (oracle.violations.length) issues.push(`oracle: ${oracle.violations.map(v => `${v.check} ${v.detail}`).join(' | ')}`);
     runs.push({ name, grade, difficulty: difficulty ?? null, topic, intent, issues,

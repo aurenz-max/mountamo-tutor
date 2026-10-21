@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useLayoutEffect, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaCardContent,
   LuminaBadge,
-  LuminaButton,
   LuminaActionButton,
   LuminaChoiceChip,
   LuminaPanel,
@@ -20,24 +19,24 @@ import {
 import type { HistogramMetrics } from '../../../evaluation/types';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   SHAPE_LABEL, binRange, computeBins, describeHistogramWork, frequencyAxis, histogramCorrect, histogramMiss, workIsCheckable,
-  workspaceAssignment, workspaceScene, type Bin, type HistogramWork,
+  workspaceScene, type Bin, type HistogramWork,
 } from './histogramWorkspace';
 import {
-  AXIS_NAMES_LEVER, BALANCE_MODEL, BALANCE_MODEL_LEVER, COUNT_LABELS_LEVER, COUNT_MARKS_LEVER, ISOLATE_LEVER,
-  LEVEL_LINE_LEVER, OUTLINE_LEVER, PEAK_MODEL_LEVER, TAIL_MODEL_LEVER, histogramLevers, isPracticeGraph, leverFacts,
-  peakModel, simplerHistogram, tailModel,
+  AXIS_NAMES_LEVER, BALANCE_MODEL, BALANCE_MODEL_LEVER, COUNT_LABELS_LEVER, COUNT_MARKS_LEVER, HISTOGRAM_LEVERS,
+  ISOLATE_LEVER, LEVEL_LINE_LEVER, OUTLINE_LEVER, PEAK_MODEL_LEVER, TAIL_MODEL_LEVER, isPracticeGraph, peakModel, tailModel,
+  type HistogramLeverContext,
 } from './histogramLevers';
+import { histogramBoss } from './histogram.boss';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -67,6 +66,8 @@ export interface HistogramChallenge {
   yAxisLabel: string;
   prompt: string;
   hint?: string;
+  /** The session's support tier, stamped on each item by the generator (when a model lever comes). Absent: medium. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // identify_shape
   expectedShape?: HistogramShapeKind;
@@ -104,8 +105,8 @@ export interface HistogramData {
    * it is always off for find_modal_bin / read_frequency (it'd be the answer).
    */
   showFrequencyLabels?: boolean;
-  /** The within-mode support tier that produced this session (debug / future
-   *  tutor calibration). Display logic keys off the resolved flags above. */
+  /** The within-mode support tier that produced this session. Display logic keys off the resolved flags above; the
+   *  levers read each item's own `supportTier`. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
@@ -146,50 +147,6 @@ const PHASE_CONFIG: Record<string, PhaseConfig> = {
 
 const phaseScore = (attempts: number): number =>
   Math.max(20, 100 - Math.max(0, attempts - 1) * 20);
-
-/**
- * Keep the AI tutor's reveal level in sync with BOTH the support tier and the
- * mode, so it never leaks what the workspace withheld (scripted path only). Two rules combine:
- *  - The ANSWER is never named at any tier. For identify_shape the shape-name
- *    IS the answer, so the tutor must never say symmetric/skewed/etc.; likewise
- *    the modal bin, the bin count, and the mean/median are answers.
- *  - The STRATEGY is named at easy, nudged at medium, withdrawn at hard — matching
- *    the generator's scaffolding withdrawal (stat panel / bar-count labels / hint).
- */
-const tutorRevealPolicy = (
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  type: HistogramChallengeType,
-): string => {
-  const neverReveal =
-    type === 'identify_shape'
-      ? ' Never name the distribution shape (symmetric / skewed / bimodal / uniform) — that IS the answer.'
-      : type === 'find_modal_bin'
-        ? ' Never say which bin is the tallest — that IS the answer.'
-        : type === 'read_frequency'
-          ? ' Never state the bin\'s count — that IS the answer.'
-          : ' Never state the mean or median value — that IS the answer.';
-  switch (tier) {
-    case 'easy':
-      return (
-        ' SUPPORT TIER EASY: you may name the STRATEGY — point to where to look' +
-        ' (the tallest bars, the balance of the tails, the height up the y-axis, the balance point)' +
-        ' and walk the student through reading it step by step.' + neverReveal
-      );
-    case 'medium':
-      return (
-        ' SUPPORT TIER MEDIUM: the workspace still shows its aids — nudge the student\'s' +
-        ' reading of the graph; do not narrate the whole strategy.' + neverReveal
-      );
-    case 'hard':
-      return (
-        ' SUPPORT TIER HARD: on-screen aids (stat panel, bar-count labels, hint) are withdrawn —' +
-        ' do NOT name the strategy or which feature to read; ask what the student notices in the bars themselves.' +
-        neverReveal
-      );
-    default:
-      return neverReveal;
-  }
-};
 
 function computeStats(data: number[]) {
   if (data.length === 0) return { mean: 0, stdDev: 0, min: 0, max: 0, count: 0, skew: 'N/A' };
@@ -470,8 +427,10 @@ const HistogramChart: React.FC<ChartProps> = ({
 // Main Component
 // =============================================================================
 
-const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  HistogramProps & { tutorOwned: boolean; useController: (options: ProgressOptions<HistogramChallenge>) => Progress }) => {
+const useHistogramProgress = useWorkspaceProgressFor('histogram');
+const PRACTICE_NOTE = 'An easier practice graph is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const HistogramSurface = ({ data, className, runtimePlanItemId }: HistogramProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -490,15 +449,15 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const stableInstanceIdRef = useRef<string>(instanceId || `histogram-${Date.now()}`);
   const resolvedInstanceId = stableInstanceIdRef.current;
 
-  // -- Challenge progress. On the workspace path the runtime moves the index. --
+  // -- Challenge progress: the teaching workspace owns it. --
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useHistogramProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: histogramBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -508,11 +467,9 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     results: challengeResults,
     isComplete,
     mergeResult,
-    advance,
-    reset,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -536,7 +493,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     hasSubmitted,
     submittedResult,
     elapsedMs,
-    resetAttempt,
   } = usePrimitiveEvaluation<HistogramMetrics>({
     primitiveType: 'histogram',
     instanceId: resolvedInstanceId,
@@ -552,13 +508,10 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const [selectedBinIndex, setSelectedBinIndex] = useState<number | null>(null);
   const [numericInput, setNumericInput] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const hintViewedRef = useRef(false);
   const recordedRef = useRef(false);
-  const [hintsViewedSession, setHintsViewedSession] = useState(0);
   const [hoveredBinIndex, setHoveredBinIndex] = useState<number | null>(null);
 
-  /** The working surface blank: a fresh item (both paths), or Try again (workspace). */
+  /** The working surface blank: a fresh item, or Try again. */
   const clearWork = () => {
     setSelectedShape(null);
     setSelectedBinIndex(null);
@@ -566,7 +519,7 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     setFeedback(null);
     setHoveredBinIndex(null);
   };
-  // In-item levers (`histogramLevers.ts`), keyed by the session item they were pulled on, and the easier graph a
+  // In-item levers (`HISTOGRAM_LEVERS`), keyed by the session item they were pulled on, and the easier graph a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<HistogramChallenge | null>(null);
@@ -576,8 +529,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     // Try again on a practice graph keeps it; a fresh item (or the full item back after practice) drops it.
     if (retry) return;
     setPractice(null);
-    setShowHint(false);
-    hintViewedRef.current = false;
     recordedRef.current = false;
   };
 
@@ -585,7 +536,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const sessionChallenge = challenges[currentIndex] ?? null;
   /** What is on screen: the easier graph while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
-  const currentChallengeId = sessionChallenge?.id ?? null;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   /** A runtime pull on the session item; never drawn on a practice graph. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
@@ -619,81 +569,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     return { start: currentChallenge.targetBinStart, end: currentChallenge.targetBinEnd };
   }, [currentChallenge, challengeType]);
 
-  // -- AI tutoring (scripted path). The legacy context is muted on the workspace path, where the tutor reads the scene.
-  const aiPrimitiveData = useMemo(
-    () => ({
-      challengeType,
-      currentChallengeIndex: currentIndex + 1,
-      totalChallenges: challenges.length,
-      contextTitle: currentChallenge?.contextTitle ?? '',
-      prompt: currentChallenge?.prompt ?? '',
-      xAxisLabel: currentChallenge?.xAxisLabel ?? '',
-      binWidth: currentChallenge?.binWidth,
-      binStart: currentChallenge?.binStart,
-      attempts: currentAttempts,
-      gradeBand,
-      supportTier: data.supportTier,
-    }),
-    [challengeType, currentIndex, challenges.length, currentChallenge, currentAttempts, gradeBand, data.supportTier],
-  );
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'histogram',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand ?? '6-8',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Session intro — once, on the first histogram.
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    if (challenges.length === 0 || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] ${title || 'Reading Histograms'} — ${challenges.length} histograms in this session, ` +
-        `mode ${challengeType}. First histogram: ${currentChallenge.contextTitle}. Prompt: ${currentChallenge.prompt}. ` +
-        `Briefly welcome the student and orient them to the first histogram.` +
-        tutorRevealPolicy(data.supportTier, challengeType),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, currentChallenge, title, challengeType, data.supportTier, sendText]);
-
-  // Per-histogram handoff — exactly one AI turn per advance (skips the first,
-  // which the intro covers), with the FULL new-histogram data to avoid the
-  // turn-race hallucination documented in ADDING_TUTORING_SCAFFOLD.md.
-  const lastAnnouncedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge) return;
-    if (!hasIntroducedRef.current) return;
-    if (lastAnnouncedIdRef.current === null) {
-      lastAnnouncedIdRef.current = currentChallenge.id;
-      return;
-    }
-    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
-    lastAnnouncedIdRef.current = currentChallenge.id;
-    sendText(
-      `[NEXT_HISTOGRAM] Histogram ${currentIndex + 1} of ${challenges.length}: ${currentChallenge.contextTitle}. ` +
-        `Prompt: ${currentChallenge.prompt}. Briefly introduce this new histogram — name its real-world context.` +
-        tutorRevealPolicy(data.supportTier, challengeType),
-      { silent: true },
-    );
-  }, [currentChallenge, currentIndex, challenges.length, isConnected, challengeType, data.supportTier, sendText]);
-
-  // -- Per-challenge reset (scripted path; the workspace path also clears in onItemOpened) --
-  useEffect(() => {
-    if (!currentChallenge) return;
-    clearWork();
-    setShowHint(false);
-    hintViewedRef.current = false;
-    recordedRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallengeId]);
-
   // -- Submit handler. Every check commits (right or wrong); a missing choice or a non-number is not a check. --
   const handleSubmit = useCallback(() => {
     if (!currentChallenge || recordedRef.current || hasSubmitted || learnerBlocked()) return;
@@ -724,7 +599,7 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         : challengeType === 'find_modal_bin' ? `[${currentChallenge.expectedBinStart}, ${currentChallenge.expectedBinEnd})`
           : challengeType === 'read_frequency' ? (currentChallenge.targetFrequency ?? 0) : (currentChallenge.targetAnswer ?? 0);
 
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own fields.
     progress.commitCheck(describeHistogramWork(currentChallenge, work, bins), isCorrect,
       histogramMiss(currentChallenge, work, bins));
 
@@ -754,16 +629,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             : 'Correct!',
         correct: true,
       });
-      sendText(
-        `[ANSWER_CORRECT] The student read histogram ${currentIndex + 1} of ${challenges.length} ` +
-          `(${currentChallenge.contextTitle}, mode ${challengeType}) correctly on attempt ${nextAttempts}. ` +
-          `Acknowledge briefly${
-            currentIndex + 1 < challenges.length ? ' and preview the next histogram.' : ' — the session is wrapping up.'
-          }`,
-        { silent: true },
-      );
-      // Scripted path only: the workspace advances when the runtime does.
-      if (!tutorOwned) setTimeout(() => advance(), 1100);
     } else {
       SoundManager.playIncorrect();
       const msg =
@@ -775,13 +640,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
               ? 'Not quite — read the bar height again.'
               : 'Not quite — try a different estimate.';
       setFeedback({ message: msg, correct: false });
-      sendText(
-        `[ANSWER_INCORRECT] On histogram ${currentIndex + 1} (${currentChallenge.contextTitle}, mode ${challengeType}), ` +
-          `the student answered "${studentAnswer}" — not correct (attempt ${nextAttempts}). ` +
-          `Give ONE brief hint about how to read the graph, without revealing the answer.` +
-          tutorRevealPolicy(data.supportTier, challengeType),
-        { silent: true },
-      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -791,85 +649,14 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     selectedBinIndex,
     numericInput,
     bins,
-    advance,
     mergeResult,
     progress.commitCheck,
     currentAttempts,
     hasSubmitted,
-    sendText,
-    currentIndex,
-    challenges.length,
-    data.supportTier,
-    tutorOwned,
   ]);
 
-  // -- Hint handler (scripted path; with the tutor, help is the tutor's) ----
-  const handleShowHint = useCallback(() => {
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      setHintsViewedSession((n) => n + 1);
-    }
-  }, []);
-
-  // -- Submit metrics on completion (scripted path) -------------------------
-  const submittedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned) return;
-    if (!isComplete || hasSubmitted || submittedRef.current) return;
-    submittedRef.current = true;
-
-    const totalChallenges = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && (r.score ?? 0) >= 100).length;
-    const overallAccuracy =
-      totalChallenges > 0
-        ? Math.round(
-            challengeResults.reduce(
-              (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-              0,
-            ) / totalChallenges,
-          )
-        : 0;
-    const averageAttemptsPerChallenge =
-      totalChallenges > 0 ? Math.round((attemptsCount / totalChallenges) * 10) / 10 : 0;
-
-    const metrics: HistogramMetrics = {
-      type: 'histogram',
-      challengeType,
-      totalChallenges,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedSession,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    submitResult(overallAccuracy >= 70, overallAccuracy, metrics, {
-      challengeResults,
-    });
-
-    sendText(
-      `[ALL_COMPLETE] The student finished all ${totalChallenges} histograms (mode ${challengeType}), ` +
-        `overall ${overallAccuracy}%. Celebrate the completed session in one or two sentences.`,
-      { silent: true },
-    );
-  }, [
-    tutorOwned,
-    isComplete,
-    hasSubmitted,
-    challengeResults,
-    challenges.length,
-    challengeType,
-    hintsViewedSession,
-    submitResult,
-    sendText,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || challenges.length === 0 || progress.recordsEvaluation === false) return;
     const metrics: HistogramMetrics = {
@@ -888,19 +675,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
   };
-
-  // -- Reset (scripted path) --------------------------------------------------
-  const handleReset = useCallback(() => {
-    reset();
-    resetAttempt();
-    submittedRef.current = false;
-    clearWork();
-    setShowHint(false);
-    hintViewedRef.current = false;
-    recordedRef.current = false;
-    setHintsViewedSession(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reset, resetAttempt]);
 
   // -- Mode-specific copy ---------------------------------------------------
   const modeLabel = PHASE_CONFIG[challengeType]?.label ?? challengeType;
@@ -926,7 +700,7 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     [challengeResults],
   );
   const solved = !!currentChallenge && completedIds.has(currentChallenge.id);
-  /** Input closed once the item is done, and on the workspace path while a checked answer waits for Try again. */
+  /** Input closed once the item is done, and while a checked answer waits for Try again. */
   const inputClosed = isComplete || hasSubmitted || solved || blocked;
 
   const localOverallScore = useMemo(() => {
@@ -939,34 +713,33 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     );
   }, [isComplete, challenges.length, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, {
       shape: selectedShape, binIndex: selectedBinIndex, typed: numericInput,
       showFrequencyLabels, showStatistics,
     });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : histogramLevers(sessionChallenge, pulledLevers, { countLabelsShown: sessionShowsLabels });
+    const ctx: HistogramLeverContext = { countLabelsShown: sessionShowsLabels, barTapped: selectedBinIndex !== null };
+    const levers = practice ? [] : HISTOGRAM_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : HISTOGRAM_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : HISTOGRAM_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice graph is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === LEVEL_LINE_LEVER && selectedBinIndex === null) {
-          return 'No bar is tapped yet: the level line is drawn at the top of the bar the learner taps. Ask them to tap one first.';
-        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerHistogram(sessionChallenge);
+          const easier = HISTOGRAM_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); clearWork();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: histogramBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -978,18 +751,6 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const tail = leverOn(TAIL_MODEL_LEVER) && sessionChallenge ? tailModel(sessionChallenge) : null;
   const peak = leverOn(PEAK_MODEL_LEVER) && sessionChallenge ? peakModel(sessionChallenge) : null;
   const askedIndex = targetBin ? bins.findIndex((b) => b.start === targetBin.start) : -1;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
-    label: 'The histogram and your answer',
-    solved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   // -- Render ---------------------------------------------------------------
   return (
@@ -1004,6 +765,7 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber">Practice</LuminaBadge>}
             <LuminaBadge accent="emerald">Grades {gradeBand}</LuminaBadge>
           </div>
         </div>
@@ -1049,9 +811,10 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
               <p className="text-slate-200 mt-1">{currentChallenge.prompt}</p>
             </div>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !isComplete && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the graph and the answer
+                as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
             {/* Chart */}
             <LuminaPanel>
               <HistogramChart
@@ -1158,50 +921,30 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   />
                 </div>
               )}
-
-              {/* Check button */}
-              {!solved && (
-                <div className="flex justify-center">
-                  <LuminaActionButton action="check" onClick={handleSubmit} disabled={hasSubmitted || blocked} />
-                </div>
-              )}
-
-              {feedback && (
-                <div
-                  className={`rounded-lg p-3 border ${
-                    feedback.correct
-                      ? 'bg-emerald-500/10 border-emerald-500/30'
-                      : 'bg-red-500/10 border-red-500/30'
-                  }`}
-                >
-                  <p className={`text-sm font-medium ${feedback.correct ? 'text-emerald-300' : 'text-red-300'}`}>
-                    {feedback.message}
-                  </p>
-                </div>
-              )}
-
-              {/* Hint (scripted path; with the tutor, help is the tutor's) */}
-              {!tutorOwned && showHint && currentChallenge.hint && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                  <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
-                </div>
-              )}
-
-              {!tutorOwned && !feedback?.correct && currentAttempts >= 2 && !showHint && currentChallenge.hint && (
-                <div className="flex justify-center">
-                  <LuminaButton onClick={handleShowHint}>Need a Hint?</LuminaButton>
-                </div>
-              )}
             </div>
-            </div>
+            </PipWorkspace>
 
+            {/* Check; the runtime retries and advances. */}
+            {!solved && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" onClick={handleSubmit} disabled={hasSubmitted || blocked} />
+              </div>
+            )}
+
+            {feedback && (
+              <div
+                className={`rounded-lg p-3 border ${
+                  feedback.correct
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}
+              >
+                <p className={`text-sm font-medium ${feedback.correct ? 'text-emerald-300' : 'text-red-300'}`}>
+                  {feedback.message}
+                </p>
+              </div>
+            )}
           </>
-        )}
-
-        {!tutorOwned && isComplete && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="retry" onClick={handleReset} />
-          </div>
         )}
       </LuminaCardContent>
     </LuminaCard>
@@ -1228,8 +971,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, accent }) => {
   );
 };
 
-// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
-const Histogram = withWorkspaceController<HistogramProps, ProgressOptions<HistogramChallenge>, Progress>(
-  'histogram', HistogramSurface, useScriptedProgress, useWorkspaceProgressFor('histogram'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const Histogram = withWorkspaceOnly<HistogramProps>('histogram', HistogramSurface, props => props.data.title);
 
 export default Histogram;

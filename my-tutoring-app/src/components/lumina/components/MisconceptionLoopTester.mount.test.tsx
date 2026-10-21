@@ -31,7 +31,9 @@ it('mounts the second representation from the same curriculum scope with safe br
   expect(screen.getByText('Generate blocks from the same hypothesis')).toHaveProperty('disabled', true);
 });
 
-it('mounts the real generated chart, judged runner and microphone panel inside the real tutor providers', async () => {
+// place-value-chart is on a boss (wave 3, 10-20): the scripted runner and its own microphone panel are gone; the
+// session's microphone is the tutor's. The provider-crash guard is the chart mounting at all.
+it('mounts the real generated chart inside the real tutor providers', async () => {
   // Only API boundaries are stubbed: mocking the chart or context hooks hides
   // the missing-provider runtime crash this test guards against.
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: {
@@ -45,6 +47,5 @@ it('mounts the real generated chart, judged runner and microphone panel inside t
   render(<Tester onBack={() => {}} />);
   fireEvent.click(screen.getByText('Generate first activity'));
   expect(await screen.findByText('Provider regression chart')).toBeTruthy();
-  expect(screen.getByText('Tap the microphone to start.')).toBeTruthy();
   expect(screen.getByText('Generate next activity')).toHaveProperty('disabled', true);
 });

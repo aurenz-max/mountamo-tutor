@@ -4,21 +4,22 @@
  * events without reading" and "confuses two events close in time". The order of the events IS the answer, so no lever
  * places, numbers, ranks or names an event: every help lever draws the timeline's own scale, never an event on it.
  *
+ * Declared once as a lever set (`TIMELINE_LEVERS`, `bossLevers.ts`).
+ *
  * Help (the screen does more; the item is unchanged):
- * - `time_arrow` an arrow along the timeline from the start end (earlier) to the far end (later), a flag on slot 1's
+ * - `time_arrow` (marks) an arrow along the timeline from the start end (earlier) to the far end (later), a flag on slot 1's
  *   end. Answers `reversed` and `mixed_order` (which way time runs).
- * - `time_ruler` the scale itself drawn under the slots: the parts of a day as pictures (daily), every month from the
+ * - `time_ruler` (layout) the scale itself drawn under the slots: the parts of a day as pictures (daily), every month from the
  *   start month to the end month (yearly), years at even steps (historical). The learner matches each card to a place
  *   on the ruler. Declared only where the scale ends can be read; never only the cards' own months or years, never a
  *   mark that is an event's name (`rulerLeaks`).
  *
- * Simplify (`fewer_events`): an ungraded practice timeline of the same kind with fewer events, far apart in time,
+ * Simplify (`fewer_events`, easier): an ungraded practice timeline of the same kind with fewer events, far apart in time,
  * built by code from a fixed pool. Never the learner's events, so it never orders part of the item (`practiceLeaks`).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { TimelineBuilderChallenge, TimelineEvent } from './TimelineBuilder';
-import type { TimelineMiss } from './timelineBuilderWorkspace';
+import { TIMELINE_MISSES } from './timelineBuilder.card';
 
 export const ARROW_LEVER = 'time_arrow';
 export const RULER_LEVER = 'time_ruler';
@@ -210,45 +211,41 @@ export function practiceTimeline(c: TimelineBuilderChallenge | null | undefined,
   return null;
 }
 
-export function practiceAssignment(p: TimelineBuilderChallenge): TeachingAssignment {
-  return { id: p.id, task: p.instruction, response: 'gesture' };
-}
+// ── the lever set ──────────────────────────────────────────────────────────
 
-// ── declarations ───────────────────────────────────────────────────────────
-
-const ALL_MISSES: readonly TimelineMiss[] = ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'];
-
-/** The levers on a full item. A practice timeline carries none. */
-export function timelineLevers(c: TimelineBuilderChallenge | null | undefined, all: readonly TimelineBuilderChallenge[],
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeTimeline(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly TimelineMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const ruler = timeRuler(c);
-  const unit = c.type === 'daily' ? 'the parts of the day, as pictures' : c.type === 'yearly' ? 'every month of the scale' : 'years at even steps';
-  return [
-    lever(ARROW_LEVER, 'help', ['reversed', 'mixed_order'],
-      'The learner puts the events backwards, or seems not to know which end of the timeline is earlier.',
-      'Draws an arrow along the timeline from the earlier end to the later end, with a flag at the start. No event is on it.'),
-    ...(ruler ? [lever(RULER_LEVER, 'help', ALL_MISSES,
-      'The learner mixes up events that are close in time, or puts one event in the wrong place.',
-      `Draws the timeline's scale under the slots: ${unit}, from the start to the end. No event is on it; the learner `
-        + 'matches each card to a place on it. Never say which event goes where.')] : []),
-    ...(practiceTimeline(c, all) ? [lever(FEWER_LEVER, 'simplify', ALL_MISSES,
-      'The learner cannot order this many events yet.',
-      'Opens an easier practice timeline of the same kind first, with fewer events far apart in time and none of these '
-        + 'events. It is not graded; the full timeline comes back after it, blank.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor. Never an event (the leak test reads every label). */
-export function timelineLeverFacts(c: TimelineBuilderChallenge, pulled: readonly string[]): string {
-  const ruler = pulled.includes(RULER_LEVER) ? timeRuler(c) : null;
-  const kind = c.type === 'daily' ? 'the parts of a day as pictures (morning, middle of the day, evening, night)'
+/** The parts of the ruler, for its words: what the scale draws on each kind of timeline. */
+const rulerUnit = (c: TimelineBuilderChallenge) =>
+  c.type === 'daily' ? 'the parts of the day, as pictures' : c.type === 'yearly' ? 'every month of the scale' : 'years at even steps';
+const rulerKind = (c: TimelineBuilderChallenge) =>
+  c.type === 'daily' ? 'the parts of a day as pictures (morning, middle of the day, evening, night)'
     : c.type === 'yearly' ? 'every month in order' : 'years at even steps';
-  return [
-    pulled.includes(ARROW_LEVER) && `An arrow runs along the timeline from ${c.scaleStart} (earlier, flagged) on the left `
-      + `to ${c.scaleEnd} (later) on the right. No event is on it.`,
-    ruler && `Under the slots is the timeline's scale from ${c.scaleStart} to ${c.scaleEnd}: ${kind}. No event is on it.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+
+/**
+ * The levers, declared once (`bossLevers.ts`). The context is every timeline in the session (a practice timeline shares
+ * no event with any of them). None is offered on a practice timeline: the component declares nothing while one is on
+ * screen, and every spec refuses one.
+ */
+export const TIMELINE_LEVERS = leverSet<TimelineBuilderChallenge, readonly TimelineBuilderChallenge[]>({
+  missesOf: () => TIMELINE_MISSES,
+  specs: [
+    { id: ARROW_LEVER, type: 'marks', answers: ['reversed', 'mixed_order'],
+      when: 'The learner puts the events backwards, or seems not to know which end of the timeline is earlier.',
+      does: 'Draws an arrow along the timeline from the earlier end to the later end, with a flag at the start. No event is on it.',
+      offer: c => !isPracticeTimeline(c),
+      fact: (_on: unknown, c) => `An arrow runs along the timeline from ${c.scaleStart} (earlier, flagged) on the left `
+        + `to ${c.scaleEnd} (later) on the right. No event is on it.` },
+    { id: RULER_LEVER, type: 'layout', answers: 'all',
+      when: 'The learner mixes up events that are close in time, or puts one event in the wrong place.',
+      does: c => `Draws the timeline's scale under the slots: ${rulerUnit(c)}, from the start to the end. No event is on `
+        + 'it; the learner matches each card to a place on it. Never say which event goes where.',
+      offer: c => !isPracticeTimeline(c),
+      content: c => timeRuler(c),
+      fact: (_on: unknown, c) => `Under the slots is the timeline's scale from ${c.scaleStart} to ${c.scaleEnd}: `
+        + `${rulerKind(c)}. No event is on it.` },
+    { id: FEWER_LEVER, type: 'easier', answers: 'all',
+      when: 'The learner cannot order this many events yet.',
+      does: 'Opens an easier practice timeline of the same kind first, with fewer events far apart in time and none of these '
+        + 'events. It is not graded; the full timeline comes back after it, blank.',
+      content: (c, all) => practiceTimeline(c, all) },
+  ],
+});

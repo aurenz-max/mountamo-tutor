@@ -35,6 +35,8 @@ import {
 } from './storyPlannerBand';
 import { generateStoryPlanner } from './gemini-story-planner';
 import { LITERACY_CATALOG } from '../manifest/catalog/literacy';
+import { storyScene } from '../../primitives/visual-primitives/literacy/storySteps';
+import { LIVE_ADAPTERS } from '../../components/live-activity/activityContract';
 
 const K_PROSE = 'kindergarten students (ages 5-6) - Use clear, simple language';
 const G3_PROSE = 'grade 3 students (ages 8-9) - Use grade-appropriate language';
@@ -212,9 +214,12 @@ describe('story-planner catalog: the teaching workspace carries the read-aloud c
     expect(entry.tutoring).toBeUndefined();
   });
 
-  it('tells the tutor it is the K-1 reading channel and forbids giving away the arc order, including by elimination', () => {
-    const g = entry.teachingWorkspace!.guidance;
-    expect(g).toMatch(/cannot read: read the story idea, each question and every picture/);
-    expect(g).toMatch(/never say which comes first or which cannot/);
+  it('tells the tutor (the K-1 scene + the shared doctrine) it is the reading channel and never to give away the arc order, including by elimination', () => {
+    const order = { id: 'arc' as const, kind: 'order' as const, events: [{ id: 'e1', text: 'A' }, { id: 'e2', text: 'B' }, { id: 'e3', text: 'C' }] };
+    const said = String(storyScene(order, 'A lost puppy', { picture: true }).facts.constraints);
+    expect(said).toMatch(/cannot read yet: read the story idea, the question and the words under every picture aloud/);
+    const g = LIVE_ADAPTERS['story-planner'].guidance;
+    expect(g).toMatch(/read the instruction and every label aloud for a learner who cannot read/);
+    expect(g).toMatch(/Never rule a choice out/);
   });
 });

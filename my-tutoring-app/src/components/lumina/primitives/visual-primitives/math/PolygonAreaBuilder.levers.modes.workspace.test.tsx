@@ -72,17 +72,19 @@ it('trapezoid: the half left out, then the turned copy in one commit, recorded o
   h.close();
 });
 
-it('composite: the left-out piece is refused until a one-piece answer, then outlined; the split draws the pieces', () => {
+it('composite: the left-out piece is offered only after a one-piece answer, then outlined; the split draws the pieces', () => {
   const h = mount(COMP);
-  expect(levers(h).map(l => l.id)).toEqual([SPLIT_LEVER, LEFT_OUT_LEVER, ROWS_LEVER, SMALLER_FIGURE_LEVER]);
+  expect(levers(h).map(l => l.id)).toEqual([SPLIT_LEVER, ROWS_LEVER, SMALLER_FIGURE_LEVER]);
   answer(h, '30');
   expect(last(h)).toMatchObject({ miss: 'wrong_area' });
+  expect(levers(h).map(l => l.id)).not.toContain(LEFT_OUT_LEVER);
   const before = frozen(h);
   expect(h.dispatch('pull_lever', { lever: LEFT_OUT_LEVER }).status).toBe('blocked');
   expect(frozen(h)).toBe(before);
   h.dispatch('retry');
   answer(h, '21');
   expect(last(h)).toMatchObject({ correct: false, miss: 'one_piece' });
+  expect(levers(h).map(l => l.id)).toEqual([SPLIT_LEVER, LEFT_OUT_LEVER, ROWS_LEVER, SMALLER_FIGURE_LEVER]);
   expect(observerLever(h.state(), true)).toBe(LEFT_OUT_LEVER);
   const receipt = h.dispatch('pull_lever', { lever: LEFT_OUT_LEVER });
   expect(receipt.status).toBe('committed');

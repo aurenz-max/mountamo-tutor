@@ -2,8 +2,8 @@
 
 - **Derived:** 2026-10-09 (workspace W1 binding + levers, batch C21; no earlier contract)
 - **Component:** `primitives/visual-primitives/literacy/EvidenceFinder.tsx` · **Domain:** `literacy/evidenceFinderWorkspace.ts` ·
-  **Levers:** `literacy/evidenceFinderLevers.ts` · **Generator:** `service/literacy/gemini-evidence-finder.ts` ·
-  **Catalog:** `service/manifest/catalog/literacy.ts`
+  **Levers:** `literacy/evidenceFinderLevers.ts` · **Boss:** `literacy/evidenceFinder.card.ts` + `literacy/evidenceFinder.boss.ts` ·
+  **Generator:** `service/literacy/gemini-evidence-finder.ts` · **Catalog:** `service/manifest/catalog/literacy.ts`
 - **Modes:** `locate_evidence` (1 claim) · `match_evidence_to_claim` (2 claims) · `evaluate_evidence_strength` (CER on).
 
 ## Requirements
@@ -25,7 +25,7 @@ the tutor. A wrong check's screen text names the kind of slip (`MISS_FEEDBACK`),
 optional, flash-lite dropped it on every sentence of a two-claim passage. `validateEvidenceFinderData` refuses a
 passage with no evidence, all evidence, a two-claim evidence sentence with no claim, or a CER passage missing a strength.
 
-### R4 — scripted path · OBSERVED (vitest), needs a browser check
+### R4 — scripted path · RETIRED 2026-10-20 (boss migration: workspace only)
 Outside a live runtime: find → evaluate (rates what was highlighted) → reason (CER, grade 4+) → one submission.
 Finish no longer submits a stale empty record (it was a `useCallback` closed over the first render).
 
@@ -44,3 +44,8 @@ full item returns blank. Probe: `evidenceFinderLevers.test.ts`, `EvidenceFinder.
 - **G2** — the check trusts the generator's evidence and strength labels; a mislabeled sentence becomes a false miss
   (locate payload 10-09: "Farmers often keep beehives near their fields to help pollinate their crops" tagged not
   evidence). → `/oracle-test`.
+
+## Changelog
+
+- 2026-10-09 — created with R1-R5 (W1 plain-shape binding and levers, C21).
+- 2026-10-20 — moved onto a boss (wave 3): card (stepped modes: find, rate) + bespoke `defineBoss`, levers as a lever set (count custom, proof model, strength legend, two easier practices), workspace-only export, Pip marked by layout; the scripted path (including the CER reasoning box of G1), adapter and catalog guidance/tutoring prose deleted. R4 retired; R1-R3, R5 unchanged.

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * spelling-pattern-explorer levers (`spellingPatternLevers.ts`) on the five classic modes, mounted the way a lesson
+ * spelling-pattern-explorer levers (`SPELLING_LEVERS`, `spellingPatternLevers.ts`) on the five classic modes, mounted the way a lesson
  * mounts it. The pattern words and the letter boxes change the screen and the scene fact in one commit and leave the
  * spelling to the learner; the shorter practice word is ungraded and gives the full word back blank; only the full
  * word's spelling is credited, with the levers recorded. Every saved payload's words are covered per item.
@@ -17,10 +17,10 @@ import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { nextLever, observerLever } from '../../../components/live-activity/runtime/observerLever';
 import type { SpellingPatternExplorerData } from './SpellingPatternExplorer';
-import { dictationItems, spellingHarnessAnswers, spellingMiss, SPELLING_MISSES } from './spellingPatternExplorerWorkspace';
+import { dictationItems, spellingHarnessAnswers, spellingMiss, spellingWords, SPELLING_MISSES } from './spellingPatternExplorerWorkspace';
 import {
-  BOXES_LEVER, PATTERN_WORDS_LEVER, SIMPLER_LEVER, letterBoxes, leverFacts, patternWordsLeak, practiceItem, practiceLeaks,
-  practiceParent, shownPatternWords, spellingLevers, type SpellingSession,
+  BOXES_LEVER, PATTERN_WORDS_LEVER, SIMPLER_LEVER, SPELLING_LEVERS, letterBoxes, patternWordsLeak, practiceItem, practiceLeaks,
+  practiceParent, shownPatternWords, type SpellingSession,
 } from './spellingPatternLevers';
 import shortVowel from '../../../components/live-activity/runtime/testing/w1-payloads/spelling-pattern-explorer.short_vowel.json';
 import longVowel from '../../../components/live-activity/runtime/testing/w1-payloads/spelling-pattern-explorer.long_vowel.json';
@@ -38,6 +38,7 @@ const PAYLOADS: [string, SpellingPatternExplorerData][] = [
 ];
 const sessionOf = (d: SpellingPatternExplorerData): SpellingSession => ({ patternWords: d.patternWords, highlightPattern: d.highlightPattern,
   items: dictationItems(d.dictationWords, d.dictationHints), supportTier: d.supportTier });
+const wordsOf = (d: SpellingPatternExplorerData) => spellingWords(d);
 const lesson = (d: Partial<SpellingPatternExplorerData>): SpellingPatternExplorerData => ({
   title: 'Long a', gradeLevel: '2', patternType: 'long-vowel', patternWords: ['rain', 'train', 'pain', 'tail', 'brain'],
   highlightPattern: 'ai', ruleTemplate: 'ai says __', correctRule: 'a', dictationWords: ['brain', 'chain', 'sail'], ...d });
@@ -45,16 +46,17 @@ const lesson = (d: Partial<SpellingPatternExplorerData>): SpellingPatternExplore
 describe('the lever rules (pure)', () => {
   it.each(PAYLOADS)('%s: every word has a lever for every miss; the shown words and practice words are never dictated', (_m, d) => {
     const s = sessionOf(d);
+    const words = wordsOf(d);
     expect(patternWordsLeak(shownPatternWords(s), s)).toBe(false);
-    for (const item of s.items) {
-      const levers = spellingLevers(item, s, []);
+    for (const item of words) {
+      const levers = SPELLING_LEVERS.declare(item, s, []);
       for (const miss of SPELLING_MISSES) expect(nextLever(levers, miss), `${item.word} ${miss}`).toBeTruthy();
       const p = practiceItem(item, s);
       if (p) {
         expect(p.id).toBe(`${item.id}~simpler`);
         expect(p.word.length).toBeLessThan(item.word.length);
         expect(practiceLeaks(p, s)).toBe(false);
-        expect(practiceParent(p.id, s.items)).toBe(item);
+        expect(practiceParent(p.id, words)).toBe(item);
       }
       expect(levers.some(l => l.id === SIMPLER_LEVER)).toBe(!!p);
     }
@@ -88,8 +90,9 @@ describe('the lever rules (pure)', () => {
     expect(letterBoxes(item, 'braine')).toEqual({ boxes: ['b', 'r', 'a', 'i', 'n'], extra: 'e' });
     for (const [, d] of PAYLOADS) {
       const s = sessionOf(d);
-      for (const it of s.items) {
-        const fact = leverFacts(it, s, [PATTERN_WORDS_LEVER, BOXES_LEVER])!;
+      for (const it of wordsOf(d)) {
+        const fact = SPELLING_LEVERS.onScreen(it, s, [PATTERN_WORDS_LEVER, BOXES_LEVER]);
+        expect(fact).toMatch(/letter boxes/);
         expect(fact.toLowerCase().split(/[^a-z]+/)).not.toContain(it.word.toLowerCase());
       }
     }
@@ -101,7 +104,7 @@ describe('the lever rules (pure)', () => {
     ['pattern_missing', [PATTERN_WORDS_LEVER, BOXES_LEVER], SIMPLER_LEVER],
   ])('after %s with %j pulled, the next lever is %s', (miss, pulled, want) => {
     const s = sessionOf(lesson({}));
-    expect(nextLever(spellingLevers(s.items[0], s, pulled as string[]), miss)).toBe(want);
+    expect(nextLever(SPELLING_LEVERS.declare(wordsOf(lesson({}))[0], s, pulled as string[]), miss)).toBe(want);
   });
 
   it('the misses the check names are the ones the levers answer', () => {
@@ -216,9 +219,9 @@ it('easy starts with the pattern words shown, and that is not a pull', () => {
 
 it.each(PAYLOADS)('%s payload: the harness wrong spelling names a miss with a lever on every word', (mode, d) => {
   const s = sessionOf(d);
-  for (const item of s.items) {
+  for (const item of wordsOf(d)) {
     const miss = spellingMiss(item, spellingHarnessAnswers(item, d.highlightPattern).plainWrong, d.highlightPattern);
     expect(miss, `${mode} ${item.word}`).toBeTruthy();
-    expect(nextLever(spellingLevers(item, s, []), miss)).toBeTruthy();
+    expect(nextLever(SPELLING_LEVERS.declare(item, s, []), miss)).toBeTruthy();
   }
 });

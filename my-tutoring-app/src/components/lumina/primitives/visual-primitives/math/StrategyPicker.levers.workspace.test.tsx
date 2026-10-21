@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * strategy-picker levers (`strategyPickerLevers.ts`), the rules and the picker mounted the way a lesson mounts it.
+ * strategy-picker levers (`STRATEGY_PICKER_LEVERS`), the rules and the picker mounted the way a lesson mounts it.
  * guided / try_another / choose: `two_parts` marks the picture's parts in the same commit as its scene fact and writes
  * only the equation's own numbers; `smaller_numbers` opens an ungraded smaller problem and the full one comes back blank.
  * match: `option_pictures` draws every choice on its own example; `two_choices` opens an ungraded two-choice item.
@@ -19,7 +19,7 @@ import type { StrategyId, StrategyPickerChallenge, StrategyPickerData } from './
 import { PICTURE_KIND, strategyPickerHarnessInputs, strategyPickerMatches, strategyPickerMiss } from './strategyPickerWorkspace';
 import {
   PARTS_LEVER, PICTURES_LEVER, SMALLER_LEVER, TWO_CHOICES_LEVER, fits, makeProblem, optionPictures, partsFact, partsLeak,
-  partsMarks, picturesLeak, practiceItem, practiceLeaks, practiceParent, simplerProblem, strategyPickerLevers,
+  partsMarks, picturesLeak, practiceItem, practiceLeaks, practiceParent, simplerProblem, STRATEGY_PICKER_LEVERS, leversStartOn,
 } from './strategyPickerLevers';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -36,6 +36,10 @@ const choose: StrategyPickerChallenge = { id: 'ch1', type: 'choose-your-strategy
   problem: p34, availableStrategies: ['counting-on', 'tally-marks', 'near-doubles'] };
 const lesson = (challenges: StrategyPickerChallenge[], supportTier?: 'easy'): StrategyPickerData => ({ title: 'Strategies', challenges,
   maxNumber: 10, operations: ['addition', 'subtraction'], strategiesIntroduced: STRATEGIES, gradeBand: '1', supportTier });
+
+/** The levers the set declares on an item of this lesson, nothing picked from a menu. */
+const declared = (c: StrategyPickerChallenge, data: StrategyPickerData, pulled: string[] = []) =>
+  STRATEGY_PICKER_LEVERS.declare(c, { data, chosen: null }, pulled);
 
 /** Every problem each strategy can draw within ten. */
 function allProblems(): { s: StrategyId; p: ReturnType<typeof makeProblem> }[] {
@@ -89,7 +93,7 @@ describe('the lever rules', () => {
   ] as const)('no smaller problem on an item already the smallest picture: %s %s', (s, p) => {
     const c = guided('g', s, p);
     expect(practiceItem(c, lesson([c]))).toBeNull();
-    expect(strategyPickerLevers(c, lesson([c]), []).map(l => l.id)).toEqual([PARTS_LEVER]);
+    expect(declared(c, lesson([c])).map(l => l.id)).toEqual([PARTS_LEVER]);
   });
 
   it('choose: a smaller problem whose menu keeps the item\'s strategies that still fit it', () => {
@@ -111,7 +115,7 @@ describe('the lever rules', () => {
     const plain = { ...match, strategyOptions: ['counting-on', 'tally-marks'] };
     expect(PICTURE_KIND['counting-on']).not.toBe(PICTURE_KIND['tally-marks']);
     expect(practiceItem(plain, lesson([plain]))).toBeNull();
-    expect(strategyPickerLevers(plain, lesson([plain]), []).map(l => l.id)).toEqual([PICTURES_LEVER]);
+    expect(declared(plain, lesson([plain])).map(l => l.id)).toEqual([PICTURES_LEVER]);
   });
 
   it.each([
@@ -119,28 +123,35 @@ describe('the lever rules', () => {
     ['one_short', [PARTS_LEVER], SMALLER_LEVER], ['short_by_more', [PARTS_LEVER], SMALLER_LEVER],
   ])('a number item: after %s with %j pulled, the next lever is %s', (miss, pulled, want) => {
     const c = guided('g', 'tally-marks');
-    expect(nextLever(strategyPickerLevers(c, lesson([c]), pulled as string[]), miss)).toBe(want);
+    expect(nextLever(declared(c, lesson([c]), pulled as string[]), miss)).toBe(want);
   });
 
   it.each([['similar_strategy', [], PICTURES_LEVER], ['different_strategy', [PICTURES_LEVER], TWO_CHOICES_LEVER]])(
     'match: after %s with %j pulled, the next lever is %s', (miss, pulled, want) => {
-      expect(nextLever(strategyPickerLevers(match, lesson([match]), pulled as string[]), miss)).toBe(want);
+      expect(nextLever(declared(match, lesson([match]), pulled as string[]), miss)).toBe(want);
     });
 
   it('the misses the journey\'s wrong answers make are each answered by a lever on that item', () => {
     const wrongMatch = strategyPickerMiss(match, { answer: '', chosen: null, match: 'counting-back', compare: null })!;
     expect(wrongMatch).toBe('similar_strategy');
-    expect(strategyPickerLevers(match, lesson([match]), []).some(l => l.answers?.includes(wrongMatch))).toBe(true);
+    expect(declared(match, lesson([match])).some(l => l.answers?.includes(wrongMatch))).toBe(true);
     const compare: StrategyPickerChallenge = { id: 'c1', type: 'compare', instruction: 'Two ways', problem: p34,
       strategies: ['counting-on', 'tally-marks'], comparisonQuestion: 'Which felt easier?' };
-    expect(strategyPickerLevers(compare, lesson([compare]), [])).toEqual([]);
+    expect(declared(compare, lesson([compare]))).toEqual([]);
   });
 
   it('easy starts the help on, released on other tiers', () => {
-    expect(strategyPickerLevers(guided('g', 'doubles', makeProblem(4, 4, 'addition'), 'easy'), lesson([]), [])
-      .map(l => [l.id, l.pulled])).toEqual([[PARTS_LEVER, true], [SMALLER_LEVER, false]]);
-    expect(strategyPickerLevers({ ...match, showStrategyExemplars: true }, lesson([]), [])[0].pulled).toBe(true);
-    expect(strategyPickerLevers(guided('g', 'doubles', makeProblem(4, 4, 'addition'), 'hard'), lesson([]), [])[0].pulled).toBe(false);
+    expect(leversStartOn(guided('g', 'doubles', makeProblem(4, 4, 'addition'), 'easy'), lesson([]))).toEqual([PARTS_LEVER]);
+    expect(leversStartOn(guided('g', 'doubles', makeProblem(4, 4, 'addition')), lesson([], 'easy'))).toEqual([PARTS_LEVER]);
+    expect(leversStartOn({ ...match, showStrategyExemplars: true }, lesson([]))).toEqual([PICTURES_LEVER]);
+    expect(leversStartOn(guided('g', 'doubles', makeProblem(4, 4, 'addition'), 'hard'), lesson([]))).toEqual([]);
+  });
+
+  it('choose: two_parts is offered once a strategy is picked, since only then is a picture drawn', () => {
+    const data = lesson([choose]);
+    expect(STRATEGY_PICKER_LEVERS.declare(choose, { data, chosen: null }, []).map(l => l.id)).toEqual([SMALLER_LEVER]);
+    expect(STRATEGY_PICKER_LEVERS.declare(choose, { data, chosen: 'tally-marks' }, []).map(l => l.id))
+      .toEqual([PARTS_LEVER, SMALLER_LEVER]);
   });
 });
 
@@ -180,9 +191,13 @@ describe.each(MOUNTS)('%s, mounted', (mode, item, help, simplify, drawn, count, 
   it('a wrong answer, then help: the picture and its fact in one commit; a refused pull changes nothing; the next try records it', () => {
     const data = lesson([item]);
     const h = mountWorkspace({ primitiveId: 'strategy-picker', evalMode: mode, data: data as never });
-    expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([[help, 'help', false], [simplify, 'simplify', false]]);
+    // Choose draws nothing before the menu pick, so there is nothing to mark yet.
+    const offered = item.type === 'choose-your-strategy' ? [[simplify, 'simplify', false]]
+      : [[help, 'help', false], [simplify, 'simplify', false]];
+    expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual(offered);
     expect(q(h, '[data-lever]')).toHaveLength(0);
     pick(h);
+    expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([[help, 'help', false], [simplify, 'simplify', false]]);
     perform(h, data, true);
     expect(last(h)).toMatchObject({ itemId: 'g1', correct: false });
     expect(last(h)!.miss).toBeTruthy();
@@ -250,7 +265,7 @@ it('guided on a number line: a ring on the start and each hop numbered, never th
   h.close();
 });
 
-it('choose: before a strategy is picked there is nothing to mark, and the pull is refused', () => {
+it('choose: before a strategy is picked there is nothing to mark, so the lever is not offered and a pull is refused', () => {
   const data = lesson([choose]);
   const h = mountWorkspace({ primitiveId: 'strategy-picker', evalMode: 'choose', data: data as never });
   const before = frozen(h);

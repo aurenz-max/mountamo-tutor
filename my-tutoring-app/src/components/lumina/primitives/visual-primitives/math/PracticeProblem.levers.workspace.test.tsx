@@ -123,7 +123,7 @@ it('mark_lines exists after a check that flagged a line, and marks only the lear
   const marked = h.view.container.querySelectorAll('[data-marked]');
   expect(marked).toHaveLength(1);
   expect(marked[0].textContent).toMatch(/check this line/i);
-  expect(h.state().task!.demand).toMatchObject({ markedLines: expect.stringContaining('"x = 63"') });
+  expect(h.state().task!.demand).toMatchObject({ onScreen: expect.stringContaining('"x = 63"') });
   expect(text(h) + JSON.stringify(h.state().task!.demand)).not.toMatch(/x = 7|Should be/);
   // Try again keeps the work and the mark: the learner fixes that line.
   h.dispatch('retry'); h.confirmVisible();

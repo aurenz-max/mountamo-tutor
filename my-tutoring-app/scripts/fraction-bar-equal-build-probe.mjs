@@ -33,7 +33,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateFractionBar } = await loader.import('/src/components/lumina/service/math/gemini-fraction-bar.ts');
   const eq = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionEqualBuild.ts');
-  const { validateFractionBarData } = await loader.import('/src/components/lumina/components/live-activity/adapters/fractionBarLive.ts');
+  const { validateFractionBarData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/fractionBar.boss.ts');
   const { fractionBarOracle } = await loader.import('/src/components/lumina/service/qa/oracles/fraction-bar.ts');
   const cases = [
     ['identify', 'identify', '3', 'Unit fractions', 'Name the parts of a unit fraction'],

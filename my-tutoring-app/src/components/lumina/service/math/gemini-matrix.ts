@@ -48,6 +48,8 @@ export interface MatrixDisplayChallenge {
   /** Support tier (modality #4): when true, "Show steps" is withheld until the student
    *  has made at least one attempt. Undefined/false = available up front. */
   stepsAfterAttempt?: boolean;
+  /** The lesson's support tier, stamped on each challenge: when the tutor's model lever comes (`MATRIX_LEVERS.support`). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface MatrixDisplayData {
@@ -938,6 +940,7 @@ Return ONLY the wrapper fields described above.
       else if (sc.hintLevel === 'none') ch.hint = '';
       // 'formula' → keep the existing formula-rich hint each build function wrote.
       if (sc.stepsGating === 'afterAttempt') ch.stepsAfterAttempt = true;
+      ch.supportTier = supportTier;
     }
     const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
       ? evalConstraint.allowedTypes[0]

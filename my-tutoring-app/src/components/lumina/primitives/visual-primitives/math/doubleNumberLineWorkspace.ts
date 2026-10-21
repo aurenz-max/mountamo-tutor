@@ -1,23 +1,22 @@
 /**
- * Double number line on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C15).
+ * Double number line's domain: the activity's check and its misses, and the scene the tutor reads. The boss
+ * (`doubleNumberLine.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Each challenge asks for the bottom value at
- * one or more top values; the learner types it and presses Check, and the activity's own check (±0.1) is the judge.
- * The tutor is never handed the bottom value a target asks for.
+ * Pure: the component and any probe read the same scene. Each challenge asks for the bottom value at one or more top
+ * values; the learner types it and presses Check, and the activity's own check (±0.1) is the judge. The tutor is never
+ * handed the bottom value a target asks for.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { DoubleNumberLineChallenge, LinkedPoint } from './DoubleNumberLine';
+import type { DoubleNumberLineMiss } from './doubleNumberLine.card';
+
+export { RATIO_LINE_MISSES_BY_MODE, type DoubleNumberLineMiss } from './doubleNumberLine.card';
 
 /** The activity's tolerance since birth. */
 export const RATIO_TOLERANCE = 0.1;
 
 export const fmt = (n: number) => String(Math.round(n * 100) / 100);
 const near = (a: number, b: number) => Math.abs(a - b) <= RATIO_TOLERANCE;
-
-export function workspaceAssignment(ch: DoubleNumberLineChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.prompt, response: 'gesture' };
-}
 
 /** The given points other than the origin (the pair the item states). */
 export const givenPairs = (ch: DoubleNumberLineChallenge): LinkedPoint[] =>
@@ -48,29 +47,6 @@ export function describeRatioWork(ch: DoubleNumberLineChallenge, values: readonl
   });
   return parts.join('; ');
 }
-
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the first target typed wrong, drawn from the
- * catalog's commonStruggles (adding instead of multiplying, not finding the unit rate, scaling errors):
- * - `gave_top`: the top value typed back as the bottom one;
- * - `stopped_at_rate`: the unit rate typed, not scaled to the asked top value;
- * - `gave_given`: the given pair's bottom value copied;
- * - `inverted_rate` (a find-the-rate item): top divided by bottom; `multiplied_not_divided`: the given pair's two
- *   values multiplied; `subtracted`: the given pair's top taken from its bottom;
- * - `added_rate`: the top value plus the rate (added once, not multiplied);
- * - `added_difference`: the given pair's difference carried over (bottom + the change in top), additive thinking;
- * - `one_unit_off`: one rate too many or too few (a skip-count slip);
- * - `too_high` / `too_low`: any other number.
- */
-export type DoubleNumberLineMiss = 'gave_top' | 'stopped_at_rate' | 'gave_given' | 'inverted_rate' | 'multiplied_not_divided'
-  | 'subtracted' | 'added_rate' | 'added_difference' | 'one_unit_off' | 'too_high' | 'too_low';
-
-export const RATIO_LINE_MISSES_BY_MODE: Record<string, readonly DoubleNumberLineMiss[]> = {
-  equivalent_ratios: ['gave_top', 'stopped_at_rate', 'added_rate', 'one_unit_off', 'too_high', 'too_low'],
-  find_missing: ['gave_top', 'stopped_at_rate', 'gave_given', 'added_rate', 'added_difference', 'one_unit_off', 'too_high', 'too_low'],
-  unit_rate: ['gave_top', 'stopped_at_rate', 'gave_given', 'inverted_rate', 'multiplied_not_divided', 'subtracted', 'added_rate',
-    'added_difference', 'one_unit_off', 'too_high', 'too_low'],
-};
 
 /** A find-the-rate item: its target sits at top 1. */
 export const asksForRate = (ch: DoubleNumberLineChallenge) => ch.targetPoints.some(t => near(t.topValue, 1));
@@ -112,7 +88,7 @@ export interface DoubleNumberLineView {
 const isUnitRateGiven = (p: LinkedPoint) => near(p.topValue, 1) && p.label === 'Unit Rate';
 
 /** What is drawn and asked. The bottom value a target asks for is never named. */
-export function workspaceScene(ch: DoubleNumberLineChallenge, view: DoubleNumberLineView): WorkspaceScene {
+export function workspaceScene(ch: DoubleNumberLineChallenge, view: DoubleNumberLineView): SceneOf {
   const { topLabel, bottomLabel } = view;
   const given = givenPairs(ch).filter(p => !isUnitRateGiven(p) || view.showUnitRate).map(p => (
     isUnitRateGiven(p) ? `a yellow unit-rate point: ${topLabel} 1 matches ${bottomLabel} ${fmt(p.bottomValue)}`
@@ -132,8 +108,8 @@ export function workspaceScene(ch: DoubleNumberLineChallenge, view: DoubleNumber
       view.showVerticalGuides ? 'faint vertical guides under the given points' : 'no vertical guides',
     ].join('; '),
     learnerWork: describeRatioWork(ch, view.values, bottomLabel, topLabel),
-    constraints: 'The learner types a number in the box under the lines (or steps it with - and +) and presses Check. '
-      + 'The activity checks it itself. You cannot type or press Check.',
+    // How the learner answers is the card's `moves`; only what is this item's own is said here.
+    constraints: 'An answer within 0.1 of the key counts. A bottom value the lines do not label is the learner\'s to work out.',
   };
   return { objects: [], facts };
 }

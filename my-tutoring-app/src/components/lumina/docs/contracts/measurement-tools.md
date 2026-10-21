@@ -2,6 +2,7 @@
 
 - **Derived:** 2026-10-09 (W1 workspace binding; no earlier contract)
 - **Component:** `primitives/visual-primitives/math/MeasurementTools.tsx` · **Domain:** `measurementToolsWorkspace.ts` ·
+  **Boss:** `measurementTools.card.ts` + `measurementTools.boss.ts` (lever set `measurementToolsLevers.ts`) ·
   **Generator:** `service/math/gemini-measurement-tools.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`measurement-tools`)
 - **Modes:** `measure` · `compare` · `estimate` · `convert` (2.MD.A.1, 2.MD.A.3, 4.MD.A.1)
 
@@ -25,13 +26,13 @@
 
 ### R4 — shared teaching workspace (W1, plain shape) · OBSERVED (NEW 2026-10-09)
 - **Property:** under a live runtime the tutor owns every mode. Items: one per shape, plus `order-shapes` after the
-  shapes on compare. `workspaceAssignment` gives a gesture task, no `expectedAnswer`. Each check commits through
+  shapes on compare. `measurementTask` is the ask; the boss's `bossAssignment` gives a gesture task, no `expectedAnswer`. Each check commits through
   `progress.commitCheck` with `measurementMiss` (`one_over`, `one_short`, `whole_not_half` (estimate), `too_long`,
   `too_short`; convert: `same_number`, `wrong_operation`, `too_small`, `too_large`; order: `longest_first`,
   `two_swapped`, `out_of_order`). A right measurement on convert opens the conversion and commits nothing. Try again
   clears the checked answer and keeps the shape on the ruler and a checked measurement. "Put it on the ruler" is the
-  drag's tap twin; the lengths are typed (or stepped). Auto-advance is off, input is closed while a checked answer
-  waits, the legacy AI hook is off.
+  drag's tap twin; the lengths are typed (or stepped). Input is closed while a checked answer waits; the
+  component is workspace-only (`withWorkspaceOnly`), with no scripted path.
 - **Probe:** `MeasurementTools.workspace.test.tsx`; journey sweep on `w1-payloads/measurement-tools.*.json`; tutor replay
   `qa/tutor-reports/replay/measurement-tools-2026-10-09-r4.json`.
 
@@ -71,3 +72,6 @@
   the rule (R3); convert's 1.2 s delay before the conversion step removed; "Put it on the ruler" button and typed
   length boxes added.
 - 2026-10-14 — R6 added (item-space slice). Before, every tier drew widths at random from one pool. Compatible: R1-R5 untouched.
+- 2026-10-20 — moved onto a boss (wave 3): card + boss replace `adapters/measurementToolsLive.ts`, the catalog
+  `tutoring` block and guidance prose; levers declared once as `MEASUREMENT_LEVERS`; `edge_line` is offered only once the
+  shape is on the ruler (was a pull-time refusal); the scripted path and its "Need a Hint?" button are gone. R1-R6 hold.

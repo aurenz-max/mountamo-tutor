@@ -44,7 +44,7 @@ const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: fal
 const L = '/src/components/lumina';
 const cb = await runner.import(`${L}/primitives/visual-primitives/math/countingBoardDomain.ts`);
 const tfs = await runner.import(`${L}/primitives/visual-primitives/math/tenFrameScript.ts`);
-const tfw = await runner.import(`${L}/primitives/visual-primitives/math/tenFrameWorkspace.ts`);
+const { tenFrameBoss } = await runner.import(`${L}/primitives/visual-primitives/math/tenFrame.boss.ts`);
 const lss = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLinkDomain.ts`);
 const { letterSoundLinkBoss } = await runner.import(`${L}/primitives/visual-primitives/literacy/letterSoundLink.boss.ts`);
 const { runObservation } = await runner.import(`${L}/service/typesafe/observationKinds.ts`);
@@ -112,7 +112,7 @@ function frameCases() {
   const d = payload('ten-frame.subitize');
   const items = tfs.itemsFromChallenges(d.challenges, { capacity: 10, band: d.gradeBand ?? 'K' }).filter(i => i.kind === 'subitize');
   return items.flatMap((item, k) => {
-    const n = item.answer, a = tfw.workspaceAssignment(item), h = tfs.tenFrameHarnessAnswers(item);
+    const n = item.answer, a = tenFrameBoss.assignment(item), h = tfs.tenFrameHarnessAnswers(item);
     const plainValue = Array.from({ length: 30 }, (_, i) => i + 1).find(v => W(v) === h.plainWrong);
     const hasEmpty = 10 - n > 0 && 10 - n !== n;
     const rows = HELD ? [
@@ -226,7 +226,7 @@ const PRIOR = argv.includes('--prior');
 function transcriptCases() {
   const itemFor = {
     'counting-board.count': (key, noun) => cb.workspaceAssignment({ id: `n${key}`, kind: 'count_all', answerKind: 'voice', target: key, objectWord: noun }),
-    'ten-frame.subitize': key => tfw.workspaceAssignment({ id: `n${key}`, kind: 'subitize', answerKind: 'voice', answer: key, capacity: 10, shown: 0 }),
+    'ten-frame.subitize': key => tenFrameBoss.assignment({ id: `n${key}`, kind: 'subitize', answerKind: 'voice', answer: key, capacity: 10, shown: 0 }),
   };
   const groups = new Map();
   for (const t of JSON.parse(readFileSync(TRANSCRIPTS, 'utf8'))) {

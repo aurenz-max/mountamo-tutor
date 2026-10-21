@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaActionButton, LuminaChallengeCounter, LuminaFeedbackCard, LuminaPrompt,
@@ -14,14 +13,15 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import ConstructionScene from './ConstructionScene';
 import type { SiteAction, SiteTarget } from './construction3d';
 import {
-  BED_SLOTS, sendFeedback,
+  BED_SLOTS, describeLoad, loadMatches, loadMiss, sendFeedback,
   type ConstructionBand, type ConstructionChallenge, type ConstructionTask,
 } from './constructionModel';
-import { constructionAssignment, constructionScene, describeLoad, loadMatches, loadMiss } from './constructionWorkspace';
+import { constructionScene } from './constructionWorkspace';
+import { constructionSiteDioramaBoss } from './constructionSiteDiorama.boss';
 
 export type { ConstructionChallenge } from './constructionModel';
 
@@ -67,7 +67,6 @@ const useConstructionProgress = useWorkspaceProgressFor('construction-site-diora
 const ConstructionSiteDioramaSurface: React.FC<ConstructionSiteDioramaProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, gradeBand, companyName, instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceId = useRef(instanceId || `construction-site-diorama-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
@@ -89,7 +88,7 @@ const ConstructionSiteDioramaSurface: React.FC<ConstructionSiteDioramaProps> = (
   const progress = useConstructionProgress<ConstructionChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: constructionAssignment,
+    workspace, assignment: constructionSiteDioramaBoss.assignment!,
     // A fresh load brings an empty truck. Try again keeps the load in the bed, so the learner fixes it.
     onItemOpened: (index, retry) => {
       setSquash(false); setDeparting(false);
@@ -177,19 +176,10 @@ const ConstructionSiteDioramaSurface: React.FC<ConstructionSiteDioramaProps> = (
     submitResult(correctCount === total, accuracy, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmitted, challenges, challengeType, challengeResults, submitResult, progress.recordsEvaluation]);
 
-  // ── Pip: the work site as a whole; never the bed (the count is the task) ──
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: 'The work site',
-    solved: departing,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...constructionScene(current, { loaded, holding, spilled, sends, lastSent }) };
+    workspace.current = constructionScene(current, { loaded, holding, spilled, sends, lastSent });
   });
 
   const localScore = useMemo(() => phaseResults.length
@@ -224,8 +214,8 @@ const ConstructionSiteDioramaSurface: React.FC<ConstructionSiteDioramaProps> = (
           </LuminaPrompt>
         )}
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-3">
+        <PipDock />
+        <PipWorkspace className="space-y-3">
           <div className="relative overflow-hidden rounded-xl border border-white/10">
             <ConstructionScene className="h-[min(62vh,520px)] min-h-[320px] w-full"
               company={companyName} material={current?.material ?? 'dirt'}
@@ -253,7 +243,7 @@ const ConstructionSiteDioramaSurface: React.FC<ConstructionSiteDioramaProps> = (
               <p>{feedback.text}</p>
             </LuminaFeedbackCard>
           )}
-        </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );

@@ -2,13 +2,15 @@
  * double-number-line's in-item levers (/add-support-tiers; report qa/eval-reports/double-number-line-levers-2026-10-09.md).
  * The misses are what `ratioLineMiss` observes in the typed number; there is no real-learner evidence.
  *
- * - `unit_jumps` (help, every item that asks at a top value of 2 or more): equal unlabelled jumps from 0 to the asked
+ * Declared once as a lever set (`RATIO_LINE_LEVERS`, `bossLevers.ts`); the lesson context is the two line labels.
+ * - `unit_jumps` (marks, every item that asks at a top value of 2 or more): equal unlabelled jumps from 0 to the asked
  *   point on both lines, one per step of 1 on top; the jumps below are all one size (the rate, never printed).
- * - `split_given` (help, items with a non-unit given pair: find_missing, unit_rate): the stretch from 0 to the given
+ * - `split_given` (marks, items with a non-unit given pair: find_missing, unit_rate): the stretch from 0 to the given
  *   pair cut into equal parts on both lines, one per step of 1 on top, with unlabelled marks.
- * - `grow_model` (help, both): a picture outside the item, with no number: equal jumps on top paired with equal,
- *   bigger jumps below, captioned that the bottom grows by repeating the jump, not by adding once.
- * - `smaller_ask` (simplify): the same mode on the same lines with a friendlier ask, built here: equivalent_ratios
+ * - `grow_model` (clue, every mode): a picture outside the item, with no number: equal jumps on top paired with
+ *   equal, bigger jumps below, captioned that the bottom grows by repeating the jump, not by adding once. A clue, not a
+ *   model: it works no item, so it has no answer and no support tier.
+ * - `smaller_ask` (easier): the same mode on the same lines with a friendlier ask, built here: equivalent_ratios
  *   asks at top 2; find_missing asks at twice the given pair's top (a whole-number scale, no rate needed); unit_rate's
  *   later items ask for the unit rate itself. unit_rate's find-the-rate item has none: any easier find-the-rate on
  *   the same lines has the same answer.
@@ -17,8 +19,8 @@
  * a practice item has its own id and prompt, keeps the mode, and asks at a different top value with a bottom value
  * outside the tolerance of every one the item asks for.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { DoubleNumberLineChallenge } from './DoubleNumberLine';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import type { DoubleNumberLineChallenge, DoubleNumberLineChallengeType } from './DoubleNumberLine';
 import {
   RATIO_LINE_MISSES_BY_MODE, RATIO_TOLERANCE, asksForRate, fmt, givenPairs, itemRate, type DoubleNumberLineMiss,
 } from './doubleNumberLineWorkspace';
@@ -97,57 +99,69 @@ export function practiceLeaks(parent: DoubleNumberLineChallenge, practice: Doubl
     || practice.targetPoints.some(p => p.topValue > practice.topScale.max || p.bottomValue > practice.bottomScale.max);
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+/** The caption under the `grow_model` picture. */
+export const GROW_MODEL_CAPTION = 'Each jump on top matches one same-size jump below. The bottom line grows by repeating that jump, not by adding once.';
 
-export function ratioLineLevers(c: DoubleNumberLineChallenge | null, pulled: readonly string[], labels: LineLabels): WorkspaceLever[] {
-  if (!c || isPracticeLine(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly DoubleNumberLineMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const all = RATIO_LINE_MISSES_BY_MODE[c.challengeType] ?? [];
-  const rateItem = asksForRate(c);
-  const jumps = jumpsFor(c), split = splitFor(c), simpler = simplerLine(c, labels);
-  const additive: DoubleNumberLineMiss[] = ['added_rate', 'added_difference', 'subtracted'];
-  return [
-    ...(split ? [lever(SPLIT_GIVEN_LEVER, 'help', 'shown', rateItem ? all : all.filter(m => ['gave_given', 'added_rate', 'added_difference', 'too_high', 'too_low'].includes(m)),
-      'The learner cannot get from the given pair to one step on the top line.',
-      'Cuts the stretch from the start to the given pair into equal parts on both lines, one part for each step of one on the '
-        + 'top line, with unlabelled marks. No value is written; the learner works out what one part below is worth.')] : []),
-    ...(jumps ? [lever(UNIT_JUMPS_LEVER, 'help', 'shown', all.filter(m => !['inverted_rate', 'multiplied_not_divided', 'subtracted'].includes(m)),
-      'The learner types a number that does not match the asked point: the top value, the rate once, or the rate added once.',
-      'Draws equal jumps from the start to the asked point on both lines, one jump for each step of one on the top line; the '
+// ── the lever set ────────────────────────────────────────────────────────
+
+/** The misses a lever answers on an item: the ones listed that the item's mode can name. */
+const inMode = (ids: readonly DoubleNumberLineMiss[]) => (c: DoubleNumberLineChallenge) =>
+  (RATIO_LINE_MISSES_BY_MODE[c.challengeType] ?? []).filter(m => ids.includes(m));
+const SPLIT_ANSWERS: DoubleNumberLineMiss[] = ['gave_given', 'added_rate', 'added_difference', 'too_high', 'too_low'];
+const JUMPS_ANSWERS: DoubleNumberLineMiss[] = ['gave_top', 'stopped_at_rate', 'gave_given', 'added_rate', 'added_difference',
+  'one_unit_off', 'too_high', 'too_low'];
+const GROW_ANSWERS: DoubleNumberLineMiss[] = ['added_rate', 'added_difference', 'subtracted'];
+const SMALLER_ANSWERS: DoubleNumberLineMiss[] = ['gave_top', 'stopped_at_rate', 'gave_given', 'subtracted', 'added_rate',
+  'added_difference', 'one_unit_off', 'too_high', 'too_low'];
+const notPractice = (c: DoubleNumberLineChallenge) => !isPracticeLine(c);
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing
+ * while one is on screen.
+ */
+export const RATIO_LINE_LEVERS = leverSet<DoubleNumberLineChallenge, LineLabels>({
+  modeOf: c => c.challengeType,
+  missesOf: mode => RATIO_LINE_MISSES_BY_MODE[mode as DoubleNumberLineChallengeType] ?? [],
+  answersOf: c => c.targetPoints.map(t => fmt(t.bottomValue)),
+  specs: [
+    // On a find-the-rate item the split is the whole way to the answer, so it answers every miss there.
+    { id: SPLIT_GIVEN_LEVER, type: 'marks', answers: 'all',
+      answersOn: c => (asksForRate(c) ? RATIO_LINE_MISSES_BY_MODE[c.challengeType] : inMode(SPLIT_ANSWERS)(c)),
+      offer: notPractice, content: c => splitFor(c),
+      when: 'The learner cannot get from the given pair to one step on the top line.',
+      does: 'Cuts the stretch from the start to the given pair into equal parts on both lines, one part for each step of one on the '
+        + 'top line, with unlabelled marks. No value is written; the learner works out what one part below is worth.',
+      fact: 'The stretch from the start to the given pair is cut into equal parts on both lines, one for each step of one on the '
+        + 'top line, with unlabelled marks.' },
+    { id: UNIT_JUMPS_LEVER, type: 'marks', answers: JUMPS_ANSWERS, answersOn: inMode(JUMPS_ANSWERS),
+      offer: notPractice, content: c => jumpsFor(c),
+      when: 'The learner types a number that does not match the asked point: the top value, the rate once, or the rate added once.',
+      does: 'Draws equal jumps from the start to the asked point on both lines, one jump for each step of one on the top line; the '
         + 'jumps below are all the same size. No jump or mark is labelled; the learner works out the jump size and how '
-        + 'many jumps there are.')] : []),
-    lever(GROW_MODEL_LEVER, 'help', 'both', all.filter(m => additive.includes(m)),
-      'The learner adds once instead of scaling.',
-      'Shows a picture outside the item, with no numbers: equal jumps on a top line paired with equal, bigger jumps on '
+        + 'many jumps there are.',
+      fact: 'Equal jumps are drawn from the start to the asked point on both lines, one for each step of one on the top line; '
+        + 'the jumps below are all one size. Nothing is labelled.' },
+    { id: GROW_MODEL_LEVER, type: 'clue', answers: GROW_ANSWERS, answersOn: inMode(GROW_ANSWERS),
+      offer: notPractice, content: () => GROW_MODEL_CAPTION,
+      when: 'The learner adds once instead of scaling.',
+      does: 'Shows a picture outside the item, with no numbers: equal jumps on a top line paired with equal, bigger jumps on '
         + 'a bottom line, captioned that the bottom grows by repeating the same jump, not by adding once. Read the caption '
-        + 'aloud. It is not the item: do not work the item\'s numbers on it.'),
-    ...(simpler ? [lever(SMALLER_ASK_LEVER, 'simplify', 'shown', all.filter(m => !['inverted_rate', 'multiplied_not_divided'].includes(m)),
-      'This ask is too far along the lines yet.',
-      c.challengeType === 'unit_rate'
+        + 'aloud. It is not the item: do not work the item\'s numbers on it.',
+      fact: 'Beside the lines is a picture outside the item, with no numbers: equal jumps on top paired with equal, bigger '
+        + 'jumps below, captioned that the bottom grows by repeating the jump, not by adding once.' },
+    { id: SMALLER_ASK_LEVER, type: 'easier', answers: SMALLER_ANSWERS, answersOn: inMode(SMALLER_ANSWERS),
+      content: (c, labels) => simplerLine(c, labels),
+      when: 'This ask is too far along the lines yet.',
+      does: c => (c.challengeType === 'unit_rate'
         ? 'Opens an easier item first on the same lines: find what matches one step on the top line. It is not graded; the '
           + 'full item comes back after it.'
         : c.challengeType === 'find_missing'
           ? 'Opens an easier item first on the same lines: an ask that is a whole number of copies of the given pair. It is not '
             + 'graded; the full item comes back after it.'
           : 'Opens an easier item first on the same lines: an ask closer to the start. It is not graded; the full item comes '
-            + 'back after it.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: DoubleNumberLineChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeLine(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(UNIT_JUMPS_LEVER) && 'Equal jumps are drawn from the start to the asked point on both lines, one for each step of one on the top line; the jumps below are all one size. Nothing is labelled.',
-    on(SPLIT_GIVEN_LEVER) && 'The stretch from the start to the given pair is cut into equal parts on both lines, one for each step of one on the top line, with unlabelled marks.',
-    on(GROW_MODEL_LEVER) && 'Beside the lines is a picture outside the item, with no numbers: equal jumps on top paired with equal, bigger jumps below, captioned that the bottom grows by repeating the jump, not by adding once.',
-  ].filter((s): s is string => !!s).join(' ');
-}
-
-/** The caption under the `grow_model` picture. */
-export const GROW_MODEL_CAPTION = 'Each jump on top matches one same-size jump below. The bottom line grows by repeating that jump, not by adding once.';
+            + 'back after it.') },
+  ],
+});
 
 /** Leak rule for the levers' words, captions and facts: no digit at all (every key is a number). */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

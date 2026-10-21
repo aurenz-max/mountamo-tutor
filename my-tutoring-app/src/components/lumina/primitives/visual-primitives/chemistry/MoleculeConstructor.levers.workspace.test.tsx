@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * molecule-constructor `build` mode levers (`moleculeConstructorLevers.ts`), mounted the way a lesson mounts it: the
- * atom tally and bond count draw on the classic canvas in the pull's commit, a pull with nothing to draw is refused
- * and changes nothing, the smaller molecule is ungraded and gives the full item back blank, and only the full
+ * molecule-constructor `build` mode levers (`MOLECULE_LEVERS`), mounted the way a lesson mounts it: the atom tally
+ * and bond count draw on the classic canvas in the pull's commit, a lever with nothing to draw yet is not offered and
+ * a pull of it changes nothing, the smaller molecule is ungraded and gives the full item back blank, and only the full
  * item's answer is credited, with the levers recorded.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -47,10 +47,12 @@ const last = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts.at(-1)
 
 it('an atom short, then the tally: drawn under the formula in the same commit, recorded on the next try', () => {
   const h = mount([WATER]);
-  expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([
-    [ATOM_TALLY_LEVER, 'help', false], [BOND_TALLY_LEVER, 'help', false], [FEWER_ATOMS_LEVER, 'simplify', false]]);
+  // The bond count is offered once an atom is on the canvas.
+  expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([[ATOM_TALLY_LEVER, 'help', false], [FEWER_ATOMS_LEVER, 'simplify', false]]);
   expect(q(h, '[data-lever]')).toHaveLength(0);
   add(h, 'O', 'H'); join(h, 1, 2);
+  expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([
+    [ATOM_TALLY_LEVER, 'help', false], [BOND_TALLY_LEVER, 'help', false], [FEWER_ATOMS_LEVER, 'simplify', false]]);
   check(h);
   expect(last(h)).toMatchObject({ correct: false, miss: 'atoms_off' });
   h.dispatch('retry');
@@ -75,7 +77,7 @@ it('a refused pull changes nothing; the bond count shows made of makes, a double
   expect(h.dispatch('pull_lever', { lever: BOND_TALLY_LEVER }).status).toBe('blocked');
   expect(JSON.stringify(h.state().task!.demand)).toBe(before);
   expect(q(h, '[data-lever]')).toHaveLength(0);
-  expect(levers(h).find(l => l.id === BOND_TALLY_LEVER)!.pulled).toBe(false);
+  expect(levers(h).map(l => l.id)).not.toContain(BOND_TALLY_LEVER);
   add(h, 'C', 'O', 'O'); join(h, 1, 2); join(h, 1, 3);
   check(h);
   expect(last(h)).toMatchObject({ correct: false, miss: 'open_valence' });
@@ -118,7 +120,8 @@ it('the smaller molecule is ungraded and keeps its atoms on Try again; the full 
 it('free build: atoms never joined, then the rings on every atom that can still bond', () => {
   const h = mount([FREE]);
   add(h, 'H');
-  expect(h.dispatch('pull_lever', { lever: JOIN_RINGS_LEVER }).status).toBe('blocked');
+  // One atom: nothing to ring yet, so the rings are not offered.
+  expect(levers(h)).toEqual([]);
   expect(q(h, '[data-lever]')).toHaveLength(0);
   add(h, 'H');
   check(h);

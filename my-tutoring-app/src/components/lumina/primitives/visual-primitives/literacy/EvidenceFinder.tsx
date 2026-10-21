@@ -20,12 +20,13 @@ import {
 } from '../../../evaluation';
 import type { EvidenceFinderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
 import {
   claimOf,
   describeEvidenceWork,
@@ -34,7 +35,6 @@ import {
   findCorrect,
   rateCorrect,
   rateList,
-  workspaceAssignment,
   workspaceScene,
   type EvidenceFinderItem,
   type EvidenceFinderMiss,
@@ -43,17 +43,15 @@ import {
 } from './evidenceFinderWorkspace';
 import {
   COUNT_LEVER,
+  EVIDENCE_LEVERS,
   EXAMPLE_LEVER,
   GUIDE_LEVER,
   PRACTICE_NOTE,
-  evidenceFinderLeverFacts,
-  evidenceFinderLevers,
-  practiceAssignment,
-  practiceFor,
   proofCounts,
   proofExample,
   strengthGuide,
 } from './evidenceFinderLevers';
+import { evidenceFinderBoss } from './evidenceFinder.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -82,8 +80,11 @@ export interface EvidenceFinderData {
     color: string;                             // Highlight color class for this claim
   }>;
 
-  // CER framework scaffold (grades 4+)
+  // CER framework scaffold (grades 4+): the strength rating is asked as its own item
   cerEnabled: boolean;
+
+  /** The lesson's support tier (config.difficulty), stamped by the generator: when the model lever comes. */
+  supportTier?: SupportTier;
 
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
@@ -107,21 +108,15 @@ interface EvidenceFinderProps {
   runtimeEvalMode?: string;
 }
 
-type EvidenceFinderSurfaceProps = EvidenceFinderProps & {
-  tutorOwned: boolean;
-  useController: (options: ProgressOptions<EvidenceFinderItem>) => Progress;
-};
-
 // ============================================================================
 // Constants
 // ============================================================================
 
-type FinderPhase = 'find' | 'evaluate' | 'reason';
+type FinderPhase = 'find' | 'evaluate';
 
 const PHASE_CONFIG: Record<FinderPhase, { label: string; description: string; accent: LuminaAccent }> = {
   find: { label: 'Find', description: 'Highlight evidence in the passage', accent: 'blue' },
   evaluate: { label: 'Evaluate', description: 'Rate evidence strength', accent: 'amber' },
-  reason: { label: 'Reason', description: 'Explain how evidence supports the claim', accent: 'emerald' },
 };
 
 // Claim-identity colors for the interaction surface (passage highlights + claim
@@ -153,11 +148,13 @@ const MISS_FEEDBACK: Record<EvidenceFinderMiss, string> = {
   mixed_ratings: 'Some ratings are too strong and some are too weak. Try again!',
 };
 
+const useEvidenceProgress = useWorkspaceProgressFor('evidence-finder');
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const EvidenceFinderSurface = (props: EvidenceFinderSurfaceProps) => {
+const EvidenceFinderSurface = (props: EvidenceFinderProps) => {
   const { data, className } = props;
   if (!data?.passage || !data.passage.sentences?.length || !data.claims?.length) {
     return (
@@ -171,7 +168,7 @@ const EvidenceFinderSurface = (props: EvidenceFinderSurfaceProps) => {
   return <EvidenceFinderBoard {...props} />;
 };
 
-const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, useController }: EvidenceFinderSurfaceProps) => {
+const EvidenceFinderBoard = ({ data, className, runtimePlanItemId }: EvidenceFinderProps) => {
   const {
     title,
     gradeLevel,
@@ -184,9 +181,6 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     onEvaluationSubmit,
   } = data;
   const workspace = useRef<TeachingWorkspace | null>(null);
-
-  // Phase state (scripted path; on the workspace the runtime's item is the phase)
-  const [scriptedPhase, setScriptedPhase] = useState<FinderPhase>('find');
   const [activeClaimIndex, setActiveClaimIndex] = useState(0);
 
   // Highlighting state: maps sentence ID -> claim index the user assigned
@@ -194,9 +188,6 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
 
   // Strength ratings: maps sentence ID -> user's strength rating
   const [strengthRatings, setStrengthRatings] = useState<Record<string, Strength>>({});
-
-  // CER reasoning: maps claim index -> user's reasoning text
-  const [reasoningTexts, setReasoningTexts] = useState<Record<number, string>>({});
 
   // Feedback
   const [feedback, setFeedback] = useState('');
@@ -219,38 +210,40 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Progress. Each phase is one checked item; on the workspace path the runtime moves the index. ──
+  // ── Progress. Each step is one checked item; the runtime moves the index. ──
   const items = useMemo(() => evidenceFinderItems(data), [data]);
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useEvidenceProgress({
     challenges: items,
     getChallengeId: (item) => item.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (item) => workspaceAssignment(item, data),
+    workspace, assignment: evidenceFinderBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next item. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
-  const sessionItem: EvidenceFinderItem | undefined = tutorOwned ? items[progress.currentIndex] : undefined;
-  const workspaceDone = tutorOwned && progress.isComplete;
-  const currentPhase: FinderPhase = tutorOwned ? (sessionItem?.id === 'rate' ? 'evaluate' : 'find') : scriptedPhase;
+  const sessionItem: EvidenceFinderItem | undefined = items[progress.currentIndex];
+  const workspaceDone = progress.isComplete;
   const finished = hasSubmittedEvaluation || workspaceDone;
 
-  // In-item levers (`evidenceFinderLevers.ts`), keyed by the item they were pulled on, and the practice passage a
-  // simplify lever puts in place of this one until the observer returns to it. `shown` is the passage on screen.
+  // In-item levers (`EVIDENCE_LEVERS`), keyed by the item they were pulled on, and the practice item a simplify lever
+  // puts in place of this one until the observer returns to it. `shownItem` is the item on screen.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<EvidenceFinderData | null>(null);
-  const shown: EvidenceFinderData = practice ?? data;
+  const [practice, setPractice] = useState<EvidenceFinderItem | null>(null);
+  const shownItem = practice ?? sessionItem;
+  const shown: EvidenceFinderData = shownItem?.data ?? data;
   const { passage, claims } = shown;
+  const currentPhase: FinderPhase = shownItem?.kind === 'rate' ? 'evaluate' : 'find';
   const pulledLevers = !practice && sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
-  const itemLevers = tutorOwned && !practice && !workspaceDone ? evidenceFinderLevers(sessionItem, data, pulledLevers) : [];
+  const leverCtx = { highlighted: highlightedSentences };
+  const itemLevers = !practice && sessionItem && !workspaceDone ? EVIDENCE_LEVERS.declare(sessionItem, leverCtx, pulledLevers) : [];
   /** A help lever is drawn on the session passage while pulled, never on a practice passage. */
-  const helpOn = (id: string) => itemLevers.some((l) => l.id === id && l.kind === 'help' && l.pulled);
+  const helpOn = (id: string) => itemLevers.some((l) => l.id === id && l.pulled);
 
   // Total evidence sentences in the session passage
   const totalEvidence = useMemo(() => data.passage.sentences.filter(s => s.isEvidence).length, [data]);
@@ -259,22 +252,22 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
   const view: EvidenceFinderView = { highlighted: highlightedSentences, ratings: strengthRatings };
 
   const clearFeedback = () => { setFeedback(''); setFeedbackType(''); };
-  const clearPhase = (id: EvidenceFinderItem['id'] | undefined) => {
-    if (id === 'rate') setStrengthRatings({});
+  const clearPhase = (step: EvidenceFinderItem['kind'] | undefined) => {
+    if (step === 'rate') setStrengthRatings({});
     else { setHighlightedSentences({}); setActiveClaimIndex(0); }
     clearFeedback();
   };
 
-  // A fresh item, or Try again on the workspace path: only the opened phase's own work is cleared. Try again keeps a
-  // practice passage; a fresh item, or the full passage back after practice, drops it.
+  // A fresh item, or Try again: only the opened step's own work is cleared. Try again keeps a practice passage; a
+  // fresh item, or the full passage back after practice, drops it.
   openItem.current = (index, retry) => {
-    clearPhase(items[index]?.id);
+    clearPhase(items[index]?.kind);
     if (!retry) setPractice(null);
   };
 
   // Toggle highlight on a sentence for the active claim
   const handleToggleHighlight = (sentenceId: string) => {
-    if (hasSubmittedEvaluation || currentPhase !== 'find' || learnerBlocked() || workspaceDone) return;
+    if (currentPhase !== 'find' || learnerBlocked() || workspaceDone) return;
     SoundManager.tap();
     setHighlightedSentences(prev => {
       const existing = prev[sentenceId];
@@ -297,19 +290,13 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
 
   // Set strength rating for a sentence
   const handleSetStrength = (sentenceId: string, strength: Strength) => {
-    if (hasSubmittedEvaluation || currentPhase !== 'evaluate' || learnerBlocked() || workspaceDone) return;
+    if (currentPhase !== 'evaluate' || learnerBlocked() || workspaceDone) return;
     SoundManager.tap();
     setStrengthRatings(prev => ({ ...prev, [sentenceId]: strength }));
-    if (tutorOwned) clearFeedback();
+    clearFeedback();
   };
 
-  // Update reasoning text (scripted path only: the reasoning box has no check)
-  const handleReasoningChange = (claimIndex: number, text: string) => {
-    if (hasSubmittedEvaluation) return;
-    setReasoningTexts(prev => ({ ...prev, [claimIndex]: text }));
-  };
-
-  // Check evidence in the find phase: the activity's own check, committed on both paths.
+  // Check evidence in the find step: the activity's own check.
   const handleCheckFind = () => {
     if (learnerBlocked()) return;
     const highlightedIds = Object.keys(highlightedSentences);
@@ -318,22 +305,13 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
       setFeedbackType('info');
       return;
     }
-    const item: EvidenceFinderItem = { id: 'find' };
     const correct = findCorrect(shown, highlightedSentences);
-    const miss = correct ? undefined : evidenceFinderMiss(item, shown, view);
-    progress.commitCheck(describeEvidenceWork(item, shown, view), correct, miss);
-
+    const miss = correct ? undefined : evidenceFinderMiss('find', shown, view);
+    progress.commitCheck(describeEvidenceWork('find', shown, view), correct, miss);
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Found ${highlightedIds.length} piece${highlightedIds.length > 1 ? 's' : ''} of evidence!`);
       setFeedbackType('success');
-      // Scripted path: advance to the evaluate phase after a brief delay. The workspace's runtime moves on itself.
-      if (!tutorOwned) {
-        setTimeout(() => {
-          setScriptedPhase('evaluate');
-          clearFeedback();
-        }, 1200);
-      }
     } else {
       SoundManager.playIncorrect();
       setFeedback(MISS_FEEDBACK[miss ?? 'missed_evidence']);
@@ -341,13 +319,12 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     }
   };
 
-  // Check ratings (workspace path: the rate item's own check)
+  // Check ratings: the rate item's own check.
   const handleCheckRate = () => {
     if (learnerBlocked()) return;
-    const item: EvidenceFinderItem = { id: 'rate' };
     const correct = rateCorrect(shown, strengthRatings);
-    const miss = correct ? undefined : evidenceFinderMiss(item, shown, view);
-    progress.commitCheck(describeEvidenceWork(item, shown, view), correct, miss);
+    const miss = correct ? undefined : evidenceFinderMiss('rate', shown, view);
+    progress.commitCheck(describeEvidenceWork('rate', shown, view), correct, miss);
     if (correct) {
       SoundManager.playCorrect();
       setFeedback('Every rating fits its evidence!');
@@ -359,7 +336,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     }
   };
 
-  const buildMetrics = (attemptsCount: number) => {
+  const buildMetrics = (attemptsCount: number): EvidenceFinderMetrics => {
     const highlightedIds = Object.keys(highlightedSentences);
     let correctEvidence = 0;
     let falseEvidence = 0;
@@ -388,71 +365,42 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
       }
     });
 
-    const strengthAccuracy = strengthRated > 0 ? Math.round(strengthAccuracyTotal / strengthRated) : 0;
-    const reasoningProvided = Object.values(reasoningTexts).some(t => t.trim().length > 10);
-    const cerComplete = cerEnabled && data.claims.every((_, i) => (reasoningTexts[i]?.trim().length || 0) > 10);
-
-    // Score: evidence finding (60%) + strength rating (20%) + reasoning (20%)
-    const findScore = totalEvidence > 0 ? (correctEvidence / totalEvidence) * 60 : 60;
-    const strengthScore = strengthAccuracy * 0.2;
-    const reasonScore = cerEnabled ? (reasoningProvided ? 20 : 0) : 20;
-    const score = Math.round(Math.min(100, findScore + strengthScore + reasonScore - (falseEvidence * 5)));
-
-    const metrics: EvidenceFinderMetrics = {
+    return {
       type: 'evidence-finder',
       gradeLevel,
       correctEvidenceFound: correctEvidence,
       evidenceTotal: totalEvidence,
       falseEvidenceSelected: falseEvidence,
-      evidenceStrengthRatingAccuracy: strengthAccuracy,
-      reasoningProvided,
-      cerFrameworkComplete: cerComplete,
+      evidenceStrengthRatingAccuracy: strengthRated > 0 ? Math.round(strengthAccuracyTotal / strengthRated) : 0,
+      // The CER reasoning box is not on the workspace: no reasoning is written.
+      reasoningProvided: false,
+      cerFrameworkComplete: false,
       attemptsCount,
     };
-    return { metrics, score: Math.max(0, score) };
   };
 
-  const studentWork = () => ({ highlightedSentences, strengthRatings, reasoningTexts });
-
-  /** Scripted path: one submission for the whole activity. */
-  const submitFinalEvaluation = () => {
-    if (hasSubmittedEvaluation || tutorOwned) return;
-    const { metrics, score } = buildMetrics(Math.max(1, progress.currentAttempts));
-    submitEvaluation(score >= 50, score, metrics, studentWork());
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
-    const { metrics } = buildMetrics(result.attemptsCount);
-    submitEvaluation(result.passed, result.accuracy, metrics,
-      { ...studentWork(), challengeResults: result.outcomes, learningResponses: result.learningResponses,
+    submitEvaluation(result.passed, result.accuracy, buildMetrics(result.attemptsCount),
+      { highlightedSentences, strengthRatings, challengeResults: result.outcomes, learningResponses: result.learningResponses,
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
   };
 
-  // Advance from evaluate to reason phase (scripted path)
-  const handleDoneEvaluate = () => {
-    if (cerEnabled) {
-      setScriptedPhase('reason');
-    } else {
-      submitFinalEvaluation();
-    }
-  };
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !sessionItem || workspaceDone) return;
-    const scene = workspaceScene(sessionItem, shown, view);
+    if (!sessionItem || !shownItem || workspaceDone) return;
+    const scene = workspaceScene(shownItem, view);
     const levers = itemLevers;
-    const onScreen = practice ? ''
-      : evidenceFinderLeverFacts(sessionItem, data, levers.filter((l) => l.kind === 'help' && l.pulled).map((l) => l.id),
-        highlightedSentences);
+    const published = leverScene(scene, {
+      support: practice ? '' : EVIDENCE_LEVERS.support(sessionItem, leverCtx),
+      onScreen: practice ? '' : EVIDENCE_LEVERS.onScreen(sessionItem, leverCtx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -460,16 +408,16 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceFor(sessionItem, data);
+          const easier = EVIDENCE_LEVERS.simpler(sessionItem, leverCtx, id);
           if (!easier) return 'There is no practice passage for this part.';
-          setLeverState(next); setPractice(easier); clearPhase(sessionItem.id);
-          return { practice: practiceAssignment(sessionItem, easier) };
+          setLeverState(next); setPractice(easier); clearPhase(sessionItem.kind);
+          return { practice: evidenceFinderBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
       },
       // Back to the full passage, blank: the practice passage is not the learner's work on it.
-      endPractice: () => { setPractice(null); clearPhase(sessionItem.id); },
+      endPractice: () => { setPractice(null); clearPhase(sessionItem.kind); },
     };
   });
 
@@ -480,9 +428,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
   // Phase progress — a bespoke horizontal step indicator (no kit equivalent for
   // a multi-step progress rail). Colors tokenized via accent maps.
   const renderPhaseProgress = () => {
-    const phases: FinderPhase[] = tutorOwned
-      ? items.map(i => (i.id === 'rate' ? 'evaluate' : 'find'))
-      : cerEnabled ? ['find', 'evaluate', 'reason'] : ['find', 'evaluate'];
+    const phases: FinderPhase[] = items.map(i => (i.kind === 'rate' ? 'evaluate' : 'find'));
     return (
       <div className="flex items-center gap-2 mb-4">
         {phases.map((phase, index) => {
@@ -570,7 +516,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
 
   // Render passage with highlight support — THE INTERACTION SURFACE. Clickable,
   // highlightable spans with claim-identity highlight colors. Left bespoke.
-  const renderPassage = (interactive: boolean) => (
+  const renderPassage = () => (
     <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5 space-y-2">
       {passage.sentences.map(sentence => {
         const highlightClaimIdx = highlightedSentences[sentence.id];
@@ -581,10 +527,9 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
           <span
             key={sentence.id}
             data-pip-object={`sentence-${sentence.id}`}
-            onClick={() => interactive && handleToggleHighlight(sentence.id)}
+            onClick={() => handleToggleHighlight(sentence.id)}
             className={`
-              inline cursor-default leading-relaxed text-base
-              ${interactive ? 'cursor-pointer hover:bg-white/5 rounded px-0.5' : ''}
+              inline leading-relaxed text-base cursor-pointer hover:bg-white/5 rounded px-0.5
               ${isHighlighted && colorSet
                 ? `${colorSet.highlight} rounded px-1 py-0.5`
                 : 'text-slate-200'
@@ -668,7 +613,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     </LuminaFeedbackCard>
   );
 
-  // Find phase
+  // Find step
   const renderFindPhase = () => (
     <div className="space-y-4">
       <LuminaPrompt>
@@ -680,7 +625,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
       {renderClaimSelector()}
       {renderProofCount()}
       {renderProofExample()}
-      {renderPassage(true)}
+      {renderPassage()}
 
       {renderFeedback()}
 
@@ -688,7 +633,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
         <LuminaActionButton
           action="check"
           onClick={handleCheckFind}
-          disabled={Object.keys(highlightedSentences).length === 0 || (tutorOwned && progress.canAttempt === false)}
+          disabled={Object.keys(highlightedSentences).length === 0 || progress.canAttempt === false}
         >
           Check Evidence
         </LuminaActionButton>
@@ -696,14 +641,9 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
     </div>
   );
 
-  // Evaluate phase - rate evidence strength. The workspace rates every evidence sentence (the find is credited by
-  // then); the scripted path rates what the learner highlighted.
+  // Rate step: every evidence sentence of the passage on screen (the find is credited by then).
   const renderEvaluatePhase = () => {
-    const evidenceSentences = tutorOwned
-      ? rateList(shown)
-      : Object.keys(highlightedSentences)
-        .map(id => passage.sentences.find(s => s.id === id))
-        .filter((s): s is NonNullable<typeof s> => !!s);
+    const evidenceSentences = rateList(shown);
     const allRated = evidenceSentences.every(s => strengthRatings[s.id]);
 
     return (
@@ -722,8 +662,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
         <div className="space-y-3">
           {evidenceSentences.map(sentence => {
             const rating = strengthRatings[sentence.id];
-            const claimIdx = tutorOwned ? claimOf(shown, sentence) : highlightedSentences[sentence.id];
-            const colorSet = CLAIM_COLORS[claimIdx % CLAIM_COLORS.length];
+            const colorSet = CLAIM_COLORS[claimOf(shown, sentence) % CLAIM_COLORS.length];
             return (
               <div
                 key={sentence.id}
@@ -757,116 +696,24 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
           })}
         </div>
 
-        {tutorOwned && renderFeedback()}
+        {renderFeedback()}
 
         <div className="flex justify-end">
-          {tutorOwned ? (
-            <LuminaActionButton
-              action="check"
-              onClick={handleCheckRate}
-              disabled={!allRated || progress.canAttempt === false}
-            >
-              Check Ratings
-            </LuminaActionButton>
-          ) : (
-            <LuminaActionButton
-              action={cerEnabled ? 'next' : 'check'}
-              onClick={handleDoneEvaluate}
-              disabled={hasSubmittedEvaluation}
-            >
-              {cerEnabled ? 'Next: Reasoning' : 'Finish'}
-            </LuminaActionButton>
-          )}
+          <LuminaActionButton
+            action="check"
+            onClick={handleCheckRate}
+            disabled={!allRated || progress.canAttempt === false}
+          >
+            Check Ratings
+          </LuminaActionButton>
         </div>
       </div>
     );
   };
 
-  // Reason phase (CER) — scripted path only: open writing with no check.
-  const renderReasonPhase = () => (
-    <div className="space-y-4">
-      <LuminaPrompt>
-        <span className="text-sm text-slate-400">
-          Explain <span className="text-amber-300">how</span> the evidence supports each claim (1-2 sentences).
-        </span>
-      </LuminaPrompt>
-
-      {/* CER scaffold */}
-      {claims.map((claim, i) => {
-        const colorSet = CLAIM_COLORS[i % CLAIM_COLORS.length];
-        const claimAccent: LuminaAccent = (['blue', 'purple', 'emerald', 'amber'] as const)[i % 4];
-        const evidenceForClaim = Object.entries(highlightedSentences)
-          .filter(([, ci]) => ci === i)
-          .map(([id]) => passage.sentences.find(s => s.id === id))
-          .filter(Boolean);
-
-        return (
-          <LuminaPanel key={claim.id} accent={claimAccent} className="space-y-3">
-            {/* Claim */}
-            <div>
-              <LuminaSectionLabel size="sm" accent={claimAccent}>Claim</LuminaSectionLabel>
-              <p className={`text-sm font-medium mt-1 ${colorSet.text}`}>{claim.text}</p>
-            </div>
-
-            {/* Evidence summary */}
-            <div>
-              <LuminaSectionLabel size="sm" accent={claimAccent}>Evidence</LuminaSectionLabel>
-              <div className="mt-1">
-                {evidenceForClaim.length > 0 ? (
-                  evidenceForClaim.map(s => s && (
-                    <p key={s.id} className="text-sm text-slate-300 italic">
-                      &ldquo;{s.text}&rdquo;
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No evidence highlighted for this claim.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Reasoning — student production surface (free-text), kept bespoke. */}
-            <div>
-              <LuminaSectionLabel size="sm" accent={claimAccent}>Reasoning</LuminaSectionLabel>
-              <textarea
-                aria-label={`Reasoning for claim ${i + 1}`}
-                value={reasoningTexts[i] || ''}
-                onChange={(e) => handleReasoningChange(i, e.target.value)}
-                placeholder="Explain how this evidence supports the claim..."
-                rows={2}
-                className="w-full mt-1 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
-              />
-            </div>
-          </LuminaPanel>
-        );
-      })}
-
-      <div className="flex justify-end">
-        <LuminaActionButton
-          action="check"
-          onClick={submitFinalEvaluation}
-          disabled={hasSubmittedEvaluation}
-        >
-          Finish
-        </LuminaActionButton>
-      </div>
-    </div>
-  );
-
   // ============================================================================
   // Main Render
   // ============================================================================
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: instanceId || 'evidence-finder',
-    scopeId: finished ? null : currentPhase,
-    label: 'The passage and the claims',
-    solved: feedbackType === 'success',
-    tutorSpeaking: false,
-  });
 
   return (
     <LuminaCard className={className}>
@@ -890,17 +737,19 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
       <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !finished && <div {...pip.dock} />}
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the passage and the claims as
+            one region. */}
         {!workspaceDone && (
-          <div {...pip.workspace} className="space-y-4">
-            {practice && (
-              <LuminaBadge accent="purple" className="text-xs">Practice passage: not graded</LuminaBadge>
-            )}
-            {currentPhase === 'find' && renderFindPhase()}
-            {currentPhase === 'evaluate' && renderEvaluatePhase()}
-            {currentPhase === 'reason' && renderReasonPhase()}
-          </div>
+          <>
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {practice && (
+                <LuminaBadge accent="purple" className="text-xs">Practice passage: not graded</LuminaBadge>
+              )}
+              {currentPhase === 'find' && renderFindPhase()}
+              {currentPhase === 'evaluate' && renderEvaluatePhase()}
+            </PipWorkspace>
+          </>
         )}
 
         {/* Final results */}
@@ -916,8 +765,7 @@ const EvidenceFinderBoard = ({ data, className, runtimePlanItemId, tutorOwned, u
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const EvidenceFinder = withWorkspaceController<EvidenceFinderProps, ProgressOptions<EvidenceFinderItem>, Progress>(
-  'evidence-finder', EvidenceFinderSurface, useScriptedProgress, useWorkspaceProgressFor('evidence-finder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const EvidenceFinder = withWorkspaceOnly<EvidenceFinderProps>('evidence-finder', EvidenceFinderSurface, props => props.data.title);
 
 export default EvidenceFinder;

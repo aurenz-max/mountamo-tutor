@@ -5,13 +5,18 @@ import { getLetterTemplate, LETTER_TEMPLATES } from './letterWorkshopGeometry';
 import { letterStructure, resolveSupportStructure } from './letterWorkshopDifficulty';
 import {
   ARROWS_LEVER, COPY_PART_LEVER, DOTS_LEVER, FIRST_PART_LEVER, LINES_LEVER, MODEL_STROKES_LEVER, SIMPLER_LETTER_LEVER,
-  TRACE_PART_LEVER, firstPart, firstPartLeaks, leverFacts, leverIdsFor, letterPart, letterWorkshopLevers, practiceItem,
+  LETTER_WORKSHOP_LEVERS, TRACE_PART_LEVER, firstPart, firstPartLeaks, letterPart, practiceItem,
   practiceLeaks, simplerLetter, startDots, startDotsLeak, startingLevers,
 } from './letterWorkshopLevers';
 import { GEOMETRY_MISSES, READING_MISSES, pathLength, templateOf } from './letterWorkshopWorkspace';
 
 const item = (type: LetterWorkshopChallenge['type'], templateId: string, id = 'c1'): LetterWorkshopChallenge => ({ id, type, templateId });
 const MODES = ['trace', 'copy', 'write'] as const;
+/** The levers an item declares, with the session's items as the set's context. */
+const letterWorkshopLevers = (ch: LetterWorkshopChallenge, pulled: readonly string[], others: readonly LetterWorkshopChallenge[] = [ch]) =>
+  LETTER_WORKSHOP_LEVERS.declare(ch, others, pulled);
+const leverIdsFor = (ch: LetterWorkshopChallenge) => letterWorkshopLevers(ch, []).map(l => l.id);
+const leverFacts = (ch: LetterWorkshopChallenge, on: readonly string[]) => LETTER_WORKSHOP_LEVERS.onScreen(ch, [ch], on);
 
 describe('which levers an item declares', () => {
   it.each([
@@ -70,7 +75,7 @@ describe('leak rules', () => {
   it('write facts never name the letter or its shape', () => {
     // The same words for every letter but the stroke count: nothing in them depends on which letter it is.
     const said = new Set(LETTER_TEMPLATES.map(t => { const ch = item('write', t.id);
-      return (leverFacts(ch, leverIdsFor(ch)) ?? '').replace(/^A (numbered )?dot on the paper marks where (each of the \d+ strokes|the stroke) starts\./, 'DOTS.'); }));
+      return leverFacts(ch, leverIdsFor(ch)).replace(/^A (numbered )?dot on the paper marks where (each of the \d+ strokes|the stroke) starts\./, 'DOTS.'); }));
     expect(said.size).toBe(1);
     expect(Array.from(said)[0]).not.toMatch(/curve|line down|bowl|circle|hump|tail|tall|short/i);
   });

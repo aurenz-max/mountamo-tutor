@@ -74,7 +74,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateSpellingPatternExplorer } = await loader.import('/src/components/lumina/service/literacy/gemini-spelling-pattern-explorer.ts');
   const { spellingPatternExplorerOracle } = await loader.import('/src/components/lumina/service/qa/oracles/spelling-pattern-explorer.ts');
-  const { validateSpellingPatternExplorerData } = await loader.import('/src/components/lumina/components/live-activity/adapters/spellingPatternExplorerLive.ts');
+  const { validateSpellingPatternExplorerData } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/spellingPatternExplorer.boss.ts');
   const lb = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/letterBuild.ts');
   const sp = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/spellingPatternBuild.ts');
   const results = [];

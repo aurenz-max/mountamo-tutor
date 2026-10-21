@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * shape-tracer levers on the real workspace: a pull changes the screen and the scene fact in the same commit, the next
- * attempt records it, a pull that would change nothing is refused, and the simpler item is ungraded and gives the full
+ * attempt records it, the side bars are not offered before there is a side, and the simpler item is ungraded and gives the full
  * item back.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -67,16 +67,11 @@ it('connect_dots: the number strip appears above the picture in the same commit,
   expect(attempts(h).at(-1)).toMatchObject({ itemId: 'd', correct: true, levers: ['number_strip'] });
 });
 
-it('connect_dots: fade_joined is refused while no dot is joined, then turns the joined dots into ticks', () => {
+it('connect_dots: fade_joined answers going back, and turns the joined dots into ticks', () => {
   const h = mount('connect_dots', [DOTS]);
-  h.touch('dot-1');
-  expect(attempts(h).at(-1)).toMatchObject({ miss: 'started_elsewhere' });
-  const before = snapshot(h);
-  expect(h.dispatch('pull_lever', { lever: 'fade_joined' }).status).toBe('blocked');
-  expect(snapshot(h)).toEqual(before);
-  h.dispatch('retry');
   taps(h, 'dot', [0, 1]); h.touch('dot-0');
   expect(attempts(h).at(-1)).toMatchObject({ miss: 'went_back' });
+  expect(nextLever(h.state().task!.workspace!.levers!, 'went_back')).toBe('fade_joined');
   expect(h.dispatch('pull_lever', { lever: 'fade_joined' }).status).toBe('committed');
   expect(q(h, '[data-pip-object="dot-0"] text')[0].textContent).toBe('✓');
   expect(q(h, '[data-pip-object="dot-2"] text')[0].textContent).toBe('3');
@@ -90,6 +85,8 @@ it('connect_dots: the simpler item is three dots, ungraded; the full item comes 
   expect(receipt.status).toBe('committed');
   expect(receipt.state.task!.itemId).toBe('d~simpler');
   expect(h.view.container.textContent).toMatch(/Practice/);
+  // A practice item offers no levers.
+  expect(levers(h)).toEqual([]);
   expect(q(h, '[data-pip-object^="dot-"]')).toHaveLength(3);
   // The hidden practice shape is not named before it is joined.
   expect(JSON.stringify(demand(h))).not.toMatch(/triangle/);
@@ -106,8 +103,8 @@ it('connect_dots: the simpler item is three dots, ungraded; the full item comes 
 
 it('draw_from_description: the corner rings and the side bars show the learner\'s own work against the clue', () => {
   const h = mount('draw_from_description', [DRAW]);
-  expect(levers(h)).toEqual([['corner_rings', false], ['side_bars', false], ['simpler_item', false]]);
-  // Bars before any corner change nothing, so they are refused.
+  expect(levers(h)).toEqual([['corner_rings', false], ['simpler_item', false]]);
+  // Bars before two corners would change nothing, so they are not offered.
   expect(h.dispatch('pull_lever', { lever: 'side_bars' }).status).toBe('blocked');
   expect(h.dispatch('pull_lever', { lever: 'corner_rings' }).status).toBe('committed');
   expect(q(h, '[data-lever="corner_rings"] span')).toHaveLength(4);

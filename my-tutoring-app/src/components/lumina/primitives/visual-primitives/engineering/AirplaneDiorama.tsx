@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaChallengeCounter, LuminaFeedbackCard, LuminaPrompt,
@@ -14,14 +13,15 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import AirplaneScene from './AirplaneScene';
 import FlightPlanPanel from './FlightPlanPanel';
 import {
-  MAX_TANKS, PART_INFO, airplaneMiss, flightFeedback, flightMiss, flyTrip, partMatches, tapFeedback,
+  MAX_TANKS, PART_INFO, airplaneMiss, describeFuel, describeTap, flightFeedback, flightMiss, flyTrip, partMatches, tapFeedback,
   type AirplaneBand, type AirplaneChallenge, type AirplanePart, type AirplaneTask, type FlightPlanChallenge, type FlightRun,
 } from './airplaneModel';
-import { airplaneAssignment, airplaneScene, describeFuel, describeTap } from './airplaneWorkspace';
+import { airplaneScene } from './airplaneWorkspace';
+import { airplaneDioramaBoss } from './airplaneDiorama.boss';
 
 export type { AirplaneChallenge } from './airplaneModel';
 
@@ -76,7 +76,6 @@ const useAirplaneProgress = useWorkspaceProgressFor('airplane-diorama');
 const AirplaneDioramaSurface: React.FC<AirplaneDioramaProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, gradeBand, airlineName, instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceId = useRef(instanceId || `airplane-diorama-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
@@ -99,7 +98,7 @@ const AirplaneDioramaSurface: React.FC<AirplaneDioramaProps> = ({ data, classNam
   const progress = useAirplaneProgress<AirplaneChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: airplaneAssignment,
+    workspace, assignment: airplaneDioramaBoss.assignment!,
     // A fresh item turns the jet back to the start view. Try again keeps the view and the last result's words;
     // the loader empties and the plane goes back to the start airport, so the tanks are worked out again, not nudged.
     onItemOpened: (_index, retry) => {
@@ -209,19 +208,10 @@ const AirplaneDioramaSurface: React.FC<AirplaneDioramaProps> = ({ data, classNam
   // The finale: every item done, the jet takes off.
   useEffect(() => { if (allChallengesComplete) setFocus({ part: 'overview', key: 'finale' }); }, [allChallengesComplete]);
 
-  // ── Pip: the jet as a whole; never a part (finding the part is the task) ──
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: current?.type === 'flight_plan' ? 'The flight plan' : 'The jet',
-    solved,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...airplaneScene(current, { tapped, taps, showing: solved, loaded, flights, lastFlight }) };
+    workspace.current = airplaneScene(current, { tapped, taps, showing: solved, loaded, flights, lastFlight });
   });
 
   const localScore = useMemo(() => phaseResults.length
@@ -262,8 +252,8 @@ const AirplaneDioramaSurface: React.FC<AirplaneDioramaProps> = ({ data, classNam
           </LuminaPrompt>
         )}
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-3">
+        <PipDock />
+        <PipWorkspace className="space-y-3">
           {onFlight && current?.type === 'flight_plan' && (
             <FlightPlanPanel challenge={current} loaded={loaded} flownNow={flownNow}
               landed={flying ? null : lastFlight} flying={flying} disabled={blocked}
@@ -303,7 +293,7 @@ const AirplaneDioramaSurface: React.FC<AirplaneDioramaProps> = ({ data, classNam
               <p>{feedback}</p>
             </LuminaFeedbackCard>
           )}
-        </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );

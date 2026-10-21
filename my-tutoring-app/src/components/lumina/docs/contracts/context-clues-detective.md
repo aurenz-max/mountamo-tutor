@@ -1,7 +1,7 @@
 # Contract: context-clues-detective
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C21) for the workspace requirements only. A full `/primitive-contract context-clues-detective` derivation (consumers per vocabulary skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/literacy/ContextCluesDetective.tsx` · **Workspace:** `contextCluesWorkspace.ts` · **Generator:** `service/literacy/gemini-context-clues-detective.ts` · **Adapter:** `components/live-activity/adapters/contextCluesDetectiveLive.ts` · **Catalog:** `service/manifest/catalog/literacy.ts` (`context-clues-detective`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/literacy/ContextCluesDetective.tsx` · **Workspace:** `contextCluesWorkspace.ts` · **Generator:** `service/literacy/gemini-context-clues-detective.ts` · **Boss:** `literacy/contextClues.card.ts` + `literacy/contextClues.boss.ts` (levers `literacy/contextCluesLevers.ts`) · **Catalog:** `service/manifest/catalog/literacy.ts` (`context-clues-detective`)
 
 ## Requirements
 
@@ -14,7 +14,7 @@
 - **Why:** before 2026-10-09 the word's own sentence could not be tapped, and every example-mode payload put its only clue there, so the find step could never pass; and any tapped clue passed, so tapping every sentence passed.
 - **Probe:** `ContextCluesDetective.workspace.test.tsx` "the find check".
 
-### R3 — the scripted path is unchanged apart from R2 · OBSERVED (2026-10-09)
+### R3 — the scripted path is unchanged apart from R2 · RETIRED (2026-10-20: the boss has one path; an unbound mount shows the needs-the-tutor card)
 - **Property:** without a runtime the steps advance on their own after a correct check, a wrong meaning shows the meaning and the dictionary and closes the word, and Finish submits `scriptedScore` (30/30/40 with a type step; find 3/7, define 4/7 without).
 - **Probe:** `ContextCluesDetective.workspace.test.tsx` "the scripted path"; `pip/LiteracyWorkspaces.surface.test.tsx`.
 
@@ -31,3 +31,4 @@
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding, C21).
 - 2026-10-09 — R4, R5: levers on every step of every mode (`/add-support-tiers`); the find-step clue outline removed.
 - 2026-10-09 — R1: classify built only when the session mixes clue types (orchestrator ruling); single-type modes' miss lists lose the type misses. Scripted path score over the steps built (`scriptedScore`): 30/30/40 with a type step, find 3/7 and define 4/7 without; a step never asked earns nothing.
+- 2026-10-20 — moved onto a boss (wave 3): `contextClues.card.ts` (steps find (board), classify, define; misses in the card) + `contextClues.boss.ts` (validate from the deleted adapter, harness from the old journey row); levers one `CLUE_LEVERS` set (layout, marks, legend, clue, custom), tier starting positions via `tierShown`; scripted path, `useLuminaAI` cues, `scriptedScore` and the catalog `tutoring` block deleted (R3 retired); Pip from the runner.

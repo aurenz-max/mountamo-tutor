@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { spokenNumber } from '../../../components/live-activity/runtime/spokenMissContract';
 import { equalityItems } from './balanceEqualityModel';
-import { balanceSpokenMisses, equalityAssignment, workshopAssignment } from './balanceScaleWorkspace';
+import { balanceKey, balanceSpokenMisses } from './balanceScaleWorkspace';
+import { balanceScaleBoss } from './balanceScale.boss';
 import { workshopItems, type WorkshopProblem } from './balanceWorkshopModel';
 
 const OFF = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
@@ -17,7 +18,7 @@ it.each([
   ['two_step infer', step(problem('two_step', 2, 3, 6), 'infer'), 2, ['said_remaining', 'said_parcels', 'said_whole', 'one_short', 'one_over', 'over_by_more']],
   ['equality_hard sum', step(problem('equality_hard', 5, 0, 1), 'sum'), 5, OFF],
 ] as const)('%s: known misses in order, none of them the answer', (_, item, answer, ids) => {
-  expect(workshopAssignment(item).expectedAnswer).toBe(String(answer));
+  expect(balanceKey(item)?.answer).toBe(String(answer));
   const misses = balanceSpokenMisses(item);
   expect(misses.map(m => m.id)).toEqual(ids);
   expect(misses.flatMap(m => m.examples ?? []).filter(e => e === spokenNumber(answer) || e === String(answer))).toEqual([]);
@@ -26,9 +27,9 @@ it.each([
 it('the equality steps list the off-by misses; hands steps and the explanation list none', () => {
   const [build, total] = equalityItems([{ id: 'e', target: 6, mode: 'equality' }]);
   expect(balanceSpokenMisses(total).map(m => m.id)).toEqual(OFF);
-  expect(equalityAssignment(total).misses?.map(m => m.id)).toEqual(OFF);
+  expect(balanceScaleBoss.assignment(total).misses?.map(m => m.id)).toEqual(OFF);
   expect(balanceSpokenMisses(build)).toEqual([]);
   const two = problem('two_step', 2, 3, 6);
   expect(balanceSpokenMisses(step(two, 'share'))).toEqual([]);
-  expect(workshopAssignment(step(two, 'explain')).misses).toBeUndefined();
+  expect(balanceScaleBoss.assignment(step(two, 'explain')).misses).toBeUndefined();
 });

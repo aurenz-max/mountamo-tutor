@@ -18,15 +18,20 @@
  *   not a cube) matching faces coloured alike; `area_vs_volume` (help) a picture outside the item; `smaller_box`
  *   (simplify) a smaller box.
  *
+ * Declared once as a lever set (`NET_LEVERS`, `bossLevers.ts`). The pictures outside the item that draw a rule are
+ * `clue`s (leak-checked against the item's answer); the part names and the two families, each named alike, are
+ * `legend`s; outlines, dashes, labels and colours on the item are `marks`; the net opened or the solid turned is
+ * `layout`. No lever works a different item of the same kind to its answer, so there is no `model` lever.
+ *
  * Leak rules (code, `leverTextLeaks` and `practiceLeaks`): no lever word or fact carries a digit; identify's words
  * never name the item's solid; match's never name the yellow square's face; a model net is never the item's shape;
  * a practice item has its own id, the same mode, and never the item's answer.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { NetFolderChallenge, NetFolderSolid } from './NetFolder';
 import {
-  boxDims, countsOf, matchItem, matchTarget, netFolds, normSolid, solidFamily, solidWords, surfaceTotal, validItem,
-  type NetFolderMiss,
+  NET_MISSES_BY_MODE, boxDims, countsOf, matchItem, matchTarget, netFolds, normSolid, solidFamily, solidWords, surfaceTotal,
+  validItem,
 } from './netFolderWorkspace';
 import { CROSS_NET, STRIP_NET, VALID_CUBE_NETS, cellsOf, foldCubeCells, shapeKey, type Cell } from './netFolderGeometry';
 
@@ -177,121 +182,123 @@ export function practiceLeaks(parent: NetFolderChallenge, solid: NetFolderSolid,
   return true;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 export interface NetLeverContext {
-  /** The solid drawn for the item. */
+  /** The solid drawn for the session item. */
   solid: NetFolderSolid;
   /** The tier already draws the fold lines (a starting position, not a pull). */
   foldGuidesShown: boolean;
-  /** The solid's net is already open beside it (the learner pressed Unfold). */
+  /** The solid's net is already open beside it because the learner pressed Unfold (not because net_beside was pulled). */
   netShown?: boolean;
 }
 
-export function netLevers(c: NetFolderChallenge | null, pulled: readonly string[], ctx: NetLeverContext): WorkspaceLever[] {
-  if (!c || isPracticeNet(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly NetFolderMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const simpler = simplerNet(c, ctx.solid);
-  const simplify = (answers: readonly NetFolderMiss[], when: string, does: string) =>
-    (simpler ? [lever(c.type === 'match_faces' || c.type === 'valid_net' ? EASIER_NET : c.type === 'identify_solid' ? TWO_CHOICES
-      : c.type === 'surface_area' ? SMALLER_BOX : SMALLER_SOLID, 'simplify', 'shown', answers, when,
-    `${does} It is not graded; the full item returns after it.`)] : []);
-  const foldGuides = (answers: readonly NetFolderMiss[]) => (ctx.foldGuidesShown ? [] : [lever(FOLD_GUIDES, 'help', 'shown', answers,
-    'The learner cannot picture where the net bends.', 'Draws a dashed line on every edge two squares share, where the net folds. No square is named.')]);
-  switch (c.type) {
-    case 'count_faces_edges_vertices': return [
-      lever(SEE_THROUGH, 'help', 'shown', ['faces_off', 'edges_off', 'vertices_off', 'several_off'],
-        'The learner counts only the parts facing them.',
-        'Draws the edges at the back of the solid as dashed lines and rings its hidden corners, so every part can be counted. No number is written.'),
-      lever(PART_NAMES, 'help', 'both', ['swapped_counts', 'several_off'],
-        'The learner mixes up faces, edges and vertices.',
-        'Shows a picture outside the item: one flat tile with arrows naming a face (a flat side), an edge (where two faces meet) and a vertex (a corner). Read the names aloud; no number is written.'),
-      lever(NET_BESIDE, 'help', 'shown', ['faces_off', 'several_off'],
-        'The learner miscounts the faces.', 'Opens the solid\'s net beside it: one flat piece for each face. No number is written.'),
-      ...simplify(['swapped_counts', 'faces_off', 'edges_off', 'vertices_off', 'several_off'], 'This solid has too many parts to count yet.',
-        'Opens the same counting task on a solid with fewer faces, edges and vertices.'),
-    ];
-    case 'identify_solid': return [
-      lever(BASE_OUTLINE, 'help', 'shown', ['prism_pyramid', 'base_shape', 'curved_solid'],
-        'The learner cannot tell what kind of solid it is.',
-        'Outlines the solid\'s base in gold: a pyramid\'s one base, or a prism\'s two matching ends. Nothing is named.'),
-      lever(TURN_TO_BASE, 'help', 'shown', ['base_shape'],
-        'The learner has the right kind of solid but the wrong base shape.',
-        'Turns the solid to face its base straight on, so the shape of the base shows. Nothing is named.'),
-      lever(FAMILY_MODEL, 'help', 'both', ['prism_pyramid', 'curved_solid'],
-        'The learner mixes up prisms and pyramids.',
-        'Shows a picture outside the item: a prism captioned "two matching ends joined by flat sides" and a pyramid captioned "one base, and its other faces meet at a point". Neither is the solid on screen.'),
-      ...simplify(['prism_pyramid', 'base_shape', 'curved_solid'], 'Too many names to choose from yet.',
-        'Opens a practice item on a different solid with only two names to choose from, far apart.'),
-    ];
-    case 'match_faces': return [
-      ...foldGuides(['adjacent_face', 'opposite_face']),
-      lever(OPPOSITE_RULE, 'help', 'both', ['opposite_face'],
-        'The learner picks the face opposite the one asked for.',
-        'Shows a picture outside the net: a straight row of three squares whose two end squares are marked alike, captioned "in a straight row, two squares with one square between them land on opposite faces". It names no face.'),
-      ...(thirdLabelCell(c) !== null ? [lever(THIRD_LABEL, 'help', 'shown', ['adjacent_face', 'opposite_face'],
-        'The learner cannot keep track of which way the net turns.',
-        'Writes the face name on one more blank square of the net, never the yellow one.')] : []),
-      ...simplify(['adjacent_face', 'opposite_face'], 'This net is too hard to fold in the mind yet.',
-        'Opens a practice item on the cross-shaped net with the yellow square just beside the front.'),
-    ];
-    case 'valid_net': return [
-      ...foldGuides(['missed_overlap', 'rejected_valid']),
-      lever(SIX_FACES_MODEL, 'help', 'both', ['missed_count'],
-        'The learner does not check how many squares a cube needs.',
-        'Shows a picture outside the item: a cube beside its faces laid flat, captioned "a cube has six faces, so its net has one square for each face". Read it aloud.'),
-      lever(WRAP_MODEL, 'help', 'both', ['missed_overlap'],
-        'The learner misses two squares folding onto the same face.',
-        'Shows a picture outside the item: a row of four squares wrapping round into a loop, captioned "four squares in a row wrap all the way round; a square that lands where another already is leaves a face open". Read it aloud.'),
-      lever(VALID_MODEL, 'help', 'both', ['rejected_valid'],
-        'The learner rejects a net that does fold.',
-        'Shows a picture outside the item: a different net that folds into a cube, captioned "each square folds onto its own face". It is never the net on screen.'),
-      ...simplify(['missed_overlap', 'missed_count', 'rejected_valid'], 'This net is too hard to judge yet.',
-        'Opens a practice item on an easier net whose fold is plain to see.'),
-    ];
-    case 'surface_area': {
-      const dims = boxDims(c.faceDimensions), cube = !!dims && dims[0] === dims[1] && dims[1] === dims[2];
-      return [
-        lever(MATCH_LIST, 'help', 'shown', ['missed_a_face', 'extra_face', 'half_the_faces', 'one_face', 'other_total'],
-          'The learner loses track of which faces they have added.',
-          'Opens the box\'s net and writes each face\'s place in the face list on its square, so each face in the list has one square. No area or total is written.'),
-        ...(dims && !cube ? [lever(PAIR_COLORS, 'help', 'shown', ['half_the_faces', 'missed_a_face'],
-          'The learner adds one face of each pair.',
-          'Colours the faces that match in the face list and on the net alike, so each face shows with its twin. No number is written.')] : []),
-        lever(AREA_VS_VOLUME, 'help', 'both', ['volume'],
-          'The learner multiplies length, width and height.',
-          'Shows a picture outside the item: a box wrapped in paper captioned "surface area covers the outside: add the area of every face", beside a box filled with cubes captioned "volume fills the inside". Read it aloud.'),
-        ...simplify(['half_the_faces', 'missed_a_face', 'extra_face', 'one_face', 'volume', 'other_total'], 'The numbers are too big to add yet.',
-          'Opens the same task on a smaller box.'),
-      ];
-    }
-  }
-  return [];
-}
+type Mode = NetFolderChallenge['type'];
+const COUNT: Mode[] = ['count_faces_edges_vertices'], IDENTIFY: Mode[] = ['identify_solid'], MATCH: Mode[] = ['match_faces'];
+const VALID: Mode[] = ['valid_net'], SURFACE: Mode[] = ['surface_area'];
+const UNGRADED = ' It is not graded; the full item returns after it.';
+const FOLD_DOES = 'Draws a dashed line on every edge two squares share, where the net folds. No square is named.';
+const FOLD_FACT = 'Dashed fold lines mark every edge two squares share.';
+const easier = (c: NetFolderChallenge, ctx: NetLeverContext) => simplerNet(c, ctx.solid);
+const foldLinesOff = (_c: NetFolderChallenge, ctx: NetLeverContext) => !ctx.foldGuidesShown;
+/** The solid an item's own answer is read from: a practice item's own, else the session item's. */
+const solidFor = (c: NetFolderChallenge, ctx: NetLeverContext) => c.solid ?? ctx.solid;
 
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: NetFolderChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticeNet(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(SEE_THROUGH) && 'The back edges of the solid are dashed and its hidden corners ringed.',
-    on(PART_NAMES) && 'Beside the solid is a picture outside the item: a flat tile with arrows naming a face, an edge and a vertex.',
-    on(NET_BESIDE) && 'The solid\'s net is open beside it.',
-    on(BASE_OUTLINE) && 'The solid\'s base is outlined in gold.',
-    on(TURN_TO_BASE) && 'The solid is turned to face its base.',
-    on(FAMILY_MODEL) && 'Beside the solid is a picture outside the item: a prism (two matching ends joined by flat sides) and a pyramid (one base, faces meeting at a point), neither the solid on screen.',
-    on(FOLD_GUIDES) && 'Dashed fold lines mark every edge two squares share.',
-    on(OPPOSITE_RULE) && 'Beside the net is a picture of a row of three squares whose ends land on opposite faces.',
-    on(THIRD_LABEL) && 'One more blank square of the net is named.',
-    on(SIX_FACES_MODEL) && 'Beside the net is a picture of a cube and its faces laid flat, one square for each face.',
-    on(WRAP_MODEL) && 'Beside the net is a picture of a row of four squares wrapping round into a loop.',
-    on(VALID_MODEL) && 'Beside the net is a picture of a different net that folds into a cube.',
-    on(MATCH_LIST) && 'The box\'s net is open and each square carries its place in the face list.',
-    on(PAIR_COLORS) && 'Matching faces are coloured alike in the face list and on the net.',
-    on(AREA_VS_VOLUME) && 'Beside the box is a picture: a box wrapped in paper (surface area) and a box filled with cubes (volume).',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/**
+ * The levers, declared once (`bossLevers.ts`), in the order a miss reaches for them within a mode. None is offered on
+ * a practice item: the component declares nothing while one is on screen.
+ */
+export const NET_LEVERS = leverSet<NetFolderChallenge, NetLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => NET_MISSES_BY_MODE[mode as Mode] ?? [],
+  answersOf: (c, ctx) => itemKeys(c, solidFor(c, ctx)),
+  specs: [
+    // count
+    { id: SEE_THROUGH, type: 'marks', modes: COUNT, answers: ['faces_off', 'edges_off', 'vertices_off', 'several_off'],
+      when: 'The learner counts only the parts facing them.',
+      does: 'Draws the edges at the back of the solid as dashed lines and rings its hidden corners, so every part can be counted. No number is written.',
+      fact: 'The back edges of the solid are dashed and its hidden corners ringed.' },
+    { id: PART_NAMES, type: 'legend', modes: COUNT, carrier: 'both', answers: ['swapped_counts', 'several_off'],
+      when: 'The learner mixes up faces, edges and vertices.',
+      does: 'Shows a picture outside the item: one flat tile with arrows naming a face (a flat side), an edge (where two faces meet) and a vertex (a corner). Read the names aloud; no number is written.',
+      fact: 'Beside the solid is a picture outside the item: a flat tile with arrows naming a face, an edge and a vertex.' },
+    { id: NET_BESIDE, type: 'layout', modes: COUNT, answers: ['faces_off', 'several_off'],
+      when: 'The learner miscounts the faces.', does: 'Opens the solid\'s net beside it: one flat piece for each face. No number is written.',
+      // The learner already pressed Unfold: the net is on screen, so there is nothing to open.
+      offer: (_c, ctx) => !ctx.netShown,
+      fact: 'The solid\'s net is open beside it.' },
+    { id: SMALLER_SOLID, type: 'easier', modes: COUNT, answers: 'all',
+      when: 'This solid has too many parts to count yet.',
+      does: `Opens the same counting task on a solid with fewer faces, edges and vertices.${UNGRADED}`, content: easier },
+    // identify
+    { id: BASE_OUTLINE, type: 'marks', modes: IDENTIFY, answers: ['prism_pyramid', 'base_shape', 'curved_solid'],
+      when: 'The learner cannot tell what kind of solid it is.',
+      does: 'Outlines the solid\'s base in gold: a pyramid\'s one base, or a prism\'s two matching ends. Nothing is named.',
+      fact: 'The solid\'s base is outlined in gold.' },
+    { id: TURN_TO_BASE, type: 'layout', modes: IDENTIFY, answers: ['base_shape'],
+      when: 'The learner has the right kind of solid but the wrong base shape.',
+      does: 'Turns the solid to face its base straight on, so the shape of the base shows. Nothing is named.',
+      fact: 'The solid is turned to face its base.' },
+    { id: FAMILY_MODEL, type: 'legend', modes: IDENTIFY, carrier: 'both', answers: ['prism_pyramid', 'curved_solid'],
+      when: 'The learner mixes up prisms and pyramids.',
+      does: 'Shows a picture outside the item: a prism captioned "two matching ends joined by flat sides" and a pyramid captioned "one base, and its other faces meet at a point". Neither is the solid on screen.',
+      fact: 'Beside the solid is a picture outside the item: a prism (two matching ends joined by flat sides) and a pyramid (one base, faces meeting at a point), neither the solid on screen.' },
+    { id: TWO_CHOICES, type: 'easier', modes: IDENTIFY, answers: 'all',
+      when: 'Too many names to choose from yet.',
+      does: `Opens a practice item on a different solid with only two names to choose from, far apart.${UNGRADED}`, content: easier },
+    // match
+    { id: FOLD_GUIDES, type: 'marks', modes: MATCH, answers: ['adjacent_face', 'opposite_face'],
+      when: 'The learner cannot picture where the net bends.', does: FOLD_DOES, offer: foldLinesOff, fact: FOLD_FACT },
+    { id: OPPOSITE_RULE, type: 'clue', modes: MATCH, answers: ['opposite_face'],
+      when: 'The learner picks the face opposite the one asked for.',
+      does: 'Shows a picture outside the net: a straight row of three squares whose two end squares are marked alike, captioned "in a straight row, two squares with one square between them land on opposite faces". It names no face.',
+      fact: 'Beside the net is a picture of a row of three squares whose ends land on opposite faces.' },
+    { id: THIRD_LABEL, type: 'marks', modes: MATCH, answers: ['adjacent_face', 'opposite_face'],
+      when: 'The learner cannot keep track of which way the net turns.',
+      does: 'Writes the face name on one more blank square of the net, never the yellow one.',
+      content: c => thirdLabelCell(c),
+      fact: 'One more blank square of the net is named.' },
+    { id: EASIER_NET, type: 'easier', modes: MATCH, answers: 'all',
+      when: 'This net is too hard to fold in the mind yet.',
+      does: `Opens a practice item on the cross-shaped net with the yellow square just beside the front.${UNGRADED}`, content: easier },
+    // valid
+    { id: FOLD_GUIDES, type: 'marks', modes: VALID, answers: ['missed_overlap', 'rejected_valid'],
+      when: 'The learner cannot picture where the net bends.', does: FOLD_DOES, offer: foldLinesOff, fact: FOLD_FACT },
+    { id: SIX_FACES_MODEL, type: 'clue', modes: VALID, answers: ['missed_count'],
+      when: 'The learner does not check how many squares a cube needs.',
+      does: 'Shows a picture outside the item: a cube beside its faces laid flat, captioned "a cube has six faces, so its net has one square for each face". Read it aloud.',
+      fact: 'Beside the net is a picture of a cube and its faces laid flat, one square for each face.' },
+    { id: WRAP_MODEL, type: 'clue', modes: VALID, answers: ['missed_overlap'],
+      when: 'The learner misses two squares folding onto the same face.',
+      does: 'Shows a picture outside the item: a row of four squares wrapping round into a loop, captioned "four squares in a row wrap all the way round; a square that lands where another already is leaves a face open". Read it aloud.',
+      fact: 'Beside the net is a picture of a row of four squares wrapping round into a loop.' },
+    { id: VALID_MODEL, type: 'clue', modes: VALID, answers: ['rejected_valid'],
+      when: 'The learner rejects a net that does fold.',
+      does: 'Shows a picture outside the item: a different net that folds into a cube, captioned "each square folds onto its own face". It is never the net on screen.',
+      fact: 'Beside the net is a picture of a different net that folds into a cube.' },
+    { id: EASIER_NET, type: 'easier', modes: VALID, answers: 'all',
+      when: 'This net is too hard to judge yet.',
+      does: `Opens a practice item on an easier net whose fold is plain to see.${UNGRADED}`, content: easier },
+    // surface
+    { id: MATCH_LIST, type: 'layout', modes: SURFACE, answers: ['missed_a_face', 'extra_face', 'half_the_faces', 'one_face', 'other_total'],
+      when: 'The learner loses track of which faces they have added.',
+      does: 'Opens the box\'s net and writes each face\'s place in the face list on its square, so each face in the list has one square. No area or total is written.',
+      fact: 'The box\'s net is open and each square carries its place in the face list.' },
+    { id: PAIR_COLORS, type: 'marks', modes: SURFACE, answers: ['half_the_faces', 'missed_a_face'],
+      when: 'The learner adds one face of each pair.',
+      does: 'Colours the faces that match in the face list and on the net alike, so each face shows with its twin. No number is written.',
+      // A cube's six faces are one size: there are no pairs to colour apart.
+      content: c => { const d = boxDims(c.faceDimensions); return d && !(d[0] === d[1] && d[1] === d[2]) ? d : null; },
+      fact: 'Matching faces are coloured alike in the face list and on the net.' },
+    { id: AREA_VS_VOLUME, type: 'clue', modes: SURFACE, answers: ['volume'],
+      when: 'The learner multiplies length, width and height.',
+      does: 'Shows a picture outside the item: a box wrapped in paper captioned "surface area covers the outside: add the area of every face", beside a box filled with cubes captioned "volume fills the inside". Read it aloud.',
+      fact: 'Beside the box is a picture: a box wrapped in paper (surface area) and a box filled with cubes (volume).' },
+    { id: SMALLER_BOX, type: 'easier', modes: SURFACE, answers: 'all',
+      when: 'The numbers are too big to add yet.',
+      does: `Opens the same task on a smaller box.${UNGRADED}`, content: easier },
+  ],
+});
 
 /**
  * Leak rule for lever words, captions and facts on item `c`: no digit (every count, area and total is a number), and

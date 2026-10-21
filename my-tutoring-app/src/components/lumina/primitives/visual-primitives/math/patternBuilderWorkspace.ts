@@ -1,16 +1,17 @@
 /**
- * Pattern builder on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C9), plain shape: `useWorkspaceProgress` in place of
- * `useChallengeProgress`. Every challenge is one checked gesture; the builder's own Check is the
- * judge and no key reaches the tutor:
+ * Pattern builder's domain on the teaching workspace (its boss is `patternBuilder.boss.ts`). Every challenge is one
+ * checked gesture; the builder's own Check is the judge and no key reaches the tutor:
  *   - extend / find_rule: tokens tapped into the "?" blanks, then Check;
  *   - identify_core: the tokens of the repeating part tapped in the row, then Check;
  *   - translate: the new tokens tapped in order, following the drawn key, then Check;
  *   - create (open build, OB-9M): the learner's own row in the pattern shape the ask names (AB, ABB, ...), then
  *     "I'm done!"; the check is code (a part of that shape, repeated at least twice). Try again keeps the row.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
+import type { PatternBuilderMiss } from './patternBuilder.card';
+
+export { PATTERN_MISSES_BY_MODE, type PatternBuilderMiss } from './patternBuilder.card';
 
 export type PatternPhase = 'copy' | 'identify' | 'create' | 'translate';
 export type PatternTier = 'easy' | 'medium' | 'hard';
@@ -118,10 +119,6 @@ export interface PatternBuilderView {
   translated: string[];
 }
 
-export function patternBuilderAssignment(c: PatternBuilderChallenge): TeachingAssignment {
-  return { id: c.id, task: c.instruction, response: 'gesture' };
-}
-
 const selectedTokens = (data: PatternSource, c: PatternBuilderChallenge, v: PatternBuilderView) => {
   const seq = activeSequence(data, c);
   const full = [...seq.given, ...seq.hidden];
@@ -139,19 +136,6 @@ export function patternBuilderMatches(data: PatternSource, c: PatternBuilderChal
     case 'translate': { const expected = translationOf(data, c); return !!expected && same(v.translated, expected); }
   }
 }
-
-/**
- * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
- * - a row filled in (extend, find_rule, translate): `blanks_left` (fewer tokens than places), `extra_tokens`,
- *   `repeated_last` (extend, find_rule: every blank holds the row's last token), `started_over` (extend, find_rule:
- *   the blanks hold the row's first tokens), `two_swapped`, `one_wrong` (one place), `several_wrong`;
- * - identify_core: `two_repeats` (the part twice), `too_long`, `too_short`, `other_part` (as many tokens, not the part);
- * - create: `too_short` (fewer than two whole repeats of the asked part, or under four tokens without a shape),
- *   `other_shape` (a part repeats, but not of the asked shape: AB made when ABB was asked, or one token over and
- *   over), `no_repeat` (no starting part repeats all the way through).
- */
-export type PatternBuilderMiss = 'blanks_left' | 'extra_tokens' | 'repeated_last' | 'started_over' | 'two_swapped' | 'one_wrong'
-  | 'several_wrong' | 'two_repeats' | 'too_long' | 'too_short' | 'other_part' | 'no_repeat' | 'other_shape';
 
 const rowMiss = (got: string[], want: string[]): PatternBuilderMiss => {
   if (got.length < want.length) return 'blanks_left';
@@ -202,21 +186,16 @@ export function describePatternBuilderCheck(data: PatternSource, c: PatternBuild
   }
 }
 
+/** This mode's own leak rules; the moves and the shared rules come from the card (`patternBuilder.card.ts`). */
 const CONSTRAINTS: Record<PatternBuilderChallenge['type'], string> = {
-  extend: 'The learner taps tokens from the choices to fill the "?" blanks in order (tapping the last one placed takes it back) '
-    + 'and presses Check; the builder checks it. The missing tokens are the answer: never say one or point to its choice.',
-  find_rule: 'The learner taps numbers from the choices to fill the "?" blanks in order and presses Check; the builder checks '
-    + 'it. The next numbers are the answer: never say one or point to its choice.',
-  identify_core: 'The learner taps the tokens in the row that make the smallest part that repeats, then presses Check; the '
-    + 'builder checks it. That part is the answer: never name it, say how many tokens it has, or say where it starts over.',
-  translate: 'The learner makes the same pattern with the new tokens, following the drawn key (each old token becomes its '
-    + 'new token), tapping them in order, then presses Check; the builder checks it. You may read the whole key aloud, '
-    + 'but never tie a key entry to a place in the row ("the first one", "the last color"). The new row is the answer: '
-    + 'never say it, or which token goes in any place.',
-  create: 'Open build: the learner taps tokens to make their own pattern of the asked shape (the letters in the task, '
-    + 'such as A B B) and presses I\'m done; the builder accepts any tokens whose first part has that shape and repeats at '
-    + 'least two whole times. Try again keeps the row to revise. There is no single answer: you may explain the shape '
-    + 'with tokens that are not on the palette, but never tell the learner which tokens to tap or say their next one.',
+  extend: 'The missing tokens are the answer: never say one or point to its choice.',
+  find_rule: 'The next numbers are the answer: never say one or point to its choice.',
+  identify_core: 'The part that repeats is the answer: never name it, say how many tokens it has, or say where it starts over.',
+  translate: 'You may read the whole key aloud, but never tie a key entry to a place in the row ("the first one", "the last '
+    + 'color"). The new row is the answer: never say it, or which token goes in any place.',
+  create: 'There is no single answer: the builder accepts any tokens whose first part has the asked shape and repeats at '
+    + 'least two whole times. You may explain the shape with tokens that are not on the palette, but never tell the '
+    + 'learner which tokens to tap or say their next one.',
 };
 
 /** How far the tutor may coach at this support tier, so it never says what the tier withheld on screen. */
@@ -239,13 +218,18 @@ function coaching(c: PatternBuilderChallenge, tier: PatternTier | undefined): st
   return 'Do not name the rule or point out where the repeating part starts over. Ask what the learner notices repeating.';
 }
 
-/** What is drawn and asked: the pattern row with its blanks, the key, the choices. Never the hidden tokens. */
-export function patternBuilderScene(data: PatternSource, c: PatternBuilderChallenge): WorkspaceScene {
+/**
+ * What is drawn and asked: the pattern row with its blanks, the key, the choices. Never the hidden tokens.
+ * `groupsShown`: the gaps where the row starts over are on screen, so the tier's "do not point it out" no longer holds.
+ */
+export function patternBuilderScene(data: PatternSource, c: PatternBuilderChallenge, groupsShown = false): SceneOf {
   const seq = activeSequence(data, c);
   const phase = phaseFor(c.type);
   const mapping = activeMapping(data, c);
   const tier = c.supportTier;
-  const tip = coaching(c, tier);
+  const tip = groupsShown
+    ? 'The gaps where the row starts over are on screen: you may point to them. Never say a blank\'s token.'
+    : coaching(c, tier);
   return { objects: [], facts: {
     kind: c.type,
     ...(phase === 'copy' ? { pattern: [...seq.given, ...seq.hidden.map(() => '?')].join(', ') } : {}),

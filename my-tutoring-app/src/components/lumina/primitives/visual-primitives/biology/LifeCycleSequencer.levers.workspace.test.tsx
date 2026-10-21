@@ -49,13 +49,14 @@ const attempts = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts;
 
 it('a swap pulls keep_right in the same commit: the right stages lock, the rest go back; the next attempt records it', () => {
   const h = mount(FROG);
-  expect(levers(h)).toEqual([['time_arrow', false], ['keep_right', false], ['fewer_stages', false]]);
-  // Before any check there is nothing to lock: refused, and nothing changes.
+  // Before any check there is nothing to lock: keep_right is not offered, a pull is refused, and nothing changes.
+  expect(levers(h)).toEqual([['time_arrow', false], ['fewer_stages', false]]);
   const before = h.view.container.innerHTML;
   expect(h.dispatch('pull_lever', { lever: 'keep_right' }).status).not.toBe('committed');
   expect(h.view.container.innerHTML).toBe(before);
   place(h, '3-5', ['s1', 's0', 's2', 's3']);
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'adjacent_swap' });
+  expect(levers(h)).toEqual([['time_arrow', false], ['keep_right', false], ['fewer_stages', false]]);
   expect(nextLever(h.state().task!.workspace!.levers!, 'adjacent_swap')).toBe('keep_right');
   const receipt = h.dispatch('pull_lever', { lever: 'keep_right' });
   expect(receipt.status).toBe('committed');
@@ -87,7 +88,7 @@ it('K-2 circle: reversed pulls the arrow with its way back, naming no stage; tap
   const fact = String(h.state().task!.demand.onScreen);
   expect(fact).toMatch(/slot 1 \(flagged: the start\) to slot 4 .* back to slot 1/);
   expect(BUTTERFLY.stages.some(s => fact.includes(s.label))).toBe(false);
-  // Reversed has nothing marked right: keep_right is refused with a reason.
+  // Reversed has nothing marked right: keep_right is not offered, and a pull is refused.
   expect(h.dispatch('pull_lever', { lever: 'keep_right' }).status).not.toBe('committed');
   h.dispatch('retry');
   expect(q(h, '[data-lever="time-arrow"]')).toHaveLength(1);

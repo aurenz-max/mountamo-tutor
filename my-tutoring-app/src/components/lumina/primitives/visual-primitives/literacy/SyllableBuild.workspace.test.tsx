@@ -22,12 +22,13 @@ vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluat
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
 import SyllableClapper, { type SyllableClapperData } from './SyllableClapper';
 import payload from '../../../components/live-activity/runtime/testing/w1-payloads/syllable-clapper.build_parts.json';
-import { validateSyllableClapperData } from '../../../components/live-activity/adapters/syllableClapperLive';
+import { validateSyllableClapperData } from './syllableClapperDomain';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { askableLetterItem, letterBuildLevers, letterItemsFrom, letterShapeMiss, smallBankFor, startRow, type LetterBuildItem } from './letterBuild';
+import { askableLetterItem, letterItemsFrom, letterShapeMiss, smallBankFor, startRow, type LetterBuildItem } from './letterBuild';
 import { beatsIn, makeSyllableItems, partsTogether, seedWordsFrom, syllableModelFor } from './syllableBuild';
 import { SYLLABLE_WORDS } from './syllableBuildWords';
-import { endsWithSilentESyllable, hasStableSyllableCount } from './syllableClapperScript';
+import { endsWithSilentESyllable, hasStableSyllableCount } from './syllableClapperDomain';
+import { syllableBuildLevers } from './syllableClapperLevers';
 import { syllableClapperOracle } from '../../../service/qa/oracles/syllable-clapper';
 
 const data = (payload as unknown as { data: SyllableClapperData }).data;
@@ -113,9 +114,9 @@ describe('syllable build rules (pure)', () => {
     expect(mode.beta - count.beta).toBeCloseTo(0.1);
     expect(mode.affordances).toEqual({ answers: ['build'] });
     const tw = entry.teachingWorkspace!;
-    const answered = new Set(letterItemsFrom(data.buildItems!).flatMap(i => letterBuildLevers(i, []).flatMap(l => l.answers ?? [])));
+    const levers = syllableBuildLevers(data.supportTier ?? 'medium');
+    const answered = new Set(letterItemsFrom(data.buildItems!).flatMap(i => levers.declare(i, []).flatMap(l => l.answers ?? [])));
     for (const m of tw.misses!.build_parts) if (!tw.unanswered!.build_parts.includes(m)) expect(answered.has(m), m).toBe(true);
-    expect(tw.guidance!.length).toBeLessThanOrEqual(2000);
   });
 });
 

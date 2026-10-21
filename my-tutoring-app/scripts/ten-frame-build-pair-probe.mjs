@@ -34,7 +34,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateTenFrame } = await loader.import('/src/components/lumina/service/math/gemini-ten-frame.ts');
   const { itemsFromChallenges } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/tenFrameScript.ts');
-  const { tenFrameLevers } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/tenFrameLevers.ts');
+  const { TEN_FRAME_LEVERS } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/tenFrameLevers.ts');
   const { tenFrameOracle } = await loader.import('/src/components/lumina/service/qa/oracles/ten-frame.ts');
   const cases = [
     ['k-to-5', 'Kindergarten', undefined, 'Decompose numbers up to 5 into pairs in more than one way', 5],
@@ -62,7 +62,7 @@ try {
     const items = itemsFromChallenges(ch, { capacity: 10, band: data.gradeBand });
     if (items.length !== ch.length) issues.push(`${ch.length - items.length} item(s) dropped`);
     for (const item of items) {
-      const lv = tenFrameLevers(item, [], data.gradeBand, { session: items });
+      const lv = TEN_FRAME_LEVERS.declare(item, { band: data.gradeBand, session: items }, []);
       if (!lv.length || lv.some(l => l.pulled)) issues.push(`levers on ${item.id}: ${JSON.stringify(lv.map(l => [l.id, l.pulled]))}`);
     }
     const oracle = tenFrameOracle.verify(data, { topic: `${topic} ${intent}` });

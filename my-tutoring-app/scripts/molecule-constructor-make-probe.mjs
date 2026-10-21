@@ -38,7 +38,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateMoleculeConstructor } = await loader.import('/src/components/lumina/service/chemistry/gemini-molecule-constructor.ts');
   const { moleculeConstructorOracle } = await loader.import('/src/components/lumina/service/qa/oracles/molecule-constructor.ts');
-  const { validateMoleculeConstructorData } = await loader.import('/src/components/lumina/components/live-activity/adapters/moleculeConstructorLive.ts');
+  const { validateMoleculeConstructorData } = await loader.import('/src/components/lumina/primitives/visual-primitives/chemistry/moleculeConstructor.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/chemistry/moleculeConstructorWorkspace.ts');
   const mb = await loader.import('/src/components/lumina/primitives/visual-primitives/chemistry/moleculeBuild.ts');
   const results = [];

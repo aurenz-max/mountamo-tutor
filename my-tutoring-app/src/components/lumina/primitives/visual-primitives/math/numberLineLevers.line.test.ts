@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  betweenMiss, countHopsLeak, countModelHop, countStart, endMarks, endMarksLeak, fewerNumbers, helpStartsShown, lastTry, lastTryLeak,
-  leverFact, lineLevers, orderMiss, plotMiss, simplerItem, simplerPlot, widerGap,
+  NUMBER_LINE_LEVERS, betweenMiss, countHopsLeak, countModelHop, countStart, endMarks, endMarksLeak, fewerNumbers, helpStartsShown,
+  lastTry, lastTryLeak, orderMiss, plotMiss, simplerItem, simplerPlot, widerGap, type NumberLineLeverContext, type SettledLine,
 } from './numberLineLevers';
 import { settledView } from './numberLineView';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
@@ -13,6 +13,15 @@ const between = (lo: number, hi: number, exact?: number, id = 'b'): NumberLineCh
   ({ id, type: 'find_between', instruction: 'Between.', hint: '', targetValues: [lo, hi], ...(exact !== undefined ? { exactTargetValue: exact } : {}) });
 const data = (challenges: NumberLineChallenge[], max = 10, min = 0): NumberLineData =>
   ({ title: 't', range: { min, max }, numberType: 'integer', gradeBand: 'K-2', challenges });
+/** The lever set's context, as the component builds it: the line, and the learner's work on it. */
+const ctx = (range: { min: number; max: number }, over: Partial<NumberLineLeverContext> = {}): NumberLineLeverContext =>
+  ({ range, settled: null, pulled: [], points: [], endpoints: [], tried: null, hops: [], ...over });
+/** The levers the lever set declares on an item: these levers on screen, these points placed, this last wrong try. */
+const lineLevers = (ch: NumberLineChallenge, pulled: string[], view: SettledLine, range: { min: number; max: number },
+  points: number[] = [], tried: number | null = null) => NUMBER_LINE_LEVERS.declare(ch, ctx(range, { settled: view, pulled, points, tried }), pulled);
+/** What the pulled levers drew, as the scene fact the lever set writes. */
+const leverFact = (ch: NumberLineChallenge, pulled: string[], view: SettledLine, tried: number | null = null) =>
+  NUMBER_LINE_LEVERS.onScreen(ch, ctx({ min: 0, max: 120 }, { settled: view, pulled, tried }), pulled);
 const labelsEvery = (step: number, lo: number, hi: number) => Array.from({ length: Math.floor((hi - lo) / step) + 1 }, (_, i) => lo + i * step);
 
 describe('what a wrong point, order or between shows (the miss)', () => {

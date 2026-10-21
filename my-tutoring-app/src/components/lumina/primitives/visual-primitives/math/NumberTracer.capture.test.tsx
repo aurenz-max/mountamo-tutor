@@ -1,29 +1,39 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-const seam = vi.hoisted(() => ({ submissions: [] as unknown[][] }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: () => ({ sendText: vi.fn(), isConnected: false, isAudioPlaying: false }) }));
-vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: () => ({ hasSubmitted: seam.submissions.length > 0, submittedResult: null, elapsedMs: 0,
-  submitResult: (...args: unknown[]) => seam.submissions.push(args) }) }));
-vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
+/**
+ * number-tracer's misconception evidence, mounted the way a lesson mounts it under an evaluation provider: every
+ * checked drawing is recorded, and only drawings the judge read as another number make the evidence. Only the canvas
+ * 2D context and the judge's fetch are substituted.
+ */
+vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
+vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
+vi.mock('@/components/lumina/evaluation', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).evaluationSeam());
+vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>summary</div> }));
-import NumberTracer, { getDigitPaths, type NumberTracerChallenge } from './NumberTracer';
+
+import React from 'react';
+import { act, cleanup, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
+import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
+import { getDigitPaths, type NumberTracerChallenge } from './NumberTracer';
 import { isDiagnosableFailure, type DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 
 beforeEach(() => {
-  seam.submissions = [];
+  installRuntimeTimers();
+  seam.evaluationContext = { lesson: 'test' };
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(new Proxy({}, { get: () => () => undefined, set: () => true }) as never);
   vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,INK');
   vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 500, height: 400, right: 500, bottom: 400, x: 0, y: 0, toJSON: () => ({}) });
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
 const run = (id: string, start: number, missingIndex: number, tier: NumberTracerChallenge['supportTier'] = 'hard'): NumberTracerChallenge => {
   const sequenceNumbers = [0, 1, 2, 3].map(k => start + k);
   return { id, type: 'sequence', digit: sequenceNumbers[missingIndex], instruction: "What's the missing number? Fill in the blank!", strokePaths: [],
     showModel: false, showArrows: false, hint: 'Count up by ones.', sequenceNumbers, missingIndex, showGhostDigit: false, showStrokeArrows: false, showStartDot: false, supportTier: tier };
 };
+const mount = (challenges: NumberTracerChallenge[], instanceId = 'nt') =>
+  mountWorkspace({ primitiveId: 'number-tracer', evalMode: 'sequence', data: { title: 'Missing numbers', gradeBand: 'K', challenges } as never, instanceId });
 /** The judge's replies, in order. */
 function judge(...replies: Array<[writtenAs: string, score: number]>) {
   const queue = [...replies];
@@ -32,27 +42,28 @@ function judge(...replies: Array<[writtenAs: string, score: number]>) {
     return { ok: true, json: async () => ({ recognized: score >= 50, score, variant: '', feedback: `Read ${writtenAs}.`, confidence: 95, writtenAs }) };
   }));
 }
-async function attempt(n: number) {
-  const canvas = document.querySelector('canvas[data-pip-object="canvas"]') as HTMLCanvasElement;
+async function attempt(h: WorkspaceHarness, n: number) {
+  const canvas = h.view.container.querySelector('canvas[data-pip-object="canvas"]') as HTMLCanvasElement;
   for (const stroke of getDigitPaths(n)) {
     await act(async () => { fireEvent.mouseDown(canvas, { clientX: stroke[0].x, clientY: stroke[0].y }); });
     for (const p of stroke.slice(1)) await act(async () => { fireEvent.mouseMove(canvas, { clientX: p.x, clientY: p.y }); });
     await act(async () => { fireEvent.mouseUp(canvas); });
   }
-  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check' })); });
+  await act(async () => { fireEvent.click(h.view.getByRole('button', { name: 'Check' })); });
 }
-const clear = () => act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Clear' })); });
-const next = () => act(async () => { fireEvent.click(screen.getByRole('button', { name: /Next|Finish/ })); });
-const submission = () => seam.submissions[0] as [boolean, number, { evalMode?: string }, { studentWork: { responses: unknown[] } }, unknown, DiagnosisEvidence | undefined];
+/** The observer's Try again, and its advance once the item is right. */
+const retry = (h: WorkspaceHarness) => { h.dispatch('retry'); };
+const next = (h: WorkspaceHarness) => { h.dispatch('advance'); h.confirmVisible(); };
+const submission = () => seam.submit.mock.calls[0] as [boolean, number, { evalMode?: string }, { studentWork: { responses: unknown[] } }, unknown, DiagnosisEvidence | undefined];
 
 it('records drawings read as another number; the submitted score still counts the accepted tries, and the first-response gate fires', async () => {
-  render(<NumberTracer data={{ title: 'Missing numbers', gradeBand: 'K', instanceId: 'nt', challenges: [run('c1', 3, 1), run('c2', 5, 2), run('c3', 1, 1)] }} />);
+  const h = mount([run('c1', 3, 1), run('c2', 5, 2), run('c3', 1, 1)]);
   judge(['6', 10], ['4', 95], ['8', 15], ['7', 95], ['2', 95]);
-  await attempt(6); await clear(); await attempt(4); await next();
-  await attempt(8); await clear(); await attempt(7); await next();
-  await attempt(2);
+  await attempt(h, 6); retry(h); await attempt(h, 4); next(h);
+  await attempt(h, 8); retry(h); await attempt(h, 7); next(h);
+  await attempt(h, 2); next(h);
 
-  expect(seam.submissions).toHaveLength(1);
+  expect(seam.submit).toHaveBeenCalledOnce();
   const [success, score, metrics, work, , evidence] = submission();
   expect([success, score, metrics.evalMode]).toEqual([true, 95, 'sequence']);
   expect(work.studentWork.responses).toHaveLength(5);
@@ -64,21 +75,23 @@ it('records drawings read as another number; the submitted score still counts th
     ['c3', '2', 'Correct: the judge read 2 (handwriting score 95)']]);
   expect(evidence?.phases?.[0].support).toBe('Try 1; no tracing guide; hint not shown; support tier hard.');
   expect(isDiagnosableFailure({ success, score }, evidence)).toBe(true);
+  h.close();
 });
 
 it('attaches no evidence when every drawing was accepted, or rejected only for handwriting', async () => {
-  const view = render(<NumberTracer data={{ title: 'Missing numbers', gradeBand: 'K', instanceId: 'nt', challenges: [run('c1', 3, 1), run('c2', 5, 2)] }} />);
+  const h = mount([run('c1', 3, 1), run('c2', 5, 2)]);
   judge(['4', 95], ['7', 90]);
-  await attempt(4); await next(); await attempt(7);
-  expect(seam.submissions).toHaveLength(1);
+  await attempt(h, 4); next(h); await attempt(h, 7); next(h);
+  expect(seam.submit).toHaveBeenCalledOnce();
   expect(submission()[5]).toBeUndefined();
-  view.unmount();
+  h.close(); h.view.unmount();
 
-  seam.submissions = [];
-  render(<NumberTracer data={{ title: 'Missing numbers', gradeBand: 'K', instanceId: 'nt2', challenges: [run('c1', 3, 1)] }} />);
+  seam.submit.mockClear();
+  const h2 = mount([run('c1', 3, 1)], 'nt2');
   judge(['4', 30], ['?', 0], ['4', 90]);
-  await attempt(4); await clear(); await attempt(4); await clear(); await attempt(4);
+  await attempt(h2, 4); retry(h2); await attempt(h2, 4); retry(h2); await attempt(h2, 4); next(h2);
   const [, , , work, , evidence] = submission();
   expect(work.studentWork.responses).toHaveLength(3);
   expect(evidence).toBeUndefined();
+  h2.close();
 });

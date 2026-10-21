@@ -4,7 +4,7 @@
  * workspace, with the real TeachingSession, LiveLessonRuntime and rendering shell. Every mode mounts under tutor
  * ownership with no scripted cue and no published key; on make_shape the learner makes any shape with the asked
  * properties on an empty grid, "I'm done!" commits, a miss is named per property, Try again keeps the shape, and the
- * levers come on a miss (none from the tier). Only sound, evaluation writes and the legacy AI hook are substituted.
+ * levers come on a miss (none from the tier). Only sound and evaluation writes are substituted.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -14,18 +14,14 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { shapeBuilderLevers } from './shapeBuilderLevers';
+import { SHAPE_BUILDER_LEVERS } from './shapeBuilderLevers';
 import { shapeAskText } from './shapeMakeBuild';
 
-const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), legacy: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
+const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn(), evaluationContext: null as unknown }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
   isConnected: true, isListening: true, isAudioPlaying: false, sessionMode: 'lesson', activePrimitiveId: 'shapes',
   conversation: [], sendText: seam.send, sharedVoiceTurns: { isVoiceActive: () => false, subscribe: () => () => {} },
 }) }));
-vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (o: { enabled?: boolean }) => {
-  if (o.enabled !== false) seam.legacy('enabled');
-  return { sendText: seam.legacy, isConnected: true, isAudioPlaying: false, activePrimitiveId: 'shapes' };
-} }));
 vi.mock('../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submittedResult: null, submitResult: seam.submit, elapsedMs: 0, resetAttempt: vi.fn() }) }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
@@ -100,7 +96,6 @@ it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no script
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   // No category key, target shape name or placement reaches the tutor.
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/correctCategory|"Triangles"|targetShape|ghost/i);
-  expect(seam.legacy).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();
 });
 
@@ -239,25 +234,10 @@ it('catalog wiring: the build mode, its misses, and every miss answered by a lev
   const entry = getComponentById('shape-builder')!;
   const mode = entry.evalModes!.find(m => m.evalMode === 'make_shape')!;
   expect(mode).toMatchObject({ beta: 1.6, challengeTypes: ['make_shape'], affordances: { answers: ['build'] } });
-  const levers = shapeBuilderLevers(CHALLENGES.make_shape, [], '3-5');
+  const levers = SHAPE_BUILDER_LEVERS.declare(CHALLENGES.make_shape, '3-5', []);
   for (const m of entry.teachingWorkspace!.misses!.make_shape) expect(levers.some(l => l.answers?.includes(m)), m).toBe(true);
   // The text names the build, never another mode's action, a shape name or the ask's numbers.
   for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/trapezoid|rectangle|rhombus|hexagon|exactly 1|drag|type/i);
-  expect(shapeBuilderLevers({ ...CHALLENGES.make_shape, type: 'build' }, [], '3-5')).toEqual([]);
-  expect(shapeBuilderLevers(MAKE('s', { sides: 5 }), [], 'K-2').some(l => l.kind === 'simplify')).toBe(false);
-});
-
-it('without a tutor (scripted path) the build still commits at "I\'m done!" and offers Next', () => {
-  const data = { title: 'Shapes', mode: 'build', gradeBand: '3-5', instanceId: 'solo',
-    grid: { type: 'dot', size: { rows: 10, columns: 10 }, showCoordinates: false },
-    tools: { ruler: false, protractor: false, symmetryLine: false, parallelMarker: false },
-    challenges: [MAKE('a', { sides: 4 }), MAKE('b', { sides: 3 })] } as ShapeBuilderData;
-  const view = render(<ShapeBuilder data={data} />);
-  const dot = (x: number, y: number) => act(() => { fireEvent.click(view.container.querySelector(`[data-pip-object="dot-${x}-${y}"]`)!); });
-  [...SQUARE, SQUARE[0]].forEach(p => dot(p.x, p.y));
-  act(() => { fireEvent.click(screen.getByRole('button', { name: "I'm done!" })); });
-  expect(screen.getByText(/Yes! Your shape/)).toBeTruthy();
-  act(() => { fireEvent.click(screen.getByRole('button', { name: /next challenge/i })); });
-  expect(screen.getByText('Make a shape with 3 sides.')).toBeTruthy();
-  expect(screen.getByRole('button', { name: "I'm done!" })).toHaveProperty('disabled', true);
+  expect(SHAPE_BUILDER_LEVERS.declare({ ...CHALLENGES.make_shape, type: 'build' }, '3-5', [])).toEqual([]);
+  expect(SHAPE_BUILDER_LEVERS.declare(MAKE('s', { sides: 5 }), 'K-2', []).some(l => l.kind === 'simplify')).toBe(false);
 });

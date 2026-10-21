@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { addWeight, removeWeight, balanceState, describeBoard, equalityItems, equalityProblem, initialBoard,
   demonstratedBoard, isMatched, usesEqualityPilot, rightWeight } from './balanceEqualityModel';
-import { equalityAssignment, equalityScene } from './balanceScaleWorkspace';
+import { equalityScene } from './balanceScaleWorkspace';
+import { balanceScaleBoss } from './balanceScale.boss';
 import type { BalanceScaleChallenge, BalanceScaleData } from './BalanceScale';
 
 const challenge: BalanceScaleChallenge = { type: 'equality', leftSide: [], rightSide: [], variableValue: 8,
   instruction: 'Match the weight.', hint: 'Watch the scale.' };
 const problem = equalityProblem(challenge, 0);
 const items = equalityItems([problem]);
+const equalityAssignment = balanceScaleBoss.assignment;
 
 describe('weight matching model', () => {
   it('starts empty, responds to weight rather than block count, and allows overshooting', () => {
@@ -69,7 +71,7 @@ describe('match, compose, infer on the teaching workspace', () => {
     expect(total.task).toContain('total weight');
     expect(infer.task).toBe('Since the scales are balanced, what weight is the left side?');
     for (const ask of [total, infer]) {
-      expect(ask).toMatchObject({ response: 'speech', expectedAnswer: '8' });
+      expect(ask).toMatchObject({ response: 'speech', expectedAnswer: '"8".' });
       expect(ask.task).not.toContain('8');
     }
   });

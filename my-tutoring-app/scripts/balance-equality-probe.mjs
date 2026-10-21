@@ -29,7 +29,7 @@ try {
   const { generateBalanceScale } = await loader.import('/src/components/lumina/service/math/gemini-balance-scale.ts');
   const model = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceEqualityModel.ts');
   const workshop = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceWorkshopModel.ts');
-  const workspace = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceScaleWorkspace.ts');
+  const { balanceScaleBoss } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/balanceScale.boss.ts');
   for (const mode of ['equality', 'equality_hard', 'one_step', 'one_step_hard', 'two_step_intro', 'two_step']) for (const difficulty of ['easy', 'medium', 'hard']) {
     const data = await generateBalanceScale({ componentId: 'balance-scale', instanceId: `equality-${difficulty}`,
       topic: 'Match a weight, add chosen weights and infer equality', grade: '2', gradeLevel: 'elementary',
@@ -39,7 +39,7 @@ try {
     const problems = data.challenges.map(basic ? model.equalityProblem : workshop.workshopProblem);
     const items = basic ? model.equalityItems(problems) : workshop.workshopItems(problems);
     // What the tutor is told per item; a hands step never carries its key.
-    const asks = items.map(basic ? workspace.equalityAssignment : workspace.workshopAssignment);
+    const asks = items.map(balanceScaleBoss.assignment);
     const issues = asks.filter((ask) => ask.response === 'gesture' && ask.expectedAnswer !== undefined).map((ask) => `${ask.id} publishes a hands key`);
     if (issues.length) throw new Error(issues.join('; '));
     const traces = problems.map((problem, index) => {
@@ -54,7 +54,7 @@ try {
             if (!workshop.stageSolved(problem, step, board)) throw new Error('Workshop stage unsolvable');
           }
           const item = items.find((entry) => entry.problem.id === problem.id && entry.step === step);
-          stages.push({ step, board, ask: workspace.workshopAssignment(item) });
+          stages.push({ step, board, ask: balanceScaleBoss.assignment(item) });
         }
         return { id: problem.id, stages };
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import {
@@ -24,25 +24,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { EquationWorkspaceMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  currentEquation, describeEquationWork, equationMiss, expectedOperationId, mergeCommutingSteps, operationCorrect, workspaceAssignment,
-  workspaceScene,
+  currentEquation, describeEquationWork, equationMiss, mergeCommutingSteps, operationCorrect, workspaceScene,
 } from './equationWorkspaceDomain';
 import {
-  FEWER_LEVER, INVERSE_LEVER, INVERSE_TEXT, MODEL_LEVER, ORDER_LEVER, SIDES_LEVER, orderText, equationLevers,
-  fewerSteps, isPracticeEquation, leverFacts, markedSides, modelLines, workedModel,
+  EQUATION_LEVERS, INVERSE_LEVER, INVERSE_TEXT, MODEL_LEVER, ORDER_LEVER, SIDES_LEVER, orderText,
+  isPracticeEquation, markedSides, modelLines, workedModel, type EquationLeverContext,
 } from './equationWorkspaceLevers';
+import { equationWorkspaceBoss } from './equationWorkspace.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -71,6 +70,8 @@ export interface EquationWorkspaceChallenge {
   /** For identify-operation: the correct next operation ID */
   correctOperationId?: string;
   knownValues?: Record<string, number>;
+  /** The item's support tier (generator-stamped); the lever set reads it to say when the model lever comes. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // ── Within-mode support tier scaffolds (set by the generator from config.difficulty).
   //    Each WITHDRAWS solving help; none changes the equation, steps, or answer.
@@ -92,7 +93,7 @@ export interface EquationWorkspaceData {
     name: string;
     unit?: string;
   }>;
-  /** Within-mode support tier ('easy' | 'medium' | 'hard') — calibrates tutor reveal. */
+  /** Within-mode support tier ('easy' | 'medium' | 'hard'); each challenge carries it too. */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: EquationWorkspaceChallenge[];
 
@@ -133,8 +134,8 @@ const CATEGORY_ACCENTS: Record<string, LuminaAccent> = {
   radical: 'rose',
 };
 
-/** A solved item's own score: 15 off per wrong operation, 10 per hint. */
-const itemScore = (incorrectOps: number, hintsUsed: number) => Math.max(0, Math.round(100 - incorrectOps * 15 - hintsUsed * 10));
+/** A solved item's own score: 15 off per wrong operation. */
+const itemScore = (incorrectOps: number) => Math.max(0, Math.round(100 - incorrectOps * 15));
 
 function sessionMetrics(challenges: EquationWorkspaceChallenge[], results: ChallengeResult[], solved: boolean, elapsedMs: number): EquationWorkspaceMetrics {
   const sum = (key: string) => results.reduce((s, r) => s + ((r[key] as number) ?? 0), 0);
@@ -143,7 +144,7 @@ function sessionMetrics(challenges: EquationWorkspaceChallenge[], results: Chall
     stepsCompleted: sum('stepsCompleted'),
     stepsRequired: challenges.reduce((s, c) => s + (c.type === 'identify-operation' ? 1 : c.solutionSteps.length), 0),
     incorrectOperations: sum('incorrectOps'),
-    hintsUsed: sum('hintsUsed'),
+    hintsUsed: 0,
     solved,
     solveTime: Math.round(elapsedMs / 1000),
   };
@@ -166,54 +167,22 @@ function MathDisplay({ latex, display = false, className = '' }: { latex: string
 }
 
 // ============================================================================
-// Tutor reveal policy (scripted path) — calibrate how much the live tutor reveals per tier.
-// INVARIANT: never reveal the final solution at any tier. For identify-operation the next
-// operation IS the answer, so the tutor never names it at any tier.
-// ============================================================================
-
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  challengeType: EquationWorkspaceChallenge['type'],
-): string {
-  if (!tier) return '';
-  const common = `Never reveal the final solution (the solved value of the target variable).`;
-
-  if (challengeType === 'identify-operation') {
-    switch (tier) {
-      case 'easy':
-        return `SUPPORT TIER easy: remind the student to think about the inverse operation that undoes what is attached to the variable, WITHOUT naming which operation is correct here. ${common}`;
-      case 'medium':
-        return `SUPPORT TIER medium: nudge them to look at what is currently applied to the variable; do not name the operation. ${common}`;
-      default:
-        return `SUPPORT TIER hard: minimal coaching — ask what is keeping the variable from being alone and let them choose unaided. Do not name the operation. ${common}`;
-    }
-  }
-
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. You may name the inverse operation and the first step to apply, and walk through the order of operations. ${common}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the balanced-state indicator is on screen but step hints are withdrawn. Nudge which side or term to address next; do not name the operation or pre-set the first step. ${common}`;
-    default:
-      return `SUPPORT TIER hard: the workspace is bare — deciding each step is the task. Do NOT name the inverse operation or the first move; ask what is keeping the variable from being alone. ${common}`;
-  }
-}
-
-// ============================================================================
 // Component
 // ============================================================================
+
+
+const useEquationProgress = useWorkspaceProgressFor('equation-workspace');
+const PRACTICE_NOTE = 'A practice equation is on screen in place of the item. It is not graded; the full item comes back after it, blank.';
 
 /** PLATFORM PROP CONTRACT: registry primitives mount as
  *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
  *  prop (evaluation props merged in), never spread across props. */
-const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, useController }:
-  EquationWorkspaceProps & { tutorOwned: boolean; useController: (options: ProgressOptions<EquationWorkspaceChallenge>) => Progress }) => {
+const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId }: EquationWorkspaceProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     context,
     variableDefinitions,
-    supportTier,
     challenges: rawChallenges,
     instanceId,
     skillId,
@@ -228,15 +197,15 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
   const resolvedInstanceId = instanceId ?? 'equation-workspace-default';
   const startTimeRef = useRef(Date.now());
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace moves the index. ──
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useEquationProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: equationWorkspaceBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -245,10 +214,9 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     results: challengeResults,
     isComplete: allChallengesComplete,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked operation stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked operation stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -266,27 +234,6 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI tutoring (scripted path). Its context and cues carry the solution path, so it is off on the workspace path. ──
-  const gradeLevel = '9-12';
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    context,
-    challengeCount: challenges.length,
-    challengeTypes: Array.from(new Set(challenges.map(c => c.type))),
-    supportTier: supportTier ?? null,
-  }), [title, context, challenges, supportTier]);
-
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'equation-workspace',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
   const phaseResults = usePhaseResults({
     challenges,
     results: challengeResults,
@@ -295,15 +242,18 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  // In-item levers (`equationWorkspaceLevers.ts`), keyed by the session item they were pulled on, and the practice
-  // equation a simplify lever put on screen in its place.
+  // In-item levers (`EQUATION_LEVERS`), keyed by the session item they were pulled on, and the practice equation a
+  // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<EquationWorkspaceChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
   /** What is on screen: the practice equation while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
-  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
-  /** A runtime pull on the session item; never drawn on a practice equation. */
+  const runtimePulls = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** The easy tier draws the inverse reminder from the start: a starting position, declared pulled, never recorded. */
+  const reminderShown = !practice && !!sessionChallenge?.showInverseReminder;
+  const pulledLevers = reminderShown && !runtimePulls.includes(INVERSE_LEVER) ? [INVERSE_LEVER, ...runtimePulls] : runtimePulls;
+  /** A lever drawn on the session item; never on a practice equation. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // ── Per-challenge state ──
@@ -311,8 +261,6 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
   const [done, setDone] = useState(0);
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [incorrectOps, setIncorrectOps] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [showHint, setShowHint] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   /** The wrong operation on screen (the workspace's learner work); cleared by Try again or the next tap. */
   const [lastWrong, setLastWrong] = useState<string | null>(null);
@@ -323,13 +271,11 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     setFeedback(null);
     setSelectedAnswer(null);
     setLastWrong(null);
-    setShowHint(false);
   };
   const resetChallenge = () => {
     clearWrong();
     setDone(0);
     setIncorrectOps(0);
-    setHintsUsed(0);
     setChallengeSolved(false);
   };
   // `index` is the item opening: this render's challenge is still the one before it.
@@ -339,23 +285,10 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     else if (challenges[index]) { setPractice(null); resetChallenge(); }
   };
 
-  // Reset per-challenge state when the challenge on screen changes (both paths). Keyed by id, not object identity.
+  // Reset per-challenge state when the challenge on screen changes. Keyed by id, not object identity.
   useEffect(() => {
     if (currentChallenge) resetChallenge();
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Send intro message for first challenge (scripted path)
-  useEffect(() => {
-    if (currentChallengeIndex === 0 && sessionChallenge) {
-      sendText(
-        `[NEXT_ITEM] Challenge 1 of ${challenges.length}. Type: ${sessionChallenge.type}. ` +
-        `Student must solve "${sessionChallenge.equation}" for ${sessionChallenge.targetVariable}. ` +
-        `Introduce the challenge briefly. ${tutorRevealPolicy(supportTier, sessionChallenge.type)}`,
-        { silent: true },
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const expectedStep = currentChallenge && currentChallenge.type !== 'identify-operation'
     ? currentChallenge.solutionSteps[done] : undefined;
@@ -364,8 +297,8 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
   const recordSolved = (c: EquationWorkspaceChallenge, stepsCompleted: number) => {
     if (isPracticeEquation(c)) return;
     mergeResult({
-      challengeId: c.id, correct: true, attempts: 1, score: itemScore(incorrectOps, hintsUsed),
-      stepsCompleted, stepsRequired: c.type === 'identify-operation' ? 1 : c.solutionSteps.length, incorrectOps, hintsUsed,
+      challengeId: c.id, correct: true, attempts: 1, score: itemScore(incorrectOps),
+      stepsCompleted, stepsRequired: c.type === 'identify-operation' ? 1 : c.solutionSteps.length, incorrectOps,
     });
   };
 
@@ -386,29 +319,17 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
     }
 
     if (operationCorrect(c, done, opId)) {
-      const step = c.solutionSteps[done];
       const next = done + 1;
       setDone(next);
       setFeedback({ message: 'Correct!', correct: true });
-      setShowHint(false);
       setLastWrong(null);
       if (next === c.solutionSteps.length) {
         SoundManager.playCorrect();
         setChallengeSolved(true);
-        sendText(
-          `[ANSWER_CORRECT] Student solved the equation in ${next} steps ` +
-          `with ${incorrectOps} incorrect attempts and ${hintsUsed} hints. Congratulate them!`,
-          { silent: true },
-        );
         recordSolved(c, next);
         commitCheck.current(describeEquationWork(c, next, null, true), true);
       } else {
         SoundManager.snap();
-        sendText(
-          `[STEP_CORRECT] Student applied "${step.operation}" correctly. ` +
-          `${c.solutionSteps.length - next} steps remaining. Briefly encourage.`,
-          { silent: true },
-        );
       }
       return;
     }
@@ -421,11 +342,6 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
       message: `"${opLabel}" isn't the right step here. Think about what isolates ${c.targetVariable}.`,
       correct: false,
     });
-    sendText(
-      `[ANSWER_INCORRECT] Student chose "${opLabel}" but the correct next step is "${expectedStep?.operation}". ` +
-      `They have made ${incorrectOps + 1} incorrect attempts. Give a gentle hint without revealing the answer.`,
-      { silent: true },
-    );
     commitCheck.current(describeEquationWork(c, done, opId), false, equationMiss(c, done, opId));
   };
 
@@ -439,44 +355,16 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setChallengeSolved(true);
       setFeedback({ message: 'Correct! That\'s the right next step.', correct: true });
-      sendText(`[ANSWER_CORRECT] Student correctly identified "${opLabel}" as the next operation. Congratulate briefly.`, { silent: true });
       recordSolved(c, 1);
       commitCheck.current(describeEquationWork(c, 0, selectedAnswer), true);
       return;
     }
     SoundManager.playIncorrect();
     setIncorrectOps(prev => prev + 1);
-    const correctLabel = c.availableOperations.find(o => o.id === expectedOperationId(c, 0))?.label ?? '';
     setFeedback({ message: `Not quite. "${opLabel}" isn't the best next step here.`, correct: false });
     setLastWrong(selectedAnswer);
     setSelectedAnswer(null);
-    sendText(
-      `[ANSWER_INCORRECT] Student chose "${opLabel}" but correct is "${correctLabel}". ` +
-      `Give a hint about why the correct operation helps isolate the variable.`,
-      { silent: true },
-    );
     commitCheck.current(describeEquationWork(c, 0, selectedAnswer), false, equationMiss(c, 0, selectedAnswer));
-  };
-
-  const handleUseHint = () => {
-    if (!currentChallenge || challengeSolved || learnerBlocked()) return;
-    setHintsUsed(prev => prev + 1);
-    setShowHint(true);
-  };
-
-  // Scripted path only: the workspace hides Next and the runtime moves the index.
-  const handleAdvance = () => {
-    if (!advanceProgress()) return;
-    const nextIdx = currentChallengeIndex + 1;
-    const next = challenges[nextIdx];
-    if (next) {
-      sendText(
-        `[NEXT_ITEM] Moving to challenge ${nextIdx + 1} of ${challenges.length}. ` +
-        `Type: ${next.type}. Equation: "${next.equation}", solve for ${next.targetVariable}. ` +
-        `Introduce briefly. ${tutorRevealPolicy(supportTier, next.type)}`,
-        { silent: true },
-      );
-    }
   };
 
   // ── Compute overall score for summary ──
@@ -487,16 +375,8 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
 
   const elapsedMs = Date.now() - startTimeRef.current;
 
-  // Scripted path: submit the session's own tally once every challenge is solved.
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (!allChallengesComplete || tutorOwned || hasSubmitted || hasAutoSubmittedRef.current) return;
-    hasAutoSubmittedRef.current = true;
-    submitResult(true, localOverallScore, sessionMetrics(challenges, challengeResults, true, Date.now() - startTimeRef.current));
-  }, [allChallengesComplete, tutorOwned, hasSubmitted, submitResult, localOverallScore, challenges, challengeResults]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong operation's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong operation's named miss.
   finish.current = (result) => {
     if (hasSubmitted || challenges.length === 0 || progress.recordsEvaluation === false) return;
     submitResult(result.passed, result.accuracy,
@@ -506,19 +386,6 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
       undefined, result.diagnosisEvidence);
   };
 
-  // Send ALL_COMPLETE message (scripted path)
-  useEffect(() => {
-    if (allChallengesComplete && phaseResults.length > 0) {
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${localOverallScore}%. ` +
-        `Give encouraging phase-specific feedback.`,
-        { silent: true },
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allChallengesComplete]);
-
   const isIdentifyMode = currentChallenge?.type === 'identify-operation';
   // Whether to highlight the correct next operation. When a support tier set the field, it governs (easy → on,
   // medium/hard → off); otherwise fall back to the guided-solve eval-mode default. Identify-operation never
@@ -526,58 +393,43 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
   const showNextStepHint = !!currentChallenge && !isIdentifyMode && !practice &&
     (currentChallenge.showNextStepHint !== undefined ? currentChallenge.showNextStepHint : currentChallenge.type === 'guided-solve');
   const hintOperationId = showNextStepHint && expectedStep ? expectedStep.operationId : null;
-  const reminderShown = !practice && !!sessionChallenge?.showInverseReminder;
-  const leverContext = { reminderShown, done };
+  const leverCtx: EquationLeverContext = { done };
   const equationNow = currentChallenge ? currentEquation(currentChallenge, isIdentifyMode ? 0 : done) : '';
   const sides = leverOn(SIDES_LEVER) && currentChallenge ? markedSides(equationNow, currentChallenge.targetVariable) : null;
   const model = leverOn(MODEL_LEVER) && sessionChallenge ? workedModel(sessionChallenge) : null;
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation.
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, {
       done, selected: selectedAnswer, lastWrong, highlighted: showNextStepHint,
-      inverseReminder: reminderShown || leverOn(INVERSE_LEVER), balanceShown: !practice && !!currentChallenge.showBalanceIndicator,
-      solved: challengeSolved,
+      balanceShown: !practice && !!currentChallenge.showBalanceIndicator, solved: challengeSolved,
     });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverContext);
-    const levers = practice ? [] : equationLevers(sessionChallenge, pulledLevers, leverContext);
+    const levers = practice ? [] : EQUATION_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : EQUATION_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : EQUATION_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'A practice equation is on screen in place of the item. It is not graded; the full item comes back after it, blank.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === SIDES_LEVER && !markedSides(equationNow, sessionChallenge.targetVariable))
-          return 'The current line has no single side holding the variable to mark; try another lever.';
-        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        const pulled = { item: sessionChallenge.id, pulled: [...runtimePulls, id] };
         if (lever.kind === 'simplify') {
-          const easier = fewerSteps(sessionChallenge);
+          const easier = EQUATION_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This equation has no shorter practice equation; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetChallenge();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: equationWorkspaceBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
       },
       endPractice: () => { setPractice(null); resetChallenge(); },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
-    label: 'The equation workspace',
-    solved: challengeSolved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   if (!currentChallenge) {
@@ -605,6 +457,7 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
           </div>
           <div className="flex items-center gap-2">
             <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
+            {practice && <LuminaBadge accent="amber" className="text-xs uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaBadge>
               {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
               {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
@@ -648,7 +501,7 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
 
             {/* Inverse-operation reminder: the easy tier's starting position, or the `inverse_reminder` lever. Process
                 guidance in words, never names the answer. */}
-            {(reminderShown || leverOn(INVERSE_LEVER)) && !challengeSolved && (
+            {leverOn(INVERSE_LEVER) && !challengeSolved && (
               <LuminaPanel accent="blue" className="p-3 text-sm text-blue-200" data-lever="inverse-reminder">
                 {INVERSE_TEXT}
               </LuminaPanel>
@@ -660,9 +513,10 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
               </LuminaPanel>
             )}
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-6">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the equation and the menu
+                as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-6">
             {/* Equation display / Step history — bespoke KaTeX readout surface */}
             <LuminaPanel className="p-6 space-y-3">
               {/* Support tier (easy/medium): balanced-state PROCESS indicator. Never shows the solved value. */}
@@ -802,31 +656,9 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
             {/* Solve / guided-solve / multi-step: operation menu */}
             {!isIdentifyMode && !challengeSolved && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-slate-300">
-                    Select the next operation:
-                  </p>
-                  {/* Manual step-hint button (scripted path): available unless the next-step hint is already
-                      highlighted (easy) or the hard tier withdraws step hints. With the tutor, its levers do this. */}
-                  {!tutorOwned && !showNextStepHint && supportTier !== 'hard' && (
-                    <LuminaButton
-                      tone="subtle"
-                      className="text-xs"
-                      onClick={handleUseHint}
-                    >
-                      Hint ({hintsUsed})
-                    </LuminaButton>
-                  )}
-                </div>
-
-                {/* Show hint */}
-                {showHint && expectedStep && !tutorOwned && (
-                  <LuminaPanel accent="amber" className="p-3 text-sm text-amber-200">
-                    Think about: what operation would help move terms away from <MathDisplay latex={currentChallenge.targetVariable} />?
-                    <br />
-                    <span className="text-xs text-amber-400">Category: {expectedStep.operationId.split('_')[0]}</span>
-                  </LuminaPanel>
-                )}
+                <p className="text-sm text-slate-300">
+                  Select the next operation:
+                </p>
 
                 {/* Operation buttons — applying an op is a direct action, not a gradeable answer choice. Guided
                     mode highlights the expected op via the shared "selected" grading-color token. */}
@@ -854,16 +686,7 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
               </div>
             )}
 
-            {/* Advance button when solved (scripted path; the workspace's shell owns Next challenge). */}
-            {challengeSolved && !tutorOwned && currentChallengeIndex < challenges.length - 1 && (
-              <div className="flex justify-end">
-                <LuminaActionButton action="next" onClick={handleAdvance}>
-                  Next Challenge
-                </LuminaActionButton>
-              </div>
-            )}
-
-            </div>
+            </PipWorkspace>
 
             {/* Known values reference */}
             {currentChallenge.knownValues && Object.keys(currentChallenge.knownValues).length > 0 && (
@@ -885,8 +708,8 @@ const EquationWorkspaceSurface = ({ data: props, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const EquationWorkspace = withWorkspaceController<EquationWorkspaceProps, ProgressOptions<EquationWorkspaceChallenge>, Progress>(
-  'equation-workspace', EquationWorkspaceSurface, useScriptedProgress, useWorkspaceProgressFor('equation-workspace'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const EquationWorkspace = withWorkspaceOnly<EquationWorkspaceProps>('equation-workspace', EquationWorkspaceSurface,
+  props => props.data.title);
 
 export default EquationWorkspace;

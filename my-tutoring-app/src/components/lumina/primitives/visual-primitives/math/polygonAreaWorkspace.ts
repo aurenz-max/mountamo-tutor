@@ -1,19 +1,17 @@
 /**
- * Polygon area builder on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
+ * Polygon area builder's scene on the shared tutor/JEV teaching workspace (the boss is `polygonAreaBuilder.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the screen
- * (an area typed and checked, or squares shaded on the open-build grid and "I'm done!") and checked by the activity's
- * own check, so the tutor is never handed `expectedArea`. The figure's drawn dimensions are the task's givens and are
- * published; the area they make is the answer and is not.
+ * Pure: the component and any probe read the same scene. Every challenge is answered on the screen (an area typed and
+ * checked, or squares shaded on the open-build grid and "I'm done!") and checked by the activity's own check, so the
+ * tutor is never handed `expectedArea`. The figure's drawn dimensions are the task's givens and are published; the
+ * area they make is the answer and is not.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
+import type { AreaMiss } from './polygonAreaBuilder.card';
 import { buildAreaFacts, buildPerimeterFacts, isBuildPerimeter, isGridBuild, type Cell } from './polygonAreaBuild';
 
-export function workspaceAssignment(challenge: PolygonAreaChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+export type { AreaMiss } from './polygonAreaBuilder.card';
 
 export interface PolygonAreaView {
   /** The typed area, as typed. */
@@ -52,20 +50,9 @@ export function describeAreaWork(c: PolygonAreaChallenge, view: PolygonAreaView)
   return c.type === 'decompose' ? `Slid the cut triangle across to make a rectangle. ${typed}` : typed;
 }
 
-/**
- * What a wrong typed area shows (`TeachingAttempt.miss`, handoff 20), from the figure the check reads and the
- * commonStruggles in the catalog. Only the observable pattern:
- * - `forgot_half`: base × height on a triangle, or (b1 + b2) × h on a trapezoid (the ½ left out);
- * - `halved`: half the area of a parallelogram, rectangle or composite (a ½ that does not belong);
- * - `added_sides`: the labelled lengths added instead of multiplied;
- * - `one_piece`: one rectangle of a composite figure, not the whole;
- * - `bounding_box`: the rectangle around a coordinate polygon, not the polygon;
- * - `wrong_area`: any other area.
- */
-export type AreaMiss = 'forgot_half' | 'halved' | 'added_sides' | 'one_piece' | 'bounding_box' | 'wrong_area';
-
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
+/** What a wrong typed area shows (`AreaMiss`, polygonAreaBuilder.card.ts). */
 export function areaMiss(c: PolygonAreaChallenge | null, typed: number): AreaMiss | undefined {
   if (!c || isGridBuild(c) || !Number.isFinite(typed) || near(typed, c.expectedArea)) return undefined;
   const b = c.base ?? 0, h = c.height ?? 0;
@@ -80,7 +67,7 @@ export function areaMiss(c: PolygonAreaChallenge | null, typed: number): AreaMis
   return 'wrong_area';
 }
 
-export function workspaceScene(c: PolygonAreaChallenge, view: PolygonAreaView): WorkspaceScene {
+export function workspaceScene(c: PolygonAreaChallenge, view: PolygonAreaView): SceneOf {
   if (isBuildPerimeter(c)) return { objects: [], facts: buildPerimeterFacts(c, view.cells, view.firstShape, view.practice) };
   if (isGridBuild(c)) return { objects: [], facts: buildAreaFacts(c, view.cells, view.firstShape, view.practice) };
   return {
@@ -92,11 +79,11 @@ export function workspaceScene(c: PolygonAreaChallenge, view: PolygonAreaView): 
       learnerWork: describeAreaWork(c, view),
       ...(view.practice ? { practice: `A smaller ${c.figureType} is on screen in place of the item, on a unit grid. It is not `
         + 'graded; the full item comes back after it.' } : {}),
-      constraints: c.type === 'decompose'
-        ? 'The learner drags the cut triangle into the slot to make a rectangle; that unlocks the answer box. Then they type '
-          + 'the area and press Check; the screen checks it. You cannot drag, type or check for the learner.'
-        : 'The learner types the area and presses Check; the screen checks it against the figure. You cannot type or '
-          + 'check for the learner.',
+      // The figure's own leak rule: a piece's area, or a product one step from the total, gives the answer away.
+      constraints: 'The labelled lengths and corners are the givens. The area, the area of any one piece of the figure, '
+        + 'and base times height are what the learner works out: never say one before the check.',
+      // The skill, not the answer (kept from the old tutoring block's commonStruggles).
+      heightCoaching: 'A height meets its base at a right angle; a slanted side is not the height.',
     },
   };
 }

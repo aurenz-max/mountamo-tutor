@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * digital-skills-sim on the shared teaching workspace (W1, plain shape) and its levers: what is its own. The generic
+ * digital-skills-sim on its boss (`digitalSkillsSim.boss.ts`) and its lever set (`SKILL_LEVERS`): what is its own. The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  * Every mode is a gesture checked by code: a click or a drop on the arena SVG (read in viewBox units), or keys. No
  * key reaches the tutor and nothing on screen marks the target. A wrong action names its miss, and every miss has a
@@ -21,19 +21,21 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { DigitalSkillsSimData } from './DigitalSkillsSim';
 import {
   BOXES, buildSkillItems, HOMES, keyLabel, neighbours, SKILL_MISSES, skillCorrect, skillHarnessAnswers, skillItems, skillMiss,
-  SPOTS, THEME_IDS, THEMES, validSkillItem, workspaceAssignment, workspaceScene, emptyWork, seededRng,
+  SPOTS, THEME_IDS, THEMES, validSkillItem, workspaceScene, emptyWork, seededRng,
   type ClickItem, type DragItem, type Point, type SkillItem, type SkillMode, type SkillTier, type TypeItem,
 } from './digitalSkillsWorkspace';
 import {
   BIG_BOXES_LEVER, BIG_KEYS_LEVER, BIG_TARGETS_LEVER, bigLeverSeparate, CAPITAL_CARD_LEVER, FEWER_BOXES_LEVER,
-  FEWER_PICTURES_LEVER, GLOW_ROW_LEVER, glowLeak, glowRow, leverFact, ONE_LETTER_LEVER, possibleMisses, SHOW_PICTURE_LEVER,
-  simplerItem, skillLevers,
+  FEWER_PICTURES_LEVER, GLOW_ROW_LEVER, glowLeak, glowRow, ONE_LETTER_LEVER, possibleMisses, SHOW_PICTURE_LEVER,
+  simplerItem, SKILL_LEVERS,
 } from './digitalSkillsLevers';
+import { digitalSkillsSimBoss } from './digitalSkillsSim.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
 const MODES: SkillMode[] = ['click', 'drag', 'type'];
+const CTX = { typed: 0 };
 const TIERS: SkillTier[] = ['easy', 'medium', 'hard'];
 const farm = (...names: string[]) => names.map(n => THEMES.farm.find(x => x.name === n)!);
 const home = (...names: string[]) => names.map(n => HOMES.find(x => x.name === n)!);
@@ -89,7 +91,7 @@ it.each(MODES)('%s binds as a gesture with no key, and nothing on screen marks t
   expect(getComponentById('digital-skills-sim')!.evalModes!.map(m => m.evalMode)).toEqual(MODES);
   expect(h.state().owner).toBe('tutor');
   expect(seam.legacyAI).not.toHaveBeenCalled();
-  expect(h.state().task!.task).toBe(workspaceAssignment(item).task);
+  expect(h.state().task!.task).toBe(digitalSkillsSimBoss.assignment!(item).task);
   expect(demand(h).response).toBe('gesture');
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   expect(JSON.stringify(demand(h))).not.toMatch(/\b(left|right side|top|bottom|row|middle|highlight(ed)? key)\b/i);
@@ -283,7 +285,7 @@ describe('the pure rules', () => {
     for (const mode of MODES) {
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...SKILL_MISSES[mode]].sort());
       for (const { i } of all(mode)) {
-        const ls = skillLevers(i, []);
+        const ls = SKILL_LEVERS.declare(i, CTX, []);
         for (const m of possibleMisses(i)) {
           expect(SKILL_MISSES[mode]).toContain(m);
           expect(ls.find(l => l.id === nextLever(ls, m))?.kind, `${i.id} ${m}`).toBe('help');
@@ -300,11 +302,11 @@ describe('the pure rules', () => {
     for (const { i } of all('type')) {
       if (i.mode !== 'type') continue;
       for (let typed = 0; typed < i.text.length; typed++) expect(glowLeak(glowRow(i, typed))).toBe(false);
-      const fact = leverFact(i, [GLOW_ROW_LEVER, BIG_KEYS_LEVER]);
+      const fact = SKILL_LEVERS.onScreen(i, CTX, [GLOW_ROW_LEVER, BIG_KEYS_LEVER]);
       expect(fact).not.toMatch(new RegExp(`\\b${i.text[0]}\\b`));
     }
     for (const mode of ['click', 'drag'] as const) for (const { i } of all(mode)) {
-      const fact = leverFact(i, skillLevers(i, []).filter(l => l.kind === 'help').map(l => l.id));
+      const fact = SKILL_LEVERS.onScreen(i, CTX, SKILL_LEVERS.declare(i, CTX, []).filter(l => l.kind === 'help').map(l => l.id));
       const name = i.mode === 'click' ? i.things[i.target].name : i.mode === 'drag' ? i.homes[i.target].name : '';
       expect(fact, i.id).not.toContain(`the ${name}`);
       const scene = JSON.stringify(workspaceScene(i, { work: emptyWork(), reach: { big: false } }).facts.shown);
@@ -319,7 +321,8 @@ describe('the pure rules', () => {
       expect(s.mode).toBe(mode);
       expect(validSkillItem(s)).toBe(true);
       expect(simplerItem(s)).toBeNull();
-      expect(skillLevers(s, [])).toEqual([]);
+      // A practice item never shrinks again (the component also declares no lever while one is on screen).
+      expect(SKILL_LEVERS.declare(s, CTX, []).some(l => l.kind === 'simplify')).toBe(false);
       if (s.mode === 'click' && i.mode === 'click') { expect(s.things).toHaveLength(2); expect(s.things[s.target].name).not.toBe(i.things[i.target].name); }
       if (s.mode === 'drag' && i.mode === 'drag') { expect(s.homes).toHaveLength(2); expect(s.thing.name).not.toBe(i.thing.name); expect(s.homes[s.target].name).not.toBe(i.homes[i.target].name); }
       if (s.mode === 'type' && i.mode === 'type') { expect(s.text).toHaveLength(1); expect(i.text).not.toContain(s.text); }

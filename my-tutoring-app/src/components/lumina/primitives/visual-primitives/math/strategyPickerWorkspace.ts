@@ -1,16 +1,13 @@
 /**
- * Strategy picker on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C9), plain shape: `useWorkspaceProgress` in place of
- * `useChallengeProgress`. Every challenge is one checked gesture; the picker's own Check is the
- * judge and no key reaches the tutor:
- *   - guided-strategy / try-another: the answer set on the stepper, then Check;
- *   - choose-your-strategy: a strategy tapped from the menu, the answer set, then Check;
- *   - match-strategy: the strategy the worked solution used, tapped, then Check;
- *   - compare: a strategy or "Both the same" tapped, then Check. A reflection with no wrong answer:
- *     every choice is credited, as before.
+ * Strategy picker's domain on the teaching workspace: the picker's own check, the miss it names, the scene the tutor
+ * reads and the harness inputs. How each mode is wired is the card (`strategyPicker.card.ts`); the boss
+ * (`strategyPicker.boss.ts`) builds the assignment. Compare is a reflection with no wrong answer: every choice counts.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { StrategyId, StrategyPickerChallenge } from './StrategyPicker';
+import type { StrategyPickerMiss } from './strategyPicker.card';
+
+export { STRATEGY_PICKER_MISSES_BY_MODE, type StrategyPickerMiss } from './strategyPicker.card';
 
 export const STRATEGY_LABELS: Record<StrategyId, string> = {
   'counting-on': 'Counting On',
@@ -36,10 +33,9 @@ export interface StrategyPickerView {
 const solves = (c: StrategyPickerChallenge) =>
   c.type === 'guided-strategy' || c.type === 'try-another' || c.type === 'choose-your-strategy';
 
-export function strategyPickerAssignment(c: StrategyPickerChallenge): TeachingAssignment {
-  const task = c.type === 'compare' && c.comparisonQuestion ? `${c.instruction} ${c.comparisonQuestion}` : c.instruction;
-  return { id: c.id, task, response: 'gesture' };
-}
+/** What the learner is asked: the instruction, and on compare its question. */
+export const strategyPickerAsk = (c: StrategyPickerChallenge) =>
+  (c.type === 'compare' && c.comparisonQuestion ? `${c.instruction} ${c.comparisonQuestion}` : c.instruction);
 
 /** The picker's own check. Compare is a reflection: any choice counts. */
 export function strategyPickerMatches(c: StrategyPickerChallenge, v: StrategyPickerView): boolean {
@@ -54,18 +50,7 @@ export const PICTURE_KIND: Record<StrategyId, string> = {
   'tally-marks': 'count-all', 'draw-objects': 'count-all', 'make-ten': 'frame',
 };
 
-/**
- * What a wrong Check shows (`TeachingAttempt.miss`, handoff 20), from the same work the check reads:
- * - a number (guided, try_another, choose): `other_operation` (the two numbers combined the other way),
- *   `printed_number` (one of the problem's own numbers), then `one_short` / `one_over` / `short_by_more` /
- *   `over_by_more`;
- * - match: `similar_strategy` (one that draws the same kind of picture: the other number-line, doubles or
- *   count-everything strategy), `different_strategy`.
- * Compare names none: every choice is credited.
- */
-export type StrategyPickerMiss = 'other_operation' | 'printed_number' | 'one_short' | 'one_over' | 'short_by_more'
-  | 'over_by_more' | 'similar_strategy' | 'different_strategy';
-
+/** What a wrong Check shows (`TeachingAttempt.miss`); the misses are listed on the card. */
 export function strategyPickerMiss(c: StrategyPickerChallenge | null, v: StrategyPickerView): StrategyPickerMiss | undefined {
   if (!c || strategyPickerMatches(c, v)) return undefined;
   if (c.type === 'match-strategy') {
@@ -101,17 +86,15 @@ const PICTURES: Record<StrategyId, string> = {
   'draw-objects': 'a circle for each of both numbers together',
 };
 
+/** What only this picker knows; the card's moves and the doctrine say the rest. */
+const PICTURE_END = 'Where the picture ends is the answer: never say it.';
 const CONSTRAINTS: Record<StrategyPickerChallenge['type'], string> = {
-  'guided-strategy': 'The learner follows the named strategy with the picture, sets the answer with the − and + buttons '
-    + 'and presses Check; the picker checks it. The number is the answer: never say it or where the picture ends.',
-  'try-another': 'The learner solves the problem again with a different, named strategy, sets the answer with the − and + '
-    + 'buttons and presses Check; the picker checks it. The number is the answer: never say it or where the picture ends.',
-  'choose-your-strategy': 'The learner picks a strategy from the menu (any of them works), then sets the answer with the − '
-    + 'and + buttons and presses Check; the picker checks the number. Never pick for them, say the number, or where the picture ends.',
-  'match-strategy': 'The learner reads how someone solved the problem, taps the strategy they used and presses Check; the '
-    + 'picker checks it. That strategy is the answer: never name it or point to its button.',
-  compare: 'Both strategies are drawn and give the same answer. The learner answers the question by tapping a strategy '
-    + 'or Both the same and presses Check: every choice counts. Ask why they chose it; there is no wrong answer.',
+  'guided-strategy': PICTURE_END,
+  'try-another': PICTURE_END,
+  'choose-your-strategy': `Any strategy on the menu works: never pick one for the learner. ${PICTURE_END}`,
+  'match-strategy': 'The worked solution never names its strategy; on screen nothing marks the one it used.',
+  compare: 'Both strategies give the same answer, printed on screen. Every choice counts and there is no wrong answer: '
+    + 'ask why they chose it.',
 };
 
 export type StrategyPickerTier = 'easy' | 'medium' | 'hard';
@@ -131,7 +114,7 @@ function coaching(c: StrategyPickerChallenge, tier: StrategyPickerTier | undefin
 }
 
 export function strategyPickerScene(c: StrategyPickerChallenge, view: { chosen: StrategyId | null; supportTier?: StrategyPickerTier },
-  introduced: StrategyId[] = []): WorkspaceScene {
+  introduced: StrategyId[] = []): SceneOf {
   const tier = c.supportTier ?? view.supportTier;
   const tip = coaching(c, tier);
   const drawn = c.assignedStrategy ?? (c.type === 'choose-your-strategy' ? view.chosen : null);

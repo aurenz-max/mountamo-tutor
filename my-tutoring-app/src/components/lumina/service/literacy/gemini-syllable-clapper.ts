@@ -15,7 +15,7 @@ import {
   syllablesJoinToWord,
   taskOf,
   type SyllableBand,
-} from "../../primitives/visual-primitives/literacy/syllableClapperScript";
+} from "../../primitives/visual-primitives/literacy/syllableClapperDomain";
 import {
   SYLLABLE_CLAPPER_TYPE_DOCS,
   SYLLABLE_TASKS,

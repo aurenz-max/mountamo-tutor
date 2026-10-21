@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * balance-scale's spoken-step levers (`balanceScaleLevers.ts`) on the shared teaching workspace, mounted the way a
+ * balance-scale's spoken-step levers (`BALANCE_LEVERS`, `balanceScaleLevers.ts`) on the shared teaching workspace, mounted the way a
  * lesson mounts it. A pull changes the screen and the scene in one commit and states no answer; the next attempt
  * records the lever; a refused pull changes nothing; a simplify pull opens an ungraded practice step, and the full
  * item comes back blank and is credited, as assisted.
@@ -74,7 +74,7 @@ it('equality total: two_blocks opens an ungraded two-weight scale, then the full
   const task = h.state().task!;
   expect(task.itemId).toBe(`${full}~simpler`);
   expect(task.workspace!.practice).toEqual({ returnsTo: full });
-  expect(task.workspace!.expectedAnswer).toBe('6');
+  expect(task.workspace!.expectedAnswer).toBe('"6".');
   expect(q(h, '[aria-label^="Remove "]').map(b => b.getAttribute('aria-label'))).toEqual(['Remove 5 weight, block -1', 'Remove 1 weight, block -2']);
   h.say('five'); h.feedback('incorrect', 'retry');
   expect(h.state().task!.itemId).toBe(`${full}~simpler`);
@@ -120,7 +120,7 @@ it('one_step_hard each: one_group rings group 1; fewer_parcels opens two parcels
   expect(JSON.stringify(h.state().task!.demand.onScreen)).not.toMatch(/\b4\b/);
   h.dispatch('pull_lever', { lever: 'fewer_parcels' });
   expect(h.state().task!).toMatchObject({ itemId: `${full}~simpler` });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('3');
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('"3".');
   expect(q(h, '[aria-label^="Parcel group"]')).toHaveLength(2);
   // The practice step is not the learner's item: its levers are gone while it is open.
   expect(levers(h)).toEqual([]);

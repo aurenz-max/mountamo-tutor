@@ -1,59 +1,23 @@
 'use client';
 
 /**
- * PlaceValueChart — LIVE-JUDGED DI surface (eighth math port; qa/di/BACKLOG.md
- * item 18). The tutor asks with scripted lines, the child answers OUT LOUD
- * (place names, value words) or WITH THEIR HANDS (writing a dictated number
- * into the chart), the tutor judges in-band, and its own affirmation advances
- * the lesson. The screen only follows.
+ * PlaceValueChart — taught on the shared tutor/JEV workspace (`placeValueChart.boss.ts`); a mount with no tutor shows
+ * the shared "needs the tutor" card (`withWorkspaceOnly`). The tutor asks, the child answers OUT LOUD (place names,
+ * value words) or WITH THEIR HANDS (writing a dictated number into the chart); the tutor judges the spoken answers
+ * against the key, the chart checks a written number itself, and the workspace advances.
  *
- * What the click era had and this file no longer does: two multiple-choice
- * rows with Check buttons (the place menu and the word-form menu), a printed
- * build target ("Now build 247") that made phase 3 a copy task, a Next Number
- * control, a hint ladder, two 1200ms phase-advance timers, and an improvised
- * tutor-commentary channel of nine pushed turns. The cues carry the entire
- * spoken surface now; progression has exactly one cause, a tutor verdict.
+ * ⭐ THE CHART IS AN ANSWER KEY IN PIXELS FOR find_place. While the ask is "which place is the four in?", labeled
+ * columns above the glowing digit ARE the answer, so analyze items render the NUMERAL ONLY — no chart, no headers.
+ * The labeled chart appears exactly where it is the page and not the key: on build items, where the answer is WHICH
+ * DIGIT goes in each labeled column, and in the find_place REVEAL, where the column name is earned. The same rule
+ * deletes a printed build target and any green match-colouring on the readout; the readout survives as the child's own
+ * trace, neutral at every tier.
  *
- * ⭐ THE CHART IS AN ANSWER KEY IN PIXELS FOR find_place — the FOURTH port in
- * a row with this defect class (ten-frame's running counter, compare-objects'
- * numbered unit boxes, ordinal-line's ordinal labels, now the column headers).
- * While the ask is "which place is the four in?", labeled columns above the
- * glowing digit ARE the answer, so analyze items render the NUMERAL ONLY — no
- * chart, no headers. The labeled chart appears exactly where it is the page
- * and not the key: on build items, where the answer is WHICH DIGIT goes in
- * each labeled column (the ten-frame R6 boundary — the action was the costume,
- * never the paper), and in the find_place REVEAL, where the column name is
- * earned. The same rule deletes the "Target: 247" print and the green
- * match-coloring on the live readout (a Check button that presses itself
- * visually); the readout survives as the child's own trace, neutral at every
- * tier.
- *
- * HOW A HANDS TURN CLOSES: stillness (`runner.armStillness`), shortened once
- * every column is filled — never correctness-gated (a wrong number commits
- * exactly as readily as the right one; that is what gives the tutor something
- * to teach). The two windows are compare-objects' calibration pair, hand-tuned
- * by ear there too.
- *
- * NO TIMED STIMULUS: the numeral (analyze) and the empty chart (build) are on
- * screen for the whole item, so there is no `onPresentStimulus` and no clock
- * to get wrong.
- *
- * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
- * tutor-busy; the tutor speaks only scripted lines; no visible timers;
- * tap-to-hear re-speaks the QUESTION (on a build item that re-dictates the
- * number — which is what replaces the printed target); interaction is gated on
- * `runner.canAttempt`, never on `runner.stage`; the reveal renders on
- * `runner.revealHeld` and is never cleared in `onItemOpened` (18b).
- *
- * Inside a live runtime with a resolved pin, the shared teaching workspace
- * replaces the scripted runner (W1, `placeValueWorkspace.ts`): the tutor
- * teaches in its own words, the observer commits outcomes, and the chart still
- * checks a written number itself. Everything above describes the page both share.
+ * HOW A HANDS TURN CLOSES: stillness (`runner.armStillness`), shortened once every column is filled — never
+ * correctness-gated (a wrong number commits exactly as readily as the right one).
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { placeValueVoiceObservation } from './placeValueEvidence';
-import { placeValueContentIdentity } from '../../../service/math/placeValueOpportunityContract';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -68,25 +32,19 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PlaceValueChartMetrics } from '../../../evaluation/types';
+import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import type { PlaceValueItem } from './placeValueDomain';
 import {
-  useJudgedScriptRunner,
-  type JudgedRunSummary,
-  type JudgedScriptRunnerOptions,
-} from '../../../hooks/useJudgedScriptRunner';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { placeValueChartPipPose } from '../../../pip/placeValueChartPipPose';
-import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
-import {
-  buildVerdictCue,
-  itemsFromChallenges,
-  placeValuePackBase,
-  type PlaceValueItem,
-  type PlaceValueMode,
-  type PlaceValueTier,
-} from './placeValueScript';
-import { BLOCKS_LEVER, MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, VALUE_MODEL_LEVER, WORTH_LEVER, askedValues,
-  leverFacts, placeValueLevers, plainItem, startLevers, teenDigit, valueModel } from './placeValueLevers';
+  BLOCKS_LEVER, MODEL_LEVER, PLACE_VALUE_LEVERS, READBACK_LEVER, TEEN_LEVER, VALUE_MODEL_LEVER, WORTH_LEVER,
+  placeValueLeverContext, startLevers, teenDigit, valueModel,
+} from './placeValueLevers';
+import { chartComplete, chartMatches, describeChart, placeValueMiss, workspaceScene } from './placeValueWorkspace';
+import { placeValueChartBoss, placeValueItems } from './placeValueChart.boss';
 import { placeLabel } from './spokenNumberWords';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -103,12 +61,9 @@ export type PlaceValueChartChallengeType =
   | 'compare'
   | 'expanded_form';
 
-/** One place-value challenge: one number. The judged loop assigns each
- *  challenge ONE role (analyze — the number prints and its glowing digit gets
- *  two spoken asks; or dictate — the number never prints and the tutor says it
- *  for the child to write). The click era's MC rows are declared because the
- *  generator still emits them, and READ BY NOTHING: no judged item carries
- *  them, so a cached challenge cannot put the buttons back. */
+/** One place-value challenge: one number. Each challenge takes ONE role (analyze — the number prints and its glowing
+ *  digit gets two spoken asks; or dictate — the number never prints and the ask says it for the child to write). The
+ *  click era's MC rows are declared because the generator still emits them, and READ BY NOTHING. */
 export interface PlaceValueChartChallenge {
   id: string;
   targetNumber: number;
@@ -119,15 +74,6 @@ export interface PlaceValueChartChallenge {
   digitValueChoices: { value: number; wordForm: string }[];
 }
 
-import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
-import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
-import { useLiveAutoStart } from '../../../components/live-activity/runtime/useLiveAutoStart';
-import { usePlaceValueRuntime } from './usePlaceValueRuntime';
-import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { chartComplete, chartMatches, describeChart, placeValueMiss, workspaceAssignment, workspaceScene } from './placeValueWorkspace';
 export interface PlaceValueChartData {
   title: string;
   description: string;
@@ -155,10 +101,10 @@ export interface PlaceValueChartData {
 interface PlaceValueChartProps {
   data: PlaceValueChartData;
   className?: string;
-  /** The live host opts in only after its correlated mount handoff. */
+  /** Kept for hosts that still pass it; the workspace starts with the lesson. */
   autoStart?: boolean;
   runtimePlanItemId?: string;
-  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  /** The RESOLVED eval mode from the mount; selects the teaching workspace inside a live runtime. */
   runtimeEvalMode?: string;
 }
 
@@ -172,69 +118,31 @@ const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   build_number: { label: 'Write It',       icon: '🏗️' },
 };
 
-/**
- * HOW LONG THE CHART MAY STAY STILL BEFORE IT COMMITS. The window is the
- * runner's (`armStillness`, 19c); these are the per-shape numbers, carried
- * from compare-objects where they were tuned by ear. Both are STRUCTURAL,
- * never correctness-gated — a wrong number commits through the same window as
- * the right one.
- */
-/** Mid-write: a child pauses to think between digits. */
+const PRACTICE_NOTE = 'An easier number to write is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+/** Mid-write: a child pauses to think between digits. Structural, never correctness-gated. */
 const WRITE_SETTLE_MS = 4000;
-/** Every column filled — a terminal shape, but a mis-type is normal, so it
- *  still waits a beat rather than committing on the keystroke. */
+/** Every column filled — a terminal shape, but a mis-type is normal, so it still waits a beat. */
 const WRITE_COMPLETE_SETTLE_MS = 1500;
 
 const multiplierLabel = (place: number): string => `×${Math.pow(10, place).toLocaleString()}`;
-
-// ============================================================================
-// Component
-// ============================================================================
-
-/**
- * The scripted runner's options beside the workspace controller's (compare-objects' shape).
- * `digitsByPlace` feeds the runner-era runtime registration only.
- */
-type PlaceValueControllerOptions = Omit<WorkspaceRunOptions<PlaceValueItem>, 'primitiveId' | 'assignment' | 'onFinished'>
-  & { /** The scripted path's runtime registration only (it goes with that path); the workspace reads the lesson's pin. */
-    scriptedEvalMode: string }
-  & Omit<JudgedScriptRunnerOptions<PlaceValueItem>, 'pack' | 'instanceId' | 'onItemOpened' | 'onFinished'>
-  & { pack?: JudgedScriptPack<PlaceValueItem>; digitsByPlace: Record<number, string>;
-    onFinished: (summary: PlaceValueFinish) => void };
-
-/** What the metrics read, from either controller's finished record. */
-type PlaceValueFinish = Pick<JudgedRunSummary, 'outcomes' | 'accuracy' | 'attemptsCount' | 'firstTryCount' | 'diagnosisEvidence'
-  | 'solvedCount' | 'learningResponses'> & Partial<Pick<JudgedRunSummary, 'hearTaps' | 'opportunityEvents'>>
-  & { teachingAttempts?: unknown; assistanceProvenance?: string };
-
-function useScriptedController(options: PlaceValueControllerOptions): LiveRun<PlaceValueItem> {
-  const runner = useJudgedScriptRunner<PlaceValueItem>({ ...options, pack: options.pack! });
-  // The SESSION's mode, never `runner.currentItem`: a mount's identity must not change while the runner owns it.
-  usePlaceValueRuntime({ runner, instanceId: options.instanceId, objectiveId: options.objectiveId,
-    planItemId: options.planItemId, evalMode: options.scriptedEvalMode, digitsByPlace: options.digitsByPlace });
-  return runner;
-}
-
-const useWorkspaceController = (options: PlaceValueControllerOptions): LiveRun<PlaceValueItem> =>
-  useWorkspaceRunner<PlaceValueItem>({ ...options, primitiveId: 'place-value-chart', assignment: workspaceAssignment });
 
 /** The chart as written, one entry per column HIGH -> LOW. */
 const writtenOf = (item: PlaceValueItem, digits: Record<number, string>) =>
   item.chartPlaces.map((p) => { const d = digits[p]; return d === undefined || d === '' ? null : Number(d); });
 
-const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  PlaceValueChartProps & { tutorOwned: boolean; useController: (options: PlaceValueControllerOptions) => LiveRun<PlaceValueItem> }) => {
-  const liveRuntime = useLiveRuntime();
+// ============================================================================
+// Component
+// ============================================================================
+
+const PlaceValueChartSurface = ({ data, className, runtimePlanItemId }: PlaceValueChartProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
-    challenges = [],
     challengeType,
     showExpandedForm = true,
     showMultipliers = true,
-    supportTier,
-    gradeLevel,
     instanceId,
     skillId,
     subskillId,
@@ -246,30 +154,19 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   const stableInstanceIdRef = useRef(instanceId || `place-value-chart-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Items: the session's judged asks, gates applied (KEEP-OR-DROP) ────────
-  const items = useMemo(() => {
-    const mode = (['identify', 'build', 'compare', 'expanded_form'] as const).includes(
-      challengeType,
-    )
-      ? (challengeType as PlaceValueMode)
-      : 'compare';
-    const tier: PlaceValueTier = supportTier ?? 'medium';
-    return itemsFromChallenges(challenges, { mode, tier }).items;
-  }, [challenges, challengeType, supportTier]);
+  // The boss's items: the family's build gate drops an unaskable challenge.
+  const items = useMemo(() => placeValueItems(data), [data]);
+  const leverCtx = useMemo(() => placeValueLeverContext(items), [items]);
 
-  // ── Per-item stage state ──────────────────────────────────────────────────
   /** The child's written digits, keyed by PLACE. Their trace, not the key. */
   const [digitsByPlace, setDigitsByPlace] = useState<Record<number, string>>({});
-  // In-item levers (`placeValueLevers.ts`), keyed by the session item they were pulled on, and the plainer
-  // dictation a simplify lever put on screen in its place. The refs are what event handlers read.
+  // In-item levers, keyed by the session item they were pulled on, and the plainer dictation a simplify lever put on
+  // screen in its place. The refs are what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<PlaceValueItem | null>(null);
   const practiceRef = useRef<PlaceValueItem | null>(null);
   const displayItemRef = useRef<PlaceValueItem | null>(null);
-  /** Post-answer only (answer-leak rule). NOT cleared when the next item opens:
-   *  that clear and the `onAffirmed` that set it land in one React batch, so
-   *  the reveal would paint on the last item and nowhere else (18b).
-   *  `runner.revealHeld` is the gate. */
+  /** Post-answer only (answer-leak rule); `runner.revealHeld` is the gate. */
   const [reward, setReward] = useState<string | null>(null);
   /** What the chart held when it last stopped changing. */
   const writtenRef = useRef<Record<number, string>>({});
@@ -284,36 +181,13 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── The pack: the exported cue surface + what only a mounted component owns ─
-  const pack = useMemo<JudgedScriptPack<PlaceValueItem> | undefined>(() => tutorOwned ? undefined : ({
-    ...placeValuePackBase(items),
-    statusLines: {
-      ready: (item) =>
-        item.answerKind === 'gesture'
-          ? 'Listen to the number, then write it.'
-          : 'Listen, then answer out loud.',
-    },
-    // One record per attempt. The voice helper annotates an apparent contradiction on the assumption of a
-    // correction, so an affirmed attempt keeps the actual transcript instead.
-    observation: (item, { heard, verdict }) => {
-      if (item.answerKind === 'gesture') return {
-        challenge: `write ${item.targetNumber} from dictation`,
-        expected: String(item.targetNumber),
-        observed: item.chartPlaces.map(p => writtenRef.current[p] ?? '·').join(''),
-      };
-      const task = placeValueVoiceObservation(item, heard);
-      return verdict === 'corrected' ? task : heard ? { ...task, observed: heard } : null;
-    },
-  }), [items, tutorOwned]);
-
-  // ── Per-item reset — every item owns its starting state ───────────────────
-  const resetStageFor = useCallback(() => {
+  const resetStage = useCallback(() => {
     setDigitsByPlace({});
     writtenRef.current = {};
   }, []);
 
-  // ── Metrics ───────────────────────────────────────────────────────────────
-  const handleFinished = useCallback(async (summary: PlaceValueFinish) => {
+  // ── Metrics: once, from the scored session, under an evaluation provider ──
+  const handleFinished = useCallback((summary: TeachingEvaluationResult) => {
     const metrics: PlaceValueChartMetrics = {
       type: 'place-value-chart',
       challengeType,
@@ -321,26 +195,11 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
       correctCount: summary.solvedCount,
       attemptsCount: summary.attemptsCount,
       firstTryCount: summary.firstTryCount,
-      hintsViewed: summary.hearTaps ?? 0,
+      hintsViewed: 0,
       overallAccuracy: summary.accuracy,
       averageAttemptsPerChallenge:
         Math.round((summary.attemptsCount / Math.max(1, items.length)) * 10) / 10,
     };
-    let opportunityEvidence;
-    if (data.misconceptionOpportunity && summary.opportunityEvents) {
-      try {
-        const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(placeValueContentIdentity(data)));
-        opportunityEvidence = {
-          opportunity_set_id: data.misconceptionOpportunity.id,
-          lesson_id: data.misconceptionOpportunity.lessonId,
-          grade: data.misconceptionOpportunity.grade,
-          curriculum_version: data.misconceptionOpportunity.curriculumVersion,
-          content_hash: Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join(''),
-          completed: summary.outcomes.length === items.length,
-          events: summary.opportunityEvents,
-        };
-      } catch { /* normal evaluation still submits without remediation credit */ }
-    }
     evaluation.submitResult(
       summary.solvedCount === items.length,
       summary.accuracy,
@@ -349,43 +208,31 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
         problem: { challengeType, supportTier: data.supportTier, challenges: data.challenges },
         diagnosisEvidence: summary.diagnosisEvidence,
         learningResponses: summary.learningResponses,
-        ...(summary.teachingAttempts ? { teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance } : {}),
-        ...(opportunityEvidence ? { misconception_opportunity: opportunityEvidence } : {}) },
+        teachingAttempts: summary.teachingAttempts, assistanceProvenance: summary.assistanceProvenance },
       undefined,
       summary.diagnosisEvidence,
     );
   }, [items, challengeType, evaluation, data]);
 
-  const runner = useController({
-    items, workspace, objectiveId, planItemId: runtimePlanItemId,
-    // The SESSION's mode, from the mount, never `runner.currentItem`: a mount's
-    // identity must not change while the runner owns it.
-    scriptedEvalMode: runtimeEvalMode || items[0]?.kind || 'default',
-    digitsByPlace,
-    // Load-bearing for the live host: without it the runner's `resume()` early-returns,
-    // its speech holds never settle, and the completion handoff has nothing to read.
-    runtime: liveRuntime,
-    ...(!tutorOwned && runtimePlanItemId ? { completionCue: '[PV_COMPLETE] Say exactly: "You finished this activity. Nice work!" Then wait silently for the lesson host.' } : {}),
-    recordOpportunityEvents: !!data.misconceptionOpportunity,
-    pack,
+  const runner = useWorkspaceRunner<PlaceValueItem>({
+    primitiveId: 'place-value-chart',
+    assignment: placeValueChartBoss.assignment,
+    items,
+    workspace,
+    objectiveId,
+    planItemId: runtimePlanItemId,
     instanceId: resolvedInstanceId,
-    gradeLevel: gradeLevel || 'Grade 3',
-    exhibitId,
     onFinished: handleFinished,
     // A fresh item never carries a plainer dictation over from the last one.
-    onItemOpened: () => { practiceRef.current = null; setPractice(null); resetStageFor(); },
+    onItemOpened: () => { practiceRef.current = null; setPractice(null); resetStage(); },
     onAffirmed: (item) => {
-      // The first moment an answer may appear on screen. The reveal is the
-      // PAIRING (digit, place, worth) — the thing the click era printed as a
-      // permanent scaffold, now earned.
+      // The first moment an answer may appear on screen: the PAIRING (digit, place, worth), earned.
       switch (item.kind) {
         case 'find_place':
           setReward(`${item.digit} — ${placeLabel(item.place)}`);
           break;
         case 'say_value':
-          setReward(
-            `${item.answerText} (${(item.digit * Math.pow(10, item.place)).toLocaleString()})`,
-          );
+          setReward(`${item.answerText} (${(item.digit * Math.pow(10, item.place)).toLocaleString()})`);
           break;
         default: {
           const parts = item.chartPlaces
@@ -396,13 +243,9 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
         }
       }
     },
-    onCorrectionRetry: (item) => {
-      // The tutor re-modeled in-band; clear the chart for another go. The
-      // stillness window is cancelled by the runner on this path.
-      if (item.kind === 'build_number') {
-        setDigitsByPlace({});
-        writtenRef.current = {};
-      }
+    // A checked miss clears the chart for another go (the practice chart too); a spoken retry has nothing to clear.
+    onCorrectionRetry: (sessionItem) => {
+      if ((practiceRef.current ?? sessionItem).kind === 'build_number') resetStage();
     },
   });
 
@@ -410,49 +253,23 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   /** What is on screen: the plainer dictation while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
-  const leverTier: PlaceValueTier = supportTier ?? 'medium';
-  const sessionNumbers = useMemo(() => new Set(items.map(i => i.targetNumber)), [items]);
-  const asked = useMemo(() => askedValues(items), [items]);
   const startPulled = startLevers(sessionItem, { showMultipliers, showExpandedForm });
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
-  // The workspace path shows its summary without an evaluation provider (the live host has none).
+  /** A lever pulled on the session item, or set by the tier from the start. */
+  const leverOn = (id: string) => pulledLevers.includes(id);
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
-  // ── Pip shared surface ────────────────────────────────────────────────────
-  // A projection of the runner's phase onto the stage and the column the child
-  // is writing in; Pip never writes a digit, judges, or advances.
-  const pip = usePipTargets(currentItem?.id ?? null, runner.canAttempt);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentItem || showSummary) return null;
-    const targets = pip.targets();
-    const pose = placeValueChartPipPose({
-      gesture: currentItem.answerKind === 'gesture',
-      running: runner.running, preparing: runner.preparing,
-      currentSolved: runner.currentSolved, revealHeld: runner.revealHeld,
-      judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
-      cueMatchesItem: runner.cuedItemId === currentItem.id,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return { instanceId: resolvedInstanceId, scopeId: currentItem.id, label: 'Place value', dock: pip.dock.current, targets, pose };
-  });
-
-  // ── The gesture commit ────────────────────────────────────────────────────
-  // No Submit control: nothing on screen may carry the child forward. The
-  // close describes the written number; THE MATCH IS COMPUTED IN CODE.
+  // ── The gesture commit: the chart checks its own number ───────────────────
   const commitChart = useCallback(() => {
     const item = displayItemRef.current;
     if (!item || item.kind !== 'build_number') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const written = writtenOf(item, writtenRef.current);
-    // The chart checks its own number, with the same code match the cue reports.
-    commitGesture(runner, { response: describeChart(item, written), correct: chartMatches(item, written),
-      miss: placeValueMiss(item, written), cue: () => buildVerdictCue(item, written) });
+    runner.commitGesture({ response: describeChart(item, written), correct: chartMatches(item, written),
+      miss: placeValueMiss(item, written), cue: () => '' });
   }, [runner]);
 
-  /** A hands turn closes on stillness; a full chart shortens the window but
-   *  never commits on the keystroke (a mis-type is normal). Further typing
-   *  re-arms it, and the runner cancels it at item open, at a correction and
-   *  at the commit. */
+  /** A hands turn closes on stillness; a full chart shortens the window but never commits on the keystroke. */
   const armWriteSettle = useCallback((next: Record<number, string>) => {
     const item = displayItemRef.current;
     writtenRef.current = next;
@@ -467,26 +284,53 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
     if (sanitized !== '') SoundManager.tick();
-    setDigitsByPlace((prev) => {
-      const next = { ...prev };
-      if (sanitized === '') delete next[place];
-      else next[place] = sanitized;
-      return next;
-    });
-    // Computed OUTSIDE the state updater on purpose: `armWriteSettle` arms a
-    // real timer, and a side effect inside an updater runs twice under
-    // StrictMode's double-invoke — two live stillness windows racing to commit
-    // the same chart.
     const next = { ...digitsByPlace };
     if (sanitized === '') delete next[place];
     else next[place] = sanitized;
+    setDigitsByPlace(next);
+    // Outside a state updater on purpose: `armWriteSettle` arms a real timer, and StrictMode double-invokes updaters.
     armWriteSettle(next);
   }, [runner, digitsByPlace, armWriteSettle]);
 
+  // ── The scene and the levers, republished after every render ──────────────
+  useLayoutEffect(() => {
+    if (!currentItem) return;
+    const scene = workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) });
+    const levers = practice ? [] : PLACE_VALUE_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
+    // A tier's starting position is on screen from the start; the fact names only what a pull added.
+    const pulledLive = pulledLevers.filter(id => !startPulled.includes(id));
+    const published = leverScene(scene, {
+      support: practice ? '' : PLACE_VALUE_LEVERS.support(sessionItem, leverCtx),
+      onScreen: practice ? '' : PLACE_VALUE_LEVERS.onScreen(sessionItem, leverCtx, pulledLive),
+    });
+    workspace.current = {
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the chart changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = PLACE_VALUE_LEVERS.simpler(sessionItem, leverCtx, id);
+          if (!easier) return 'There is no plainer number for this item.';
+          setLeverState(pulled);
+          practiceRef.current = easier; setPractice(easier); resetStage(); runner.clearStillness();
+          return { practice: placeValueChartBoss.assignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); resetStage(); },
+    };
+  });
+
   // ── The drawings ──────────────────────────────────────────────────────────
 
-  /** The numeral, comma-grouped, one digit glowing. Analyze items only — the
-   *  labeled chart would be the find_place answer in pixels. */
+  /** The numeral, comma-grouped, one digit glowing. Analyze items only — the labeled chart would be the find_place
+   *  answer in pixels. */
   const renderNumeral = (item: PlaceValueItem) => {
     const str = String(item.targetNumber);
     const cells: React.ReactNode[] = [];
@@ -512,8 +356,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
         <div className="text-5xl font-bold font-mono flex items-end justify-center gap-0.5">
           {cells}
         </div>
-        {/* The column name is the find_place ANSWER — reveal only, never a
-            scaffold, whatever the click era's headers did. */}
+        {/* The column name is the find_place ANSWER — reveal only, never a scaffold. */}
         <div className="h-5 text-sm font-semibold tracking-wide text-emerald-300">
           {runner.revealHeld && item.kind === 'find_place' ? placeLabel(item.place) : ''}
         </div>
@@ -521,10 +364,8 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     );
   };
 
-  /** The chart — build items only, where the labeled columns are the PAGE (the
-   *  answer is which digit goes in each), never the key. No printed target, no
-   *  match-coloring: the tutor's dictation is the stimulus and her verdict is
-   *  the only grader. */
+  /** The chart — build items only, where the labeled columns are the PAGE (the answer is which digit goes in each),
+   *  never the key. No printed target, no match-colouring: the chart's own check is the only grader. */
   const renderChart = (item: PlaceValueItem) => {
     const written = item.chartPlaces.map((p) => digitsByPlace[p] ?? '');
     // A column left empty is a gap, never a zero (contract R8): "5_1" is not 501, and the check says so.
@@ -540,7 +381,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
       <div className="py-4 px-2">
         <div className="overflow-x-auto">
           <div className="inline-flex flex-col min-w-full items-center">
-            {pulledLevers.includes(WORTH_LEVER) && (
+            {leverOn(WORTH_LEVER) && (
               <div className="flex gap-2 mb-1" data-lever="column-worth">
                 {item.chartPlaces.map((p) => (
                   <div key={`m${p}`} className="w-16 text-center text-[10px] font-mono text-indigo-300/70">
@@ -560,9 +401,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
               {item.chartPlaces.map((p) => (
                 <input
                   key={`i${p}`}
-                  ref={pip.ref(`digit-${p}`)}
                   data-pip-object={`digit-${p}`}
-                  onFocus={() => pip.look(`digit-${p}`)}
                   type="text"
                   inputMode="numeric"
                   value={digitsByPlace[p] || ''}
@@ -578,15 +417,13 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
           </div>
         </div>
 
-        {/* The child's own trace — their digits read back as a number. Neutral
-            at every tier: a green-on-match readout is a Check button that
-            presses itself. */}
+        {/* The child's own trace — their digits read back as a number. Neutral at every tier. */}
         {child !== null && (
           <div className="mt-4 text-center text-lg font-mono text-indigo-300">
             {child}
           </div>
         )}
-        {pulledLevers.includes(READBACK_LEVER) && expandedParts.length > 0 && (
+        {leverOn(READBACK_LEVER) && expandedParts.length > 0 && (
           <div className="mt-2 text-center text-sm font-mono text-slate-400" data-lever="expanded-readback">
             {expandedParts.join(' + ')}
           </div>
@@ -597,7 +434,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
 
   /** say_value's model: another number, a digit glowing in the item's place and its worth under it. No place name. */
   const renderValueModel = (item: PlaceValueItem) => {
-    const model = valueModel(item, asked);
+    const model = valueModel(item, leverCtx.asked);
     if (!model) return null;
     const str = String(model.number);
     return (
@@ -639,12 +476,12 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!showSummary) return [];
-    const practice = runner.practiceSummary;
-    return phaseResultsFromSummary(items, practice ?? runner.summary, (item) => {
+    const summary = runner.practiceSummary;
+    return phaseResultsFromSummary(items, summary ?? runner.summary, (item) => {
       const config = PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' };
-      return practice?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
+      return summary?.outcomes.find(o => o.id === item.id)?.assisted ? { ...config, label: `${config.label} (with help)` } : config;
     }).map((phase, index) => {
-      const outcome = practice?.outcomes.find(o => o.id === items[index].id);
+      const outcome = summary?.outcomes.find(o => o.id === items[index].id);
       return outcome ? { ...phase, attempts: outcome.attempts, firstTry: outcome.solved && outcome.attempts === 1 } : phase;
     });
   }, [showSummary, runner.summary, runner.practiceSummary, items]);
@@ -661,41 +498,6 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   // Render
   // ============================================================================
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
-  useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem) return;
-    const scene = workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) });
-    const onScreen = leverFacts(sessionItem, pulledLevers, startPulled, asked);
-    const levers = practice ? [] : placeValueLevers(sessionItem, pulledLevers, sessionNumbers, leverTier, asked);
-    workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      levers,
-      // A synchronous commit (the workspace runs it inside flushSync): the chart changes before this returns.
-      pullLever: (id) => {
-        const lever = levers.find(l => l.id === id);
-        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
-        if (lever.pulled) return `${id} is already pulled.`;
-        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
-        if (id === PLAIN_LEVER) {
-          const easier = plainItem(sessionItem, sessionNumbers, leverTier);
-          if (!easier) return 'There is no plainer number for this item.';
-          setLeverState(pulled);
-          practiceRef.current = easier; setPractice(easier); resetStageFor(); runner.clearStillness();
-          return { practice: workspaceAssignment(easier) };
-        }
-        setLeverState(pulled);
-        return true;
-      },
-      endPractice: () => { practiceRef.current = null; setPractice(null); resetStageFor(); },
-    };
-  });
-  // AFTER the runtime mount is registered, never before: `start()` waits for
-  // `grantOwnership('runner')`, which cannot be granted until this primitive's
-  // mount exists. Declared earlier, its effect runs first and the runner spins.
-  useLiveAutoStart(autoStart, resolvedInstanceId, runner.start);
-
   if (items.length === 0) {
     return (
       <LuminaCard className={className}>
@@ -708,13 +510,11 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
 
   const isGestureItem = currentItem?.answerKind === 'gesture';
 
-  const stageWord = runner.stage === 'judging'
-    ? 'let’s see…'
-    : runner.currentSolved
-      ? 'yes!'
-      : runner.running
-        ? (isGestureItem ? 'write it' : 'say it out loud')
-        : 'get ready';
+  const stageWord = runner.currentSolved
+    ? 'yes!'
+    : runner.running
+      ? (isGestureItem ? 'write it' : 'say it out loud')
+      : 'get ready';
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
@@ -730,6 +530,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
                 <LuminaBadge accent="emerald" className="text-xs">
                   {PHASE_TYPE_CONFIG[currentItem.kind]?.icon} {PHASE_TYPE_CONFIG[currentItem.kind]?.label}
                 </LuminaBadge>
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
               </div>
             )}
           </div>
@@ -751,47 +552,34 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
                 total={items.length}
                 variant="dots"
               />
-              {/* Tap-to-hear — the QUESTION again, never a hint ladder. On a
-                  build item this re-dictates the number, which is what
-                  replaces the printed target the click era showed. With the
-                  tutor (no `hearStimulus`), the learner asks the tutor instead. */}
-              {runner.hearStimulus && <button
-                type="button"
-                onClick={runner.hearStimulus}
-                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all ${
-                  (runner as { stimulusTapped?: boolean }).stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''
-                }`}
-                aria-label="Hear the question again"
-              >
-                <span className="text-xl">🔁</span>
-              </button>}
             </div>
 
-            {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId} className={PIP_DOCK_CLASS} />}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the stage below. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {/* The stage. The tutor speaks the ask — no printed instruction. */}
+              <div data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
+                {isGestureItem ? renderChart(currentItem) : renderNumeral(currentItem)}
+                {isGestureItem && sessionItem && !practice && (leverOn(MODEL_LEVER) || leverOn(TEEN_LEVER)) && (
+                  <div className="mt-3 flex flex-wrap items-start justify-center gap-4">
+                    {leverOn(MODEL_LEVER) && renderModel(sessionItem.modelNumber, sessionItem.chartPlaces.length, 'model-chart')}
+                    {leverOn(TEEN_LEVER) && <div className="flex gap-3">
+                      {renderModel(10 + teenDigit(sessionItem.targetNumber), 2, 'model-teen')}
+                      {renderModel(teenDigit(sessionItem.targetNumber) * 10, 2, 'model-teen')}
+                    </div>}
+                  </div>
+                )}
+                {!isGestureItem && sessionItem?.kind === 'say_value' && !practice
+                  && (leverOn(VALUE_MODEL_LEVER) || leverOn(BLOCKS_LEVER)) && (
+                  <div className="mb-4 flex flex-wrap items-end justify-center gap-6">
+                    {leverOn(BLOCKS_LEVER) && renderBlockPicture(sessionItem)}
+                    {leverOn(VALUE_MODEL_LEVER) && renderValueModel(sessionItem)}
+                  </div>
+                )}
+              </div>
+            </PipWorkspace>
 
-            {/* The stage. The tutor speaks the ask — no printed instruction. */}
-            <div ref={pip.ref('stage')} data-pip-object="stage" className="bg-white/[0.02] rounded-xl border border-white/5 overflow-x-auto">
-              {isGestureItem ? renderChart(currentItem) : renderNumeral(currentItem)}
-              {isGestureItem && sessionItem && (pulledLevers.includes(MODEL_LEVER) || pulledLevers.includes(TEEN_LEVER)) && (
-                <div className="mt-3 flex flex-wrap items-start justify-center gap-4">
-                  {pulledLevers.includes(MODEL_LEVER) && renderModel(sessionItem.modelNumber, sessionItem.chartPlaces.length, 'model-chart')}
-                  {pulledLevers.includes(TEEN_LEVER) && <div className="flex gap-3">
-                    {renderModel(10 + teenDigit(sessionItem.targetNumber), 2, 'model-teen')}
-                    {renderModel(teenDigit(sessionItem.targetNumber) * 10, 2, 'model-teen')}
-                  </div>}
-                </div>
-              )}
-              {!isGestureItem && sessionItem?.kind === 'say_value' && !practice
-                && (pulledLevers.includes(VALUE_MODEL_LEVER) || pulledLevers.includes(BLOCKS_LEVER)) && (
-                <div className="mb-4 flex flex-wrap items-end justify-center gap-6">
-                  {pulledLevers.includes(BLOCKS_LEVER) && renderBlockPicture(sessionItem)}
-                  {pulledLevers.includes(VALUE_MODEL_LEVER) && renderValueModel(sessionItem)}
-                </div>
-              )}
-            </div>
-
-            {/* The reward — the first moment an answer may appear. Gated on
-                `revealHeld`, never on `currentSolved` (18b). */}
+            {/* The reward — the first moment an answer may appear. Gated on `revealHeld`, never on `currentSolved`. */}
             {reward && runner.revealHeld && (
               <LuminaPanel className="p-3 text-center">
                 <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
@@ -804,12 +592,11 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
 
             <p className="text-center text-xs text-slate-500">
               {isGestureItem
-                ? 'Type one digit in each column — the tutor checks when you stop.'
+                ? 'Type one digit in each column — the chart checks when you stop.'
                 : 'Listen to the question, then say your answer out loud.'}
             </p>
 
-            {/* The orb tells the truth about the turn: a hands item is not
-                "I'm listening". */}
+            {/* The orb tells the truth about the turn: a hands item is not "I'm listening". */}
             <JudgedMicPanel run={runner} gestureLabel="Write the number" />
           </>
         )}
@@ -829,8 +616,6 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   );
 };
 
-// The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
-const PlaceValueChart = withWorkspaceController<PlaceValueChartProps, PlaceValueControllerOptions, LiveRun<PlaceValueItem>>(
-  'place-value-chart', PlaceValueChartSurface, useScriptedController, useWorkspaceController);
+const PlaceValueChart = withWorkspaceOnly<PlaceValueChartProps>('place-value-chart', PlaceValueChartSurface, props => props.data.title);
 
 export default PlaceValueChart;

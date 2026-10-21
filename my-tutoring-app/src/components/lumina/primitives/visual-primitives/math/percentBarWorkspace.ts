@@ -1,17 +1,19 @@
 /**
- * Percent bar on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C15).
+ * Percent bar on the shared tutor/JEV teaching workspace: its domain for the boss (`percentBar.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. A challenge is one or more steps, each
+ * Pure: the component, the boss and any probe read the same ask, check and scene. A challenge is one or more steps, each
  * answered on the screen (the bar set to a percent, or one option tapped) and checked by the activity's own Check.
  * A right step opens the next step of the same challenge and is not a commit; a wrong step, and the last step
  * right, are. The tutor is never handed a step's target percent or which option is right.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type {
   PercentBarAmountStep, PercentBarChallenge, PercentBarChallengeType, PercentBarPlaceStep, PercentBarStep,
 } from './PercentBar';
 import { percentMissValues } from '../../../service/itemSpace/percentOf';
+import type { AmountMiss, PercentBarMiss } from './percentBar.card';
+
+export { PERCENT_MISSES_BY_MODE, type AmountMiss, type PercentBarMiss } from './percentBar.card';
 
 /** ±2 percentage points, the activity's tolerance since birth. */
 export const PERCENT_TOLERANCE = 2;
@@ -38,12 +40,12 @@ export function challengeSteps(ch: PercentBarChallenge): PercentBarStep[] {
   }];
 }
 
-export function workspaceAssignment(ch: PercentBarChallenge): TeachingAssignment {
+/** What the learner is asked: the scenario and every step's question. */
+export function percentAsk(ch: PercentBarChallenge): string {
   const steps = challengeSteps(ch);
-  const ask = steps.length > 1
+  return steps.length > 1
     ? `${ch.scenario} Work it in ${steps.length} steps, pressing Check after each: ${steps.map(s => s.prompt).join(' ')}`
     : `${ch.scenario} ${steps[0]?.prompt ?? ch.question}`;
-  return { id: ch.id, task: ask, response: 'gesture' };
 }
 
 /** The learner's work on the current step. */
@@ -102,46 +104,6 @@ export function describePercentWork(ch: PercentBarChallenge, work: PercentWork):
   return `${stepLabel(ch, work.stepIndex)}the bar is set to ${work.percent}%${step.wholeUnknown ? '' : ` of ${step.wholeValue}`}`;
 }
 
-/**
- * What a wrong step shows (`TeachingAttempt.miss`, handoff 20), from where the bar was set or the option tapped,
- * drawn from the catalog's commonStruggles (part and whole confused, the discount placed instead of what is left,
- * the added rate placed instead of the total, the bigger discount taken as the cheaper price):
- * - `complement` (identify): the rest of the whole, 100 minus the stated percent;
- * - `placed_discount` (a discount step): the discount itself, not what is still paid;
- * - `rate_not_total` (a total step): only the added rate; `whole_only`: 100%, the rate not added;
- *   `took_off_rate`: the rate taken off 100 instead of added;
- * - `placed_value`: the bar set to the part's value (dollars, points) read as a percent;
- * - `near_miss`: within 5 points of the step's percent, outside the tolerance;
- * - `too_high` / `too_low`: any other placement;
- * - `bigger_discount` (compare): the option with the bigger % off, which is not the asked one; `other_price`: the
- *   other option when the bigger discount was the right one.
- */
-export type PercentBarMiss = 'complement' | 'placed_discount' | 'rate_not_total' | 'whole_only' | 'took_off_rate'
-  | 'placed_value' | 'near_miss' | 'too_high' | 'too_low' | 'bigger_discount' | 'other_price'
-  | AmountMiss;
-
-/**
- * A wrong typed amount (find_part, find_whole), from `percentMissValues` in the percent-of item space:
- * - find_part: `rest_not_part` the rest of the whole; `percent_as_amount` the percent typed as dollars; `tenth_only`
- *   a tenth of the whole when the percent is not 10;
- * - find_whole: `percent_of_part` the percent taken of the part; `part_times_ten` the part times ten when the percent is
- *   not 10; `rest_not_whole` the rest of the whole only; `part_as_whole` the part typed back; `percent_as_amount`;
- * - then `near_miss` (within a tenth of the amount), `too_high`, `too_low`.
- */
-export type AmountMiss = 'rest_not_part' | 'percent_as_amount' | 'tenth_only' | 'percent_of_part' | 'part_times_ten'
-  | 'rest_not_whole' | 'part_as_whole';
-
-const PLACEMENT: readonly PercentBarMiss[] = ['placed_value', 'near_miss', 'too_high', 'too_low'];
-export const PERCENT_MISSES_BY_MODE: Record<string, readonly PercentBarMiss[]> = {
-  identify_percent: ['complement', ...PLACEMENT],
-  convert: ['placed_discount', ...PLACEMENT, 'bigger_discount', 'other_price'],
-  // Renamed 10-16 (8.1f): these two ask the percent still paid and the percent with a fee added.
-  percent_remaining: ['placed_discount', ...PLACEMENT],
-  percent_total: ['rate_not_total', 'whole_only', 'took_off_rate', ...PLACEMENT],
-  find_part: ['complement', ...PLACEMENT, 'rest_not_part', 'percent_as_amount', 'tenth_only'],
-  find_whole: ['complement', ...PLACEMENT, 'percent_of_part', 'part_times_ten', 'rest_not_whole', 'part_as_whole', 'percent_as_amount'],
-};
-
 /** A place step that asks for a sale price as a percent of the original (a discount step). */
 const isDiscountStep = (type: PercentBarChallengeType) => type === 'subtraction' || type === 'comparison';
 /** On a tax/tip challenge, the total step (its percent is past the whole). */
@@ -187,7 +149,7 @@ export function percentMiss(ch: PercentBarChallenge, work: PercentWork): Percent
 const money = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 /** What is drawn and asked. The step's percent and the right option are never named. */
-export function workspaceScene(ch: PercentBarChallenge, view: PercentBarView): WorkspaceScene {
+export function workspaceScene(ch: PercentBarChallenge, view: PercentBarView): SceneOf {
   const steps = challengeSteps(ch);
   const step = steps[view.stepIndex];
   const facts: Record<string, string> = {
@@ -225,14 +187,13 @@ export function workspaceScene(ch: PercentBarChallenge, view: PercentBarView): W
     facts.foundSoFar = view.established.map(e => `${e.label} ${e.percent}%${e.value === null ? '' : ` = ${money(e.value)}`}`).join('; ');
   }
   facts.learnerWork = describePercentWork(ch, view);
-  facts.constraints = 'The learner sets the bar by tapping or dragging it (or with the arrow keys) and presses Check; on a '
-    + 'choice step they tap one option and press Check; on an amount step they type the amount and press Check. The activity checks each step itself: a right step opens the '
-    + 'next step of the same problem, and only the last step finishes it. You cannot move the bar, choose, or press Check.';
+  // The moves are the card's; what is this primitive's own is that a right step is not the end of the problem.
+  facts.constraints = 'A right step opens the next step of the same problem, and only the last step finishes it.';
   return { objects: [], facts };
 }
 
 /**
- * The journey row's inputs for the current step on (`liveJourneySpec.ts`): each step's percent, or the right option.
+ * The journey row's inputs for the current step on (`percentBar.boss.ts` drive.play): each step's percent, or the right option.
  * `wrong`: the step's signature miss (the discount placed, the rate not added, the other option), else ten points off.
  */
 export function percentHarnessSteps(ch: PercentBarChallenge, from: number, intent: 'correct' | 'wrong'):

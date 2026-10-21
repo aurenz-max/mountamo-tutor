@@ -8,6 +8,7 @@
  * rests on the ground (the scene's terrain) or on a block below any of its cells. A triangle is a cap:
  * nothing stacks on it. Whether a build meets the goal is the judge's call, never a rule here.
  */
+import type { OpenBuilderMiss } from './openBuilder.card';
 
 export type BlockKind = 'small' | 'plank' | 'long' | 'tall' | 'big' | 'triangle' | 'wheel';
 
@@ -242,8 +243,8 @@ export interface Placed {
   row: number;
 }
 
-export type OpenBuilderMiss = 'missing_part' | 'does_not_work';
-export const OPEN_BUILDER_MISSES: readonly OpenBuilderMiss[] = ['missing_part', 'does_not_work'];
+// The misses the buddy names live in the card (`openBuilder.card.ts`); the judge reads them from here.
+export { OPEN_BUILDER_MISSES, type OpenBuilderMiss } from './openBuilder.card';
 
 /** The judge's reading of one picture of the build. */
 export interface OpenBuilderVerdict {

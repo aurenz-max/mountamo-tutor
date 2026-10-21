@@ -1,30 +1,31 @@
 /**
  * The in-item levers on an open-builder project (`/add-support-tiers`, report
  * qa/eval-reports/open-builder-levers-2026-10-08.md). No real-learner evidence: the misses are the building buddy's
- * (`missing_part`, `does_not_work`), seen on the 10-06 vision drive's unfinished builds. Pure: the component draws
- * from these, the workspace publishes them, the tests hold each leak rule.
+ * (`missing_part`, `does_not_work`), seen on the 10-06 vision drive's unfinished builds. Declared once as a lever set
+ * (`OPEN_BUILDER_LEVERS`, `bossLevers.ts`). Pure: the component draws from these, the tests hold each leak rule.
  *
  * There is no key: many builds meet a goal. So no lever may show a build, a block, a block position or a count of
  * blocks. Help shows more of the JOB, which is in the scenery and the goal, never of a build:
- * - `job_marks` (help) marks on the scenery the goal's job is about: a flag on each river bank at the water, a dashed
+ * - `job_marks` (marks) marks on the scenery the goal's job is about: a flag on each river bank at the water, a dashed
  *   line at the giraffe's head, a flag on the cliff top. Every mark sits on terrain or on a prop (`marksLeak`), and
  *   is an aid stripped from the buddy's picture.
- * - `goal_parts` (help) picture cards of the parts the goal names (walls, a roof; a head, a body, two arms, two legs),
- *   never a block kind the goal does not say, a number or a place (`partsLeak`).
- * - `smaller_job` (simplify) an ungraded project in other scenery with a smaller job of the same kind: a narrow stream
+ * - `goal_parts` (clue) picture cards of the parts the goal names (walls, a roof; a head, a body, two arms, two legs),
+ *   never a block kind the goal does not say, a number or a place (`partsLeak`; the set's `answersOf` checks the
+ *   block kinds again on its words).
+ * - `smaller_job` (easier) an ungraded project in other scenery with a smaller job of the same kind: a narrow stream
  *   for the river, a pony for the giraffe, one tower for the castle. Id `<item>~simpler`; never the item's scene or
  *   any session scene (`practiceLeaks`). The truck has none: one demand (wheels) is already the plainest job.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import {
   BLOCK_KINDS, SCENES, groundAt, type OpenBuilderChallenge, type PracticeSceneId, type SceneId,
 } from './openBuilderModel';
+import { OPEN_BUILDER_MISSES } from './openBuilder.card';
 
 export const MARKS_LEVER = 'job_marks';
 export const PARTS_LEVER = 'goal_parts';
 export const SIMPLER_LEVER = 'smaller_job';
 export const PRACTICE_SUFFIX = '~simpler';
-const BOTH_MISSES = ['missing_part', 'does_not_work'];
 
 // ── job marks ───────────────────────────────────────────────────────────────
 
@@ -132,32 +133,52 @@ export function practiceItem(c: OpenBuilderChallenge, session: readonly OpenBuil
 export const practiceParent = (id: string | null | undefined, challenges: readonly OpenBuilderChallenge[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-// ── the levers on an item ───────────────────────────────────────────────────
+// ── the lever set ───────────────────────────────────────────────────────────
 
 /** Easy starts with the item's help shown; a starting position is not a pull. */
 export const helpStartsShown = (c: OpenBuilderChallenge) => c.supportTier === 'easy';
 
-export function openBuilderLevers(c: OpenBuilderChallenge | null, session: readonly OpenBuilderChallenge[],
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const isOn = (id: string) => helpStartsShown(c) || pulled.includes(id);
-  const fence = 'Never say where a block goes, which block to use or how many, and never describe a finished build.';
-  if (jobMarks(c)) levers.push({ id: MARKS_LEVER, kind: 'help', carrier: 'shown', pulled: isOn(MARKS_LEVER), answers: BOTH_MISSES,
-    when: 'The build stops short of what the goal is about, or the learner does not see what it has to reach, cross or keep apart.',
-    does: `Marks the scenery the goal is about (${jobMarks(c)!.fact.toLowerCase()}); nothing is drawn where blocks could go. `
-      + `You may point to the marks and ask what the build has to do there. ${fence}` });
-  if (goalParts(c)) levers.push({ id: PARTS_LEVER, kind: 'help', carrier: 'both', pulled: isOn(PARTS_LEVER), answers: BOTH_MISSES,
-    when: 'A part the goal names is not in the build yet, or the learner has lost track of what the goal asks for.',
-    does: 'Shows a picture card beside the board for each part the goal asks for. You may read the cards and ask which '
-      + `ones the build has; the learner decides which is missing. ${fence}` });
-  if (practiceItem(c, session)) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown',
-    pulled: pulled.includes(SIMPLER_LEVER), answers: BOTH_MISSES,
-    when: 'The learner cannot do this project even with the help on screen: a smaller job first.',
-    does: 'Opens an ungraded practice project in other scenery with a smaller job of the same kind; then this project '
-      + 'comes back on an empty board. Never compare the two builds block by block.' });
-  return levers;
-}
+/** The help levers shown from the start on an easy item, passed to `declare` and `onScreen` as already on screen. */
+export const startingLevers = (c: OpenBuilderChallenge): string[] => (helpStartsShown(c) ? [MARKS_LEVER, PARTS_LEVER] : []);
+
+/**
+ * The block kinds the scene's goal does not say, which a worded lever must never name: naming one says which block to
+ * use. The scene's goal, as `partsLeak` reads it: the cards are the scene's, whatever words the lesson gave its goal.
+ */
+const unsaidKinds = (c: OpenBuilderChallenge) => {
+  const said = new Set(namesKind(SCENES[c.sceneId].goal));
+  return BLOCK_KINDS.filter(k => !said.has(k)).flatMap(k => [k, `${k}s`]);
+};
+
+const FENCE = 'Never say where a block goes, which block to use or how many, and never describe a finished build.';
+
+/**
+ * The levers, declared once (`bossLevers.ts`). The set's context is the session's projects, whose scenery the smaller
+ * job must not use. None is offered on a practice project: the component declares nothing then.
+ */
+export const OPEN_BUILDER_LEVERS = leverSet<OpenBuilderChallenge, readonly OpenBuilderChallenge[]>({
+  missesOf: () => OPEN_BUILDER_MISSES,
+  answersOf: c => unsaidKinds(c),
+  specs: [
+    { id: MARKS_LEVER, type: 'marks', answers: 'all',
+      when: 'The build stops short of what the goal is about, or the learner does not see what it has to reach, cross or keep apart.',
+      does: c => `Marks the scenery the goal is about (${jobMarks(c)!.fact.toLowerCase()}); nothing is drawn where blocks could go. `
+        + `You may point to the marks and ask what the build has to do there. ${FENCE}`,
+      content: c => jobMarks(c),
+      fact: (marks: JobMarks) => marks.fact },
+    { id: PARTS_LEVER, type: 'clue', answers: 'all',
+      when: 'A part the goal names is not in the build yet, or the learner has lost track of what the goal asks for.',
+      does: 'Shows a picture card beside the board for each part the goal asks for. You may read the cards and ask which '
+        + `ones the build has; the learner decides which is missing. ${FENCE}`,
+      content: c => goalParts(c),
+      fact: (parts: GoalPart[]) => partsFact(parts) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', answers: 'all',
+      when: 'The learner cannot do this project even with the help on screen: a smaller job first.',
+      does: 'Opens an ungraded practice project in other scenery with a smaller job of the same kind; then this project '
+        + 'comes back on an empty board. Never compare the two builds block by block.',
+      content: (c, session) => practiceItem(c, session) },
+  ],
+});
 
 export const PRACTICE_NOTE = 'A smaller practice project, ungraded; the full project comes back on an empty board after it.';
 

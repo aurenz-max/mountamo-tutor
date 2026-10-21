@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -21,23 +20,22 @@ import {
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   activeMapping as mappingFor, activeSequence as sequenceFor, createdFacts, describePatternBuilderCheck, paletteFor,
-  patternBuilderAssignment, patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, shapeLetters,
+  patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, shapeLetters,
   DONE_LABEL, START_OVER_LABEL, type PatternBuilderView, type PatternPhase,
 } from './patternBuilderWorkspace';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
-  CORE_MODEL_LEVER, GROUPS_LEVER, LINE_LEVER, MARKER_LEVER, MODEL_LEVER, PRACTICE_NOTE, coreModel, coreModelFact, groupsFact,
-  lineFact, markerFact, markerPlace, modelFact, numberLine, patternBuilderLevers, practiceItem, repeatGroups, shapeModel,
-  type NumberLineModel,
+  CORE_MODEL_LEVER, GROUPS_LEVER, LINE_LEVER, MARKER_LEVER, MODEL_LEVER, PATTERN_LEVERS, PRACTICE_NOTE, coreModel, markerPlace,
+  numberLine, repeatGroups, shapeModel, startsShown, type NumberLineModel, type PatternLeverContext,
 } from './patternBuilderLevers';
+import { patternBuilderBoss } from './patternBuilder.boss';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { patternBuilderPipPose } from '../../../pip/patternBuilderPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -217,7 +215,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     showRule = false,
   } = showOptions;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `pattern-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -231,7 +228,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: patternBuilderAssignment,
+    workspace, assignment: patternBuilderBoss.assignment!,
     onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
@@ -278,7 +275,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const [translationCorrect, setTranslationCorrect] = useState(false);
   const [patternTypesExplored] = useState(new Set<string>([patternType]));
 
-  // In-item levers (`patternBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // In-item levers (`PATTERN_LEVERS`), keyed by the session item they were pulled on, and the easier
   // practice item a simplify lever puts in place of the session item until the observer returns to it.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<PatternBuilderChallenge | null>(null);
@@ -491,9 +488,11 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges,
     coreIdentifiedCorrectly, ruleArticulated, patternCreated, translationCorrect, patternTypesExplored, submitEvaluation]);
 
-  // The session item's levers (`patternBuilderLevers.ts`); a help lever's picture is drawn beside or on the session
-  // item only while it is pulled (or shown from the start on easy), never on a practice item.
-  const itemLevers = sessionChallenge ? patternBuilderLevers(sessionChallenge, data, pulledLevers) : [];
+  // The session item's levers (`PATTERN_LEVERS`); a help lever's picture is drawn beside or on the session item only
+  // while it is pulled (or shown from the start on easy, `startsShown`), never on a practice item.
+  const leverCtx: PatternLeverContext = { session: data, placed: translatedPattern.length };
+  const shownLevers = Array.from(new Set([...pulledLevers, ...startsShown(sessionChallenge)]));
+  const itemLevers = PATTERN_LEVERS.declare(sessionChallenge, leverCtx, shownLevers);
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const shownModel = sessionChallenge && helpOn(MODEL_LEVER) ? shapeModel(sessionChallenge, paletteFor(data, sessionChallenge)) : null;
   const groupLen = sessionChallenge && helpOn(GROUPS_LEVER) ? repeatGroups(data, sessionChallenge) : null;
@@ -511,19 +510,17 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const scene = patternBuilderScene(data, currentChallenge);
+    // The gaps show where the row starts over, so the tier's "do not point it out" no longer holds (the scene says so).
+    const scene = patternBuilderScene(data, currentChallenge, !!groupLen);
+    // While a practice row is up the levers are off, and endPractice brings the full item back, blank.
     const levers = practice ? [] : itemLevers;
-    const onScreen = shownModel ? modelFact(shownModel)
-      : groupLen ? groupsFact(data, sessionChallenge, groupLen)
-      : shownLine ? lineFact(shownLine)
-      : shownCoreModel ? coreModelFact(shownCoreModel)
-      : markerOn ? markerFact(data, sessionChallenge, translatedPattern.length) : undefined;
+    const published = leverScene(scene, {
+      support: practice ? '' : PATTERN_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : PATTERN_LEVERS.onScreen(sessionChallenge, leverCtx, shownLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(isOpenBuild ? createdFacts(createdPattern) : {}),
-        ...(onScreen ? { onScreen } : {}),
-        // The gaps show where the row starts over, so the tier's "do not point it out" no longer holds.
-        ...(groupLen ? { coaching: 'The gaps where the row starts over are on screen: you may point to them. Never say a blank\'s token.' } : {}),
+      ...published,
+      facts: { ...published.facts, ...(isOpenBuild ? createdFacts(createdPattern) : {}),
         ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
@@ -532,10 +529,10 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, data);
+          const easier = PATTERN_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); clearWork();
-          return { practice: patternBuilderAssignment(easier) };
+          return { practice: patternBuilderBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -567,33 +564,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const fullSequence = [...activeSequence.given, ...activeSequence.hidden];
 
   // -------------------------------------------------------------------------
-  // Pip shared surface
-  // -------------------------------------------------------------------------
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's last touch; Pip never places a token, checks, or advances.
-  // Tutor audio counts only while the tutor is on this block and began on this challenge.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !hasSubmittedEvaluation);
-  const pipRef = pip.ref;
-  const tutorSpeaking = ctx.isAudioPlaying && !!currentChallenge
-    && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets = pip.targets();
-    const pose = patternBuilderPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      phase: currentPhase,
-      openSlotId: extensionAnswers.length < activeSequence.hidden.length ? `slot-${extensionAnswers.length}` : undefined,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Pattern builder',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-
-  // -------------------------------------------------------------------------
   // Overall Score
   // -------------------------------------------------------------------------
   const localOverallScore = useMemo(() => {
@@ -622,7 +592,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     isSelected?: boolean;
     isCoreHighlight?: boolean;
     size?: number;
-    /** Pip's registry id for this cell; presentation only. */
+    /** A harness handle (`token-2`), never a Pip target: Pip points at the workspace as a whole. */
     pipId?: string;
   }) => {
     const {
@@ -640,7 +610,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     return (
       <div
         key={`${token}-${index}`}
-        ref={pipId ? pipRef(pipId) : undefined}
         data-pip-object={pipId}
         onClick={onClick}
         className={`
@@ -670,7 +639,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {isHidden ? '?' : display.label}
       </div>
     );
-  }, [pipRef]);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Render
@@ -725,8 +694,13 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
             </p>
           </LuminaPanel>
         )}
-        {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice row</div>}
+        {practice && (
+          <div className="flex justify-center" data-practice><LuminaBadge accent="amber" className="text-xs">Practice</LuminaBadge></div>
+        )}
 
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the challenge as one region. */}
+        {currentChallenge && !allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Pattern Display */}
         {(currentPhase === 'copy' || currentPhase === 'identify') && (
           <div className="space-y-3">
@@ -745,13 +719,13 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                   ))}
                 </div>
               )}
-              <div ref={pip.ref('pattern')} data-pip-object="pattern" className="flex items-center gap-1.5 flex-wrap justify-center">
+              <div data-pip-object="pattern" className="flex items-center gap-1.5 flex-wrap justify-center">
                 {activeSequence.given.map((token, i) => {
                   const isCorePos = showCore && i < activeSequence.core.length;
                   const isIdentifyMode = currentPhase === 'identify';
                   const cell = renderToken(token, i, {
                     onClick: isIdentifyMode && !isCurrentChallengeComplete
-                      ? () => { pip.look(`seq-${i}`); handleToggleCoreIndex(i); }
+                      ? () => handleToggleCoreIndex(i)
                       : undefined,
                     isSelected: isIdentifyMode && selectedCoreIndices.has(i),
                     isCoreHighlight: isCorePos && !isIdentifyMode,
@@ -778,10 +752,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                   if (answered) {
                     return renderToken(answered, activeSequence.given.length + i, {
                       onClick: !isCurrentChallengeComplete
-                        ? () => {
-                          pip.look(`slot-${i}`);
-                          if (i === extensionAnswers.length - 1) handleRemoveLastExtension();
-                        }
+                        ? () => { if (i === extensionAnswers.length - 1) handleRemoveLastExtension(); }
                         : undefined,
                       pipId: `slot-${i}`,
                     });
@@ -844,15 +815,15 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               </div>
             )}
             {isOpenBuild ? (
-              <div ref={pip.ref('build')} data-pip-object="build"
+              <div data-pip-object="build"
                 className="flex min-h-[60px] items-center justify-center rounded-lg border border-white/5 bg-slate-800/20 p-3">
                 {createdPattern.length === 0
                   ? <p className="text-slate-500 text-sm">Tap tokens below to make your pattern</p>
                   : <CreatedRow ref={rowSvgRef} row={createdPattern}
-                    onTapLast={!learnerBlocked() ? () => { pip.look('build'); handleRemoveLastCreated(); } : undefined} />}
+                    onTapLast={!learnerBlocked() ? handleRemoveLastCreated : undefined} />}
               </div>
             ) : (
-            <div ref={pip.ref('build')} data-pip-object="build"
+            <div data-pip-object="build"
               className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
               {createdPattern.length === 0 ? (
                 <p className="text-slate-500 text-sm">Tap tokens below to build your pattern</p>
@@ -860,7 +831,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 createdPattern.map((token, i) =>
                   renderToken(token, i, {
                     onClick: !isCurrentChallengeComplete && i === createdPattern.length - 1
-                      ? () => { pip.look('build'); handleRemoveLastCreated(); }
+                      ? handleRemoveLastCreated
                       : undefined,
                   })
                 )
@@ -916,7 +887,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               <p className="text-slate-400 text-xs text-center">
                 Your translation ({translationTarget?.targetType || 'target'}):
               </p>
-              <div ref={pip.ref('build')} data-pip-object="build"
+              <div data-pip-object="build"
                 className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
                 {translatedPattern.length === 0 ? (
                   <p className="text-slate-500 text-sm">Tap tokens below to translate</p>
@@ -924,7 +895,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                   translatedPattern.map((token, i) =>
                     renderToken(token, i, {
                       onClick: !isCurrentChallengeComplete && i === translatedPattern.length - 1
-                        ? () => { pip.look('build'); handleRemoveLastTranslated(); }
+                        ? handleRemoveLastTranslated
                         : undefined,
                     })
                   )
@@ -943,14 +914,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
           </div>
         )}
 
-        {/* Pip's dock sits between the workspace and the palette: every cue
-            (a "?" slot, the pattern row, the build zone) is above it and every
-            answer token is below it, so a pointer never crosses a token. */}
-        {pipStore && currentChallenge && !allChallengesComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-        )}
-
         {/* Token Palette */}
         {!allChallengesComplete && !isCurrentChallengeComplete && (
           <div className="space-y-2">
@@ -960,7 +923,6 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 renderToken(token, i, {
                   pipId: `token-${i}`,
                   onClick: () => {
-                    pip.look(`token-${i}`);
                     if (currentPhase === 'copy') handleAddExtensionToken(token);
                     else if (currentPhase === 'create') handleAddCreatedToken(token);
                     else if (currentPhase === 'translate') handleAddTranslatedToken(token);
@@ -971,6 +933,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
             </div>
           </div>
         )}
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (

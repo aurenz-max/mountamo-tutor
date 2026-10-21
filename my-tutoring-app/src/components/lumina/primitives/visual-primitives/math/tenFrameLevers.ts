@@ -1,31 +1,32 @@
 /**
- * The in-item levers on a ten-frame item (`/add-support-tiers`; handoff 18 B1 built `build`, handoff 32 the rest).
- * Tables: qa/support-levers/m4-lever-tables-2026-09-29.md. No real-learner evidence: the misses are what `frameMiss`
- * and `tenFrameSpokenMisses` observe.
- *
- * Pure: the component draws from these, the workspace publishes them, the tests hold each leak rule.
- * - build / build_teen: `running_count` (placed counters only; starts withdrawn at every tier, user ruling
- *   2026-09-29), `five_frame` (never on five), `smaller_build` (about half, never the item's number).
- * - decompose: `split_model` (a model frame of a total no split item still ahead uses), `ways_shown` (the learner's
- *   own ways for this total, never an unshown way), `smaller_total` (a smaller total no split item still ahead uses).
+ * The in-item levers on a ten-frame item, as one lever set (`bossLevers.ts`; `/add-support-tiers`, handoff 18 B1 built
+ * `build`, handoff 32 the rest; tables qa/support-levers/m4-lever-tables-2026-09-29.md). No real-learner evidence: the
+ * misses are what `frameMiss` and `tenFrameSpokenMisses` observe. Pure: the component draws a pulled lever, the
+ * workspace publishes the set.
+ * - build / build_teen: `running_count` (marks: placed counters only; starts withdrawn at every tier, user ruling
+ *   2026-09-29), `five_frame` (marks, never on five), `smaller_build` (easier: about half, never the item's number).
+ * - decompose: `split_model` (model: a total no split item still ahead uses), `ways_shown` (custom: the learner's own
+ *   ways for this total, never an unshown way), `smaller_total` (easier: a smaller total no split item still ahead uses).
  * - build_pair (open build): `running_count` (all the counters on the frame; the total is public), and decompose's
  *   `split_model`, `ways_shown` and `smaller_total`, each kept to build_pair items (a split's ways are not a pair's).
- * - decompose_teen: `running_count` (the yellow counters only; the ten is public), `ten_model` (a full model frame of
- *   ten beside the item, never on its counters), `smaller_teen` (about half the ones, never the item's teen number).
- * - make_ten: K fills the frame, so `empty_glow` (the empty boxes pulse, no count); grades 1-2 say the complement, so
- *   `fill_model` (a five-frame model, never a make-ten fact) and `five_frame` (never on five). Both: `near_ten`
- *   (1-3 missing, not a make-ten still ahead).
- * - subitize: `hide_empty` (empty boxes fade during the look), `five_frame` (above five only), `longer_look` (the
- *   next look lasts twice as long; the counters still hide), `fewer_dots` (about half, no look still ahead).
- * - operate: `operation_model` (a model problem of the same operation whose result no operate item still ahead
- *   answers), `five_frame` (never on five), `smaller_numbers` (second number 1 or 2, smaller answer, none still ahead).
+ * - decompose_teen: `running_count` (the yellow counters only; the ten is public), `ten_model` (custom: a full model
+ *   frame of ten beside the item, never on its counters), `smaller_teen` (easier: about half the ones).
+ * - make_ten: K fills the frame, so `empty_glow` (marks: the empty boxes pulse, no count); grades 1-2 say the
+ *   complement, so `fill_model` (model: a five-frame, never a make-ten fact) and `five_frame` (never on five). Both:
+ *   `near_ten` (easier: 1-3 missing, not a make-ten still ahead).
+ * - subitize: `hide_empty` (layout: empty boxes fade during the look), `five_frame` (above five only), `longer_look`
+ *   (custom: the next look lasts twice as long; the counters still hide), `fewer_dots` (easier: about half).
+ * - operate: `operation_model` (model: a problem of the same operation whose result no operate item still ahead
+ *   answers), `five_frame` (never on five), `smaller_numbers` (easier: second number 1 or 2, a smaller answer).
  * A number "still ahead" is the current item's or a later item's: an answer the learner has already given leaks nothing.
- * Every simpler item has the id `<item>~smaller`, the same mode, and is built by `practiceItem`.
- * `frameMiss` names what a wrong placement shows on every gesture kind (handoff 20).
+ * Every simpler item has the id `<item>~smaller`, the same mode, and is built through the family's own item gate.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { isPairKind, itemsFromChallenges, judgeSplit, teenTargetFor, waysToSplit, teenTotalFor, type TenFrameBand, type TenFrameChallengeLike,
-  type TenFrameItem, type TenFrameSplit } from './tenFrameScript';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { OFF_BY } from '../../../components/live-activity/boss';
+import { tenFrameCard } from './tenFrame.card';
+import { isPairKind, itemsFromChallenges, teenTotalFor, waysToSplit, type TenFrameBand, type TenFrameChallengeLike,
+  type TenFrameItem, type TenFrameSplit } from './tenFrameDomain';
+import { evalModeForKind } from './tenFrameWorkspace';
 
 export const COUNT_LEVER = 'running_count';
 export const FIVE_LEVER = 'five_frame';
@@ -43,56 +44,12 @@ export const LONGER_LOOK_LEVER = 'longer_look';
 export const FEWER_DOTS_LEVER = 'fewer_dots';
 export const OPERATION_MODEL_LEVER = 'operation_model';
 export const SMALLER_NUMBERS_LEVER = 'smaller_numbers';
-/** Every simplify lever: each kind has one, and `practiceItem` builds it. */
-export const SIMPLIFY_LEVERS: ReadonlySet<string> = new Set([SMALLER_LEVER, SMALLER_TOTAL_LEVER, SMALLER_TEEN_LEVER,
-  NEAR_TEN_LEVER, FEWER_DOTS_LEVER, SMALLER_NUMBERS_LEVER]);
 
-/**
- * What a wrong placement shows (`TeachingAttempt.miss`), from the count the frame commits: counters placed
- * (build), added to the seeded ones (make_ten, build_teen) or turned yellow (split, decompose_teen).
- * - `one_short` / `one_over`: one fewer or one more than the number to produce;
- * - `short_by_more` / `over_by_more`: two or more off;
- * - `filled_frame`: every empty box filled (build, build_teen), when that is more than one over;
- * - `all_flipped` / `none_flipped`: the whole group turned yellow, or none of it (split; decompose_teen's
- *   whole group when that is more than one over);
- * - `same_way_again`: a split already shown for this total while another way remains.
- * - `one_colour` (build_pair): the right number on the frame, all of it one colour. A wrong total on build_pair is
- *   named by the count misses above, whatever the colours.
- * Only the observable pattern; why the learner did it is the tutor's and the distiller's to judge.
- * Undefined for a right placement or a spoken item.
- */
-export type FrameMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'filled_frame'
-  | 'all_flipped' | 'none_flipped' | 'same_way_again' | 'one_colour';
-
-export function frameMiss(item: TenFrameItem | null, work: { placed: number; yellow?: number; shownWays?: ReadonlySet<string> }):
-  FrameMiss | undefined {
-  if (!item || item.answerKind !== 'gesture') return undefined;
-  const { placed } = work;
-  if (item.kind === 'build_pair' && placed === item.answer) {
-    const verdict = judgeSplit(item, { a: placed - (work.yellow ?? 0), b: work.yellow ?? 0 }, work.shownWays);
-    return verdict === 'repeat' ? 'same_way_again' : verdict === 'correct' ? undefined : 'one_colour';
-  }
-  if (item.kind === 'split') {
-    const verdict = judgeSplit(item, { a: item.answer - placed, b: placed }, work.shownWays);
-    if (verdict === 'repeat') return 'same_way_again';
-    if (verdict === 'correct') return undefined;
-    return placed <= 0 ? 'none_flipped' : 'all_flipped';
-  }
-  const target = item.kind === 'build_teen' || item.kind === 'decompose_teen' ? teenTargetFor(item) : item.answer;
-  const off = placed - target;
-  if (off === 0) return undefined;
-  if (off === -1) return 'one_short';
-  if (off === 1) return 'one_over';
-  if (off > 0 && item.kind === 'decompose_teen' && placed === item.answer) return 'all_flipped';
-  if (off > 0 && (item.kind === 'build' || item.kind === 'build_teen' || item.kind === 'build_pair')
-    && placed === item.capacity - item.shown) return 'filled_frame';
-  return off < 0 ? 'short_by_more' : 'over_by_more';
-}
-
-/** What a lever needs beyond the item. */
-export interface LeverContext {
+/** The lesson's lever state for the item on screen. */
+export interface TenFrameLeverContext {
+  band: TenFrameBand;
   /** Every item of the session, in order: a number still ahead of the learner stays out of a model or practice item. */
-  session?: readonly TenFrameItem[];
+  session: readonly TenFrameItem[];
   /** decompose, build_pair: the ways the learner already showed for this item's total (`splitKey`s). */
   shownWays?: ReadonlySet<string>;
 }
@@ -258,7 +215,7 @@ export function smallerNumbers(item: TenFrameItem, band: TenFrameBand, session: 
   return null;
 }
 
-/** The simpler item a simplify lever opens on `item`, or null when it has none. */
+/** The simpler item a simplify lever opens on `item`, or null when it has none (the harness rebuilds it from the id). */
 export function practiceItem(item: TenFrameItem, band: TenFrameBand, session: readonly TenFrameItem[] = []): TenFrameItem | null {
   switch (item.kind) {
     case 'build': case 'build_teen': return smallerBuild(item, band);
@@ -270,114 +227,132 @@ export function practiceItem(item: TenFrameItem, band: TenFrameBand, session: re
   }
 }
 
-// ── The declared levers ────────────────────────────────────────────────────
+// ── The lever set ──────────────────────────────────────────────────────────
 
-export function tenFrameLevers(item: TenFrameItem | null, pulled: readonly string[], band: TenFrameBand,
-  ctx: LeverContext = {}): WorkspaceLever[] {
-  if (!item) return [];
-  const session = ctx.session ?? [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const five = (answers: string[]) => lever(FIVE_LEVER, 'help', 'shown', answers, 'The learner loses track past five.',
-    'Outlines the top row of the frame and marks it 5, so the learner can see a full row of five.');
-  const back = 'It is not graded; the full item comes back after it.';
-  const levers: WorkspaceLever[] = [];
-  const push = (on: unknown, l: () => WorkspaceLever) => { if (on) levers.push(l()); };
+const BACK = 'It is not graded; the full item comes back after it.';
+const spoken = (item: TenFrameItem) => item.answerKind !== 'gesture';
+const modelFact = (m: ModelFrame) => `A small model ${m.whole === 5 ? 'five-frame' : 'frame'} beside the item shows: ${m.says}`;
+const fiveFact = (_on: unknown, item: TenFrameItem) =>
+  `The top row of the ${item.kind === 'build_teen' ? 'second frame' : 'frame'} is outlined and marked 5.`;
+const FIVE_DOES = 'Outlines the top row of the frame and marks it 5, so the learner can see a full row of five.';
+const PAIR_MODES = ['decompose', 'build_pair'];
 
-  switch (item.kind) {
-    case 'build': case 'build_teen': {
-      if (item.answerKind !== 'gesture') return [];
-      const teen = item.kind === 'build_teen';
-      push(true, () => lever(COUNT_LEVER, 'help', 'both', ['one_short', 'one_over', 'filled_frame'],
-        'The learner miscounts while placing: one too many, one too few, or loses track.',
-        teen ? 'Shows under the frames how many counters are on them so far, the ten included. Never the number to make.'
-          : 'Shows under the frame how many counters the learner has placed so far. Never the number to build.'));
-      push(!fiveFrameLeaks(item), () => lever(FIVE_LEVER, 'help', 'shown', ['short_by_more', 'over_by_more', 'filled_frame'],
-        'The learner counts one by one and loses track past five.',
-        teen ? 'Outlines the top row of the second frame and marks it 5, so the learner can count the ones on from a full row.'
-          : 'Outlines the top row of the frame and marks it 5, so the learner can count on from a full row.'));
-      push(smallerBuild(item, band), () => lever(SMALLER_LEVER, 'simplify', 'shown', ['short_by_more', 'over_by_more'],
-        teen ? 'The learner cannot place this many ones beside the ten yet.' : 'The learner cannot build a number this big yet.',
-        teen ? `Opens an easier teen number first, with about half as many ones beside the ten. ${back}`
-          : `Opens an easier build first, about half as many counters. ${back}`));
-      return levers;
-    }
-    case 'split':
-      push(splitModel(item, session), () => lever(SPLIT_MODEL_LEVER, 'help', 'both', ['none_flipped', 'all_flipped'],
-        'The learner turns every counter yellow, or none, so there is only one group.',
-        'Shows a small model frame beside this one with a different number split into red and yellow. Never a split of this number.'));
-      push(waysShown(item, ctx.shownWays).length, () => lever(WAYS_LEVER, 'help', 'shown', ['same_way_again'],
-        'The learner shows a way they already showed.',
-        'Shows beside the frame small pictures of the ways the learner already showed for this number. Never a way they have not shown.'));
-      push(smallerTotal(item, band, session), () => lever(SMALLER_TOTAL_LEVER, 'simplify', 'shown', ['none_flipped', 'all_flipped'],
-        'The learner cannot make two groups from this many yet.', `Opens a split of a smaller group first. ${back}`));
-      return levers;
-    case 'build_pair':
-      // Bare at every tier: the count of what is on the frame is half the task, so it comes on a miss.
-      push(true, () => lever(COUNT_LEVER, 'help', 'both', ['one_short', 'one_over', 'filled_frame'],
-        'The learner miscounts while making the number: one too many, one too few, or loses track.',
-        'Shows under the frame how many counters are on it so far, red and yellow together. Never how many of each colour.'));
-      push(splitModel(item, session), () => lever(SPLIT_MODEL_LEVER, 'help', 'both', ['one_colour'],
-        'The learner makes the number all in one colour, so there is only one group.',
-        'Shows a small model frame beside this one with a different number made of red and yellow. Never a pair for this number.'));
-      push(waysShown(item, ctx.shownWays).length, () => lever(WAYS_LEVER, 'help', 'shown', ['same_way_again'],
-        'The learner makes the same pair they already made.',
-        'Shows beside the frame small pictures of the ways the learner already made this number. Never a way they have not made.'));
-      push(smallerTotal(item, band, session), () => lever(SMALLER_TOTAL_LEVER, 'simplify', 'shown',
-        ['short_by_more', 'over_by_more', 'one_colour'],
-        'The learner cannot make this number from two colours yet.', `Opens a smaller number to make from red and yellow first. ${back}`));
-      return levers;
-    case 'decompose_teen':
-      push(true, () => lever(COUNT_LEVER, 'help', 'both', ['one_short', 'one_over'],
-        'The learner miscounts the ten: one yellow too many or too few.',
-        'Shows under the frames how many counters are yellow so far. Never how many are left over.'));
-      push(true, () => lever(TEN_MODEL_LEVER, 'help', 'both', ['all_flipped', 'short_by_more', 'over_by_more'],
-        'The learner turns the whole group yellow, or far from ten.',
-        'Shows a small full frame beside the item: ten yellow counters. The item\'s counters are unchanged.'));
-      push(smallerTeen(item, band), () => lever(SMALLER_TEEN_LEVER, 'simplify', 'shown', ['short_by_more', 'over_by_more', 'all_flipped'],
-        'The learner cannot find the ten in a group this big yet.',
-        `Opens a smaller teen group first, with fewer left over beside the ten. ${back}`));
-      return levers;
-    case 'make_ten': {
-      const spoken = item.answerKind !== 'gesture';
-      push(!spoken, () => lever(EMPTY_GLOW_LEVER, 'help', 'shown', ['one_short', 'short_by_more'],
-        'The learner stops before the frame is full.', 'Makes the empty boxes on the frame pulse. No count.'));
-      push(spoken && fillModel(item), () => lever(FILL_MODEL_LEVER, 'help', 'both', ['said_shown', 'said_capacity'],
-        'The learner says the counters already there, or the whole, instead of how many more.',
-        'Shows a small five-frame beside the item with some counters and the more that fill it. Never a fact about ten.'));
-      push(spoken && !fiveFrameLeaks(item), () => five(['one_short', 'one_over']));
-      push(nearTen(item, band, session), () => lever(NEAR_TEN_LEVER, 'simplify', 'shown',
-        spoken ? ['short_by_more', 'over_by_more'] : ['short_by_more'],
-        'The learner is far off on how many more make ten.', `Opens a frame with only one to three boxes missing first. ${back}`));
-      return levers;
-    }
-    case 'subitize':
-      push(item.answer < item.capacity, () => lever(HIDE_EMPTY_LEVER, 'help', 'shown', ['empty_count'],
-        'The learner counts the empty boxes instead of the counters.',
-        'Fades the empty boxes during the quick look, so only the counters stand out.'));
-      push(item.answer > 5, () => five(['one_short', 'one_over', 'short_by_more', 'over_by_more']));
-      push(true, () => lever(LONGER_LOOK_LEVER, 'help', 'shown', ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        'The look is too quick for the learner to take in.',
-        'The next quick look lasts twice as long. The counters still hide before the learner answers.'));
-      push(fewerDots(item, band, session), () => lever(FEWER_DOTS_LEVER, 'simplify', 'shown', ['short_by_more', 'over_by_more'],
-        'The learner cannot take in this many at a glance yet.', `Opens a quick look at fewer counters first. ${back}`));
-      return levers;
-    default: {
-      const add = item.kind === 'add';
-      push(operationModel(item, session), () => lever(OPERATION_MODEL_LEVER, 'help', 'both',
-        add ? ['said_addend'] : ['said_start', 'said_change'],
-        add ? 'The learner says one of the numbers being added, not how many altogether.'
-          : 'The learner says how many there were, or how many were taken away, not how many are left.',
-        add ? 'Shows a small model frame beside the item with a different adding problem in red and yellow, and its total. Never this problem.'
-          : 'Shows a small model frame beside the item with a different take-away, the taken counters crossed out, and what is left. Never this problem.'));
-      push(item.answer !== 5, () => five(['one_short', 'one_over']));
-      push(smallerNumbers(item, band, session), () => lever(SMALLER_NUMBERS_LEVER, 'simplify', 'shown', ['short_by_more', 'over_by_more'],
-        'The learner is far off with numbers this big.',
-        `Opens the same kind of problem with smaller numbers first. ${back}`));
-      return levers;
-    }
-  }
-}
+export const TEN_FRAME_LEVERS = leverSet<TenFrameItem, TenFrameLeverContext>({
+  modeOf: item => evalModeForKind(item.kind),
+  missesOf: mode => tenFrameCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'medium', different: 'a different number, worked on a small frame beside this one',
+    own: 'this item\'s answer' },
+  specs: [
+    // ── running_count: the learner's own counters, never the number to make ──
+    { id: COUNT_LEVER, type: 'marks', modes: ['build'], carrier: 'both', answers: ['one_short', 'one_over', 'filled_frame'],
+      when: 'The learner miscounts while placing: one too many, one too few, or loses track.',
+      does: 'Shows under the frame how many counters the learner has placed so far. Never the number to build.',
+      fact: 'Under the frame, a count shows how many counters are on it so far.' },
+    { id: COUNT_LEVER, type: 'marks', modes: ['build_teen'], carrier: 'both', answers: ['one_short', 'one_over', 'filled_frame'],
+      when: 'The learner miscounts while placing: one too many, one too few, or loses track.',
+      does: 'Shows under the frames how many counters are on them so far, the ten included. Never the number to make.',
+      fact: 'Under the frames, a count shows how many counters are on them so far, the ten included.' },
+    // Bare at every tier: the count of what is on the frame is half the task, so it comes on a miss.
+    { id: COUNT_LEVER, type: 'marks', modes: ['build_pair'], carrier: 'both', answers: ['one_short', 'one_over', 'filled_frame'],
+      when: 'The learner miscounts while making the number: one too many, one too few, or loses track.',
+      does: 'Shows under the frame how many counters are on it so far, red and yellow together. Never how many of each colour.',
+      fact: 'Under the frame, a count shows how many counters are on it, both colours together.' },
+    { id: COUNT_LEVER, type: 'marks', modes: ['decompose_teen'], carrier: 'both', answers: ['one_short', 'one_over'],
+      when: 'The learner miscounts the ten: one yellow too many or too few.',
+      does: 'Shows under the frames how many counters are yellow so far. Never how many are left over.',
+      fact: 'Under the frames, a count shows how many counters are yellow.' },
+    // ── five_frame: never where five is what to produce ──
+    { id: FIVE_LEVER, type: 'marks', modes: ['build', 'build_teen'], answers: ['short_by_more', 'over_by_more', 'filled_frame'],
+      offer: item => !fiveFrameLeaks(item), when: 'The learner counts one by one and loses track past five.',
+      does: item => (item.kind === 'build_teen'
+        ? 'Outlines the top row of the second frame and marks it 5, so the learner can count the ones on from a full row.'
+        : 'Outlines the top row of the frame and marks it 5, so the learner can count on from a full row.'),
+      fact: fiveFact },
+    { id: SMALLER_LEVER, type: 'easier', carrier: 'shown', modes: ['build', 'build_teen'], answers: ['short_by_more', 'over_by_more'],
+      content: (item, { band }) => smallerBuild(item, band),
+      when: item => (item.kind === 'build_teen' ? 'The learner cannot place this many ones beside the ten yet.'
+        : 'The learner cannot build a number this big yet.'),
+      does: item => (item.kind === 'build_teen'
+        ? `Opens an easier teen number first, with about half as many ones beside the ten. ${BACK}`
+        : `Opens an easier build first, about half as many counters. ${BACK}`) },
+    // ── decompose and build_pair: a model of another total, the learner's own ways, a smaller total ──
+    { id: SPLIT_MODEL_LEVER, type: 'model', modes: ['decompose'], answers: ['none_flipped', 'all_flipped'],
+      content: (item, { session }) => splitModel(item, session), fact: modelFact,
+      when: 'The learner turns every counter yellow, or none, so there is only one group.',
+      does: 'Shows a small model frame beside this one with a different number split into red and yellow. Never a split of this number.' },
+    { id: SPLIT_MODEL_LEVER, type: 'model', modes: ['build_pair'], answers: ['one_colour'],
+      content: (item, { session }) => splitModel(item, session), fact: modelFact,
+      when: 'The learner makes the number all in one colour, so there is only one group.',
+      does: 'Shows a small model frame beside this one with a different number made of red and yellow. Never a pair for this number.' },
+    { id: WAYS_LEVER, type: 'custom', modes: PAIR_MODES, carrier: 'shown', answers: ['same_way_again'],
+      why: 'It shows the learner\'s own earlier answers for this number; no stock type replays the learner\'s work.',
+      content: (item, { shownWays }) => { const ways = waysShown(item, shownWays); return ways.length ? ways : null; },
+      when: 'The learner shows a way they already showed.',
+      does: 'Shows beside the frame small pictures of the ways the learner already showed for this number. Never a way they have not shown.',
+      fact: (ways: TenFrameSplit[]) => `Beside the frame, the ways the learner already showed: ${ways.map(w => `${w.a} red and ${w.b} yellow`).join('; ')}.` },
+    { id: SMALLER_TOTAL_LEVER, type: 'easier', carrier: 'shown', modes: ['decompose'], answers: ['none_flipped', 'all_flipped'],
+      content: (item, { band, session }) => smallerTotal(item, band, session),
+      when: 'The learner cannot make two groups from this many yet.', does: `Opens a split of a smaller group first. ${BACK}` },
+    { id: SMALLER_TOTAL_LEVER, type: 'easier', carrier: 'shown', modes: ['build_pair'], answers: ['short_by_more', 'over_by_more', 'one_colour'],
+      content: (item, { band, session }) => smallerTotal(item, band, session),
+      when: 'The learner cannot make this number from two colours yet.',
+      does: `Opens a smaller number to make from red and yellow first. ${BACK}` },
+    // ── decompose_teen ──
+    { id: TEN_MODEL_LEVER, type: 'custom', modes: ['decompose_teen'], carrier: 'both',
+      answers: ['all_flipped', 'short_by_more', 'over_by_more'],
+      why: 'It draws a reference frame of ten beside the item, not a different item worked; no stock type shows a reference quantity.',
+      when: 'The learner turns the whole group yellow, or far from ten.',
+      does: 'Shows a small full frame beside the item: ten yellow counters. The item\'s counters are unchanged.',
+      fact: modelFact(TEN_MODEL) },
+    { id: SMALLER_TEEN_LEVER, type: 'easier', carrier: 'shown', modes: ['decompose_teen'], answers: ['short_by_more', 'over_by_more', 'all_flipped'],
+      content: (item, { band }) => smallerTeen(item, band),
+      when: 'The learner cannot find the ten in a group this big yet.',
+      does: `Opens a smaller teen group first, with fewer left over beside the ten. ${BACK}` },
+    // ── make_ten: Kindergarten fills the frame, Grades 1-2 say how many more ──
+    { id: EMPTY_GLOW_LEVER, type: 'marks', modes: ['make_ten'], answers: ['one_short', 'short_by_more'],
+      offer: item => !spoken(item), when: 'The learner stops before the frame is full.',
+      does: 'Makes the empty boxes on the frame pulse. No count.', fact: 'The empty boxes on the frame pulse.' },
+    { id: FILL_MODEL_LEVER, type: 'model', modes: ['make_ten'], answers: ['said_shown', 'said_capacity'],
+      content: item => (spoken(item) ? fillModel(item) : null), fact: modelFact,
+      when: 'The learner says the counters already there, or the whole, instead of how many more.',
+      does: 'Shows a small five-frame beside the item with some counters and the more that fill it. Never a fact about ten.' },
+    { id: FIVE_LEVER, type: 'marks', modes: ['make_ten'], answers: ['one_short', 'one_over'],
+      offer: item => spoken(item) && !fiveFrameLeaks(item), when: 'The learner loses track past five.', does: FIVE_DOES, fact: fiveFact },
+    { id: NEAR_TEN_LEVER, type: 'easier', carrier: 'shown', modes: ['make_ten'], answers: ['short_by_more', 'over_by_more'],
+      answersOn: item => (spoken(item) ? ['short_by_more', 'over_by_more'] : ['short_by_more']),
+      content: (item, { band, session }) => nearTen(item, band, session),
+      when: 'The learner is far off on how many more make ten.', does: `Opens a frame with only one to three boxes missing first. ${BACK}` },
+    // ── subitize ──
+    { id: HIDE_EMPTY_LEVER, type: 'layout', modes: ['subitize'], answers: ['empty_count'], offer: item => item.answer < item.capacity,
+      when: 'The learner counts the empty boxes instead of the counters.',
+      does: 'Fades the empty boxes during the quick look, so only the counters stand out.',
+      fact: 'During the quick look the empty boxes fade, so only the counters stand out.' },
+    { id: FIVE_LEVER, type: 'marks', modes: ['subitize'], answers: OFF_BY, offer: item => item.answer > 5,
+      when: 'The learner loses track past five.', does: FIVE_DOES, fact: fiveFact },
+    { id: LONGER_LOOK_LEVER, type: 'custom', modes: ['subitize'], carrier: 'shown', answers: OFF_BY,
+      why: 'It changes how long the next look lasts; no stock type changes the timing of what is shown.',
+      when: 'The look is too quick for the learner to take in.',
+      does: 'The next quick look lasts twice as long. The counters still hide before the learner answers.',
+      fact: 'The next quick look lasts twice as long.' },
+    { id: FEWER_DOTS_LEVER, type: 'easier', carrier: 'shown', modes: ['subitize'], answers: ['short_by_more', 'over_by_more'],
+      content: (item, { band, session }) => fewerDots(item, band, session),
+      when: 'The learner cannot take in this many at a glance yet.', does: `Opens a quick look at fewer counters first. ${BACK}` },
+    // ── operate ──
+    { id: OPERATION_MODEL_LEVER, type: 'model', modes: ['operate'], answers: ['said_addend', 'said_start', 'said_change'],
+      answersOn: item => (item.kind === 'add' ? ['said_addend'] : ['said_start', 'said_change']),
+      content: (item, { session }) => operationModel(item, session), fact: modelFact,
+      when: item => (item.kind === 'add' ? 'The learner says one of the numbers being added, not how many altogether.'
+        : 'The learner says how many there were, or how many were taken away, not how many are left.'),
+      does: item => (item.kind === 'add'
+        ? 'Shows a small model frame beside the item with a different adding problem in red and yellow, and its total. Never this problem.'
+        : 'Shows a small model frame beside the item with a different take-away, the taken counters crossed out, and what is left. Never this problem.') },
+    { id: FIVE_LEVER, type: 'marks', modes: ['operate'], answers: ['one_short', 'one_over'], offer: item => item.answer !== 5,
+      when: 'The learner loses track past five.', does: FIVE_DOES, fact: fiveFact },
+    { id: SMALLER_NUMBERS_LEVER, type: 'easier', carrier: 'shown', modes: ['operate'], answers: ['short_by_more', 'over_by_more'],
+      content: (item, { band, session }) => smallerNumbers(item, band, session),
+      when: 'The learner is far off with numbers this big.', does: `Opens the same kind of problem with smaller numbers first. ${BACK}` },
+  ],
+});
 
 // ── What the pulled levers put on screen ───────────────────────────────────
 
@@ -394,8 +369,9 @@ export interface LeverView {
   yellowCount: boolean;
 }
 
-export function leverView(item: TenFrameItem | null, pulled: readonly string[], band: TenFrameBand, ctx: LeverContext = {}): LeverView {
-  const on = new Set(tenFrameLevers(item, pulled, band, ctx).filter(l => l.pulled).map(l => l.id));
+/** What the component draws for the levers pulled on `item`. */
+export function leverView(item: TenFrameItem | null, pulled: readonly string[], ctx: TenFrameLeverContext): LeverView {
+  const on = new Set(TEN_FRAME_LEVERS.declare(item, ctx, pulled).filter(l => l.pulled).map(l => l.id));
   const model = !item ? null
     : on.has(SPLIT_MODEL_LEVER) ? splitModel(item, ctx.session)
       : on.has(TEN_MODEL_LEVER) ? TEN_MODEL
@@ -410,20 +386,4 @@ export function leverView(item: TenFrameItem | null, pulled: readonly string[], 
     longLook: on.has(LONGER_LOOK_LEVER),
     yellowCount: on.has(COUNT_LEVER) && item?.kind === 'decompose_teen',
   };
-}
-
-/** What the pulled levers on a non-build item put on screen, as a scene fact. Never the item's answer. */
-export function leverFacts(item: TenFrameItem | null, pulled: readonly string[], band: TenFrameBand, ctx: LeverContext = {}): string {
-  if (!item || BUILD_KINDS.includes(item.kind)) return '';
-  const view = leverView(item, pulled, band, ctx);
-  return [
-    view.five >= 0 && 'The top row of the frame is outlined and marked 5.',
-    ...view.models.map(m => `A small model ${m.whole === 5 ? 'five-frame' : 'frame'} beside the item shows: ${m.says}`),
-    view.ways.length && `Beside the frame, the ways the learner already showed: ${view.ways.map(w => `${w.a} red and ${w.b} yellow`).join('; ')}.`,
-    item.kind === 'build_pair' && pulled.includes(COUNT_LEVER) && 'Under the frame, a count shows how many counters are on it, both colours together.',
-    view.emptyGlow && 'The empty boxes on the frame pulse.',
-    view.hideEmpty && 'During the quick look the empty boxes fade, so only the counters stand out.',
-    view.longLook && 'The next quick look lasts twice as long.',
-    view.yellowCount && 'Under the frames, a count shows how many counters are yellow.',
-  ].filter((s): s is string => !!s).join(' ');
 }

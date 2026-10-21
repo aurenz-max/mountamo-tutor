@@ -12,7 +12,7 @@
  * - `shorter_chain` (simplify): an ungraded ask for a chain one living thing shorter to the same end, then the full item.
  * `wrong_end` has no lever: the ask on screen names the end.
  *
- * The whole web, `complete_web` (`webLevers`), from its own misses (`foodWebMiss`):
+ * The whole web, `complete_web`, from its own misses (`foodWebMiss`):
  * - `arrow_words` (help, `backwards_arrows`): the same "eaten by" words on every arrow the learner drew, right or wrong.
  * - `food_tags` (help, `wrong_arrows`): what each living thing eats, in plain words under its level label.
  * - `arrow_counts` (help, `missing_arrows`): on each living thing, how many feeding arrows join it in the whole web. It
@@ -20,10 +20,14 @@
  *   drawn and cannot be used to test arrows one by one. It names no partner and no direction.
  * - `smaller_web` (simplify): the same task on fewer living things (the top eaters, else the decomposers, left out),
  *   ungraded, then the full web back empty.
+ *
+ * Declared once as a lever set (`FOOD_WEB_LEVERS`, `bossLevers.ts`); the component calls its declare, onScreen and
+ * simpler. None is offered on a practice item: the component declares nothing while one is on screen.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { Connection, FoodWebChallenge, Organism } from './FoodWebBuilder';
-import { chainAsk, feedingChains, type FoodChainMiss, type FoodWebMiss } from './foodWebWorkspace';
+import { chainAsk, feedingChains } from './foodWebWorkspace';
+import { foodWebBuilderCard } from './foodWebBuilder.card';
 
 export const ARROW_WORDS_LEVER = 'arrow_words';
 export const FOOD_TAGS_LEVER = 'food_tags';
@@ -91,66 +95,52 @@ export function webArrowCounts(organisms: readonly Organism[], connections: read
   return Object.fromEntries(organisms.map(o => [o.id, connections.filter(r => r.fromId === o.id || r.toId === o.id).length]));
 }
 
-export function webLevers(c: FoodWebChallenge | null, organisms: readonly Organism[], connections: readonly Connection[],
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (c?.type !== 'complete_web' || c.only) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly FoodWebMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  return [
-    lever(ARROW_WORDS_LEVER, 'help', ['backwards_arrows'],
-      'The learner draws an arrow from the eater to its food.',
-      'Writes "eaten by" along every arrow the learner drew and in their list of arrows, the same words on every arrow, so '
-        + 'each reads as a sentence. It turns no arrow round and marks none.'),
-    lever(FOOD_TAGS_LEVER, 'help', ['wrong_arrows'],
-      'The learner joins two living things where neither eats the other.',
-      'Puts a tag on every living thing saying what it eats in plain words. It names no pair and draws no arrow.'),
-    lever(ARROW_COUNTS_LEVER, 'help', ['missing_arrows'],
-      'The learner leaves feeding relationships out of the web.',
-      'Shows on every living thing how many feeding arrows join it in the whole web. It is counted from the web, not from '
-        + 'the arrows the learner drew, so it does not change as arrows are drawn; it names no partner and no direction.'),
-    ...(smallerWeb(c, organisms, connections) ? [lever(SMALLER_WEB_LEVER, 'simplify', ['missing_arrows', 'wrong_arrows'],
-      'The learner cannot keep the whole web in view yet.',
-      'Opens an easier web first: the same task with some living things left out, on an empty web. It is not graded; the '
-        + 'full web comes back after it, empty.')] : []),
-  ];
-}
+/** What the levers read beside the item: the lesson's living things and the feeding relations the item is judged against. */
+export interface FoodWebLeverContext { organisms: readonly Organism[]; relations: readonly Connection[] }
 
-export function foodWebLevers(c: FoodWebChallenge | null, organisms: readonly Organism[], connections: readonly Connection[],
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (c?.type === 'complete_web') return webLevers(c, organisms, connections, pulled);
-  if (c?.type !== 'build_chain') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly FoodChainMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  return [
-    lever(ARROW_WORDS_LEVER, 'help', ['arrow_backwards', 'broken_chain'],
-      'The learner draws an arrow from the eater to its food, or leaves a gap or a branch in the chain.',
-      'Writes "eaten by" along every arrow the learner drew in the scene, so each arrow reads as a sentence. It turns no arrow round.'),
-    lever(FOOD_TAGS_LEVER, 'help', ['no_producer', 'not_a_feeding_pair'],
-      'The learner starts the chain without a living thing that makes its own food, or joins two that do not feed each other.',
-      'Puts a tag on every living thing in the list and in the scene saying what it eats. It names no pair and draws no arrow.'),
-    lever(CHAIN_COUNT_LEVER, 'help', ['too_short', 'too_long'],
-      'The learner loses count of the living things joined in the chain.',
-      'Shows under the scene how many living things are on the learner\'s longest line of arrows. Never the number asked for.'),
-    ...(shorterChain(c, organisms, connections) ? [lever(SHORTER_LEVER, 'simplify', ['broken_chain', 'not_a_feeding_pair', 'too_long'],
-      'The learner cannot build a chain this long yet.',
-      'Opens an easier ask first, a chain with one living thing fewer that ends at the same living thing, on an empty scene. '
-        + 'It is not graded; the full item comes back after it.')] : []),
-  ];
-}
+const CHAIN = ['build_chain'], WEB = ['complete_web'];
 
-/** What the pulled help levers put on screen, for the tutor. */
-export function leverFacts(c: FoodWebChallenge | null, pulled: readonly string[]): string {
-  if (c?.type === 'complete_web') {
-    return [
-      pulled.includes(ARROW_WORDS_LEVER) && 'Along every arrow the learner drew is written "eaten by".',
-      pulled.includes(FOOD_TAGS_LEVER) && 'Every living thing has a tag saying what it eats.',
-      pulled.includes(ARROW_COUNTS_LEVER) && 'Every living thing shows how many feeding arrows join it in the whole web.',
-    ].filter((s): s is string => !!s).join(' ');
-  }
-  if (c?.type !== 'build_chain') return '';
-  return [
-    pulled.includes(ARROW_WORDS_LEVER) && 'Along every arrow in the scene is written "eaten by".',
-    pulled.includes(FOOD_TAGS_LEVER) && 'Every living thing has a tag saying what it eats.',
-    pulled.includes(CHAIN_COUNT_LEVER) && 'Under the scene is how many living things are on the learner\'s longest line of arrows.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+export const FOOD_WEB_LEVERS = leverSet<FoodWebChallenge, FoodWebLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => foodWebBuilderCard.modes[mode]?.misses ?? [],
+  specs: [
+    // build_chain
+    { id: ARROW_WORDS_LEVER, type: 'marks', modes: CHAIN, answers: ['arrow_backwards', 'broken_chain'],
+      when: 'The learner draws an arrow from the eater to its food, or leaves a gap or a branch in the chain.',
+      does: 'Writes "eaten by" along every arrow the learner drew in the scene, so each arrow reads as a sentence. It turns no arrow round.',
+      fact: 'Along every arrow in the scene is written "eaten by".' },
+    { id: FOOD_TAGS_LEVER, type: 'legend', modes: CHAIN, answers: ['no_producer', 'not_a_feeding_pair'],
+      when: 'The learner starts the chain without a living thing that makes its own food, or joins two that do not feed each other.',
+      does: 'Puts a tag on every living thing in the list and in the scene saying what it eats. It names no pair and draws no arrow.',
+      fact: 'Every living thing has a tag saying what it eats.' },
+    { id: CHAIN_COUNT_LEVER, type: 'marks', modes: CHAIN, answers: ['too_short', 'too_long'],
+      when: 'The learner loses count of the living things joined in the chain.',
+      does: 'Shows under the scene how many living things are on the learner\'s longest line of arrows. Never the number asked for.',
+      fact: 'Under the scene is how many living things are on the learner\'s longest line of arrows.' },
+    { id: SHORTER_LEVER, type: 'easier', modes: CHAIN, answers: ['broken_chain', 'not_a_feeding_pair', 'too_long'],
+      when: 'The learner cannot build a chain this long yet.',
+      does: 'Opens an easier ask first, a chain with one living thing fewer that ends at the same living thing, on an empty scene. '
+        + 'It is not graded; the full item comes back after it.',
+      content: (c, ctx) => shorterChain(c, ctx.organisms, ctx.relations) },
+    // complete_web
+    { id: ARROW_WORDS_LEVER, type: 'marks', modes: WEB, answers: ['backwards_arrows'],
+      when: 'The learner draws an arrow from the eater to its food.',
+      does: 'Writes "eaten by" along every arrow the learner drew and in their list of arrows, the same words on every arrow, so '
+        + 'each reads as a sentence. It turns no arrow round and marks none.',
+      fact: 'Along every arrow the learner drew is written "eaten by".' },
+    { id: FOOD_TAGS_LEVER, type: 'legend', modes: WEB, answers: ['wrong_arrows'],
+      when: 'The learner joins two living things where neither eats the other.',
+      does: 'Puts a tag on every living thing saying what it eats in plain words. It names no pair and draws no arrow.',
+      fact: 'Every living thing has a tag saying what it eats.' },
+    { id: ARROW_COUNTS_LEVER, type: 'marks', modes: WEB, answers: ['missing_arrows'],
+      when: 'The learner leaves feeding relationships out of the web.',
+      does: 'Shows on every living thing how many feeding arrows join it in the whole web. It is counted from the web, not from '
+        + 'the arrows the learner drew, so it does not change as arrows are drawn; it names no partner and no direction.',
+      fact: 'Every living thing shows how many feeding arrows join it in the whole web.' },
+    { id: SMALLER_WEB_LEVER, type: 'easier', modes: WEB, answers: ['missing_arrows', 'wrong_arrows'],
+      when: 'The learner cannot keep the whole web in view yet.',
+      does: 'Opens an easier web first: the same task with some living things left out, on an empty web. It is not graded; the '
+        + 'full web comes back after it, empty.',
+      content: (c, ctx) => smallerWeb(c, ctx.organisms, ctx.relations) },
+  ],
+});

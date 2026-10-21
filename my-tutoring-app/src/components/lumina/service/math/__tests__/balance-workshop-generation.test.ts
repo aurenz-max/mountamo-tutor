@@ -29,9 +29,11 @@ describe('workshop generation, curriculum mode and audio routing', () => {
     expect(definition.evalModes!.find((entry) => entry.evalMode === mode)?.affordances?.answers).toContain('spoken');
     expect(resolvePrimitiveAudioInput(definition, data)).toEqual({ manual_activity: true });
   });
-  it('keeps unsupported mixed payloads off the homogeneous workshop audio path', () => {
+  // balance-scale is a spoken boss (wave 3, 10-20): every mode brackets its turns, and a mixed payload no longer
+  // mounts (the boss validator rejects it), so there is no non-workshop audio path left to keep it off.
+  it('gives every payload the spoken session audio', () => {
     const definition = MATH_CATALOG.find((entry) => entry.id === 'balance-scale')!;
     const data = { challenges: [{ type: 'one_step' }, { type: 'two_step' }] };
-    expect(resolvePrimitiveAudioInput(definition, data)).toBeUndefined();
+    expect(resolvePrimitiveAudioInput(definition, data)).toEqual({ manual_activity: true });
   });
 });

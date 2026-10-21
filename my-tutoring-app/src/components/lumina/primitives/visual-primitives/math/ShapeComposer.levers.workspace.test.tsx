@@ -36,13 +36,13 @@ const levers = (h: WorkspaceHarness) => (h.state().task!.workspace!.levers ?? []
 const attempts = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts;
 const snapshot = (h: WorkspaceHarness) => ({ demand: JSON.stringify(h.state().task!.demand), levers: levers(h),
   attempts: attempts(h).length, html: h.view.container.innerHTML });
-const board = (h: WorkspaceHarness) => q(h, '[data-pip-object^="piece-"]').map(el => {
+const board = (h: WorkspaceHarness) => q(h, '[data-piece]').map(el => {
   const [, x, y] = /translate\(([-\d.]+), ([-\d.]+)\)/.exec(el.getAttribute('transform') ?? '')!;
   return { el, shape: el.getAttribute('data-shape')!, x: Number(x), y: Number(y), mark: el.getAttribute('data-lever-mark') };
 });
 const drag = (h: WorkspaceHarness, shape: string, x: number, y: number) => {
   const p = board(h).filter(b => b.shape === shape).at(-1)!;
-  const svg = h.view.container.querySelector('[data-pip-object="canvas"] svg')!;
+  const svg = h.view.container.querySelector('[data-part="canvas"] svg')!;
   act(() => { fireEvent.pointerDown(p.el, { clientX: p.x + 1, clientY: p.y + 1 }); });
   act(() => { fireEvent.pointerMove(svg, { clientX: x + 1, clientY: y + 1 }); });
   act(() => { fireEvent.pointerUp(svg); });

@@ -7,13 +7,13 @@
 
 import { ComponentDefinition } from '../../../types';
 import { missLists } from './missLists';
-import type { EcosystemMiss } from '../../../primitives/visual-primitives/biology/ecosystemModel';
-import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
-import type { CycleMiss } from '../../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
+import { lifeCycleSequencerCard } from '../../../primitives/visual-primitives/biology/lifeCycleSequencer.card';
 import { classificationSorterCard } from '../../../primitives/visual-primitives/biology/classificationSorter.card';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { cellBuilderCard } from '../../../primitives/visual-primitives/biology/cellBuilder.card';
 import { habitatDioramaCard } from '../../../primitives/visual-primitives/biology/habitatDiorama.card';
+import { ecosystemDioramaCard } from '../../../primitives/visual-primitives/biology/ecosystemDiorama.card';
+import { foodWebBuilderCard } from '../../../primitives/visual-primitives/biology/foodWebBuilder.card';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -173,7 +173,7 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'life-cycle-sequencer',
-    description: 'Interactive temporal sequencing activity where students arrange stages of a biological process in correct temporal order. The CORE "what happens next?" primitive for biology. Covers organismal life cycles (butterfly metamorphosis, frog development, plant growth, human lifecycle), cellular processes (mitosis phases, meiosis, cell cycle), and ecological cycles (water cycle, carbon cycle, nitrogen cycle, rock cycle). PERFECT for teaching temporal relationships, transformation, developmental sequences, and understanding change over time. Features drag-and-drop stage cards with visual placeholders, descriptions, durations, and transition explanations. Linear layout for developmental sequences (embryo → adult), circular layout for repeating cycles (water cycle, seasons). Shows connecting arrows with transition explanations when correct. Includes misconception traps to address common errors. ESSENTIAL for K-8 biology whenever students need to understand sequences, life stages, cycles, or temporal processes.',
+    description: 'Interactive temporal sequencing activity where students arrange stages of a biological process in correct temporal order. The CORE "what happens next?" primitive for biology. Covers organismal life cycles (butterfly metamorphosis, frog development, plant growth, human lifecycle), cellular processes (mitosis phases, meiosis, cell cycle), and ecological cycles (water cycle, carbon cycle, nitrogen cycle, rock cycle). PERFECT for teaching temporal relationships, transformation, developmental sequences, and understanding change over time. Features drag-and-drop stage cards with visual placeholders, descriptions, durations, and transition explanations. Linear layout for developmental sequences (embryo → adult), circular layout for repeating cycles (water cycle, seasons). Shows connecting arrows with transition explanations when correct. ESSENTIAL for K-8 biology whenever students need to understand sequences, life stages, cycles, or temporal processes.',
     constraints: 'Use for K-8 students learning life cycles, developmental sequences, or cyclical processes. K-2: Simple linear sequences (4-6 stages, basic vocabulary, observable changes like "seed grows into plant"). 3-5: More complex linear or circular cycles (5-7 stages, scientific terms introduced, mechanisms explained like "tadpole loses tail and grows legs"). 6-8: Complex cycles with molecular details (6-8 stages, cellular/molecular mechanisms, precise scientific terminology like "chromatin condenses into chromosomes"). Linear for one-direction processes (embryo to adult), circular for repeating cycles (water cycle, cell division). Always include stage durations, transition explanations, and one common misconception with correction. Perfect for any temporal biology topic: metamorphosis, germination, human development, cellular processes, biogeochemical cycles, seasonal changes, etc.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
     // One task identity: order every stage of one process. Linear and circular payloads share the check.
@@ -181,88 +181,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'sequence', label: 'Sequence the stages', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['sequence'],
         description: 'Put every stage of a life cycle or biological process in the order it happens.' },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks the order itself, and you are not told it. The cards are mixed up on purpose: when '
-        + 'you name them, name them in the order given, never sorted, and never list more than two stages in order (that '
-        + 'is the answer). Before the check, and after a wrong one, never say which stage comes first, next or last, which '
-        + 'slot a card belongs in, which two to trade, or what a stage turns into or came from. After a check each slot '
-        + 'shows a green check or a red cross; you may say how many are right, not where the red ones go. Describing '
-        + 'what is happening in one picture, and asking what a living thing can do at that stage or how big it is, is '
-        + 'teaching; linking two pictures (that vapor, then it), calling one the beginning or the end, or asking which '
-        + 'of two comes first is the answer. A Kindergarten to Grade 2 learner may not read: say the instruction and each card\'s name aloud, and '
-        + 'describe its picture from the card facts. On a cycle that starts again, slot 1 is the stage the item starts '
-        + 'from. You cannot place cards for the learner.',
-      // The activity's own check (`cycleMiss`), read from the placed order; `cycle_rotated` only on a circle.
-      misses: missLists<CycleMiss>({ sequence: ['cycle_rotated', 'reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'] }),
-      // time_arrow, keep_right, fewer_stages (`lifeCycleSequencerLevers.ts`). `cycle_rotated` has none: which stage a
-      // circle starts from is the item's own choice, and a lever that shows it places a stage.
-      unanswered: { sequence: ['cycle_rotated'] },
-      levers: true,
-    },
-    tutoring: {
-      taskDescription:
-        'Student is putting the stages of {{title}} in the order they really happen. '
-        + 'Cycle shape: {{cycleType}}. Stages to place: {{stageLabels}}. '
-        + 'They have placed {{placedCount}} of {{totalStages}}. Currently holding: {{selectedStageLabel}}. '
-        + 'At K-2 they tap the pictures in order; older students drag cards into numbered slots.',
-      contextKeys: [
-        'title',
-        'cycleType',
-        'stageLabels',
-        'placedCount',
-        'totalStages',
-        'selectedStageLabel',
-        'gradeBand',
-        'checked',
-      ],
-      scaffoldingLevels: {
-        level1: '"Which one do you think happens FIRST — right at the very beginning?"',
-        level2: '"You have placed {{placedCount}} so far. Think about what has to happen before the next one can happen."',
-        level3: '"Start at the very beginning of the life and work forwards. For each picture ask: could this happen before the one I just put down, or after it?"',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student orders the stages by size instead of by time',
-          response: '"Bigger does not always mean later — think about WHEN each one happens, not how big it is."',
-        },
-        {
-          pattern: 'Student places stages in the order the cards happen to be shown',
-          response: '"The pictures are all mixed up on purpose. Do not go left to right — look at each picture and think about what happens first in real life."',
-        },
-        {
-          pattern: 'Student gets stuck on which of two middle stages comes first',
-          response: '"Take just those two. What has to be true before each one can start? The one that needs the other to happen first goes second."',
-        },
-        {
-          pattern: 'Student finishes a circular cycle and thinks it has an end',
-          response: '"This one is a circle — when you get to the last one it starts all over again. That is what makes it a cycle."',
-        },
-        {
-          pattern: 'A pre-reader cannot read the stage names or the descriptions',
-          response: '"Never ask them to read. Name each picture aloud as they look at it and describe what is happening in child words. They tap the pictures in order — the words are yours to speak."',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
-          instruction:
-            'A pre-reader CANNOT read the stage names, the descriptions, the slot numbers or the instructions. Your voice is the only channel. '
-            + 'When you receive [CYCLE_ORIENT], say in one or two warm child-sized sentences that these pictures are mixed up and they should tap them in the order they really happen, starting with the very first one. '
-            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
-            + 'When you receive [CYCLE_STAGE_PLACED], SAY the name of the picture they just placed and what is happening in it, in one short sentence. Do NOT say whether it is in the right place. '
-            + 'When you receive [CYCLE_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
-        },
-        {
-          title: 'ORDER IS THE ANSWER',
-          instruction:
-            'The correct ORDER is the answer to this task. Never state the sequence, never say "the egg comes first", and never confirm or deny a placement before the student checks their work — '
-            + 'naming even one position gives away a piece of the answer. '
-            + 'Describe what is happening IN a picture freely; that is the stimulus, not the answer. '
-            + 'After they check and something is wrong, ask what has to happen before what — do not reorder it for them.',
-        },
-      ],
-    },
+    // How it is wired to the live tutor: `lifeCycleSequencer.card.ts` (behavior: `lifeCycleSequencer.boss.ts`).
+    ...bossEntry(lifeCycleSequencerCard),
     supportsEvaluation: true,
   },
   {
@@ -275,46 +195,23 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     id: 'ecosystem-diorama',
     description: 'A 3D island in a glass tank that runs like a real little world: a sun that crosses the sky and warms what it shines on, weather (sun, clouds, rain, snow, wind), seasons, plants, and animals (bear, bird, squirrel, deer). Students investigate in it: run a fair sun test and read picture thermometers (sunlight warms surfaces; dark and light, sun and shade); give a plant the sunlight, water and soil it needs and watch it grow or droop (what plants need); bring winter and move each animal to where it spends the winter (hibernate in a den, fly south, stored nuts in a tree, stay and find food); play a month of weather into a picture weather log and name the season from it; compare two weather logs for two months or places; and design shade to keep an ice pop cool in the sun. Perfect for lessons on weather and seasons, weather patterns and graphs, plants and animals and their needs, how animals and plants change with the seasons, sunlight and heat, and simple engineering design. ESSENTIAL for K-2 science: K-PS3-1, K-PS3-2, K-LS1-1, K-ESS2-1, K-ESS3-1, and seasonal change.',
     constraints: 'Grades K-5 (built for K-2). Each session is 5 items of one task, or 6 mixed (one of each). Code picks every pair, record, plant, animal, cover and result. The manifest must NOT supply items or say any answer. No numbers or temperatures are shown: thermometers are pictures with five marks; weather logs are pictures.',
-    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['apply'], minutes: 7 },
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'build', 'manipulate'], role: ['apply'], minutes: 7 },
     evalModes: [
-      { evalMode: 'plant_needs', label: 'Plant Needs', beta: -1.5, scaffoldingMode: 1, challengeTypes: ['plant_needs'],
+      { evalMode: 'plant_needs', affordances: { answers: ['build'] }, label: 'Plant Needs', beta: -1.5, scaffoldingMode: 1, challengeTypes: ['plant_needs'],
         description: 'Give a potted plant sunlight, water and soil (and nothing an animal needs), or fix a drooping one, then watch it grow' },
-      { evalMode: 'sun_test', label: 'Sun Test', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sun_test'],
+      { evalMode: 'sun_test', affordances: { answers: ['tap'] }, label: 'Sun Test', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sun_test'],
         description: 'Run a fair sun test on two things that differ in one way: guess, move the sun across the sky, then tap the one the thermometers show got warmer' },
-      { evalMode: 'season_behavior', label: 'Animals in Winter', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['season_behavior'],
+      { evalMode: 'season_behavior', affordances: { answers: ['manipulate'] }, label: 'Animals in Winter', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['season_behavior'],
         description: 'Bring winter to the island and move each animal to where it spends the winter (den, south, tree hollow, meadow)' },
-      { evalMode: 'season_from_log', label: 'Season from a Weather Log', beta: 0.0, scaffoldingMode: 2, challengeTypes: ['season_from_log'],
+      { evalMode: 'season_from_log', affordances: { answers: ['tap'] }, label: 'Season from a Weather Log', beta: 0.0, scaffoldingMode: 2, challengeTypes: ['season_from_log'],
         description: 'Play a month of weather into a picture log, then name the season and the most common weather that shows it' },
-      { evalMode: 'compare_logs', label: 'Compare Weather Logs', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['compare_logs'],
+      { evalMode: 'compare_logs', affordances: { answers: ['tap'] }, label: 'Compare Weather Logs', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['compare_logs'],
         description: 'Play two months or places into two weather logs, then say which had more of a weather or which was warmer' },
-      { evalMode: 'keep_it_cool', label: 'Keep It Cool', beta: 1.0, scaffoldingMode: 4, challengeTypes: ['keep_it_cool'],
+      { evalMode: 'keep_it_cool', affordances: { answers: ['build'] }, label: 'Keep It Cool', beta: 1.0, scaffoldingMode: 4, challengeTypes: ['keep_it_cool'],
         description: 'Build shade over a treat in the sun (umbrella, leaf roof, the hut; a clear sheet does not work) so the thermometer stays below the cool line all day' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The world runs what the learner sets up and the activity judges; never give an answer before the learner works '
-        + 'it out. Sun test: the learner taps a guess, drags the sun across the sky (or presses Let the day go by), then taps the '
-        + 'thing that got warmer; that tap is the check. The guess is never graded; compare it with what happened afterwards. Never '
-        + 'say which thing got warmer or which red line is higher, and never say before the test that dark, sunny or sandy things '
-        + 'get warmer; ask the learner to compare the two red lines. Each test changes one thing; name what is the same and what is '
-        + 'different. Plant needs: Watch it grow is the check; never name what the plant is missing; ask what plants need to grow, '
-        + 'and after it grows, why it did not need a den or berries. Winter: the learner brings winter, moves each animal to a '
-        + 'winter place and presses Done; never say where an animal goes; ask what is hard about winter for that animal (cold, no '
-        + 'food). Weather log: the log is the evidence; never name the season or say which weather happened most; ask the learner '
-        + 'to count the rows. Compare logs: never say which log answers the question; ask the learner to count the same weather in '
-        + 'both logs. Keep it cool: the end of the day is the check; many designs work; never pick the cover; ask what blocks '
-        + 'sunlight, and after a clear sheet fails, why. This is a pretend sun in a tank: never tell the learner to look at the sun.',
-      // Each task's own check: `readMiss`, `plantNeedsMiss`, `winterMiss`, `seasonLogMiss`, `compareMiss`, `coolMiss`.
-      misses: missLists<EcosystemMiss>({
-        plant_needs: ['no_sun', 'no_water', 'no_soil', 'gave_animal_things'],
-        sun_test: ['picked_cooler'],
-        season_behavior: ['wrong_place'],
-        season_from_log: ['wrong_season', 'present_not_most'],
-        compare_logs: ['picked_fewer', 'picked_colder'],
-        keep_it_cool: ['no_shade', 'clear_cover'],
-      }),
-    },
+    ...bossEntry(ecosystemDioramaCard),
   },
   {
     id: 'habitat-diorama',
@@ -499,25 +396,6 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     constraints: 'Use for grades 3-8 students learning food chains, food webs, trophic levels, or ecosystem dynamics. Grade 3-5: Simple food chains with 6-8 organisms, clear linear relationships (grass → rabbit → fox), focus on basic producer/consumer/predator progression, optional simple disruption scenario showing predictable effects. Grade 6-8: Complex food webs with 8-10 organisms showing interconnected relationships, organisms with multiple prey and predators, REQUIRED disruption scenarios demonstrating trophic cascades and keystone species effects, emphasis on systems thinking and indirect effects. Perfect for teaching: producers/consumers/decomposers, energy flow, food chains vs food webs, trophic levels, predator-prey relationships, ecosystem balance, keystone species, trophic cascades, population dynamics. Works for any ecosystem: grassland, forest, ocean, coral reef, desert, tundra, pond, wetland. Students click organisms to draw connections showing energy flow direction (arrow from prey → predator). Evaluation tracks connection accuracy, identifies missing/extra connections, and can include disruption prediction assessment for 6-8.',
     affordances: { representation: 'pictorial', answers: ['build'], role: 'apply', minutes: 7 },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'On the whole web the learner taps one living thing and then another to draw an arrow for every feeding '
-        + 'relationship, then presses Check. On make a food chain the scene starts empty: the learner puts living things in '
-        + 'from the list, joins them with arrows and presses I’m done!; many chains pass. Either way the activity checks every '
-        + 'arrow against the lesson’s feeding relations, which you are not told. Never name a living thing the chain still '
-        + 'needs, never say which way an arrow should point or which arrow is wrong, and never say how many living things are '
-        + 'in the chain. Asking the learner to read one of their own arrows aloud as a sentence is teaching; saying what it '
-        + 'should say is not. You cannot tap, place or draw for the learner.',
-      // Both modes publish levers (`foodWebLevers.ts`): every complete_web miss has one.
-      levers: true,
-      // The activity's own checks (`foodWebMiss`, `foodChainMiss`).
-      misses: missLists<FoodWebMiss | FoodChainMiss>({
-        complete_web: ['backwards_arrows', 'wrong_arrows', 'missing_arrows'],
-        build_chain: ['arrow_backwards', 'not_a_feeding_pair', 'broken_chain', 'wrong_end', 'no_producer', 'too_short', 'too_long'],
-      }),
-      // build_chain `wrong_end` has no lever: the ask on screen names the living thing the chain ends at.
-      unanswered: { build_chain: ['wrong_end'] },
-    },
     evalModes: [
       {
         evalMode: 'complete_web',
@@ -542,6 +420,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
           + 'arrow is a real feeding relation. 3-LS, 5-LS2-1, MS-LS2-3.',
       },
     ],
+    // How it is wired to the live tutor: `foodWebBuilder.card.ts` (behavior: `foodWebBuilder.boss.ts`).
+    ...bossEntry(foodWebBuilderCard),
   },
   {
     id: 'adaptation-investigator',

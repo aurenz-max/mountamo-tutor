@@ -113,7 +113,7 @@ it('make_ten at grades 1-2: a five-frame model and the five-frame, never the ans
   expect(demand(h)).not.toMatch(/\b7\b|seven/);
   h.dispatch('pull_lever', { lever: 'near_ten' });
   expect(h.state().task).toMatchObject({ itemId: 'c0~smaller' });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('3');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"three"\./);
   h.say('three'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('c0');
   h.say('seven'); h.feedback('correct');
@@ -139,7 +139,7 @@ it('subitize: empty boxes fade, the long look lasts twice as long and still hide
   expect(onFrame(h)).toBe(0);
   h.dispatch('pull_lever', { lever: 'fewer_dots' });
   expect(h.state().task).toMatchObject({ itemId: 'c0~smaller' });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four"\./);
   h.close();
 });
 
@@ -153,7 +153,7 @@ it('operate: a model problem beside the frame, never this one; smaller numbers i
   expect(demand(h)).not.toMatch(/\b8\b|eight/);
   h.dispatch('pull_lever', { lever: 'smaller_numbers' });
   expect(h.state().task).toMatchObject({ itemId: 'c0~smaller' });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('5');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"five"\./);
   h.say('five'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('c0');
   h.say('eight'); h.feedback('correct', 'advance'); h.confirmVisible();

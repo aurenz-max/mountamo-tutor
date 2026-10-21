@@ -1,27 +1,29 @@
 /**
- * evidence-finder's in-item levers (/add-support-tiers; report qa/eval-reports/evidence-finder-levers-2026-10-09.md).
- * No real-learner evidence: the misses are what `evidenceFinderMiss` observes; the catalog's commonStruggles name
- * "opinion vs evidence", "weak evidence" and "wrong section". Every answer is a fact about THIS passage (which
- * sentences prove the claim, which claim each supports, how strong each is), so no lever marks, orders or singles out
- * a sentence of the passage. Help levers count, or show a worked example on another topic; simplify levers open a
- * short practice passage on another topic.
+ * evidence-finder's in-item levers (/add-support-tiers; report qa/eval-reports/evidence-finder-levers-2026-10-09.md),
+ * declared once as a lever set (`bossLevers.ts`). The levers follow the item's step (its kind), not its mode.
+ * No real-learner evidence: the misses are what `evidenceFinderMiss` observes. Every answer is a fact about THIS passage
+ * (which sentences prove the claim, which claim each supports, how strong each is), so no lever marks, orders or singles
+ * out a sentence of the passage: they count, or show a worked example on another topic, or open a short practice
+ * passage on another topic.
  *
  * find (`not_evidence`, `wrong_claim`, `missed_evidence`):
- * - `evidence_count` (help) under each claim a row of boxes, one per sentence that clearly proves it (strong or
- *   moderate), filled one per sentence highlighted under that claim. It counts picks, never marks which (`countLeaks`).
- * - `proof_example` (help) a worked example on another topic: a claim (two on a two-claim passage), a sentence that
+ * - `evidence_count` (custom) under each claim a row of boxes, one per sentence that clearly proves it (strong or
+ *   moderate), filled one per sentence highlighted under that claim. It counts picks, never marks which; refused when
+ *   it would say "none here" or "pick them all" (`countLeaks`).
+ * - `proof_example` (model) a worked example on another topic: a claim (two on a two-claim passage), a sentence that
  *   proves it, one only about the topic, and an opinion, each marked with why. None of the passage's topic (`poolLeaks`).
- * - `practice_passage` (simplify) a four-sentence practice passage on another topic, the same number of claims, every
+ * - `practice_passage` (easier) a four-sentence practice passage on another topic, the same number of claims, every
  *   proving sentence strong. Ungraded; the full passage comes back after it, blank.
  * rate (`weak_as_strong`, `rated_too_strong`, `rated_too_weak`, `mixed_ratings`):
- * - `strength_guide` (help) what Strong, Moderate and Weak mean, each with an example on another topic.
- * - `practice_ratings` (simplify) two sentences to rate on another topic, one strong and one weak (far apart).
+ * - `strength_guide` (legend) what Strong, Moderate and Weak mean, each with an example on another topic.
+ * - `practice_ratings` (easier) two sentences to rate on another topic, one strong and one weak (far apart).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { EvidenceFinderData } from './EvidenceFinder';
+import { evidenceFinderCard } from './evidenceFinder.card';
 import {
-  FIND_MISSES, RATE_MISSES, claimOf, requiredEvidence, type EvidenceFinderItem, type EvidenceFinderMiss, type Strength,
+  FIND_MISSES, RATE_MISSES, claimOf, practiceId, requiredEvidence, type EvidenceFinderItem, type EvidenceStep,
+  type EvidenceFinderView, type Strength,
 } from './evidenceFinderWorkspace';
 
 export const COUNT_LEVER = 'evidence_count';
@@ -29,12 +31,10 @@ export const EXAMPLE_LEVER = 'proof_example';
 export const PASSAGE_LEVER = 'practice_passage';
 export const GUIDE_LEVER = 'strength_guide';
 export const RATINGS_LEVER = 'practice_ratings';
-export const PRACTICE_SUFFIX = '~simpler';
 export const PRACTICE_NOTE = 'A short practice passage on another topic, ungraded; the full passage comes back after it, blank.';
 
-export const practiceId = (item: EvidenceFinderItem['id']) => `${item}${PRACTICE_SUFFIX}`;
-export const practicePhase = (id: string | null | undefined): EvidenceFinderItem['id'] | null =>
-  id?.endsWith(PRACTICE_SUFFIX) ? id.slice(0, -PRACTICE_SUFFIX.length) as EvidenceFinderItem['id'] : null;
+/** The lesson context the levers read: the learner's highlights (the count fills one box per highlight). */
+export type EvidenceLeverCtx = Pick<EvidenceFinderView, 'highlighted'>;
 
 // ── the other-topic pool ───────────────────────────────────────────────────
 
@@ -103,7 +103,7 @@ function topics(data: EvidenceFinderData): PoolTopic[] {
 export const exampleTopic = (data: EvidenceFinderData): PoolTopic | null => topics(data)[0] ?? null;
 export const practiceTopic = (data: EvidenceFinderData): PoolTopic | null => topics(data)[1] ?? topics(data)[0] ?? null;
 
-// ── help: what each lever draws ────────────────────────────────────────────
+// ── what each help lever draws ─────────────────────────────────────────────
 
 /** One marked sentence of the worked example. */
 export interface ExampleLine { text: string; mark: 'proves' | 'topic' | 'opinion'; claim?: number; why: string }
@@ -154,22 +154,22 @@ export function countLeaks(data: EvidenceFinderData): boolean {
 // ── simplify: the practice items ───────────────────────────────────────────
 
 /**
- * The practice passage for find: four or five sentences on another topic, the session's number of claims, every proving
+ * The practice passage for find: four sentences on another topic, the session's number of claims, every proving
  * sentence strong and stated outright. The practice for rate: one strong and one weak sentence (plus one that is not
  * evidence, never rated) for one claim.
  */
-export function practiceFor(item: EvidenceFinderItem, data: EvidenceFinderData): EvidenceFinderData | null {
+export function practiceFor(step: EvidenceStep, data: EvidenceFinderData): EvidenceFinderData | null {
   const t = practiceTopic(data);
   if (!t) return null;
   const s = (id: string, text: string, claimIndex?: number, evidenceStrength?: Strength) =>
     (claimIndex === undefined ? { id, text, isEvidence: false } : { id, text, isEvidence: true, claimIndex, evidenceStrength });
   const two = data.claims.length > 1;
-  const sentences = item.id === 'rate'
+  const sentences = step === 'rate'
     ? [s('p1', t.proves[0], 0, 'strong'), s('p2', t.topical), s('p3', t.weak, 0, 'weak')]
     : two
       ? [s('p1', t.topical), s('p2', t.proves[0], 0, 'strong'), s('p3', t.opinion), s('p4', t.provesSecond, 1, 'strong')]
       : [s('p1', t.topical), s('p2', t.proves[0], 0, 'strong'), s('p3', t.opinion), s('p4', t.proves[1], 0, 'strong')];
-  const claims = (item.id === 'find' && two ? t.claims : [t.claims[0]])
+  const claims = (step === 'find' && two ? t.claims : [t.claims[0]])
     .map((text, i) => ({ id: `practice-claim${i + 1}`, text, color: i ? 'violet' : 'blue' }));
   const p: EvidenceFinderData = {
     title: 'Practice passage', gradeLevel: data.gradeLevel, cerEnabled: data.cerEnabled,
@@ -185,75 +185,72 @@ export function practiceLeaks(p: EvidenceFinderData, data: EvidenceFinderData): 
     || [...p.passage.sentences.map(s => s.text), ...p.claims.map(c => c.text)].some(x => theirs.has(norm(x)));
 }
 
-export function practiceAssignment(item: EvidenceFinderItem, p: EvidenceFinderData): TeachingAssignment {
-  const task = item.id === 'rate'
-    ? 'Practice passage: rate how strong each piece of evidence is: Strong, Moderate or Weak.'
-    : p.claims.length > 1
-      ? `Practice passage: highlight every sentence that is evidence, under the claim it supports: ${p.claims
-        .map((c, i) => `claim ${i + 1}, "${c.text}"`).join('; ')}.`
-      : `Practice passage: highlight every sentence that is evidence for the claim: "${p.claims[0].text}".`;
-  return { id: practiceId(item.id), task, response: 'gesture' };
+/** The practice item a simplify lever opens on `item`: the same step on a practice passage, its own id. */
+export function practiceItem(item: EvidenceFinderItem): EvidenceFinderItem | null {
+  const p = practiceFor(item.kind, item.data);
+  return p ? { id: practiceId(item.kind), kind: item.kind, data: p } : null;
 }
 
-// ── declarations ───────────────────────────────────────────────────────────
+// ── the lever set ──────────────────────────────────────────────────────────
 
-/** The levers on a session item. A practice item carries none. */
-export function evidenceFinderLevers(item: EvidenceFinderItem | null | undefined, data: EvidenceFinderData,
-  pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly EvidenceFinderMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  const practice = practiceFor(item, data);
-  if (item.id === 'find') return [
-    ...(countLeaks(data) ? [] : [lever(COUNT_LEVER, 'help', ['missed_evidence', 'wrong_claim'],
-      'The learner stops before finding all the evidence, or puts evidence under the wrong claim.',
-      data.claims.length > 1
+const on = (step: EvidenceStep) => (item: EvidenceFinderItem) => item.kind === step;
+
+/** What the count shows now, from the learner's highlights. */
+function countFact(data: EvidenceFinderData, highlighted: EvidenceLeverCtx['highlighted']): string {
+  const counts = proofCounts(data);
+  const filled = (i: number) => Math.min(Object.values(highlighted).filter(c => c === i).length, counts[i]);
+  return data.claims.length > 1
+    ? `Under each claim, a row of boxes, one for each sentence that clearly proves it (${counts.map((n, i) =>
+      `claim ${i + 1}: ${n}, ${filled(i)} filled`).join('; ')}). It does not mark which sentences.`
+    : `Under the claim, a row of ${counts[0]} boxes, one for each sentence that clearly proves it, ${filled(0)} filled. `
+      + 'It does not mark which sentences.';
+}
+
+/** The levers, declared once. None is offered on a practice passage: the component declares nothing there. */
+export const EVIDENCE_LEVERS = leverSet<EvidenceFinderItem, EvidenceLeverCtx>({
+  missesOf: mode => evidenceFinderCard.modes[mode]?.misses ?? [],
+  support: {
+    tier: item => item.supportTier ?? 'medium',
+    different: 'a worked example on another topic, each sentence marked with why',
+    own: 'which sentences of this passage are evidence',
+  },
+  specs: [
+    { id: COUNT_LEVER, type: 'custom', carrier: 'shown', answers: ['missed_evidence', 'wrong_claim'],
+      why: 'It counts the learner\'s own highlights against how many sentences prove each claim and changes as they '
+        + 'highlight; no stock type reads back the learner\'s own work.',
+      when: 'The learner stops before finding all the evidence, or puts evidence under the wrong claim.',
+      does: item => (item.data.claims.length > 1
         ? 'Shows under each claim a row of boxes, one for each sentence that clearly proves it, filling one per sentence '
           + 'highlighted under that claim. It counts; it never marks which sentences. You may say how many each claim has.'
         : 'Shows under the claim a row of boxes, one for each sentence that clearly proves it, filling one per sentence '
-          + 'highlighted. It counts; it never marks which sentences. You may say how many there are.')]),
-    ...(proofExample(data) ? [lever(EXAMPLE_LEVER, 'help', ['not_evidence', 'wrong_claim'],
-      'The learner highlights sentences that are only about the topic, or opinions, or sorts them under the wrong claim.',
-      'Shows a worked example on another topic: a claim, a sentence that proves it, one that is only about the topic, and '
-        + 'an opinion, each marked with why. Nothing from this passage is on it.')] : []),
-    ...(practice ? [lever(PASSAGE_LEVER, 'simplify', FIND_MISSES,
-      'The learner cannot find the evidence in a passage this long yet.',
-      'Opens a four-sentence practice passage on another topic with the same task first. It is not graded; this passage '
-        + 'comes back after it, blank.')] : []),
-  ];
-  return [
-    ...(strengthGuide(data) ? [lever(GUIDE_LEVER, 'help', RATE_MISSES,
-      'The learner rates evidence too strong or too weak, or rates a sentence that only mentions the idea as Strong.',
-      'Shows what Strong, Moderate and Weak mean, each with an example sentence on another topic. Nothing from this '
-        + 'passage is on it.')] : []),
-    ...(practice ? [lever(RATINGS_LEVER, 'simplify', RATE_MISSES,
-      'The learner cannot tell the strengths apart in this passage yet.',
-      'Opens a practice with two sentences on another topic to rate, one strong and one weak, first. It is not graded; '
-        + 'this passage comes back after it, blank.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor. Never a sentence of the passage singled out. */
-export function evidenceFinderLeverFacts(item: EvidenceFinderItem, data: EvidenceFinderData, pulled: readonly string[],
-  highlighted: Readonly<Record<string, number>>): string {
-  const has = (id: string) => pulled.includes(id);
-  if (item.id === 'find') {
-    const counts = proofCounts(data);
-    const filled = (i: number) => Object.values(highlighted).filter(c => c === i).length;
-    const count = has(COUNT_LEVER) && !countLeaks(data)
-      ? (data.claims.length > 1
-        ? `Under each claim, a row of boxes, one for each sentence that clearly proves it (${counts.map((n, i) =>
-          `claim ${i + 1}: ${n}, ${Math.min(filled(i), n)} filled`).join('; ')}). It does not mark which sentences.`
-        : `Under the claim, a row of ${counts[0]} boxes, one for each sentence that clearly proves it, ${Math.min(filled(0), counts[0])} `
-          + 'filled. It does not mark which sentences.') : '';
-    const ex = has(EXAMPLE_LEVER) ? proofExample(data) : null;
-    const example = ex ? `A worked example about ${ex.topic}, not this passage: ${ex.claims.map((c, i) =>
-      `${ex.claims.length > 1 ? `claim ${i + 1}` : 'claim'} "${c}"`).join(', ')}; ${ex.lines.map(l => `"${l.text}" is marked ${l.why}`)
-      .join('; ')}.` : '';
-    return [count, example].filter(Boolean).join(' ');
-  }
-  const g = has(GUIDE_LEVER) ? strengthGuide(data) : null;
-  return g ? `A strength guide about ${g.topic}, not this passage, for the claim "${g.claim}": ${g.rows.map(r =>
-    `${r.strength === 'strong' ? 'Strong' : r.strength === 'moderate' ? 'Moderate' : 'Weak'} means ${r.means}, e.g. "${r.example}"`)
-    .join('; ')}.` : '';
-}
+          + 'highlighted. It counts; it never marks which sentences. You may say how many there are.'),
+      content: item => (on('find')(item) && !countLeaks(item.data) ? true : null),
+      fact: (_c, item, ctx) => countFact(item.data, ctx.highlighted) },
+    { id: EXAMPLE_LEVER, type: 'model', answers: ['not_evidence', 'wrong_claim'],
+      when: 'The learner highlights sentences that are only about the topic, or opinions, or sorts them under the wrong claim.',
+      does: 'Shows a worked example on another topic: a claim, a sentence that proves it, one that is only about the topic, '
+        + 'and an opinion, each marked with why. Nothing from this passage is on it.',
+      content: item => (on('find')(item) ? proofExample(item.data) : null),
+      fact: (ex: ProofExample) => `A worked example about ${ex.topic}, not this passage: ${ex.claims.map((c, i) =>
+        `${ex.claims.length > 1 ? `claim ${i + 1}` : 'claim'} "${c}"`).join(', ')}; ${ex.lines.map(l => `"${l.text}" is marked ${l.why}`)
+        .join('; ')}.` },
+    { id: PASSAGE_LEVER, type: 'easier', answers: FIND_MISSES,
+      when: 'The learner cannot find the evidence in a passage this long yet.',
+      does: 'Opens a four-sentence practice passage on another topic with the same task first. It is not graded; this '
+        + 'passage comes back after it, blank.',
+      content: item => (on('find')(item) ? practiceItem(item) : null) },
+    { id: GUIDE_LEVER, type: 'legend', answers: RATE_MISSES,
+      when: 'The learner rates evidence too strong or too weak, or rates a sentence that only mentions the idea as Strong.',
+      does: 'Shows what Strong, Moderate and Weak mean, each with an example sentence on another topic. Nothing from this '
+        + 'passage is on it.',
+      content: item => (on('rate')(item) ? strengthGuide(item.data) : null),
+      fact: (g: StrengthGuide) => `A strength guide about ${g.topic}, not this passage, for the claim "${g.claim}": ${g.rows.map(r =>
+        `${r.strength === 'strong' ? 'Strong' : r.strength === 'moderate' ? 'Moderate' : 'Weak'} means ${r.means}, e.g. "${r.example}"`)
+        .join('; ')}.` },
+    { id: RATINGS_LEVER, type: 'easier', answers: RATE_MISSES,
+      when: 'The learner cannot tell the strengths apart in this passage yet.',
+      does: 'Opens a practice with two sentences on another topic to rate, one strong and one weak, first. It is not '
+        + 'graded; this passage comes back after it, blank.',
+      content: item => (on('rate')(item) ? practiceItem(item) : null) },
+  ],
+});

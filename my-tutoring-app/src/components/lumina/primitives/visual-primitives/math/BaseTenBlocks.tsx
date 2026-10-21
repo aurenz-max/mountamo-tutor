@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -22,19 +21,21 @@ import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRu
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { TWO_WAYS, describePlainCheck, describeTwoWaysCheck, plainMiss, plainWorkspaceAssignment, plainWorkspaceScene,
-  twoWaysMiss, twoWaysScene } from './baseTenWorkspace';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { TWO_WAYS, clickItemsOf, describePlainCheck, describeTwoWaysCheck, plainMiss, plainWorkspaceScene,
+  twoWaysMiss, twoWaysScene, type BaseTenClickItem } from './baseTenWorkspace';
 import { BaseTenBuildScene, MatButtons, TenModel, columnCapacity, type MatPlace } from './BaseTenBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
 import BaseTenBlocksDi from './BaseTenBlocksDi';
 import { usesBaseTenDi } from './baseTenScript';
-import { BRACKET_LEVER, COUNTS_LEVER, PRACTICE_SUFFIX, TEN_MODEL_LEVER, TOTAL_LEVER, TRADE_MARK_LEVER, baseTenLevers,
-  isOperate as isOperateType, leverFacts, practiceItem, startLevers, tradeColumns } from './baseTenLevers';
+import { BASE_TEN_LEVERS, BRACKET_LEVER, COUNTS_LEVER, TEN_MODEL_LEVER, TOTAL_LEVER, TRADE_MARK_LEVER,
+  isOperate as isOperateType, startLevers, tradeColumns } from './baseTenLevers';
+import { baseTenBlocksBoss } from './baseTenBlocks.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -203,7 +204,7 @@ interface BaseTenBlocksProps {
   runtimeEvalMode?: string;
 }
 
-type PlainChallenge = BaseTenBlocksChallenge & { id: string };
+type PlainChallenge = BaseTenClickItem;
 
 /** The teaching workspace is base-ten-blocks' only controller: the runtime owns progression. */
 const useBaseTenProgress = useWorkspaceProgressFor('base-ten-blocks');
@@ -236,10 +237,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   const activePlaces = useMemo(() => getActivePlaces(maxPlace, decimalMode), [maxPlace, decimalMode]);
 
   // Stable challenges with IDs (BaseTenBlocksChallenge has no id field)
-  const challengesWithIds = useMemo(
-    () => challenges.map((ch, i) => ({ ...ch, id: `${ch.type}-${i}` })),
-    [challenges],
-  );
+  const challengesWithIds = useMemo(() => clickItemsOf(challenges), [challenges]);
 
   // -------------------------------------------------------------------------
   // State
@@ -300,7 +298,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     challenges: challengesWithIds,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: plainWorkspaceAssignment,
+    workspace, assignment: baseTenBlocksBoss.assignment!,
     // A fresh challenge and Try again both start from the challenge's own mat. Try again on the plainer build
     // keeps it; only a fresh challenge or the workspace's endPractice removes it.
     onItemOpened: (index, retry) => {
@@ -633,19 +631,6 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         + 'Purple sticks are tens, green cubes are ones, blue squares are hundreds.' },
   });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: showSummary || hasSubmittedEvaluation ? null : currentChallenge?.id ?? (challengesWithIds.length === 0 ? 'explore' : null),
-    label: 'The place value mat',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challengesWithIds.length === 0) return 0;
     const correct = challengeResults.filter(r => r.correct).length;
@@ -660,11 +645,12 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
       ? twoWaysScene({ columns, places: matPlaces, value: currentTotal, first: firstWayNow })
       : plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
         typed: typedAnswer, trades: regroupCount });
-    const onScreen = leverFacts(pulledLevers, startPulled);
-    const levers = practice ? [] : baseTenLevers(sessionChallenge, pulledLevers, columns);
+    const leverCtx = { problems: [], columns, started: startPulled };
+    const levers = practice || !sessionChallenge ? [] : BASE_TEN_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...leverScene(scene, {
+        support: practice || !sessionChallenge ? '' : BASE_TEN_LEVERS.support(sessionChallenge, leverCtx),
+        onScreen: practice || !sessionChallenge ? '' : BASE_TEN_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the mat changes before this returns.
       pullLever: (id) => {
@@ -672,14 +658,14 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (PRACTICE_SUFFIX[id]) {
-          // The same builders the journey row rebuilds a practice item with (`practiceFromId`).
-          const easier = practiceItem(sessionChallenge, id);
-          if (easier === null) return 'There is no simpler item for this one.';
+        if (lever.kind === 'simplify') {
+          // The same builders the journey rebuilds a practice item with (`practiceFromId`).
+          const easier = BASE_TEN_LEVERS.simpler(sessionChallenge, leverCtx, id);
+          if (!easier || 'step' in easier) return 'There is no simpler item for this one.';
           setLeverState(pulled);
           practiceRef.current = easier; setPractice(easier); setFirstWay(null);
           setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
-          return { practice: plainWorkspaceAssignment(easier) };
+          return { practice: baseTenBlocksBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -754,6 +740,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             <LuminaBadge accent="blue" className="text-xs">
               {interactionMode}
             </LuminaBadge>
+            {practice && <LuminaBadge accent="amber" className="text-xs">Practice</LuminaBadge>}
             {decimalMode && (
               <LuminaBadge accent="cyan" className="text-xs">
                 Decimal
@@ -792,12 +779,13 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
 
         {/* Pip's dock sits above the place value mat, which it outlines as the
             workspace — never one column or one block. */}
-        {pip.store && !showSummary && <div {...pip.dock} />}
+        {!showSummary && <PipDock />}
 
         {/* Open build (build_two_ways): the first way, kept once it was right, above the mat the learner builds on.
             Only the live mat carries data-base-ten-mat; the first way is a picture of earlier work. */}
         {isTwoWays && !showSummary && (
-          <div {...pip.workspace} data-base-ten-mat="click" className="flex flex-col items-center gap-3">
+          <PipWorkspace>
+          <div data-base-ten-mat="click" className="flex flex-col items-center gap-3">
             {firstWayNow && (
               <div className="flex flex-col items-center gap-1" data-first-way>
                 <span className="text-xs text-slate-400">Your first way</span>
@@ -820,11 +808,13 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
               I&apos;m done!
             </LuminaButton>
           </div>
+          </PipWorkspace>
         )}
 
         {/* Place Value Columns */}
         {!isTwoWays && (
-        <div {...pip.workspace} data-base-ten-mat="click" className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
+        <PipWorkspace>
+        <div data-base-ten-mat="click" className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
           {activePlaces.map(place => {
             const config = PLACE_CONFIG[place];
             const count = columns[place] || 0;
@@ -910,6 +900,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             );
           })}
         </div>
+        </PipWorkspace>
         )}
 
         {/* The ten_model lever on the click mat's read and trade items (a mixed payload): outside the learner's mat. */}

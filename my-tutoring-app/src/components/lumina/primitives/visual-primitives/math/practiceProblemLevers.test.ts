@@ -4,11 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { PracticeProblemSolution } from './practice-problem-types';
-import { PRACTICE_MISSES, type PracticeMiss } from './practiceProblemWorkspace';
+import { PRACTICE_MISSES, PRACTICE_UNANSWERED, type PracticeMiss } from './practiceProblem.card';
 import {
-  MARK_LINES_LEVER, PRACTICE_UNANSWERED, START_HERE_LEVER, STEP_TITLES_LEVER, STRATEGY_LEVER,
-  answerPhrases, practiceProblemLevers, scaffoldLeaks, scaffoldText, startingLevers, supportWith,
+  MARK_LINES_LEVER, PRACTICE_LEVERS, START_HERE_LEVER, STEP_TITLES_LEVER, STRATEGY_LEVER,
+  answerPhrases, scaffoldLeaks, scaffoldText, startingLevers, supportWith,
 } from './practiceProblemLevers';
+
+/** The levers on `p` with these scaffolds on screen and these lines flagged by the last check. */
+const practiceProblemLevers = (p: PracticeProblemSolution, on: readonly string[], flagged: readonly string[]) =>
+  PRACTICE_LEVERS.declare({ ...p, id: 'problem' }, { flagged }, on);
 
 const P: PracticeProblemSolution = {
   title: 'Two-step equation', subject: 'Algebra', difficulty: 'easy', evalMode: 'derive_easy', gradeLevel: 'Grade 7',

@@ -8,13 +8,17 @@
  * - `parallel_marks`: matching arrows on each pair of parallel sides.
  * - `equal_ticks`: matching tick marks on sides of the same length.
  * - `fold_lines`: a dashed line wherever the shape folds onto itself.
- * - `fewer_properties` (simplify): the same ask with its last property dropped, ungraded, then the full item.
- * The other modes declare no levers.
+ * - `fewer_properties` (easier): the same ask with its last property dropped, ungraded, then the full item.
+ * The other modes declare no levers (their misses are `unanswered` on the card).
+ *
+ * Declared once as a lever set (`SHAPE_BUILDER_LEVERS`, `bossLevers.ts`); its context is the lesson's grade band,
+ * which words the easier ask.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ShapeBuilderChallenge } from './ShapeBuilder';
 import { askOf } from './shapeBuilderWorkspace';
-import { fewerProperties, shapeAskText, type ShapeBand, type ShapeMakeMiss } from './shapeMakeBuild';
+import { fewerProperties, shapeAskText, type ShapeBand } from './shapeMakeBuild';
+import { SHAPE_BUILDER_MISSES_BY_MODE } from './shapeBuilder.card';
 
 export const SIDE_TAGS_LEVER = 'side_tags';
 export const CORNER_MARKS_LEVER = 'corner_marks';
@@ -25,6 +29,8 @@ export const FEWER_LEVER = 'fewer_properties';
 
 const FEWER = '~fewer';
 export const isPracticeShape = (c: Pick<ShapeBuilderChallenge, 'id'>) => c.id.endsWith(FEWER);
+/** The session item id a practice id stands in for. */
+export const practiceParent = (id: string) => (id.endsWith(FEWER) ? id.slice(0, -FEWER.length) : id);
 
 /** The easier ask for a make_shape item, or null: the same sides with the last property dropped, on an empty grid. */
 export function fewerShape(c: ShapeBuilderChallenge, band: ShapeBand): ShapeBuilderChallenge | null {
@@ -36,41 +42,38 @@ export function fewerShape(c: ShapeBuilderChallenge, band: ShapeBand): ShapeBuil
       equalSides: ask.equalSides, linesOfSymmetry: ask.linesOfSymmetry } };
 }
 
-export function shapeBuilderLevers(c: ShapeBuilderChallenge | null, pulled: readonly string[], band: ShapeBand): WorkspaceLever[] {
-  if (c?.type !== 'make_shape') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly ShapeMakeMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
-  return [
-    lever(SIDE_TAGS_LEVER, 'help', ['sides_off'],
-      'The learner makes a shape with too many or too few sides, or counts dots on a straight run as corners.',
-      "Puts a small number on each side of the learner's shape, 1, 2, 3 and on; dots on one straight run share one side."),
-    lever(CORNER_MARKS_LEVER, 'help', ['right_angles_off'],
-      'The learner cannot tell which corners of their shape are right angles (square corners).',
-      "Draws a small square in every corner of the learner's shape that is a right angle. Marks only their own shape."),
-    lever(PARALLEL_MARKS_LEVER, 'help', ['parallel_off'],
-      'The learner cannot tell which sides of their shape are parallel.',
-      "Puts matching arrows on each pair of parallel sides of the learner's shape."),
-    lever(EQUAL_TICKS_LEVER, 'help', ['equal_sides_off'],
-      'The learner cannot tell which sides of their shape are the same length.',
-      "Puts matching tick marks on the sides of the learner's shape that are the same length."),
-    lever(FOLD_LINES_LEVER, 'help', ['symmetry_off'],
-      'The learner cannot see where their shape folds onto itself.',
-      "Draws a dashed line through the learner's shape wherever it folds exactly onto itself."),
-    ...(fewerShape(c, band) ? [lever(FEWER_LEVER, 'simplify', ['right_angles_off', 'parallel_off', 'equal_sides_off', 'symmetry_off'],
-      'The learner cannot make a shape with all of these properties at once yet.',
-      'Opens an easier ask first on an empty grid: the same number of sides with one property fewer. It is not graded; '
-        + 'the full item comes back after it.')] : []),
-  ];
-}
+const MAKE = ['make_shape'];
 
-/** What the pulled help levers put on the grid, for the tutor. */
-export function leverFacts(c: ShapeBuilderChallenge | null, pulled: readonly string[]): string {
-  if (c?.type !== 'make_shape') return '';
-  return [
-    pulled.includes(SIDE_TAGS_LEVER) && "Each side of the learner's shape carries a small number.",
-    pulled.includes(CORNER_MARKS_LEVER) && "Each right-angle corner of the learner's shape has a small square in it.",
-    pulled.includes(PARALLEL_MARKS_LEVER) && "Parallel sides of the learner's shape carry matching arrows.",
-    pulled.includes(EQUAL_TICKS_LEVER) && "Sides of the learner's shape that are the same length carry matching ticks.",
-    pulled.includes(FOLD_LINES_LEVER) && "Dashed fold lines are drawn through the learner's shape where it folds onto itself.",
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
+export const SHAPE_BUILDER_LEVERS = leverSet<ShapeBuilderChallenge, ShapeBand>({
+  modeOf: c => c.type,
+  missesOf: mode => SHAPE_BUILDER_MISSES_BY_MODE[mode] ?? [],
+  specs: [
+    { id: SIDE_TAGS_LEVER, type: 'marks', modes: MAKE, answers: ['sides_off'],
+      when: 'The learner makes a shape with too many or too few sides, or counts dots on a straight run as corners.',
+      does: "Puts a small number on each side of the learner's shape, 1, 2, 3 and on; dots on one straight run share one side.",
+      fact: "Each side of the learner's shape carries a small number." },
+    { id: CORNER_MARKS_LEVER, type: 'marks', modes: MAKE, answers: ['right_angles_off'],
+      when: 'The learner cannot tell which corners of their shape are right angles (square corners).',
+      does: "Draws a small square in every corner of the learner's shape that is a right angle. Marks only their own shape.",
+      fact: "Each right-angle corner of the learner's shape has a small square in it." },
+    { id: PARALLEL_MARKS_LEVER, type: 'marks', modes: MAKE, answers: ['parallel_off'],
+      when: 'The learner cannot tell which sides of their shape are parallel.',
+      does: "Puts matching arrows on each pair of parallel sides of the learner's shape.",
+      fact: "Parallel sides of the learner's shape carry matching arrows." },
+    { id: EQUAL_TICKS_LEVER, type: 'marks', modes: MAKE, answers: ['equal_sides_off'],
+      when: 'The learner cannot tell which sides of their shape are the same length.',
+      does: "Puts matching tick marks on the sides of the learner's shape that are the same length.",
+      fact: "Sides of the learner's shape that are the same length carry matching ticks." },
+    { id: FOLD_LINES_LEVER, type: 'marks', modes: MAKE, answers: ['symmetry_off'],
+      when: 'The learner cannot see where their shape folds onto itself.',
+      does: "Draws a dashed line through the learner's shape wherever it folds exactly onto itself.",
+      fact: "Dashed fold lines are drawn through the learner's shape where it folds onto itself." },
+    // Offered only when the ask has a property to drop (`fewerShape`).
+    { id: FEWER_LEVER, type: 'easier', modes: MAKE, answers: ['right_angles_off', 'parallel_off', 'equal_sides_off', 'symmetry_off'],
+      when: 'The learner cannot make a shape with all of these properties at once yet.',
+      does: 'Opens an easier ask first on an empty grid: the same number of sides with one property fewer. It is not graded; '
+        + 'the full item comes back after it.',
+      content: (c, band) => fewerShape(c, band) },
+  ],
+});

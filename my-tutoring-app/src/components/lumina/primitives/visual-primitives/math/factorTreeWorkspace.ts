@@ -1,6 +1,5 @@
 /**
- * Factor tree on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C15).
+ * Factor tree on the shared tutor/JEV teaching workspace (boss: `factorTree.boss.ts`, card: `factorTree.card.ts`).
  *
  * Pure: the component and any probe read the same assignment and scene. A challenge is one composite to factor
  * into primes on the screen: the learner taps a number that is not prime, types two factors (or, in a guided mode,
@@ -8,8 +7,11 @@
  * composite on the tree stays and is not a commit; a wrong split, and the split that makes every leaf prime, are.
  * The tutor is never handed a factor pair, a quotient or the factorization.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { FactorTreeChallenge, TreeNode } from './FactorTree';
+import type { FactorTreeMiss } from './factorTree.card';
+
+export { FACTOR_TREE_MISSES_BY_MODE, type FactorTreeMiss } from './factorTree.card';
 
 export type FactorTreeNodes = ReadonlyMap<string, TreeNode>;
 
@@ -57,14 +59,10 @@ export function describeSplits(tree: FactorTreeNodes, id = '0'): string[] {
     ...describeSplits(tree, `${id}-0`), ...describeSplits(tree, `${id}-1`)];
 }
 
-export function workspaceAssignment(challenge: FactorTreeChallenge): TeachingAssignment {
-  return {
-    id: challenge.id,
-    task: `Find the prime factorization of ${challenge.rootValue}: split it into two factors, then keep splitting `
-      + 'every factor that is not prime until every leaf of the tree is prime.',
-    response: 'gesture',
-  };
-}
+/** The ask of one tree (`factorTreeBoss.ask`). */
+export const workspaceTask = (challenge: FactorTreeChallenge): string =>
+  `Find the prime factorization of ${challenge.rootValue}: split it into two factors, then keep splitting `
+    + 'every factor that is not prime until every leaf of the tree is prime.';
 
 /** One split the learner tried: the number tapped and the two factors given. */
 export interface FactorSplit { value: number; factor1: number; factor2: number }
@@ -79,22 +77,6 @@ export function describeFactorWork(tree: FactorTreeNodes, split: FactorSplit | n
   if (!splits.length) return 'Nothing split yet';
   return `${treeComplete(tree) ? 'Finished the tree' : 'Split so far'}: ${splits.join('; ')}`;
 }
-
-/**
- * What a wrong split shows (`TeachingAttempt.miss`, handoff 20), drawn from the catalog's commonStruggles (using 1
- * as a factor) and the factor-pair errors a split can show:
- * - `used_one`: 1 × the number (the product is right, the pair is useless);
- * - `added`: two numbers that add to the number instead of multiplying to it;
- * - `wrong_partner`: one factor divides the number, but the other is not the number divided by it;
- * - `not_a_factor`: neither number divides the number.
- */
-export type FactorTreeMiss = 'used_one' | 'added' | 'wrong_partner' | 'not_a_factor';
-
-const MISSES: readonly FactorTreeMiss[] = ['used_one', 'added', 'wrong_partner', 'not_a_factor'];
-export const FACTOR_TREE_MISSES_BY_MODE: Record<string, readonly FactorTreeMiss[]> = {
-  guided_small: MISSES, guided_medium: MISSES, unguided: MISSES, unguided_large: MISSES,
-  assessment_intro: MISSES, assessment: MISSES,
-};
 
 export function factorMiss(split: FactorSplit): FactorTreeMiss | undefined {
   if (splitCorrect(split)) return undefined;
@@ -120,7 +102,7 @@ export interface FactorTreeView {
 }
 
 /** What is drawn and asked. The tree as the learner built it; never a factor pair or the factorization to come. */
-export function workspaceScene(challenge: FactorTreeChallenge, view: FactorTreeView): WorkspaceScene {
+export function workspaceScene(challenge: FactorTreeChallenge, view: FactorTreeView): SceneOf {
   const splits = describeSplits(view.tree);
   const facts: Record<string, string> = {
     kind: 'factor tree',
@@ -136,15 +118,14 @@ export function workspaceScene(challenge: FactorTreeChallenge, view: FactorTreeV
     ...(view.runningShown ? { runningFactorization: 'shown: the leaves written as a product' } : {}),
     ...(view.selected !== null ? { selected: `${view.selected}, waiting for two factors` } : {}),
     learnerWork: describeFactorWork(view.tree, view.lastSplit),
-    constraints: 'The learner taps a number that is not prime, types two factors and presses Split (or taps a listed '
-      + 'factor pair). The activity checks each split itself: a right split stays on the tree, and the tree is finished '
-      + 'when every leaf is prime. You cannot tap, type or press Split.',
+    constraints: 'A right split stays on the tree and is not a finished answer; the tree is finished when every leaf is '
+      + 'prime.',
   };
   return { objects: [], facts };
 }
 
 /**
- * The journey row's splits from the leaves on screen (`liveJourneySpec.ts`). `correct`: every composite leaf split
+ * The harness's splits from the leaves on screen (`factorTreeBoss.drive.play`). `correct`: every composite leaf split
  * by its smallest prime until all are prime. `wrong`: the first composite leaf split into its smallest prime and the
  * partner plus one (`wrong_partner`, or `added` where those happen to sum to it).
  */

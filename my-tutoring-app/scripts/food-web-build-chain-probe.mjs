@@ -40,7 +40,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateFoodWebBuilder } = await loader.import('/src/components/lumina/service/biology/gemini-food-web-builder.ts');
   const { foodWebBuilderOracle } = await loader.import('/src/components/lumina/service/qa/oracles/food-web-builder.ts');
-  const { validateFoodWebBuilderData } = await loader.import('/src/components/lumina/components/live-activity/adapters/foodWebBuilderLive.ts');
+  const { validateFoodWebBuilderData } = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/foodWebBuilder.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/foodWebWorkspace.ts');
   const lv = await loader.import('/src/components/lumina/primitives/visual-primitives/biology/foodWebLevers.ts');
   const results = [];
@@ -75,7 +75,7 @@ try {
         dropFirstMiss: ref ? judge(ref.slice(1), arrowsOf(ref.slice(1))) : 'no chain',
         dropLastMiss: ref ? judge(ref.slice(0, -1), arrowsOf(ref.slice(0, -1))) : 'no chain',
         shorter: shorter?.instruction ?? null,
-        levers: lv.foodWebLevers(c, data.organisms, relations, []).map((l) => l.id),
+        levers: lv.FOOD_WEB_LEVERS.declare(c, { organisms: data.organisms, relations }, []).map((l) => l.id),
         sceneFacts: ws.workspaceScene(c, { mode: 'build_chain', ecosystem: data.ecosystem, organisms: data.organisms,
           placed: ref ?? [], arrows: ref ? arrowsOf(ref) : [] }).facts,
       };

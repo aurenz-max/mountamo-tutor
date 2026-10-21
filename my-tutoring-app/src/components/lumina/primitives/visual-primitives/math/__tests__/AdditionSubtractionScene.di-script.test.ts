@@ -25,10 +25,9 @@
  *  6. Hand items carry a SILENCE contract and never a spoken judging contract;
  *     the verdict is code-computed, including WHICH of three faults an equation
  *     has.
- *  7. The catalog keeps its side: contextKeys equal exactly what the pack
- *     pushes, every template key resolves, no catalog sentence opens with a
- *     verdict sentinel, and the steering prose no longer sells this primitive as
- *     a typing surface.
+ *  7. The catalog steers the manifest at a spoken primitive, not a typing
+ *     surface (its tutoring block and DI_PORTS row left with the move onto the
+ *     boss, 2026-10-20).
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -61,12 +60,10 @@ import {
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
-  checkDiCatalogEntry,
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
 import { fallbackFor, VALID_OBJECT_TYPES } from '../../../../service/math/gemini-addition-subtraction-scene';
-import { DI_PORTS } from '../../../../service/qa/di/diDrivePlan';
 import { numberWordFor, objectSingularFor } from '../countingBoardScript';
 
 // ── Fixtures — one item per mode × band, session-shaped ─────────────────────
@@ -562,10 +559,6 @@ describe('gesture items', () => {
 // ── 7. The catalog's side of the contract ───────────────────────────────────
 
 describe('catalog entry', () => {
-  it('matches the pack — audio mode, contextKeys, template keys, sentinels', () => {
-    expect(checkDiCatalogEntry(CATALOG_ENTRY, pack, SOLVE_K)).toEqual([]);
-  });
-
   // Steering regression: "students act out stories by tapping" routed this
   // primitive as a click surface forever. The description now has to say the
   // child SPEAKS, and the constraints have to name the microphone.
@@ -573,25 +566,6 @@ describe('catalog entry', () => {
     expect(CATALOG_ENTRY.description).toMatch(/SAY the number OUT LOUD/);
     expect(CATALOG_ENTRY.constraints).toMatch(/Requires a microphone/);
     expect(CATALOG_ENTRY.constraints).toMatch(/no typed answer and no numeral menu/);
-  });
-
-  // A MIXED pack must say what counts as an answer PER DIRECTION —
-  // letter-spotter's block claimed "every answer is a touch" while one of its
-  // modes was spoken.
-  it('describes both answer surfaces, keyed to the challenge type', () => {
-    const answersBlock = CATALOG_ENTRY.tutoring?.aiDirectives
-      ?.find((d) => d.title.startsWith('WHAT COUNTS AS AN ANSWER'));
-    expect(answersBlock).toBeDefined();
-    expect(answersBlock!.instruction).toContain('{{challengeType}}');
-    expect(answersBlock!.instruction).toMatch(/On a SPOKEN item/);
-    expect(answersBlock!.instruction).toMatch(/On a HANDS item/);
-  });
-
-  it('keeps R1 alive — the story is read aloud, now as the scripted line', () => {
-    const storyBlock = CATALOG_ENTRY.tutoring?.aiDirectives
-      ?.find((d) => d.title.includes('THE STORY IS INSIDE THE SCRIPTED LINE'));
-    expect(storyBlock).toBeDefined();
-    expect(storyBlock!.instruction).toMatch(/never summarise it/i);
   });
 
   it('holds every beta — the modality changed, the production demand did not', () => {
@@ -670,51 +644,6 @@ describe('harness answers mirror the judging contract', () => {
   });
 });
 
-describe('the registered DI adapter', () => {
-  const adapter = DI_PORTS['addition-subtraction-scene'];
-
-  it('is registered, so `--di` can drive this port', () => {
-    expect(adapter).toBeDefined();
-  });
-
-  it('rebuilds the SAME items the component builds, through the same drop gates', () => {
-    const data = {
-      gradeBand: '1',
-      challenges: [
-        {
-          id: 'ok', type: 'solve-story', operation: 'addition',
-          startCount: 3, changeCount: 2, resultCount: 5, unknownPosition: 'result',
-          storyText: 'Three ducks were in the pond. Two more swam over.',
-          scene: 'pond', objectType: 'ducks', equation: '3 + 2 = 5',
-        },
-        {
-          // Inconsistent arithmetic — dropped, never repaired into an ask.
-          id: 'bad', type: 'solve-story', operation: 'addition',
-          startCount: 3, changeCount: 2, resultCount: 9, unknownPosition: 'result',
-          storyText: 'Three ducks were in the pond. Two more swam over.',
-          scene: 'pond', objectType: 'ducks', equation: '3 + 2 = 9',
-        },
-      ],
-    } as unknown as Record<string, unknown>;
-    const built = adapter.build(data);
-    expect(built.items.map((i) => i.id)).toEqual(['ok']);
-    expect(built.dropped).toBe(1);
-    expect(built.surface.primitiveType).toBe('addition-subtraction-scene');
-    expect(built.surface.itemCue(built.items[0], { opening: false, howToPlay: false }))
-      .toBe(itemCue(built.items[0] as AddSubSceneItem, { opening: false, howToPlay: false }));
-  });
-
-  it('routes BOTH gesture commit shapes — a count and a tile list — off one wire', () => {
-    const scene = ITEMS.find((i) => i.answerKind === 'gesture' && i.kind !== 'build-equation')!;
-    const eq = ITEMS.find((i) => i.kind === 'build-equation')!;
-    expect(adapter.gestureVerdictCue!(scene, scene.answer)).toContain('MATCHES');
-    expect(adapter.gestureVerdictCue!(scene, scene.answer + 1)).toContain('does NOT match');
-    const eqAnswers = addSubHarnessAnswers(eq);
-    expect(adapter.gestureVerdictCue!(eq, eqAnswers.tapped!.correct)).toContain('MATCHES');
-    expect(adapter.gestureVerdictCue!(eq, eqAnswers.tapped!.wrong)).toContain('does NOT match');
-  });
-});
-
 describe('the two-branch law (cap-drill finding, 2026-08-15 — 19h-i-f, 2nd port)', () => {
   it('every voice contract states the law BEFORE its branches', () => {
     for (const item of ITEMS.filter((i) => i.answerKind === 'voice')) {
@@ -725,20 +654,6 @@ describe('the two-branch law (cap-drill finding, 2026-08-15 — 19h-i-f, 2nd por
     }
   });
 
-  it('THE CATALOG SCAFFOLD RUNGS CARRY A SENTINEL — a bare rung stalls the loop', () => {
-    // The cap drill caught the model speaking level 2 and level 3 verbatim on
-    // corrections 2 and 3 ("…think about what happened in the story", "Take
-    // your time. Look at the picture. Then tell me."), neither opening with a
-    // sentinel, so the loop recorded di-no-verdict twice and the counter froze.
-    const levels = Object.values(CATALOG_ENTRY.tutoring!.scaffoldingLevels ?? {}) as string[];
-    expect(levels).toHaveLength(3);
-    for (const level of levels) {
-      expect(level).toMatch(/scripted correction|say nothing further/i);
-    }
-    const prose = JSON.stringify(CATALOG_ENTRY.tutoring);
-    expect(prose).not.toContain('Take your time. Look at the picture.');
-    expect(prose).not.toContain('Think about what happened in the story"');
-  });
 });
 
 describe('the verdict lines agree in number with a scene of ONE (act_out drive, 2026-08-15)', () => {

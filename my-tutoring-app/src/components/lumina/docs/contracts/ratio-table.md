@@ -1,7 +1,7 @@
 # Contract: ratio-table
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C15) for the workspace and lever requirements only. A full `/primitive-contract ratio-table` derivation (consumers per ratio skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/RatioTable.tsx` · **Workspace:** `ratioTableWorkspace.ts` · **Levers:** `ratioTableLevers.ts` · **Generator:** `service/math/gemini-ratio-table.ts` · **Oracle:** `service/qa/oracles/ratio-table.ts` · **Adapter:** `components/live-activity/adapters/ratioTableLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`ratio-table`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/RatioTable.tsx` · **Workspace:** `ratioTableWorkspace.ts` · **Levers:** `ratioTableLevers.ts` · **Generator:** `service/math/gemini-ratio-table.ts` · **Oracle:** `service/qa/oracles/ratio-table.ts` · **Boss:** `ratioTable.card.ts` + `ratioTable.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`ratio-table`)
 
 ## Requirements
 
@@ -28,3 +28,4 @@
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C15).
 - 2026-10-14 — R-IS added. Before: the LLM chose every ratio; easy got ×3.75 and ×4.5 while medium got ×7, and the no-tier path shipped decimal base ratios (1.5:45, 8.2:140). Compatible with R1-R2.
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss` (typed modes and the build slider), levers as a lever set (bar chart layout, unit-rate banner clue shown, times arrows marks, division frame and equal groups layout, model, easier; the model lever's tier from the item's `supportTier`, which the generator now stamps), workspace-only export; the scripted path, hint button, adapter and catalog guidance/tutoring prose deleted. R1-R3 unchanged.

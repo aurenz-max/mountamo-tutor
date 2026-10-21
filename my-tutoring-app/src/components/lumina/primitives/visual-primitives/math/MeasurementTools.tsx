@@ -6,11 +6,12 @@
  * the checked length to the other unit, and compare ends by ordering the measured
  * shapes shortest to longest.
  *
- * Shared teaching workspace (W1, plain shape): `measurementToolsWorkspace.ts`
- * holds the items (one per shape, plus compare's ordering), the assignment, the
- * scene, the learner's work in words and the named miss. Under a live runtime the
- * tutor owns the item; the activity's own check commits through
- * `progress.commitCheck`, and the runtime owns Try again and Next.
+ * Taught only on the shared teaching workspace (the boss is `measurementTools.boss.ts`):
+ * `measurementToolsWorkspace.ts` holds the items (one per shape, plus compare's
+ * ordering), the ask, the scene, the learner's work in words and the named miss;
+ * `measurementToolsLevers.ts` the lever set. The tutor owns the item; the
+ * activity's own check commits through `progress.commitCheck`, and the runtime
+ * owns Try again and Next.
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
@@ -32,27 +33,27 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { MeasurementToolsMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   ORDER_ITEM_ID, UNIT_ABBR, conversionCorrect, conversionMultiplies, conversionRule, conversionTarget, crossSystem,
   defaultConvertTo, describeMeasurementWork, lessonOf, type LengthUnit,
-  measureCorrect, measurementItems, measurementMiss, orderChoices, orderCorrect, orderShapes, workspaceAssignment, workspaceScene,
+  measureCorrect, measurementItems, measurementMiss, orderChoices, orderCorrect, orderShapes, workspaceScene,
   type MeasurementItem, type MeasurementView,
 } from './measurementToolsWorkspace';
 import {
-  EDGE_LINE_LEVER, HALF_MARKS_LEVER, INCH_MODEL_LEVER, ORDER_STEPS_LEVER, OWN_LENGTHS_LEVER, PRACTICE_NOTE,
-  SPACE_SHADING_LEVER, leverFacts, measurementLevers, practiceItem,
+  EDGE_LINE_LEVER, HALF_MARKS_LEVER, INCH_MODEL_LEVER, MEASUREMENT_LEVERS, ORDER_STEPS_LEVER, OWN_LENGTHS_LEVER,
+  PRACTICE_NOTE, SPACE_SHADING_LEVER, type LeverView,
 } from './measurementToolsLevers';
+import { measurementToolsBoss } from './measurementTools.boss';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -85,7 +86,7 @@ export interface MeasurementToolsData {
   // -- Support tier (within-mode scaffolding level; set by the generator) --
   // All fields are display-/instruction-only and default to the medium-tier
   // behavior when absent, so a no-tier session renders exactly as before.
-  /** 'easy' | 'medium' | 'hard' — drives the live tutor's reveal calibration. */
+  /** 'easy' | 'medium' | 'hard' — the generator's tier (ruler labels, method cue, conversion hint follow it). */
   supportTier?: 'easy' | 'medium' | 'hard';
   /** Ruler tick-label density. 'all' labels half ticks too; 'sparse' labels
    *  only even wholes so the student counts marks. Default 'whole'. */
@@ -93,7 +94,7 @@ export interface MeasurementToolsData {
   /** How much the instruction spells out the align-at-0 / read-the-edge method.
    *  Default 'standard'. */
   instructionDetail?: 'full' | 'standard' | 'minimal';
-  /** Attempts before the "Need a Hint?" button appears. Default 2. */
+  /** Unused since the scripted "Need a Hint?" button left (2026-10-20); older payloads still carry it. */
   hintThreshold?: number;
   /** convert mode: show the "1 inch = 2.54 cm" factor. Default true. */
   showConversionFactor?: boolean;
@@ -456,8 +457,9 @@ const OrderSteps: React.FC<{ count: number }> = ({ count }) => (
 // Main Component
 // =============================================================================
 
-const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  MeasurementToolsProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MeasurementItem>) => Progress }) => {
+const useMeasurementProgress = useWorkspaceProgressFor('measurement-tools');
+
+const MeasurementToolsSurface = ({ data, className, runtimePlanItemId }: MeasurementToolsProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -467,10 +469,8 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
     unit,
     precision,
     gradeBand,
-    supportTier,
     rulerLabels = 'whole',
     instructionDetail = 'standard',
-    hintThreshold = 2,
     showConversionFactor = true,
     instanceId,
     skillId,
@@ -489,10 +489,8 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   /** What every item's check, scene and miss read from the session. */
   const lesson = useMemo(() => lessonOf(data), [data]);
-  const lessonRef = useRef(lesson);
-  lessonRef.current = lesson;
-  /** One item per shape, then compare's ordering. Memoized: a new array restarts the scripted progress. */
-  const items = useMemo(() => measurementItems(challengeType, challenges), [challengeType, challenges]);
+  /** One item per shape, then compare's ordering. Memoized: a new array restarts the progress. */
+  const items = useMemo(() => measurementItems(lesson), [lesson]);
 
   const pixelsPerUnit = Math.min(
     (CANVAS_WIDTH - RULER_LEFT_PAD - 40) / rulerLengthInches,
@@ -510,29 +508,29 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const rulerY = SHAPE_AREA_Y + maxShapeH + SHAPE_RULER_GAP + 50;
   const canvasHeight = rulerY + RULER_HEIGHT + BOTTOM_PAD;
 
-  // -- Progress. On the workspace path the runtime moves the index. ---------
+  // -- Progress. The runtime moves the index. ------------------------------
   /** Bound below, once the setters exist; the progress hook calls them only after render. */
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useMeasurementProgress({
     challenges: items,
     getChallengeId: (item) => item.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (item) => workspaceAssignment(item, lessonRef.current),
+    workspace, assignment: measurementToolsBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
   });
-  const { currentIndex, results: itemResults, isComplete: allItemsDone, mergeResult, advance, reset } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const { currentIndex, results: itemResults, isComplete: allItemsDone, mergeResult } = progress;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   /** The activity's own check is the workspace's checked gesture. A ref, so delayed callbacks read the latest. */
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
 
-  // Levers (`measurementToolsLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place. The tier's ruler labels and conversion hint are starting positions.
+  // Levers (`MEASUREMENT_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. The tier's ruler labels and conversion hint are starting positions.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<MeasurementItem | null>(null);
   const sessionItem = items[currentIndex] ?? null;
@@ -580,7 +578,6 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
     hasSubmitted,
     submittedResult,
     elapsedMs,
-    resetAttempt,
   } = usePrimitiveEvaluation<MeasurementToolsMetrics>({
     primitiveType: 'measurement-tools',
     instanceId: resolvedInstanceId,
@@ -594,12 +591,8 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   // -- Per-challenge state --------------------------------------------------
   const [answerInput, setAnswerInput] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const [measureAttempts, setMeasureAttempts] = useState(0);
   const measureAttemptsRef = useRef(0);
-  const hintViewedRef = useRef(false);
   const recordedRef = useRef(false);
-  const hasIntroducedRef = useRef(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Drag state
@@ -613,14 +606,11 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const [convertInput, setConvertInput] = useState('');
   const [convertFeedback, setConvertFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [measuredValue, setMeasuredValue] = useState(0);
-  const [convertAttempts, setConvertAttempts] = useState(0);
   const convertAttemptsRef = useRef(0);
 
   // Compare mode ordering state (its own item)
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [compareFeedback, setCompareFeedback] = useState<{ message: string; correct: boolean } | null>(null);
-  const [compareAttempts, setCompareAttempts] = useState(0);
-  const [hintsViewedSession, setHintsViewedSession] = useState(0);
 
   /** The compare buttons' order: never shortest to longest. */
   const orderButtons = useMemo(() => orderChoices(orderList), [orderList]);
@@ -633,9 +623,9 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const positionOf = (c: MeasurementToolsChallenge) => shapePositions[c.id] ?? homePosition(c);
 
   /**
-   * The item blank: a fresh shape or the scripted reset. Try again on the workspace path (`retry`) clears only the
-   * checked answer: the shape stays on the ruler (the snap puts its left edge at 0, so the placement is never the
-   * miss), and after a wrong conversion the checked measurement stays, so only the conversion is asked again.
+   * The item blank. Try again (`retry`) clears only the checked answer: the shape stays on the ruler (the snap puts
+   * its left edge at 0, so the placement is never the miss), and after a wrong conversion the checked measurement
+   * stays, so only the conversion is asked again.
    */
   const clearWork = useCallback((retry: boolean) => {
     setAnswerInput('');
@@ -658,16 +648,11 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   // A fresh item (or the full item back after a practice item) drops the practice; Try again keeps it.
   openItem.current = (retry) => { clearWork(retry); if (!retry) setPractice(null); };
 
-  // -- Per-challenge reset (canonical pattern, §6c) -------------------------
-  // Runs whenever the index moves — resets every per-item slot.
+  // -- Per-challenge reset: runs whenever the item on screen changes. -------
   useEffect(() => {
     if (!currentItem) return;
-    setShowHint(false);
-    setMeasureAttempts(0);
     measureAttemptsRef.current = 0;
-    setConvertAttempts(0);
     convertAttemptsRef.current = 0;
-    hintViewedRef.current = false;
     clearWork(false);
   }, [currentItem?.id, pixelsPerUnit]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -690,79 +675,6 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const viewRef = useRef(view);
   viewRef.current = view;
 
-  // -- Support-tier reveal calibration for the live tutor (Gotcha #2) -------
-  // The tutor sees the full challenge data and could leak what a hard tier hid
-  // on screen (the align-at-0/read-edge method; the conversion factor). These
-  // clauses calibrate how much the tutor may name at each tier.
-  const measureRevealClause = useMemo(() => {
-    if (supportTier === 'easy')
-      return ' (Tier EASY: you may name the method — line the left edge up with 0, then read where the right edge lands — but never state the measurement.)';
-    if (supportTier === 'hard')
-      return ' (Tier HARD: the step-by-step method is hidden on screen on purpose — do NOT spell out align-at-0/read-the-edge. Ask what they see at the shape\'s right edge. Never reveal the measurement.)';
-    return ' (Tier MEDIUM: nudge where to look on the ruler without walking every step or revealing the measurement.)';
-  }, [supportTier]);
-
-  const convertRevealClause = useMemo(() => {
-    if (supportTier === 'easy')
-      return ` (Tier EASY: you may restate ${rule} and name multiply vs divide, but never the final number.)`;
-    if (supportTier === 'hard')
-      return ` (Tier HARD: the conversion factor is hidden on screen on purpose — do NOT state "${rule}" or which operation. Ask what they recall about ${unit} and ${effectiveConvertToUnit}. Never reveal the answer.)`;
-    return ' (Tier MEDIUM: nudge the operation and rough size without restating the full rule or the answer.)';
-  }, [supportTier, rule, unit, effectiveConvertToUnit]);
-
-  // -- AI Tutoring (scripted path) ------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    currentShape: currentChallenge?.label,
-    shapeWidth: currentChallenge?.widthInches,
-    unit,
-    precision,
-    gradeBand,
-    supportTier: supportTier ?? 'medium',
-    isOnRuler: currentChallenge ? !!onRuler[currentChallenge.id] : false,
-    currentAttempts: measureAttempts + convertAttempts,
-    convertStep,
-    convertToUnit: effectiveConvertToUnit,
-    comparePhase: inOrderPhase,
-  }), [
-    challengeType, currentIndex, challenges.length, currentChallenge, unit, precision,
-    gradeBand, supportTier, onRuler, measureAttempts, convertAttempts, convertStep,
-    effectiveConvertToUnit, inOrderPhase,
-  ]);
-
-  // Its context carries the widths, so it is off on the workspace path, and its scripted cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'measurement-tools',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K-2' ? '1st Grade' : '3rd Grade',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Introduction (session-level)
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    const modeDesc =
-      challengeType === 'compare'
-        ? `Measure all ${challenges.length} shapes, then compare them by ordering shortest to longest.`
-        : challengeType === 'convert'
-          ? `Measure each shape in ${unit}, then convert the measurement to ${effectiveConvertToUnit}.`
-          : `${challenges.length} shapes to measure in ${unit}. Drag each onto the ruler.`;
-
-    sendText(
-      `[ACTIVITY_START] Measurement session! ${modeDesc} ` +
-      `First shape: "${currentChallenge.label}". Introduce warmly.`,
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, challenges.length, unit, effectiveConvertToUnit, challengeType, sendText]);
-
   // -- Placing the shape ----------------------------------------------------
   /** Snaps the current shape onto the ruler, its left edge at 0. */
   const placeOnRuler = useCallback(() => {
@@ -774,14 +686,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       [currentChallenge.id]: { x: RULER_LEFT_PAD, y: rulerY - shapeH - 2 },
     }));
     setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: true }));
-    if (!onRuler[currentChallenge.id]) {
-      sendText(
-        `[SHAPE_PLACED] Student placed "${currentChallenge.label}" on the ruler. ` +
-        `Ask: "How many ${unit} long is this shape?"`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, hasSubmitted, convertStep, pixelsPerUnit, rulerY, onRuler, sendText, unit]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, hasSubmitted, convertStep, pixelsPerUnit, rulerY]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Drag handlers --------------------------------------------------------
   const getSVGPoint = useCallback((clientX: number, clientY: number) => {
@@ -838,11 +743,11 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       setShapePositions((prev) => ({ ...prev, [currentChallenge.id]: homePosition(currentChallenge) }));
       setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: false }));
     }
-  }, [isDragging, currentChallenge, shapePositions, pixelsPerUnit, rulerY, placeOnRuler, homePosition]);
+  }, [isDragging, currentChallenge, shapePositions, pixelsPerUnit, rulerY, placeOnRuler, homePosition]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Helpers --------------------------------------------------------------
   /**
-   * The shape's own score fields beside the result `commitCheck` records, then (scripted path) the move on.
+   * The shape's own score fields beside the result `commitCheck` records; the runtime advances.
    * Stale-state guard (§6a #8): bail if already recorded for this challenge.
    */
   const completeChallenge = useCallback((opts: { studentMeasure: number }) => {
@@ -865,27 +770,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       studentAnswer: opts.studentMeasure,
       targetAnswer: currentChallenge.widthInches,
     });
-
-    // The runtime advances on the workspace path; the scripted path moves on after the celebration.
-    if (tutorOwned) return;
-    setTimeout(() => {
-      if (!advance()) return;
-      const next = items[currentIndex + 1];
-      if (next?.kind === 'shape') {
-        sendText(
-          `[NEXT_ITEM] Shape ${currentIndex + 2} of ${challenges.length}: "${next.challenge.label}". ` +
-          (challengeType === 'convert' ? 'Measure it and convert!' : 'Say: "Next shape! Drag it onto the ruler to measure."'),
-          { silent: true },
-        );
-      } else if (next?.kind === 'order') {
-        sendText(
-          `[MEASURE_PHASE_DONE] All shapes measured. Comparison phase begins. ` +
-          `Explain: "Great measuring! Now order the shapes shortest to longest."`,
-          { silent: true },
-        );
-      }
-    }, 1100);
-  }, [currentChallenge, practice, challengeType, mergeResult, tutorOwned, advance, items, currentIndex, challenges.length, sendText]);
+  }, [currentChallenge, practice, challengeType, mergeResult]);
 
   // -- Answer checking (measure step) ---------------------------------------
   const checkAnswer = useCallback(() => {
@@ -897,9 +782,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       return;
     }
 
-    const nextAttempts = measureAttemptsRef.current + 1;
-    measureAttemptsRef.current = nextAttempts;
-    setMeasureAttempts(nextAttempts);
+    measureAttemptsRef.current += 1;
 
     const isCorrect = measureCorrect(currentChallenge, lesson, studentNum);
     const work = { ...viewRef.current, measure: studentNum };
@@ -912,15 +795,10 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       setConvertStep(true);
       setConvertInput('');
       setConvertFeedback(null);
-      sendText(
-        `[MEASURE_CORRECT] Student measured "${currentChallenge.label}" as ${studentNum} ${unit}. ` +
-        `Now convert to ${effectiveConvertToUnit}. Encourage them.`,
-        { silent: true },
-      );
       return;
     }
 
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: counts the attempt and records a correct result.
     commitCheck.current(describeMeasurementWork(currentItem!, lesson, work), isCorrect,
       isCorrect ? undefined : measurementMiss(currentItem, lesson, work));
 
@@ -931,28 +809,14 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
         message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long!`,
         correct: true,
       });
-      sendText(
-        `[ANSWER_CORRECT] Student measured "${currentChallenge.label}" as ${studentNum} ${unit}. ` +
-        `Correct: ${currentChallenge.widthInches} ${unit}. Attempts: ${nextAttempts}. Brief celebration.`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback({
         message: 'Not quite — look at the ruler more carefully!',
         correct: false,
       });
-      sendText(
-        `[ANSWER_INCORRECT] Student guessed ${studentNum} ${unit} for "${currentChallenge.label}" ` +
-        `(actual: ${currentChallenge.widthInches} ${unit}). Attempt ${nextAttempts}. Give a hint.` +
-        measureRevealClause,
-        { silent: true },
-      );
     }
-  }, [
-    currentChallenge, currentItem, answerInput, lesson, unit, challengeType, effectiveConvertToUnit,
-    completeChallenge, sendText, measureRevealClause,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChallenge, currentItem, answerInput, lesson, unit, challengeType, completeChallenge]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Conversion checking (convert mode) -----------------------------------
   const checkConversion = useCallback(() => {
@@ -964,9 +828,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       return;
     }
 
-    const nextAttempts = convertAttemptsRef.current + 1;
-    convertAttemptsRef.current = nextAttempts;
-    setConvertAttempts(nextAttempts);
+    convertAttemptsRef.current += 1;
 
     const correctConverted = conversionTarget(currentChallenge, lesson);
     const isCorrect = conversionCorrect(currentChallenge, lesson, studentNum);
@@ -981,11 +843,6 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
         message: `Correct! ${measuredValue} ${unit} = ${Math.round(correctConverted * 10) / 10} ${effectiveConvertToUnit}!`,
         correct: true,
       });
-      sendText(
-        `[CONVERT_CORRECT] Student converted ${measuredValue} ${unit} to ${studentNum} ${effectiveConvertToUnit}. ` +
-        `Brief celebration.`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       // The rule is named only where the session shows it; at the hard tier the learner recalls it.
@@ -995,16 +852,10 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
           : `Not quite. Remember: ${rule}. Try ${multiplies ? 'multiplying' : 'dividing'}!`,
         correct: false,
       });
-      sendText(
-        `[CONVERT_INCORRECT] Student tried ${studentNum} ${effectiveConvertToUnit} ` +
-        `(correct: ~${Math.round(correctConverted * 10) / 10}). Attempt ${nextAttempts}. Help without revealing.` +
-        convertRevealClause,
-        { silent: true },
-      );
     }
   }, [
     currentChallenge, currentItem, convertInput, measuredValue, unit, effectiveConvertToUnit, lesson,
-    showConversionFactor, completeChallenge, sendText, convertRevealClause, rule, multiplies,
+    showConversionFactor, completeChallenge, rule, multiplies,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Comparison checking (compare mode's last item) -----------------------
@@ -1020,102 +871,22 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (!currentItem || currentItem.kind !== 'order' || learnerBlocked() || orderSolved) return;
     const isCorrect = orderCorrect(orderList, selectedOrder);
     const work = { ...viewRef.current, order: selectedOrder };
-    if (!practice) setCompareAttempts((a) => a + 1);
     commitCheck.current(describeMeasurementWork(currentItem, lesson, work), isCorrect,
       isCorrect ? undefined : measurementMiss(currentItem, lesson, work));
 
     if (isCorrect) {
       SoundManager.playCorrect();
       setCompareFeedback({ message: 'Perfect! You ordered them shortest to longest!', correct: true });
-      const orderLabels = selectedOrder.map((id) => orderList.find((c) => c.id === id)?.label).join(' → ');
-      sendText(
-        `[COMPARE_CORRECT] Student ordered shapes correctly: ${orderLabels}. Celebrate!`,
-        { silent: true },
-      );
     } else {
+      // The taps stay on screen until Try again.
       SoundManager.playIncorrect();
       setCompareFeedback({ message: 'Not quite! Think back to which shapes were shorter.', correct: false });
-      // The scripted path starts the order over; the workspace keeps the taps on screen until Try again.
-      if (!tutorOwned) setSelectedOrder([]);
-      sendText(
-        `[COMPARE_INCORRECT] Student ordered incorrectly. Attempt ${compareAttempts + 1}. Remind without revealing.`,
-        { silent: true },
-      );
     }
-  }, [currentItem, practice, lesson, orderList, selectedOrder, orderSolved, compareAttempts, tutorOwned, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentItem, lesson, orderList, selectedOrder, orderSolved]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -- Hint tracking --------------------------------------------------------
-  const showHintHandler = useCallback(() => {
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      setHintsViewedSession((n) => n + 1);
-    }
-  }, []);
-
-  // -- Evaluation on completion (scripted path) -----------------------------
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   const submittedRef = useRef(false);
-  useEffect(() => {
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned || !isFullyComplete || hasSubmitted || submittedRef.current) return;
-    submittedRef.current = true;
-
-    const totalChallenges = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount =
-      challengeResults.reduce((s, r) => s + r.attempts, 0)
-      + (challengeType === 'compare' ? compareAttempts : 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && (r.score ?? 0) >= 100).length;
-
-    const challengeScoreAvg = totalChallenges > 0
-      ? Math.round(
-          challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / totalChallenges,
-        )
-      : 0;
-
-    let overallAccuracy: number;
-    if (challengeType === 'compare') {
-      const compareScore = comparisonDone ? Math.max(20, 100 - (compareAttempts - 1) * 20) : 0;
-      overallAccuracy = Math.round(challengeScoreAvg * 0.6 + compareScore * 0.4);
-    } else {
-      overallAccuracy = challengeScoreAvg;
-    }
-
-    const averageAttemptsPerChallenge = totalChallenges > 0
-      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
-      : 0;
-
-    const metrics: MeasurementToolsMetrics = {
-      type: 'measurement-tools',
-      challengeType,
-      totalChallenges,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedSession,
-      overallAccuracy,
-      averageAttemptsPerChallenge,
-    };
-
-    submitResult(
-      overallAccuracy >= 70,
-      overallAccuracy,
-      metrics,
-      { challengeResults, compareAttempts: challengeType === 'compare' ? compareAttempts : undefined },
-    );
-
-    const phaseScoreStr = phaseResults.map((p) => `${p.label} ${p.score}%`).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Session finished! Mode: ${challengeType}. Score: ${overallAccuracy}%. ${phaseScoreStr}. Celebrate!`,
-      { silent: true },
-    );
-  }, [
-    tutorOwned, isFullyComplete, hasSubmitted, challengeResults, challenges.length, challengeType,
-    comparisonDone, compareAttempts, hintsViewedSession, submitResult, phaseResults, sendText,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || submittedRef.current || items.length === 0) return;
     submittedRef.current = true;
@@ -1126,7 +897,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       correctCount: result.solvedCount,
       attemptsCount: result.attemptsCount,
       firstTryCount: result.firstTryCount,
-      hintsViewed: hintsViewedSession,
+      hintsViewed: 0,
       overallAccuracy: result.accuracy,
       averageAttemptsPerChallenge: Math.round((result.attemptsCount / items.length) * 10) / 10,
     };
@@ -1136,52 +907,32 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       undefined, result.diagnosisEvidence);
   };
 
-  // -- Reset (scripted path) ------------------------------------------------
-  const handleReset = () => {
-    reset();
-    resetAttempt();
-    submittedRef.current = false;
-    setShowHint(false);
-    setMeasureAttempts(0);
-    measureAttemptsRef.current = 0;
-    setConvertAttempts(0);
-    convertAttemptsRef.current = 0;
-    setCompareAttempts(0);
-    setHintsViewedSession(0);
-    hintViewedRef.current = false;
-    hasIntroducedRef.current = false;
-    clearWork(false);
-    const positions: Record<string, { x: number; y: number }> = {};
-    challenges.forEach((c) => { positions[c.id] = homePosition(c); });
-    setShapePositions(positions);
-    setOnRuler({});
-  };
-
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`measurementToolsLevers.ts`), none during a practice item.
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; every
+  // mode declares levers (`MEASUREMENT_LEVERS`), none during a practice item.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentItem || !sessionItem) return;
+    if (!currentItem || !sessionItem) return;
     const scene = workspaceScene(currentItem, lesson, viewRef.current);
-    const leverView = { convertStep: viewRef.current.convertStep };
-    const onScreen = practice ? '' : leverFacts(sessionItem, pulledLevers, leverView);
-    const levers = practice ? [] : measurementLevers(sessionItem, lesson, pulledLevers, leverView);
+    const leverView: LeverView = { convertStep: viewRef.current.convertStep, onRuler: viewRef.current.onRuler };
+    const levers = practice ? [] : MEASUREMENT_LEVERS.declare(sessionItem, leverView, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : MEASUREMENT_LEVERS.support(sessionItem, leverView),
+      onScreen: practice ? '' : MEASUREMENT_LEVERS.onScreen(sessionItem, leverView, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === EDGE_LINE_LEVER && !viewRef.current.onRuler)
-          return 'The shape is not on the ruler yet: the learner puts it on first, then the line can drop from its edge.';
         const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionItem, lesson);
+          const easier = MEASUREMENT_LEVERS.simpler(sessionItem, leverView, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); clearWork(false); setPractice(easier);
-          return { practice: workspaceAssignment(easier, lesson) };
+          return { practice: measurementToolsBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1198,15 +949,10 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const localOverallScore = useMemo(() => {
     if (!isFullyComplete || challenges.length === 0) return 0;
-    const challengeScoreAvg = Math.round(
+    return Math.round(
       challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
     );
-    if (challengeType === 'compare') {
-      const compareScore = comparisonDone ? Math.max(20, 100 - (compareAttempts - 1) * 20) : 0;
-      return Math.round(challengeScoreAvg * 0.6 + compareScore * 0.4);
-    }
-    return challengeScoreAvg;
-  }, [isFullyComplete, challenges.length, challengeResults, challengeType, comparisonDone, compareAttempts]);
+  }, [isFullyComplete, challenges.length, challengeResults]);
 
   // -- Mode-specific copy ---------------------------------------------------
   // The align-at-0 / read-the-edge method is the core instructional scaffold.
@@ -1266,18 +1012,6 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   const convertLocked = hasSubmitted || shapeRecorded || convertFeedback?.correct === true;
 
   // -- Render ---------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isFullyComplete || hasSubmitted ? null : inOrderPhase ? 'compare' : currentChallenge?.id ?? null,
-    label: 'The measuring workspace',
-    solved: inOrderPhase ? comparisonDone : convertStep ? convertFeedback?.correct === true : feedback?.correct === true,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
@@ -1292,6 +1026,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {practice ? <LuminaBadge accent="amber">Practice</LuminaBadge> : null}
             <LuminaBadge accent="blue">{unit}</LuminaBadge>
             {challengeType === 'convert' && (
               <LuminaBadge accent="amber">→ {effectiveConvertToUnit}</LuminaBadge>
@@ -1341,9 +1076,9 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
           />
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !isFullyComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workspace as one region. */}
+        {!isFullyComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* COMPARE — ordering, the session's last item */}
         {inOrderPhase && !isFullyComplete && (
           <div className="space-y-4">
@@ -1578,20 +1313,6 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
                     {feedback.message}
                   </LuminaFeedbackCard>
                 )}
-
-                {showHint && (
-                  <LuminaPrompt accent="amber">
-                    <p className="text-amber-200 text-sm font-normal">{currentChallenge.hint}</p>
-                  </LuminaPrompt>
-                )}
-
-                {!feedback?.correct && measureAttempts >= hintThreshold && !showHint && (
-                  <div className="flex justify-center">
-                    <LuminaButton tone="subtle" onClick={showHintHandler}>
-                      Need a Hint?
-                    </LuminaButton>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1676,20 +1397,13 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
           </>
         )}
 
-        </div>
-
-        {isFullyComplete && !tutorOwned && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="retry" onClick={handleReset} />
-          </div>
-        )}
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
-const MeasurementTools = withWorkspaceController<MeasurementToolsProps, ProgressOptions<MeasurementItem>, Progress>(
-  'measurement-tools', MeasurementToolsSurface, useScriptedProgress, useWorkspaceProgressFor('measurement-tools'));
+const MeasurementTools = withWorkspaceOnly<MeasurementToolsProps>('measurement-tools', MeasurementToolsSurface,
+  props => props.data.title);
 
 export default MeasurementTools;

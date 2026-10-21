@@ -167,7 +167,7 @@ describe('the bench drive', () => {
   // rhyme-studio's DI_PORTS row, this fixture's only port, was deleted when the family moved to the boss framework
   // (2026-10-20): its drive replayed scripted cues the tutor no longer receives. The fixture above stays as the key.
   it('refuses a bench on a port with no fixture, by name', () => {
-    expect(() => buildDiDrivePlan('ten-frame', {}, 'Kindergarten', { bench: true }))
+    expect(() => buildDiDrivePlan('number-sequencer', {}, 'Kindergarten', { bench: true }))
       .toThrow(/no bench fixture/);
   });
 });

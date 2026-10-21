@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isVowel, lexWord } from './lexicon';
 import { mulberry32, tierPick, tierPickSplit } from './pick';
 import { splitIsValid, syllableSpace, type SyllableSpaceTask } from './syllableSpaces';
-import { itemFromChallenge, isCompoundPartWord } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
+import { itemFromChallenge, isCompoundPartWord } from '../../primitives/visual-primitives/literacy/syllableClapperDomain';
 import type { SupportTier } from '../generation/generationContext';
 
 const TIERS: SupportTier[] = ['easy', 'medium', 'hard'];

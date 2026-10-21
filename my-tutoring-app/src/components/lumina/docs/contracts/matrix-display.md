@@ -1,7 +1,7 @@
 # Contract: matrix-display
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C20) for the workspace and lever requirements only. A full `/primitive-contract matrix-display` derivation (consumers per matrix skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/MatrixDisplay.tsx` · **Workspace:** `matrixDisplayWorkspace.ts` · **Levers:** `matrixDisplayLevers.ts` · **Generator:** `service/math/gemini-matrix.ts` · **Oracle:** `service/qa/oracles/matrix-display.ts` · **Adapter:** `components/live-activity/adapters/matrixDisplayLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`matrix-display`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/MatrixDisplay.tsx` · **Workspace:** `matrixDisplayWorkspace.ts` · **Levers:** `matrixDisplayLevers.ts` · **Generator:** `service/math/gemini-matrix.ts` · **Oracle:** `service/qa/oracles/matrix-display.ts` · **Boss:** `matrixDisplay.card.ts` (modes, misses, words) + `matrixDisplay.boss.ts` (validate, items, ask, levers, harness) · **Catalog:** `service/manifest/catalog/math.ts` (`matrix-display`)
 
 ## Requirements
 
@@ -11,9 +11,9 @@
 - **Evidence:** `MatrixDisplay.workspace.test.tsx` 10; sweep J1-J13 on 4 payloads, 0 findings, 16/16 misses named; replay 4 x 5 (`qa/tutor-reports/matrix-display-w1-2026-10-09.md`).
 - **Probe:** `MatrixDisplay.workspace.test.tsx`; `journeySweep -t matrix-display`.
 
-### R2 — the walkthrough works one entry, never the whole answer · OBSERVED (2026-10-09)
+### R2 — the walkthrough works one entry, never the whole answer · RETIRED (2026-10-20)
 - **Property:** "Show steps" (scripted path) shows the rule and one worked entry with the rest of the result masked; a determinant's walkthrough stops at the substitution, an inverse's at the determinant. It previously drew the full transpose, sum, difference and inverse, and the determinant's value.
-- **Probe:** read `StepsReveal` in `MatrixDisplay.tsx`.
+- **Probe:** none: the scripted path and its `StepsReveal` were deleted when the family moved onto a boss (one path); the `model_example` lever is the worked example now, and it works a different matrix.
 
 ### R3 — every mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
 - **Property:** `matrixDisplayLevers.ts` declares levers on every mode and every catalog miss of an item's type is answered by a help lever on every item. Help: row_bands (transpose), position_tracking (add/subtract), row_column_tracking and term_list (multiply), diagonal_marks (2×2 determinant), cofactor_signs (3×3 determinant), swap_negate_letters (inverse), model_example (every type). Leak rules in code: no lever text or fact carries a digit; the bands, tracking, marks, signs, letters and recipes write no value; the model shows no number whose size equals an answer entry or the determinant (transpose's model is lettered). Simplify (`simpler_problem`) opens a same-operation practice item on a smaller or friendlier matrix with its own `~simpler` id, ask, values and key (`practiceLeaks`), ungraded; the full item comes back blank.
@@ -26,3 +26,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R4 (W1 plain-shape binding, levers, walkthrough and grade fixes, C20).
+- 2026-10-20 — moved onto a boss (wave 3): `matrixDisplay.card.ts` + `matrixDisplay.boss.ts`, `adapters/matrixDisplayLive.ts` deleted, catalog `teachingWorkspace` guidance and `tutoring` block replaced by `bossEntry`. The scripted path (Show steps, Next, Skip, `useLuminaAI`) is gone, so R2 is retired. Levers declared once as `MATRIX_LEVERS` (layout, marks, model, easier); the model lever's timing comes from the set's `support`, read from `supportTier`, which the generator now stamps on each challenge. R1 and R3 unchanged.

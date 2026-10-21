@@ -4,11 +4,6 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, describe, it, vi } from 'vitest';
 import fixtures from './testing/workspaceFixtures.json';
 import { expectClassicWorkspace, mountWithStore } from './testing/classicSurface';
-import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
-import PoetryLab from '../primitives/visual-primitives/literacy/PoetryLab';
-import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
-import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
-import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
 import CharacterWeb from '../primitives/visual-primitives/literacy/CharacterWeb';
 import ReadingRepairStudio from '../primitives/visual-primitives/literacy/ReadingRepairStudio';
 
@@ -28,11 +23,9 @@ afterEach(() => { cleanup(); Object.assign(tutor, { isAudioPlaying: false, activ
 type AnyPrimitive = React.ComponentType<{ data: any }>;
 // Components without a tutor hook (`no_ai`) never point; they keep the rest of the contract.
 const SPEAKING: Array<[string, AnyPrimitive]> = [
-  ['context-clues-detective', ContextCluesDetective],
-  ['poetry-lab', PoetryLab], ['reading-repair-studio', ReadingRepairStudio],
+  ['reading-repair-studio', ReadingRepairStudio],
 ];
 const SILENT: Array<[string, AnyPrimitive]> = [
-  ['evidence-finder', EvidenceFinder], ['spelling-pattern-explorer', SpellingPatternExplorer], ['story-map', StoryMap],
   ['character-web', CharacterWeb],
 ];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

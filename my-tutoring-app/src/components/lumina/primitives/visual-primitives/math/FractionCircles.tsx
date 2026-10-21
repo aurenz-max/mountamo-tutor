@@ -20,20 +20,21 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FractionCirclesMetrics } from '../../../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeWork, workspaceAssignment, workspaceScene, type FractionCirclesView } from './fractionCirclesWorkspace';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { describeWork, workspaceScene, type FractionCirclesView } from './fractionCirclesWorkspace';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { fractionCirclesBoss } from './fractionCircles.boss';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
 import {
-  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, REFERENCE_LEVER, SPLIT_LEVER, fractionMiss,
-  fractionLevers, simplerItem, splitFactor, startLevers,
+  COUNT_LEVER, FRACTION_CIRCLES_LEVERS, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, REFERENCE_LEVER, SPLIT_LEVER, fractionMiss,
+  splitFactor, startLevers,
 } from './fractionCirclesLevers';
 import { cutInto, cutsFor, equalBuildMiss, halvePiece, makesEqual, readBuild, toggleShade, wholeCircle,
   type EqualBuildMiss, type Piece } from './fractionEqualBuild';
@@ -296,7 +297,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: fractionCirclesBoss.assignment!,
     // A fresh challenge and Try again both start from a blank circle. The setters are declared
     // below; this runs only after render.
     // Try again on an easier practice item keeps it; only a fresh challenge or endPractice removes it.
@@ -390,9 +391,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // The tutor teaches from the workspace packet; Pip only reads whether it is speaking.
-  const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
-
   // -------------------------------------------------------------------------
   // Slice click handler (build & equivalent modes)
   // -------------------------------------------------------------------------
@@ -471,7 +469,8 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       left: { numerator: currentChallenge.numerator, denominator: currentChallenge.denominator },
       right: { ...currentChallenge.compareFraction },
       chosen: compareChoice, correct: correctChoice, attempt: currentAttempts + 1,
-      labelsShown: currentChallenge.showFractionLabels !== false, hintShown: currentAttempts >= 2,
+      // No hint is drawn on the workspace: the tutor's levers are the help.
+      labelsShown: currentChallenge.showFractionLabels !== false, hintShown: false,
     });
 
     const leftStr = `${currentChallenge.numerator}/${currentChallenge.denominator}`;
@@ -603,18 +602,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     r => r.challengeId === currentChallenge?.id && r.correct,
   );
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The fraction circles',
-    solved: isCurrentChallengeCorrect,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
     const correct = challengeResults.filter(r => r.correct).length;
@@ -625,13 +612,17 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    const levers = practice ? [] : fractionLevers(sessionChallenge, pulledLevers, gradeBand);
+    const ctx = { band: gradeBand };
+    const levers = practice ? [] : FRACTION_CIRCLES_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
     const clear = () => { setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice(''); setFeedback(''); setFeedbackType('');
       setPieces(wholeCircle()); setKnife(false); };
     const building = currentChallenge.type === 'build_equal';
-    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: building ? made.shaded : shadedSlices.size,
+    const scene = workspaceScene(currentChallenge, { typed: identifyInput, shaded: building ? made.shaded : shadedSlices.size,
       choice: compareChoice, levers: pulledLevers, practice: !!practice,
-      ...(building ? { pieces: made.pieces, equalPieces: made.equal } : {}) }),
+      ...(building ? { pieces: made.pieces, equalPieces: made.equal } : {}) });
+    workspace.current = { ...leverScene(scene, {
+      support: practice ? '' : FRACTION_CIRCLES_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : FRACTION_CIRCLES_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the circle changes before this returns.
       pullLever: id => {
@@ -639,11 +630,11 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge, gradeBand);
+          const easier = FRACTION_CIRCLES_LEVERS.simpler(sessionChallenge, ctx, id) as FractionCirclesChallenge | null;
           if (!easier) return 'There is no easier item for this one.';
           setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
           setPractice(easier); clear();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: fractionCirclesBoss.assignment!(easier) };
         }
         setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
         return true;
@@ -934,6 +925,9 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
             <LuminaBadge accent="blue" className="text-xs">
               {gradeBand}
             </LuminaBadge>
+            {practice && !allChallengesComplete && (
+              <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+            )}
             {currentChallenge && !allChallengesComplete && (
               <LuminaBadge accent="purple" className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon} {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
@@ -982,12 +976,10 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
           </LuminaPanel>
         )}
 
-        {/* Pip's dock sits above the circle and its controls, which it outlines
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the circle and its controls
             as the workspace — never one slice. */}
-        {pip.store && currentChallenge && !allChallengesComplete && <div {...pip.dock} />}
-
-        {/* Challenge Content */}
-        <div {...pip.workspace}>{renderChallengeContent()}</div>
+        <PipDock />
+        <PipWorkspace>{renderChallengeContent()}</PipWorkspace>
 
         {/* Feedback */}
         {feedback && (
@@ -1011,13 +1003,6 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
               />
             )}
           </div>
-        )}
-
-        {/* Hint (shows after 2 failed attempts) */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPanel className="p-2 text-center">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </LuminaPanel>
         )}
 
         {/* Completion message */}

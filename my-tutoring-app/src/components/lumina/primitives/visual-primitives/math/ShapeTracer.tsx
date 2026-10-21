@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -15,26 +15,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ShapeTracerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { shapeTracerPipPose } from '../../../pip/shapeTracerPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CANVAS_HEIGHT, CANVAS_WIDTH, checkShapeProperties, describeShapeWork, freeTrace, gridDots as generateGridDots,
-  nextTraceCorner, shapeTracerMiss, tierGuides, traceAccepts, workspaceAssignment, workspaceScene, type ShapeTracerView,
+  nextTraceCorner, shapeTracerMiss, tierGuides, traceAccepts, workspaceScene, type ShapeTracerView,
 } from './shapeTracerWorkspace';
 import {
-  BARS_LEVER, FADE_LEVER, OUTLINE_LEVER, RINGS_LEVER, STRIP_LEVER, cornerRings, guidesWith, leverFacts, practiceItem,
-  shapeTracerLevers, sideBars,
+  BARS_LEVER, FADE_LEVER, OUTLINE_LEVER, RINGS_LEVER, SHAPE_TRACER_LEVERS, STRIP_LEVER, cornerRings, guidesWith,
+  sideBars, startingLevers, type ShapeWork,
 } from './shapeTracerLevers';
+import { shapeTracerBoss } from './shapeTracer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -148,8 +146,9 @@ interface ShapeTracerProps {
 // Component
 // ============================================================================
 
-const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ShapeTracerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ShapeTracerChallenge>) => Progress }) => {
+const useShapeProgress = useWorkspaceProgressFor('shape-tracer');
+
+const ShapeTracerSurface = ({ data, className, runtimePlanItemId }: ShapeTracerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -181,18 +180,18 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<ShapeTracerChallenge | null>(null);
 
-  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progression: the teaching workspace owns it. ──
 
   const stableInstanceIdRef = useRef(instanceId || `shape-tracer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useShapeProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: shapeTracerBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
   });
@@ -200,11 +199,10 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     currentIndex: currentChallengeIndex,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or the next item. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
   // The activity's own check is the workspace's checked gesture. A ref, so the tap callbacks keep their deps.
   const commitCheck = useRef(progress.commitCheck);
@@ -222,6 +220,8 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** Levers in force on the session item: where its tier started the guides, plus the tutor's pulls. */
+  const leversOn = sessionChallenge && !practice ? Array.from(new Set([...startingLevers(sessionChallenge), ...pulledLevers])) : [];
   /** A runtime pull on the session item; never on a practice item. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
@@ -298,102 +298,9 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring Integration ───────────────────────────────────────
-
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? 'trace',
-    targetShape: currentChallenge?.targetShape ?? '',
-    description: currentChallenge?.description ?? '',
-    requiredProperties: currentChallenge?.requiredProperties ?? {},
-    sidesCompleted,
-    totalSides,
-    attemptNumber: progress.currentAttempts + 1,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? '',
-    supportTier: currentChallenge?.supportTier,
-  }), [
-    currentChallenge, sidesCompleted, totalSides, progress.currentAttempts,
-    gradeBand, challenges.length, currentChallengeIndex,
-  ]);
-
-  /**
-   * Tier-aware tutor reveal level. Keeps the tutor from re-supplying the
-   * tracing help the canvas withdrew at a harder tier.
-   * easy → walk the stroke; medium → nudge progress; hard → do NOT narrate
-   * the stroke path, encourage from memory of the shape.
-   */
-  const tutorRevealClause = useCallback((tier?: 'easy' | 'medium' | 'hard') => {
-    if (tier === 'hard') {
-      return ` [REVEAL: hard tier — the guide path, arrows, and order numbers are HIDDEN. `
-        + `Do NOT narrate the stroke path or name which dot/side comes next. `
-        + `Ask what the student remembers about the shape and let them choose their own path.]`;
-    }
-    if (tier === 'medium') {
-      return ` [REVEAL: medium tier — the guide outline is hidden but a faint next cue remains. `
-        + `Nudge progress and confirm the count of sides; don't trace the whole path for them.]`;
-    }
-    if (tier === 'easy') {
-      return ` [REVEAL: easy tier — full guide path is visible. `
-        + `You may walk the student dot-by-dot along the outline.]`;
-    }
-    return '';
-  }, []);
-
-  // Its context carries the dot order and the hidden shape, so it is off on the workspace path, and its scripted
-  // cues send nothing there.
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'shape-tracer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // ── Pip shared surface ────────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the dot the child last tapped; Pip never taps, draws, checks, or advances.
-  // Tutor audio counts only while the tutor is on this block and began on this challenge.
-  const pip = usePipTargets(currentChallenge?.id ?? null, !isCurrentChallengeComplete && !allChallengesComplete && !hasSubmittedEvaluation);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets = pip.targets();
-    const pose = shapeTracerPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
-      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnChallenge,
-      visibleIds: targets.map((target) => target.id), lastTouchedId: pip.lastTouchedId,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Shape drawing canvas',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Shape Tracer activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges covering shape construction. `
-      + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}, shape: ${currentChallenge?.targetShape}). `
-      + `Introduce warmly: "Let's learn to draw shapes! We'll trace, complete, and even draw shapes from descriptions."`
-      + tutorRevealClause(currentChallenge?.supportTier),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, tutorRevealClause, tutorOwned]);
-
   // ── Reset ─────────────────────────────────────────────────────────
 
   const resetDomainState = useCallback(() => {
-    pip.clear();
     setTappedIndices([]);
     setSelectedGridPoints([]);
     setShapeComplete(false);
@@ -401,7 +308,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setFeedbackType('');
     setRevealedShape('');
     setRefusedTap(false);
-  }, [pip.clear]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   // A fresh challenge starts empty, and the return from a practice item ends it. Try again (only after a checked
   // miss) keeps a connect-dots item's joined dots, which were all right, and clears a drawing's corners; on a practice
   // item it keeps the practice item.
@@ -440,29 +347,15 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     const isComplete = newTapped.length === path.length;
     if (!isComplete) SoundManager.tap();
 
-    const sideNum = newTapped.length - 1;
-    if (sideNum > 0 && sideNum < path.length) {
-      sendText(
-        `[SIDE_COMPLETE] Student completed side ${sideNum} of ${path.length} for ${currentChallenge?.targetShape}. `
-        + `Encourage: "Side ${sideNum} done! ${path.length - sideNum} more to go!"`,
-        { silent: true },
-      );
-    }
-
     if (isComplete) {
       SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`You traced the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
       creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
-      sendText(
-        `[ANSWER_CORRECT] Student traced a ${currentChallenge?.targetShape} with ${path.length} sides! `
-        + `Celebrate: "You drew a perfect ${currentChallenge?.targetShape}! Look at all ${path.length} sides!"`,
-        { silent: true },
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, freeStart, sendText, creditShape]);
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, freeStart, creditShape]);
 
   const handleCompleteTap = useCallback((vertexIndex: number) => {
     if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
@@ -486,32 +379,15 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     const isComplete = newTapped.length === remaining.length;
     if (!isComplete) SoundManager.tap();
 
-    const drawnCount = currentChallenge?.drawnSides?.length ?? 0;
-    const sideNum = drawnCount + newTapped.length;
-    const totalShapeSides = drawnCount + remaining.length;
-
-    if (newTapped.length > 0) {
-      sendText(
-        `[SIDE_COMPLETE] Student drew side ${sideNum} of ${totalShapeSides} for ${currentChallenge?.targetShape}. `
-        + `${totalShapeSides - sideNum} sides remaining.`,
-        { silent: true },
-      );
-    }
-
     if (isComplete) {
       SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`You completed the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
       creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
-      sendText(
-        `[ANSWER_CORRECT] Student completed a ${currentChallenge?.targetShape}! `
-        + `They drew the missing ${remaining.length} side(s). Celebrate!`,
-        { silent: true },
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, sendText, creditShape]);
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, creditShape]);
 
   const handleGridDotClick = useCallback((dot: { x: number; y: number }) => {
     if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
@@ -544,11 +420,6 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       setFeedbackType('error');
       commitCheck.current(describeShapeWork(currentChallenge, view, dotIndex), false,
         shapeTracerMiss(currentChallenge, { tapped: tappedIndices, points: [], wrongDot: dotIndex }));
-      sendText(
-        `[WRONG_DOT] Student tapped dot ${dotIndex} but should tap dot ${expectedDot} (step ${tappedIndices.length + 1}). `
-        + `Hint: "Look for the number ${tappedIndices.length + 1}. Which dot is next?"`,
-        { silent: true },
-      );
       return;
     }
 
@@ -568,14 +439,9 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       setFeedback(`It's a ${shapeName}!`);
       setFeedbackType('success');
       creditShape(currentChallenge, { ...view, tapped: newTapped, complete: true });
-      sendText(
-        `[ANSWER_CORRECT] Student connected all ${order.length} dots and revealed a ${shapeName}! `
-        + `Ask: "What shape did you make? How many sides does it have?"`,
-        { silent: true },
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, sendText, creditShape]);
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, creditShape]);
 
   const handleUndo = useCallback(() => {
     if (learnerBlocked()) return;
@@ -602,7 +468,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
     const required = currentChallenge.requiredProperties;
     const result = required ? checkShapeProperties(selectedGridPoints, required) : { correct: true, feedback: '' };
-    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    // The checked gesture: it counts the attempt and records the result.
     const work = { ...view, refused: false };
     if (result.correct) {
       SoundManager.playCorrect();
@@ -610,81 +476,17 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       setFeedback(required ? `Great job! You drew a ${currentChallenge.targetShape}!` : `Nice ${currentChallenge.targetShape}!`);
       setFeedbackType('success');
       commitCheck.current(describeShapeWork(currentChallenge, work), true);
-      if (required) sendText(
-        `[ANSWER_CORRECT] Student drew a ${currentChallenge.targetShape} from description: "${currentChallenge.description}". `
-        + `Their shape has ${selectedGridPoints.length} sides. Celebrate!`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(result.feedback);
       setFeedbackType('error');
       commitCheck.current(describeShapeWork(currentChallenge, work), false,
         shapeTracerMiss(currentChallenge, { tapped: [], points: selectedGridPoints }));
-      sendText(
-        `[ANSWER_INCORRECT] Student's shape doesn't match. ${result.feedback} `
-        + `Required: ${JSON.stringify(required)}. Student drew ${selectedGridPoints.length} vertices. `
-        + `Give a gentle hint.`,
-        { silent: true },
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, selectedGridPoints, sendText]);
+  }, [currentChallenge, selectedGridPoints]);
 
-  // ── Challenge Navigation ──────────────────────────────────────────
-
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges done
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter(r => r.correct).length / challenges.length) * 100,
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging feedback about their shape-drawing skills!`,
-        { silent: true },
-      );
-
-      // The workspace path submits the scored session from `onFinished` (below), not this tally.
-      if (!hasSubmittedEvaluation && !tutorOwned) {
-        const correct = challengeResults.filter(r => r.correct).length;
-        const accuracy = Math.round((correct / challenges.length) * 100);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-
-        const metrics: ShapeTracerMetrics = {
-          type: 'shape-tracer',
-          tracingAccuracy: accuracy,
-          shapesCompleted: correct,
-          totalShapes: challenges.length,
-          attemptsCount: totalAttempts,
-        };
-
-        submitEvaluation(correct === challenges.length, accuracy, metrics, { challengeResults });
-      }
-      return;
-    }
-
-    // Reset domain-specific state
-    resetDomainState();
-
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, shape: ${nextChallenge.targetShape}). `
-      + `Read the instruction and encourage the student.`
-      + tutorRevealClause(nextChallenge.supportTier),
-      { silent: true },
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText, tutorOwned,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause, resetDomainState,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
   finish.current = (result) => {
     if (hasSubmittedEvaluation) return;
@@ -701,40 +503,32 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       undefined, result.diagnosisEvidence);
   };
 
-  // Auto-submit when all complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
-  // demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
     // Levers belong to the session item; a practice item offers none. A guide the tier already shows is pulled.
-    const levers = practice ? [] : shapeTracerLevers(sessionChallenge, pulledLevers);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const work: ShapeWork = { placed: selectedGridPoints.length };
+    const levers = practice ? [] : SHAPE_TRACER_LEVERS.declare(sessionChallenge, work, leversOn);
+    const published = leverScene(scene, {
+      support: practice ? '' : SHAPE_TRACER_LEVERS.support(sessionChallenge, work),
+      onScreen: practice ? '' : SHAPE_TRACER_LEVERS.onScreen(sessionChallenge, work, leversOn),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+      ...published,
+      facts: { ...published.facts,
         ...(practice ? { practice: 'An easier practice item, not graded; the full item comes back after it.' } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === FADE_LEVER && !tappedIndices.length) return 'No dot is joined yet, so nothing would change; pull it once a dot is joined.';
-        if (id === BARS_LEVER && selectedGridPoints.length < 2) return 'The bars show the learner’s own sides, and there are none yet; pull it once two corners are placed.';
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge);
+          const easier = SHAPE_TRACER_LEVERS.simpler(sessionChallenge, work, id);
           if (!easier) return 'This item has no easier one; try a help lever.';
           setLeverState(pulled); resetDomainState(); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: shapeTracerBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -829,8 +623,8 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           const isNext = idx === nextCorner;
 
           return (
-            <g key={`v-${idx}`} ref={pip.ref(`vertex-${idx}`)} data-pip-object={`vertex-${idx}`} className="cursor-pointer"
-              onClick={() => { pip.look(`vertex-${idx}`); handleTraceTap(idx); }}>
+            <g key={`v-${idx}`} data-pip-object={`vertex-${idx}`} className="cursor-pointer"
+              onClick={() => handleTraceTap(idx)}>
               {/* Pulsing ring for next vertex (next/start cue) */}
               {showNextCue && isNext && !shapeComplete && (
                 <circle
@@ -975,8 +769,8 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           const isTapped = tappedIndices.includes(idx);
           const isNext = idx === tappedIndices.length;
           return (
-            <g key={`rem-${idx}`} ref={pip.ref(`remaining-${idx}`)} data-pip-object={`remaining-${idx}`} className="cursor-pointer"
-              onClick={() => { pip.look(`remaining-${idx}`); handleCompleteTap(idx); }}>
+            <g key={`rem-${idx}`} data-pip-object={`remaining-${idx}`} className="cursor-pointer"
+              onClick={() => handleCompleteTap(idx)}>
               {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={point.x} cy={point.y} r={DOT_RADIUS + 6}
@@ -1030,7 +824,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           return (
             <circle
               key={`g-${idx}`}
-              ref={pip.ref(`grid-${idx}`)}
+             
               data-pip-object={`grid-${idx}`}
               cx={dot.x} cy={dot.y}
               r={isSelected ? GRID_DOT_RADIUS + 4 : GRID_DOT_RADIUS}
@@ -1038,7 +832,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               stroke={isSelected ? 'rgba(34, 197, 94, 0.7)' : 'none'}
               strokeWidth={isSelected ? 2 : 0}
               className="cursor-pointer transition-all duration-150"
-              onClick={() => { pip.look(`grid-${idx}`); handleGridDotClick(dot); }}
+              onClick={() => handleGridDotClick(dot)}
             />
           );
         })}
@@ -1155,8 +949,8 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           // The fade_joined lever: a joined dot becomes a green tick, so it stops looking like a dot to tap.
           if (isTapped && leverOn(FADE_LEVER) && !shapeComplete) {
             return (
-              <g key={`d-${idx}`} ref={pip.ref(`dot-${idx}`)} data-pip-object={`dot-${idx}`} className="cursor-pointer"
-                onClick={() => { pip.look(`dot-${idx}`); handleConnectDotTap(idx); }}>
+              <g key={`d-${idx}`} data-pip-object={`dot-${idx}`} className="cursor-pointer"
+                onClick={() => handleConnectDotTap(idx)}>
                 <circle cx={dot.x} cy={dot.y} r={DOT_RADIUS} fill="rgba(34, 197, 94, 0.12)" stroke="rgba(34, 197, 94, 0.5)" strokeWidth={2} />
                 <text x={dot.x} y={dot.y} textAnchor="middle" dominantBaseline="central" fontSize={14} fill="#4ade80"
                   className="pointer-events-none select-none">{'✓'}</text>
@@ -1165,8 +959,8 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           }
 
           return (
-            <g key={`d-${idx}`} ref={pip.ref(`dot-${idx}`)} data-pip-object={`dot-${idx}`} className="cursor-pointer"
-              onClick={() => { pip.look(`dot-${idx}`); handleConnectDotTap(idx); }}>
+            <g key={`d-${idx}`} data-pip-object={`dot-${idx}`} className="cursor-pointer"
+              onClick={() => handleConnectDotTap(idx)}>
               {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={dot.x} cy={dot.y} r={DOT_RADIUS + 6}
@@ -1298,6 +1092,10 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           </div>
         )}
 
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the canvas and its buttons as
+            one region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
         {/* The number_strip lever: the dots' numbers in counting order, a tick on each one joined. Marks no dot. */}
         {currentChallenge?.type === 'connect-dots' && leverOn(STRIP_LEVER) && !shapeComplete && (
           <div data-lever={STRIP_LEVER} aria-label="Number strip" className="flex justify-center gap-1.5 flex-wrap">
@@ -1316,7 +1114,6 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {/* Drawing Canvas */}
         <div className="flex justify-center">
           <svg
-            ref={pip.ref('canvas')}
             data-pip-object="canvas"
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
@@ -1358,12 +1155,6 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             {currentChallenge?.type === 'connect-dots' && renderConnectDotsCanvas()}
           </svg>
         </div>
-
-        {/* Pip's dock sits under the canvas, away from the Undo / Check buttons. */}
-        {pipStore && !allChallengesComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto flex min-h-28 w-full max-w-[500px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
-        )}
 
         {/* Side Counter */}
         {currentChallenge && !allChallengesComplete && totalSides > 0 && (
@@ -1424,7 +1215,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {/* Action Buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {canUndo && !(tutorOwned && progress.canAttempt === false) && (
+            {canUndo && progress.canAttempt !== false && (
               <LuminaButton tone="subtle" onClick={handleUndo}>
                 Undo
               </LuminaButton>
@@ -1434,15 +1225,9 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckShape}
-                disabled={selectedGridPoints.length < 3 || (tutorOwned && progress.canAttempt === false)}
+                disabled={selectedGridPoints.length < 3 || progress.canAttempt === false}
               >
                 Check Shape
-              </LuminaActionButton>
-            )}
-
-            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                Next Challenge
               </LuminaActionButton>
             )}
 
@@ -1458,6 +1243,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             )}
           </div>
         )}
+        </PipWorkspace>
 
         {/* Phase Summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1475,8 +1261,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path keeps the runtime's progression: no Next button, no scripted cue, no legacy AI context.
-const ShapeTracer = withWorkspaceController<ShapeTracerProps, ProgressOptions<ShapeTracerChallenge>, Progress>(
-  'shape-tracer', ShapeTracerSurface, useScriptedProgress, useWorkspaceProgressFor('shape-tracer'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const ShapeTracer = withWorkspaceOnly<ShapeTracerProps>('shape-tracer', ShapeTracerSurface, props => props.data.title);
 
 export default ShapeTracer;

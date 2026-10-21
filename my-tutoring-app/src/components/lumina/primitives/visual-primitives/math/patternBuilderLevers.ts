@@ -1,25 +1,30 @@
 /**
  * The in-item levers on a pattern-builder item (`/add-support-tiers`, report
  * qa/eval-reports/pattern-builder-levers-2026-10-08.md). No real-learner evidence: the misses are what
- * `patternBuilderMiss` observes. Pure: the component draws from these, the workspace publishes them, the tests hold
- * each leak rule. Every simpler item has the id `<item>~simpler`, the same mode, and is built by `practiceItem`.
+ * `patternBuilderMiss` observes. Pure: the component draws from these, the tests hold each leak rule. Declared once as
+ * a lever set (`PATTERN_LEVERS`, `bossLevers.ts`). Every simpler item has the id `<item>~simpler`, the same mode, and
+ * is built by `practiceItem`.
  *
- * - create: `shape_model` (help) the asked shape twice in pictures off the palette (`modelLeaks`); `shape_ab`
- *   (simplify) an A B ask with the same palette, never when A B is the ask.
- * - extend / find_rule, a row that repeats: `repeat_groups` (help) a gap in the SHOWN row each time it starts over,
- *   never on a blank. A row of numbers that does not repeat: `number_line` (help) the shown numbers as dots on a line
+ * - create: `shape_model` (model) the asked shape twice in pictures off the palette (`modelLeaks`); `shape_ab`
+ *   (easier) an A B ask with the same palette, never when A B is the ask.
+ * - extend / find_rule, a row that repeats: `repeat_groups` (layout) a gap in the SHOWN row each time it starts over,
+ *   never on a blank. A row of numbers that does not repeat: `number_line` (layout) the shown numbers as dots on a line
  *   that spans them only, a hop between neighbours and no hop size written (`lineLeaks`).
- * - identify_core: the part IS the answer, so the help acts on a model outside the item: `core_model` (help) a row of
+ * - identify_core: the part IS the answer, so the help acts on a model outside the item: `core_model` (model) a row of
  *   pictures off the palette, its own repeating part boxed, of a different shape from the item's part (`coreModelLeaks`).
- * - translate: `place_marker` (help) a marker under the next place of the original row and a tick under each place
+ * - translate: `place_marker` (marks) a marker under the next place of the original row and a tick under each place
  *   made, from the learner's own row; it never names a new token (`markerFact`).
- * - extend, identify_core, translate, find_rule: `simpler_row` (simplify) a shorter or plainer row of the same mode in
+ * - extend, identify_core, translate, find_rule: `simpler_row` (easier) a shorter or plainer row of the same mode in
  *   other tokens or with a different step (`practiceLeaks`). Never offered on an item already the plainest shape.
+ *
+ * When a model lever comes is the set's `support`, by the item's tier. Easy starts the other help shown
+ * (`startsShown`): a starting position, not a pull.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
 import {
-  activeMapping, activeSequence, createInstruction, paletteFor, repeatedPart, shapeLetters, shapeOf, translationOf,
+  PATTERN_MISSES_BY_MODE, activeMapping, activeSequence, createInstruction, paletteFor, repeatedPart, shapeLetters, shapeOf,
+  translationOf,
 } from './patternBuilderWorkspace';
 
 export const MODEL_LEVER = 'shape_model';
@@ -307,74 +312,86 @@ export function practiceItem(c: PatternBuilderChallenge, data: PatternSession): 
 export const practiceParent = (id: string | null | undefined, challenges: readonly PatternBuilderChallenge[]) =>
   id?.endsWith(PRACTICE_SUFFIX) ? challenges.find(c => `${c.id}${PRACTICE_SUFFIX}` === id) ?? null : null;
 
-/** Easy starts with the item's help shown (the learner can check against it); a starting position is not a pull. */
-export const helpStartsShown = (c: PatternBuilderChallenge) => c.supportTier === 'easy';
+// ── the lever set ──────────────────────────────────────────────────────────
+
+/** What a lever reads beyond the item: the lesson, and how many tokens the learner has placed (the place marker). */
+export interface PatternLeverContext { session: PatternSession; placed: number }
 
 const ROW_MISSES = ['repeated_last', 'started_over', 'one_wrong', 'two_swapped', 'several_wrong'];
+const SIMPLER_WHEN = 'The learner cannot do this item even with the help on screen: a smaller one first.';
+const BACK = 'then this item comes back blank.';
+const shapeOfItem = (c: PatternBuilderChallenge) => shapeLetters(c.createShape ?? '');
 
-/** The levers on a session item. `pulled` holds this item's runtime pulls. */
-export function patternBuilderLevers(c: PatternBuilderChallenge | null, data: PatternSession, pulled: readonly string[]):
-  WorkspaceLever[] {
-  if (!c) return [];
-  const levers: WorkspaceLever[] = [];
-  const isOn = (id: string) => helpStartsShown(c) || pulled.includes(id);
-  const help = (id: string, when: string, does: string, answers: string[]) =>
-    levers.push({ id, kind: 'help', carrier: 'shown', when, does, pulled: isOn(id), answers });
-  const simplify = (does: string, answers: string[]) => {
-    if (practiceItem(c, data)) levers.push({ id: SIMPLER_LEVER, kind: 'simplify', carrier: 'shown',
-      when: 'The learner cannot do this item even with the help on screen: a smaller one first.', does,
-      pulled: pulled.includes(SIMPLER_LEVER), answers });
-  };
-  const back = 'then this item comes back blank.';
-  switch (c.type) {
-    case 'create': {
-      if (!c.createShape) return [];
-      const shape = shapeLetters(c.createShape);
-      if (shapeModel(c, paletteFor(data, c))) help(MODEL_LEVER,
-        `The learner's row is not a ${shape} part made twice, or they do not know how a ${shape} pattern goes.`,
-        `Draws a model ${shape} pattern beside the row, two times, in pictures that are not on the palette. `
-          + 'You may point to it and say the pictures; never turn it into the learner\'s tokens.',
-        ['too_short', 'other_shape', 'no_repeat']);
-      if (abPractice(c)) levers.push({
-        id: AB_LEVER, kind: 'simplify', carrier: 'shown',
-        when: `The learner cannot make ${shape} even with the model: a smaller ask first.`,
-        does: `Opens an ungraded practice row asking for A B (two things taking turns) with the same tokens; then the ${shape} item comes back blank.`,
-        pulled: pulled.includes(AB_LEVER), answers: ['other_shape', 'no_repeat'],
-      });
-      return levers;
-    }
-    case 'extend':
-    case 'find_rule':
-      if (repeatGroups(data, c)) help(GROUPS_LEVER,
-        'The learner fills the blanks with tokens that do not keep the pattern going, or cannot tell where it starts over.',
-        'Draws a gap in the shown row each time the pattern starts over; nothing on the blanks. You may point to the gaps '
-          + 'and read the groups; never say a blank\'s token or point to its choice.', ROW_MISSES);
-      else if (numberLine(data, c)) help(LINE_LEVER,
-        'The learner cannot see how the numbers change from one to the next.',
-        'Draws the row\'s numbers as dots on a number line beside it, spanning only those numbers, with a hop from each '
-          + 'to the next and no size written. You may point to the hops; never say a hop size, the rule or a next number.', ROW_MISSES);
-      simplify(numberLine(data, c)
-        ? `Opens an ungraded practice row that adds the same small number each time, with one blank; ${back}`
-        : `Opens an ungraded practice row of two other tokens taking turns, with fewer blanks; ${back}`,
-        ['repeated_last', 'started_over', 'several_wrong']);
-      return levers;
-    case 'identify_core':
-      if (coreModel(data, c)) help(CORE_MODEL_LEVER,
-        'The learner selects more or less than one repeat, or a part that is not the one that repeats.',
-        'Draws a model row beside the item in other pictures, its own repeating part boxed each time; the model has a '
-          + 'different shape from this row. You may point to the model and say its pictures; never box, count or name a '
-          + 'part of the learner\'s row.', ['two_repeats', 'too_long', 'too_short', 'other_part']);
-      simplify(`Opens an ungraded practice row of two tokens taking turns; ${back}`, ['two_repeats', 'too_long', 'other_part']);
-      return levers;
-    case 'translate':
-      if (activeMapping(data, c)) help(MARKER_LEVER,
-        'The learner loses their place in the original row, leaves places out, or makes too many.',
-        'Puts a marker under the next place of the original row to make and a tick under each place made, following '
-          + 'the learner\'s own row. You may point to the marked token and to the key; never say which new token goes there.',
-        ['blanks_left', 'extra_tokens', 'one_wrong', 'two_swapped', 'several_wrong']);
-      simplify(`Opens an ungraded practice row: a shorter pattern of two tokens with their key; ${back}`, ['two_swapped', 'several_wrong']);
-      return levers;
-  }
-}
+/** Declared in the order the tutor reaches for them. */
+export const PATTERN_LEVERS = leverSet<PatternBuilderChallenge, PatternLeverContext>({
+  modeOf: c => c.type,
+  missesOf: mode => PATTERN_MISSES_BY_MODE[mode as PatternBuilderChallenge['type']] ?? [],
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (c.type === 'create' ? 'the asked shape made twice in other pictures, not on the palette'
+      : 'a row in other pictures with its own repeating part boxed, a different shape from this row\'s'),
+    own: c => (c.type === 'create' ? 'which tokens to tap' : 'this row\'s repeating part'),
+  },
+  specs: [
+    // create
+    { id: MODEL_LEVER, type: 'model', modes: ['create'], answers: ['too_short', 'other_shape', 'no_repeat'],
+      when: c => `The learner's row is not a ${shapeOfItem(c)} part made twice, or they do not know how a ${shapeOfItem(c)} pattern goes.`,
+      does: c => `Draws a model ${shapeOfItem(c)} pattern beside the row, two times, in pictures that are not on the palette. `
+        + 'You may point to it and say the pictures; never turn it into the learner\'s tokens.',
+      content: (c, { session }) => shapeModel(c, paletteFor(session, c)),
+      fact: (m: ShapeModel) => modelFact(m) },
+    { id: AB_LEVER, type: 'easier', carrier: 'shown', modes: ['create'], answers: ['other_shape', 'no_repeat'],
+      when: c => `The learner cannot make ${shapeOfItem(c)} even with the model: a smaller ask first.`,
+      does: c => 'Opens an ungraded practice row asking for A B (two things taking turns) with the same tokens; then the '
+        + `${shapeOfItem(c)} item comes back blank.`,
+      content: c => abPractice(c) },
+    // extend, find_rule
+    { id: GROUPS_LEVER, type: 'layout', modes: ['extend', 'find_rule'], answers: ROW_MISSES,
+      when: 'The learner fills the blanks with tokens that do not keep the pattern going, or cannot tell where it starts over.',
+      does: 'Draws a gap in the shown row each time the pattern starts over; nothing on the blanks. You may point to the gaps '
+        + 'and read the groups; never say a blank\'s token or point to its choice.',
+      content: (c, { session }) => repeatGroups(session, c),
+      fact: (k: number, c, { session }) => groupsFact(session, c, k) },
+    { id: LINE_LEVER, type: 'layout', modes: ['extend', 'find_rule'], answers: ROW_MISSES,
+      when: 'The learner cannot see how the numbers change from one to the next.',
+      does: 'Draws the row\'s numbers as dots on a number line beside it, spanning only those numbers, with a hop from each '
+        + 'to the next and no size written. You may point to the hops; never say a hop size, the rule or a next number.',
+      content: (c, { session }) => numberLine(session, c),
+      fact: (line: NumberLineModel) => lineFact(line) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['extend', 'find_rule'],
+      answers: ['repeated_last', 'started_over', 'several_wrong'], when: SIMPLER_WHEN,
+      does: (c, { session }) => (numberLine(session, c)
+        ? `Opens an ungraded practice row that adds the same small number each time, with one blank; ${BACK}`
+        : `Opens an ungraded practice row of two other tokens taking turns, with fewer blanks; ${BACK}`),
+      content: (c, { session }) => practiceItem(c, session) },
+    // identify_core
+    { id: CORE_MODEL_LEVER, type: 'model', modes: ['identify_core'], answers: ['two_repeats', 'too_long', 'too_short', 'other_part'],
+      when: 'The learner selects more or less than one repeat, or a part that is not the one that repeats.',
+      does: 'Draws a model row beside the item in other pictures, its own repeating part boxed each time; the model has a '
+        + 'different shape from this row. You may point to the model and say its pictures; never box, count or name a '
+        + 'part of the learner\'s row.',
+      content: (c, { session }) => coreModel(session, c),
+      fact: (m: CoreModel) => coreModelFact(m) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['identify_core'], answers: ['two_repeats', 'too_long', 'other_part'],
+      when: SIMPLER_WHEN, does: `Opens an ungraded practice row of two tokens taking turns; ${BACK}`,
+      content: (c, { session }) => practiceItem(c, session) },
+    // translate
+    { id: MARKER_LEVER, type: 'marks', modes: ['translate'],
+      answers: ['blanks_left', 'extra_tokens', 'one_wrong', 'two_swapped', 'several_wrong'],
+      when: 'The learner loses their place in the original row, leaves places out, or makes too many.',
+      does: 'Puts a marker under the next place of the original row to make and a tick under each place made, following '
+        + 'the learner\'s own row. You may point to the marked token and to the key; never say which new token goes there.',
+      content: (c, { session }) => activeMapping(session, c) ?? null,
+      fact: (_mapping: unknown, c, { session, placed }) => markerFact(session, c, placed) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['translate'], answers: ['two_swapped', 'several_wrong'],
+      when: SIMPLER_WHEN, does: `Opens an ungraded practice row: a shorter pattern of two tokens with their key; ${BACK}`,
+      content: (c, { session }) => practiceItem(c, session) },
+  ],
+});
+
+/** Easy starts with the item's help shown (the learner can check against it); a starting position is not a pull. The
+ *  model levers are not among them: when a model comes is the set's `support`. */
+export const startsShown = (c: PatternBuilderChallenge | null): string[] => (c?.supportTier === 'easy'
+  ? PATTERN_LEVERS.idsFor(c.type).filter(id => id === GROUPS_LEVER || id === LINE_LEVER || id === MARKER_LEVER) : []);
 
 export const PRACTICE_NOTE = 'An easier practice row, ungraded; the full item comes back after it.';

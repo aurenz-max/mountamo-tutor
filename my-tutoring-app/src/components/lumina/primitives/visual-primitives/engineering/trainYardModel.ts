@@ -9,6 +9,10 @@
  * run the learner watches, the key the generator stores and the check the workspace commits agree.
  */
 
+import type { TrainYardMiss } from './trainYard.card';
+
+export { TRAIN_YARD_MISSES, TRAIN_YARD_MISSES_BY_MODE, type TrainYardMiss } from './trainYard.card';
+
 export const ROLLING_PULL_PER_TON = 0.002;
 
 export type TrainCarType = 'hopper' | 'tank' | 'flat' | 'boxcar' | 'autorack' | 'coach';
@@ -88,6 +92,9 @@ export interface TrainYardChallenge {
   /** Hill steepness in percent. */
   grade: number;
   distanceKm: number;
+  /** The lesson's support tier, stamped on each job by the generator: when the model levers come (`supportFact`).
+   *  Absent on older payloads, which read as medium. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   /** match_car only: the car kinds the yard offers, when fewer than all (a `two_cars` practice job). */
   carChoices?: TrainCarType[];
 }
@@ -186,20 +193,7 @@ export function yardConsist(c: TrainYardChallenge, built: Consist): Consist {
   }
 }
 
-/**
- * What a checked build shows, in precedence order:
- *   - `wrong_car`: none of its cars can carry this cargo;
- *   - `mixed_cars`: some cars are a kind that cannot carry it (dead weight);
- *   - `too_few_cars`: the right cars cannot hold the whole load;
- *   - `stalled`: the engines cannot pull the train up the hill;
- *   - `extra_cars`: the load fits in fewer cars;
- *   - `extra_engines`: fewer engines would climb the hill.
- * `undefined` is the fewest-cars, fewest-engines train: the one correct build.
- */
-export type TrainYardMiss = 'wrong_car' | 'mixed_cars' | 'too_few_cars' | 'stalled' | 'extra_cars' | 'extra_engines';
-export const TRAIN_YARD_MISSES: readonly TrainYardMiss[] =
-  ['wrong_car', 'mixed_cars', 'too_few_cars', 'stalled', 'extra_cars', 'extra_engines'];
-
+/** What a checked build shows, in precedence order (the card lists them, `trainYard.card.ts`). */
 export function trainYardMiss(c: TrainYardChallenge, consist: Consist): TrainYardMiss | undefined {
   const run = runTrain(c, consist);
   if (run.rightCars === 0 && run.wrongCars > 0) return 'wrong_car';

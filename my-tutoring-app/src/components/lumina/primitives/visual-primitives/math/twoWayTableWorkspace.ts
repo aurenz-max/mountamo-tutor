@@ -1,13 +1,14 @@
 /**
- * Two-way table on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, batch C19).
+ * Two-way table's domain: the table arithmetic, the activity's check and its misses, and the scene the tutor reads.
+ * The boss (`twoWayTable.boss.ts`) builds the assignment.
  *
  * Pure: the component and any probe read the same assignment and scene. Every mode is a gesture item checked by the
  * activity's own Check: a typed probability within the item's tolerance of `expectedProbability`. The tutor is never
  * handed the answer: not the probability, not the division that gives it, not a total the table hides.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { TwoWayTableChallenge, TwoWayTableChallengeType } from './TwoWayTable';
+import type { TwoWayMiss } from './twoWayTable.card';
 
 /** Which cell, row or column the question names; `given` is the conditioning axis of a conditional item. */
 export interface TableTarget {
@@ -105,32 +106,7 @@ export function describeTwoWayWork(typed: string): string {
 
 // ── misses ───────────────────────────────────────────────────────────────
 
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the number typed, drawn from the catalog's
- * commonStruggles (joint and marginal confused, a conditional divided by everyone, independence misread):
- * - joint: `row_denominator` / `column_denominator` the cell out of its own row or column (a conditional);
- *   `marginal_instead` the whole row or column out of everyone; `wrong_cell` another cell out of everyone;
- * - marginal: `one_cell` one cell of the row or column out of everyone (not added up); `other_marginal` another row's
- *   or column's total out of everyone;
- * - conditional: `joint_instead` the cell out of everyone; `reversed_condition` the cell out of the other axis's total
- *   (the condition swapped); `marginal_instead` a row or column total out of everyone; `wrong_cell` another cell of the
- *   given group out of the group;
- * - independence: `observed_joint` the cell out of everyone (what was observed, not expected); `one_factor` P(A) or
- *   P(B) alone; `added_factors` P(A) + P(B);
- * - every mode: `typed_count` a count from the table typed as the answer; `near_miss` within 0.05; else `too_high` /
- *   `too_low`.
- */
-export type TwoWayMiss = 'row_denominator' | 'column_denominator' | 'marginal_instead' | 'wrong_cell' | 'one_cell'
-  | 'other_marginal' | 'joint_instead' | 'reversed_condition' | 'observed_joint' | 'one_factor' | 'added_factors'
-  | 'typed_count' | 'near_miss' | 'too_high' | 'too_low';
-
-const SIZE: readonly TwoWayMiss[] = ['typed_count', 'near_miss', 'too_high', 'too_low'];
-export const TWO_WAY_MISSES_BY_MODE: Record<TwoWayTableChallengeType, readonly TwoWayMiss[]> = {
-  joint_probability: ['row_denominator', 'column_denominator', 'marginal_instead', 'wrong_cell', ...SIZE],
-  marginal_distribution: ['one_cell', 'other_marginal', ...SIZE],
-  conditional_probability: ['joint_instead', 'reversed_condition', 'marginal_instead', 'wrong_cell', ...SIZE],
-  independence_test: ['observed_joint', 'one_factor', 'added_factors', ...SIZE],
-};
+export { TWO_WAY_MISSES_BY_MODE, type TwoWayMiss } from './twoWayTable.card';
 
 /** The values each signature miss stands for on this item, most specific first. Shared by the check and the harness. */
 export function signatureValues(ch: TwoWayTableChallenge): Array<[TwoWayMiss, number]> {
@@ -190,10 +166,6 @@ export function twoWayMiss(ch: TwoWayTableChallenge, typed: string): TwoWayMiss 
 
 // ── what the tutor is told ───────────────────────────────────────────────
 
-export function workspaceAssignment(ch: TwoWayTableChallenge): TeachingAssignment {
-  return { id: ch.id, task: ch.question, response: 'gesture' };
-}
-
 /** Which totals the table draws: the support tier's flags, else the legacy single switch. */
 export function totalsVisibility(ch: TwoWayTableChallenge): { showRow: boolean; showCol: boolean; showGrand: boolean } {
   const tiered = ch.supportTier != null;
@@ -212,7 +184,7 @@ const KIND: Record<TwoWayTableChallengeType, string> = {
 };
 
 /** What is drawn and asked. Totals are named only where the table draws them; the probability never. */
-export function workspaceScene(ch: TwoWayTableChallenge, view: { typed: string }): WorkspaceScene {
+export function workspaceScene(ch: TwoWayTableChallenge, view: { typed: string }): SceneOf {
   const f = ch.frequencies;
   const { showRow, showCol, showGrand } = totalsVisibility(ch);
   const facts: Record<string, string> = {
@@ -229,8 +201,8 @@ export function workspaceScene(ch: TwoWayTableChallenge, view: { typed: string }
   };
   if (ch.sumReminder) facts.reminder = `under the table: ${ch.sumReminder}`;
   facts.learnerWork = describeTwoWayWork(view.typed);
-  facts.constraints = 'The learner types a probability in the answer box (a decimal from 0 to 1, or a percent with %) '
-    + 'and presses Check. The activity checks it itself, within 0.02. You cannot type, or press Check.';
+  // How the learner answers is the card's `moves`; only what is this table's own is said here.
+  facts.constraints = 'An answer within 0.02 of the key counts. A total the table hides is the learner\'s to add up.';
   return { objects: [], facts };
 }
 

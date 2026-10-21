@@ -20,23 +20,23 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SlopeTriangleMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  describeSlopeWork, drawCorrect, lineLabel, parseSlope, slopeTriangleMiss, workspaceAssignment, workspaceScene, type SlopeWork,
+  describeSlopeWork, drawCorrect, lineLabel, parseSlope, slopeTriangleMiss, workspaceScene, type SlopeWork,
 } from './slopeTriangleWorkspace';
 import {
-  BUILD_FRAME, COUNT_TICKS, FORMULA_FRAME, LEG_LABELS, LEG_NAMES, MODEL_TRIANGLE, SIGN_FRAME, isPracticeItem, leverFacts,
-  simplerItem, slopeTriangleLevers, triangleModel, type TriangleModel,
+  BUILD_FRAME, COUNT_TICKS, FORMULA_FRAME, LEG_LABELS, LEG_NAMES, MODEL_TRIANGLE, SIGN_FRAME, SLOPE_LEVERS, isPracticeItem,
+  triangleModel, type TriangleModel,
 } from './slopeTriangleLevers';
+import { slopeTriangleBoss } from './slopeTriangle.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -85,7 +85,7 @@ export interface SlopeTriangleChallenge {
   expectedSlope: number;
   instruction: string;
   hint: string;
-  /** Within-mode support tier from the manifest, when present (drives tutor reveal). */
+  /** Within-mode support tier, stamped per item by the generator (when the model lever comes; `SLOPE_LEVERS.support`). */
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -121,21 +121,6 @@ const PHASE_CONFIG_BY_TYPE: Record<SlopeTriangleChallengeType, PhaseConfig> = {
 };
 
 // ============================================================================
-// Tutor reveal policy — keep the AI tutor in sync with the measurement overlay
-// so it never names what a harder tier withheld. (Scripted path only.)
-// ============================================================================
-
-function tutorRevealClause(type: string, tier?: 'easy' | 'medium' | 'hard'): string {
-  if (!tier) return '';
-  if (tier === 'easy')
-    return ' Support tier EASY: the rise/run overlay is on — you may name the method and walk the first step.';
-  if (tier === 'medium')
-    return ' Support tier MEDIUM: numeric labels are withdrawn — nudge the student to count the grid, do not state rise, run, or the slope value.';
-  // hard — the screen withholds every measurement overlay; the tutor must not leak it.
-  return ' Support tier HARD: no measurement overlay — ask how far the line goes UP vs ACROSS between the corners; do NOT state the rise, the run, or the slope value.';
-}
-
-// ============================================================================
 // Component
 // ============================================================================
 
@@ -149,6 +134,8 @@ interface SlopeTriangleProps {
 }
 
 const MAX_RUN = 8;
+const useSlopeProgress = useWorkspaceProgressFor('slope-triangle');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
 
 /** The model_triangle lever's worked example: a different triangle, drawn to scale, with its caption. */
 function ModelTriangleFigure({ model }: { model: TriangleModel }) {
@@ -168,8 +155,7 @@ function ModelTriangleFigure({ model }: { model: TriangleModel }) {
   );
 }
 
-const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  SlopeTriangleProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SlopeTriangleChallenge>) => Progress }) => {
+const SlopeTriangleSurface = ({ data, className, runtimePlanItemId }: SlopeTriangleProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -192,16 +178,16 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge state. On the workspace path the runtime moves the index.
+  // Challenge progression: the teaching workspace owns it.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useSlopeProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: slopeTriangleBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -211,16 +197,15 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     results: challengeResults,
     isComplete: allChallengesComplete,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
 
-  // In-item levers (`slopeTriangleLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place.
+  // In-item levers (`SLOPE_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place.
   const sessionChallenge = challenges[currentChallengeIndex] || null;
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<SlopeTriangleChallenge | null>(null);
@@ -256,12 +241,9 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const [slopeInput, setSlopeInput] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [showHint, setShowHint] = useState(false);
   const [draggingHandle, setDraggingHandle] = useState<'base' | 'right' | 'top' | null>(null);
 
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
   const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -270,7 +252,7 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const canvasWidth = 720;
   const canvasHeight = 540;
 
-  /** The working surface back to the item's start: its triangle, empty boxes, no feedback or hint. */
+  /** The working surface back to the item's start: its triangle, empty boxes, no feedback. */
   const resetWork = (ch: SlopeTriangleChallenge | null) => {
     if (!ch) return;
     setTrianglePos({ x: ch.triangle.position.x, size: ch.triangle.size, rise: 0 });
@@ -279,19 +261,17 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     setSlopeInput('');
     setFeedback('');
     setFeedbackType('');
-    setShowHint(false);
     setDraggingHandle(null);
     recordedRef.current = false;
-    hintViewedRef.current = false;
   };
-  /** A fresh item (both paths) or Try again (workspace). Try again on a practice item keeps it; a fresh item (or the
-   *  full item back after practice) drops it. */
+  /** A fresh item or Try again. Try again on a practice item keeps it; a fresh item (or the full item back after
+   *  practice) drops it. */
   openItem.current = (index, retry) => {
     if (!retry) setPractice(null);
     resetWork(retry && practice ? practice : challenges[index] ?? null);
   };
 
-  // Per-challenge reset on the scripted path, whose advance() flips the item, and when a practice item comes or goes.
+  // When the item on screen changes (a practice item comes or goes), its triangle starts over.
   useEffect(() => {
     resetWork(currentChallenge);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -664,59 +644,8 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring (scripted path; on the workspace path the tutor reads the scene instead,
-  // and this context, which carries the answers, is never sent)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    equation: currentChallenge?.attachedLine.label ?? '',
-    slope: currentChallenge?.attachedLine.slope ?? 0,
-    expectedRise: currentChallenge?.expectedRise ?? 0,
-    expectedRun: currentChallenge?.expectedRun ?? 0,
-    expectedSlope: currentChallenge?.expectedSlope ?? 0,
-    gradeBand,
-    attemptNumber: currentAttempts + 1,
-    notation: currentChallenge?.triangle.notation ?? 'riseRun',
-    supportTier: currentChallenge?.supportTier,
-  }), [
-    challengeType,
-    currentChallengeIndex,
-    challenges.length,
-    currentChallenge,
-    gradeBand,
-    currentAttempts,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'slope-triangle',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel:
-      gradeBand === '7-8' ? 'Grade 8' : gradeBand === 'algebra-1' ? 'Algebra 1' : 'Algebra 2',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    const totalCh = challenges.length;
-    sendText(
-      `[ACTIVITY_START] Slope triangle session: ${totalCh > 1 ? `${totalCh} lines` : 'one line'}. `
-      + `Mode: ${challengeType}. Grade band: ${gradeBand}. `
-      + `Introduce briefly: "Each line has a slope triangle — read or build it to find the slope."`,
-      { silent: true }
-    );
-  }, [tutorOwned, isConnected, challenges.length, challengeType, gradeBand, sendText]);
-
-  // -------------------------------------------------------------------------
   // The check. Every complete Check commits, right or wrong, through the progress
-  // hook (counts the attempt, records the verdict on both paths, names the miss).
+  // hook (counts the attempt, records the verdict, names the miss).
   // -------------------------------------------------------------------------
   const commit = useCallback((correct: boolean, w: SlopeWork) => {
     if (!currentChallenge) return;
@@ -747,20 +676,14 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setFeedback(`Correct! Rise = ${currentChallenge.expectedRise}, Run = ${currentChallenge.expectedRun}.`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student identified rise/run. Celebrate briefly.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Count the grid units carefully.`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered rise=${rise}, run=${run}. Hint: "Count up from the base point for rise, across for run."`
-        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
-        { silent: true }
-      );
     }
     commit(correct, work);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, hasSubmittedEvaluation, riseInput, runInput, commit, sendText]);
+  }, [currentChallenge, hasSubmittedEvaluation, riseInput, runInput, commit]);
 
   const handleSubmitCalculate = useCallback(() => {
     if (!currentChallenge || hasSubmittedEvaluation || recordedRef.current || learnerBlocked()) return;
@@ -780,20 +703,14 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setFeedback(`Correct! Slope = ${currentChallenge.expectedSlope}.`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student calculated slope. Reinforce rise/run formula.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Slope = rise ÷ run.`);
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student said slope=${parsed}, actual ${currentChallenge.expectedSlope}. Hint: "Divide rise by run; watch the sign."`
-        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
-        { silent: true }
-      );
     }
     commit(correct, work);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, hasSubmittedEvaluation, slopeInput, commit, sendText]);
+  }, [currentChallenge, hasSubmittedEvaluation, slopeInput, commit]);
 
   const handleSubmitDrawTriangle = useCallback(() => {
     if (!currentChallenge || hasSubmittedEvaluation || recordedRef.current || learnerBlocked()) return;
@@ -804,86 +721,17 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       SoundManager.playCorrect();
       setFeedback(`The top corner is on the line: rise ${trianglePos.rise} over run ${trianglePos.size}.`);
       setFeedbackType('success');
-      sendText(`[ANSWER_CORRECT] Student built a slope triangle. Reinforce slope constancy.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite: the top corner is not on the line yet.');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student's triangle: run=${trianglePos.size}, rise=${trianglePos.rise}; the line's slope is ${currentChallenge.expectedSlope}. Coach: rise = slope x run.`
-        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
-        { silent: true }
-      );
     }
     commit(correct, work);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, hasSubmittedEvaluation, trianglePos, commit, sendText]);
+  }, [currentChallenge, hasSubmittedEvaluation, trianglePos, commit]);
 
-  const handleShowHint = useCallback(() => {
-    if (showHint) return;
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      hintsViewedRef.current += 1;
-    }
-  }, [showHint]);
-
-  // Scripted path only: the workspace path hides Next and the runtime advances.
-  const advanceChallenge = useCallback(() => {
-    if (tutorOwned) return;
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      const next = challenges[nextIdx];
-      sendText(
-        `[NEXT_ITEM] Line ${nextIdx + 1} of ${challenges.length}: "${next?.attachedLine.label}". `
-        + `Introduce briefly: "Here's the next line. Read the triangle to find the slope."`,
-        { silent: true },
-      );
-    }
-  }, [tutorOwned, advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Session-complete (scripted path): build metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (tutorOwned || !allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: SlopeTriangleMetrics = {
-      type: 'slope-triangle',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'identify_slope') as SlopeTriangleMetrics['challengeType'],
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    const goalMet = correctCount === total;
-    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} slope triangles done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
-      { silent: true },
-    );
-  }, [tutorOwned, allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || submittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
     submittedRef.current = true;
@@ -904,17 +752,19 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   };
 
   // -------------------------------------------------------------------------
-  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // What the tutor and the observer are shown, republished every render.
   // -------------------------------------------------------------------------
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { work });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : slopeTriangleLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : SLOPE_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : SLOPE_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : SLOPE_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -922,10 +772,10 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge);
+          const easier = SLOPE_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: slopeTriangleBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -947,18 +797,6 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     );
   }, [allChallengesComplete, challengeResults]);
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The slope triangle and your answer',
-    solved: !!isCurrentComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -970,6 +808,7 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   }
 
   const notation = currentChallenge.triangle.notation;
+  const model = leverOn(MODEL_TRIANGLE) && sessionChallenge ? triangleModel(sessionChallenge) : null;
 
   return (
     <LuminaCard className={className}>
@@ -977,6 +816,7 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-xs uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaBadge accent="emerald" className="text-xs">{gradeBand}</LuminaBadge>
             <LuminaChallengeCounter
               current={Math.min(currentChallengeIndex + 1, challenges.length)}
@@ -1017,144 +857,142 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           })}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {/* Canvas — bespoke interaction surface (painting) */}
-        <div className="p-3 bg-slate-800/30 rounded-2xl border border-green-500/20">
-          <canvas
-            ref={canvasRef}
-            width={canvasWidth}
-            height={canvasHeight}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            className={`rounded-lg w-full ${challengeType === 'draw_triangle' ? 'cursor-grab active:cursor-grabbing' : ''}`}
-            style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
-          />
-        </div>
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the grid and the answer panel
+            as one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
+          {/* Canvas — bespoke interaction surface (painting) */}
+          <div className="p-3 bg-slate-800/30 rounded-2xl border border-green-500/20">
+            <canvas
+              ref={canvasRef}
+              width={canvasWidth}
+              height={canvasHeight}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              className={`rounded-lg w-full ${challengeType === 'draw_triangle' ? 'cursor-grab active:cursor-grabbing' : ''}`}
+              style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
+            />
+          </div>
 
-        {/* Lever frames and the worked triangle (`slopeTriangleLevers.ts`), on the session item only */}
-        {leverOn(SIGN_FRAME) && (
-          <p data-lever="sign-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
-            From the left corner, a rise that goes up is positive and one that goes down is negative. The run counts to the right, so it is positive.
-          </p>
-        )}
-        {leverOn(FORMULA_FRAME) && (
-          <p data-lever="formula-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
-            Slope = {notation === 'deltaNotation' ? 'Δy ÷ Δx' : 'rise ÷ run'}: the up-or-down leg goes on top, the across leg underneath. A line that falls from left to right has a negative slope.
-          </p>
-        )}
-        {leverOn(BUILD_FRAME) && (
-          <p data-lever="build-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
-            The top corner lands back on the line when the rise is the slope times the run. For a line that falls from left to right, the top corner goes below the right angle. Rise + and Rise − move the top corner.
-          </p>
-        )}
-        {leverOn(MODEL_TRIANGLE) && sessionChallenge && triangleModel(sessionChallenge) && (
-          <ModelTriangleFigure model={triangleModel(sessionChallenge)!} />
-        )}
+          {/* Lever frames and the worked triangle (`slopeTriangleLevers.ts`), on the session item only */}
+          {leverOn(SIGN_FRAME) && (
+            <p data-lever="sign-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+              From the left corner, a rise that goes up is positive and one that goes down is negative. The run counts to the right, so it is positive.
+            </p>
+          )}
+          {leverOn(FORMULA_FRAME) && (
+            <p data-lever="formula-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+              Slope = {notation === 'deltaNotation' ? 'Δy ÷ Δx' : 'rise ÷ run'}: the up-or-down leg goes on top, the across leg underneath. A line that falls from left to right has a negative slope.
+            </p>
+          )}
+          {leverOn(BUILD_FRAME) && (
+            <p data-lever="build-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+              The top corner lands back on the line when the rise is the slope times the run. For a line that falls from left to right, the top corner goes below the right angle. Rise + and Rise − move the top corner.
+            </p>
+          )}
+          {model && <ModelTriangleFigure model={model} />}
 
-        {/* Answer panel — varies by challenge type */}
-        {!isCurrentComplete && !allChallengesComplete && (
-          <LuminaPanel className="space-y-3">
-            {challengeType === 'identify_slope' && (
-              <>
-                <p className="text-slate-300 text-sm font-medium">
-                  Read the triangle off the grid:
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <label className="flex items-center gap-2 text-slate-300 text-sm">
-                    <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δy =' : 'rise ='}</span>
+          {/* Answer panel — varies by challenge type */}
+          {!isCurrentComplete && !allChallengesComplete && (
+            <LuminaPanel className="space-y-3">
+              {challengeType === 'identify_slope' && (
+                <>
+                  <p className="text-slate-300 text-sm font-medium">
+                    Read the triangle off the grid:
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <label className="flex items-center gap-2 text-slate-300 text-sm">
+                      <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δy =' : 'rise ='}</span>
+                      <LuminaInput
+                        type="number"
+                        aria-label="Rise"
+                        value={riseInput}
+                        disabled={blocked}
+                        onChange={(e) => { if (!learnerBlocked()) setRiseInput(e.target.value); }}
+                        className="w-20 py-1.5 text-center"
+                        placeholder="?"
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-slate-300 text-sm">
+                      <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δx =' : 'run ='}</span>
+                      <LuminaInput
+                        type="number"
+                        aria-label="Run"
+                        value={runInput}
+                        disabled={blocked}
+                        onChange={(e) => { if (!learnerBlocked()) setRunInput(e.target.value); }}
+                        className="w-20 py-1.5 text-center"
+                        placeholder="?"
+                      />
+                    </label>
+                    <LuminaActionButton action="check" onClick={handleSubmitIdentifySlope} disabled={blocked}>
+                      Check
+                    </LuminaActionButton>
+                  </div>
+                </>
+              )}
+
+              {challengeType === 'calculate' && (
+                <>
+                  <p className="text-slate-300 text-sm font-medium">
+                    Slope = rise ÷ run. What is the slope?
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <span className="text-purple-300 font-mono font-bold">m =</span>
                     <LuminaInput
-                      type="number"
-                      aria-label="Rise"
-                      value={riseInput}
+                      type="text"
+                      aria-label="Slope"
+                      value={slopeInput}
                       disabled={blocked}
-                      onChange={(e) => { if (!learnerBlocked()) setRiseInput(e.target.value); }}
-                      className="w-20 py-1.5 text-center"
+                      onChange={(e) => { if (!learnerBlocked()) setSlopeInput(e.target.value); }}
+                      className="w-28 py-1.5 text-center"
                       placeholder="?"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSubmitCalculate()}
                     />
-                  </label>
-                  <label className="flex items-center gap-2 text-slate-300 text-sm">
-                    <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δx =' : 'run ='}</span>
-                    <LuminaInput
-                      type="number"
-                      aria-label="Run"
-                      value={runInput}
-                      disabled={blocked}
-                      onChange={(e) => { if (!learnerBlocked()) setRunInput(e.target.value); }}
-                      className="w-20 py-1.5 text-center"
-                      placeholder="?"
-                    />
-                  </label>
-                  <LuminaActionButton action="check" onClick={handleSubmitIdentifySlope} disabled={blocked}>
-                    Check
-                  </LuminaActionButton>
-                </div>
-              </>
-            )}
+                    <LuminaActionButton action="check" onClick={handleSubmitCalculate} disabled={blocked}>
+                      Check
+                    </LuminaActionButton>
+                  </div>
+                </>
+              )}
 
-            {challengeType === 'calculate' && (
-              <>
-                <p className="text-slate-300 text-sm font-medium">
-                  Slope = rise ÷ run. What is the slope?
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <span className="text-purple-300 font-mono font-bold">m =</span>
-                  <LuminaInput
-                    type="text"
-                    aria-label="Slope"
-                    value={slopeInput}
-                    disabled={blocked}
-                    onChange={(e) => { if (!learnerBlocked()) setSlopeInput(e.target.value); }}
-                    className="w-28 py-1.5 text-center"
-                    placeholder="?"
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitCalculate()}
-                  />
-                  <LuminaActionButton action="check" onClick={handleSubmitCalculate} disabled={blocked}>
-                    Check
-                  </LuminaActionButton>
-                </div>
-              </>
-            )}
-
-            {challengeType === 'draw_triangle' && (
-              <>
-                <p className="text-slate-300 text-sm font-medium">
-                  Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-                  <LuminaButton tone="subtle" size="sm" aria-label="Move left" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) moveTo(trianglePos.x - 1); }}>← Move</LuminaButton>
-                  <LuminaButton tone="subtle" size="sm" aria-label="Move right" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) moveTo(trianglePos.x + 1); }}>Move →</LuminaButton>
-                  <LuminaButton tone="subtle" size="sm" aria-label="Shorter run" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) sizeTo(trianglePos.size - 1); }}>Run −</LuminaButton>
-                  <LuminaButton tone="subtle" size="sm" aria-label="Longer run" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) sizeTo(trianglePos.size + 1); }}>Run +</LuminaButton>
-                  <LuminaButton tone="subtle" size="sm" aria-label="Lower rise" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) riseTo(trianglePos.rise - 1); }}>Rise −</LuminaButton>
-                  <LuminaButton tone="subtle" size="sm" aria-label="Higher rise" disabled={!buildOpen}
-                    onClick={() => { if (!learnerBlocked()) riseTo(trianglePos.rise + 1); }}>Rise +</LuminaButton>
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                  <span className="text-slate-400">Current:</span>
-                  <span className="text-green-300 font-mono">run = {trianglePos.size}</span>
-                  <span className="text-slate-400">·</span>
-                  <span className="text-green-300 font-mono">rise = {trianglePos.rise}</span>
-                  <span className="text-slate-400">·</span>
-                  <span className="text-cyan-300 font-mono">base x = {trianglePos.x}</span>
-                  <LuminaActionButton action="check" onClick={handleSubmitDrawTriangle} disabled={blocked}>
-                    Check
-                  </LuminaActionButton>
-                </div>
-              </>
-            )}
-          </LuminaPanel>
-        )}
-
-        </div>
+              {challengeType === 'draw_triangle' && (
+                <>
+                  <p className="text-slate-300 text-sm font-medium">
+                    Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+                    <LuminaButton tone="subtle" size="sm" aria-label="Move left" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) moveTo(trianglePos.x - 1); }}>← Move</LuminaButton>
+                    <LuminaButton tone="subtle" size="sm" aria-label="Move right" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) moveTo(trianglePos.x + 1); }}>Move →</LuminaButton>
+                    <LuminaButton tone="subtle" size="sm" aria-label="Shorter run" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) sizeTo(trianglePos.size - 1); }}>Run −</LuminaButton>
+                    <LuminaButton tone="subtle" size="sm" aria-label="Longer run" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) sizeTo(trianglePos.size + 1); }}>Run +</LuminaButton>
+                    <LuminaButton tone="subtle" size="sm" aria-label="Lower rise" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) riseTo(trianglePos.rise - 1); }}>Rise −</LuminaButton>
+                    <LuminaButton tone="subtle" size="sm" aria-label="Higher rise" disabled={!buildOpen}
+                      onClick={() => { if (!learnerBlocked()) riseTo(trianglePos.rise + 1); }}>Rise +</LuminaButton>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+                    <span className="text-slate-400">Current:</span>
+                    <span className="text-green-300 font-mono">run = {trianglePos.size}</span>
+                    <span className="text-slate-400">·</span>
+                    <span className="text-green-300 font-mono">rise = {trianglePos.rise}</span>
+                    <span className="text-slate-400">·</span>
+                    <span className="text-cyan-300 font-mono">base x = {trianglePos.x}</span>
+                    <LuminaActionButton action="check" onClick={handleSubmitDrawTriangle} disabled={blocked}>
+                      Check
+                    </LuminaActionButton>
+                  </div>
+                </>
+              )}
+            </LuminaPanel>
+          )}
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (
@@ -1163,37 +1001,6 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           >
             {feedback}
           </LuminaFeedbackCard>
-        )}
-
-        {/* Hint (scripted path; with the tutor, help is the tutor's) */}
-        {showHint && !tutorOwned && (
-          <LuminaPanel accent="amber" className="bg-amber-500/10">
-            <p className="text-amber-200 text-sm">
-              <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-              {currentChallenge.hint}
-            </p>
-          </LuminaPanel>
-        )}
-
-        {/* Controls (scripted path; with the tutor, Next and Try again are the shell's) */}
-        {!tutorOwned && (
-          <div className="flex justify-center gap-2 flex-wrap">
-            {isCurrentComplete && !allChallengesComplete && (
-              <LuminaActionButton action="next" onClick={advanceChallenge}>
-                Next Triangle →
-              </LuminaActionButton>
-            )}
-            {!isCurrentComplete && !allChallengesComplete && (
-              <LuminaButton
-                tone="subtle"
-                size="sm"
-                onClick={handleShowHint}
-                disabled={showHint}
-              >
-                {showHint ? 'Hint shown' : 'Show hint'}
-              </LuminaButton>
-            )}
-          </div>
         )}
 
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1211,8 +1018,7 @@ const SlopeTriangleSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const SlopeTriangle = withWorkspaceController<SlopeTriangleProps, ProgressOptions<SlopeTriangleChallenge>, Progress>(
-  'slope-triangle', SlopeTriangleSurface, useScriptedProgress, useWorkspaceProgressFor('slope-triangle'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const SlopeTriangle = withWorkspaceOnly<SlopeTriangleProps>('slope-triangle', SlopeTriangleSurface, props => props.data.title);
 
 export default SlopeTriangle;

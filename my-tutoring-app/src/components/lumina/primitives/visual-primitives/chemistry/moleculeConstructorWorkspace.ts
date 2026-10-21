@@ -1,16 +1,20 @@
 /**
- * molecule-constructor on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md), plus the open build `make_molecule` (/add-eval-modes references/build-mode.md).
+ * molecule-constructor's domain on the boss (`moleculeConstructor.boss.ts`), plus the open build `make_molecule`
+ * (/add-eval-modes references/build-mode.md).
  *
- * Pure: the component, the journey row and any probe read the same assignment, scene, check and misses. Every
- * challenge is answered on the screen and checked by the activity, so the tutor is never handed a key.
+ * Pure: the component, the boss and any probe read the same ask, scene, check and misses. Every challenge is answered
+ * on the screen and checked by the activity, so the tutor is never handed a key.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { DriverInput } from '../../../components/live-activity/liveJourneySpec';
 import type { MoleculeConstructorChallenge } from './MoleculeConstructor';
+import type { ClassicMoleculeMiss, MoleculeMiss } from './moleculeConstructor.card';
 import {
   askText, buildOf, formulaOf, moleculeMiss, passingSpec, readMolecule, VALENCE,
-  type MakeMoleculeMiss, type MoleculeAsk, type MoleculeBuild, type MoleculeSpec,
+  type MoleculeAsk, type MoleculeBuild, type MoleculeSpec,
 } from './moleculeBuild';
+
+export type { ClassicMoleculeMiss, MoleculeMiss } from './moleculeConstructor.card';
 
 /** The ask a make_molecule item carries (code-owned; an item without one asks for a double bond). */
 export const askOf = (c: Pick<MoleculeConstructorChallenge, 'ask'>): MoleculeAsk => c.ask ?? { doubleBonds: 1 };
@@ -27,10 +31,9 @@ export interface MoleculeView {
   identifyInput: string;
 }
 
-export function workspaceAssignment(c: MoleculeConstructorChallenge): TeachingAssignment {
-  const task = c.type === 'make_molecule' ? c.instruction || askText(askOf(c)) : c.instruction;
-  return { id: c.id, task, response: 'gesture' };
-}
+/** What the item asks: its instruction (make_molecule: the code-owned ask when it has none). */
+export const moleculeTask = (c: MoleculeConstructorChallenge): string =>
+  (c.type === 'make_molecule' ? c.instruction || askText(askOf(c)) : c.instruction);
 
 /** The learner's molecule in words: what is on the board, never what it should be. */
 export function describeBuild(build: MoleculeBuild): string {
@@ -57,18 +60,6 @@ export function describeWork(c: MoleculeConstructorChallenge, view: MoleculeView
   }
 }
 
-/**
- * What a wrong answer on a classic challenge shows:
- * - `atoms_off` (build_target): the atom counts are not the target's;
- * - `open_valence` (build_target): the right atoms, but some still have bonds to make;
- * - `name_off` (identify), `formula_off` (formula_write): the typed answer is not the key;
- * - `no_bonds` (free_build, predict_bonds, shape_predict): no atoms joined yet.
- * make_molecule's misses are `MakeMoleculeMiss` (moleculeBuild.ts).
- */
-export type ClassicMoleculeMiss = 'atoms_off' | 'open_valence' | 'name_off' | 'formula_off' | 'no_bonds';
-export type MoleculeMiss = ClassicMoleculeMiss | MakeMoleculeMiss;
-export const CLASSIC_MOLECULE_MISSES: readonly ClassicMoleculeMiss[] = ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'];
-
 /** The classic check's verdict on a build_target: counts first, then every bond used (the component's own rule). */
 export function buildTargetMiss(c: MoleculeConstructorChallenge, view: MoleculeView): ClassicMoleculeMiss | undefined {
   const target = c.targetAtoms ?? [];
@@ -90,37 +81,33 @@ export function moleculeConstructorMiss(c: MoleculeConstructorChallenge | null, 
   }
 }
 
-const CONSTRAINTS = 'The learner answers on the screen and presses Check Answer; the activity checks the work itself. '
-  + 'You cannot place, join or type for the learner.';
-
-/** What is drawn and asked. No target name or formula of an identify or formula item is ever published. */
-export function workspaceScene(c: MoleculeConstructorChallenge, view: MoleculeView): WorkspaceScene {
+/**
+ * What is drawn and asked: the item's kind (its type, which names the moves on a mixed session) and the learner's work.
+ * No target name or formula of an identify or formula item is ever published. The moves and the check are the card's.
+ */
+export function workspaceScene(c: MoleculeConstructorChallenge, view: MoleculeView): SceneOf {
   if (c.type === 'make_molecule') {
     const r = readMolecule(view.build);
     return { objects: [], facts: {
       kind: 'make_molecule',
-      board: 'an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double '
-        + 'or triple bond), taps a bond to take one step of it away',
       // The made molecule as numbers, so the shared work history records a revision (`openBonds 2 → 0`).
       atomsPlaced: r.atoms, bondsMade: r.bonds, doubleBonds: r.doubleBonds, tripleBonds: r.tripleBonds,
       openBonds: r.openBonds, pieces: r.pieces,
       learnerWork: describeBuild(view.build),
-      constraints: 'The learner builds on the board and presses "I\'m done!"; the activity checks the molecule itself. '
-        + 'You cannot place or join atoms for the learner.',
     } };
   }
   const facts: Record<string, string | number> = { kind: c.type, atomsPlaced: view.elements.length, bondsFormed: view.bondsFormed };
   // A build item's target is on screen in its instruction; an identify or formula item's key is not given to the tutor.
   if (c.type === 'build_target' && c.targetFormula) facts.asked = c.targetFormula;
   if (c.type === 'identify' || c.type === 'formula_write') {
-    facts.board = `a molecule drawn on the canvas, its atoms joined; the learner reads it and types its ${c.type === 'identify' ? 'name' : 'formula'}`;
+    facts.board = `a molecule drawn on the canvas, its atoms joined; the learner types its ${c.type === 'identify' ? 'name' : 'formula'}`;
   }
-  return { objects: [], facts: { ...facts, learnerWork: describeWork(c, view), constraints: CONSTRAINTS } };
+  return { objects: [], facts: { ...facts, learnerWork: describeWork(c, view) } };
 }
 
-// ── The journey row's learner (liveJourneySpec.ts) ──────────────────────────
+// ── The boss's harness learner (`drive.play`) ──────────────────────────
 
-type Input = { type: 'choose'; label: string } | { type: 'touch'; target: string } | { type: 'write'; label: string; text: string } | { type: 'check' };
+type Input = DriverInput;
 
 /** Real board moves that build a spec: add each atom, then tap each bonded pair once per bond step. */
 export function inputsForSpec(s: MoleculeSpec, atomTarget: (i: number) => string): Input[] {

@@ -1,18 +1,25 @@
 /**
- * Function machine on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
+ * Function machine's domain on the teaching workspace: the ask, the activity's misses and the scene the tutor reads.
+ * The boss (`functionMachine.boss.ts`) builds the assignment.
  *
- * Pure: the component and any probe read the same assignment and scene. Every item is answered on the screen (fed
- * inputs, a typed prediction, a typed rule, or a machine built from tiles) and checked by the activity's own code,
- * so the tutor is never handed a hidden rule, an output not yet fed, or a machine that would make the pair.
+ * Pure: the component and any probe read the same scene. Every item is answered on the screen (fed inputs, a typed
+ * prediction, a typed rule, or a machine built from tiles) and checked by the activity's own code, so the tutor is
+ * never handed a hidden rule, an output not yet fed, or a machine that would make the pair.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { FunctionMachineChallenge, FunctionMachineChallengeType } from './FunctionMachine';
-import {
-  evaluateRule, rulesEquivalent, makeRuleAsk, makeRuleTarget, showRule, MAKE_RULE_WAYS, type MakeRuleMiss,
-} from './functionMachineDomain';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
+import type { FunctionMachineChallenge, FunctionMachineChallengeType, FunctionMachineData } from './FunctionMachine';
+import type { FunctionMachineMiss } from './functionMachine.card';
+import { evaluateRule, rulesEquivalent, makeRuleAsk, makeRuleTarget, showRule, MAKE_RULE_WAYS } from './functionMachineDomain';
 
+export type { FunctionMachineMiss } from './functionMachine.card';
 export type FunctionMachineMode = FunctionMachineChallengeType;
+
+/** One item as the boss, the levers and the workspace see it: the challenge with the session's mode and tier on it. */
+export type FunctionMachineItem = FunctionMachineChallenge & { mode: FunctionMachineMode; supportTier?: SupportTier };
+/** The lesson's items: the generator pins one mode and one tier per session, so each item carries the session's. */
+export const functionMachineItems = (d: Pick<FunctionMachineData, 'challenges' | 'challengeType' | 'supportTier'>): FunctionMachineItem[] =>
+  (d.challenges ?? []).map(c => ({ ...c, mode: d.challengeType, ...(d.supportTier ? { supportTier: d.supportTier } : {}) }));
 
 /** Pairs fed before observe's Continue appears (the tier may require the whole queue). */
 export const observePairsNeeded = (c: FunctionMachineChallenge) => c.pairsRequiredToComplete ?? 3;
@@ -34,10 +41,6 @@ export function functionMachineTask(c: FunctionMachineChallenge, mode: FunctionM
         : 'Make a machine.';
     }
   }
-}
-
-export function workspaceAssignment(c: FunctionMachineChallenge, mode: FunctionMachineMode): TeachingAssignment {
-  return { id: c.id, task: functionMachineTask(c, mode), response: 'gesture' };
 }
 
 export interface FunctionMachineView {
@@ -74,20 +77,6 @@ export const describePrediction = (input: number, predicted: string) => `Predict
 export const describeGuess = (guess: string) => `Wrote f(x) = ${guess.trim()}`;
 export const describeMachine = (row: readonly string[], input: number, gave: number | null) =>
   `Built f(x) = ${showRule(row)}; ${gave === null ? 'the machine could not run it' : `fed ${input}, it gave ${gave}`}`;
-
-/**
- * What a wrong check shows (`TeachingAttempt.miss`, handoff 20), from the catalog's commonStruggles (adding for a
- * multiplicative rule, looking at one pair, two-step rules) and the open build's own judge:
- * - predict: `gave_input` (the input back), `added_not_multiplied` (added or subtracted the rule's number where the
- *   rule multiplies or divides), `multiplied_not_added`, `one_step_only` (one step of a two-step rule),
- *   `wrong_order` (the two steps the other way round), `too_high` / `too_low`;
- * - discover_rule, create_rule: `not_a_rule` (cannot run), `fits_some_pairs` (right for some pairs, not all),
- *   `added_not_multiplied`, `multiplied_not_added`, `one_step_only`, `wrong_order`, `wrong_rule`;
- * - make_rule: the open build's `not_a_rule`, `no_input`, `wrong_output`, `same_machine` (`judgeMakeRule`).
- * Observe has no check that can fail: Continue is the item's end.
- */
-export type FunctionMachineMiss = 'gave_input' | 'added_not_multiplied' | 'multiplied_not_added' | 'one_step_only'
-  | 'wrong_order' | 'too_high' | 'too_low' | 'fits_some_pairs' | 'wrong_rule' | MakeRuleMiss;
 
 const near = (a: number | null, b: number) => a !== null && Math.abs(a - b) < 0.01;
 
@@ -142,7 +131,7 @@ export function guessMiss(guess: string, rule: string, pairs: FunctionMachineVie
 }
 
 /** What is drawn and asked. A hidden rule, an output not yet fed and a machine that would work are never listed. */
-export function workspaceScene(c: FunctionMachineChallenge, mode: FunctionMachineMode, view: FunctionMachineView): WorkspaceScene {
+export function workspaceScene(c: FunctionMachineChallenge, mode: FunctionMachineMode, view: FunctionMachineView): SceneOf {
   const facts: Record<string, string | number> = { kind: mode };
   facts.rule = mode === 'observe' || mode === 'predict' ? `f(x) = ${c.rule}, shown on the machine`
     : mode === 'make_rule' ? 'none: the learner builds the machine' : 'hidden: finding it is the task';
@@ -152,7 +141,6 @@ export function workspaceScene(c: FunctionMachineChallenge, mode: FunctionMachin
     facts.inputsToFeed = view.inputsLeft.join(', ') || 'none left';
   }
   if (mode === 'observe') facts.continueAfter = `${observePairsNeeded(c)} pairs fed`;
-  if (mode === 'predict') facts.outputs = 'each output shows only after a right prediction for that input';
   if (mode === 'discover_rule') facts.ruleBox = view.guessOpen ? 'open' : 'opens after 2 pairs';
   if (mode === 'make_rule') {
     const t = makeRuleTarget(c);
@@ -162,9 +150,6 @@ export function workspaceScene(c: FunctionMachineChallenge, mode: FunctionMachin
     if (view.lastCheck) facts.lastCheck = view.lastCheck;
   }
   facts.learnerWork = describeFunctionWork(mode, view);
-  facts.constraints = 'The learner answers on the screen: feeds inputs, types a prediction or a rule and presses Check, '
-    + 'or taps tiles to build a machine and presses I\'m done; the activity checks the work itself. You cannot feed, type '
-    + 'or tap for the learner.';
   return { objects: [], facts };
 }
 

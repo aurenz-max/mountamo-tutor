@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import katex from 'katex';
 // @ts-ignore – CSS import works at runtime via Next.js loader
 import 'katex/dist/katex.min.css';
@@ -27,25 +27,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ParameterExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { bossAssignment } from '../../../components/live-activity/boss';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  DIRECTION_LABEL, describeParameterWork, directionKey, evaluateFormula, formatOutput, identifyKey, parameterCheck,
-  parameterLabel, parameterMiss, promptFor, resultText, sliderLabel, startingValues, workspaceAssignment, workspaceScene,
+  DIRECTION_LABEL, describeParameterWork, evaluateFormula, formatOutput, parameterAsk, parameterCheck, parameterLabel,
+  parameterMiss, promptFor, resultText, sliderLabel, startingValues, workspaceScene,
   type Direction, type ParameterWork, plainFormula,
 } from './parameterExplorerWorkspace';
 import {
-  DOUBLE_MARKS_LEVER, DOUBLING_MODEL_LEVER, FIND_PARAMETER_LEVER, MODEL_PAIR_LEVER, SCALING_MODEL_LEVER, SUBSTITUTION_LEVER,
-  doubleMarks, doublingModel, isPracticeParameter, leverFacts, modelPair, parameterLevers, scalingModel, simplerParameter,
-  substitutionText, type Model,
+  DOUBLE_MARKS_LEVER, DOUBLING_MODEL_LEVER, FIND_PARAMETER_LEVER, MODEL_PAIR_LEVER, PARAMETER_LEVERS, PRACTICE_NOTE,
+  SCALING_MODEL_LEVER, SUBSTITUTION_LEVER, doubleMarks, doublingModel, modelPair, scalingModel, substitutionText, type Model,
 } from './parameterExplorerLevers';
 
 // ============================================================================
@@ -91,7 +90,7 @@ export interface ParameterExplorerChallenge {
   showParamReadouts?: boolean;
   /** Show the amber "watch this slider" cue on the varied parameter. Off at hard. */
   showVaryHighlight?: boolean;
-  /** Support tier for tutor-reveal calibration ('easy' | 'medium' | 'hard'). */
+  /** Support tier the generator resolved ('easy' | 'medium' | 'hard'). */
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -138,6 +137,8 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 
 const DIRECTION_ICON: Record<Direction, string> = { increase: '📈', decrease: '📉', 'stay-same': '➡️' };
 
+const useParameterProgress = useWorkspaceProgressFor('parameter-explorer');
+
 // ============================================================================
 // MathDisplay — inline KaTeX renderer
 // ============================================================================
@@ -155,41 +156,6 @@ function MathDisplay({ latex, display = false, className = '' }: { latex: string
 }
 
 // ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Tier-aware tutor reveal clause for the scripted path's tagged messages. The workspace path sends none (the tutor
- * reads the scene, which never carries the key).
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  type: ParameterExplorerChallenge['type'] | undefined,
-): string {
-  // identify-relationship: the dominant parameter IS the answer — never name it at any tier.
-  if (type === 'identify-relationship') {
-    return 'REVEAL POLICY: never name which parameter dominates — ask the student where each '
-      + 'parameter sits in the formula (multiplier vs additive, exponent) and let them decide.';
-  }
-  switch (tier) {
-    case 'hard':
-      return 'REVEAL POLICY (hard): the live output readout and value readouts are HIDDEN on '
-        + 'screen — do NOT read the output value back, do NOT state the parameter\'s effect or '
-        + 'name the relationship. Ask what the student PREDICTS will happen and why, reasoning '
-        + 'from the formula. Never reveal the answer.';
-    case 'medium':
-      return 'REVEAL POLICY (medium): the output readout is hidden — nudge the student to predict '
-        + 'the effect from the formula before sliding; do not name the relationship outright. '
-        + 'Never reveal the answer.';
-    case 'easy':
-      return 'REVEAL POLICY (easy): you may name the relationship in general terms, but the output stays '
-        + 'hidden until the answer is checked; let the student answer.';
-    default:
-      return 'REVEAL POLICY: guide without revealing the final answer.';
-  }
-}
-
-// ============================================================================
 // Sub-Components
 // ============================================================================
 
@@ -197,7 +163,7 @@ interface ParameterSliderProps {
   param: ParameterDef;
   value: number;
   locked: boolean;
-  /** Closed while a checked answer waits for Try again (workspace path). */
+  /** Closed while a checked answer waits for Try again. */
   disabled?: boolean;
   onValueChange: (value: number) => void;
   onToggleLock: () => void;
@@ -338,8 +304,7 @@ interface ParameterExplorerProps {
   runtimeEvalMode?: string;
 }
 
-const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  ParameterExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ParameterExplorerChallenge>) => Progress }) => {
+const ParameterExplorerSurface = ({ data, className, runtimePlanItemId }: ParameterExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -360,38 +325,32 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     onEvaluationSubmit,
   } = data;
 
-  // -------------------------------------------------------------------------
-  // Refs
-  // -------------------------------------------------------------------------
   const stableInstanceIdRef = useRef(instanceId || `parameter-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // -------------------------------------------------------------------------
-  // Challenge Progress. On the workspace path the runtime moves the index; the hooks below are bound after render.
-  // -------------------------------------------------------------------------
+  // Challenge progress: the teaching workspace owns it. The hooks below are bound after render.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  /** Every ask reads the lab, so the assignment is built here from the boss's pieces; no key reaches the tutor. */
+  const assignment = (challenge: ParameterExplorerChallenge) => bossAssignment(challenge.id, parameterAsk(data, challenge), null);
+  const progress = useParameterProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId,
     objectiveId,
     planItemId: runtimePlanItemId,
     workspace,
-    assignment: (ch) => workspaceAssignment(data, ch),
+    assignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const {
     currentIndex: currentChallengeIndex,
-    currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -409,31 +368,22 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   // -------------------------------------------------------------------------
   // Parameter values (keyed by symbol). Every item opens at the starting values its ask is stated from.
   const [paramValues, setParamValues] = useState<Record<string, number>>(() => startingValues(data));
-
   // Locked parameters (hold-and-vary)
   const [lockedParams, setLockedParams] = useState<Set<string>>(new Set());
-
   // Parameters the student has moved in the lesson (metrics), and on the current item (explore's check).
   const [exploredParams, setExploredParams] = useState<Set<string>>(new Set());
   const [movedThisItem, setMovedThisItem] = useState<string[]>([]);
-
   // Observations that have been triggered
   const [triggeredObservations, setTriggeredObservations] = useState<Set<number>>(new Set());
-
-  // Used hold-and-vary?
   const [usedHoldAndVary, setUsedHoldAndVary] = useState(false);
-
   // Challenge answer state
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [predictedValue, setPredictedValue] = useState('');
   const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
   const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'incorrect' | null>(null);
 
-  // -------------------------------------------------------------------------
-  // Computed
-  // -------------------------------------------------------------------------
-  // In-item levers (`parameterExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier
-  // problem a simplify lever put on screen in its place.
+  // In-item levers (`PARAMETER_LEVERS`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<ParameterExplorerChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
@@ -455,27 +405,23 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     parameter: selectedParameter,
     moved: movedThisItem,
   };
-  /** The item is over: credited, or (scripted path only) missed and waiting for Next. */
-  const itemClosed = answerFeedback === 'correct' || (!tutorOwned && answerFeedback !== null);
+  /** The item is credited: the result and the explanation are on screen. */
+  const itemClosed = answerFeedback === 'correct';
 
   // ── Support-tier overlay flags (default ON when the field is absent — back-compat
   //    for sessions with no config.difficulty). The simulation object (sliders +
   //    formula) is always rendered; only these explanatory overlays withdraw. In the
-  //    predict modes the output is the answer, so it stays hidden until the item is over
-  //    at every tier. ──
+  //    predict modes the output is the answer, so it stays hidden until the item is
+  //    credited at every tier. ──
   const showOutputReadout = isPredict ? itemClosed : currentChallenge?.showOutputReadout ?? true;
   const showParamReadouts = currentChallenge?.showParamReadouts ?? true;
   const showVaryHighlight = currentChallenge?.showVaryHighlight ?? true;
-  const supportTier = currentChallenge?.supportTier;
   /** Observation cards narrate relationships, which the checked modes ask for: explore only. */
   const observationsVisible = currentType === 'explore' || !currentChallenge;
   const shownObservations = observationsVisible
     ? observations.filter((_, idx) => triggeredObservations.has(idx)).map((obs) => obs.prompt)
     : [];
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
@@ -490,63 +436,6 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring (scripted path; on the workspace path the tutor reads the scene)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(
-    () => ({
-      formula,
-      outputName,
-      paramValues,
-      outputValue: showOutputReadout ? outputValue : null,
-      exploredParams: Array.from(exploredParams),
-      lockedParams: Array.from(lockedParams),
-      currentChallengeType: currentChallenge?.type,
-      currentChallengeInstruction: currentChallenge ? promptFor(data, currentChallenge) : undefined,
-      challengeIndex: currentChallengeIndex,
-      totalChallenges: challenges.length,
-      supportTier,
-    }),
-    [
-      formula,
-      outputName,
-      paramValues,
-      outputValue,
-      showOutputReadout,
-      exploredParams,
-      lockedParams,
-      currentChallenge,
-      currentChallengeIndex,
-      challenges.length,
-      supportTier,
-      data,
-    ],
-  );
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'parameter-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Grade 9-12',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Parameter Explorer: "${title}". Formula: ${formula}. `
-      + `Context: ${context}. Parameters: ${parameters.map((p) => `${p.symbol} (${p.name})`).join(', ')}. `
-      + `${challenges.length} challenges. Introduce the formula and explain what it describes.`,
-      { silent: true },
-    );
-  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -595,64 +484,15 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     setLockedParams(new Set());
     setMovedThisItem([]);
   }, [resetAnswerState, data]);
-  // Workspace path: the runtime opens each item (and reopens it after a miss) in the same commit as the scene.
-  // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+  // The runtime opens each item (and reopens it after a miss) in the same commit as the scene. Try again on a practice
+  // problem keeps it; a fresh item (or the full item back after practice) drops it.
   openItem.current = (_index, retry) => {
     if (retry) resetAnswerState();
     else { setPractice(null); openFresh(); }
   };
 
-  // Scripted path: submit evaluation when all challenges complete (the workspace path submits from `onFinished`).
-  const handleSubmitEvaluation = useCallback(() => {
-    if (tutorOwned || hasSubmittedEvaluation || challenges.length === 0) return;
-
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const score = Math.round((correctCount / challenges.length) * 100);
-
-    const phaseScoreStr = phaseResults
-      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-      .join(', ');
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${score}%. `
-      + `Parameters explored: ${exploredParams.size}/${parameters.length}. `
-      + `Used hold-and-vary: ${usedHoldAndVary}. Give encouraging phase-specific feedback.`,
-      { silent: true },
-    );
-
-    submitEvaluation(score >= 60, score, {
-      type: 'parameter-explorer',
-      evalMode: challenges[0]?.type ?? 'default',
-      predictionsCorrect: correctCount,
-      predictionsTotal: challenges.length,
-      parametersExplored: Array.from(exploredParams),
-      observationsTriggered: triggeredObservations.size,
-      usedHoldAndVary,
-      explorationTime: Math.round((elapsedMs ?? 0) / 1000),
-    });
-  }, [
-    tutorOwned,
-    hasSubmittedEvaluation,
-    challenges,
-    challengeResults,
-    phaseResults,
-    exploredParams,
-    parameters.length,
-    usedHoldAndVary,
-    triggeredObservations.size,
-    elapsedMs,
-    sendText,
-    submitEvaluation,
-  ]);
-
-  // Auto-submit when all challenges complete (scripted path)
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && challenges.length > 0) {
-      handleSubmitEvaluation();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges.length, handleSubmitEvaluation]);
-
-  // Workspace path, under a lesson's evaluation provider only (the live host has none): the scored session, whose
-  // item scores count corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only (the live host has none): the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
   const submittedOnFinish = useRef(false);
   finish.current = (result) => {
     if (hasSubmittedEvaluation || submittedOnFinish.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
@@ -671,112 +511,41 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
     undefined, result.diagnosisEvidence);
   };
 
-  // -------------------------------------------------------------------------
-  // Challenge Answer Checking
-  // -------------------------------------------------------------------------
-  const handleCheckAnswer = useCallback(() => {
+  // The activity's own check; the runtime records the verdict and the named miss.
+  const handleCheckAnswer = () => {
     if (!currentChallenge || answerFeedback !== null || learnerBlocked()) return;
     const isCorrect = parameterCheck(data, currentChallenge, work);
-
     progress.commitCheck(
       describeParameterWork(data, currentChallenge, work),
       isCorrect,
       isCorrect ? undefined : parameterMiss(data, currentChallenge, work),
     );
-    if (isCorrect) {
-      SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
-    }
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
-    // The item is over (credited, or missed on the scripted path): the sliders show the asked setting.
+    // A credited item shows the asked setting on the sliders.
     const p = currentChallenge.prediction;
-    if ((isCorrect || !tutorOwned) && p?.newValue !== undefined && parameters.some((x) => x.symbol === p.varyParameter)) {
+    if (isCorrect && p?.newValue !== undefined && parameters.some((x) => x.symbol === p.varyParameter)) {
       setParamValues({ ...startingValues(data), [p.varyParameter]: p.newValue });
     }
-
-    if (isCorrect) {
-      sendText(
-        `[ANSWER_CORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}: `
-        + `"${promptFor(data, currentChallenge)}" — Student answered correctly. Congratulate briefly.`,
-        { silent: true },
-      );
-    } else {
-      const key = currentChallenge.type === 'predict-direction' ? directionKey(data, currentChallenge)
-        : currentChallenge.type === 'identify-relationship' ? identifyKey(data, currentChallenge)
-        : currentChallenge.prediction?.correctValue;
-      sendText(
-        `[ANSWER_INCORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}: `
-        + `"${promptFor(data, currentChallenge)}" — Student ${describeParameterWork(data, currentChallenge, work)} but correct is `
-        + `"${key}". Attempt ${currentAttempts + 1}. Give a hint. `
-        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
-        { silent: true },
-      );
-    }
-
-    // Scripted path: the item ends here, right or wrong, with this primitive's own score.
-    if (!tutorOwned) {
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: isCorrect,
-        attempts: currentAttempts + 1,
-        score: isCorrect ? 100 : Math.max(0, 100 - currentAttempts * 25),
-      });
-    }
-  }, [ // eslint-disable-line react-hooks/exhaustive-deps
-    currentChallenge,
-    answerFeedback,
-    selectedDirection,
-    predictedValue,
-    selectedParameter,
-    movedThisItem,
-    currentAttempts,
-    currentChallengeIndex,
-    challenges.length,
-    recordResult,
-    sendText,
-    tutorOwned,
-    data,
-    parameters,
-    progress.commitCheck,
-  ]);
-
-  // Scripted path: the primitive's own Next (the workspace path hides it; the runtime advances).
-  const handleNextChallenge = useCallback(() => {
-    openFresh();
-    if (!advanceProgress()) {
-      // All done — evaluation auto-submits via effect
-      return;
-    }
-    const nextCh = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly. `
-      + tutorRevealPolicy(nextCh?.supportTier, nextCh?.type),
-      { silent: true },
-    );
-  }, [advanceProgress, openFresh, currentChallengeIndex, challenges, sendText]);
+  };
 
   // -------------------------------------------------------------------------
   // Observation Triggers
   // -------------------------------------------------------------------------
   useEffect(() => {
-    // Simple observation trigger check — we evaluate a basic text match
-    // (a real implementation could parse trigger conditions)
+    // Observations open one by one as the learner moves more parameters.
     observations.forEach((obs, idx) => {
       if (triggeredObservations.has(idx)) return;
-      // For now, trigger observations sequentially as the user explores
       if (idx <= exploredParams.size - 1) {
         setTriggeredObservations((prev) => new Set(prev).add(idx));
       }
     });
   }, [observations, exploredParams.size, triggeredObservations]);
 
-  // -------------------------------------------------------------------------
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
-  // -------------------------------------------------------------------------
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(data, currentChallenge, {
       ...work,
       values: paramValues,
@@ -786,13 +555,14 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
       observations: shownObservations,
       solved: answerFeedback === 'correct',
     });
-    const onScreen = practice ? '' : leverFacts(data, sessionChallenge, pulledLevers);
-    const levers = practice ? [] : parameterLevers(data, sessionChallenge, pulledLevers, {
-      outputShown: sessionChallenge.type === 'identify-relationship' && (sessionChallenge.showOutputReadout ?? true) });
+    const levers = practice ? [] : PARAMETER_LEVERS.declare(sessionChallenge, data, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : PARAMETER_LEVERS.support(sessionChallenge, data),
+      onScreen: practice ? '' : PARAMETER_LEVERS.onScreen(sessionChallenge, data, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -800,10 +570,10 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerParameter(data, sessionChallenge);
+          const easier = PARAMETER_LEVERS.simpler(sessionChallenge, data, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); openFresh();
-          return { practice: workspaceAssignment(data, easier) };
+          return { practice: assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -815,26 +585,13 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-
   const localOverallScore = useMemo(() => {
     if (challengeResults.length === 0) return 0;
     const correct = challengeResults.filter((r) => r.correct).length;
     return Math.round((correct / challenges.length) * 100);
   }, [challengeResults, challenges.length]);
 
-  const showSummary = allChallengesComplete && (!tutorOwned || hasSubmittedEvaluation || !!progress.practiceSummary);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? 'explore',
-    label: 'The parameter explorer',
-    solved: answerFeedback === 'correct',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const showSummary = allChallengesComplete && (hasSubmittedEvaluation || !!progress.practiceSummary);
 
   /** Answer controls: closed once the item is checked, and while a checked miss waits for Try again. */
   const answerClosed = answerFeedback !== null || blocked;
@@ -850,12 +607,15 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <LuminaCardTitle>{title}</LuminaCardTitle>
-          {challenges.length > 0 && (
-            <LuminaChallengeCounter
-              current={currentChallengeIndex + 1}
-              total={challenges.length}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+            {challenges.length > 0 && (
+              <LuminaChallengeCounter
+                current={currentChallengeIndex + 1}
+                total={challenges.length}
+              />
+            )}
+          </div>
         </div>
         {(description || context) && (
           <p className="text-sm text-slate-400 mt-1">{description || context}</p>
@@ -886,7 +646,7 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
         </LuminaPanel>
 
         {/* ── Output Display (bespoke focal readout — a withdrawable OVERLAY) ──
-            Hidden in the predict modes until the answer is checked (it is the answer), and
+            Hidden in the predict modes until the answer is credited (it is the answer), and
             at the tiers that withdraw it elsewhere. The sliders + formula stay live. */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/20 text-center">
           <p className="text-xs text-slate-400 mb-1">{outputName}</p>
@@ -904,222 +664,209 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
           )}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-6">
-        {/* ── Parameter Sliders ── */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <LuminaSectionLabel accent="blue" size="sm">Parameters</LuminaSectionLabel>
-            {lockedParams.size > 0 && (
-              <LuminaBadge accent="rose" className="text-xs">
-                {lockedParams.size} locked — hold-and-vary mode
-              </LuminaBadge>
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the workspace it outlines. */}
+        <PipDock />
+        <PipWorkspace className="space-y-6">
+          {/* ── Parameter Sliders ── */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <LuminaSectionLabel accent="blue" size="sm">Parameters</LuminaSectionLabel>
+              {lockedParams.size > 0 && (
+                <LuminaBadge accent="rose" className="text-xs">
+                  {lockedParams.size} locked — hold-and-vary mode
+                </LuminaBadge>
+              )}
+            </div>
+            {parameters.map((param) => (
+              <ParameterSlider
+                key={param.symbol}
+                param={param}
+                value={paramValues[param.symbol] ?? param.default}
+                locked={lockedParams.has(param.symbol)}
+                disabled={blocked}
+                onValueChange={(v) => handleParamChange(param.symbol, v)}
+                onToggleLock={() => toggleLock(param.symbol)}
+                showValueReadout={showParamReadouts}
+                marks={leverOn(DOUBLE_MARKS_LEVER) ? doubleMarks(data).find((m) => m.symbol === param.symbol) : undefined}
+                highlighted={
+                  isPredict
+                    ? showVaryHighlight && currentChallenge?.prediction?.varyParameter === param.symbol
+                    : currentType === 'identify-relationship'
+                    ? selectedParameter === param.symbol
+                    : false
+                }
+              />
+            ))}
+            {leverOn(DOUBLE_MARKS_LEVER) && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  disabled={blocked}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                  onClick={() => {
+                    if (learnerBlocked()) return;
+                    SoundManager.select();
+                    setParamValues(startingValues(data));
+                  }}
+                >
+                  Back to start
+                </button>
+              </div>
             )}
           </div>
-          {parameters.map((param) => (
-            <ParameterSlider
-              key={param.symbol}
-              param={param}
-              value={paramValues[param.symbol] ?? param.default}
-              locked={lockedParams.has(param.symbol)}
-              disabled={blocked}
-              onValueChange={(v) => handleParamChange(param.symbol, v)}
-              onToggleLock={() => toggleLock(param.symbol)}
-              showValueReadout={showParamReadouts}
-              marks={leverOn(DOUBLE_MARKS_LEVER) ? doubleMarks(data).find((m) => m.symbol === param.symbol) : undefined}
-              highlighted={
-                isPredict
-                  ? showVaryHighlight && currentChallenge?.prediction?.varyParameter === param.symbol
-                  : currentType === 'identify-relationship'
-                  ? selectedParameter === param.symbol
-                  : false
-              }
-            />
-          ))}
-          {leverOn(DOUBLE_MARKS_LEVER) && (
-            <div className="text-center">
-              <button
-                type="button"
-                disabled={blocked}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
-                onClick={() => {
-                  if (learnerBlocked()) return;
-                  SoundManager.select();
-                  setParamValues(startingValues(data));
-                }}
-              >
-                Back to start
-              </button>
+
+          {/* Lever pictures outside the item: none of its letters or numbers. */}
+          {pairModel || scaleModel || doubleModel ? (
+            <div className="space-y-2">
+              {pairModel && <ModelFigure model={pairModel} lever="model-pair" />}
+              {scaleModel && <ModelFigure model={scaleModel} lever="scaling-model" />}
+              {doubleModel && <ModelFigure model={doubleModel} lever="doubling-model" />}
+            </div>
+          ) : null}
+
+          {/* ── Observation Prompts (explore only: they narrate relationships the checked modes ask for) ── */}
+          {shownObservations.length > 0 && (
+            <div className="space-y-2">
+              {shownObservations.map((prompt, idx) => (
+                <LuminaCallout
+                  key={idx}
+                  accent="emerald"
+                  label="Observe"
+                  icon={<Lightbulb className="w-4 h-4" />}
+                >
+                  {prompt}
+                </LuminaCallout>
+              ))}
             </div>
           )}
-        </div>
 
-        {/* Lever pictures outside the item: none of its letters or numbers. */}
-        {(leverOn(MODEL_PAIR_LEVER) && pairModel) || (leverOn(SCALING_MODEL_LEVER) && scaleModel)
-          || (leverOn(DOUBLING_MODEL_LEVER) && doubleModel) ? (
-          <div className="space-y-2">
-            {leverOn(MODEL_PAIR_LEVER) && pairModel && <ModelFigure model={pairModel} lever="model-pair" />}
-            {leverOn(SCALING_MODEL_LEVER) && scaleModel && <ModelFigure model={scaleModel} lever="scaling-model" />}
-            {leverOn(DOUBLING_MODEL_LEVER) && doubleModel && <ModelFigure model={doubleModel} lever="doubling-model" />}
-          </div>
-        ) : null}
+          {/* ── Challenge Area ── */}
+          {/* Stays up once the last item is credited, until the runtime closes the lesson. */}
+          {currentChallenge && !showSummary && (
+            <LuminaPanel className="space-y-4">
+              <LuminaPrompt>{promptFor(data, currentChallenge)}</LuminaPrompt>
 
-        {/* ── Observation Prompts (explore only: they narrate relationships the checked modes ask for) ── */}
-        {shownObservations.length > 0 && (
-          <div className="space-y-2">
-            {shownObservations.map((prompt, idx) => (
-              <LuminaCallout
-                key={idx}
-                accent="emerald"
-                label="Observe"
-                icon={<Lightbulb className="w-4 h-4" />}
-              >
-                {prompt}
-              </LuminaCallout>
-            ))}
-          </div>
-        )}
+              {/* Explore: just needs to interact with sliders */}
+              {currentChallenge.type === 'explore' && (
+                <div className="text-center">
+                  <p className="text-xs text-slate-500 mb-3">
+                    Move the sliders above to explore how the parameters affect the output.
+                  </p>
+                  <LuminaActionButton
+                    action="check"
+                    onClick={handleCheckAnswer}
+                    disabled={movedThisItem.length === 0 || answerClosed}
+                  >
+                    Done Exploring
+                  </LuminaActionButton>
+                </div>
+              )}
 
-        {/* ── Challenge Area ── */}
-        {/* Stays up on the workspace path once the last item is credited, until the runtime closes the lesson. */}
-        {currentChallenge && !showSummary && (
-          <LuminaPanel className="space-y-4">
-            <LuminaPrompt>{promptFor(data, currentChallenge)}</LuminaPrompt>
+              {/* Predict Direction */}
+              {currentChallenge.type === 'predict-direction' && (
+                <div className="space-y-3">
+                  <div className="flex gap-2 justify-center">
+                    {(['increase', 'decrease', 'stay-same'] as const).map((dir) => (
+                      <button
+                        key={dir}
+                        type="button"
+                        aria-label={DIRECTION_LABEL[dir]}
+                        className={`rounded-xl border px-4 py-2 transition-all ${answerStateClass(
+                          selectedDirection === dir ? 'selected' : 'idle',
+                        )}`}
+                        onClick={() => {
+                          if (learnerBlocked()) return;
+                          SoundManager.select();
+                          setSelectedDirection(dir);
+                        }}
+                        disabled={answerClosed}
+                      >
+                        <span aria-hidden="true">{DIRECTION_ICON[dir]} </span>{DIRECTION_LABEL[dir]}
+                      </button>
+                    ))}
+                  </div>
+                  {answerFeedback === null && selectedDirection && (
+                    <div className="text-center">
+                      <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Explore: just needs to interact with sliders */}
-            {currentChallenge.type === 'explore' && (
-              <div className="text-center">
-                <p className="text-xs text-slate-500 mb-3">
-                  Move the sliders above to explore how the parameters affect the output.
-                </p>
-                <LuminaActionButton
-                  action="check"
-                  onClick={handleCheckAnswer}
-                  disabled={movedThisItem.length === 0 || answerClosed}
-                >
-                  Done Exploring
-                </LuminaActionButton>
-              </div>
-            )}
-
-            {/* Predict Direction */}
-            {currentChallenge.type === 'predict-direction' && (
-              <div className="space-y-3">
-                <div className="flex gap-2 justify-center">
-                  {(['increase', 'decrease', 'stay-same'] as const).map((dir) => (
-                    <button
-                      key={dir}
-                      type="button"
-                      aria-label={DIRECTION_LABEL[dir]}
-                      className={`rounded-xl border px-4 py-2 transition-all ${answerStateClass(
-                        selectedDirection === dir ? 'selected' : 'idle',
-                      )}`}
-                      onClick={() => {
-                        if (learnerBlocked()) return;
-                        SoundManager.select();
-                        setSelectedDirection(dir);
-                      }}
+              {/* Predict Value */}
+              {currentChallenge.type === 'predict-value' && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 justify-center">
+                    <LuminaInput
+                      type="number"
+                      aria-label="Your prediction"
+                      value={predictedValue}
+                      onChange={(e) => { if (!learnerBlocked()) setPredictedValue(e.target.value); }}
+                      placeholder="Your prediction..."
                       disabled={answerClosed}
-                    >
-                      <span aria-hidden="true">{DIRECTION_ICON[dir]} </span>{DIRECTION_LABEL[dir]}
-                    </button>
-                  ))}
-                </div>
-                {answerFeedback === null && selectedDirection && (
-                  <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
+                      className="w-40 text-center font-mono"
+                    />
+                    {outputUnit && <span className="text-sm text-slate-500">{outputUnit}</span>}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Predict Value */}
-            {currentChallenge.type === 'predict-value' && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 justify-center">
-                  <LuminaInput
-                    type="number"
-                    aria-label="Your prediction"
-                    value={predictedValue}
-                    onChange={(e) => { if (!learnerBlocked()) setPredictedValue(e.target.value); }}
-                    placeholder="Your prediction..."
-                    disabled={answerClosed}
-                    className="w-40 text-center font-mono"
-                  />
-                  {outputUnit && <span className="text-sm text-slate-500">{outputUnit}</span>}
+                  {answerFeedback === null && predictedValue.trim() && (
+                    <div className="text-center">
+                      <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
+                    </div>
+                  )}
                 </div>
-                {answerFeedback === null && predictedValue.trim() && (
-                  <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
-                  </div>
-                )}
-              </div>
-            )}
+              )}
 
-            {/* Identify Relationship */}
-            {currentChallenge.type === 'identify-relationship' && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {parameters.map((param) => (
-                    <button
-                      key={param.symbol}
-                      type="button"
-                      aria-label={parameterLabel(param)}
-                      className={`rounded-xl border px-4 py-2 font-mono transition-all ${answerStateClass(
-                        selectedParameter === param.symbol ? 'selected' : 'idle',
-                      )}`}
-                      onClick={() => {
-                        if (learnerBlocked()) return;
-                        SoundManager.select();
-                        setSelectedParameter(param.symbol);
-                      }}
-                      disabled={answerClosed}
-                    >
-                      {param.symbol}
-                      <span className="ml-1 text-xs font-sans text-slate-400">({param.name})</span>
-                    </button>
-                  ))}
+              {/* Identify Relationship */}
+              {currentChallenge.type === 'identify-relationship' && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {parameters.map((param) => (
+                      <button
+                        key={param.symbol}
+                        type="button"
+                        aria-label={parameterLabel(param)}
+                        className={`rounded-xl border px-4 py-2 font-mono transition-all ${answerStateClass(
+                          selectedParameter === param.symbol ? 'selected' : 'idle',
+                        )}`}
+                        onClick={() => {
+                          if (learnerBlocked()) return;
+                          SoundManager.select();
+                          setSelectedParameter(param.symbol);
+                        }}
+                        disabled={answerClosed}
+                      >
+                        {param.symbol}
+                        <span className="ml-1 text-xs font-sans text-slate-400">({param.name})</span>
+                      </button>
+                    ))}
+                  </div>
+                  {answerFeedback === null && selectedParameter && (
+                    <div className="text-center">
+                      <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
+                    </div>
+                  )}
                 </div>
-                {answerFeedback === null && selectedParameter && (
-                  <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
-                  </div>
-                )}
-              </div>
-            )}
+              )}
 
-            {/* Feedback. A miss on the workspace path shows nothing new: the explanation and result wait for credit. */}
-            {answerFeedback && (
-              <LuminaFeedbackCard status={answerFeedback}>
-                {itemClosed ? (
-                  <>
-                    {result && <span className="block">{result}</span>}
-                    {currentChallenge.prediction?.explanation && (
-                      <span className="block mt-1">{currentChallenge.prediction.explanation}</span>
-                    )}
-                    {!result && !currentChallenge.prediction?.explanation && (answerFeedback === 'correct'
-                      ? 'Nicely done.'
-                      : 'Take another look at how the parameters drive the output.')}
-                  </>
-                ) : (
-                  'Not yet. Look at where that parameter sits in the formula and think again.'
-                )}
-              </LuminaFeedbackCard>
-            )}
-
-            {/* Next button (scripted path; on the workspace path the shell's Try again / Next challenge replace it) */}
-            {!tutorOwned && answerFeedback !== null && (
-              <div className="text-center">
-                <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                  {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish'}
-                </LuminaActionButton>
-              </div>
-            )}
-          </LuminaPanel>
-        )}
-
-        </div>
+              {/* Feedback. A miss shows nothing new: the explanation and the result wait for credit. */}
+              {answerFeedback && (
+                <LuminaFeedbackCard status={answerFeedback}>
+                  {itemClosed ? (
+                    <>
+                      {result && <span className="block">{result}</span>}
+                      {currentChallenge.prediction?.explanation && (
+                        <span className="block mt-1">{currentChallenge.prediction.explanation}</span>
+                      )}
+                      {!result && !currentChallenge.prediction?.explanation && 'Nicely done.'}
+                    </>
+                  ) : (
+                    'Not yet. Look at where that parameter sits in the formula and think again.'
+                  )}
+                </LuminaFeedbackCard>
+              )}
+            </LuminaPanel>
+          )}
+        </PipWorkspace>
 
         {/* ── Phase Summary ── */}
         {showSummary && phaseResults.length > 0 && (
@@ -1137,8 +884,6 @@ const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwn
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const ParameterExplorer = withWorkspaceController<ParameterExplorerProps, ProgressOptions<ParameterExplorerChallenge>, Progress>(
-  'parameter-explorer', ParameterExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('parameter-explorer'));
+const ParameterExplorer = withWorkspaceOnly<ParameterExplorerProps>('parameter-explorer', ParameterExplorerSurface, props => props.data.title);
 
 export default ParameterExplorer;

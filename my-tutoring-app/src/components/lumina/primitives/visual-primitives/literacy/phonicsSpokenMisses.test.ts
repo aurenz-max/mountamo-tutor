@@ -10,7 +10,7 @@ import { blendSpokenMisses } from './phonicsBlenderDomain';
 import { phonemeSpokenMisses } from './phonemeExplorerDomain';
 import { rhymeSpokenMisses } from './rhymeStudioDomain';
 import { swapSpokenMisses } from './soundSwapDomain';
-import { syllableSpokenMisses } from './syllableClapperWorkspace';
+import { syllableSpokenMisses } from './syllableClapperDomain';
 import { flipSpokenMisses } from './wordFlipDomain';
 import { wordWorkoutSpokenMisses } from './wordWorkoutDomain';
 import { decodableSpokenMisses } from './decodableReaderDomain';

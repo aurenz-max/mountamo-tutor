@@ -1,20 +1,17 @@
 /**
- * Train yard on the shared tutor/JEV teaching workspace (born bound, plain shape).
+ * Train yard on the shared tutor/JEV teaching workspace, through its boss (`trainYard.boss.ts`).
  *
  * Every job is one gesture item: the learner builds a consist and presses Highball, and the train
  * run is the check. The key — which car carries the cargo, how many cars and engines — never
  * reaches the tutor; the scene names the job, the train the learner built, and, after a run, the
- * evidence the run printed on screen.
+ * evidence the run printed on screen. What the learner presses is the card's `moves`.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import {
-  CAR_ORDER, describeLoad, TRAIN_CARS, type Consist, type TrainRun, type TrainYardChallenge, type TrainYardTask,
+  CAR_ORDER, describeLoad, TRAIN_CARS, type Consist, type TrainRun, type TrainYardChallenge,
 } from './trainYardModel';
 
-export { trainMatches, trainYardMiss, TRAIN_YARD_MISSES, type TrainYardMiss } from './trainYardModel';
-
-export const trainYardAssignment = (c: TrainYardChallenge): TeachingAssignment =>
-  ({ id: c.id, task: c.instruction, response: 'gesture' });
+export { trainYardMiss } from './trainYardModel';
 
 /** "2 engines, 12 hopper cars and 1 boxcar" — the learner's own train. */
 export function describeConsist(consist: Consist): string {
@@ -39,31 +36,26 @@ export function describeRunEvidence(c: TrainYardChallenge, run: TrainRun): strin
   return parts.join('; ');
 }
 
-/** What the learner controls in each task, and what the yard sets for them. */
-const TASK_CONTROLS: Record<TrainYardTask, string> = {
-  match_car: 'The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines '
-    + "the job needs for that kind. Only the choice of car kind is the learner's.",
-  enough_cars: 'The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds '
-    + "and removes cars. Only the number of cars is the learner's.",
-  enough_pull: 'The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is '
-    + "the learner's.",
-  build_train: 'The learner adds and removes engines and cars with the yard buttons.',
-};
-
 /** `consist` is the train that will run: the learner's part plus what the yard set (`yardConsist`). */
 export interface TrainYardView { consist: Consist; phase: 'building' | 'running' | 'ran'; lastRun: TrainRun | null; runs: number }
 
-export function trainYardScene(c: TrainYardChallenge, view: TrainYardView): WorkspaceScene {
+/** What the yard shows beside the controls, by task: the facts a learner reasons from. */
+function onTheCards(c: TrainYardChallenge): string {
+  if (c.type === 'match_car') return 'Each car card says how the car is built, never what it carries, and no card shows what a car holds.';
+  const cars = c.type === 'enough_pull' ? '' : 'Each car card says how the car is built and what one car holds. ';
+  const rule = c.type === 'enough_cars' ? ''
+    : 'The engine card says what one engine pulls and weighs, and the rule of the rails is printed under it: every 100 t '
+      + 'of train needs 1 t of pull for each 1% of hill, plus a little more to roll. ';
+  return `${cars}${rule}The train's weight and the pull the hill needs show only after a run.`;
+}
+
+export function trainYardScene(c: TrainYardChallenge, view: TrainYardView): SceneOf {
   return { objects: [], facts: {
     job: `${describeLoad(c)} from ${c.from} to ${c.to}`,
     hill: `${c.hillName}, ${c.grade.toFixed(1)}% grade`,
     trainNow: describeConsist(view.consist),
     runsSoFar: view.runs,
     ...(view.lastRun ? { lastRunShowed: describeRunEvidence(c, view.lastRun) } : {}),
-    constraints: `${TASK_CONTROLS[c.type]} The learner presses Highball to send the `
-      + 'train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill '
-      + 'needed. '
-      + (c.type === 'match_car' ? 'The yard shows how each car is built.'
-        : 'The yard shows what each car holds and how it is built, and what each engine pulls and weighs.'),
+    constraints: onTheCards(c),
   } };
 }

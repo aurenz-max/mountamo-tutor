@@ -91,406 +91,24 @@
  * `checkPackGates` in this pack's test file over every cue it can emit.
  */
 
-import type { JudgedScriptItem, ResponseClassId, JudgedCueSurface } from '../../../hooks/judgedScriptContract';
+import type { JudgedCueSurface } from '../../../hooks/judgedScriptContract';
 import { numberWordFor } from './countingBoardScript';
-import { resolveScaffolds, type LiveScaffold } from '../../../components/live-activity/runtime/liveScaffolds';
+import {
+  BOND_TEN, BOND_WHOLE_MAX, askFor, bondEquationFaultOf, factFamilyCanonicalKeys, factFamilyForms, parseBondEquation,
+  tenAndOnesFaultOf, type NumberBondItem, type BondModelAction,
+} from './numberBondDomain';
+import { prepareSplit, splitCounts, splitQuestion, validSplit, type BondCounters, type BondPair } from './numberBondSplit';
+import { bondActionOf, countersForAction, groupsForBond, relatedQuestion } from './numberBondModes';
 
-export type NumberBondKind =
-  | 'decompose'
-  | 'missing-part'
-  | 'related-fact'
-  | 'ten-and-ones'
-  | 'fact-family'
-  | 'build-equation';
-export type BondBand = 'K' | '1';
-export type BondModelAction = 'join' | 'separate-left' | 'separate-right' | 'swap';
-export type BondFamilyForm = 'add-left' | 'add-right' | 'subtract-left' | 'subtract-right';
-export type NumberBondInteractionPhase =
-  | 'missing-infer'
-  | 'related-join'
-  | 'related-say-addend'
-  | 'related-separate'
-  | 'related-say-remainder'
-  | 'equation-model'
-  | 'equation-build'
-  | 'family-model'
-  | 'family-build';
-
-/**
- * `ten-and-ones` — the bond side of CCSS K.NBT.1, added 2026-09-08 alongside
- * ten-frame's two teen modes.
- *
- * WHY IT IS NOT `decompose` WITH A BIGGER WHOLE. `decompose` asks for EVERY
- * pair and treats each one as a right answer; fourteen has eight of them and
- * seven are not what this objective is about. Here exactly ONE pair is
- * accepted — a full ten and the rest — and refusing 6+8 is the whole
- * pedagogy. Two different accept sets over the same gesture is a task
- * identity, not a difficulty setting, so it forks as a mode.
- *
- * WHY ITS WHOLE MAY EXCEED `BOND_WHOLE_MAX`. Every other kind is capped at ten
- * because its answer is spoken or symbolic and the caps keep both inside
- * benched ranges. This one is answered with HANDS and its whole is stated in
- * the ask, so the cap that binds it is the objective's own: 11-19.
- */
-/**
- * `related-fact` — the SPOKEN half of the fact family, added 2026-09-09 for the
- * two K rows the 2026-09-08 band-floor re-audit left homeless (OPS001-02-G,
- * OPS001-03-F; qa/reader-fit/k-band-floor-2026-09-08.md).
- *
- * WHY IT IS NOT `missing-part`. A K probe of `missing_part` against both
- * objectives returned ten turns, every one of them "W is the whole. One part is
- * P. What is the other part?" — part-part-whole, ten times. The words "take
- * away" never occur, and nothing in the session asks the child to carry a fact
- * they just found into its subtraction form. The objectives name the CONNECTION
- * ("connect addition and subtraction as inverse operations ... using related
- * facts"), and one unknown-addend turn is one fact, not a relationship.
- *
- * WHY IT IS NOT `fact-family`. That mode's floor HELD at PRE and should: it
- * constructs every distinct equation, and written symbolic form IS its declared skill. This
- * one asks for the same relationship in the K-legal channel — the child SAYS
- * both facts, one number word each.
- *
- * THE SHAPE. One bond, two judged turns:
- *   turn 0 (addition)     "Two and how many more make five?"      -> three
- *   turn 1 (subtraction)  "Five take away three — what is left?"  -> two
- * Turn 1's known part is the number turn 0 produced, so the child has to spend
- * their own answer to get the next one. That is the inverse relationship as an
- * action rather than an assertion.
- *
- * WHY THE PARTS MUST DIFFER. If part1 === part2 both turns have the SAME answer
- * and turn 1 scores for a child who simply repeats themselves. `itemsFromChallenge`
- * drops a symmetric bond outright — the pedagogy does not survive it.
- */
-export const BOND_TEN = 10;
-export const TEEN_WHOLE_MIN = 11;
-export const TEEN_WHOLE_MAX = 19;
-
-/** The benched spoken-number window (shared family constants). Zero is
- *  excluded by the class record itself; 20 is the benched ceiling. */
-export const SPOKEN_ANSWER_MIN = 1;
-export const SPOKEN_ANSWER_MAX = 20;
-
-/** Structural bounds a bond must satisfy to be askable at all. */
-export const BOND_WHOLE_MIN = 2;
-export const BOND_WHOLE_MAX = 10;
-
-const int = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isInteger(value);
+export * from './numberBondDomain';
 
 const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
-
-/** A spoken answer must be inside the benched window. */
-export const isSayableAnswer = (n: unknown): n is number =>
-  int(n) && n >= SPOKEN_ANSWER_MIN && n <= SPOKEN_ANSWER_MAX;
-
-/**
- * A KNOWN part must be 1..whole−1 — 0 or the whole makes the task trivial and
- * puts "zero" (unbenched) or the whole itself in the child's mouth. THE ONE
- * SHARED PREDICATE for both sides of the wire: the generator repairs against
- * it, this module drops against it. Hand-synced copies drift (letter-spotter's
- * two sides disagreed live), so the generator must IMPORT this, never re-state
- * it.
- */
-export const isValidBondPart = (whole: number, part: unknown): part is number =>
-  int(part) && part >= 1 && part <= whole - 1;
-
-// ── Answer material — the fork, as code ─────────────────────────────────────
-
-const SPOKEN_KINDS: readonly NumberBondKind[] = ['missing-part', 'related-fact'];
-
-export const answerKindFor = (kind: NumberBondKind): 'voice' | 'gesture' =>
-  SPOKEN_KINDS.includes(kind) ? 'voice' : 'gesture';
-
-/** How many ones sit beside the ten on a `ten-and-ones` item. */
-export const onesOf = (whole: number): number => whole - BOND_TEN;
-
-export const responseClassFor = (kind: NumberBondKind): ResponseClassId =>
-  SPOKEN_KINDS.includes(kind) ? 'number_word_to_20' : 'manipulation';
-
-/** Task identity for the runner's how-to-play policy: when consecutive items
- *  change `action`, the next cue re-speaks what to do. */
-export const actionFor = (kind: NumberBondKind): string => {
-  switch (kind) {
-    case 'decompose': return 'split';
-    // Same gesture as decompose, different accept set — and the ASK is
-    // materially different ("break it into a ten and some more"), so a session
-    // that moves between them re-speaks the how-to-play rather than assuming a
-    // five-year-old carried the rule across.
-    case 'ten-and-ones': return 'ten-split';
-    case 'missing-part': return 'say';
-    // A DIFFERENT action id from `missing-part` on purpose: both are spoken, but
-    // this one runs two linked turns over one bond, so a session that moves
-    // between the two re-speaks the how-to-play instead of assuming the rule
-    // carried across.
-    case 'related-fact': return 'say-family';
-    case 'fact-family': return 'write';
-    case 'build-equation': return 'build';
-  }
-};
-
-export interface NumberBondItem extends JudgedScriptItem {
-  /** Runtime split-and-say expansion; source challenge identity stays unchanged. */
-  splitPhase?: 'build' | 'say';
-  /** Stateful phase added by the runtime expander. */
-  interactionPhase?: NumberBondInteractionPhase;
-  /** Existing assessment-unit id underneath one or more runtime phases. */
-  logicalId?: string;
-  /** Transformation the student performed or is being asked to perform. */
-  bondAction?: BondModelAction;
-  /** Fact-family form owned by this transform/build pair. */
-  familyForm?: BondFamilyForm;
-  kind: NumberBondKind;
-  band: BondBand;
-  /** The generated challenge this item came from — decompose expands one
-   *  challenge into several items, and the component resets its found-pairs
-   *  ledger when this changes. */
-  sourceId: string;
-  whole: number;
-  /** missing-part: the SHOWN part. fact-family / build-equation: part1.
-   *  decompose: 0 (the child chooses both parts). */
-  knownPart: number;
-  /** fact-family / build-equation: part2 (= whole − part1). missing-part: the
-   *  part the child must produce. decompose: 0. */
-  otherPart: number;
-  /** decompose only: which way this turn asks for (0-based) and how many
-   *  unique ways exist. 0 / 1 elsewhere. */
-  pairIndex: number;
-  pairCount: number;
-  /** What the child must PRODUCE: said aloud on missing-part (whole − known);
-   *  for the hand modes the artifact is judged in code and this carries the
-   *  whole, the number every verdict is about. */
-  answer: number;
-}
-
-// ── Equation parsing — MOVED here from the component so the judge, the
-// component and the harness share one parser ────────────────────────────────
-
-export interface ParsedBondEquation {
-  left: number;
-  op: '+' | '-';
-  right: number;
-  result: number;
-  /** The arithmetic checks out. */
-  valid: boolean;
-  /** Uses exactly {whole, part1, part2}. */
-  usesCorrectNumbers: boolean;
-  /** Mathematical equivalence key — commutative addition collapses. */
-  canonicalKey: string;
-  /** Required family form; addition order remains visible here. */
-  familyFormKey: string;
-}
-
-/** Parse "a op b = c" or "c = a op b", whitespace-insensitive. */
-export const parseBondEquation = (
-  input: string,
-  whole: number,
-  p1: number,
-  p2: number,
-): ParsedBondEquation | null => {
-  const s = (input ?? '').replace(/\s+/g, '').replace(/[−–]/g, '-');
-  if (!s) return null;
-  let left: number, op: '+' | '-', right: number, result: number;
-  const m1 = s.match(/^(\d+)([+-])(\d+)=(\d+)$/);
-  const m2 = m1 ? null : s.match(/^(\d+)=(\d+)([+-])(\d+)$/);
-  if (m1) {
-    left = parseInt(m1[1], 10); op = m1[2] as '+' | '-';
-    right = parseInt(m1[3], 10); result = parseInt(m1[4], 10);
-  } else if (m2) {
-    result = parseInt(m2[1], 10); left = parseInt(m2[2], 10);
-    op = m2[3] as '+' | '-'; right = parseInt(m2[4], 10);
-  } else {
-    return null;
-  }
-  const valid = op === '+' ? left + right === result : left - right === result;
-  const nums = [left, right, result].sort((a, b) => a - b);
-  const expected = [whole, p1, p2].sort((a, b) => a - b);
-  const usesCorrectNumbers =
-    nums[0] === expected[0] && nums[1] === expected[1] && nums[2] === expected[2];
-  const canonicalKey = op === '+'
-    ? `${Math.min(left, right)}+${Math.max(left, right)}=${result}`
-    : `${left}-${right}=${result}`;
-  const familyFormKey = `${left}${op}${right}=${result}`;
-  return { left, op, right, result, valid, usesCorrectNumbers, canonicalKey, familyFormKey };
-};
-
-/** Required family forms. Equality orientation is normalized by the parser,
- * while unequal addition orders remain distinct. Symmetric bonds have 2. */
-export const factFamilyCanonicalKeys = (whole: number, p1: number, p2: number): Set<string> => {
-  return new Set([
-    `${p1}+${p2}=${whole}`,
-    `${p2}+${p1}=${whole}`,
-    `${whole}-${p1}=${p2}`,
-    `${whole}-${p2}=${p1}`,
-  ]);
-};
-
-export const familyFormKeyFor = (
-  form: BondFamilyForm,
-  whole: number,
-  p1: number,
-  p2: number,
-): string => {
-  switch (form) {
-    case 'add-left': return `${p1}+${p2}=${whole}`;
-    case 'add-right': return `${p2}+${p1}=${whole}`;
-    case 'subtract-left': return `${whole}-${p1}=${p2}`;
-    case 'subtract-right': return `${whole}-${p2}=${p1}`;
-  }
-};
-
-export const factFamilyForms = (p1: number, p2: number): BondFamilyForm[] =>
-  p1 === p2
-    ? ['add-left', 'subtract-left']
-    : ['add-left', 'add-right', 'subtract-left', 'subtract-right'];
 
 /** "two plus three equals five" — an equation spoken; numerals stay off the
  *  tutor's tongue everywhere in this pack. */
 const equationSpoken = (left: number, op: '+' | '-', right: number, result: number): string =>
   `${numberWordFor(left)} ${op === '+' ? 'plus' : 'take away'} ${numberWordFor(right)} equals ${numberWordFor(result)}`;
 
-// ── Build gates — DROP an unaskable item, never repair it into one ──────────
-
-/** Structural challenge shape as the generator emits it (duck-typed so this
- *  module never imports the component — the component imports us). */
-export interface NumberBondChallengeLike {
-  id: string;
-  type: string;
-  whole?: number;
-  part1?: number | null;
-  part2?: number | null;
-}
-
-export interface BondBuildContext {
-  band: BondBand;
-  maxNumber: number;
-}
-
-const KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones', 'fact-family', 'build-equation'];
-const K_KINDS: readonly NumberBondKind[] = ['decompose', 'missing-part', 'related-fact', 'ten-and-ones'];
-
-/**
- * One generated challenge → its judged items, or [] when it cannot be asked
- * honestly:
- *   - an unknown type, or a symbolic type (fact-family / build-equation) at K
- *   - a whole outside 2..min(maxNumber, 10)
- *   - a known part outside 1..whole−1 (missing-part / fact-family /
- *     build-equation) — which also keeps every SPOKEN answer in 1..9
- * decompose expands into one item per unique pair (see the module docblock).
- * Nothing is backfilled.
- */
-export const itemsFromChallenge = (
-  ch: NumberBondChallengeLike,
-  ctx: BondBuildContext,
-): NumberBondItem[] => {
-  const kind = KINDS.find((k) => k === ch.type);
-  if (!kind) return [];
-  if (ctx.band === 'K' && !K_KINDS.includes(kind)) return [];
-
-  const whole = ch.whole;
-  const base = {
-    band: ctx.band,
-    sourceId: ch.id,
-    whole: whole as number,
-    answerKind: answerKindFor(kind),
-    responseClass: responseClassFor(kind),
-    action: actionFor(kind),
-  };
-
-  if (kind === 'ten-and-ones') {
-    // Gestural, and the whole is PUBLIC (the ask states it), so neither the
-    // spoken bench nor `maxNumber` binds — the objective's own 11-19 window
-    // does. A whole of ten or twenty has no "ten and some more" to make.
-    if (!int(whole) || whole < TEEN_WHOLE_MIN || whole > TEEN_WHOLE_MAX) return [];
-    return [{
-      ...base,
-      id: ch.id,
-      kind,
-      knownPart: BOND_TEN,
-      otherPart: onesOf(whole),
-      pairIndex: 0,
-      pairCount: 1,
-      answer: whole,
-    }];
-  }
-
-  const ceiling = Math.min(BOND_WHOLE_MAX, int(ctx.maxNumber) ? ctx.maxNumber : BOND_WHOLE_MAX);
-  if (!int(whole) || whole < BOND_WHOLE_MIN || whole > ceiling) return [];
-
-  if (kind === 'decompose') {
-    // allPairs is NEVER trusted from the wire — the pair space is arithmetic.
-    const pairCount = Math.floor(whole / 2) + 1;
-    return Array.from({ length: pairCount }, (_, pairIndex) => ({
-      ...base,
-      id: `${ch.id}::p${pairIndex}`,
-      kind,
-      knownPart: 0,
-      otherPart: 0,
-      pairIndex,
-      pairCount,
-      answer: whole,
-    }));
-  }
-
-  const p1 = ch.part1;
-  if (!isValidBondPart(whole, p1)) return [];
-  const p2 = whole - p1;
-
-  if (kind === 'missing-part') {
-    // The spoken gate binds the tutor's EAR: the answer must be sayable. With
-    // whole ≤ 10 and part 1..whole−1 it always is; asserted so a future
-    // capacity change cannot launder an unbenched class into production.
-    if (!isSayableAnswer(p2)) return [];
-    return [{ ...base, id: ch.id, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 1, answer: p2 }];
-  }
-
-  if (kind === 'related-fact') {
-    // TWO spoken turns, so BOTH numbers have to be sayable — not just the one
-    // `missing-part` would have asked for.
-    if (!isSayableAnswer(p1) || !isSayableAnswer(p2)) return [];
-    // A symmetric bond (three and three make six) gives both turns the same
-    // answer, and a child who repeats themselves scores turn 1 without the
-    // relationship. Dropped, never repaired: the pair IS the item.
-    if (p1 === p2) return [];
-    return [
-      // turn 0 — the ADDITION fact. The child produces p2.
-      { ...base, id: `${ch.id}::f0`, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 2, answer: p2 },
-      // turn 1 — the RELATED SUBTRACTION over the same three numbers. Its known
-      // part is what the child just said, so the answer is the OTHER part: the
-      // echo of turn 0 is now a wrong answer, and `discriminationFor` says so.
-      { ...base, id: `${ch.id}::f1`, kind, knownPart: p2, otherPart: p1, pairIndex: 1, pairCount: 2, answer: p1 },
-    ];
-  }
-
-  return [{ ...base, id: ch.id, kind, knownPart: p1, otherPart: p2, pairIndex: 0, pairCount: 1, answer: whole }];
-};
-
-/**
- * The whole session's items. Drops consecutive same-content challenges
- * (type + whole + part): weak content (N challenges = N problems) that would
- * also recite a byte-identical 13-word missing-part ask twice in a row.
- * Duplicate challenge IDs are dropped too — decompose sub-item ids derive from
- * them, and `validateJudgedScriptPack` refuses duplicate item ids.
- */
-export const buildBondItems = (
-  challenges: NumberBondChallengeLike[],
-  ctx: BondBuildContext,
-): { items: NumberBondItem[]; droppedChallenges: number } => {
-  const items: NumberBondItem[] = [];
-  let dropped = 0;
-  let previousKey: string | null = null;
-  const seenIds = new Set<string>();
-  for (const ch of challenges ?? []) {
-    if (seenIds.has(ch.id)) { dropped++; continue; }
-    const key = `${ch.type}|${ch.whole}|${ch.part1 ?? ''}`;
-    if (key === previousKey) { dropped++; continue; }
-    const built = itemsFromChallenge(ch, ctx);
-    if (built.length === 0) { dropped++; continue; }
-    seenIds.add(ch.id);
-    previousKey = key;
-    items.push(...built);
-  }
-  return { items, droppedChallenges: dropped };
-};
 
 // ── How-to-play — spoken on the opener AND whenever the ACTION changes ──────
 
@@ -518,46 +136,6 @@ export const howToPlayFor = (item: NumberBondItem): string => {
   }
 };
 
-// ── The asks — code-owned at every band; numbers spoken as WORDS ────────────
-
-/** The question as the runner asks it. The adapter publishes this as the tutor task. */
-export const askFor = (item: NumberBondItem): string => {
-  const wholeWord = numberWordFor(item.whole);
-  switch (item.kind) {
-    case 'decompose':
-      if (item.pairIndex === 0) {
-        return `Here is ${wholeWord}. Make ${wholeWord} with two parts.`;
-      }
-      // The short repeat ask for the invariant mode (repeat-ask gate): the
-      // action stated, nothing recited. The last way gets its own words.
-      return item.pairIndex === item.pairCount - 1
-        ? `Find the last way to make ${wholeWord}.`
-        : `Find a different way to make ${wholeWord}.`;
-    case 'ten-and-ones':
-      // The whole and the TEN are both public — the ten is the structure the
-      // objective names, not a number the child has to find. The ONES are the
-      // answer and appear nowhere before the verdict.
-      return `${cap(wholeWord)} is the whole. Your turn — break it into a ten and some more.`;
-    case 'missing-part':
-      // "has TWO parts" would put the word "two" in every ask — and two IS the
-      // answer whenever whole − part = 2. "is the whole" carries no number but
-      // the public ones.
-      return `${cap(wholeWord)} is the whole. One part is ${numberWordFor(item.knownPart)}. What is the other part?`;
-    case 'related-fact':
-      // Turn 0 is the ADDITION form of the same unknown `missing-part` asks for
-      // — worded as a fact ("and how many more make") rather than as a part, so
-      // turn 1 can then quote it back as the fact they already know.
-      // Turn 1 names the whole and the part the child JUST PRODUCED; the answer
-      // is the third number, which the ask does not say.
-      return item.pairIndex === 0
-        ? `${cap(numberWordFor(item.knownPart))} and how many more make ${wholeWord}?`
-        : `Good — now the other way round. ${cap(wholeWord)} take away ${numberWordFor(item.knownPart)}. What is left?`;
-    case 'fact-family':
-      return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Build all ${factFamilyForms(item.knownPart, item.otherPart).length} distinct equations for this fact family.`;
-    case 'build-equation':
-      return `The parts are ${numberWordFor(item.knownPart)} and ${numberWordFor(item.otherPart)}, and the whole is ${wholeWord}. Build a number sentence with the tiles.`;
-  }
-};
 
 // ── The correction — DISTAR re-model then re-elicit; the answer is EARNED ───
 
@@ -716,24 +294,6 @@ export const splitVerdictCue = (
   return `${head}${line}Never read bracket tags aloud.`;
 };
 
-/**
- * `ten-and-ones` faults — code-decided, so the correction names the actual
- * misconception. `no-ten` is the one this mode exists for: 6 and 8 is a
- * perfectly good pair that makes fourteen and a perfectly wrong answer to
- * K.NBT.1, and a judge that only checked the sum would affirm it.
- */
-export type TenAndOnesFault = 'match' | 'empty' | 'miscount' | 'no-ten';
-
-export const tenAndOnesFaultOf = (
-  item: NumberBondItem,
-  left: number,
-  right: number,
-): TenAndOnesFault => {
-  if (left + right === 0) return 'empty';
-  if (left + right !== item.whole) return 'miscount';
-  if (left !== BOND_TEN && right !== BOND_TEN) return 'no-ten';
-  return 'match';
-};
 
 /**
  * The `ten-and-ones` verdict. Ten may be spoken on every branch — it is the
@@ -824,39 +384,6 @@ export const familyVerdictCue = (item: NumberBondItem, inputs: readonly string[]
   return `${head}Say exactly: "${specific}" Never read bracket tags aloud.`;
 };
 
-/** Build-equation faults. Arithmetic validity and bond-number use are recorded
- * separately from whether the equation describes the committed action. */
-export type BondEquationFault = 'match' | 'incomplete' | 'arithmetic' | 'numbers' | 'action';
-
-export const bondEquationMatchesAction = (
-  parsed: ParsedBondEquation,
-  action: BondModelAction,
-  whole: number,
-  p1: number,
-  p2: number,
-): boolean => {
-  if (action === 'join' || action === 'swap') {
-    return parsed.op === '+' && parsed.result === whole
-      && ((parsed.left === p1 && parsed.right === p2) || (parsed.left === p2 && parsed.right === p1));
-  }
-  if (action === 'separate-left') {
-    return parsed.op === '-' && parsed.left === whole && parsed.right === p1 && parsed.result === p2;
-  }
-  return parsed.op === '-' && parsed.left === whole && parsed.right === p2 && parsed.result === p1;
-};
-
-export const bondEquationFaultOf = (
-  item: NumberBondItem,
-  tiles: readonly string[],
-  action?: BondModelAction,
-): BondEquationFault => {
-  const parsed = parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart);
-  if (!parsed) return 'incomplete';
-  if (!parsed.valid) return 'arithmetic';
-  if (!parsed.usesCorrectNumbers) return 'numbers';
-  if (action && !bondEquationMatchesAction(parsed, action, item.whole, item.knownPart, item.otherPart)) return 'action';
-  return 'match';
-};
 
 export const bondEquationVerdictCue = (
   item: NumberBondItem,
@@ -939,26 +466,108 @@ export const stimulusFor = (item: NumberBondItem): string => {
   }
 };
 
-/**
- * The fact-family worked example is MODELED ON CONTENT THE SESSION NEVER ASKS
- * ABOUT, picked in code (the pickModelNoun pattern): the shipped helper
- * hardcoded 2+3=5, which IS the answer sheet whenever the item is that very
- * bond. The first triple that is no bond of the session (this item or any other, contract R13) wins; the
- * three the helper has always shown come first, then every other unequal pair within ten.
- */
-const HELPER_TRIPLES: ReadonlyArray<readonly [number, number, number]> = [
-  [2, 3, 5], [3, 4, 7], [2, 4, 6],
-  ...Array.from({ length: 10 }, (_, a) => a + 1).flatMap(a => Array.from({ length: 10 - a }, (_, i) => a + 1 + i)
-    .filter(b => a + b <= 10).map(b => [a, b, a + b] as const)),
-];
 
-type Bond = Pick<NumberBondItem, 'whole' | 'knownPart' | 'otherPart'>;
-const sameBond = ([a, b, w]: readonly [number, number, number], bond: Bond) =>
-  w === bond.whole && a === Math.min(bond.knownPart, bond.otherPart) && b === Math.max(bond.knownPart, bond.otherPart);
+// ── The retired workspace-phase cues (split and say, the persistent-model moves) ──────
+// Kept for `__tests__/NumberBond.*` and the probes; the boss never sends them.
 
-export const familyHelperExample = (item: Bond, session: readonly Bond[] = []): readonly [number, number, number] =>
-  HELPER_TRIPLES.find(t => !sameBond(t, item) && !session.some(bond => sameBond(t, bond)))
-    ?? HELPER_TRIPLES.find(t => !sameBond(t, item)) ?? HELPER_TRIPLES[0];
+const SPLIT_WAIT = 'Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait. ';
+export function splitAndSayCue(item: NumberBondItem, opts: NumberBondCueOptions, counters: BondCounters, found: readonly BondPair[], moveOn = false): string {
+  if (item.splitPhase === 'build') {
+    const how = opts.opening || opts.howToPlay ? 'Tap a counter, then where it should go, or drag it. You can move counters between the parts or bring them back together. ' : '';
+    const ask = item.kind === 'ten-and-ones' ? `Split ${numberWordFor(item.whole)} into a ten and some ones.`
+      : item.pairIndex === 0 ? `Split ${numberWordFor(item.whole)} into two parts.` : `Move the counters to make a different way to split ${numberWordFor(item.whole)}.`;
+    return `[NS_ITEM] Say exactly: "${opts.opening ? 'Let us split and say. ' : ''}${how}${ask}" Hands only. Do not judge speech or name the part counts. Wait for [NS_SPLIT] to supply a code-computed result. ` + SPLIT_WAIT;
+  }
+  const prepared = prepareSplit(item, counters, found);
+  const question = splitQuestion(item, prepared.counters);
+  return `[NS_ITEM] Highlighted answer side: ${question.answerSide}. Say exactly: "${moveOn && prepared.modeled ? 'I have shown a split. Use my example. ' : ''}${question.ask}" `
+    + `Private expected number: ${question.answer}. Judge only fresh speech for this turn. Accept number words or short sentences such as "${numberWordFor(question.answer)} in that part". `
+    + 'Reject negated correct numbers, conflicting guesses, and a whole/known-part echo unless it is also the actual answer. Counting without a final answer is unfinished. Silence, questions and off-task speech are not wrong answers. '
+    + `If correct say exactly "Yes, ${numberWordFor(question.answer)} in that part." If incorrect say exactly "My turn: this part has ${numberWordFor(question.answer)}. Your turn. ${question.ask}" ` + SPLIT_WAIT;
+}
+export function splitAndSayVerdict(item: NumberBondItem, counters: BondCounters, found: readonly BondPair[]) {
+  const valid = validSplit(item, counters, found);
+  const { left, right, whole } = splitCounts(counters);
+  return `[NS_SPLIT] Code-computed valid=${valid}; left=${left}, right=${right}, unplaced=${whole}. Say exactly: "${valid
+    ? item.kind === 'ten-and-ones' ? 'Yes, a full ten and some ones.' : 'Yes, you made two parts.'
+    : whole > 0 ? 'My turn: move all the counters into the parts, then we can look at your split.'
+      : item.kind === 'ten-and-ones' ? 'My turn: make a full ten in one part, and put the rest in the other.'
+        : 'My turn: that is a way you already made. Move a counter to make a different pair.'}" Do not name the other part before the spoken turn. ` + SPLIT_WAIT;
+}
+const MODE_WAIT = 'Never speak bracket tags or private rules. Only the app advances steps. After the quoted line, wait.';
+
+export const numberBondInteractionCue = (
+  item: NumberBondItem,
+  opts: NumberBondCueOptions,
+  counters: BondCounters,
+): string => {
+  const opening = opts.opening ? 'Let us use one bond in different ways. ' : '';
+  if (item.interactionPhase === 'related-join') {
+    return `[NB_MODEL] Say exactly: "${opening}Slide the two groups together." The child answers with their hands. Stay silent while they work. ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'related-separate') {
+    return `[NB_MODEL] Say exactly: "Now move the group you just found out of the whole." The child answers with their hands. Stay silent while they work. ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'related-say-addend' || item.interactionPhase === 'related-say-remainder') {
+    const safeCounters = item.bondAction && bondActionOf(counters, groupsForBond(item)) !== item.bondAction
+      ? countersForAction(item, item.bondAction)
+      : counters;
+    const question = relatedQuestion(item, safeCounters);
+    const answer = numberWordFor(question.answer);
+    return `[NB_RELATION] Say exactly: "${question.ask}" Private expected number: ${question.answer}. `
+      + `Judge only fresh speech for this turn. Accept "${answer}" or a short sentence ending in "${answer}". `
+      + 'Reject negated answers, conflicting guesses, and counting without a final answer. Silence and help questions are not wrong answers. '
+      + `If correct say exactly "Yes, ${answer}." If incorrect say exactly "My turn: the highlighted group has ${answer}. Your turn. ${question.ask}" ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'equation-model') {
+    return `[NB_MODEL] Say exactly: "${opening}Choose an action. Join the groups, or take one group away." The child answers with their hands. Stay silent while they work. ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'equation-build') {
+    return `[NB_EQUATION_ITEM] Say exactly: "Build an equation that shows what you did." The equation is the assessed response; do not ask for a spoken number. Stay silent while the child builds. ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'family-model') {
+    const line = item.bondAction === 'join'
+      ? 'Join the first group, then the second group.'
+      : item.bondAction === 'swap'
+        ? 'Swap the two groups so the other part comes first.'
+        : item.bondAction === 'separate-left'
+          ? 'Start with the whole, then move the first group away.'
+          : 'Start with the whole, then move the other group away.';
+    return `[NB_FAMILY_MODEL] Say exactly: "${opening}${line}" The child answers with their hands. Stay silent while they work. ${MODE_WAIT}`;
+  }
+  if (item.interactionPhase === 'family-build') {
+    return `[NB_FAMILY_ITEM] Say exactly: "Build the equation that shows this move." Do not fill it in or read a prior equation as the answer. Stay silent while the child builds. ${MODE_WAIT}`;
+  }
+  return '';
+};
+
+export const modeActionVerdictCue = (
+  item: NumberBondItem,
+  counters: BondCounters,
+): { cue: string; committed: BondModelAction | null; matched: boolean } => {
+  const committed = bondActionOf(counters, groupsForBond(item));
+  const expected = item.interactionPhase === 'equation-model' ? null : item.bondAction ?? null;
+  const matched = !!committed && (item.interactionPhase === 'equation-model'
+    ? committed !== 'swap'
+    : !expected || committed === expected);
+  const correction = item.interactionPhase === 'related-join'
+    ? 'My turn: keep each colored group together and slide both groups into the whole.'
+    : item.interactionPhase === 'related-separate'
+      ? 'My turn: move the group you just found out of the whole, and leave the other group there.'
+      : item.interactionPhase === 'equation-model'
+        ? 'My turn: choose one of the offered actions. Join the groups, or take one group away.'
+        : expected === 'swap'
+        ? 'My turn: keep each group together and swap their positions.'
+        : expected === 'separate-left' || expected === 'separate-right'
+          ? 'My turn: start with the whole and move the named group away.'
+          : 'My turn: keep each group together and complete the action.';
+  const line = matched ? 'Yes, the model is ready.' : correction;
+  return {
+    committed,
+    matched,
+    cue: `[NB_MODEL_RESULT] Code-computed action=${committed ?? 'incomplete'}; expected=${expected ?? 'meaningful-choice'}; matched=${matched}. Say exactly: "${line}" Never read bracket tags aloud.`,
+  };
+};
 
 // ── The cue surface — one source for the component and the DI harness ───────
 
@@ -1132,121 +741,3 @@ export const bondVerdictCueForPlaced = (item: NumberBondItem, placed: number): s
       return splitVerdictCue(item, 0, 0, []);
   }
 };
-
-/* ------------------------------------------------------------------ *
- * Live-tutor misstep inventory (see `/add-live-tutor-tools`).
- *
- * Kept beside `correctionFor` above, because the two answer different things.
- * The correction MODELS the count-up walk and states the answer, and it fires
- * however the child was wrong. These aids name the misstep and never state the
- * answer, so nothing here repeats what the correction already says.
- *
- * Missteps deliberately left to another lane:
- *   - "does not know the count sequence" — between-item remediation, not an
- *     in-item aid.
- *   - "needs the counters shown / the equation pre-built" — that is the support
- *     tier, a difficulty axis, not an error response.
- *   - "said a number outside the sayable range" — the spoken judge's own
- *     response-class contract owns that rejection.
- *   - decompose with one empty part — whether zero is an accepted way is the
- *     mode's accept set, not a misstep, so no aid claims it is wrong.
- * ------------------------------------------------------------------ */
-
-/** What the child has actually done on this item, as the adapter publishes it. */
-export interface BondMisstepEvidence {
-  /** The number we heard, when it parsed. Null on a hand item or no transcript. */
-  heard: number | null;
-  /** Counters currently in each part of the bond. */
-  left: number;
-  right: number;
-  /** decompose: the ways already banked this challenge. */
-  waysFound: readonly (readonly [number, number])[];
-  /** The equation tiles currently in the slots, in order. */
-  tiles: readonly string[];
-  /** fact-family: the number sentences already banked for this challenge. */
-  builtSentences: readonly string[];
-  /**
-   * Whether the last committed attempt on this item was judged wrong.
-   *
-   * The HAND aids below gate on it, because a part that does not yet make the
-   * whole is what building LOOKS like: offering "count both parts together"
-   * while the child is still moving counters would correct work in progress.
-   * The spoken aids need no such gate — a heard number only exists after a turn.
-   */
-  wrongNow: boolean;
-}
-
-export type BondScaffold = LiveScaffold<NumberBondItem, BondMisstepEvidence>;
-
-const SPOKEN: NumberBondKind[] = ['missing-part', 'related-fact'];
-const built = (e: BondMisstepEvidence) => e.left + e.right;
-const samePair = (a: readonly [number, number], left: number, right: number) =>
-  (a[0] === left && a[1] === right) || (a[0] === right && a[1] === left);
-
-/**
- * One method reminder per mode. Deliberately number-free — `statesNumber` sweeps
- * every line in the tests, and a missing part really can be one, two or ten.
- */
-const METHOD: Record<NumberBondKind, BondScaffold> = {
-  'missing-part': { strategyId: 'count-up-from-the-part', when: 'the child needs the method again',
-    hint: () => 'Start on the part you can see and count up to the whole. Count the steps you take.' },
-  'related-fact': { strategyId: 'the-same-bond-both-ways', when: 'the child needs the method again',
-    hint: i => i.pairIndex === 0
-      ? 'Start on the part you can see and count up to the whole.'
-      : 'You just made this bond. The parts you already found answer this question too.' },
-  decompose: { strategyId: 'both-parts-make-the-whole', when: 'the child needs the method again',
-    hint: () => 'Put some counters in each part. Together the parts make the whole.' },
-  'ten-and-ones': { strategyId: 'make-a-full-ten-first', when: 'the child needs the method again',
-    hint: () => 'Make a full ten in the first part. Everything left over goes in the other part.' },
-  'fact-family': { strategyId: 'every-sentence-uses-all-three', when: 'the child needs the method again',
-    hint: () => 'Each number sentence uses both parts and the whole.' },
-  'build-equation': { strategyId: 'parts-and-whole-together', when: 'the child needs the method again',
-    hint: () => 'Put both parts and the whole into a number sentence.' },
-};
-
-/**
- * The error-specific aids, offered only once the published evidence fits. Each
- * `when` states the CONDITION, because the model routes on that sentence.
- */
-const AIDS: readonly BondScaffold[] = [
-  // Spoken modes: which of the three numbers in the bond the child actually said.
-  { strategyId: 'not-the-whole-number', when: 'the child said the whole instead of the missing part',
-    hint: () => 'That is the whole. We want the part that is missing.',
-    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.whole && i.answer !== i.whole },
-  { strategyId: 'not-the-part-you-can-see', when: 'the child said back the part that is already shown',
-    hint: () => 'That is the part you can already see. We want the other part.',
-    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.knownPart && i.answer !== i.knownPart },
-  { strategyId: 'the-part-you-start-on-is-not-a-step', when: 'the child counted the part they started on as a step',
-    hint: () => 'When you count up, the part you start on is not a step. Start counting after it.',
-    matches: (i, e) => SPOKEN.includes(i.kind) && e.heard !== null && e.heard === i.answer + 1 },
-
-  // decompose: the evidence is the pair currently built, and the ways already banked.
-  { strategyId: 'count-both-parts-together', when: 'the parts the child built do not make the whole',
-    hint: () => 'Count both parts together. They have to make the whole.',
-    matches: (i, e) => i.kind === 'decompose' && e.wrongNow && built(e) > 0 && built(e) !== i.whole },
-  { strategyId: 'move-a-counter-for-a-different-way', when: 'the child rebuilt a way they already found',
-    hint: () => 'You already found that way. Move a counter across to make a different way.',
-    matches: (i, e) => i.kind === 'decompose' && e.wrongNow && built(e) === i.whole
-      && e.waysFound.some(pair => samePair(pair, e.left, e.right)) },
-
-  // ten-and-ones: the ten has to be FULL, which is the structure the mode teaches.
-  { strategyId: 'fill-the-ten-all-the-way', when: 'the child split the whole without filling a ten',
-    hint: () => 'Neither part is a full ten yet. Fill one part all the way up before you stop.',
-    matches: (i, e) => i.kind === 'ten-and-ones' && e.wrongNow && built(e) === i.whole && e.left !== 10 && e.right !== 10 },
-
-  // The tile modes: the evidence is the sentence in the slots.
-  { strategyId: 'that-sentence-is-already-built', when: 'the child rebuilt a number sentence they already made',
-    hint: () => 'You already built that number sentence. Write the bond a different way.',
-    matches: (i, e) => i.kind === 'fact-family' && e.wrongNow && e.tiles.length > 0
-      && e.builtSentences.includes(e.tiles.join(' ')) },
-  { strategyId: 'a-sentence-needs-both-sides', when: 'the child left the number sentence unfinished',
-    hint: () => 'A number sentence needs something on each side of the equals sign.',
-    matches: (i, e) => ['fact-family', 'build-equation'].includes(i.kind) && e.wrongNow
-      && e.tiles.length > 0 && !e.tiles.includes('=') },
-];
-
-/** The mode's method reminder plus every aid whose evidence currently fits. */
-export function bondScaffoldsFor(item: NumberBondItem | null | undefined,
-  evidence: BondMisstepEvidence): BondScaffold[] {
-  return resolveScaffolds(item, evidence, item ? METHOD[item.kind] : undefined, AIDS);
-}

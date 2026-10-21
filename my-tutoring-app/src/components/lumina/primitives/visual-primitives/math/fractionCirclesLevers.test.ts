@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { FractionCirclesChallenge } from './FractionCircles';
 import {
   COUNT_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER, FRAME_LEVER,
-  doubleSplit, farPair, fewerPieces, fractionLevers, fractionMiss, leverFacts, leverTextLeaks, simplerItem, splitFactor, startLevers, unitBuild,
+  FRACTION_CIRCLES_LEVERS, doubleSplit, farPair, fewerPieces, fractionMiss, leverTextLeaks, simplerItem, splitFactor, startLevers, unitBuild,
+  type FractionCirclesItem,
 } from './fractionCirclesLevers';
-import { buildFractionTouchItems, touchLevers, touchMatches, touchMiss, twoPictureItem } from './fractionCirclesWorkspace';
+import { buildFractionTouchItems, touchMatches, touchMiss, twoPictureItem } from './fractionCirclesWorkspace';
+
+/** The lever set, as the component calls it. */
+const fractionLevers = (item: FractionCirclesItem, pulled: string[], band?: string) =>
+  FRACTION_CIRCLES_LEVERS.declare(item, { band }, pulled);
+const leverFacts = (item: FractionCirclesItem, pulled: string[]) => FRACTION_CIRCLES_LEVERS.onScreen(item, {}, pulled);
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 
 const BANDS = { 'K-2': [2, 3, 4], '3-5': [2, 3, 4, 5, 6, 8, 10, 12] } as const;
@@ -20,7 +26,7 @@ describe('help levers state no answer', () => {
     const levers = fractionLevers(ch, [], '3-5');
     expect(levers.length).toBeGreaterThan(0);
     for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
-    const facts = leverFacts(ch, levers.map(l => l.id)).join(' ');
+    const facts = leverFacts(ch, levers.map(l => l.id));
     expect(leverTextLeaks(facts)).toBe(false);
   });
   it('split_reference is offered only when each reference slice splits into a whole number', () => {
@@ -116,8 +122,8 @@ describe('touch_fraction two_pictures', () => {
       expect(same(easier.numerator, easier.denominator, n, d)).toBe(false);
       expect(easier.choices[0].denominator).not.toBe(easier.choices[1].denominator);
       expect(twoPictureItem(item)).toEqual(easier);
-      expect(touchLevers(item, []).map(l => l.id)).toEqual(['two_pictures']);
-      expect(touchLevers(easier, [])).toEqual([]);
+      expect(fractionLevers(item, []).map(l => l.id)).toEqual(['two_pictures']);
+      expect(fractionLevers(easier, [])).toEqual([]);
     }
   });
 });
@@ -153,7 +159,7 @@ describe('what a wrong Check shows, and the lever that answers it (code, not a L
         : picture.numerator === 1 ? 'same_shading_other_parts' : 'other_fraction';
       expect(touchMiss(item, picture.id)).toBe(expected);
     }
-    expect(nextLever(touchLevers(item, []), 'same_parts_other_shading')).toBe('two_pictures');
+    expect(nextLever(fractionLevers(item, []), 'same_parts_other_shading')).toBe('two_pictures');
   });
 
   const levers = (item: FractionCirclesChallenge, pulled: string[] = []) => fractionLevers(item, pulled, '3-5');

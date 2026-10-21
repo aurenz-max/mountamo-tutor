@@ -10,8 +10,12 @@
  * Code judges at "I'm done!": the count of squares, that they make one connected shape, and on the second shape that it
  * is not the first one moved, turned or flipped. Levers start bare (counting the squares IS the task) and come on a miss.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
+import {
+  BUILD_AREA_MISSES, BUILD_PERIMETER_MISSES, type BuildAreaMiss, type BuildPerimeterMiss,
+} from './polygonAreaBuilder.card';
+
+export { BUILD_AREA_MISSES, BUILD_PERIMETER_MISSES, type BuildAreaMiss, type BuildPerimeterMiss };
 
 export const BUILD_AREA = 'build_area';
 /** The empty grid the learner builds on. Every area the generator asks for fits many ways. */
@@ -88,15 +92,7 @@ export function shapeSize(cells: readonly Cell[]): string {
   return `${rows} row${rows === 1 ? '' : 's'} tall and ${cols} column${cols === 1 ? '' : 's'} wide`;
 }
 
-/**
- * What a build that does not pass shows, in precedence order: the count (`one_short`, `one_over`, `short_by_more`,
- * `over_by_more`), then `not_connected` (the squares make more than one piece), then on the second shape
- * `same_as_first` (the first shape again, moved, turned or flipped). Undefined when the build passes.
- */
-export type BuildAreaMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'not_connected' | 'same_as_first';
-export const BUILD_AREA_MISSES: readonly BuildAreaMiss[] =
-  ['one_short', 'one_over', 'short_by_more', 'over_by_more', 'not_connected', 'same_as_first'];
-
+/** What a build that does not pass shows (`BuildAreaMiss`, polygonAreaBuilder.card.ts). Undefined when it passes. */
 export function buildAreaMiss(area: number, cells: readonly Cell[], first: readonly Cell[] | null): BuildAreaMiss | undefined {
   const n = cells.length;
   if (n !== area) return n === area - 1 ? 'one_short' : n === area + 1 ? 'one_over' : n < area ? 'short_by_more' : 'over_by_more';
@@ -143,43 +139,6 @@ export function smallerArea(c: PolygonAreaChallenge): PolygonAreaChallenge | nul
     instruction: buildAreaAsk(half, 1) };
 }
 
-export function buildAreaLevers(c: PolygonAreaChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || !isBuildArea(c) || isPracticeBuild(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: BuildAreaMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const easier = smallerArea(c);
-  return [
-    lever(NUMBERS_LEVER, 'help', 'both', ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      'The learner shades one square too many or too few, or loses count of the squares in the shape.',
-      'Numbers each square the learner has shaded, 1, 2, 3..., in the order they shaded them, so they can count the '
-        + 'squares in their shape. It never shows the area asked for.'),
-    lever(PIECES_LEVER, 'help', 'shown', ['not_connected'],
-      "The learner's squares make more than one separate piece.",
-      "Tints each separate piece of the learner's squares a different colour, so they can see which squares do not touch "
-        + 'the rest along a side.'),
-    ...(c.shapesAsked === 2 ? [lever(TURNED_LEVER, 'help', 'shown', ['same_as_first'],
-      'The learner makes the first shape again, turned or flipped, and thinks it is a new shape.',
-      "Draws the learner's first shape beside the grid turned and flipped to line up with the shape on the grid when the "
-        + 'two are the same shape, so the learner can see they match.')] : []),
-    ...(easier || pulled.includes(SMALLER_LEVER) ? [lever(SMALLER_LEVER, 'simplify', 'shown',
-      ['short_by_more', 'over_by_more', 'not_connected'],
-      'The learner cannot keep track of this many squares yet.',
-      `Opens an easier shape to make first, with an area of ${easier?.targetArea ?? 'fewer'} squares, on an empty grid. `
-        + 'It is not graded; the full item comes back after it.')] : []),
-  ];
-}
-
-/** What each pulled lever put on screen, in terms of what is drawn. */
-export function buildLeverFacts(c: PolygonAreaChallenge, pulled: readonly string[]): string {
-  const said: string[] = [];
-  if (pulled.includes(NUMBERS_LEVER)) said.push("each shaded square carries a number, in the order the learner shaded it");
-  if (pulled.includes(PIECES_LEVER)) said.push('each separate piece of shaded squares is tinted its own colour');
-  if (c.shapesAsked === 2 && pulled.includes(TURNED_LEVER)) {
-    said.push("the learner's first shape is drawn beside the grid, turned to line up with the grid's shape when they match");
-  }
-  return said.length ? `On the grid: ${said.join('; ')}.` : '';
-}
-
 /** The build's scene facts: the made quantities as NUMBERS (the shared work history reads them), never the target beside them. */
 export function buildAreaFacts(c: PolygonAreaChallenge, cells: readonly Cell[], first: readonly Cell[] | null,
   practice: boolean): Record<string, string | number> {
@@ -195,12 +154,13 @@ export function buildAreaFacts(c: PolygonAreaChallenge, cells: readonly Cell[], 
     if (first) facts.firstShape = `checked right and drawn beside the grid: ${shapeSize(first)}`;
   }
   if (practice) facts.practice = 'An easier shape to make is on screen in place of the item. It is not graded; the full item comes back after it.';
-  facts.constraints = first
-    ? "The first shape was checked right. The learner changes the squares on the grid into a different shape with the same "
-      + "area, then presses I'm done. The grid checks the count, that the squares make one shape, and that it is not the "
-      + 'first shape moved, turned or flipped.'
-    : "The learner taps squares on an empty grid to shade them (tap again to clear one) and presses I'm done. The grid "
-      + 'checks the count and that the squares make one shape joined along sides. The grid prints no count.';
+  // Counting the squares is the skill, so the count is never said; the first shape again, turned, is not different.
+  facts.constraints = (first
+    ? 'The first shape was checked right; now the learner changes the squares into a different shape with the same area. '
+      + 'The grid checks the count, that the squares make one shape, and that it is not the first shape moved, turned or '
+      + 'flipped. '
+    : 'The grid checks the count and that the squares make one shape joined along sides. ')
+    + 'It prints no count: counting the squares is the skill, so never say how many are shaded or how many more are needed.';
   return facts;
 }
 
@@ -264,17 +224,12 @@ export function buildPerimeterAsk(perimeter: number, shapes: 1 | 2): string {
 }
 
 /**
- * What a perimeter build that does not pass shows, in precedence order: `not_connected` (more than one piece: a
- * perimeter goes around ONE shape), `has_hole` (its perimeter would include the sides around the hole), then on the
- * right perimeter `same_as_first` (the first shape again, moved, turned or flipped); on a wrong perimeter
- * `counted_squares` when the squares number the target (the area made instead of the perimeter), else the count
- * misses (`two_short`, `two_over`: one step, since a shape of squares always has an even perimeter; `short_by_more`,
- * `over_by_more`). Undefined when the build passes.
+ * What a perimeter build that does not pass shows (`BuildPerimeterMiss`, polygonAreaBuilder.card.ts), in precedence
+ * order: `not_connected` (a perimeter goes around ONE shape), `has_hole` (its perimeter would include the sides around
+ * the hole), then on the right perimeter `same_as_first`; on a wrong perimeter `counted_squares` when the squares
+ * number the target, else the count misses (`two_short`, `two_over`: one step, since a shape of squares always has an
+ * even perimeter; `short_by_more`, `over_by_more`). Undefined when the build passes.
  */
-export type BuildPerimeterMiss = 'two_short' | 'two_over' | 'short_by_more' | 'over_by_more' | 'counted_squares'
-  | 'not_connected' | 'has_hole' | 'same_as_first';
-export const BUILD_PERIMETER_MISSES: readonly BuildPerimeterMiss[] =
-  ['two_short', 'two_over', 'short_by_more', 'over_by_more', 'counted_squares', 'not_connected', 'has_hole', 'same_as_first'];
 
 export function buildPerimeterMiss(target: number, cells: readonly Cell[], first: readonly Cell[] | null): BuildPerimeterMiss | undefined {
   if (connectedParts(cells).length > 1) return 'not_connected';
@@ -329,44 +284,6 @@ export function smallerPerimeter(c: PolygonAreaChallenge): PolygonAreaChallenge 
     instruction: buildPerimeterAsk(half, 1) };
 }
 
-export function buildPerimeterLevers(c: PolygonAreaChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || !isBuildPerimeter(c) || isPracticeBuild(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: BuildPerimeterMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const easier = smallerPerimeter(c);
-  return [
-    lever(EDGES_LEVER, 'help', 'shown', ['two_short', 'two_over', 'short_by_more', 'over_by_more', 'counted_squares', 'has_hole'],
-      'The learner counts the squares instead of the sides around them, skips or double-counts a side at a corner, or '
-        + 'misses the sides around a hole.',
-      'Puts a dot on every side of a shaded square that is on the edge of the shape, the sides around a hole included, '
-        + 'so the learner can count the sides that make the perimeter. No numbers; it never shows the perimeter asked for.'),
-    lever(PIECES_LEVER, 'help', 'shown', ['not_connected'],
-      "The learner's squares make more than one separate piece.",
-      "Tints each separate piece of the learner's squares a different colour, so they can see which squares do not touch "
-        + 'the rest along a side.'),
-    ...(c.shapesAsked === 2 ? [lever(TURNED_LEVER, 'help', 'shown', ['same_as_first'],
-      'The learner makes the first shape again, turned or flipped, and thinks it is a new shape.',
-      "Draws the learner's first shape beside the grid turned and flipped to line up with the shape on the grid when the "
-        + 'two are the same shape, so the learner can see they match.')] : []),
-    ...(easier || pulled.includes(SMALLER_PERIMETER_LEVER) ? [lever(SMALLER_PERIMETER_LEVER, 'simplify', 'shown',
-      ['short_by_more', 'over_by_more', 'counted_squares'],
-      'The learner cannot keep track of this many sides around a shape yet.',
-      `Opens an easier shape to make first, with a perimeter of ${easier?.targetPerimeter ?? 'fewer'} units, on an empty `
-        + 'grid. It is not graded; the full item comes back after it.')] : []),
-  ];
-}
-
-/** What each pulled perimeter lever put on screen, in terms of what is drawn. */
-export function buildPerimeterLeverFacts(c: PolygonAreaChallenge, pulled: readonly string[]): string {
-  const said: string[] = [];
-  if (pulled.includes(EDGES_LEVER)) said.push('a dot sits on every side of a shaded square on the edge of the shape');
-  if (pulled.includes(PIECES_LEVER)) said.push('each separate piece of shaded squares is tinted its own colour');
-  if (c.shapesAsked === 2 && pulled.includes(TURNED_LEVER)) {
-    said.push("the learner's first shape is drawn beside the grid, turned to line up with the grid's shape when they match");
-  }
-  return said.length ? `On the grid: ${said.join('; ')}.` : '';
-}
-
 /** The perimeter build's scene facts: the made perimeter as a NUMBER (the shared work history reads it), never the target. */
 export function buildPerimeterFacts(c: PolygonAreaChallenge, cells: readonly Cell[], first: readonly Cell[] | null,
   practice: boolean): Record<string, string | number> {
@@ -384,12 +301,12 @@ export function buildPerimeterFacts(c: PolygonAreaChallenge, cells: readonly Cel
     if (first) facts.firstShape = `checked right and drawn beside the grid: ${shapeSize(first)}`;
   }
   if (practice) facts.practice = 'An easier shape to make is on screen in place of the item. It is not graded; the full item comes back after it.';
-  facts.constraints = first
-    ? "The first shape was checked right. The learner changes the squares on the grid into a different shape with the same "
-      + "perimeter, then presses I'm done. The grid checks the sides around the outside, that the squares make one shape "
-      + 'with no hole, and that it is not the first shape moved, turned or flipped.'
-    : "The learner taps squares on an empty grid to shade them (tap again to clear one) and presses I'm done. The grid "
-      + 'counts the unit sides around the outside of the shape and checks the squares make one shape with no hole. '
-      + 'The grid prints no count.';
+  facts.constraints = (first
+    ? 'The first shape was checked right; now the learner changes the squares into a different shape with the same '
+      + 'perimeter. The grid checks the sides around the outside, that the squares make one shape with no hole, and that '
+      + 'it is not the first shape moved, turned or flipped. '
+    : 'The grid counts the unit sides around the outside of the shape and checks the squares make one shape with no '
+      + 'hole. ')
+    + 'It prints no count: never say how many sides go around the shape or how many squares it has.';
   return facts;
 }

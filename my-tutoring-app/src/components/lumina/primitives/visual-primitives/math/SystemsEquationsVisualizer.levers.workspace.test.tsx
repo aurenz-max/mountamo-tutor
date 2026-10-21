@@ -54,10 +54,13 @@ const mount = (c: SystemsEquationsChallenge) => {
 
 it('graph: the axis guide draws in the same commit; the next attempt records it; a repeat pull changes nothing', () => {
   const h = mount(graph);
-  expect(levers(h)).toEqual([['axis_guide', false], ['every_line', false], ['check_both', false], ['method_steps', false],
+  expect(levers(h)).toEqual([['axis_guide', false], ['every_line', false], ['method_steps', false],
     ['worked_example', false], ['simpler_item', false]]);
   enter(h, { x: 3, y: 1 });
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'swapped' });
+  // A checked pair puts check_both on offer, after the mode's own lever.
+  expect(levers(h).map(([id]) => id)).toEqual(['axis_guide', 'every_line', 'check_both', 'method_steps', 'worked_example',
+    'simpler_item']);
   expect(nextLever(h.state().task!.workspace!.levers!, 'swapped')).toBe('axis_guide');
   const receipt = h.dispatch('pull_lever', { lever: 'axis_guide' });
   expect(receipt.status).toBe('committed');
@@ -71,7 +74,7 @@ it('graph: the axis guide draws in the same commit; the next attempt records it;
   expect(attempts(h).at(-1)).toMatchObject({ itemId: 'g1', correct: true, levers: ['axis_guide'] });
 });
 
-it('check_both with no checked pair yet is refused and changes nothing; after a miss it marks each equation', () => {
+it('check_both is not offered before a checked pair (a pull is refused and changes nothing); after a miss it marks each equation', () => {
   const h = mount(substitution);
   const before = snapshot(h);
   expect(h.dispatch('pull_lever', { lever: 'check_both' }).status).toBe('blocked');

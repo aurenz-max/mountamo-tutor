@@ -9,7 +9,6 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaButton,
-  LuminaPrompt,
   LuminaFeedbackCard,
   LuminaChallengeCounter,
   LuminaAnswerChoice,
@@ -19,25 +18,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TransformationLabMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CANVAS_H, CANVAS_W, GRID_MAX, GRID_MIN, GRID_TARGET, canvasToGrid, SEQUENCE_PALETTE, applyOp, describeTransformWork, gridToCanvas,
-  transformCorrect, transformMiss, workspaceAssignment, workspaceScene, type TransformWork,
+  transformCorrect, transformMiss, workspaceScene, type TransformWork,
 } from './transformationLabWorkspace';
 import {
   CORNER_LETTERS_LEVER, LETTERS, MODEL_FLAG, MODEL_POINT_LEVER, MOTION_MODELS_LEVER, ORIGIN_RAYS_LEVER, PRE_COORDS_LEVER,
-  RULE_CARD_LEVER, TARGET_COORDS_LEVER, isPracticeTransform, leverFacts, modelPoint, motionModels, ruleFor, simplerItem,
-  transformLevers,
+  RULE_CARD_LEVER, TARGET_COORDS_LEVER, TRANSFORM_LEVERS, isPracticeTransform, leverContext, modelPoint, motionModels, ruleFor,
 } from './transformationLabLevers';
+import { transformationLabBoss } from './transformationLab.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -164,37 +162,6 @@ const COL_MODEL = '#34d399';      // green — the model point a lever draws out
 
 const worldToScreen = gridToCanvas;
 
-/**
- * Tier-aware tutor reveal clause. The support tier withholds on-screen guides
- * (rule notation, pre-image coords); the tutor must not hand them back at a
- * harder tier. Hard: never name the rule or where vertices map; ask what the
- * transformation DOES; never reveal image coordinates. (Identify always hides
- * the rule — the relationship IS the answer — independent of tier.)
- */
-function tutorRevealClause(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  isIdentify: boolean,
-): string {
-  if (isIdentify) {
-    return ' [REVEAL: This is a recognition task — the transformation name IS the answer. '
-      + 'Never name it; have the student follow one corner and describe the motion they see.]';
-  }
-  if (tier === 'hard') {
-    return ' [REVEAL=hard: The rule notation and coordinate labels are HIDDEN this tier. '
-      + 'Do NOT state the coordinate rule, do NOT say where any vertex maps, and never reveal image coordinates. '
-      + 'Ask what the transformation DOES to the figure and let the student derive the rule.]';
-  }
-  if (tier === 'medium') {
-    return ' [REVEAL=medium: The rule notation is on screen but coordinate labels are hidden. '
-      + 'Nudge execution — point to the rule; do not compute the image coordinates for them.]';
-  }
-  if (tier === 'easy') {
-    return ' [REVEAL=easy: The rule notation and pre-image coordinates are on screen. '
-      + 'You may name the rule and walk one vertex through it, then let the student finish the rest.]';
-  }
-  return ''; // no tier active — default coaching
-}
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -208,8 +175,10 @@ interface TransformationLabProps {
   runtimeEvalMode?: string;
 }
 
-const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TransformationLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TransformationLabChallenge>) => Progress }) => {
+const useTransformProgress = useWorkspaceProgressFor('transformation-lab');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const TransformationLabSurface = ({ data, className, runtimePlanItemId }: TransformationLabProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -228,16 +197,16 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression. On the workspace path the runtime moves the index.
+  // Multi-challenge progression: the teaching workspace moves the index.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useTransformProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: transformationLabBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -247,10 +216,9 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -268,7 +236,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   /** The rule card on screen: the tier's, or the `rule_card` lever's on the session item. */
   const ruleOnScreen = currentChallenge?.ruleNotation
     ?? (leverOn(RULE_CARD_LEVER) && sessionChallenge ? ruleFor(sessionChallenge) : null);
-  const challengeType = currentChallenge?.type ?? 'apply_translation_reflection';
 
   // -------------------------------------------------------------------------
   // Per-challenge UI state
@@ -279,13 +246,10 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [showHint, setShowHint] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);
 
   // Refs
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
   const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragIndexRef = useRef<number | null>(null);
@@ -297,13 +261,11 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     setSelectedOption(null);
     setFeedback('');
     setFeedbackType('');
-    setShowHint(false);
     recordedRef.current = false;
-    hintViewedRef.current = false;
     dragIndexRef.current = null;
   };
-  // Workspace path: a fresh item and Try again both open blank (the scripted path resets in the effect below). Try again
-  // on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+  // A fresh item and Try again both open blank. Try again on a practice item keeps it; a fresh item (or the full item back
+  // after practice) drops it.
   openItem.current = (index, retry) => {
     if (retry) resetWork(practice ?? challenges[index] ?? null);
     else { setPractice(null); resetWork(challenges[index] ?? null); }
@@ -660,52 +622,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring (scripted path). Its context carries the transformation's name, so the workspace path reads the
-  // scene instead: the legacy hook is disabled there and its sendText muted.
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    answerKind: currentChallenge?.answerKind ?? 'drag',
-    transformLabel: currentChallenge?.transformLabel ?? null,
-    isSimilarity: currentChallenge?.isSimilarity ?? false,
-    scaleFactor: currentChallenge?.scaleFactor ?? null,
-    supportTier: currentChallenge?.supportTier ?? null,
-    gradeBand,
-    attemptNumber: currentAttempts + 1,
-  }), [
-    challengeType,
-    currentChallenge,
-    currentChallengeIndex,
-    challenges.length,
-    gradeBand,
-    currentAttempts,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'transformation-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: `Grade ${gradeBand}`,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Transformation session: ${challenges.length} problems, mode "${challengeType}", grade ${gradeBand}. `
-      + `Introduce briefly: a transformation moves a shape on the coordinate plane. Rigid motions (translations, reflections, rotations) keep size and shape — the image is congruent. A dilation scales the shape — the image is similar. Then read the first task.`,
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
-
-  // -------------------------------------------------------------------------
   // Record / check
   // -------------------------------------------------------------------------
   /** This primitive's own score on a correct check (the commit already counted the attempt and the verdict). */
@@ -735,10 +651,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
       SoundManager.playCorrect();
       if (ch.answerKind === 'identify') {
         setFeedback(`Correct — this is a ${ch.transformLabel.toLowerCase()}.`);
-        sendText(
-          `[ANSWER_CORRECT] Student identified the transformation as "${ch.options?.[selectedOption ?? 0]}" (correct). Celebrate briefly and restate what stays invariant.`,
-          { silent: true },
-        );
       } else {
         const tail =
           ch.answerKind === 'sequence'
@@ -747,11 +659,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
             ? ' The image is similar to the original — same shape, scaled size.'
             : ' The image is congruent to the original.';
         setFeedback(`Correct — that's the right image.${tail}`);
-        sendText(
-          `[ANSWER_CORRECT] Student produced the correct image for a ${challengeType} task (${ch.transformLabel}). `
-          + `Celebrate briefly and reinforce ${ch.isSimilarity ? 'why it is similar (not congruent)' : 'why size and shape were preserved'}.`,
-          { silent: true },
-        );
       }
       setFeedbackType('success');
       progress.commitCheck(response, true);
@@ -762,94 +669,18 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     SoundManager.playIncorrect();
     if (ch.answerKind === 'identify') {
       setFeedback('Not quite. Track ONE vertex from the pre-image to the image — did it slide, flip, turn, or scale?');
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${ch.options?.[selectedOption ?? 0]}" but the transformation is "${ch.transformLabel}". `
-        + `Attempt ${attempts}. Tell them to follow one corner and notice what changed — do NOT name the answer.`
-        + tutorRevealClause(ch.supportTier, true),
-        { silent: true },
-      );
-      // The scripted path clears the choice at once; the workspace path clears it on Try again.
-      if (!tutorOwned) setSelectedOption(null);
     } else {
       setFeedback(
         ch.answerKind === 'sequence'
           ? 'Not there yet. Compare each working corner to the ghost target and pick the next transformation.'
           : 'Not quite. Apply the rule to each vertex and drag it to the matching grid point.',
       );
-      sendText(
-        `[ANSWER_INCORRECT] Student's image does not match the target for ${challengeType} (${ch.transformLabel}). `
-        + `Attempt ${attempts}. Coach the coordinate rule for ONE vertex — do NOT give all the answer coordinates.`
-        + tutorRevealClause(ch.supportTier, false),
-        { silent: true },
-      );
     }
     setFeedbackType('error');
     progress.commitCheck(response, false, transformMiss(ch, work));
   };
 
-  const handleShowHint = useCallback(() => {
-    if (showHint) return;
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      hintsViewedRef.current += 1;
-    }
-  }, [showHint]);
-
-  const advanceChallenge = useCallback(() => {
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      const next = challenges[nextIdx];
-      sendText(
-        `[NEXT_ITEM] Problem ${nextIdx + 1} of ${challenges.length} (${next?.type}). `
-        + `Introduce briefly: "Here's the next one — a new figure to transform."`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Session complete (scripted path) — build metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    // The workspace path submits the scored session from `onFinished` (below), not this tally.
-    if (tutorOwned) return;
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: TransformationLabMetrics = {
-      type: 'transformation-lab',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'apply_translation_reflection') as TransformationLabMetrics['challengeType'],
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    submitEvaluation(correctCount === total, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} transformation problems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, transformation-focused summary (congruence vs similarity).`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, tutorOwned]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0 || submittedRef.current) return;
@@ -861,7 +692,7 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
       correctCount: result.solvedCount,
       attemptsCount: result.attemptsCount,
       firstTryCount: result.firstTryCount,
-      hintsViewed: hintsViewedRef.current,
+      hintsViewed: 0,
       overallAccuracy: result.accuracy,
       averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
     };
@@ -888,22 +719,23 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
     );
   }, [allChallengesComplete, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, {
       image: workingImage, steps: sequenceSteps, selected: selectedOption,
       preCoordsShown: currentChallenge.showPreImageCoords !== false || leverOn(PRE_COORDS_LEVER),
       rule: ruleOnScreen,
     });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : transformLevers(sessionChallenge, pulledLevers, {
-      preCoordsShown: sessionChallenge.showPreImageCoords !== false, ruleShown: !!sessionChallenge.ruleNotation });
+    const ctx = leverContext(sessionChallenge);
+    const levers = practice ? [] : TRANSFORM_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : TRANSFORM_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : TRANSFORM_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -911,10 +743,10 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge);
+          const easier = TRANSFORM_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: transformationLabBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -926,18 +758,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The coordinate grid and answer panel',
-    solved: isCurrentComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -973,7 +793,10 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
           {currentChallenge.narration && (
             <p className="text-slate-300 text-sm italic">{currentChallenge.narration}</p>
           )}
-          <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+          <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+          </div>
           {/* Rule-notation guide (perception/instruction scaffold; withdrawn at hard,
               never present for identify where the rule names the answer). */}
           {ruleOnScreen && (
@@ -1001,9 +824,10 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
           })}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the grid and the answer panel as
+            one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Canvas — bespoke interaction surface. */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
@@ -1147,7 +971,7 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
           </>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && feedbackType === 'success' && (
@@ -1158,34 +982,6 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
         )}
         {feedback && feedbackType === 'info' && (
           <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
-        )}
-
-        {/* Hint (scripted path). The generated hint states the coordinate rule; with the tutor, help is the tutor's. */}
-        {!tutorOwned && showHint && (
-          <LuminaPrompt accent="amber">
-            <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-            {currentChallenge.hint}
-          </LuminaPrompt>
-        )}
-
-        {/* Controls. On the workspace path the shell's Try again / Next challenge replace Next. */}
-        {!tutorOwned && (
-          <div className="flex justify-center gap-2 flex-wrap">
-            {isCurrentComplete && !allChallengesComplete && (
-              <LuminaButton
-                tone="primary"
-                className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                onClick={advanceChallenge}
-              >
-                Next Problem →
-              </LuminaButton>
-            )}
-            {!isCurrentComplete && !allChallengesComplete && (
-              <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
-                {showHint ? 'Hint shown' : 'Show hint'}
-              </LuminaButton>
-            )}
-          </div>
         )}
 
         {/* Phase summary */}
@@ -1204,8 +1000,7 @@ const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwn
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TransformationLab = withWorkspaceController<TransformationLabProps, ProgressOptions<TransformationLabChallenge>, Progress>(
-  'transformation-lab', TransformationLabSurface, useScriptedProgress, useWorkspaceProgressFor('transformation-lab'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const TransformationLab = withWorkspaceOnly<TransformationLabProps>('transformation-lab', TransformationLabSurface, props => props.data.title);
 
 export default TransformationLab;

@@ -1094,6 +1094,8 @@ Return the complete ten frame configuration.
   // reflects the settled frame mode — the on-screen prompt can never contradict the frame.
   for (const ch of data.challenges as TenFrameChallenge[]) {
     ch.instruction = buildInstruction(ch, data.mode);
+    // The tier on each item: when a model lever comes (`TEN_FRAME_LEVERS.support`); absent, the lever set reads medium.
+    if (supportTier) ch.supportTier = supportTier;
   }
 
   return data;

@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import {
-  DIVISIBILITY_RULES, PARTNER_LEVER, PRODUCT_LEVER, RULES_LEVER, SMALLER_LEVER, factorTreeLevers, frameLeaks, leverFacts,
-  leverTextLeaks, partnerFrame, practiceLeaks, productReadout, readoutLeaks, smallerTree,
+  DIVISIBILITY_RULES, FACTOR_LEVERS, PARTNER_LEVER, PRODUCT_LEVER, RULES_LEVER, SMALLER_LEVER, frameLeaks, leverTextLeaks,
+  partnerFrame, practiceLeaks, productReadout, pulledWith, readoutLeaks, smallerTree,
 } from './factorTreeLevers';
+import type { FactorTreeChallenge } from './FactorTree';
 import { FACTOR_TREE_MISSES_BY_MODE, factorMiss, factorPairs, isPrime, primeFactors } from './factorTreeWorkspace';
 
 /** The generator's pools (`gemini-factor-tree.ts` CANDIDATE_POOLS). */
@@ -22,6 +23,11 @@ const POOLS: Record<string, number[]> = {
 };
 const MODES = Object.keys(POOLS);
 const item = (rootValue: number) => ({ id: `ft-${rootValue}`, rootValue });
+/** The levers a mount declares: the set's, with the tier's rules panel declared pulled (`pulledWith`). */
+const factorTreeLevers = (c: FactorTreeChallenge | null, pulled: readonly string[], ctx: { rulesShown: boolean }) =>
+  FACTOR_LEVERS.declare(c, ctx, pulledWith(pulled, ctx));
+const leverFacts = (c: FactorTreeChallenge, pulled: readonly string[], ctx: { rulesShown: boolean }) =>
+  FACTOR_LEVERS.onScreen(c, ctx, pulledWith(pulled, ctx));
 
 describe('simplify builder', () => {
   it.each(MODES)('%s: a nearby composite with one prime factor fewer, its own id, never a factor or multiple, deterministic', mode => {
@@ -82,6 +88,7 @@ describe('declarations', () => {
     for (const n of POOLS[mode]) for (const rulesShown of [false, true]) {
       const levers = factorTreeLevers(item(n), [], { rulesShown });
       const help = levers.filter(l => l.kind === 'help');
+      expect(FACTOR_LEVERS.support(item(n), { rulesShown })).toBe('');
       for (const miss of misses) expect(help.some(l => l.answers?.includes(miss)), `${n} ${miss}`).toBe(true);
       for (const l of levers) expect(leverTextLeaks(`${l.when} ${l.does}`), l.id).toBe(false);
       expect(leverTextLeaks(leverFacts(item(n), levers.map(l => l.id), { rulesShown }))).toBe(false);

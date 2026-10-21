@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -20,15 +19,17 @@ import type { StrategyPickerMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   BOTH_SAME, CHECK_LABEL, STEP_DOWN, STEP_UP, describeStrategyPickerCheck, menuLabel, optionLabel, strategyLabel,
-  strategyPickerAssignment, strategyPickerMatches, strategyPickerMiss, strategyPickerScene, type StrategyPickerView,
+  strategyPickerMatches, strategyPickerMiss, strategyPickerScene, type StrategyPickerView,
 } from './strategyPickerWorkspace';
 import {
-  PARTS_LEVER, PICTURES_LEVER, PRACTICE_NOTE, exampleProblem, optionPictures, partsFact, picturesFact, practiceItem,
-  strategyPickerLevers,
+  PARTS_LEVER, PICTURES_LEVER, PRACTICE_NOTE, STRATEGY_PICKER_LEVERS, exampleProblem, leversStartOn,
+  type StrategyPickerLeverCtx,
 } from './strategyPickerLevers';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { strategyPickerBoss } from './strategyPicker.boss';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -567,7 +568,6 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
     onEvaluationSubmit,
   } = data;
 
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceIdRef = useRef(instanceId || `strategy-picker-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -581,7 +581,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: strategyPickerAssignment,
+    workspace, assignment: strategyPickerBoss.assignment!,
     onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
@@ -765,35 +765,37 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
 
   // What the tutor and the observer are shown, republished every render. Derived from the challenge and
   // the menu choice alone, so opening an item adds no revision after the advance.
-  // The session item's levers; a help picture is drawn on the session item only while it is pulled (or from the start
-  // on easy), never on a practice item.
-  const itemLevers = sessionChallenge ? strategyPickerLevers(sessionChallenge, data, pulledLevers) : [];
-  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  // The session item's levers (`STRATEGY_PICKER_LEVERS`); a help picture is drawn on the session item only while it is
+  // pulled (or from the start on easy, which is not a pull), never on a practice item.
+  const leverCtx: StrategyPickerLeverCtx = { data, chosen: chosenStrategy };
+  const shownLevers = sessionChallenge
+    ? Array.from(new Set([...leversStartOn(sessionChallenge, data), ...pulledLevers])) : [];
+  const helpOn = (id: string) => !practice && shownLevers.includes(id);
   const partsOn = helpOn(PARTS_LEVER);
   const picturesOn = helpOn(PICTURES_LEVER);
-  const drawnStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
 
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
     const scene = strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced);
-    const levers = practice ? [] : itemLevers;
-    const onScreen = partsOn && drawnStrategy ? partsFact(drawnStrategy, currentChallenge.problem)
-      : picturesOn ? picturesFact(optionPictures(currentChallenge)) : undefined;
+    const levers = practice ? [] : STRATEGY_PICKER_LEVERS.declare(sessionChallenge, leverCtx, shownLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : STRATEGY_PICKER_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : STRATEGY_PICKER_LEVERS.onScreen(sessionChallenge, leverCtx, shownLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already on screen.`;
-        if (id === PARTS_LEVER && !drawnStrategy) return 'Nothing is drawn yet: the learner picks a strategy from the menu first.';
         const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, data);
+          const easier = STRATEGY_PICKER_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This problem is already the smallest of its kind.';
           setLeverState(next); setPractice(easier); reopen.current(true);
-          return { practice: strategyPickerAssignment(easier) };
+          return { practice: strategyPickerBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
@@ -813,18 +815,6 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
 
   const activeStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
   const blocked = learnerBlocked();
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this challenge's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The strategy workspace',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -877,13 +867,13 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
           </div>
         )}
 
-        {/* Pip's dock sits above the problem, strategy picture and answer
-            controls, which it outlines together as the workspace. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the problem, strategy picture
+            and answer controls as one region. */}
+        {!allChallengesComplete && <PipDock />}
 
         {/* Problem Display */}
         {currentChallenge && !allChallengesComplete && (
-          <div {...pip.workspace} className="space-y-4">
+          <PipWorkspace className="space-y-4">
             {/* Equation */}
             <div className="text-center">
               <span className="text-3xl font-bold text-white tracking-wider">
@@ -896,7 +886,11 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
               <p className="text-slate-200 text-sm font-medium text-center">
                 {currentChallenge.instruction}
               </p>
-              {practice && <p className="text-amber-300 text-xs text-center mt-1" data-practice>Practice problem</p>}
+              {practice && (
+                <div className="flex justify-center mt-1" data-practice>
+                  <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>
+                </div>
+              )}
             </LuminaPanel>
 
             {/* Support tier (easy): feature hint — names what to NOTICE about the
@@ -1119,7 +1113,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
                 </div>
               </div>
             )}
-          </div>
+          </PipWorkspace>
         )}
 
         {/* Feedback */}

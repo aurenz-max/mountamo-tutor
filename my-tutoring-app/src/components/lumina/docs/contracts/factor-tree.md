@@ -1,7 +1,7 @@
 # Contract: factor-tree
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C15) for the workspace and lever requirements only. A full `/primitive-contract factor-tree` derivation (consumers per number-theory skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/FactorTree.tsx` · **Workspace:** `factorTreeWorkspace.ts` · **Levers:** `factorTreeLevers.ts` · **Generator:** `service/math/gemini-factor-tree.ts` · **Oracle:** `service/qa/oracles/factor-tree.ts` · **Adapter:** `components/live-activity/adapters/factorTreeLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`factor-tree`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/FactorTree.tsx` · **Workspace:** `factorTreeWorkspace.ts` · **Levers:** `factorTreeLevers.ts` · **Generator:** `service/math/gemini-factor-tree.ts` · **Oracle:** `service/qa/oracles/factor-tree.ts` · **Boss:** `primitives/visual-primitives/math/factorTree.card.ts` + `factorTree.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`factor-tree`)
 
 ## Requirements
 
@@ -22,3 +22,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C15).
+- 2026-10-20 — moved onto a boss (wave 3): card `factorTree.card.ts` (misses moved in; guided modes `tap`, the rest `type`, per-mode affordances say `type`), boss `factorTree.boss.ts` (validate from the deleted `factorTreeLive.ts`, journey play and replay keys), levers as one lever set `FACTOR_LEVERS` (legend, layout, custom, easier); component workspace-only, Pip from the runner, scripted cues and tier reveal clauses deleted.

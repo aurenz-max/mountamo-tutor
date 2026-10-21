@@ -1,72 +1,66 @@
 import { missLists, sameMisses } from './missLists';
 import { bossEntry } from '../../../components/live-activity/boss';
-import type { ArrayMiss } from '../../../primitives/visual-primitives/math/arrayGridWorkspace';
-import type { AddSubMiss, SpokenAddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
+import { arrayGridCard } from '../../../primitives/visual-primitives/math/arrayGrid.card';
+import { additionSubtractionSceneCard } from '../../../primitives/visual-primitives/math/additionSubtractionScene.card';
 import { barModelCard } from '../../../primitives/visual-primitives/math/barModel.card';
-import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/math/balanceScaleWorkspace';
-import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
+import { balanceScaleCard } from '../../../primitives/visual-primitives/math/balanceScale.card';
 import { coinCounterCard } from '../../../primitives/visual-primitives/math/coinCounter.card';
-import { REGROUP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
-import { PERCENT_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/percentBarWorkspace';
-import { TRANSFORM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/transformationLabWorkspace';
-import { NET_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/netFolderWorkspace';
-import { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from '../../../primitives/visual-primitives/math/formulaLabWorkspace';
-import { PARAMETER_MISSES_BY_MODE, type ParameterExplorerMiss } from '../../../primitives/visual-primitives/math/parameterExplorerWorkspace';
-import { RATIO_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/ratioTableWorkspace';
-import { MATRIX_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/matrixDisplayWorkspace';
-import { HISTOGRAM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/histogramWorkspace';
-import { TWO_WAY_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/twoWayTableWorkspace';
-import { COORDINATE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/coordinateGraphWorkspace';
-import { SYSTEMS_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/systemsEquationsWorkspace';
-import { SLOPE_TRIANGLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/slopeTriangleWorkspace';
-import { FUNCTION_SKETCH_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/functionSketchWorkspace';
-import { CIRCLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/circleExplorerWorkspace';
-import { DISTRIBUTION_MISSES_BY_MODE } from '../../../primitives/distribution-explorer/distributionExplorerWorkspace';
-import { RATIO_LINE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
-import { FACTOR_TREE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/factorTreeWorkspace';
-import { EQUATION_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/equationWorkspaceDomain';
-import { PRACTICE_MISSES, type PracticeMiss } from '../../../primitives/visual-primitives/math/practiceProblemWorkspace';
-import type { MeasureMiss } from '../../../primitives/visual-primitives/math/measureLabWorkspace';
-import type { MeasurementMiss } from '../../../primitives/visual-primitives/math/measurementToolsWorkspace';
-import type { AreaModelMiss } from '../../../primitives/visual-primitives/math/areaModelWorkspace';
-import type { MultiplicationMiss } from '../../../primitives/visual-primitives/math/multiplicationExplorerWorkspace';
+import { regroupingWorkbenchCard } from '../../../primitives/visual-primitives/math/regroupingWorkbench.card';
+import { percentBarCard } from '../../../primitives/visual-primitives/math/percentBar.card';
+import { transformationLabCard } from '../../../primitives/visual-primitives/math/transformationLab.card';
+import { netFolderCard } from '../../../primitives/visual-primitives/math/netFolder.card';
+import { formulaLabCard } from '../../../primitives/visual-primitives/math/formulaLab.card';
+import { parameterExplorerCard } from '../../../primitives/visual-primitives/math/parameterExplorer.card';
+import { ratioTableCard } from '../../../primitives/visual-primitives/math/ratioTable.card';
+import { matrixDisplayCard } from '../../../primitives/visual-primitives/math/matrixDisplay.card';
+import { histogramCard } from '../../../primitives/visual-primitives/math/histogram.card';
+import { twoWayTableCard } from '../../../primitives/visual-primitives/math/twoWayTable.card';
+import { baseTenBlocksCard } from '../../../primitives/visual-primitives/math/baseTenBlocks.card';
+import { fractionCirclesCard } from '../../../primitives/visual-primitives/math/fractionCircles.card';
+import { fractionBarCard } from '../../../primitives/visual-primitives/math/fractionBar.card';
+import { coordinateGraphCard } from '../../../primitives/visual-primitives/math/coordinateGraph.card';
+import { systemsEquationsCard } from '../../../primitives/visual-primitives/math/systemsEquations.card';
+import { slopeTriangleCard } from '../../../primitives/visual-primitives/math/slopeTriangle.card';
+import { functionSketchCard } from '../../../primitives/visual-primitives/math/functionSketch.card';
+import { circleExplorerCard } from '../../../primitives/visual-primitives/math/circleExplorer.card';
+import { distributionExplorerCard } from '../../../primitives/distribution-explorer/distributionExplorer.card';
+import { doubleNumberLineCard } from '../../../primitives/visual-primitives/math/doubleNumberLine.card';
+import { factorTreeCard } from '../../../primitives/visual-primitives/math/factorTree.card';
+import { equationWorkspaceCard } from '../../../primitives/visual-primitives/math/equationWorkspace.card';
+import { practiceProblemCard } from '../../../primitives/visual-primitives/math/practiceProblem.card';
+import { measureLabCard } from '../../../primitives/visual-primitives/math/measureLab.card';
+import { measurementToolsCard } from '../../../primitives/visual-primitives/math/measurementTools.card';
+import { areaModelCard } from '../../../primitives/visual-primitives/math/areaModel.card';
+import { multiplicationExplorerCard } from '../../../primitives/visual-primitives/math/multiplicationExplorer.card';
 import { lengthLabCard } from '../../../primitives/visual-primitives/math/lengthLab.card';
 import { analogClockCard } from '../../../primitives/visual-primitives/math/analogClock.card';
 import { timeSequencerCard } from '../../../primitives/visual-primitives/math/timeSequencer.card';
-import type { AreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaWorkspace';
-import type { BuildAreaMiss, BuildPerimeterMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
+import { polygonAreaBuilderCard } from '../../../primitives/visual-primitives/math/polygonAreaBuilder.card';
 import { compareObjectsCard } from '../../../primitives/visual-primitives/math/compareObjects.card';
 import { comparisonBuilderCard } from '../../../primitives/visual-primitives/math/comparisonBuilder.card';
 import { countingBoardCard } from '../../../primitives/visual-primitives/math/countingBoard.card';
-import type { EquationBuilderMiss } from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
-import type { FractionMiss } from '../../../primitives/visual-primitives/math/fractionCirclesLevers';
-import type { FractionBarMiss, FractionCompareMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
-import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
-import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
-import type { FunctionMachineMiss } from '../../../primitives/visual-primitives/math/functionMachineWorkspace';
+import { equationBuilderCard } from '../../../primitives/visual-primitives/math/equationBuilder.card';
+import { functionMachineCard } from '../../../primitives/visual-primitives/math/functionMachine.card';
 import { hundredsChartCard } from '../../../primitives/visual-primitives/math/hundredsChart.card';
 import { skipCountingCard } from '../../../primitives/visual-primitives/math/skipCounting.card';
 import { mathFactFluencyCard } from '../../../primitives/visual-primitives/math/mathFactFluency.card';
 import { additionFactStrategiesCard } from '../../../primitives/visual-primitives/math/additionFactStrategies.card';
-import { CLASSIC_MISSES as ANGLE_CLASSIC_MISSES, MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
-import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
-import type { SpokenBondMiss } from '../../../primitives/visual-primitives/math/numberBondWorkspace';
-import type { JumpMiss, LineMiss as NumberLineMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
-import type { BuildHopsMiss } from '../../../primitives/visual-primitives/math/numberLineBuildHops';
+import { angleWorkshopCard } from '../../../primitives/visual-primitives/math/angleWorkshop.card';
+import { numberBondCard } from '../../../primitives/visual-primitives/math/numberBond.card';
+import { numberLineCard } from '../../../primitives/visual-primitives/math/numberLine.card';
 import type { OrderMiss, SpokenSequencerMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
-import type { NumberTracerMiss } from '../../../primitives/visual-primitives/math/numberTracerWorkspace';
-import type { ShapeTracerMiss } from '../../../primitives/visual-primitives/math/shapeTracerWorkspace';
+import { numberTracerCard } from '../../../primitives/visual-primitives/math/numberTracer.card';
+import { shapeTracerCard } from '../../../primitives/visual-primitives/math/shapeTracer.card';
 import { ordinalLineCard } from '../../../primitives/visual-primitives/math/ordinalLine.card';
-import type { PatternBuilderMiss } from '../../../primitives/visual-primitives/math/patternBuilderWorkspace';
-import type { PlaceValueMiss, SpokenPlaceValueMiss } from '../../../primitives/visual-primitives/math/placeValueWorkspace';
+import { patternBuilderCard } from '../../../primitives/visual-primitives/math/patternBuilder.card';
+import { placeValueChartCard } from '../../../primitives/visual-primitives/math/placeValueChart.card';
 import { spatialSceneCard } from '../../../primitives/visual-primitives/math/spatialScene.card';
-import type { StrategyPickerMiss } from '../../../primitives/visual-primitives/math/strategyPickerWorkspace';
-import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFrameLevers';
-import type { SpokenFrameMiss } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
+import { strategyPickerCard } from '../../../primitives/visual-primitives/math/strategyPicker.card';
+import { tenFrameCard } from '../../../primitives/visual-primitives/math/tenFrame.card';
 import { shapeSorterCard } from '../../../primitives/visual-primitives/math/shapeSorter.card';
 import { threeDShapeExplorerCard } from '../../../primitives/visual-primitives/math/threeDShapeExplorer.card';
-import type { ShapeBuilderMiss } from '../../../primitives/visual-primitives/math/shapeBuilderWorkspace';
-import type { ShapeComposerMiss } from '../../../primitives/visual-primitives/math/shapeComposerWorkspace';
+import { shapeBuilderCard } from '../../../primitives/visual-primitives/math/shapeBuilder.card';
+import { shapeComposerCard } from '../../../primitives/visual-primitives/math/shapeComposer.card';
 import { sortingStationCard } from '../../../primitives/visual-primitives/math/sortingStation.card';
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
@@ -215,68 +209,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-line',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The learner places points or jumps on the line and presses Check; the line checks the work itself, and '
-        + 'talk about a half-placed line is teaching, not a verdict. The target values are not yours to say. You cannot '
-        + 'place, move, clear or highlight points. On build_hops the learner picks their own hops to land on the asked '
-        + 'number and presses I am done, then makes it a different way; never say where the hops land, a hop size to use, '
-        + 'or how far is left: choosing the hops is the task.',
-      levers: true,
-      misses: missLists<JumpMiss | BuildHopsMiss | NumberLineMiss>({
-        jump: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'second_jump_off', 'no_landing'],
-        identify: ['one_short', 'one_past', 'off_by_more'],
-        plot: ['one_short', 'one_past', 'off_by_more'],
-        order: ['reversed', 'out_of_order'],
-        between: ['on_end', 'outside', 'wrong_inside'],
-        build_hops: ['one_short', 'one_past', 'off_by_more', 'other_hop_count', 'same_way_again'],
-      }),
-      // build_hops `other_hop_count` (the right number in fewer hops than asked) has no lever: the ask names the count,
-      // and a hop slot tag is not built.
-      // between `wrong_inside` (inside, but not the exact missing number) occurs only on a fraction or decimal grid,
-      // where no number-line lever is built.
-      unanswered: { build_hops: ['other_hop_count'], between: ['wrong_inside'] },
-    },
+    ...bossEntry(numberLineCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: numberLineDeliveryEligible },
     description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and auto-zoom. Supports integers, fractions, decimals, and mixed numbers. K uses small fully labeled ranges; explicit Grade-1 objectives can use readable local windows within 0-120; grades 3-5 add negatives, fractions, and operations. Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
     constraints: 'Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.',
-      contextKeys: ['rangeMin', 'rangeMax', 'visibleMin', 'visibleMax', 'numberType', 'interactionMode', 'gradeBand', 'instruction', 'challengeType', 'targetValues', 'exactTargetValue', 'placedPoints', 'attemptNumber', 'currentPhase'],
-      scaffoldingLevels: {
-        level1: '"Look carefully at the number line. Where do you think that value belongs?"',
-        level2: '"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time."',
-        level3: '"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target."',
-      },
-      commonStruggles: [
-        { pattern: 'Placing point far from target value', response: '"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them."' },
-        { pattern: 'Confusing addition direction with subtraction', response: '"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller)."' },
-        { pattern: 'Ordering fractions incorrectly', response: '"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first — is it more or less than half?"' },
-        { pattern: 'Difficulty reading a large range', response: '"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'INTERACTION MODE COACHING',
-          instruction:
-            'Adapt your coaching to the interaction mode. '
-            + 'In PLOT mode: guide placement — "Find the spot between the tick marks." '
-            + 'In JUMP mode: narrate movement — "You jumped 3 to the right, that is adding 3!" '
-            + 'In ORDER mode: guide comparison — "Which number is further left? That one is smaller." '
-            + 'Always reference the number line visually — point to specific tick marks and positions.',
-        },
-        {
-          title: 'GRADE-BAND ADAPTATION',
-          instruction:
-            'For K-2: use counting language — "Let\'s count the hops: 1, 2, 3..." Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. '
-            + 'For grades 3-5: introduce fraction/decimal language — "Is 3/4 closer to 1/2 or to 1?" '
-            + 'Use benchmark fractions (1/4, 1/2, 3/4) as reference points. '
-            + 'For negative numbers: "Numbers left of zero are negative — they are less than zero."',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -334,38 +273,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'base-ten-blocks',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'On read-the-blocks the mat prints no counts or totals, because they are the answers: the learner says '
-        + 'how many blocks of the asked size there are, then what they are worth, and the count said where the value was '
-        + 'asked (four for forty) is not the value. On a trade the learner first predicts aloud how many smaller blocks '
-        + 'there will be, while the mat is untraded, then taps one block to break it into ten; the mat checks the trade '
-        + 'itself once the learner stops. On build and operate the learner adds, removes or trades blocks and presses '
-        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; on build the right '
-        + 'value without the fewest blocks is not yet a build. On two ways the learner builds the number on an empty mat, '
-        + 'any blocks that make it, presses I\'m done, then changes the blocks to show it a different way; the mat checks '
-        + 'both. Never say a column count, a total, a '
-        + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
-      // Both mats publish levers (handoff 21 M1): build_number and operate on the click mat (`baseTenLevers.ts`),
-      // read_blocks and regroup on the spoken mat (`baseTenSpokenLevers.ts`).
-      levers: true,
-      // The mats' own checks (`tradeMiss`, `plainMiss`; read_blocks' first six are the click mat's keypad, a mixed
-      // payload), and the judged mat's spoken steps (`baseTenSpokenMisses`: read_blocks' count and worth, regroup's
-      // prediction).
-      misses: missLists<BaseTenMiss | SpokenBaseTenMiss>({
-        build_number: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'not_traded_up', 'short_by_more', 'over_by_more'],
-        regroup: ['other_block', 'traded_twice', 'no_trade', 'value_changed', 'said_ten', 'said_start', 'one_short', 'one_over',
-          'short_by_more', 'over_by_more'],
-        read_blocks: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more', 'said_value',
-          'said_count', 'said_total', 'other_block_count', 'one_block_off'],
-        operate: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
-        build_two_ways: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more', 'same_as_first'],
-      }),
-      // operate `digits_swapped` has no lever (approved table). The click-mat misses of regroup and read_blocks come
-      // only from a mixed payload; there the click mat answers them (`ten_model`, `plainer_read`), and a homogeneous
-      // read_blocks or regroup payload runs on the spoken mat, which never checks them.
-      unanswered: { operate: ['digits_swapped'], regroup: ['no_trade', 'value_changed'], read_blocks: ['one_ten_off', 'digits_swapped'] },
-    },
+    ...bossEntry(baseTenBlocksCard),
     // Only read_blocks emits correction evidence; the other modes supply none,
     // so capture skips them without a model call.
     misconceptionScope: 'skill',
@@ -373,43 +281,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     learningObservations: { eligible: baseTenDeliveryEligible },
     description: 'Interactive base-ten manipulative with place value columns, supply tray, and regrouping. TWO MODES ARE LIVE TUTOR-JUDGED AND SPOKEN. read_blocks: the child reads one size of block at a time OUT LOUD — how many are there, and what are they worth altogether ("forty") — and never says the composed numeral; the tutor puts the whole number together. regroup: the child PREDICTS the result of a trade out loud while the mat is still untraded, then makes the trade with their hands. build_number and the operate modes remain hands-and-keypad: students drag blocks to build numbers and perform addition/subtraction with regrouping, with decimal mode (tenths/hundredths) and thousands. ESSENTIAL for K-5 place value.',
     constraints: 'Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity. read_blocks and regroup require a microphone and a targetNumber of at least 10 with a non-zero digit above the ones place — code picks which place is read or traded, and drops any number that cannot carry one. Those two modes must be generated as HOMOGENEOUS sessions: a payload mixing them with build_number or the operate modes falls back to the click surface for all of them.',
+    // Only the spoken mat takes the microphone; a card's audio is session-wide, so this stays beside the boss spread.
     audioInputByMode: { read_blocks: JUDGED_AUDIO_INPUT, regroup: JUDGED_AUDIO_INPUT },
     affordances: { representation: 'concrete', answers: ['build', 'manipulate', 'type'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Explore place value using base-ten blocks. Mode: {{interactionMode}}. Target: {{targetNumber}}. Current total: {{currentTotal}}.',
-      contextKeys: ['numberValue', 'interactionMode', 'decimalMode', 'gradeBand', 'currentTotal', 'columns', 'targetNumber', 'challengeType', 'instruction', 'attemptNumber', 'regroupsUsed'],
-      scaffoldingLevels: {
-        level1: '"Look at the columns. How many hundreds, tens, and ones do you see?"',
-        level2: '"You have {{columns.hundreds}} hundreds, {{columns.tens}} tens, and {{columns.ones}} ones. What number is that?"',
-        level3: '"Each hundred block = 100, each ten stick = 10, each one cube = 1. So {{columns.hundreds}} × 100 + {{columns.tens}} × 10 + {{columns.ones}} × 1 = {{currentTotal}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Adding too many blocks in wrong column', response: '"Check which column you are adding to. Hundreds are the biggest, ones are the smallest."' },
-        { pattern: 'Not regrouping when column has 10+', response: '"You have 10 or more in one column! You can trade 10 of those for 1 in the next column."' },
-        { pattern: 'Confusing decimal places', response: '"Tenths are 0.1 — ten of them make 1 whole. Hundredths are 0.01 — ten of them make one tenth."' },
-        { pattern: 'Child says the bare count where the value was asked (four for forty)', response: 'The count is not the value: each block is worth its size (a ten-stick is worth ten), so ask what all of those blocks are worth together.' },
-        { pattern: 'Child predicts ten for a trade', response: 'The blocks already on the mat are being forgotten: the ten new blocks join the ones already there.' },
-        { pattern: 'Child is moving blocks', response: 'Speech does not make a trade. The mat checks the trade itself once the child stops tapping.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'REGROUPING DISCOVERY',
-          instruction:
-            'The key "aha" moment is when a student realizes that 10 of one unit equals 1 of the next. '
-            + 'When a column reaches 10+, guide the discovery: "Can 12 ones fit in the ones column? '
-            + 'What if we traded 10 ones for 1 ten?" Celebrate each successful trade. '
-            + 'Connect blocks to written numbers: "See how the blocks match the digits in the number?"',
-        },
-        {
-          title: 'CHALLENGE TYPE COACHING',
-          instruction:
-            'For BUILD_NUMBER: guide adding blocks to match the target — "What digit is in the tens place? Add that many ten sticks." '
-            + 'For READ_BLOCKS: guide reading the blocks as a number — "Count each column and combine." '
-            + 'For REGROUP: focus entirely on the trading mechanic — "Trade 10 ones for 1 ten!" '
-            + 'For ADD/SUBTRACT_WITH_BLOCKS: narrate the operation step by step, starting with the ones column.',
-        },
-      ],
-    },
     evalModes: [
       {
         evalMode: 'build_number',
@@ -448,27 +322,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-circles',
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      levers: true,
-      guidance: 'Circles are cut into equal slices. The learner types the fraction a shaded circle shows, shades slices to '
-        + 'build a fraction or an equal one, or picks which of two circles is larger, then presses Check; the circle checks '
-        + 'the answer and you are not told it. When the fraction labels are hidden, talk about how much of each circle is '
-        + 'shaded, never the values. In touch-the-fraction the fraction is only written in words, so say it aloud; three '
-        + 'unlabelled pictures are shown and you do not know which one matches: never point at, number or describe a picture '
-        + 'as the answer. You cannot type, shade, choose or touch for the learner. On the your-own-way build the learner '
-        + 'chooses the cut: never name a number of pieces or how many to shade, and never say whether their fraction is '
-        + "equal before they press I'm done.",
-      // The circle's own check (`fractionMiss`, `touchMiss`, `equalBuildMiss`).
-      misses: missLists<FractionMiss | TouchMiss | EqualBuildMiss>({
-        identify: ['not_a_fraction', 'swapped', 'bottom_not_pieces', 'top_is_unshaded', 'top_one_off', 'top_off_by_more'],
-        build: ['shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        equivalent: ['copied_the_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        compare: ['picked_more_slices', 'picked_smaller', 'said_equal', 'missed_equal'],
-        touch_fraction: ['same_parts_other_shading', 'same_shading_other_parts', 'other_fraction'],
-        build_equal: [...EQUAL_BUILD_MISSES],
-      }),
-    },
+    ...bossEntry(fractionCirclesCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: fractionCompareDeliveryEligible },
@@ -476,35 +330,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints: 'Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.',
     affordances: { representation: ['concrete', 'pictorial'], answers: ['type', 'tap', 'build'], role: 'apply', minutes: 5 },
     // Scoped like base-ten-blocks' audioInputByMode: only touch_fraction is a judged
-    // Live session (gesture-judged, no spoken answer); the legacy identify/build/compare/
-    // equivalent modes stay Check-button and must not trigger a mic request.
+    // Live session (gesture-judged, no spoken answer); the other modes stay Check-button and
+    // must not trigger a mic request. A card's `audio` is session-wide, so this stays beside the boss spread.
     audioInputByMode: { touch_fraction: JUDGED_AUDIO_INPUT },
-    tutoring: {
-      taskDescription: 'Complete fraction challenges using circle diagrams. Current challenge: {{instruction}} (type: {{challengeType}}). Circle has {{denominator}} slices.',
-      contextKeys: ['challengeType', 'instruction', 'denominator', 'numerator', 'shadedCount', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges', 'equivalentDenominator'],
-      scaffoldingLevels: {
-        level1: '"How many total pieces is this circle divided into? Count the lines."',
-        level2: '"The circle has {{denominator}} slices. Count the shaded ones — that is your numerator. The total slices is the denominator."',
-        level3: '"The numerator (top number) = shaded pieces. The denominator (bottom number) = total pieces = {{denominator}}. So the fraction is shaded/{{denominator}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Counting unshaded instead of shaded slices', response: '"Count only the colored pieces for the numerator — the blue/purple sections."' },
-        { pattern: 'Confusing numerator and denominator', response: '"Remember: denominator = total slices (the whole pie), numerator = slices you colored (the part)."' },
-        { pattern: 'Not recognizing equivalent fractions', response: '"Both circles have the same amount shaded even though the numbers look different. They are equivalent fractions!"' },
-        { pattern: 'Difficulty comparing fractions with different denominators', response: '"Look at how much of each circle is filled with color. Which circle has more color showing?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'FRACTION CIRCLE COACHING',
-          instruction:
-            'Always tie the fraction to the visual circle. For identify challenges: "Count the colored slices — that is your top number." '
-            + 'For build challenges: "Click slices until you have exactly {{numerator}} colored." '
-            + 'For compare: "Look at how much of each circle is filled. Which has more color?" '
-            + 'For equivalent: "Can you make the same amount of color using {{equivalentDenominator}} slices instead?" '
-            + 'Use food analogies for younger students: "Imagine this is a pizza cut into {{denominator}} slices."',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       ...FRACTION_TOUCH_EVAL_MODES,
@@ -559,55 +387,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-bar',
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      levers: true,
-      guidance: 'A fraction is printed and the learner works one fraction at a time. In the three-step item they pick the numerator, '
-        + 'then the denominator, from four number buttons, then shade that many equal parts of a bar; each step has its own Check and the '
-        + 'bar checks it, so you are not told the answer. In the open build (build_equal) the learner splits a bar into equal parts of '
-        + "their own choosing, shades some, and presses I'm done; many splits are right. Never name a number of parts or how many to "
-        + "shade, and never say whether the bar is equal before I'm done. In compare two fractions are printed, each above its shaded "
-        + 'bar of the same whole, and the learner picks <, = or >; never say which is greater or whether they are equal before the '
-        + "check. You cannot pick, split or shade for the learner.",
-      // The bar's own checks (`fractionBarMiss`; build_equal: `equalBuildMiss`, shared with fraction-circles).
-      misses: missLists<FractionBarMiss | FractionCompareMiss | EqualBuildMiss>({
-        ...sameMisses<FractionBarMiss>(['identify', 'build', 'larger_denominators', 'add_subtract'], ['chose_denominator', 'other_numerator',
-          'chose_numerator', 'other_denominator', 'shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-        compare: ['said_equal', 'said_unequal', 'more_parts_bigger', 'flipped'],
-        build_equal: ['unequal_pieces', 'same_pieces', 'shaded_the_rest', 'cut_cannot_make', 'one_off', 'off_by_more'],
-      }),
-    },
+    ...bossEntry(fractionBarCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: fractionBarDeliveryEligible },
     description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. Open-build mode build_equal skips the three phases: the student makes a fraction equal to a given one on the bar their own way (chooses how many equal parts, shades some), and any equal fraction passes. Mode compare skips the three phases too: two fractions of the same whole are drawn as shaded bars, one above the other, and the student picks <, = or > (3.NF.A.3d, 4.NF.A.2). ESSENTIAL for elementary fraction introduction.',
     constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), larger_denominators (4-5, name and shade denominators 4-12), compare (3-4, two bars: <, = or >), add_subtract (5-6, operation context), build_equal (open build: make an equal fraction your own way).',
     affordances: { representation: 'pictorial', answers: ['tap', 'build'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Walk through {{totalChallenges}} fraction problems in {{challengeType}} mode. Current: fraction {{currentChallengeIndex}} of {{totalChallenges}} = {{numerator}}/{{denominator}}. Phase: {{currentPhase}}.',
-      contextKeys: ['numerator', 'denominator', 'currentPhase', 'shadedCount', 'currentChallengeIndex', 'totalChallenges', 'challengeType'],
-      scaffoldingLevels: {
-        level1: '"Look at the fraction. The top number and bottom number each have a special name."',
-        level2: '"The numerator is the top number — it tells how many parts are shaded. The denominator is the bottom number — it tells how many equal parts there are."',
-        level3: '"In {{numerator}}/{{denominator}}, the numerator is {{numerator}} (top) and the denominator is {{denominator}} (bottom). Now shade exactly {{numerator}} parts on the bar."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing numerator and denominator', response: '"Remember: the Denominator is Down (bottom). The Numerator is the Number on top."' },
-        { pattern: 'Shading wrong number of parts in build phase', response: '"Count the shaded parts carefully. You need exactly {{numerator}} parts shaded out of {{denominator}}."' },
-        { pattern: 'Selecting the denominator when asked for numerator', response: '"The numerator is the TOP number. Look at which number sits above the fraction line."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PHASE-AWARE FRACTION COACHING',
-          instruction:
-            'In Phase 1 (Identify Numerator): focus on vocabulary — "The numerator is the top number. It tells us how many parts." '
-            + 'In Phase 2 (Identify Denominator): reinforce vocabulary — "The denominator is the bottom number. It tells us how many equal parts the whole is divided into." '
-            + 'In Phase 3 (Build): connect vocabulary to action — "You said the numerator is {{numerator}}, so shade {{numerator}} parts. '
-            + 'The denominator is {{denominator}}, so the bar has {{denominator}} equal parts." '
-            + 'Use the mnemonic: "Denominator is Down, Numerator is the Number of parts."',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -664,118 +450,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'place-value-chart',
+    ...bossEntry(placeValueChartCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: placeValueDeliveryEligible, retest: placeValueRetest },
-    description: 'Live tutor-judged place value (DI modality) over 2- to 5-digit whole numbers. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH ("forty", "three hundred" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing "four hundred six" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.',
+    description: 'Live tutor-judged place value over 2- to 5-digit whole numbers. The Live tutor asks and judges what the child says, and the chart checks what the child writes. Each session alternates two kinds of number: for a PRINTED number with one glowing digit the child SAYS THE NAME OF ITS PLACE (ones through ten thousands) and then SAYS WHAT IT IS WORTH ("forty", "three hundred" — the spoken place-value vocabulary this primitive has always been about); for a number that is NEVER printed the tutor SAYS it and the child WRITES it into the labeled chart, one digit per column — dictation, where hearing "four hundred six" and writing 4-0-6 rather than 46 is the whole skill. ESSENTIAL for elementary place value instruction, grades 1-5.',
     constraints: 'Requires a microphone: two of the three answer kinds are spoken and judged by the Live tutor, and there is no Check button, no Next button, and no multiple-choice row anywhere. Session-level configuration: the generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or answer choices from the manifest. Whole numbers only, 11 to 99,999 — every spoken value word stays inside the place-value vocabulary (digit and decade words plus hundred/thousand), and a highlighted digit is never zero because "zero" is not an accepted spoken answer. A number that was printed for analysis is never dictated, and a dictated number is never printed — each would answer the other. Supports challengeTypes: identify (1-2), build (2-3), compare (3-4), expanded_form (5+).',
     affordances: { representation: 'symbolic', answers: ['spoken', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED place value practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or by WRITING digits into the chart, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ 18d, applied at BIRTH: no level of this ladder may OFFER a quoted
-      // replacement line of its own. A quoted hint here is a sanctioned-sounding
-      // substitute for the scripted correction at exactly the moment the model
-      // wants one — it opens with neither sentinel, so the engine sees no
-      // verdict and the correction counter stalls. The ladder commands script
-      // fidelity; it never supplies an alternative. The click-era ladder here
-      // quoted three hint lines and its level3 printed the full construction.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name a place, a value, or a digit beyond what the ask names.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the scripted "My turn:" correction from the cue again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction walks the places (or the columns) and re-asks for you. Never invent encouragement, a new question, a softer hint, or a walk of your own.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child looking and thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Says the digit\'s value, or the digit itself, when asked for its PLACE', response: 'That answers what the digit is worth, not where it sits, so it is wrong: speak the scripted "My turn:" correction, which walks the places from the end and re-asks.' },
-        { pattern: 'Says the bare digit when asked what it is WORTH (four for forty)', response: 'That says how many ones, not what the digit is worth in its place, so it is WRONG however close it sounds: speak the scripted correction, which is where digit and worth get told apart.' },
-        { pattern: 'Says the right digit at the wrong place (four hundred for forty)', response: 'Wrong place, wrong worth: speak the scripted "My turn:" correction exactly as written.' },
-        { pattern: 'Reads the whole number off the screen instead of answering', response: 'That does not answer the question — only the glowing digit\'s place or worth does. It is wrong: speak the scripted correction.' },
-        { pattern: 'Writes the digits in the wrong columns, or leaves a column empty', response: 'The chart is judged in code and you are told whether it matches — speak only the verdict line the cue gives you. The correction models the column walk on a different number and dictates the target again; never walk the target\'s own columns beyond it.' },
-        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it — '
-            + 'and never read the number on the screen out loud before the ask.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants — this activity asks for three different kinds and you must never assume which. '
-            + 'On find_place the answer is a PLACE NAME — ones, tens, hundreds, thousands, ten thousands. The digit or its value said instead is the recorded confusion and is wrong. '
-            + 'On say_value the answer is the digit\'s WORTH said with place vocabulary — "forty", "three hundred". The bare digit is wrong however close it sounds: it says how many, not what it is worth. '
-            + 'Where ten thousands is on the chart, a bare "thousands" for the ten-thousands column is the wrong column and is corrected. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a WRITING item (build_number) the child writes the number you dictated into the chart, and you are told what they wrote and whether it matches. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'THE VERDICT ENDS THE TURN',
-          instruction:
-            'An affirmation is the WHOLE turn. After it, stop speaking — never carry on into another question, another digit, or the next item, '
-            + 'even one you can see on the screen. The next ask always arrives as its own cue, and a question you ask early is about the wrong number.',
-        },
-        {
-          title: 'NEVER READ THE SCREEN OR THE STATE ALOUD',
-          instruction:
-            'Never read the number on the screen out loud during the child\'s turn — on an analysis item it contains the value they are about to say, and reading it hands the answer over. '
-            + 'Never read the [CURRENT STATE] block, its heading, or any of its lines aloud: it is context for you, never content for the child. '
-            + 'Never name the columns beyond what the quoted ask names.',
-        },
-        {
-          title: 'WRITING ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers by writing, say nothing at all while they work — no repeating the number, no digit names, no column names, no narration. '
-            + 'The dictation is said once in the ask; if the child wants it again they tap to hear it. '
-            + 'You will be told what number they wrote and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never count the columns for them, and never prompt while the child is looking at the number. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer. On a writing item that means dictating the whole number again, because it is never printed.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      // Dictated build items publish levers (`placeValueLevers.ts`, handoff 21 M1); the spoken asks do not yet.
-      levers: true,
-      guidance: 'A printed number shows no column labels, because on a which-place item the label is the answer. '
-        + 'On a write-the-number item the number is never printed, so say it aloud before the learner writes; the chart checks the written digits itself once the '
-        + 'learner stops, even with a column empty. You cannot write, clear or highlight digits.',
-      // The chart's own check of a dictated number (`placeValueMiss`), which every mode alternates with printed
-      // numbers; and the spoken place and value asks' known wrong answers (`placeValueSpokenMisses`).
-      misses: sameMisses<PlaceValueMiss | SpokenPlaceValueMiss>(['identify', 'build', 'compare', 'expanded_form'],
-        ['zero_left_empty', 'column_empty', 'digits_swapped', 'teen_ty_swap', 'one_short', 'one_over', 'one_ten_off',
-          'short_by_more', 'over_by_more', 'said_value', 'said_digit', 'next_place', 'other_place', 'said_place',
-          'shifted_place', 'said_number', 'next_digit_value']),
-      // find_place has no lever (a place label anywhere names its answer by column position), so its own misses are
-      // unanswered; say_value's are answered by `model_value` and `block_picture` (handoff 21 M1 spoken slice).
-      unanswered: sameMisses<SpokenPlaceValueMiss>(['identify', 'build', 'compare', 'expanded_form'],
-        ['said_value', 'next_place', 'other_place']),
-    },
     evalModes: [
       {
         evalMode: 'identify',
@@ -835,66 +516,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'practice-problem',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks the work itself, and you are not given the worked solution or the answer: the '
-        + 'learner writes the solution by hand on the whiteboard, one step per line, and presses Done; a checker reads '
-        + 'the lines and compares them with a worked solution. Never say the final answer, a step’s result, or what a '
-        + 'line should say, before the check or after a wrong one. Talk only about what the screen shows: when the step '
-        + 'slots have no titles, do not name a step, a method or the strategy; ask what the problem asks and what the '
-        + 'learner notices. When a start-here hint is shown, you may talk through that first move without doing it. '
-        + 'After a wrong check the screen says which line is wrong only when a line is marked "check this line"; never say '
-        + 'what is wrong in it or what it should be. Otherwise ask the learner to read their lines back and check each '
-        + 'move; a worked example on other numbers is teaching. If the checker read no line, ask for larger '
-        + 'writing, one step per line. You cannot write, erase or press Done.',
-      // Every mode publishes levers (`practiceProblemLevers.ts`): the tier's three scaffolds and, after a check that
-      // flagged a line, `mark_lines`. Nothing helps a checker that read no line.
-      levers: true,
-      // The judge's verdict, read by code (`practiceMiss`): the same five on every mode.
-      misses: sameMisses<PracticeMiss>(['derive_easy', 'derive_medium', 'derive_hard'], PRACTICE_MISSES),
-      unanswered: sameMisses<PracticeMiss>(['derive_easy', 'derive_medium', 'derive_hard'], ['nothing_read']),
-    },
-    description:'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution and reveals a verdict (correct / partial / incorrect) with side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
+    ...bossEntry(practiceProblemCard),
+    description:'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution; a wrong check keeps the worked solution hidden for another try, and a correct one reveals the side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
     constraints: 'Requires a problem with a canonical multi-step solution (2+ steps). Best for derivation-style math problems (solve equations, simplify expressions, evaluate integrals, prove identities). Not suitable for one-shot computation, multiple choice, or visual-spatial problems where the answer is non-symbolic.',
-    affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 10 },
+    affordances: { representation: 'symbolic', answers: ['build'], role: 'apply', minutes: 10 },
     evalModes: [
       { evalMode: 'derive_easy', label: 'Derive — Easy (Tier 1)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['derive'], description: 'Short 2-3 step derivation. Single rule application, simple algebra or arithmetic. Aimed at warm-up / fluency.' },
       { evalMode: 'derive_medium', label: 'Derive — Medium (Tier 2)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['derive'], description: '3-5 step derivation requiring multiple rule applications. Standard practice difficulty.' },
       { evalMode: 'derive_hard', label: 'Derive — Hard (Tier 3)', beta: 0.7, scaffoldingMode: 4, challengeTypes: ['derive'], description: '4-6 step derivation requiring strategy choice (substitution, case split, identity selection). Stretch problems.' },
     ],
-    tutoring: {
-      taskDescription: 'Student is solving a {{difficulty}}-band math derivation by hand on a whiteboard: "{{problem}}". They are currently in the {{currentPhase}} phase with {{strokeCount}} strokes drawn so far. The canonical solution has {{stepCount}} steps. On-screen support tier: {{supportTier}} (easy = worked-step skeleton + first-step prompt visible; hard = bare problem, scaffolds withdrawn).',
-      contextKeys: ['title', 'problem', 'equations', 'difficulty', 'stepCount', 'currentPhase', 'strokeCount', 'supportTier'],
-      scaffoldingLevels: {
-        level1: '"Take a moment to look at the problem. What do you see, and what do you think the first move should be?"',
-        level2: '"Try writing the first transformation on the canvas. What rule applies to the left-hand side of {{equations}}? Don\'t worry about getting all {{stepCount}} steps at once."',
-        level3: '"Start by isolating one term. For "{{problem}}", the first canonical step is usually a structural simplification — try rewriting the expression so the variables you care about are on one side."',
-      },
-      commonStruggles: [
-        { pattern: 'Empty canvas after extended time', response: '"You don\'t have to solve it all at once. Just write the first thing that comes to mind, even if you\'re not sure. We can build from there."' },
-        { pattern: 'Off-track derivation (live reviewer flagged)', response: '"Pause for a second. Look at the line you just wrote — does the operation you applied actually preserve equality? Re-check the rule."' },
-        { pattern: 'Skipped steps (shortcut detected)', response: '"That\'s a valid shortcut, but make sure you can justify each move. Want to write out the intermediate step so the chain is explicit?"' },
-        { pattern: 'Got the right answer but messy work', response: '"You landed on it! Looking back at your derivation — which line was the key move that made the rest fall into place?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'COACH PROCESS, NOT ANSWERS',
-          instruction:
-            'Never reveal the canonical step or final answer at any scaffolding level. The point of this primitive is for the student to derive the solution themselves. '
-            + 'Use the live reviewer\'s status (on-track / shortcut / off-track) when the student asks for help — if they\'re on-track, encourage continuation; if off-track, ask them to re-examine the latest line; if shortcut, ask them to articulate the rule they applied. '
-            + 'After the verdict returns, focus on metacognition: which step was hardest, what would they try differently next time, what rule did they use. '
-            + 'For hard difficulty problems, lean into strategy talk — substitution choice, case-split decisions, identity selection — rather than mechanical hints.',
-        },
-        {
-          title: 'CALIBRATE REVEAL TO THE SUPPORT TIER',
-          instruction:
-            'The {{supportTier}} support tier mirrors what scaffolds are on screen — match your help to it. '
-            + 'easy: the worked-step skeleton (step titles) and a first-step prompt are visible, so you MAY name the strategy and walk the student through the FIRST step only (never compute it, never reveal the answer). '
-            + 'medium: the skeleton is visible but no first-step prompt — nudge execution of the step they are on; do not pre-name the first move. '
-            + 'hard: NO skeleton and NO first-step prompt are shown — do NOT name any solution step or the strategy; ask what the problem is asking and what they notice, and let them choose the method. Never reveal the final answer at any tier.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
@@ -902,79 +532,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: areaModelDeliveryEligible },
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The activity checks every entry itself, and you are not told the answers. On build, find-area and multiply '
-        + 'the learner taps a cell, types its product and presses Check; once every cell is right they type the sum of the '
-        + 'cells and press Submit Final Answer. A right cell stays on screen; a wrong one is marked. On perimeter they type '
-        + 'one number; on factor they type each column part and row part, and any parts that make every cell are right. '
-        + 'Never say a cell product, the total, the perimeter or a part the learner must find, before the check or after a '
-        + 'wrong one, and never say whether a typed number is right before the activity checks it. The column and row '
-        + 'parts printed on the grid may be named; when the cells are not labelled, ask which column part and row part a '
-        + 'cell uses instead of saying them. Teaching the method is fine: a cell is its column part times its row part, '
-        + 'the product is all the cells added, the perimeter is the distance all the way around. After a wrong entry, do '
-        + 'not tell the learner what to change (how many zeros to write, which sides to add again): ask a question that '
-        + 'lets them find it, such as how many tens each part has or how many sides a rectangle has. After a lever too: '
-        + 'say where to look and ask a question; do not tell them to add the four sides or count the zeros. A worked example on '
-        + 'other numbers is teaching. You cannot tap or type for the learner.',
-      // Every mode publishes levers (`areaModelLevers.ts`); every miss below is answered by one on every saved payload
-      // item (`areaModelLevers.test.ts`). Cell labels, the side sum and the start cell are the tier's starting positions.
-      levers: true,
-      // The activity's own check (`areaMiss`), every mode. A forward item's misses are a cell's or the sum's.
-      misses: missLists<AreaModelMiss>({
-        build_model: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
-        find_area: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
-        multiply: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
-        perimeter: ['gave_area', 'two_sides_only', 'three_sides', 'perimeter_off'],
-        factor: ['swapped', 'one_part_wrong', 'parts_wrong'],
-      }),
-    },
+    ...bossEntry(areaModelCard),
     description: 'Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.',
     constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Area model session: {{challengeType}}, {{totalChallenges}} problems. Currently on problem {{currentChallengeIndex}}/{{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'factor1Parts', 'factor2Parts', 'algebraicMode', 'supportTier'],
-      scaffoldingLevels: {
-        level1: '"What two numbers are multiplied in this cell?"',
-        level2: '"This cell is {{factor1Part}} × {{factor2Part}}. What is that product?"',
-        level3: '"Multiply the column header by the row header for each cell, then add all the partial products together."',
-      },
-      commonStruggles: [
-        { pattern: 'Wrong partial product', response: '"Check: which number is on top of this column? Which is beside this row? Multiply those two."' },
-        { pattern: 'Forgetting to add partial products', response: '"You found all the pieces! Now add them all together for the total product."' },
-        { pattern: 'Place value errors in decomposition', response: '"23 breaks into 20 + 3, not 2 + 3. Keep the place values."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'NUMERIC VS ALGEBRAIC MODE',
-          instruction:
-            'For NUMERIC mode (grades 3-5): focus on place value decomposition — "23 breaks into 20 + 3. '
-            + 'That is why we have two columns!" Guide partial product calculation one cell at a time. '
-            + 'For ALGEBRAIC mode (grades 7+): use proper algebraic language — "Multiply each term in the first '
-            + 'binomial by each term in the second." Reference FOIL for binomials. '
-            + 'In both modes, emphasize the distributive property: "We are breaking a hard multiplication into easier pieces."',
-        },
-        {
-          title: 'SUPPORT TIER — REVEAL POLICY',
-          instruction:
-            'The student is at support tier {{supportTier}} (easy = max on-screen scaffolding, hard = min). '
-            + 'Keep your reveal level in sync with what is on screen. '
-            + 'easy: you may name the method (multiply column header × row header, then add the parts; '
-            + 'or Perimeter = 2 × (length + width)) and walk the setup. '
-            + 'medium: the method is shown on screen — nudge the next step, let the student do the arithmetic. '
-            + 'hard: the on-screen cells are NOT pre-labeled (and the side-sum is hidden) on purpose — '
-            + 'do NOT supply that withheld step; ask the student to read the row/column headers (or the labeled sides) '
-            + 'and map it themselves. NEVER state a partial product, the total product, the perimeter, '
-            + 'or (in factor mode) the dimension numbers at any tier — those are the answer.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
         evalMode: 'build_model',
-        affordances: { answers: ['build'] },
+        affordances: { answers: ['build', 'type'] },
         label: 'Build Model (Concrete)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -1017,71 +583,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'array-grid',
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'The activity checks the answer itself, and you are not told it. On build the learner picks the rows and '
-        + 'columns asked for, then types the total; on count the learner types the total of the array drawn; on multiply '
-        + 'the learner writes rows × columns = total; each then presses Check. Never say the total. On count and multiply '
-        + 'never say how many rows or columns there are: finding them is the task. Skip-counting a row aloud together is '
-        + 'teaching; saying where the count ends is not. On make an array the learner fills cells on an empty grid to make '
-        + 'any array with the number of squares asked, presses I’m done!, and on some items then makes a different array. '
-        + 'Many arrays pass: never say how many rows or columns to use, how many squares are on the grid, or how many more '
-        + 'are needed; if they stop, invite them to check that every row has the same number of squares. You cannot tap, '
-        + 'build or type for the learner.',
-      // Every mode publishes levers (`arrayGridLevers.ts`): make_array row counts / square count / smaller ask; the
-      // given-array modes row strips, number labels (build/count, labels hidden) and a smaller array.
-      levers: true,
-      // The activity's own check (`arrayMiss`), every mode.
-      misses: missLists<ArrayMiss>({
-        build_array: ['added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
-        count_array: ['added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
-        multiply_array: ['swapped_sides', 'wrong_side', 'added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
-        make_array: ['ragged', 'one_line_short', 'one_line_over', 'too_few', 'too_many', 'same_as_first'],
-      }),
-      // make_array `same_as_first` has no lever: the first array stays on screen beside the grid, and "different" has
-      // no smaller form.
-      unanswered: { make_array: ['same_as_first'] },
-    },
+    ...bossEntry(arrayGridCard),
     description: 'Multi-challenge rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Each session walks the student through 3-6 distinct (rows, columns) pairs in the same eval mode. Per-challenge dimensions are picked locally by a pool service; Gemini emits only session-level wrapper metadata. Teaches multiplication introduction, repeated addition, skip counting, commutative property, and arrays-as-multiplication. ESSENTIAL for elementary multiplication (grades 2-5).',
     constraints: 'The manifest must NOT supply specific row/column counts — the generator picks 3-6 dimension pairs locally per the selected eval mode. Keep arrays within the component caps (rows 2-6, columns 2-8).',
     affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Array session: {{challengeType}}, {{totalChallenges}} arrays. Currently on array {{currentChallengeIndex}}/{{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetRows', 'targetColumns', 'supportTier'],
-      scaffoldingLevels: {
-        level1: '"How many rows do you need? How many columns?"',
-        level2: '"You need {{targetRows}} rows of {{targetColumns}}. Can you count by {{targetColumns}}s?"',
-        level3: '"{{targetRows}} rows × {{targetColumns}} columns = {{targetRows}} groups of {{targetColumns}}. Skip count by rows of {{targetColumns}} to find the total."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing rows and columns', response: '"Rows go across (left to right). Columns go up and down."' },
-        { pattern: 'Counting one-by-one instead of skip counting', response: '"Try counting by rows: each row has {{targetColumns}} items"' },
-        { pattern: 'Swapping dimensions', response: '"3 rows of 5 and 5 rows of 3 give the same total — that is the commutative property!"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'ARRAY-TO-MULTIPLICATION BRIDGING',
-          instruction:
-            'Help students see arrays as multiplication, not just counting. '
-            + 'For each new array in the session, guide the connection: "You have {{targetRows}} rows. Each row has {{targetColumns}}. '
-            + 'That is {{targetRows}} groups of {{targetColumns}}, which is {{targetRows}} × {{targetColumns}}!" '
-            + 'Encourage skip counting over one-by-one counting. '
-            + 'When the student notices the commutative property across two arrays in the session, celebrate: "You flipped it and got the same total — that always works with multiplication."',
-        },
-        {
-          title: 'MULTI-ARRAY PACING',
-          instruction:
-            'This is a multi-array session — the student is on array {{currentChallengeIndex}} of {{totalChallenges}}. '
-            + 'Each array is a fresh (rows, columns) pair. Do not re-explain the strategy from scratch every time — '
-            + 'reinforce on array 1, encourage independence on array 2+, and celebrate completion patterns across the session.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
         evalMode: 'build_array',
-        affordances: { representation: 'concrete', answers: ['build'] },
+        // Picks the rows and columns (a build), then types the total.
+        affordances: { representation: 'concrete', answers: ['build', 'type'] },
         label: 'Build Array (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -1123,23 +634,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'double-number-line',
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner types the bottom-line value '
-        + 'that matches the marked top value and presses Check. Never say that value before the check or after a wrong '
-        + 'one, nor the product or quotient that gives it. On find missing and unit rate items the unit rate is the '
-        + 'learner\'s to find, and on a find-the-unit-rate item it is the answer: do not say it. The given pair, and on '
-        + 'equivalent ratios the unit rate the question states, may be named. Teaching is that the two lines grow by '
-        + 'multiplying: each step of 1 on the top line is the same-size jump on the bottom line, so twice as far on top '
-        + 'is twice as far below; adding the same amount once is not scaling. The unit rate comes from cutting the given '
-        + 'pair into equal parts, one per step of 1 on top. Ask what 1 on the top line matches, how many of those the '
-        + 'asked value is, and what that makes below. When tick labels or guides are not drawn, do not supply what they '
-        + 'would show. Read the question aloud. You cannot type or press Check.',
-      // Every mode declares levers (`doubleNumberLineLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`ratioLineMiss`), every mode.
-      misses: { ...RATIO_LINE_MISSES_BY_MODE },
-    },
+    ...bossEntry(doubleNumberLineCard),
     description: 'Multi-challenge double-number-line session: students walk through 3-6 ratio challenges that all share ONE proportional relationship (same topLabel/bottomLabel/unitRate) for context coherence. Each challenge highlights one target ask-point on parallel number lines and the student enters the missing value. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
     constraints: 'Session-level configuration. The generator produces 3-6 ratio challenges per session sharing one scenario, so do NOT supply specific target points, given points, or per-challenge prompts from the manifest — they are derived from the eval mode + generated unit rate. Supports equivalent_ratios, find_missing, and unit_rate challenge types.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: 'apply', minutes: 5 },
@@ -1169,46 +664,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Given a non-unit pair, discover the unit rate through division.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Walk through {{totalChallenges}} ratio challenges in {{challengeType}} mode (current: challenge {{currentChallengeIndex}} of {{totalChallenges}}). Shared relationship: 1 {{topLabel}} = {{unitRate}} {{bottomLabel}}. Current prompt: {{currentPrompt}}.',
-      contextKeys: ['topLabel', 'bottomLabel', 'unitRate', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentPrompt', 'targetTopValue', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What is the relationship between {{topLabel}} and {{bottomLabel}}? Look at the given point on the number lines."',
-        level2: '"When {{topLabel}} = 1, what is {{bottomLabel}}? That is the unit rate — the key to every challenge in this session."',
-        level3: '"Multiply the {{topLabel}} value by the unit rate to get the {{bottomLabel}} value. {{targetTopValue}} × {{unitRate}} = answer."',
-      },
-      commonStruggles: [
-        { pattern: 'Adding instead of multiplying', response: '"Ratios use multiplication, not addition. If 1 costs $3, then 4 costs 4 × $3, not 1 + $3."' },
-        { pattern: 'Cannot find unit rate', response: '"Look at the given point. Divide the bottom value by the top value to find the rate for 1 unit."' },
-        { pattern: 'Scaling errors', response: '"Check: does your answer make sense? More {{topLabel}} should mean more {{bottomLabel}}."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-RATIO PACING',
-          instruction:
-            'This session contains {{totalChallenges}} ratio challenges that all share ONE proportional relationship. '
-            + 'After each correct answer the student advances to the next challenge with a new ask-point on the same number lines. '
-            + 'Briefly acknowledge each correct answer and preview the next challenge — do not re-explain the unit rate after challenge 1 unless the student gets stuck. '
-            + 'The single-mode session is the IRT signal: do not skip ahead or change the relationship across challenges.',
-        },
-        {
-          title: 'PROPORTIONAL REASONING COACHING',
-          instruction:
-            'The critical concept is the UNIT RATE. Always guide students toward finding it first: '
-            + '"If 3 apples cost $6, what does 1 apple cost? Divide!" '
-            + 'Once the unit rate is found, coach multiplication: "Now you know 1 costs $2. So 5 costs 5 × $2." '
-            + 'Watch for additive thinking (a common misconception): if a student adds instead of multiplies, '
-            + 'use a counterexample — "If 1 apple costs $2 and you add $2, you get $4. But 3 apples should cost $6, not $4."',
-        },
-        {
-          title: 'REAL-WORLD CONNECTION',
-          instruction:
-            'Always connect the abstract ratio to the real-world context: use the labels ({{topLabel}} and {{bottomLabel}}). '
-            + '"You are finding how many {{bottomLabel}} for each {{topLabel}}." '
-            + 'This helps students see proportional reasoning as practical, not just arithmetic.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
     {
@@ -1250,53 +705,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'factor-tree',
-    teachingWorkspace: {
-      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
-      guidance: 'The activity checks every split itself, and you are not told the factorization: the learner taps a '
-        + 'number that is not prime, types two factors and presses Split, or in a guided mode taps one of the factor '
-        + 'pairs listed for it. A split whose factors do not multiply to the number, or that uses 1, is a wrong answer; a '
-        + 'right split stays on the tree, and the item is finished when every leaf is prime. Before the tree is finished '
-        + 'and after a wrong split, never say a factor pair of a number on the tree, the result of a division, whole or '
-        + 'worked out in parts, or the prime factorization, and do not say whether a leaf is prime when the leaves are not '
-        + 'colored. The learner does the division or the multiplying; you ask the question that starts it. Teaching is that a '
-        + 'factor pair multiplies to the number, never adds to it; that if a small prime (2, 3, 5, 7) divides a number, '
-        + 'the number divided by it is its partner; and that a prime has no factor pair without 1. Ask which small prime '
-        + 'divides the number and how they could check. Any first split ends in the same primes. When pairs are listed, '
-        + 'the learner chooses one; never choose it for them. You cannot tap, type or press Split.',
-      // Every mode declares levers (`factorTreeLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`factorMiss`), every mode.
-      misses: { ...FACTOR_TREE_MISSES_BY_MODE },
-    },
+    ...bossEntry(factorTreeCard),
     description:'Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a row at the same difficulty tier. Each challenge is a fresh tree with its own composite. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. ESSENTIAL for grades 4-6 number theory.',
     constraints: 'Composites only (not primes). Session-level configuration; rootValues are selected by the local pool service per eval mode, so do NOT supply specific numbers from the manifest.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Walk through {{totalChallenges}} factor trees. Current factorization: {{rootValue}} (challenge {{currentChallengeIndex}} of {{totalChallenges}}).',
-      contextKeys: ['rootValue', 'currentFactorization', 'leavesCount', 'allPrime', 'guidedMode', 'currentChallengeIndex', 'totalChallenges'],
-      scaffoldingLevels: {
-        level1: '"Is this number prime or composite? If composite, can you think of two numbers that multiply to make it?"',
-        level2: '"Try dividing {{selectedValue}} by small primes: 2, 3, 5, 7. Which one divides evenly?"',
-        level3: '"{{selectedValue}} ÷ {{smallestFactor}} = {{otherFactor}}. So {{selectedValue}} = {{smallestFactor}} × {{otherFactor}}. Now check if each factor is prime."',
-      },
-      commonStruggles: [
-        { pattern: 'Using 1 as a factor', response: '"1 is not useful in factor trees. Find two factors that are both greater than 1."' },
-        { pattern: 'Not recognizing primes', response: '"A prime number has exactly 2 factors: 1 and itself. 2, 3, 5, 7, 11, 13 are primes."' },
-        { pattern: 'Stopping before all leaves are prime', response: '"Keep splitting until every leaf is a prime number (green). Are there any yellow nodes left?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'GUIDED FACTORING APPROACH',
-          instruction:
-            'Guide students through divisibility rules as a strategy: '
-            + '"Is the number even? Then divide by 2 first! Does it end in 0 or 5? Try dividing by 5." '
-            + 'Celebrate when a prime is found: "That one is prime — it is a leaf! No more splitting needed." '
-            + 'When the tree is complete, guide the student to read the leaves: '
-            + '"Read all the green leaves — those are the prime factors. Write them as a multiplication." '
-            + 'Point out that different factor pairs lead to the same prime factorization.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -1317,6 +729,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'unguided',
+        affordances: { answers: ['type'] },
         label: 'Unguided (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1325,6 +738,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'unguided_large',
+        affordances: { answers: ['type'] },
         label: 'Unguided Large (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -1333,6 +747,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'assessment_intro',
+        affordances: { answers: ['type'] },
         label: 'Assessment Intro (Tier 4+)',
         beta: 5.5,
         scaffoldingMode: 4,
@@ -1341,6 +756,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'assessment',
+        affordances: { answers: ['type'] },
         label: 'Assessment (Tier 5)',
         beta: 6.5,
         scaffoldingMode: 5,
@@ -1351,56 +767,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ratio-table',
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number and presses '
-        + 'Check (a missing value, a multiplier, or a unit rate), or on a build item moves the multiplier slider and presses '
-        + 'Check. Before a check and after a wrong one, never say the hidden value, the multiplier a find or build item asks '
-        + 'for, the unit rate a unit-rate item asks for, or the result of the division on screen. Teaching is that '
-        + 'equivalent ratios scale by multiplying: both rows of the base column are multiplied by the same number, never '
-        + 'added to; the multiplier is how many times bigger the scaled column is (scaled divided by base); the unit rate is '
-        + 'how many of the second quantity go with 1 of the first (second divided by first). Ask which row is known, what it '
-        + 'was multiplied by, and what that does to the other row. When the unit-rate banner or the bar chart is not drawn, '
-        + 'do not supply what it would show. Read the question aloud. You cannot type, move the slider, or press Check.',
-      // Every mode declares levers (`ratioTableLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`ratioMiss`), every mode.
-      misses: { ...RATIO_MISSES_BY_MODE },
-    },
-    description:'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty with scaffolded hints. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
+    ...bossEntry(ratioTableCard),
+    description:'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
     constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Work through {{totalChallenges}} ratio challenges covering missing values, multipliers, ratio building, and unit rates. Current challenge: {{instruction}} with base ratio {{baseRatio}}.',
-      contextKeys: ['baseRatio', 'rowLabels', 'challengeType', 'targetMultiplier', 'studentAnswer', 'targetValue', 'unitRate', 'hintsUsed', 'currentChallengeIndex', 'totalChallenges', 'currentAttempts'],
-      scaffoldingLevels: {
-        level1: '"What is the relationship between {{rowLabel1}} and {{rowLabel2}}? Look at the base ratio."',
-        level2: '"The base ratio is {{baseRatio1}}:{{baseRatio2}}. The unit rate is {{unitRate}}. How can you use that to solve this?"',
-        level3: '"Step by step: First find the unit rate ({{baseRatio2}} ÷ {{baseRatio1}} = {{unitRate}}). Then use it: {{unitRate}} × the known value gives the answer."',
-      },
-      commonStruggles: [
-        { pattern: 'Only scaling one value', response: '"To keep the ratio equivalent, multiply BOTH values by the same number."' },
-        { pattern: 'Adding instead of multiplying', response: '"Ratios scale by multiplication. 2:3 doubled is 4:6, not 4:5."' },
-        { pattern: 'Cannot find unit rate', response: '"Divide the second quantity by the first: {{baseRatio2}} ÷ {{baseRatio1}}."' },
-        { pattern: 'Confusing multiplier with unit rate', response: '"The multiplier tells you how many times bigger the scaled ratio is. The unit rate tells you the ratio when the first quantity is 1."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-CHALLENGE RATIO COACHING',
-          instruction:
-            'This primitive uses 4 challenge types in sequence. Adapt coaching to the current challenge type. '
-            + 'For MISSING-VALUE: guide proportional reasoning — "The base ratio is {{baseRatio1}}:{{baseRatio2}}. '
-            + 'What multiplier scales the base to this row? Use it to find the hidden value." '
-            + 'For FIND-MULTIPLIER: focus on the scaling factor — "Compare the scaled value to the base value. '
-            + 'What did you multiply by? That number works for BOTH columns." '
-            + 'For BUILD-RATIO: guide slider use — "Slide to build a ratio equivalent to {{baseRatio1}}:{{baseRatio2}}. '
-            + 'Both values must scale by the same factor." '
-            + 'For UNIT-RATE: guide division — "Divide the second quantity by the first to find the rate per 1 unit." '
-            + 'Track progress across challenges: "You have completed {{currentChallengeIndex}} of {{totalChallenges}} challenges." '
-            + 'Use hints sparingly — let the student struggle productively before offering the next scaffold level.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -1443,28 +813,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'percent-bar',
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks each step itself, and you are not told its answer: the learner sets the bar to a percent '
-        + '(tap, drag or the arrow keys) and presses Check; on a compare step they tap one option and press Check. A right '
-        + 'step opens the next step of the same problem, and only the last step finishes it. Before a check and after a '
-        + 'wrong one, never say the percent a step needs, the value or total it makes, or which option is cheaper or costs '
-        + 'more. Teaching is the whole and its parts: the bar is the whole, 100%; a discount is taken off 100%, and the bar '
-        + 'shows what is still paid; a tax, tip or fee is added on top, so a total lands past the 100% line; a bigger percent '
-        + 'off is not always the lower price, so compare the prices found, not the discounts. Ask what the scenario states '
-        + 'and where that sits between 0% and 100%. When the labels or the calculation panel are hidden, do not supply what '
-        + 'they would show. Read the scenario and each step aloud. You cannot move the bar, choose, or press Check. '
-        + 'On a find-part or find-whole item the learner marks the percent, then types an amount in dollars: never say the '
-        + 'amount, and on a find-whole item never say the whole. Teach from the bar: the whole bar is 100%, the filled part '
-        + 'is the percent; find an easy percent (10%, 50%) first and build from it.',
-      // Every mode declares levers (`percentBarLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`percentMiss`), every mode.
-      misses: { ...PERCENT_MISSES_BY_MODE },
-    },
+    ...bossEntry(percentBarCard),
     description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison, a percent of an amount, a whole from its part) and the student drags the bar to the target percent, and in find-part / find-whole types the amount in dollars. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
     constraints: 'The generator pre-selects every scenario (wholeValue, question, targetPercent, hint) per session — the manifest must NOT supply specific numbers, scenarios, questions, or target percents. The manifest may set instanceCount (default 4, max 6), showPercentLabels, showValueLabels, benchmarkLines, doubleBar, and the targetEvalMode.',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: 'apply', minutes: 5 },
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'type', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
         evalMode: 'identify_percent',
@@ -1472,6 +824,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['direct'],
+        affordances: { answers: ['manipulate'] },
         description: 'Place a benchmark percent on the bar — test scores, parts of a quantity.',
       },
       {
@@ -1480,6 +833,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 3,
         challengeTypes: ['part_of'],
+        affordances: { answers: ['manipulate', 'type'] },
         description: 'Find a percent of a quantity in dollars (15% of $60): mark the percent on the bar, then type the part. No readout shows an amount (6.RP.3c).',
       },
       {
@@ -1489,6 +843,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['subtraction'],
+        affordances: { answers: ['manipulate'] },
         description: 'Compute 100 - discount to find the percent of original price that remains.',
       },
       {
@@ -1498,6 +853,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['addition'],
+        affordances: { answers: ['manipulate'] },
         description: 'Two steps on the bar: place the added rate (tip/tax — value shows the dollars), then place the new total (100% + rate, bar extends past 100%).',
       },
       {
@@ -1506,6 +862,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['whole_of'],
+        affordances: { answers: ['manipulate', 'type'] },
         description: 'Find the whole when a part and its percent are given ($12 is 20% of what?): mark the percent, then type the whole. The whole is never shown (6.RP.3c).',
       },
       {
@@ -1514,152 +871,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['comparison'],
+        affordances: { answers: ['manipulate', 'tap'] },
         description: 'Multi-step: compute each good\'s sale price on the bar, then choose which is cheaper — a bigger % off is not always the better deal.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Percent bar session: {{title}}. Mode: {{challengeType}}. Challenge {{currentChallengeIndex}} of {{totalChallenges}}. Scenario: {{scenario}}. Question: {{question}}. Whole: {{wholeValue}} ({{wholeValueLabel}}). Current placement: {{currentPercent}}%. Target: {{targetPercent}}%.',
-      contextKeys: [
-        'challengeType',
-        'currentChallengeIndex',
-        'totalChallenges',
-        'scenario',
-        'wholeValue',
-        'wholeValueLabel',
-        'question',
-        'targetPercent',
-        'currentPercent',
-        'currentValue',
-        'attemptNumber',
-      ],
-      scaffoldingLevels: {
-        level1: '"What benchmark percentage is closest — 25%, 50%, or 75%? Start there."',
-        level2: '"{{targetPercent}}% means {{targetPercent}} out of 100. What is {{targetPercent}}/100 × {{wholeValue}}?"',
-        level3: '"Convert the percent to a decimal: {{targetPercent}}% = {{targetPercent}}/100. Multiply: that × {{wholeValue}} gives the part."',
-      },
-      commonStruggles: [
-        { pattern: 'Not connecting percent to fraction', response: '"Percent means per hundred. 25% = 25/100 = 1/4 of the whole."' },
-        { pattern: 'Confusing part and whole', response: '"The whole (100%) is {{wholeValue}}. You are finding a part of it."' },
-        { pattern: 'Difficulty with non-benchmark percents', response: '"Break it down: find 10% first (divide by 10), then scale up."' },
-        { pattern: 'Subtraction-mode answer = rate, not 100 - rate', response: '"Discount mode: a {{targetPercent}}% discount means 100% - that = what you still pay. Subtract from 100."' },
-        { pattern: 'Addition-mode places only the added rate, not the total', response: '"Tax and tip ADD ON TOP. The whole bill is 100% — add the rate to get the total, which lands past the 100% mark."' },
-        { pattern: 'Comparison-mode assumes the bigger discount is cheaper', response: '"Bigger % off does not always win — it depends on the original price. Compute each sale price first, then compare the dollars."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MODE-AWARE GUIDANCE',
-          instruction:
-            'For DIRECT mode: the answer is the percent given in the scenario — student just places it. '
-            + 'For SUBTRACTION (discount) mode: answer = 100 - the discount rate. Coach the subtraction explicitly. '
-            + 'For ADDITION (tax/tip/markup) mode: a TWO-STEP problem. Step 1 = place the added rate (the dollar value shows the tip/tax). Step 2 = place the TOTAL = 100% + the rate; the bar extends past 100%. Never name the total for them. '
-            + 'For COMPARISON mode: a MULTI-STEP shopping problem. Steps 1-2 = place each good\'s sale price as a percent of its own original (value shows the dollar price). Step 3 = choose which is cheaper/pricier. Coach the student to compare the COMPUTED PRICES, not the discount percents — a bigger % off is not always cheaper.',
-        },
-        {
-          title: 'MULTI-PERCENT PACING',
-          instruction:
-            'After each challenge is solved, give a brief celebration and frame the next one as a fresh scenario. '
-            + 'Reference progress ("Challenge {{currentChallengeIndex}} of {{totalChallenges}}") when natural. '
-            + 'Do not re-introduce the percent-bar metaphor each time — once is enough.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'balance-scale',
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Hands steps and spoken steps alternate. Hands: tap numbered weights onto a pan, set a known weight aside '
-        + 'on both sides, or share weight units into one equal group per identical parcel. Spoken: a total, the weight in one '
-        + 'group, or the weight of one parcel; two_step ends with an explanation of why one equal share is x. The activity checks '
-        + 'a hands step and commits it only when the move is complete and the learner stops; an unbalanced or uneven move is '
-        + 'exploration, not a wrong answer. What the learner is finding (the unnumbered left weight, the missing part of a '
-        + 'load, the weight of one sealed parcel) has no number on screen: during a hands step never say it, the total to '
-        + 'reach, or which weights to use. Say each question aloud; the learner '
-        + 'may not read it. A mixed-equation session instead solves on the scale and types x, which the scale checks. '
-        + 'You cannot place, move, remove or share weights, or open a parcel.',
-      // The spoken steps' known wrong weights (`balanceSpokenMisses`). The hands steps name none: an incomplete move
-      // is exploration. The two_step explanation names none: it is a free explanation.
-      misses: (() => {
-        const off: SpokenBalanceMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-        const share: SpokenBalanceMiss[] = ['said_remaining', 'said_parcels', 'said_whole'];
-        return missLists<SpokenBalanceMiss>({
-          equality: off, equality_hard: off,
-          one_step: ['said_whole', 'said_given_part', 'added_both', ...off],
-          one_step_hard: [...share, ...off],
-          ...sameMisses<SpokenBalanceMiss>(['two_step_intro', 'two_step'], [...share, 'said_change', 'said_one_parcel', ...off]),
-        });
-      })(),
-    },
+    ...bossEntry(balanceScaleCard),
     description: 'Touch-and-voice weight workshop with six mathematical actions: match and add; compose the same weight two ways; complete a known load; share among identical parcels; separate known weight then share; and connect those moves to equations. Unknown parcels have identical opaque containers; known weights show their quantities. Each challenge includes manipulation and separate spoken interpretation. Numeric pools are code-built. Never supply numbers in the manifest.',
-    audioInputByMode: {
-      equality: { manual_activity: true }, equality_hard: { manual_activity: true },
-      one_step: { manual_activity: true }, one_step_hard: { manual_activity: true },
-      two_step_intro: { manual_activity: true }, two_step: { manual_activity: true },
-    },
     constraints: 'The generator pre-selects every equation (leftSide, rightSide, variableValue) per session — the manifest must NOT supply specific numbers, sides, or solutions. The manifest may set instanceCount (default 4, max 6), showTilt, and the targetEvalMode.',
-    affordances: { representation: ['concrete', 'pictorial', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Balance scale session: {{title}}. Mode: {{challengeType}}. Equation {{currentChallengeIndex}} of {{totalChallenges}}. Current: {{currentEquation}}. Phase: {{phase}}. Steps taken: {{stepCount}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetEquation', 'currentEquation', 'variableValue', 'gradeBand', 'phase', 'stepCount', 'isSolved', 'isBalanced', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What do you notice about the two sides of the scale?"',
-        level2: '"Look for a number that appears on the same side as x. Can you remove it from both sides?"',
-        level3: '"The equation is {{currentEquation}}. To isolate x, subtract the constant from both sides. That gives you x = {{variableValue}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Removing from only one side', response: '"Whatever you do to one side, you MUST do to the other side too! That keeps the scale balanced."' },
-        { pattern: 'Not knowing which operation to use', response: '"Look at what is next to x. If there is a + number, subtract it. If there is a × number, divide by it."' },
-        { pattern: 'Incorrect verification', response: '"Plug your answer back in: replace x with your answer. Does the left side equal the right side?"' },
-        { pattern: 'Stuck in explore phase', response: '"Click Start Solving when you are ready. Then click on blocks or use the operations panel."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PHASE-AWARE GUIDANCE',
-          instruction:
-            'In EXPLORE phase: let the student click and play freely. Ask: "What happens when you add to one side? Does the scale stay balanced?" '
-            + 'In SOLVE phase: guide one step at a time. Never solve multiple steps at once. '
-            + 'Ask: "What should we remove first?" After each step, pause and let the student observe the scale. '
-            + 'In VERIFY phase: guide substitution — "Replace x with your answer. Does it balance?"',
-        },
-        {
-          title: 'GRADE-BAND ADAPTATION',
-          instruction:
-            'For K-2: use concrete "mystery number" language — "What number is hiding under the box?" Avoid "x" and "equation." '
-            + 'For grades 3-4: introduce "equation" and "x" but tie to the concrete scale — "x is the mystery number on the scale." '
-            + 'For grade 5: use algebraic language — "Isolate the variable by performing inverse operations on both sides."',
-        },
-        {
-          title: 'MULTI-EQUATION PACING',
-          instruction:
-            'After each equation is solved, give a brief celebration and frame the next one as a fresh puzzle. '
-            + 'Reference progress ("Equation {{currentChallengeIndex}} of {{totalChallenges}}") when natural. '
-            + 'Do not re-introduce the balance metaphor each time — once is enough.',
-        },
-      ],
-      studentPrompts: [
-        {
-          kind: 'explain',
-          label: 'What do I do with {{currentEquation}}?',
-          prompt: "I'm looking at {{currentEquation}}. What should my first step be?",
-        },
-        { kind: 'hint', label: 'Give me a nudge', hintLevel: 1 },
-        { kind: 'hint', label: 'Show me the next step', hintLevel: 2 },
-        {
-          kind: 'check',
-          label: 'Did I keep it balanced?',
-          prompt: "Did I keep both sides balanced? I'm on step {{stepCount}}.",
-        },
-        {
-          kind: 'advance',
-          label: 'Next equation',
-          prompt:
-            "I solved it! Ready for equation {{currentChallengeIndex}} of {{totalChallenges}}.",
-          showWhen: { key: 'isSolved' },
-        },
-      ],
-    },
+    affordances: { representation: ['concrete', 'pictorial', 'symbolic'], answers: ['tap', 'manipulate', 'spoken'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -1720,72 +943,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'function-machine',
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks every answer itself, and you are not told it. Observe and predict show the rule on the '
-        + 'machine: working an input through it step by step is teaching, but on predict stop before the result: never say '
-        + 'an output, or count up to it, before the learner predicts it right; the screen shows an output only after a '
-        + 'right prediction. Discover and create hide '
-        + 'the rule, because finding it is the task: never say the rule, its operation (add, take away, times, double, '
-        + 'half) or its number, and never say how an output relates to its input. Point the learner to two pairs, ask how '
-        + 'the output changed when the input grew by 1 and whether that change stays the same, and ask whether their rule '
-        + 'fits every pair, not just one. Make asks for two different machines that turn one input into one output: never '
-        + 'suggest an operation, a number, or how much to change a tile; talk about the machine the learner built and what '
-        + 'it gave, and ask what it needs to do instead. Running the '
-        + 'learner’s own rule on an input aloud is teaching. You cannot feed inputs, type, or tap tiles for the learner.',
-      // Every checked mode declares levers (`functionMachineLevers.ts`); observe has none, since nothing in it can miss.
-      levers: true,
-      // The activity's own checks (`predictMiss`, `guessMiss`, `judgeMakeRule`). Observe has no check that can fail.
-      misses: missLists<FunctionMachineMiss>({
-        predict: ['gave_input', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'too_high', 'too_low'],
-        discover_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
-        create_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
-        make_rule: ['not_a_rule', 'no_input', 'wrong_output', 'same_machine'],
-      }),
-    },
+    ...bossEntry(functionMachineCard),
     description: 'Visual "machine" with input hopper, rule display, and output chute. Each session walks the student through 3-6 distinct function rules of the same challenge type (observe / predict / discover_rule / create_rule). Numbers enter, get transformed by the rule, and exit. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
     constraints: 'The generator pre-selects the rules and input queues for each session — the manifest must NOT supply specific rules, inputs, or numeric values. The manifest may set instanceCount (default 3, max 6), ruleComplexity, gradeBand, outputDisplay, and the targetEvalMode.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Function machine session: {{title}}. Mode: {{challengeType}}. Function {{currentChallengeIndex}} of {{totalChallenges}}. Current rule: {{rule}} (visible={{showRule}}). Pairs observed: {{pairsCount}}. Predictions: {{predictionsCorrect}}/{{predictionsTotal}}. Grade band: {{gradeBand}}.',
-      contextKeys: ['challengeType', 'title', 'currentChallengeIndex', 'totalChallenges', 'rule', 'showRule', 'processedPairs', 'guessedRule', 'gradeBand', 'ruleComplexity', 'pairsCount', 'predictionsCorrect', 'predictionsTotal', 'guessAttempts', 'ruleDiscovered'],
-      scaffoldingLevels: {
-        level1: '"Look at the input and output. What changed? What stayed the same?"',
-        level2: '"Compare the pairs: input {{input1}} → output {{output1}}, input {{input2}} → output {{output2}}. What pattern do you see?"',
-        level3: '"Each output = input {{operation}} {{operand}}. Try it: {{input}} {{operation}} {{operand}} = {{output}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Guessing additively for multiplicative rules', response: '"The change is not the same each time. Try multiplying instead of adding."' },
-        { pattern: 'Only looking at one pair', response: '"Look at multiple input-output pairs. The rule works for ALL of them."' },
-        { pattern: 'Confusing two-step rules', response: '"Some rules have two steps. Try: first multiply, then add (or subtract)."' },
-        { pattern: 'Prediction consistently wrong', response: '"Look at the pairs you already have. Before you predict, check: does your idea work for ALL previous pairs?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'CHALLENGE-TYPE GUIDANCE',
-          instruction:
-            'In observe mode: let the student explore freely, narrate the transformation. '
-            + 'In predict mode: ask "What do you think will come out?" BEFORE revealing the output. Celebrate correct predictions. '
-            + 'In discover_rule mode: guide toward the rule using scaffolding. Never reveal the rule directly. '
-            + 'In create_rule mode: focus on writing the rule symbolically. Confirm understanding of the operation order. '
-            + 'In make_rule mode the learner invents a rule that turns one input into one output, then a different rule for the '
-            + 'same pair; never say a rule, an operation or a number that would make the pair. Talk about the machine they built.',
-        },
-        {
-          title: 'GRADE-BAND ADAPTATION',
-          instruction:
-            'For grades 3-4: use simple language, focus on one-step patterns like "add 3" or "double". '
-            + 'For grade 5: introduce two-step thinking: "first multiply, then add". '
-            + 'For advanced: use algebraic notation f(x), discuss domain and range concepts.',
-        },
-        {
-          title: 'MULTI-RULE PACING',
-          instruction:
-            'After each rule is complete, give a brief celebration and frame the next one as a fresh puzzle. '
-            + 'Reference progress ("Function {{currentChallengeIndex}} of {{totalChallenges}}") when appropriate.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -1837,9 +998,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'coordinate-graph',
+    ...bossEntry(coordinateGraphCard),
     description: 'Interactive coordinate plane with structured challenges. Students plot points by clicking grid intersections, identify coordinates of displayed points, calculate slopes using rise/run triangles, and find y-intercepts of lines. SVG-based with snap-to-grid interaction. ESSENTIAL for Grades 5-8 algebra readiness and Algebra I.',
     constraints: 'Requires gridMin/gridMax (integer bounds for both axes). Challenges must use integer coordinates within the grid range. For plot_point, target must be on a grid intersection. For find_slope, points must have integer coordinates producing clean slope fractions. For find_intercept, the line must cross the y-axis at an integer.',
-    affordances: { representation: 'symbolic', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'symbolic', answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'plot_point',
@@ -1848,6 +1010,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['plot_point'],
         description: 'Student clicks the correct grid intersection for given coordinates. Tests ordered pair comprehension.',
+        // A point placed anywhere on the plane, not a choice among offered ones (shape-tracer's corners are the same).
+        affordances: { answers: ['manipulate'] },
       },
       {
         evalMode: 'read_point',
@@ -1856,6 +1020,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['read_point'],
         description: 'A point is displayed on the grid. Student identifies its coordinates from multiple choice options.',
+        affordances: { answers: ['tap'] },
       },
       {
         evalMode: 'find_slope',
@@ -1864,6 +1029,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['find_slope'],
         description: 'Two points and a rise/run triangle are shown. Student identifies the slope from multiple choice options.',
+        affordances: { answers: ['tap'] },
       },
       {
         evalMode: 'find_intercept',
@@ -1872,46 +1038,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 5,
         challengeTypes: ['find_intercept'],
         description: 'A line is drawn across the grid. Student identifies where it crosses the y-axis from multiple choice options.',
+        affordances: { answers: ['tap'] },
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is working on a coordinate plane challenge: {{challenge.type}}. Current instruction: "{{challenge.instruction}}". Grid range: {{gridMin}} to {{gridMax}}.',
-      contextKeys: ['challenges', 'gridMin', 'gridMax', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Can you think about what each number in the ordered pair tells you? Which one is horizontal and which is vertical?"',
-        level2: '"Let\'s break this down. Start at the origin (0,0). The x-coordinate tells you how far to go left or right. The y-coordinate tells you how far to go up or down. Try tracing with your finger."',
-        level3: '"Step by step: First, find {{challenge.x1}} on the x-axis (horizontal). Now from that spot, count {{challenge.y1}} units up (positive) or down (negative) on the y-axis. That\'s where the point goes."',
-      },
-      commonStruggles: [
-        { pattern: 'Student swaps x and y coordinates when plotting', response: 'Remember: x comes first and goes left-right, y comes second and goes up-down. Think "x across, y up".' },
-        { pattern: 'Student confused by negative coordinates', response: 'Negative x means go LEFT from the origin. Negative y means go DOWN. The origin (0,0) is your starting point.' },
-        { pattern: 'Student cannot calculate slope from two points', response: 'Slope is rise over run. Rise = how much you go up or down (change in y). Run = how much you go left or right (change in x). Look at the dashed triangle on the graph.' },
-        { pattern: 'Student confuses slope and y-intercept', response: 'The y-intercept is WHERE the line crosses the y-axis (the vertical line). The slope is HOW STEEP the line is. They are different properties of the line.' },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
-      guidance: 'The activity checks each answer itself, and you are not told it: to plot, the learner taps a grid '
-        + 'crossing; otherwise the learner taps one of four choices. Before a check and after a wrong one, never say the '
-        + 'highlighted point\'s ordered pair, the slope, the y-intercept, which choice is right, or a rise or run the '
-        + 'plane does not label: reading and working them out is the task. You may read the instruction, the choices, '
-        + 'and any pair or number the plane labels. Teaching is direction and order: from the origin, x first, across '
-        + '(negative is left), then y, up or down (negative is down); slope is rise over run, the change in y over the '
-        + 'change in x, negative when the line falls from left to right; the y-intercept is where the line meets the '
-        + 'y-axis, where x is 0, not a marked point and not the slope. Ask which way to move first and how many steps, '
-        + 'or how far the line goes up for each step across. A wrong choice\'s named miss tells you how it differs from '
-        + 'the answer: ask about that difference, and never turn it into the direction or number the answer has. When '
-        + 'the learner is stuck, give one step and let them take the next: on a slope, ask which number goes on top, and '
-        + 'never say the fraction or what it simplifies to. You cannot tap the grid or a choice.',
-      // Every mode declares levers (`coordinateGraphLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`coordinateMiss`), every mode.
-      misses: { ...COORDINATE_MISSES_BY_MODE },
-    },
     supportsEvaluation: true,
   },
   {
     id: 'slope-triangle',
+    ...bossEntry(slopeTriangleCard),
     description: 'Multi-challenge slope triangle session (3-6 distinct lines of the same challenge type). Each challenge shows a line on a coordinate grid with a right triangle illustrating rise and run; the student reads or constructs the triangle to find slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent). Supports rise/run notation for younger students and Δy/Δx notation for older ones. The system pre-builds the line equations and triangle positions per challenge — the manifest must NOT specify equations, slopes, or triangle dimensions.',
     constraints: 'The manifest must NOT supply equations, slopes, or triangle positions/sizes — these are built per challenge by the pool service. Provide only topic + grade-level context and (optionally) instanceCount and targetEvalMode.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: 'apply', minutes: 5 },
@@ -1942,83 +1076,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Build a slope triangle on a given line: choose a run and set the rise so the top corner lands back on the line (rise = slope × run). Δy/Δx notation.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-line slope triangle session. Mode: {{challengeType}}. Line {{currentChallengeIndex}} of {{totalChallenges}}: {{equation}}. Expected slope = {{expectedSlope}} (rise {{expectedRise}} over run {{expectedRun}}).',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'equation', 'slope', 'expectedRise', 'expectedRun', 'expectedSlope', 'notation', 'gradeBand', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"How steep is this line? Does it go uphill or downhill?"',
-        level2: '"Count the rise (vertical change) and the run (horizontal change). Divide rise by run."',
-        level3: '"Rise = {{expectedRise}}, Run = {{expectedRun}}. Slope = rise ÷ run = {{expectedRise}} ÷ {{expectedRun}} = {{expectedSlope}}."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing rise and run', response: '"Rise is vertical (up/down). Run is horizontal (left/right). Rise over run."' },
-        { pattern: 'Negative slope confusion', response: '"If the line goes downhill (left to right), the rise is negative. The slope is negative."' },
-        { pattern: 'Thinking slope changes with triangle size', response: '"Even a bigger triangle gives the same slope. The ratio rise/run is constant along a line."' },
-        { pattern: 'Forgetting to simplify a fractional slope', response: '"Reduce the fraction. 4/6 = 2/3."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-LINE PACING',
-          instruction:
-            'The session walks through several distinct lines of the same challenge type. '
-            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next line — same idea, different numbers." '
-            + 'Do NOT re-introduce the concept from scratch on every line; the second through Nth challenges should feel like fluency practice, not lesson restarts.',
-        },
-        {
-          title: 'SLOPE CONSTANCY DISCOVERY',
-          instruction:
-            'Across the multi-line session, reinforce that slope is CONSTANT along each individual line. '
-            + 'On any line, dragging or resizing the triangle does not change rise ÷ run. '
-            + 'Across lines, different equations give different slopes — that is the point of practicing multiple. '
-            + 'Connect to rate of change: a slope of 2 means y goes up 2 for every 1 step right; a slope of -1/3 means y goes down 1 for every 3 steps right.',
-        },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11'],
-      guidance: 'The activity checks each answer itself, and you are not told it. Reading a triangle, the learner types its '
-        + 'rise and its run; calculating, the learner types the slope as a number or a fraction (any equal fraction counts); '
-        + 'building, the learner chooses a run and raises or lowers the top corner until it lands back on the line; any run '
-        + 'whose rise is a whole number of steps fits. Before a check and after a wrong one, never say the rise, the run, '
-        + 'the slope, the fraction it reduces to, or the rise a built run needs: working them out is the task. The line '
-        + 'label shows the slope as ?x where the item asks for it. You may read the instruction, the line label, and any '
-        + 'number the card prints (the legs, a build\'s current run and rise). Teaching is '
-        + 'counting and direction: the run is the grid steps across from the left corner to the right-angle corner; the '
-        + 'rise is the grid steps up or down from the right-angle corner to the line, negative when the line falls from '
-        + 'left to right; slope is rise divided by run, the same for every triangle on one line. Ask which leg goes up or '
-        + 'down and how many steps it covers, or which number goes on top. A wrong answer\'s named miss tells you how it '
-        + 'differs from the answer: ask about that difference, and never turn it into the answer\'s number. When the '
-        + 'learner is stuck, give one step and let them take the next. You cannot type, move the triangle or press Check.',
-      // Every mode declares levers (`slopeTriangleLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`slopeTriangleMiss`), every mode.
-      misses: { ...SLOPE_TRIANGLE_MISSES_BY_MODE },
-    },
     supportsEvaluation: true,
   },
   {
     id: 'systems-equations-visualizer',
-    teachingWorkspace: {
-      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The learner types x and y into two boxes and presses Check; the activity checks the pair itself, and you '
-        + 'are not told the solution. Before a check and after a wrong one, never say the solution, either coordinate, or '
-        + 'the result of any step (the x that setting equal or eliminating gives, the y it leads to): working them out is '
-        + 'the task. You may read the two equations, the instruction and any number the screen prints. On graph items both '
-        + 'lines are drawn and the crossing is not marked; on substitution and elimination the graph stays hidden until the '
-        + 'answer is right, so never describe where the lines cross. Teaching is the method: the solution is the one point '
-        + 'on BOTH lines, so it makes both equations true; substitution sets the two expressions for y equal, solves for x, '
-        + 'then puts x back in to find y; elimination lines up the x, y and constant columns and adds or scales the '
-        + 'equations so one variable cancels. A wrong check\'s named miss says how the pair differs (on one line only, x '
-        + 'right and y wrong, swapped, a sign): ask about that difference, such as which equation the pair fails, and never '
-        + 'turn it into the answer\'s number or sign. Never suggest swapping x and y, flipping a sign or keeping one '
-        + 'coordinate: on a named miss that hands over the answer; send the learner back to the method. When the learner is stuck, give one step and let them take the next: '
-        + 'name the step, never its result. You cannot type, press Check or show the graph.',
-      // Every mode declares levers (`systemsEquationsLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`systemsMiss`), every mode.
-      misses: { ...SYSTEMS_MISSES_BY_MODE },
-    },
-    description: 'Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution method, surfaced sequentially). Per challenge, students see two linear equations and one integer (x, y) solution, then type the answer for immediate judgment. Wrong answers prompt a hint; correct answers reveal the intersection on the graph and advance. Supports graphing (slope-intercept lines drawn for visual reading), substitution (equations in y = mx + b form, graph hidden until correct), and elimination (equations in a·x + b·y = c form, graph hidden until correct). ESSENTIAL for grade 8 (systems introduction via graphing), Algebra 1 (substitution + elimination), and Algebra 2 (efficient method selection).',
+    ...bossEntry(systemsEquationsCard),
+    description: 'Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution method, surfaced sequentially). Per challenge, students see two linear equations and one integer (x, y) solution, then type the answer for immediate judgment. A wrong pair stays for another try; a correct pair reveals the intersection on the graph and advances. Supports graphing (slope-intercept lines drawn for visual reading), substitution (equations in y = mx + b form, graph hidden until correct), and elimination (equations in a·x + b·y = c form, graph hidden until correct). ESSENTIAL for grade 8 (systems introduction via graphing), Algebra 1 (substitution + elimination), and Algebra 2 (efficient method selection).',
     constraints: 'Manifest must NOT supply specific equations, slopes, intercepts, or solutions — the pool service builds 3-6 distinct systems deterministically from the eval mode and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape: graph uses integer slopes (m ∈ {±1, ±2, ±3, ±1/2}) and integer intersections in [-4, 4]; substitution uses the same slope-intercept form with mixed integer/fractional slopes; elimination uses small integer coefficients (a, b ∈ {±1, ±2, ±3}) with integer solutions and a·x + b·y = c display form.',
     affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
@@ -2048,72 +1111,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Solve a·x + b·y = c systems by adding or scaling. Graph hidden until correct. CCSS A-REI.C.5. Algebra 1 / 2.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-system practice session. Method: {{challengeType}}. System {{currentChallengeIndex}} of {{totalChallenges}}. Equations: {{equationA}} and {{equationB}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'equationA', 'equationB', 'systemForm', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Two equations, one (x, y) that satisfies BOTH. What method are you using?"',
-        level2: '"Walk through the method one step at a time. For substitution: set the two y-expressions equal. For elimination: line up x or y columns."',
-        level3: '"Plug a candidate solution into both equations — it must work in both. Verify before you commit."',
-      },
-      commonStruggles: [
-        { pattern: 'Reading intersection off the graph wrong', response: '"Trace each line carefully. The intersection is the single point both lines share — read x first, then y."' },
-        { pattern: 'Substitution: forgot to back-substitute', response: '"You found x. Now plug that x into either equation to find y."' },
-        { pattern: 'Elimination: signs not lined up', response: '"To cancel a variable, the coefficients must be opposites. Multiply one equation by -1 if needed."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'METHOD-AWARE COACHING',
-          instruction:
-            'For GRAPH mode: guide visual inspection — "Trace each line to where they cross. That point is the solution." '
-            + 'For SUBSTITUTION mode: guide setting equations equal — "Both are solved for y, so set them equal and solve for x. Then back-substitute." '
-            + 'For ELIMINATION mode: guide coefficient alignment — "Can you add or subtract the equations so one variable cancels? Multiply if the coefficients don\'t match yet." '
-            + 'Always end with verification: "Plug (x, y) into BOTH equations. It must work in both."',
-        },
-        {
-          title: 'MULTI-SYSTEM PACING',
-          instruction:
-            'This is a {{totalChallenges}}-system session. After each correct answer the student clicks "Next System →". '
-            + 'Encourage progression: "Nice — on to system {{currentChallengeIndex}}!" '
-            + 'After a wrong attempt, point at the specific step (set-equal, distribute, eliminate) that needs another look — '
-            + 'do NOT just repeat the whole method.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'polygon-area-builder',
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
-      guidance: 'Most modes ask for an area the learner types and checks with Check; the screen checks it against the '
-        + 'figure. The drawn lengths are the givens; the area, and any piece\'s area, is the answer: never say one before '
-        + 'the check. On decompose the learner first drags the cut triangle into the slot to make a rectangle, which '
-        + "unlocks the answer box. The open build (build_area) is answered on an empty grid: the learner taps squares to "
-        + "shade them into ONE shape (squares joined along a side) with the area the task states, then presses I'm done; "
-        + 'a two-shape item then asks for a different shape with the same area, and the first shape moved, turned or '
-        + 'flipped is not different. The grid checks the count, that it is one shape, and that the second differs. '
-        + 'Counting the squares is the skill: never say how many are shaded or how many more are needed. You cannot '
-        + 'type, drag, shade or clear squares for the learner. The perimeter build (build_perimeter) is the same grid: '
-        + 'one shape, no hole, whose sides around the outside make the perimeter the task states; never say how many sides '
-        + 'go around the shape or how many squares it has.',
-      levers: true,
-      // The screen's own check (`areaMiss` for a typed area, `buildAreaMiss` / `buildPerimeterMiss` for the open builds).
-      misses: (() => {
-        const typed: AreaMiss[] = ['forgot_half', 'halved', 'added_sides', 'wrong_area'];
-        return missLists<AreaMiss | BuildAreaMiss | BuildPerimeterMiss>({
-          decompose: ['halved', 'added_sides', 'wrong_area'],
-          find_area_triangle_parallelogram: typed,
-          find_area_trapezoid: ['forgot_half', 'added_sides', 'wrong_area'],
-          composite_area: ['one_piece', 'halved', 'wrong_area'],
-          // No forgot_half: `areaMiss` names a coordinate triangle's base × height `bounding_box` (it is the rectangle).
-          coordinate_polygon: ['bounding_box', 'halved', 'wrong_area'],
-          build_area: ['one_short', 'one_over', 'short_by_more', 'over_by_more', 'not_connected', 'same_as_first'],
-          build_perimeter: ['two_short', 'two_over', 'short_by_more', 'over_by_more', 'counted_squares', 'not_connected',
-            'has_hole', 'same_as_first'],
-        });
-      })(),
-    },
+    ...bossEntry(polygonAreaBuilderCard),
     description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. One more mode is an OPEN BUILD for Grade 3 (build_area, 3.MD.C.5-6): on an empty square grid the student shades unit squares into a shape with a stated area, then a different shape with the same area; any shape with that area passes. A second open build is for Grade 3 perimeter (build_perimeter, 3.MD.D.8): the student shades a shape whose perimeter is stated, then a different shape with the same perimeter (same perimeter, different area). The system pre-builds each figure (dimensions, coordinates, rectangle parts, build areas) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
     constraints: 'The manifest must NOT supply per-figure dimensions, coordinates, rectangle parts, or areas — the pool service builds 3-6 distinct figures deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challenge type of the same name.',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 8 },
@@ -2178,62 +1180,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Find the area of a polygon from its vertex coordinates on a grid.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-figure polygon-area session. Mode: {{challengeType}}. Figure {{currentChallengeIndex}} of {{totalChallenges}} ({{figureType}}). Expected area = {{expectedArea}} {{unitLabel}}².',
-      contextKeys: ['challengeType', 'figureType', 'currentChallengeIndex', 'totalChallenges', 'base', 'base2', 'height', 'expectedArea', 'unitLabel', 'gradeBand', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"What kind of shape is this? Can you see a rectangle hiding inside it, or a way to cut it into pieces you already know?"',
-        level2: '"Use the right formula for this figure: triangle = ½·b·h, parallelogram = b·h, trapezoid = ½·(b1+b2)·h, composite = decompose into rectangles and add, coordinate polygon = count the whole grid units inside."',
-        level3: '"This figure has base {{base}} and height {{height}}. Plug those into the formula for a {{figureType}}: the area works out to {{expectedArea}} {{unitLabel}}². Walk through each multiplication, then write the result."',
-      },
-      commonStruggles: [
-        { pattern: 'Forgetting the ½ for a triangle', response: '"A triangle is exactly HALF of a rectangle with the same base and height. After base × height, remember to take half."' },
-        { pattern: 'Using a slant side instead of the perpendicular height', response: '"Height must be perpendicular (straight up) from the base — not the slanted edge. Look for the right-angle mark."' },
-        { pattern: 'Adding the two trapezoid bases without halving', response: '"For a trapezoid, average the two bases first: (b1 + b2) ÷ 2, THEN multiply by the height."' },
-        { pattern: 'Double-counting the overlap in a composite figure', response: '"When you split into rectangles, make sure the pieces do not overlap. Each square of the figure should be counted exactly once."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-FIGURE PACING',
-          instruction:
-            'The session walks through several distinct figures of the same eval mode. '
-            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next figure — same method, new shape." '
-            + 'Do NOT re-teach the formula from scratch on every figure; the second through Nth challenges should feel like fluency practice, not lesson restarts. '
-            + 'The student is on figure {{currentChallengeIndex}} of {{totalChallenges}}.',
-        },
-        {
-          title: 'FORMULA DERIVATION',
-          instruction:
-            'Reinforce that EVERY polygon area comes from base × height. '
-            + 'A triangle is half of a rectangle (½·b·h). A parallelogram rearranges into a rectangle of the same base and height (b·h) — that is the conservation-of-area idea from the decompose tier. '
-            + 'A trapezoid averages its two parallel bases, then multiplies by height (½·(b1+b2)·h). '
-            + 'A composite figure is just several rectangles added together, and a coordinate polygon decomposes into rectangles and triangles on the grid. '
-            + 'Keep returning to this through-line: students who see WHY the formula is base × height stop memorizing four disconnected rules.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'circle-explorer',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number in the answer '
-        + 'box and presses Check; on discover π they first press Unroll the circumference. Before a check and after a wrong '
-        + 'one, never say the ratio, the circumference, the area, the radius a reverse item asks for, a composite\'s result, '
-        + 'or the result of any calculation on the figure\'s numbers. Teaching is that π is the circumference divided by the '
-        + 'diameter, a little more than three, the same for every circle; the circumference is π times the diameter (or two '
-        + 'times π times the radius) and is a length; the area is π times the radius times the radius, in square units; a '
-        + 'reverse item undoes those steps in reverse order; a semicircle is half a circle, its perimeter is the curved half '
-        + 'plus the diameter, and a circle in a square leaves the square minus the circle. Ask whether the item wants the '
-        + 'distance around or the space inside, and whether the figure gives the radius or the diameter. When the figure '
-        + 'withholds its formula labels, do not name the formula; ask what the figure shows. Read the question aloud. You '
-        + 'cannot type, unroll, slice, or press Check.',
-      // Every mode declares levers (`circleExplorerLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`circleMiss`), every mode.
-      misses: { ...CIRCLE_MISSES_BY_MODE },
-    },
     description: 'Multi-circle grade-7 session (3-6 distinct circles of the same eval mode, surfaced sequentially) for discovering and applying the geometry of circles. Students first uncover π itself by measuring C ÷ d across several circles and recognizing the constant ≈ 3.14, then find circumference from a radius or diameter (C = 2πr = πd), find area from a radius (A = πr²), work backward to recover the radius given a circumference or an area, and finally tackle composite figures (semicircle area/perimeter, circle-in-square). Canvas-based with two signature interactions: an unroll-the-circumference animation that straightens the perimeter into a line of length πd, and a slice-into-wedges rearrangement that morphs the circle into a near-rectangle of base πr and height r to reveal A = πr². Five progressive difficulty tiers (discover π → circumference → area → reverse → composite). CCSS 7.G.B.4. Grade 7. Fork-A: the pool service pre-builds each circle (radius, given value, composite dimensions, answer) deterministically per challenge — the manifest must NOT specify radii, given values, dimensions, or answers.',
     constraints: 'The manifest must NOT supply per-circle radii, given values, composite dimensions, or answers — the pool service builds 3-6 distinct circles deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challengeType of the same name.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: ['visualize', 'apply'], minutes: 5 },
@@ -2280,60 +1230,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Semicircle area/perimeter and circle-in-square composite figures.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-circle session. Mode: {{challengeType}}. Circle {{currentChallengeIndex}} of {{totalChallenges}} (radius {{radius}} {{unitLabel}}). Expected answer = {{expectedAnswer}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'radius', 'given', 'answerKind', 'reverseGiven', 'compositeShape', 'unitLabel', 'expectedAnswer', 'gradeBand', 'attemptNumber'],
-      scaffoldingLevels: {
-        level1: '"Every circle answer flows from one number — π. Before you compute anything, ask yourself: does this question want what is AROUND the circle or INSIDE it, and do you need the radius or the diameter to get there?"',
-        level2: '"Pick the relationship that matches this mode: circumference is C = 2πr = πd; area is A = πr²; to work backward, divide a circumference by 2π to get the radius, or take √(A/π) for the radius from an area; for a composite, a semicircle is exactly half a circle, and a circle-in-square is the square minus the inscribed circle. This circle has radius {{radius}} {{unitLabel}} — match it to the right formula."',
-        level3: '"Start from radius {{radius}} {{unitLabel}}. For circumference, double the radius and multiply by π (2 × {{radius}} × π); for area, square the radius first ({{radius}} × {{radius}}) and then multiply by π; for reverse, undo that chain one step at a time; for a composite, build each circular piece and then combine. I have set up the multiplication for you — now you finish the arithmetic and tell me what you get."',
-      },
-      commonStruggles: [
-        { pattern: 'Using the diameter where the radius is needed (or the radius where the diameter is needed)', response: '"Check which length you have. The radius reaches from the center to the edge; the diameter goes all the way across (d = 2r). C = πd uses the diameter, but C = 2πr and A = πr² both use the radius."' },
-        { pattern: 'Forgetting to square the radius for area', response: '"Area is A = πr² — the radius is SQUARED, not just multiplied once. Compute r × r first, then multiply by π."' },
-        { pattern: 'Confusing circumference (around) with area (inside), and units with square units', response: '"Circumference measures the distance AROUND the circle and is reported in plain units; area measures the space INSIDE and is reported in square units. Decide which one the question wants before you start."' },
-        { pattern: 'For reverse problems, multiplying by 2π instead of dividing', response: '"To go from circumference back to the radius you must UNDO the formula: since C = 2πr, divide the circumference by 2π. Multiplying would make the radius far too big."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-CIRCLE PACING',
-          instruction:
-            'The session walks through several distinct circles of the same eval mode. '
-            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next circle — same method, new measurements." '
-            + 'Do NOT re-teach the formula from scratch on every circle; circles 2 through N should feel like fluency practice, not lesson restarts. '
-            + 'The student is on circle {{currentChallengeIndex}} of {{totalChallenges}}.',
-        },
-        {
-          title: 'PI AS A RATIO',
-          instruction:
-            'Keep returning to the through-line that π is simply C ÷ d — the ratio of any circle\'s circumference to its diameter, the same ≈ 3.14 for every circle. '
-            + 'That one constant powers BOTH circumference (C = 2πr = πd) and area (A = πr²). '
-            + 'Students who understand π as this single ratio stop memorizing disconnected formulas and instead see every circle answer as the same idea applied two ways.',
-        },
-      ],
-    },
+    ...bossEntry(circleExplorerCard),
     supportsEvaluation: true,
   },
   {
     id: 'angle-workshop',
-    teachingWorkspace: {
-      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks every answer itself, and you are not told it. On measure the learner places the '
-        + 'protractor and types the reading; on the solving modes they type the angle or x; on classify they tap a '
-        + 'relationship; each then presses Check. Before the check, and after a wrong one, never say the measure, the '
-        + 'value of x, or the relationship: ask what the learner notices in the figure (a square corner, a straight line, '
-        + 'crossing lines, parallel marks). On make an angle the learner turns a ray from a fixed ray and presses '
-        + 'I\'m done!; any angle of the asked kind passes. You are told the opening in degrees so you can follow the '
-        + 'work, and the screen does not show it: never say it, never say whether their angle is acute, right, obtuse '
-        + 'or straight, and never say which way to turn the ray; ask them to compare their angle with a square corner '
-        + 'or a straight line. You cannot type, tap or move the ray for the learner.',
-      // Every mode publishes levers (`angleWorkshopLevers.ts`); a help picture on the figure, a simpler item of the mode.
-      levers: true,
-      // The open build's check (`makeAngleMiss`) and the classic modes' (`classicMiss`, named for the value typed).
-      misses: { make_angle: MAKE_ANGLE_MISSES, ...ANGLE_CLASSIC_MISSES },
-      // make_angle `not_opened` has no lever: the ray never left the fixed ray, and the screen already says to open it.
-      unanswered: { make_angle: ['not_opened'] },
-    },
+    ...bossEntry(angleWorkshopCard),
     description: 'Interactive angle workshop where students measure, classify, and solve for unknown angles on a canvas figure. Perfect for angle relationships (complementary, supplementary, vertical, adjacent), writing and solving equations for unknown angles, and parallel-lines-with-a-transversal reasoning. ESSENTIAL for grade 7-8 geometry (CCSS 7.G.B.5, 8.G.A.5). Also an open build for grades 4-6: the student makes an acute, right, obtuse or straight angle, or one inside a degree range (4.G.A.1, 4.MD.C.5, 4.MD.C.6).',
     constraints: 'The manifest must NOT supply specific per-challenge angle values, measures, or relationships — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand).',
     affordances: { representation: 'pictorial', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
@@ -2394,54 +1296,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Parallel lines cut by a transversal, and triangle angle-sum / exterior-angle problems.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-problem angle session — the student measures, classifies, or solves for unknown angles across several figures. Currently on {{challengeType}} problem {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'relationship', 'solveConfig', 'algConfig', 'transversalShape', 'transRelation', 'knownAngle', 'givenAngle', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Which angles in the figure are connected — do they form a line, a right angle, or cross? Decide how they relate before you reach for any numbers."',
-        level2: '"Name the relationship first. This is a {{relationship}} pair, so the two angles have a fixed total or are equal. One angle here measures {{knownAngle}}° — write the relationship as an equation that links it to the unknown, but do NOT compute the answer yet."',
-        level3: '"Set it up step by step. Start from the relationship ({{relationship}}) and the known angle {{knownAngle}}°. Write the equation, isolate the unknown on one side, and — if the question asks for an algebraic angle — remember to substitute your value of x back into the expression. I have framed the equation; you finish the arithmetic and tell me what you get."',
-      },
-      commonStruggles: [
-        { pattern: 'Adds to 90 when the angles lie on a straight line', response: 'Point out the straight line means the two angles must total 180°, not 90°.' },
-        { pattern: 'Solves for x but submits x instead of the requested angle measure', response: 'Remind them to substitute x back into the expression when the question asks for the angle.' },
-        { pattern: 'Calls a straight-line pair "vertical"', response: 'Clarify vertical angles are the opposite pair where two lines cross.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-PROBLEM PACING',
-          instruction:
-            'This is a {{totalChallenges}}-problem session. After each correct answer, the student clicks "Next Problem →". '
-            + 'Encourage progression: "Nice — on to problem {{currentChallengeIndex}}!" '
-            + 'After a wrong attempt, point at the specific step that needs another look — '
-            + 'do NOT repeat the whole method from scratch.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'transformation-lab',
-    teachingWorkspace: {
-      grades: ['Grade 7', 'Grade 8'],
-      guidance: 'The activity checks the answer itself, and you are not told it. On a translation, reflection, rotation or '
-        + 'dilation the learner drags each pink corner to a grid point and presses Check. No target is drawn, because the '
-        + 'image is the answer: never say where a corner lands or give an image coordinate. On identify the learner taps one '
-        + 'of the named transformations and presses Check: never name it, its line or its angle, and never call the motion a '
-        + 'flip, mirror or turn, even as a conclusion; ask what happened to one corner\'s coordinates from the cyan figure '
-        + 'to the amber one and let the learner name the motion. On compose the dashed target is drawn and the learner '
-        + 'presses move buttons, then Check: never say which moves or how many squares. Teaching is what the motion does and '
-        + 'what it keeps: a slide moves every corner the same way, a flip mirrors the figure over a line, a turn swings it '
-        + 'about the origin, a dilation pushes every corner away from the origin by the scale factor. Rigid motions keep size '
-        + 'and shape (congruent); a dilation keeps the shape only (similar). Working through one corner the learner picks is '
-        + 'teaching; placing the corners is not. Never state a coordinate rule such as (x, y) to (-y, x) unless a rule card is '
-        + 'on screen, whatever the tier; without one, ask what the motion does to one corner. When coordinate labels are hidden, '
-        + 'do not read them out. Read the task aloud. You cannot drag, tap or press Check.',
-      // Every mode declares levers (`transformationLabLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`transformMiss`), every mode.
-      misses: { ...TRANSFORM_MISSES_BY_MODE },
-    },
+    ...bossEntry(transformationLabCard),
     description: 'Interactive coordinate-plane transformation lab where students slide, flip, turn, and scale a polygon and see what stays the same. Students drag image vertices to apply translations, reflections, and rotations; name transformations from a pre-image/image pair; compose sequences of motions to hit a target; and apply dilations to reason about similarity vs congruence. Perfect for rigid motions (translations, reflections, rotations), congruence via sequences of transformations, dilations, and similarity. ESSENTIAL for grade 8 geometry (CCSS 8.G.A.1, 8.G.A.2, 8.G.A.3, 8.G.A.4).',
     constraints: 'The manifest must NOT supply specific per-challenge vertices, coordinates, transformation parameters, or answers — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand=\'8\').',
     affordances: { representation: 'pictorial', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
@@ -2475,6 +1334,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compose_sequence',
+        affordances: { answers: ['manipulate'] },
         label: 'Compose a Sequence (Tier 5)',
         beta: 5.0,
         scaffoldingMode: 4,
@@ -2491,53 +1351,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Apply a scale factor about the origin; reason about similarity vs congruence.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-problem transformation session — the student slides, flips, turns, and scales polygons on a coordinate grid across several figures. Currently on {{challengeType}} problem {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'transformLabel', 'isSimilarity', 'scaleFactor', 'supportTier', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Follow ONE corner of the pre-image. Where should it land after this transformation — does it slide, flip across a line, turn around the origin, or scale away from it?"',
-        level2: '"Use the coordinate rule for {{transformLabel}}. Apply it to a single vertex first: write the new (x, y), then move that corner. Reflections swap or negate a coordinate; a 90° turn sends (x, y) to (−y, x); a dilation multiplies both coordinates by the scale factor."',
-        level3: '"Go vertex by vertex. Take each pre-image point, apply the rule for {{transformLabel}} to get its image coordinates, and place that corner. I will set up the rule for the first corner; you finish the rest and check that the whole figure matches."',
-      },
-      commonStruggles: [
-        { pattern: 'Reflects over the wrong axis (swaps which coordinate is negated)', response: 'Reflection over the x-axis negates y; over the y-axis negates x. Point at which axis is the mirror.' },
-        { pattern: 'Confuses rotation direction (90° CW vs CCW)', response: 'A 90° counterclockwise turn about the origin sends (x, y) to (−y, x). Have them test it on one corner.' },
-        { pattern: 'Calls a dilation congruent', response: 'A dilation changes size, so the image is similar, not congruent — only rigid motions preserve size.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-PROBLEM PACING',
-          instruction:
-            'This is a {{totalChallenges}}-problem session. After each correct answer, the student clicks "Next Problem →". '
-            + 'Encourage progression: "Nice — on to problem {{currentChallengeIndex}}!" '
-            + 'After a wrong attempt, point at the specific vertex or rule that needs another look — '
-            + 'do NOT re-explain the whole method from scratch.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'matrix-display',
-    teachingWorkspace: {
-      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number in every box '
-        + 'of the answer grid, or one number for a determinant, and presses Check; the check then marks each box right or '
-        + 'wrong. Before a check and after a wrong one, never say an entry of the answer, the determinant, or the result '
-        + 'of any product, sum or difference the learner has to work out; the numbers of the matrices on screen may be '
-        + 'read. Teaching is the rule of the operation: a transpose turns each row into the matching column; adding or '
-        + 'subtracting pairs the entries in the same position; a product box is a row of A times a column of B, matching '
-        + 'entries multiplied and then added; a two by two determinant is the main diagonal\'s product minus the other '
-        + 'diagonal\'s; a two by two inverse swaps the diagonal entries, changes the signs of the other two, and divides '
-        + 'by the determinant. Name one box and ask which entries go into it, then let the learner do the arithmetic. '
-        + 'When no rule line is on screen, do not state the formula; ask the learner to recall it. Say a formula in plain '
-        + 'words, never in symbols or markup. Read the task aloud. You cannot type or press Check.',
-      // Every mode declares levers (`matrixDisplayLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`matrixMiss`), every mode.
-      misses: { ...MATRIX_MISSES_BY_MODE },
-    },
-    description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
+    description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. The check marks each box right or wrong; a correct answer advances to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
     constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',
     affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -2574,40 +1392,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Calculate determinant or find inverse of square matrices.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-matrix practice session. Operation: {{challengeType}}. Matrix {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"What does {{challengeType}} do to a matrix? Describe the operation in your own words."',
-        level2: '"For {{challengeType}}, walk through ONE entry at a time. Start with the top-left position."',
-        level3: '"Use the formula directly: substitute the numbers from Matrix A (and Matrix B if there is one), then compute."',
-      },
-      commonStruggles: [
-        { pattern: 'Wrong determinant formula', response: '"For a 2×2 [[a,b],[c,d]], det = ad − bc. Cross-multiply diagonals."' },
-        { pattern: 'Matrix multiplication order', response: '"Row from A × column from B. Multiply corresponding entries and sum them."' },
-        { pattern: 'Inverse confusion', response: '"For [[a,b],[c,d]] with det = d, A⁻¹ = (1/det) · [[d, −b], [−c, a]]. Swap the diagonal, negate the off-diagonal."' },
-        { pattern: 'Transpose dimensions wrong', response: '"The transpose of an m×n matrix is n×m. Row i becomes column i."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'OPERATION-AWARE COACHING',
-          instruction:
-            'For DETERMINANT: walk through the cross-multiplication pattern — "Multiply a×d, then subtract b×c." '
-            + 'For MULTIPLICATION: guide row-by-column — "Take row 1 of matrix A and column 1 of matrix B. '
-            + 'Multiply matching entries and add: (a₁₁×b₁₁) + (a₁₂×b₂₁)." '
-            + 'For INVERSE: emphasize the swap-and-negate pattern — "Swap a and d, negate b and c, then divide by det." '
-            + 'For TRANSPOSE: emphasize the shape change — "Each row becomes a column. A 2×3 becomes a 3×2."',
-        },
-        {
-          title: 'MULTI-MATRIX PACING',
-          instruction:
-            'This is a {{totalChallenges}}-matrix session. After each correct answer, the student clicks "Next Matrix →". '
-            + 'Encourage progression: "Nice — on to matrix {{currentChallengeIndex}}!" '
-            + 'After a wrong attempt, point at the specific column or row that needs another look — '
-            + 'do NOT just repeat the formula.',
-        },
-      ],
-    },
+    ...bossEntry(matrixDisplayCard),
     supportsEvaluation: true,
   },
   {
@@ -2698,25 +1483,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'histogram',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner taps a shape word, taps a bar, '
-        + 'or types a number, then presses Check. Before a check and after a wrong one, never say which shape the graph is '
-        + '(the shape words on the buttons are the choices), which bar is tallest or its range, the asked bar\'s count, or '
-        + 'the mean or median. You are not told the bar heights; ask the learner what they see. Teaching: each bar covers '
-        + 'a range of values, from its left edge up to, not including, its right edge; its height, read straight across to '
-        + 'the frequency axis, is how many values fall in that range; the tallest bar is the modal bin; the shape is read '
-        + 'from where the tall bars sit and which side a long, low tail runs to, and a skew is named for the side of the '
-        + 'tail, not the peak; the median is the value with half the values on each side, the mean is where the bars would '
-        + 'balance, and a long tail pulls the mean toward it. A wrong check\'s miss names the confusion: peak_count is one '
-        + 'peak against two, flat_vs_peaked even bars against one middle peak, skew_reversed the tail\'s side, missed_skew '
-        + 'and called_skewed whether there is a long tail at all; teach that contrast, never a shape you guessed. An estimate is accepted within one bar width, so the learner '
-        + 'reads it from the picture rather than calculating. Read the question aloud. You cannot tap, type, or press Check.',
-      // Every mode declares levers (`histogramLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`histogramMiss`), every mode.
-      misses: { ...HISTOGRAM_MISSES_BY_MODE },
-    },
+    ...bossEntry(histogramCard),
     description: 'Multi-histogram analysis session (3-6 distinct histograms of the same challenge type) for grades 6-8 statistics. Each challenge presents its own dataset with a real-world context (test scores, heights, temperatures, etc.) and a single mode-specific prompt: identify the distribution shape (symmetric, skewed, bimodal, uniform), find the modal bin, read a specific bin frequency, or estimate the mean/median from the visual. Pool-service generator: bin widths, datasets, and answer keys are built deterministically per mode. ESSENTIAL for 6.SP (statistical questions, shape & center), 7.SP (comparing populations from displays).',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own dataset, bin width, and prompt. The manifest MUST NOT supply specific data arrays, bin widths, bin starts, contexts, or answer keys — the generator builds every challenge deterministically from the eval mode + topic via the pool service. Stats panel is auto-hidden in estimate_center mode to prevent the student from reading the mean/median directly off the UI.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
@@ -2758,48 +1525,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Estimate the mean or median from a histogram visual. Stats panel is hidden so the answer is not given. Numeric entry with tolerance ±1 bin width. CCSS 6.SP.B.5, 7.SP.B. Grades 7-8.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Work through {{totalChallenges}} histograms. Mode: {{challengeType}}. Currently on histogram {{currentChallengeIndex}} of {{totalChallenges}} — {{contextTitle}}. Prompt: {{prompt}}.',
-      contextKeys: [
-        'challengeType',
-        'currentChallengeIndex',
-        'totalChallenges',
-        'contextTitle',
-        'prompt',
-        'xAxisLabel',
-        'binWidth',
-        'binStart',
-        'attempts',
-        'gradeBand',
-      ],
-      scaffoldingLevels: {
-        level1: '"What is the overall shape of the histogram? Is it symmetric, skewed, or bimodal?"',
-        level2: '"Which bin has the tallest bar? That is where most data values fall."',
-        level3: '"The mean is the balance point. Find where the bars would balance like a seesaw."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing histogram with bar chart', response: '"Histograms show ranges of continuous data (bins). Bar charts show separate categories."' },
-        { pattern: 'Reading bin edges off-by-one', response: '"Each bar covers the range [start, end). The left edge is included; the right edge is not."' },
-        { pattern: 'Misidentifying skewness', response: '"The tail tells the skew direction. Long tail on the right = right-skewed."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-HISTOGRAM PACING',
-          instruction:
-            'Each session walks through {{totalChallenges}} distinct histograms. After each correct answer the next histogram appears with a fresh dataset and context. '
-            + 'When introducing a new histogram, name the context ("Math quiz scores", "Heights of seventh graders") so the student grounds the data in something real. '
-            + 'For identify_shape: start with the big picture — "Where are the bars tallest? Are the tails balanced?" '
-            + 'For find_modal_bin: "Scan left to right. Which bar is the tallest? What range does that bar cover?" '
-            + 'For read_frequency: "Find the bar covering that range. Count up the y-axis to read its height." '
-            + 'For estimate_center: "The stats panel is hidden on purpose — use the bars themselves. The mean balances the histogram like a seesaw; the median splits the data into equal halves."',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'two-way-table',
-    description: 'Multi-challenge two-way table (contingency table) probability practice session (3-6 problems of the same probability concept, surfaced sequentially). Per challenge, students see a real-world scenario (pet preference by gender, sport by grade, transportation by distance, etc.), a frequency table, and a question — they enter a probability as a decimal and click "Check Answer" for immediate judgment. Wrong answers show a hint; correct answers advance to the next table. Supports joint probability, marginal distribution, conditional probability, and the independence test. Mode-specific UI gating: marginal/conditional modes hide row/column totals so the student must compute them; joint/independence modes show totals to support the calculation. ESSENTIAL for grade 7 (categorical data, joint probability), grade 7-Statistics (conditional probability), and Statistics courses (independence testing).',
+    description: 'Multi-challenge two-way table (contingency table) probability practice session (3-6 problems of the same probability concept, surfaced sequentially). Per challenge, students see a real-world scenario (pet preference by gender, sport by grade, transportation by distance, etc.), a frequency table, and a question — they enter a probability as a decimal and click "Check Answer" for immediate judgment. A wrong answer stays on the table for another try; a correct answer moves on to the next table. Supports joint probability, marginal distribution, conditional probability, and the independence test. Mode-specific UI gating: marginal/conditional modes hide row/column totals so the student must compute them; joint/independence modes show totals to support the calculation. ESSENTIAL for grade 7 (categorical data, joint probability), grade 7-Statistics (conditional probability), and Statistics courses (independence testing).',
     constraints: 'Manifest must NOT supply specific scenarios, categories, or per-challenge frequencies — the pool service builds 3-6 distinct contingency-table problems deterministically from the eval-mode concept. Manifest may supply instanceCount only. Per-mode shape: joint/independence modes use 2×2 frequency tables with totals visible; marginal/conditional modes use 2×2 tables with totals hidden to prevent answer leak.',
     affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -2836,87 +1566,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Compute expected joint under independence: P(A) × P(B). Compare to observed P(A∩B). Totals visible.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Multi-table probability session. Concept: {{challengeType}}. Table {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"What two categories does each cell represent? Look at the row and column headers."',
-        level2: '"For joint, divide the cell by the grand total. For conditional, divide the cell by ONLY the row or column total of the condition."',
-        level3: '"P(A and B) = joint count ÷ grand total. P(A|B) = joint count ÷ B total. P(A)·P(B) = (row total ÷ N) × (column total ÷ N)."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing joint and marginal', response: '"Joint = inside the table (both categories). Marginal = totals on the edges (one category)."' },
-        { pattern: 'Conditional probability errors', response: '"Given B means you only look at column B. Divide the cell by the column total, not the grand total."' },
-        { pattern: 'Independence misconception', response: '"Independent means P(A and B) = P(A) × P(B). Multiply the marginal probabilities and compare to the joint."' },
-        { pattern: 'Decimal vs percentage confusion', response: '"Both work — 0.25 and 25% are the same answer. Just be sure the decimal matches the fraction you computed."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'CONCEPT-AWARE COACHING',
-          instruction:
-            'For JOINT: start with the cell, then divide by grand total — "Which cell has BOTH the row category AND the column category? Now divide by the total people." '
-            + 'For MARGINAL: walk through summing a row or column FIRST — "Add the counts across that row to get the marginal, THEN divide by the grand total." '
-            + 'For CONDITIONAL: narrow the focus physically — "Given B, we only look at column B. Divide the cell by THAT column total, not the grand total." '
-            + 'For INDEPENDENCE: use the expected-vs-observed frame — "If these were independent, P(A∩B) would equal P(A) × P(B). Compute P(A)·P(B) and we will compare."',
-        },
-        {
-          title: 'MULTI-PROBABILITY PACING',
-          instruction:
-            'This is a {{totalChallenges}}-table session. After each correct answer, the student clicks "Next Table →". Encourage progression: "Nice — on to table {{currentChallengeIndex}}!" After a wrong attempt, point at the specific cell or total that needs another look — do NOT just repeat the formula.',
-        },
-      ],
-    },
-    teachingWorkspace: {
-      grades: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks each answer itself, and you are not told it: the learner reads the counts in the '
-        + 'table, types a probability (a decimal from 0 to 1, or a percent with %) and presses Check; it accepts the '
-        + 'answer within 0.02. Before a check and after a wrong one, never say the probability, the division that gives '
-        + 'it, or its result, and never say a row, column or grand total the table hides: adding those up is part of the '
-        + 'task. You may read the cells and any total the table draws. Teaching is which group the question counts and '
-        + 'which group it is out of: a joint probability is one cell out of everyone; a marginal is a whole row or column '
-        + 'added up, out of everyone; a conditional "given B" is out of only the B row or column, not everyone; under '
-        + 'independence the expected joint is P(A) times P(B), each out of everyone, compared with the observed cell. Ask '
-        + 'which cells the question names and what the probability is out of. Read the question aloud. You cannot type '
-        + 'or press Check.',
-      // Every mode declares levers (`twoWayTableLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`twoWayMiss`), every mode.
-      misses: { ...TWO_WAY_MISSES_BY_MODE },
-    },
+    ...bossEntry(twoWayTableCard),
     supportsEvaluation: true,
   },
   // Math Phase 2 Primitives (K-5 Foundations)
   {
     id: 'ten-frame',
+    ...bossEntry(tenFrameCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: tenFrameDeliveryEligible },
     description: 'Live tutor-taught 2×5 grid manipulative for K-2 number sense. The Live tutor teaches each item in its own words; the child\'s answer is checked (a placement by the frame itself, a spoken number from the tutor\'s feedback) and a checked answer advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters), for DECOMPOSING a group (a group of counters arrives all red; turn some yellow to break it into two groups, and a different way each time), and for make-ten at Kindergarten (tap the empty cells until the frame is full), and for TEEN NUMBERS at Kindergarten (place the ones beside a full frame of ten, or find the ten inside a scattered group of 11-19), where working the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, decomposing numbers into pairs (K.OA.3), TEEN NUMBERS as ten ones and some further ones (K.NBT.1), make-ten strategy, addition, and subtraction.',
     constraints: 'Best for grades K-2. A microphone is required for the SPOKEN modes (subitize, make-ten at grades 1-2, operate); the hands-only modes (build, decompose) are judged from what the child does on the frame and need no spoken answer. There is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2 — except the two teen-number modes, which use the double frame at every grade because a ten and some ones will not fit on one frame. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'build'], role: ['visualize', 'apply'], minutes: 5 },
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The frame checks placed or flipped counters itself once the learner stops; '
-        + 'talk about a part-built frame is teaching, not a verdict. On a quick-look item, call present when the learner '
-        + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters. '
-        + 'On build_pair the learner makes the number in red and yellow and presses I am done; never name a pair, '
-        + 'how many of a colour to use, or how many are on the frame.',
-      levers: true,
-      // The frame's own check (`frameMiss`), and the spoken items' known wrong answers (`tenFrameSpokenMisses`:
-      // subitize, operate, make_ten at grades 1-2), named by the `spoken_miss` observer.
-      misses: missLists<FrameMiss | SpokenFrameMiss>({
-        build: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
-        make_ten: ['said_shown', 'said_capacity', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        subitize: ['empty_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        operate: ['said_addend', 'said_start', 'said_change', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        decompose: ['all_flipped', 'none_flipped', 'same_way_again'],
-        build_pair: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more', 'one_colour', 'same_way_again'],
-        build_teen: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
-        decompose_teen: ['one_short', 'one_over', 'all_flipped', 'short_by_more', 'over_by_more'],
-      }),
-      // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/150 right-answer readings named wrong.
-      missFromWords: ['subitize'],
-    },
     evalModes: [
       {
         evalMode: 'build',
@@ -2991,73 +1653,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Addition and subtraction worked on the frame, with the sum or difference said aloud. Transitional symbolic — bridging concrete and abstract.',
       },
     ],
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED ten frame practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the frame (placing counters, or turning some of them yellow to split a group into two), you judge what the cue reports, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
-        level2: 'Remind the child of the method in one short sentence — "Look at the frame and think about how many" — without saying any number.',
-        level3: 'Invite one try together: "Take your time. Look at the frame. Then tell me." Still never say the answer.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Counts the counters aloud on a flash item', response: 'The scripted correction handles this AFTER the attempt is judged: it re-models looking at the whole group, then re-asks. Never interrupt mid-attempt.' },
-        { pattern: 'Says the total instead of how many more', response: 'The scripted correction re-models the number bond and re-elicits. Speak only that line.' },
-        { pattern: 'Turns every counter yellow, or none of them, on a split item', response: 'One group and an empty one is not two groups. The scripted correction re-models the property — both colours visible — without naming a pair. Speak only that line.' },
-        { pattern: 'Shows the same split again when asked for a different way', response: 'The cue tells you it is a repeat. Speak the scripted correction, which asks for a different number of yellows and still names no pair.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER',
-          instruction:
-            'On spoken items the answer is ONE number word from 1 to 20 and nothing else — never a digit read as a string of words, never a sentence you supply. '
-            + 'The cue for each item names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right. Judge by that cue and nothing else. '
-            + 'THE LAW: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'HAND ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers with their hands on the frame, say nothing at all while they work — no counting, no narration, no encouragement mid-placement. '
-            + 'You will be told what they placed and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'ON A SPLIT ITEM THE ANSWER IS A PAIR — AND IT IS NOT YOURS TO OFFER',
-          instruction:
-            'A split item shows a group of red counters and asks the child to turn some yellow. Any pair of two non-empty groups is a right answer, so there is nothing to hint toward and nothing to check for you: '
-            + 'the cue tells you what they did, whether it was right, and whether they have shown that exact pair already in this session. '
-            + 'NEVER suggest how many to turn yellow, never name two numbers that make the total, and never count the counters aloud — one pair spoken out loud answers every remaining split item on that total, not just the one in front of you. '
-            + 'You may name the pair in ONE place only: the affirmation the cue hands you after they have built it.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'SHOW-AGAIN ON DEMAND',
-          instruction:
-            'The child can ask to see the flash again. That re-asks the QUESTION only — speak the scripted line you are given and never describe or count what flashed.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
@@ -3224,56 +1819,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
     constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes (AB, AAB, ABB), including creation when the objective asks the child to make their own pattern. Grades 2-3: growing and number patterns, translation, and creation over number tokens.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'build'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student is working through {{totalChallenges}} pattern challenges (currently {{currentChallengeIndex}}). Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
-      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation', 'currentChallengeIndex', 'totalChallenges', 'supportTier', 'tutorRevealPolicy'],
-      scaffoldingLevels: {
-        level1: '"Look at the pattern: {{givenSequence}}. Can you see what repeats? What comes next?"',
-        level2: '"Let me help. The repeating part is: {{coreUnit}}. Now that you know the core, what should come next?"',
-        level3: '"The pattern rule is: {{rule}}. Each time, the core {{coreUnit}} repeats. So the next tokens are the beginning of the core again!"',
-      },
-      commonStruggles: [
-        { pattern: 'Cannot identify repeating core', response: '"Let\'s look together. Start from the beginning: {{givenSequence}}. Where does the pattern start over? That\'s your core!"' },
-        { pattern: 'Growing pattern confusion', response: '"Look at the numbers: {{givenSequence}}. What do you add to each number to get the next one? That\'s the rule!"' },
-        { pattern: 'Translation difficulty', response: '"The pattern structure is the same! If red→circle and blue→square, then red-blue-red-blue becomes circle-square-circle-square."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PATTERN COACHING APPROACH',
-          instruction:
-            'Use warm, encouraging language. For K-1, focus on visual pattern recognition: "I see red, blue, red, blue... what do you think comes next?" '
-            + 'For grades 2-3, connect to math: "Your pattern goes 2, 4, 6, 8... that\'s counting by 2s!" '
-            + 'Celebrate pattern creation: "You made your own pattern! Can you describe its rule?" '
-            + 'Guide core identification: "Can you find the part that keeps repeating?" '
-            + 'For translations, emphasize structural similarity: "Same pattern, different look!"',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The builder checks the learner’s answer itself when they press Check, and you are not told the answer: '
-        + 'the learner taps tokens into the "?" blanks to continue a pattern, taps the tokens of the part that repeats, '
-        + 'rebuilds a pattern with new tokens by following the drawn key, or makes a pattern of their own in the asked shape '
-        + '(A B B: the letters are the task, the tokens are theirs) and presses I\'m done; Try again keeps that row. The learner may '
-        + 'not read well: say the instruction and the pattern row in your own words first (colors and shapes by name). '
-        + 'Before the learner has checked, never say a missing token or number, the new row, or the repeating part, how '
-        + 'many tokens it has or which ones to select, and never point to the token to tap; this holds after a wrong '
-        + 'Check too. Coach only as far as the support tier allows. Asking what repeats and reading '
-        + 'the row aloud together is fine. You cannot tap, select or build for the learner.',
-      // The builder's own check (`patternBuilderMiss`), every mode.
-      misses: missLists<PatternBuilderMiss>({
-        extend: ['blanks_left', 'extra_tokens', 'repeated_last', 'started_over', 'two_swapped', 'one_wrong', 'several_wrong'],
-        find_rule: ['blanks_left', 'extra_tokens', 'repeated_last', 'started_over', 'two_swapped', 'one_wrong', 'several_wrong'],
-        translate: ['blanks_left', 'extra_tokens', 'two_swapped', 'one_wrong', 'several_wrong'],
-        identify_core: ['two_repeats', 'too_long', 'too_short', 'other_part'],
-        create: ['too_short', 'other_shape', 'no_repeat'],
-      }),
-      // `patternBuilderLevers.ts`. A Check with "?" blanks left needs no picture (the blanks are on screen); a row
-      // longer than its blanks cannot be made (the row stops at the last blank).
-      unanswered: missLists<PatternBuilderMiss>({ extend: ['blanks_left', 'extra_tokens'], find_rule: ['blanks_left', 'extra_tokens'] }),
-    },
     evalModes: [
       {
         evalMode: 'extend',
@@ -3321,6 +1867,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Discover the underlying rule.',
       },
     ],
+    ...bossEntry(patternBuilderCard),
   },
   {
     id: 'skip-counting-runner',
@@ -3428,22 +1975,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'regrouping-workbench',
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner types one digit in each box '
-        + 'under the written problem, ones on the right, and presses Check. Before the check and after a wrong one, never '
-        + 'say the answer, a digit of it, or whether a typed digit is right; ask what the learner gets in one column, '
-        + 'starting with the ones. Teaching is place value: in addition, when a column makes ten or more, ten of them make '
-        + 'one of the next place, which is carried; in subtraction, when the top digit is smaller than the bottom one, one '
-        + 'of the next place is broken into ten, and that place\'s top digit is then one less. The blocks show this: Carry '
-        + 'or Borrow under a column makes the trade on screen, and a trade is never checked. When the regroup marks are '
-        + 'hidden, do not say which column needs a trade. Read the problem and any story aloud. You cannot type, trade or '
-        + 'press Check for the learner.',
-      // Every mode declares levers (`regroupingWorkbenchLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`regroupMiss`), every mode.
-      misses: { ...REGROUP_MISSES_BY_MODE },
-    },
     description: 'Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algorithm. Students tap to trade 10 ones for 1 ten (carry) or break 1 ten into 10 ones (borrow). The blocks and algorithm update in parallel. Progressive phases from exploration to solving. Supports word problem contexts. ESSENTIAL for grades 1-4 multi-digit addition, subtraction, regrouping, and standard algorithm understanding.',
     constraints: 'Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction. Supports add_no_regroup, subtract_no_regroup, add_regroup, and subtract_regroup challenge types.',
     affordances: { representation: ['concrete', 'symbolic'], answers: ['manipulate', 'type'], role: 'apply', minutes: 6 },
@@ -3481,73 +2012,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Subtraction problems that require borrowing.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is solving {{instruction}} using base-ten blocks and the written algorithm. Operation: {{operation}}. Current blocks: {{blocks}}. Carries: {{carries}}. Phase: {{currentPhase}}. Requires regrouping: {{requiresRegrouping}}. Attempt: {{attemptNumber}}.',
-      contextKeys: ['operation', 'instruction', 'blocks', 'carries', 'currentPhase', 'requiresRegrouping', 'attemptNumber', 'correctAnswer', 'wordProblem', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Start with the ones column. What do you get when you add those digits?"',
-        level2: '"You have {{blocks}} in the ones place. That is more than 9! What can you trade 10 ones for?"',
-        level3: '"10 ones = 1 ten. Trade them! See how the 1 appears above the tens column in the algorithm? That is carrying!"',
-      },
-      commonStruggles: [
-        { pattern: 'Forgetting to carry/borrow', response: '"Check the ones column again. You got a number bigger than 9. You need to carry that extra ten!"' },
-        { pattern: 'Subtracting smaller from larger in wrong direction', response: '"In subtraction, you subtract the bottom from the top. If the top digit is smaller, you need to borrow first!"' },
-        { pattern: 'Not connecting blocks to algorithm', response: '"See how the blocks match the numbers? When you trade 10 ones for a ten, that is the same as carrying a 1 to the tens column!"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'REGROUPING COACHING APPROACH',
-          instruction:
-            'Guide the critical "aha" moment when the student discovers why regrouping is needed. '
-            + 'For addition: "7 + 5 = 12. Can 12 fit in the ones place? No! Time to trade 10 ones for 1 ten." '
-            + 'For subtraction: "Can you take 7 from 2? No! You need to borrow a ten to help." '
-            + 'Always connect blocks to algorithm: "See how the carry/borrow in the written problem matches what you did with the blocks?" '
-            + 'Celebrate each successful regroup: "Great trade! 10 ones became 1 ten!"',
-        },
-      ],
-    },
     supportsEvaluation: true,
+    ...bossEntry(regroupingWorkbenchCard),
   },
   {
     id: 'multiplication-explorer',
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'The activity checks the answer itself, and you are not told it. Each item is one fact; the learner types '
-        + 'one number and presses Check. On build, connect, commutative, distributive and fluency the number is the '
-        + 'product; on missing factor it is the factor shown as ? in the equation. Never say the product, or on missing '
-        + 'factor the missing factor, before the check or after a wrong one, and never say whether a typed number is right '
-        + 'before the activity checks it. The factors printed on screen may be named. On build, connect, commutative and '
-        + 'distributive a picture shows the fact (equal groups, an array, repeated addition, a number line or an area '
-        + 'model); teaching how to read it is fine (count the groups, skip-count a row aloud together), saying where the '
-        + 'count ends is not. On fluency and missing factor no picture is drawn, because it would show the answer. On '
-        + 'distributive the break-apart shows two partial products with the sum hidden: ask what each part is worth and how '
-        + 'the parts make the whole fact, and leave the adding to the learner. After a wrong answer, ask a question that '
-        + 'lets the learner find the mistake, such '
-        + 'as how many groups there are or what one group holds; do not say what to change. After a lever too: say where to '
-        + 'look and ask a question (what the last box makes, how many jumps reach the product, what the two parts make '
-        + 'together); do not tell the learner to add or count. A worked example on other numbers is teaching. You cannot '
-        + 'type or press for the learner.',
-      // Every mode publishes levers (`multiplicationExplorerLevers.ts`): product modes skip_strip (+ show_model on fluency,
-      // break_apart on distributive), missing_factor skip_line; smaller_fact everywhere but a 2 × 2. Every miss below is
-      // answered by a help lever on every item (`multiplicationExplorerLevers.test.ts`).
-      levers: true,
-      // The activity's own check (`multiplicationMiss`), every mode.
-      misses: missLists<MultiplicationMiss>({
-        build: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
-        connect: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
-        commutative: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
-        distributive: ['added_factors', 'one_part_only', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
-        missing_factor: ['gave_product', 'gave_known_factor', 'subtracted', 'one_jump_off', 'other_factor'],
-        fluency: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
-      }),
-    },
     description: 'Multi-representation multiplication workspace connecting equal groups, arrays, repeated addition, number line jumps, and area model — all synchronized to the same fact. Students progress through 4 phases: build groups → build arrays → connect all 5 representations → use strategies (distributive property, fact families). Includes commutative property toggle, missing-factor challenges, and fluency quiz mode. ESSENTIAL for grades 2-4 multiplication introduction, fact fluency, and multiplicative thinking.',
     constraints: 'Best for single-digit × single-digit facts (grades 2-3) or multi-digit × single-digit (grade 4). Factors should be reasonable for visual display (≤12 for arrays, ≤50 product for number line). Supports build, connect, commutative, distributive, missing_factor, and fluency challenge types.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'build',
-        affordances: { representation: 'concrete', answers: ['build'] },
+        // Typed: the groups are drawn, the learner types the product (contract G1).
+        affordances: { representation: 'concrete', answers: ['type'] },
         label: 'Build (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3556,7 +2033,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'connect',
-        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'] },
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'] },
         label: 'Connect (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3598,33 +2075,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Rapid fact recall under time pressure.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is exploring multiplication through multiple representations. Fact: {{fact}}. Phase: {{currentPhase}}. Challenge: {{instruction}}. Challenge type: {{challengeType}}. Attempt: {{attemptsCount}}. Score: {{factsCorrect}}/{{factsTotal}}.',
-      contextKeys: ['fact', 'currentPhase', 'challengeIndex', 'challengeType', 'instruction', 'flipped', 'attemptsCount', 'factsCorrect', 'factsTotal', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Look at the groups. How many groups are there? How many in each group?"',
-        level2: '"You have {{fact}}. Can you see it as an array too? Same number of rows as groups, same number of columns as items per group."',
-        level3: '"All 5 pictures show the same fact! {{fact}}. Groups, array, addition, number line, and area — they all equal the same product."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing groups and items per group', response: '"The first number tells you HOW MANY groups. The second tells you HOW MANY IN EACH group."' },
-        { pattern: 'Not connecting representations', response: '"3 groups of 4 and a 3×4 array are the same thing! Count them — same total both ways."' },
-        { pattern: 'Difficulty with commutative property', response: '"Flip the array sideways. 3 rows of 4 becomes 4 rows of 3. Count them — still 12!"' },
-        { pattern: 'Struggling with distributive property', response: '"Don\'t know 7×8? Break it up: 5×8=40 and 2×8=16. Add them: 40+16=56! Easier, right?"' },
-        { pattern: 'Missing factor confusion', response: '"If you know 4 × ? = 20, think: how many groups of 4 make 20? Count by 4s: 4, 8, 12, 16, 20 — that\'s 5 groups!"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'REPRESENTATION BRIDGING',
-          instruction:
-            'When the student explores different tabs, help them see the CONNECTION between representations. '
-            + '"You showed 3 groups of 4. Now look at the array — 3 rows with 4 in each row. Same thing!" '
-            + 'In the Connect phase, point out how all 5 panels show the same total. '
-            + 'In the Strategy phase, celebrate the distributive property as a "trick": "You broke a hard fact into easy ones!"',
-        },
-      ],
-    },
     supportsEvaluation: true,
+    ...bossEntry(multiplicationExplorerCard),
   },
   {
     id: 'measure-lab',
@@ -3669,29 +2121,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Put three identical containers in order from least to most. K.MD.A.2.',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The activity runs the test and checks the answer itself, and you are not told it: no weight, how much a '
-        + 'container holds, how many cups fill it, or which jar has the least. A Kindergarten learner may not read: read '
-        + 'the question aloud. On heavier and holds-more the learner taps a guess first, then tests it (puts both on the '
-        + 'scale, or presses Pour); the guess is what is checked. Before the test, never say or hint which is heavier or '
-        + 'holds more; ask what they think and why. A tall container does not always hold more. Once the test has run, '
-        + 'the screen shows the result: after a wrong guess, ask the learner which side went down or which took more '
-        + 'cups, and let them say it; do not say it for them. On how-many-cups '
-        + 'the learner taps one cup at a time until it is full, then taps a number: counting each cup aloud together as '
-        + 'it is poured is teaching; saying how many it took is not. On least-to-most the learner taps the containers '
-        + 'from least water to most: never say which has the least or the most; ask them to look at how high the water '
-        + 'comes. You cannot tap, pour or place for the learner.',
-      // Every mode's misses are answered by a drawn lever (`measureLabLevers.ts`).
-      levers: true,
-      // The activity's own check (`measureMiss`), every mode.
-      misses: missLists<MeasureMiss>({
-        balance_predict: ['picked_lighter'],
-        capacity_predict: ['tall_means_more', 'picked_less'],
-        pour_count: ['one_short', 'one_over', 'too_few', 'too_many'],
-        order_capacity: ['most_to_least', 'two_swapped', 'out_of_order'],
-      }),
-    },
+    ...bossEntry(measureLabCard),
     supportsEvaluation: true,
   },
   {
@@ -3699,44 +2129,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Multi-shape ruler measurement session (3-6 distinct shapes of the same challenge type). Pool-service pattern: the generator picks the mode and unit, the component supplies the shapes deterministically from per-mode width pools. Students walk through each shape sequentially, dragging it onto a ruler and reading the measurement. Modes: measure (whole units, grades 1-3), compare (measure all, then order shortest-to-longest, grades 2-3), estimate (half-inch precision between tick marks, grades 2-3), convert (measure then convert between inches and centimeters, grades 3-4). ESSENTIAL for grades 1-5 measurement and data standards.',
     constraints: 'Ruler-based length measurement session. The manifest must NOT supply specific shape widths, colors, labels, or hints — those are built deterministically from the in-generator pool service. Grades 1-2 use whole-number precision; grades 3-5 add half precision and unit conversion.',
     affordances: { representation: 'pictorial', answers: ['manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Multi-shape measurement session. Mode: {{challengeType}}. Shape {{currentChallengeIndex}} of {{totalChallenges}}: {{currentShape}} (width: {{shapeWidth}} {{unit}}). On ruler: {{isOnRuler}}. Precision: {{precision}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentShape', 'shapeWidth', 'unit', 'precision', 'isOnRuler'],
-      scaffoldingLevels: {
-        level1: '"Count the marks on the ruler starting from 0. Each mark is one unit. How many marks does the shape cover?"',
-        level2: '"Look where the right edge of the shape ends on the ruler. What number is it pointing to?"',
-        level3: '"Drag the shape so its left edge lines up with 0. Now look at the right edge — it lands on {{shapeWidth}}. That means the shape is {{shapeWidth}} {{unit}} long."',
-      },
-      commonStruggles: [
-        { pattern: 'Counting from 1 instead of 0', response: '"Remember, the ruler starts at 0, not 1. Line up the left edge of the shape with the 0 mark, then count from there."' },
-        { pattern: 'Not aligning shape to the edge of the ruler', response: '"Make sure to drag the shape so its left side touches the 0 mark on the ruler. That gives you an accurate reading."' },
-        { pattern: 'Reading between marks incorrectly', response: '"Look at where the shape ends between two marks. Count the small lines between the numbers — each small line is one step. Is the edge closer to the lower mark or the higher one?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'DRAG-TO-RULER MEASUREMENT COACHING',
-          instruction:
-            'Guide students through the drag-to-ruler interaction step by step. '
-            + 'First, encourage them to drag the shape onto the ruler: "Grab the shape and slide it onto the ruler." '
-            + 'Then, teach alignment: "Line up the left edge with the 0 mark." '
-            + 'Finally, teach reading: "Now look where the right edge ends — that number is your measurement."',
-        },
-        {
-          title: 'RULER READING REINFORCEMENT',
-          instruction:
-            'Reinforce that measurement means finding how many units fit along the object. '
-            + 'For whole numbers: "Count the spaces between 0 and where the shape ends." '
-            + 'For fractional precision: "Look at the small marks between the numbers. If there are 2 marks between each number, each mark is a half."',
-        },
-        {
-          title: 'MULTI-SHAPE PACING',
-          instruction:
-            'This is a session of {{totalChallenges}} distinct shapes, not a single measurement. '
-            + 'Keep coaching tight per shape: introduce, prompt for the measurement, react to feedback, then transition to the next shape. '
-            + 'Track which shape number you are on ({{currentChallengeIndex}} of {{totalChallenges}}) so reminders stay accurate.',
-        },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -3774,54 +2166,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           + 'centimeters; 4.MD.A.1, 5.MD.A.1) unless the objective asks to convert between systems (inches and centimeters; 6.RP.A.3d).',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The activity checks every answer itself, and you are not told the key: no shape\'s length, no converted '
-        + 'length, no shortest-to-longest order. The learner puts the shape on the ruler (it snaps with its left edge at '
-        + '0), reads where the right edge lands, types or steps that number and presses Check. Teach the reading, never '
-        + 'the number: ask where the left edge starts and where the right edge ends; counting the spaces from 0 together '
-        + 'is teaching, saying the length is not. A named miss says which way the answer was off: never turn it into '
-        + 'the length, and never name a number the edge reaches, passes or lies between; the learner reads them. On '
-        + 'estimate the edge lands between two whole marks: ask which marks they are and whether it sits on the half. On convert the learner measures, then changes the checked length '
-        + 'to a smaller unit (feet to inches, meters to centimeters, or inches and centimeters). The scene says whether the screen shows the rule; when it does not, ask '
-        + 'what they remember and do not state the rule or whether to multiply or divide. Never say the converted '
-        + 'number. On compare the learner measures every shape, then taps them from shortest to longest: ask them to '
-        + 'look at the drawn lengths or recall their measurements; never say which is shortest or longest. You cannot '
-        + 'place, type, tap or check for the learner.',
-      // Every mode's misses are answered by a drawn lever (`measurementToolsLevers.ts`).
-      levers: true,
-      // The activity's own check (`measurementMiss`), every mode; compare's last item is the ordering.
-      misses: missLists<MeasurementMiss>({
-        measure: ['one_over', 'one_short', 'too_long', 'too_short'],
-        compare: ['one_over', 'one_short', 'too_long', 'too_short', 'longest_first', 'two_swapped', 'out_of_order'],
-        estimate: ['whole_not_half', 'one_over', 'one_short', 'too_long', 'too_short'],
-        convert: ['one_over', 'one_short', 'too_long', 'too_short', 'same_number', 'wrong_operation', 'too_small', 'too_large'],
-      }),
-    },
+    ...bossEntry(measurementToolsCard),
   },
   {
     id: 'shape-builder',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      // Only the open build (make_shape) publishes levers (`shapeBuilderLevers.ts`).
-      levers: true,
-      guidance: 'The activity checks every answer itself, and you are not told the key: the learner places corners on '
-        + 'the dot grid and closes the shape, taps a shape then a category, draws fold lines, or turns on measuring tools, '
-        + 'then presses Check. On make_shape many shapes pass: the learner makes any shape with the properties asked and '
-        + 'presses "I\'m done!". The scene gives the learner\'s own shape\'s sides, right angles, parallel pairs, equal '
-        + 'sides and fold lines: never read them out against the ask or say which property is off, and never name the '
-        + 'shape (square, trapezoid): naming can be the skill. Ask the learner to count sides and check corners. You '
-        + 'cannot place, move or sort anything for the learner.',
-      // The activity's own checks: `buildCheck` (build, coordinate_shape), `makeShapeMiss` (make_shape), and the sort.
-      // find_symmetry, measure and compose have no wrong check: an unfinished one is not checked.
-      misses: missLists<ShapeBuilderMiss>({
-        build: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off'],
-        make_shape: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off', 'symmetry_off'],
-        classify_by_lines: ['misplaced_shape'],
-        classify: ['misplaced_shape'],
-        coordinate_shape: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off'],
-      }),
-    },
     description: 'Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring properties with ruler/protractor tools, classifying shapes into categories, composing/decomposing shapes, and finding lines of symmetry. Supports build, discover, classify, compose, decompose, and symmetry modes. Perfect for teaching shape construction, property discovery, classification hierarchies, and spatial reasoning. ESSENTIAL for K-5 geometry.',
     constraints: 'Requires challenges array with progressive difficulty. Grid-based workspace (dot or coordinate). Supports modes: build, discover, classify, compose, decompose, symmetry.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
@@ -3897,41 +2245,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Build shapes by plotting vertices on a coordinate plane.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Complete geometry challenges in {{mode}} mode on a {{grid.type}} grid. Current challenge: "{{challenges[0].instruction}}".',
-      contextKeys: ['mode', 'gradeBand', 'targetShape', 'challenges', 'tools', 'classificationCategories'],
-      scaffoldingLevels: {
-        level1: '"Look at the shape carefully. How many sides does it have? How many corners?"',
-        level2: '"Count the sides one by one. Now check — are any sides the same length? Do any angles look like the corner of a book (right angles)?"',
-        level3: '"This shape has {{targetShape.properties.sides}} sides. To build it, place {{targetShape.properties.sides}} points on the grid, then click the first point again to close it. For a rectangle, make sure you have 4 right angles."',
-      },
-      commonStruggles: [
-        { pattern: 'Student cannot close the shape (keeps adding vertices)', response: '"To finish your shape, click on the very first point you placed — the yellow one! That will connect your last side."' },
-        { pattern: 'Student builds wrong number of sides', response: '"Count your corners — each corner is where two sides meet. You need exactly {{targetShape.properties.sides}} corners for this shape."' },
-        { pattern: 'Student confuses shape names in classification', response: '"Let\'s look at the properties: count the sides first, then check for right angles and parallel sides. That will tell us the shape\'s name."' },
-        { pattern: 'Student cannot find lines of symmetry', response: '"Imagine folding the shape in half. Where could you fold it so both halves match perfectly? Try drawing a line through the middle."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MODE-AWARE GEOMETRY COACHING',
-          instruction:
-            'In BUILD mode: guide construction step-by-step — "Place your first point, then your second. How many more do you need?" '
-            + 'In DISCOVER mode: let the student explore properties first — "Measure this side, then that side. What do you notice?" '
-            + 'In CLASSIFY mode: guide by properties, not just name — "Does it have 4 sides? Are they all equal? Are all angles right angles? Then it is a square!" '
-            + 'In COMPOSE mode: "Can you put these two triangles together to make a rectangle?" '
-            + 'In DECOMPOSE mode: "Can you cut this hexagon into triangles?" '
-            + 'In SYMMETRY mode: "Try folding along this line — do both halves match perfectly?"',
-        },
-        {
-          title: 'GRADE-BAND ADAPTATION',
-          instruction:
-            'For K-1: use informal language — "pointy corners," "straight sides," "same size." Focus on counting sides and sorting. '
-            + 'For grades 2-3: introduce formal names — "vertex," "edge," "right angle." Use the "corner of a book" test for right angles. '
-            + 'For grades 4-5: use full classification vocabulary — "parallel sides," "congruent," "perpendicular." '
-            + 'Guide hierarchical thinking: "A square IS a rectangle — it just has all sides equal too!"',
-        },
-      ],
-    },
+    ...bossEntry(shapeBuilderCard),
     supportsEvaluation: true,
   },
   {
@@ -3982,120 +2296,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-bond',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      // Splits, related-fact moves and the missing-part tray publish levers (`numberBondLevers.ts`, handoff 21 M1).
-      levers: true,
-      guidance: 'Counters move between the whole and two parts, and tiles build number sentences. The activity checks a '
-        + 'finished split, move or equation itself once the learner stops; talk about a half-built one is teaching, not a '
-        + 'verdict. A spoken question asks about the split or move now on the board. You cannot move counters, place '
-        + 'tiles, or say a part before the learner does.',
-      // The bond's own check (`bondMiss`): split, move and equation phases; and the spoken turns' known wrong
-      // answers (`numberBondSpokenMisses`: the say-your-part turns, the related-fact asks, missing_part).
-      misses: missLists<BondMiss | SpokenBondMiss>({
-        decompose: ['same_way_again', 'not_all_placed', 'said_given_part', 'said_whole', 'one_short', 'one_over',
-          'short_by_more', 'over_by_more'],
-        ten_and_ones: ['ten_one_off', 'no_full_ten', 'not_all_placed', 'said_ten', 'said_whole', 'one_short', 'one_over',
-          'short_by_more', 'over_by_more'],
-        missing_part: ['said_given_part', 'said_whole', 'added_both', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        related_fact: ['other_move', 'said_given_part', 'said_change', 'said_whole', 'added_both', 'one_short', 'one_over',
-          'short_by_more', 'over_by_more'],
-        build_equation: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
-        fact_family: ['other_move', 'unfinished_equation', 'false_equation', 'other_numbers', 'other_fact'],
-      }),
-      // A split commits only once the parts make the whole, so `not_all_placed` is never committed there (contract).
-      // build_equation's model step is the learner's free choice among join and the two take-aways; its only wrong
-      // move (a swap) is not offered, so no lever answers `other_move` there. The spoken say turns are answered by
-      // `ten_frame_part` and missing_part's by `open_counters` (handoff 21 M1 spoken slice).
-      unanswered: {
-        decompose: ['not_all_placed'],
-        ten_and_ones: ['not_all_placed'],
-        build_equation: ['other_move'],
-      },
-    },
+    ...bossEntry(numberBondCard),
     description: 'DI-native Number Bond. Students transform one persistent counter model, then express its relationship: Split and Say and Ten and Ones pair hand construction with one spoken count; Missing Part keeps the unknown covered and offers counters as optional support; Related Facts joins, speaks, separates, and speaks again; Build Equation matches a student-chosen action with symbols; Fact Family transforms the same groups through every distinct related form. Students SAY the missing part OUT LOUD where speech is assessed and construct equations where symbolic form is assessed.',
     constraints: 'Wholes are capped at 5 for Kindergarten and 10 for Grade 1, except Ten and Ones uses teen wholes 11-19. Requires a microphone for spoken turns; there is no Check button and no typed numeric substitute for speech. Counter and equation work closes on stillness. Missing Part records independent, counter-supported, and revealed paths. Related Facts requires unequal positive parts and preserves its two linked spoken outcomes. Build Equation requires arithmetic validity, the bond numbers, and a match to the committed action. Fact Family requires four distinct forms for unequal parts and two for equal parts; reversing the sides of = is equivalent notation, not an extra form. Kindergarten supports decompose, missing-part, related-fact and ten-and-ones; symbolic modes remain Grade 1.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken', 'build', 'type'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED number bond practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the bond, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      // ⚠️ No level of this ladder may OFFER a speakable line of its own. The
-      // first number-bond cap drill (2026-08-14) proved why: on the SECOND
-      // wrong answer the model balked at repeating the byte-identical scripted
-      // correction (18c) and recited level2/level3's quoted hints instead —
-      // lines that open with neither sentinel, so the engine saw no verdict
-      // and the correction counter stalled. The ladder now commands script
-      // fidelity; it never supplies an alternative.
-      scaffoldingLevels: {
-        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
-        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
-        level3: 'If the child stays stuck, stay with the script: the correction line re-models and re-asks for you. Never invent encouragement, a new question, or a softer hint.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Says the whole instead of the missing part', response: 'The scripted correction handles this AFTER the attempt is judged: it models counting up from the known part and re-asks. Never interrupt mid-attempt.' },
-        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
-        { pattern: 'Repeats a pair already found', response: 'The verdict cue you are handed names the repeated pair and asks for a new one. Speak only that line.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'SPLIT AND SAY OVERRIDES THE OLD HAND-ONLY FORK',
-          instruction: 'For decompose and ten-and-ones, [NS_ITEM] explicitly chooses a hand turn or a spoken turn. These cues override the older hand-only guidance below. '
-            + 'In the hand turn, counters move between the whole and both parts. Wait for [NS_SPLIT] and use its code-computed result. Never state the part counts in the hand affirmation. '
-            + 'Then the app highlights a part and [NS_ITEM] asks for ONE spoken count. Judge fresh speech using that cue, not a prior response. Questions, silence and unfinished counting are not wrong answers. '
-            + 'Known empty parts are allowed; the spoken question asks about the nonempty part. Teen tasks ask for the ones beside the ten. '
-            + 'Never invent a second spoken question. A capped hand turn may show a tutor example; attribute it to the tutor.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On a SPOKEN item (missing-part; the two related-fact speech phases; Split and Say speech phases) the answer is ONE number word from 1 to 20 and nothing else. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a HANDS item the child changes the persistent counter model or constructs an equation, and you are told what they made and whether it matches. Physical preparation does not create a new mastery item. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'HAND ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no encouragement mid-build. '
-            + 'You will be told what they made and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'PERSISTENT MODEL PHASES',
-          instruction: 'Related Facts follows join → spoken missing addend → separate the just-found group → spoken remainder. Missing Part keeps the covered quantity hidden in visual and accessible labels until verification; optional counters are support, not a second answer. Build Equation and Fact Family assess the student-built equation, never a spoken arithmetic shortcut. For Build Equation, distinguish bad arithmetic from a true equation that belongs to the bond but does not describe the committed action. For Fact Family, keep accepted equations as the child\'s record and never fill the next form automatically.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-QUESTION ON DEMAND',
-          instruction:
-            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -4176,96 +2380,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'addition-subtraction-scene',
+    ...bossEntry(additionSubtractionSceneCard),
     description: 'Live K-1 addition and subtraction story scenes with a spoken tutor. The tutor reads the story aloud and asks, and a credited answer advances the lesson. What the child produces depends on the skill: they SAY the number OUT LOUD to solve a word problem (both grades) and to report how many there are now, or how many are left, after acting a story out at Grade 1; they answer WITH THEIR HANDS by acting the story out on the scene at Kindergarten (bring more in, send some away), by building the number sentence from tiles, and by making the scene that matches a given number sentence — in those three, constructing it IS the skill. Supports join, separate, compare, and part-part-whole story types. The bridge from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
     constraints: 'Best for Kindergarten and Grade 1. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button, no typed answer and no numeral menu anywhere. Numbers limited to maxNumber (5 for K, 10 for Grade 1), so every spoken answer is a number word from 1 to 20. Four challenge types: act-out, build-equation, solve-story, create-story; story contexts must match the scene theme. Stories are read aloud, so a story that states the number the child must find — or whose answer would be 0 — is discarded before the child ever sees it.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'manipulate', 'build'], role: 'apply', minutes: 6 },
-    tutoring: {
-      taskDescription: 'LIVE-JUDGED addition and subtraction story practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the scene, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      scaffoldingLevels: {
-      // ON A JUDGED LOOP THE CORRECTION *IS* THE SCAFFOLD — there is no third
-      // reply channel. The 2026-08-15 cap drill caught the model speaking level
-      // 2 and level 3 VERBATIM on corrections 2 and 3 ("…think about what
-      // happened in the story", "Take your time. Look at the picture. Then tell
-      // me."). Neither opens with a sentinel, so the loop recorded no verdict
-      // twice and the counter froze (`di-no-verdict` x2, 19h-i-f, 2nd port).
-      // Same content, routed through the branch that carries a sentinel.
-        level1: 'Speak the current item\'s scripted correction line, exactly as the cue gives it. It already re-models the story and re-asks — that IS the first scaffold, and it opens with "My turn:" so the activity can hear it.',
-        level2: 'Speak the SAME scripted correction line again, a little slower. Do not swap it for a reminder of the method or any other wording: a reply that opens with neither "Yes" nor "My turn:" reaches the activity as no verdict at all and the lesson stalls.',
-        level3: 'Still the same scripted correction line. If the child is stuck after it, say nothing further — the activity moves the lesson on by itself and carries the next story to you.',
-      },
-      commonStruggles: [
-        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
-        { pattern: 'Says a number the story already gave', response: 'The scripted correction handles this AFTER the attempt is judged: it re-models the story and re-asks. Never interrupt mid-attempt.' },
-        { pattern: 'Confuses joining with taking away', response: 'The scripted correction names the story direction and re-elicits. Speak only that line.' },
-      ],
-      // R1 (the STIMULUS beat) is RE-BASED, not dropped. It used to be a
-      // directive telling the tutor to read {{storyText}} before improvising —
-      // necessary when the tutor authored its own turns, and droppable for the
-      // same reason. Under the judged loop the story is INSIDE the quoted line
-      // of every cue this pack emits, including every correction, so reading it
-      // aloud is no longer a rule the tutor might forget: it is the only thing
-      // the tutor is given to say. The directive below now defends that line
-      // against summarising rather than commanding a first action.
-      aiDirectives: [
-        {
-          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
-          instruction:
-            'Your first cue contains a scripted opening line with the story and the how-to-play inside it. Speak that line exactly. '
-            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
-        },
-        {
-          title: 'THE STORY IS INSIDE THE SCRIPTED LINE — SAY IT AS WRITTEN',
-          instruction:
-            'The child CANNOT read the screen — you are their voice, and the story IS the whole problem. '
-            + 'It is already inside the quoted line of every cue, including every correction, so it gets read aloud '
-            + 'word for word each time you speak that line. Never summarise it, never shorten it, never replace it '
-            + 'with a bare greeting, and never add a sentence of your own to it.',
-        },
-        {
-          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
-          instruction:
-            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
-            + 'On a SPOKEN item (solve-story at either grade; act-out at Grade 1) the answer is ONE number word from 1 to 20 and nothing else. '
-            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
-            + 'On a HANDS item (act-out at Kindergarten; build-equation; create-story) the child answers by changing what is on the screen, and you are told what they made and whether it matches. '
-            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
-        },
-        {
-          title: 'HAND ITEMS ARE SILENT',
-          instruction:
-            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no encouragement mid-build. '
-            + 'You will be told what they made and whether it matches; only then do you speak the line the cue gives you.',
-        },
-        {
-          title: 'THE CHILD IS THINKING — WAIT',
-          instruction:
-            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
-        },
-        {
-          title: 'SENTINEL DISCIPLINE',
-          instruction:
-            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
-            + 'Never begin any other sentence with either opener.',
-        },
-        {
-          title: 'HEAR-THE-STORY ON DEMAND',
-          instruction:
-            'The child can ask to hear the story again. That re-speaks the STORY and the QUESTION only — speak the scripted line you are given, '
-            + 'treat nothing you just heard as an answer, and never say the answer.',
-        },
-        {
-          title: 'NEVER READ BRACKET TAGS',
-          instruction:
-            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
-        },
-      ],
-    },
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'act_out',
-        affordances: { answers: ['manipulate'] },
+        affordances: { answers: ['manipulate', 'spoken'] },
         label: 'Act Out (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -4316,32 +2438,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // nothing for a judge to do. Grade 1 now does the same construction —
         // that raises what the mode MEASURES from nothing to something, which is
         // a validity fix, not a difficulty change.
-        description: 'Represent a given number sentence as a story by BUILDING the scene — a production task, not writing. The child places and removes objects until the picture matches the equation, and the tutor judges what they made. Pre-reader capable at both grades.',
+        description: 'Represent a given number sentence as a story by BUILDING the scene — a production task, not writing. The child places and removes objects until the picture matches the equation, and the activity checks the picture against the sentence. Pre-reader capable at both grades.',
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'A story picture of objects. Read the story aloud and ask its question; the printed story states only its '
-        + 'own numbers, never the one the child must find. Solve-story and Grade 1 act-out are answered by saying the '
-        + 'number: counting aloud that ends on it counts, a number the story already said is not it. At Kindergarten '
-        + 'act-out and in create-story the child brings objects in with the add button or taps one to send it away, '
-        + 'and build-equation builds the number sentence from tiles; those are checked by the activity when the child '
-        + 'stops. When only the first group is in the picture, tell that part of the story, then use present to bring '
-        + 'in the ones that join. Before an attempt never say the answer or count the objects for the child. Hear the '
-        + 'story again asks you to repeat the story and question only. You cannot add, remove or place anything.',
-      // The activity's own check of a picture or number sentence (`addSubMiss`), and the spoken items' known wrong
-      // numbers (`additionSubtractionSpokenMisses`: solve_story, and act_out at Grade 1).
-      misses: missLists<AddSubMiss | SpokenAddSubMiss>({
-        act_out: ['no_change', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more', 'said_start', 'said_change',
-          'other_operation'],
-        solve_story: ['said_start', 'said_change', 'said_result', 'other_operation', 'one_short', 'one_over', 'short_by_more',
-          'over_by_more'],
-        create_story: ['no_change', 'wrong_way', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        build_equation: ['unfinished_equation', 'false_equation', 'other_operation', 'other_numbers'],
-      }),
-    },
   },
   {
     id: 'ordinal-line',
@@ -4660,45 +2760,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-tracer',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The activity checks the shape itself, and you are not told an answer: the learner taps dots on the canvas, '
-        + 'and on a drawing places corners on the grid and presses Check Shape. A trace or a completion finishes itself on '
-        + 'the last right corner; a tap that is not the next corner is not drawn and not checked. On connect-dots a dot out '
-        + 'of number order is a checked miss, and the hidden shape is not named until every dot is joined: do not name it '
-        + 'before then. Counting on is the task there: ask which number comes after the last dot joined; do not say it. '
-        + 'On draw-from-description the clue is the task: read it aloud, and do not name the shape it '
-        + 'describes unless the instruction does, or say where to put a corner. When the order numbers or the next-dot glow '
-        + 'are hidden, do not say which dot comes next or where to start; ask what the shape needs, such as how many corners '
-        + 'it has. A Kindergarten learner may not read: read the instruction aloud. You cannot tap, draw or check for the '
-        + 'learner.',
-      // Every mode publishes levers (`shapeTracerLevers.ts`); every miss below is answered by one on every saved payload
-      // item (`shapeTracerLevers.test.ts`).
-      levers: true,
-      // The activity's own check (`shapeTracerMiss`). A trace or completion tap out of turn is refused, never checked.
-      misses: missLists<ShapeTracerMiss>({
-        connect_dots: ['started_elsewhere', 'skipped_number', 'went_back'],
-        draw_from_description: ['too_few_sides', 'too_many_sides', 'sides_unequal'],
-      }),
-    },
     description: 'Interactive shape construction canvas with 4 progressive challenge types: trace (follow dotted outlines), complete (finish half-drawn shapes), draw-from-description (build shapes from verbal property descriptions), and connect-dots (reveal shapes by connecting numbered dots). Develops geometric reasoning by linking shape properties to motor construction. Perfect for K-1 shape recognition and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
     constraints: 'Canvas coordinate space is 500x400. All vertex coordinates must be within bounds (x: 40-460, y: 40-360). Shapes should be large enough for small hands to tap. Maximum 6 challenges per activity.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student is constructing shapes on a drawing canvas. Current challenge type: {{challengeType}}. Target shape: {{targetShape}}. They have completed {{sidesCompleted}} of {{totalSides}} sides. Attempt {{attemptNumber}}.',
-      contextKeys: ['challengeType', 'targetShape', 'description', 'requiredProperties', 'sidesCompleted', 'totalSides', 'attemptNumber', 'tracingAccuracy'],
-      scaffoldingLevels: {
-        level1: '"Follow the dots slowly. Start at the first dot and draw to the next one. Which dot is next?"',
-        level2: '"You\'ve drawn {{sidesCompleted}} sides. How many more do you need? Look at the dots \u2014 where does the next side go?"',
-        level3: '"A {{targetShape}} has {{totalSides}} sides. You drew {{sidesCompleted}} already \u2014 now connect the last dot back to where you started to close the shape!"',
-      },
-      commonStruggles: [
-        { pattern: 'Student taps vertices out of order repeatedly', response: 'Guide them to the numbered dots: "See the numbers? Let\'s go in order: 1, then 2, then 3. Find number [next] and tap it!"' },
-        { pattern: 'Student draws wrong number of sides for draw-from-description', response: 'Redirect to properties: "How many sides does the shape need? Count your corners \u2014 how many do you have? Do you need more or fewer?"' },
-        { pattern: 'Student connects dots in wrong order', response: 'Point to the labels: "Look at the numbers on the dots. Which number comes next? Find it and tap!"' },
-        { pattern: 'Student struggles with shape completion', response: 'Point to where the shape needs to close: "Look at where the shape started. Can you draw a line back to the beginning to close it up?"' },
-      ],
-    },
     evalModes: [
       {
         evalMode: 'trace',
@@ -4735,6 +2799,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    ...bossEntry(shapeTracerCard),
   },
   {
     id: 'math-fact-fluency',
@@ -4814,40 +2879,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'strategy-picker',
     description: 'An interactive strategy-comparison activity where students solve the SAME addition/subtraction equation using 2-3 different strategies (counting on, make-ten, doubles, tally marks, or drawing a circle per addend), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10. NOT a decomposition primitive: the "draw objects" strategy draws the addends of a FIXED equation to find one sum — it does not find all the ways to split a number into pairs. For "show different ways to break a number into pairs," use number-bond[decompose] instead.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1) BY DEFAULT — the band sets the default, the objective sets the scope: a K objective that says "within 10" or "making 10" gets 10. Ceiling 10 either way (the ten frame has ten cells). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
-    tutoring: {
-      taskDescription: 'Student is on challenge {{currentChallengeIndex}} of {{totalChallenges}}, solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}. Support tier: {{supportTier}}. RECOGNITION RULE: for challenge type "match-strategy" the strategy IS the answer — NEVER name the correct strategy at any tier; at easy describe what features to look for, at hard only ask what the student notices.',
-      contextKeys: ['currentChallengeIndex', 'totalChallenges', 'challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted', 'supportTier'],
-      scaffoldingLevels: {
-        level1: '"Let\'s try this problem a different way! This time, we\'ll use {{assignedStrategy}}. What do you think the answer might be?"',
-        level2: '"For counting on, start at {{operand1}} and hop forward {{operand2}} times. Let\'s count together: what comes after {{operand1}}?"',
-        level3: '"Watch the number line — we start at {{operand1}} and make {{operand2}} hops: {{operand1}}... [count each hop]. Where did we land? That\'s our answer!"',
-      },
-      commonStruggles: [
-        { pattern: 'Student gives different answers with different strategies', response: 'Highlight that all strategies should give the same answer. Ask them to recheck the strategy that gave a different result.' },
-        { pattern: 'Student always chooses the same strategy in choose-your-strategy', response: 'Gently encourage trying a different approach: "You\'re great at counting on! Want to try make-ten this time to see if it works too?"' },
-        { pattern: 'Student cannot identify the strategy in match-strategy', response: 'Point out the key visual feature: "Look — do you see a number line with hops? That\'s counting on! Do you see a ten frame? That\'s make-ten!"' },
-      ],
-    },
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      levers: true,
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The picker checks the learner’s answer itself when they press Check, and you are not told the answer: the '
-        + 'learner sets a number with the − and + buttons after following a strategy picture, taps a strategy from the menu '
-        + 'first when asked to choose, taps the strategy a worked solution used, or answers a compare question by tapping. '
-        + 'The learner may not read well: say the instruction, the problem and any steps in your own words first. Before the '
-        + 'learner has checked, never say the answer or where a picture ends; on a match item never name the strategy the '
-        + 'solution used. Coach only as far as the support tier allows. A compare item has no wrong answer: ask why they '
-        + 'chose. You cannot press a button for the learner.',
-      // The picker's own check (`strategyPickerMiss`); compare credits every choice, so it names none.
-      misses: missLists<StrategyPickerMiss>({
-        guided: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        try_another: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        choose: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        match: ['similar_strategy', 'different_strategy'],
-      }),
-    },
+    ...bossEntry(strategyPickerCard),
     evalModes: [
       {
         evalMode: 'guided',
@@ -4893,38 +2927,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-tracer',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The learner writes the numeral on the canvas with a finger and presses Check; the canvas checks the writing '
-        + 'itself, and talk about a half-written numeral is teaching, not a verdict. On a missing-number item the missing number '
-        + 'is the answer: never say, trace or describe it. You cannot draw, trace or clear.',
-      levers: true,
-      // The canvas's own check (`numberTracerMiss`), every mode.
-      misses: sameMisses<NumberTracerMiss>(['trace', 'copy', 'write', 'sequence'],
-        ['other_numeral', 'digits_swapped', 'not_readable', 'poorly_formed', 'part_left_out', 'shape_off']),
-      // Levers: `numberTracerLevers.ts`. On a missing-number item every formation guide would draw the hidden numeral (NT-7).
-      unanswered: { sequence: ['poorly_formed', 'part_left_out', 'shape_off'] },
-    },
+    ...bossEntry(numberTracerCard),
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: numberTracerDeliveryEligible },
     description: 'Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (write to 120).',
     constraints: 'Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 4 },
-    tutoring: {
-      taskDescription: 'Student is writing the numeral {{digit}}. Challenge type: {{challengeType}}. Attempt {{attemptNumber}}. Model visible: {{showModel}}. Support tier: {{supportTier}}.',
-      contextKeys: ['digit', 'challengeType', 'instruction', 'showModel', 'showArrows', 'supportTier', 'attemptNumber', 'lastScore', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Good try! Can you trace the dotted line from top to bottom?"',
-        level2: '"Let\'s try together. For the number {{digit}}, start at the green dot and follow the arrows. What direction does the line go first?"',
-        level3: '"Watch carefully: for {{digit}}, place your pencil at the top. Draw straight down. Now what shape do you need to add? Let\'s try one stroke at a time."',
-      },
-      commonStruggles: [
-        { pattern: 'Score below 50% on trace mode', response: 'Encourage starting at the green dot and following arrows one step at a time.' },
-        { pattern: 'Writing digit with strokes in wrong order', response: 'Refocus on stroke direction: ask "Where does this number start?"' },
-        { pattern: 'Sequence input is off by one', response: 'Ask student to count aloud from the first number in the sequence.' },
-      ],
-    },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -5357,34 +3366,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-composer',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner drags pieces onto the board, '
-        + 'taps shapes, or types a number, then presses Check Answer (“I’m done!” on a build). Pieces snap when they are '
-        + 'close to their place, and a selected piece shows a turn button. On compose-match and compose-picture never say '
-        + 'where a piece goes or which way to turn it; asking what shape could fill a corner is teaching. On decompose '
-        + 'never name the shapes the big shape is made of or how many: ask the learner to trace each part with a finger '
-        + 'and say what shape it is. On how-many-ways never say the number, even as how many pieces to try, and never say '
-        + 'how the shape splits (such as cutting it corner to corner); the palette '
-        + 'pieces may not fit the named shape exactly, so invite the learner to picture the small shapes fitting inside '
-        + 'it one at a time, and count them. On free-create the learner makes their own picture from the shapes listed under the ask; '
-        + 'describe what you see, but never say which shape to add, take off or move, or how many are on the board. A '
-        + 'Kindergarten or Grade 1 learner may not read: read the instruction aloud, including the listed shapes on a '
-        + 'build. You cannot drag, tap or type for the learner.',
-      // Every mode declares levers (`shapeComposerLevers.ts`); every miss below is answered by one on every saved item.
-      levers: true,
-      // An older free-create payload with no recipe has no list to match or shorten: its any-two-shapes check has no lever.
-      unanswered: { 'free-create': ['too_few_shapes'] },
-      // The activity's own check (`shapeComposerMiss`), every mode. free-create's `too_few_shapes` is an older payload's
-      // (no recipe) any-two-shapes check.
-      misses: missLists<ShapeComposerMiss>({
-        'compose-match': ['pieces_left', 'piece_off_outline'],
-        'compose-picture': ['shape_missing', 'shape_off_spot'],
-        decompose: ['not_a_part', 'missed_part', 'extra_part', 'wrong_mix'],
-        'how-many-ways': ['too_few', 'too_many'],
-        'free-create': ['missing_piece', 'extra_piece', 'overlapping', 'not_touching', 'too_few_shapes'],
-      }),
-    },
+    ...bossEntry(shapeComposerCard),
     description: 'Interactive shape composition and decomposition workspace. Students compose larger shapes from smaller pieces (tangram-style), build pictures from shape palettes, and decompose composite shapes into basic components. Supports snap-to-fit placement, rotation, and guided decomposition. Perfect for teaching spatial reasoning, shape relationships, and geometry vocabulary at K-1 level. ESSENTIAL for kindergarten geometry composition standards.',
     constraints: 'Requires K-1 grade band. Challenge types: compose-match, compose-picture, decompose, free-create, how-many-ways.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },
@@ -5424,6 +3406,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'how-many-ways',
+        affordances: { answers: ['type'] },
         label: 'How Many Ways (Hard)',
         beta: 1.0,
         scaffoldingMode: 4,
@@ -5431,51 +3414,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Determine minimum pieces needed and explore multiple composition solutions',
       },
     ],
-    tutoring: {
-      taskDescription: 'Compose or decompose shapes. Challenge type: {{challengeType}}. Target: {{targetShape}}.',
-      contextKeys: ['challengeType', 'targetShape', 'targetPicture', 'piecesPlaced', 'totalPieces', 'expectedComponents', 'attemptNumber', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Look at the big shape. What smaller shapes could fit inside it?"',
-        level2: '"Try the triangle — can you turn it so it fits into the corner? Two triangles can make a square! You\'ve placed {{piecesPlaced}} of {{totalPieces}} pieces."',
-        level3: '"Two triangles make one big square. The triangle\'s pointy corner fits right into the square\'s corner. Try rotating the piece — press the rotate button!"',
-      },
-      commonStruggles: [
-        { pattern: 'Piece placed far from target position', response: '"Drag the shape closer to the outline. When it gets close enough, it will snap into place!"' },
-        { pattern: 'Student not rotating pieces', response: '"Try the rotate button! Sometimes a shape needs to be turned to fit."' },
-        { pattern: 'Wrong shapes selected for decompose', response: '"Look at the edges of the big shape. Can you see where one shape ends and another begins?"' },
-        { pattern: 'Stuck on how-many-ways', response: '"Start by trying to fill the shape with just triangles. How many do you need?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'SPATIAL VOCABULARY COACHING',
-          instruction:
-            'Build spatial vocabulary: "Turn it," "Flip it," "Slide it over," "It fits in the corner." '
-            + 'Celebrate creative solutions — there is often more than one way to compose a shape! '
-            + 'In free-create the learner composes their own picture from the shapes on the list; describe what you see ("a triangle on top of a square — that looks like a house!"), '
-            + 'but never say how many shapes are on the board or still needed, and never say which piece to add or move: choosing and joining the shapes is the task. '
-            + 'Never say a solution is wrong if it is geometrically valid.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'net-folder',
-    teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'The activity checks every answer itself, and you are not told it: the counts typed into Faces, Edges and '
-        + 'Vertices, the solid named from the options, the face the yellow square becomes, Valid net or Invalid net, the '
-        + 'surface area typed. Before a check and after a wrong one, never say a count, the solid\'s name, which face the '
-        + 'yellow square becomes, whether the net folds, the total, or which faces a wrong total left out. Teaching is the '
-        + 'parts and the fold: a face is a flat side, an edge is where two faces meet, a vertex is a corner, and the parts at '
-        + 'the back count too; a prism has two matching ends, a pyramid one base and a point. On a net, fold the squares one '
-        + 'at a time around the labelled ones; a cube\'s net has six squares, each landing on its own face. Read the question '
-        + 'aloud. You cannot type, tap, turn the solid, or press Check.',
-      // Every mode declares levers (`netFolderLevers.ts`); every miss is answered by a lever on every item.
-      levers: true,
-      // The activity's own check (`netFolderMiss`), every mode.
-      misses: { ...NET_MISSES_BY_MODE },
-    },
+    ...bossEntry(netFolderCard),
     description: '3D shape net folding/unfolding visualization, the solid drawn in 3D. Shows relationship between 3D solids and 2D nets. Students rotate solids, unfold into nets, match face correspondence, validate nets, and calculate surface area. Supports cube, rectangular prism, triangular prism, and pyramid. Perfect for teaching spatial reasoning, 3D geometry, and surface area at grades 3-5. ESSENTIAL for geometry standards.',
     constraints: 'Requires grade 3-5. Solid types: cube, rectangular_prism, triangular_prism, square_pyramid, triangular_pyramid. Challenge types: identify_solid, match_faces, valid_net, surface_area, count_faces_edges_vertices.',
     affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 8 },
@@ -5526,36 +3469,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Calculate surface area by summing face areas from the net',
       },
     ],
-    tutoring: {
-      taskDescription: 'Explore a 3D {{solidType}} ({{solidName}}) and its 2D net. Challenge type: {{challengeType}}.',
-      contextKeys: ['solidType', 'solidName', 'faces', 'edges', 'vertices', 'netLayout', 'gradeBand', 'challengeType', 'instruction', 'attemptNumber', 'isFolded'],
-      scaffoldingLevels: {
-        level1: '"Look at the 3D shape. How many flat surfaces can you see?"',
-        level2: '"Try unfolding the shape. Each face of the solid becomes a flat piece in the net. Can you match the {{highlightedFace}} face?"',
-        level3: '"This is a {{solidName}} with {{faces}} faces. When you unfold it, the top face connects to the front. Count each face in the net — they should match the solid exactly."',
-      },
-      commonStruggles: [
-        { pattern: 'Student confuses faces and edges', response: '"A face is a flat surface — like the side of a box. An edge is where two faces meet — like a crease in the box."' },
-        { pattern: 'Student cannot match net faces to solid', response: '"Try the fold button to watch it fold up. See how the net piece becomes a face on the 3D shape?"' },
-        { pattern: 'Student miscounts surface area', response: '"Count the unit squares on each face separately, then add them all up. Write down each face area first."' },
-        { pattern: 'Student thinks invalid net is valid', response: '"Try folding the net in your mind. Do any faces overlap? If two pieces would end up on the same spot, it cannot fold into a solid."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'SPATIAL REASONING COACHING',
-          instruction:
-            'Guide students to build spatial visualization skills. '
-            + 'For grade 3: focus on naming shapes, counting faces/edges/vertices. Use concrete language: "This flat surface is called a face." '
-            + 'For grade 4: focus on net-solid correspondence. Encourage using the fold/unfold toggle: "Watch what happens when we unfold it!" '
-            + 'For grade 5: connect nets to surface area calculation. "Each face in the net has an area — add them all for surface area!" '
-            + 'Never give the answer directly — guide toward spatial insight.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'equation-builder',
+    ...bossEntry(equationBuilderCard),
     description: 'Interactive equation-building manipulative where students construct, evaluate, and balance equations using draggable number and operator tiles. Teaches that the equal sign means "same amount on both sides," not "answer comes next." Supports build, missing-value, true-false, balance, and rewrite challenge types across scaffolding levels. ESSENTIAL for K-2 equation understanding.',
     constraints: 'Requires grade band (K-2). Challenges array drives interactivity. Each challenge specifies a challengeType and target equation.',
     // reader: 'developing' — WRONG-BAND @ PRE (qa/reader-fit/equation-builder-PRE-2026-09-05.md).
@@ -5563,68 +3481,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     // two English words, with no read-aloud directive. No band floor was added (user ruling: make
     // it age-friendly, never floor it) — the demand is recorded here instead.
     affordances: { representation: 'symbolic', reader: 'developing', answers: ['build', 'type', 'tap'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription: 'Build and reason about equations using draggable tiles. Challenge type: {{challengeType}}. Instruction: {{instruction}}. Equation: {{equation}}. Grade band: {{gradeBand}}.',
-      contextKeys: ['challengeType', 'instruction', 'equation', 'gradeBand'],
-      scaffoldingLevels: {
-        level1: '"Read the equation out loud. What does each part mean?"',
-        level2: '"The equal sign means both sides must show the same amount. What is on the left side? What needs to be on the right side?"',
-        level3: '"Let\'s work through it together: count the value on one side first, then think about what makes the other side match."',
-      },
-      commonStruggles: [
-        { pattern: 'Treats = as "answer comes next" — always puts result on right side', response: '"The equal sign doesn\'t mean \'the answer is.\' It means both sides are the SAME amount. Can you check: is the left side the same as the right side?"' },
-        { pattern: 'Drags tiles to wrong positions or places operator tiles in number slots', response: '"Look at the shape of each slot. Number tiles go where numbers belong, and the + or − tile goes between them."' },
-        { pattern: 'Cannot balance both sides — only changes one side', response: '"Both sides of the equal sign must show the same amount. If you change one side, check: does the other side still match?"' },
-        { pattern: 'Guesses randomly on true/false without computing', response: '"Before you pick true or false, figure out the value on each side. Are they the same number?"' },
-      ],
-      aiDirectives: [
-        {
-          title: 'EQUAL SIGN CONCEPTUAL COACHING',
-          instruction:
-            'The equal sign is the most misunderstood symbol in elementary math. Students often think = means "the answer is" rather than "both sides are the same amount." '
-            + 'Consistently model relational language: "Is the left side the same as the right side?" '
-            + 'For balance and rewrite modes, emphasize that both sides must always show the same value. '
-            + 'Never say "the answer is" — always say "both sides equal" or "both sides are the same."',
-        },
-        {
-          title: 'CHALLENGE TYPE COACHING',
-          instruction:
-            'For BUILD: guide tile placement — "Which number tile goes first? What operation are we using?" '
-            + 'For MISSING-VALUE: direct attention to the known side — "What does the complete side equal? The other side must be the same." '
-            + 'For TRUE-FALSE: require computation before judgment — "Calculate each side, then compare." '
-            + 'For BALANCE: focus on the equal sign — "What is on the left? What do you need on the right to make them the same?" '
-            + 'For REWRITE: show equivalence — "Can you write this equation a different way that still means the same thing?"',
-        },
-      ],
-    },
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The builder checks the learner’s answer itself when they press Check, and you are not told the answer: '
-        + 'the learner taps tiles into a row to build or rewrite an equation, taps a number to fill the "?", taps True or '
-        + 'False, or types the number that balances both sides. The learner may not read well: say the instruction and the '
-        + 'printed equation in your own words first. Before the learner has checked, never say the missing number, whether '
-        + 'the equation is true, the value of either side, an equation to build, or which number goes first; coach only as far as the support tier '
-        + 'allows. Talk about = as "the same amount on both sides", never "the answer is". You cannot place a tile, pick '
-        + 'or type for the learner. On make-n the learner makes their own sentence for the total and presses "I\'m done!": '
-        + 'never say what their row makes or a sentence that works; if they stop, invite them to work out their row.',
-      // Every mode publishes levers (`equationBuilderLevers.ts`): dots, a frame, a rewrite model, match marks, and a
-      // smaller-numbers practice item.
-      levers: true,
-      // The builder's own check (`equationBuilderMiss`), every mode.
-      misses: missLists<EquationBuilderMiss>({
-        'build-simple': ['unfinished_equation', 'false_equation', 'other_operation', 'other_numbers'],
-        'make-n': ['bare_number', 'unfinished_sentence', 'one_short', 'one_over', 'short_by_more', 'over_by_more', 'same_way'],
-        'missing-result': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        'missing-operand': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        'true-false': ['said_true', 'said_false'],
-        'balance-both-sides': ['other_side_total', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        rewrite: ['unfinished_equation', 'false_equation', 'same_as_printed', 'other_form', 'other_numbers'],
-      }),
-      // make-n `same_way` has no lever: the way already made stays on screen beside the row, and "different" has no
-      // smaller form.
-      unanswered: { 'make-n': ['same_way'] },
-    },
     evalModes: [
       {
         evalMode: 'build-simple',
@@ -5646,7 +3503,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing-result',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['tap'] },
         label: 'Missing Result',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -5664,7 +3521,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'missing-operand',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['tap'] },
         label: 'Missing Operand',
         beta: 2.5,
         scaffoldingMode: 4,
@@ -5673,7 +3530,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'balance-both-sides',
-        affordances: { answers: ['build'] },
+        affordances: { answers: ['type'] },
         label: 'Balance Both Sides',
         beta: 3.5,
         scaffoldingMode: 5,
@@ -5758,78 +3615,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'formula-lab',
+    ...bossEntry(formulaLabCard),
     description: 'Interactive Formula Lab for grades 6-12 math and science relationship reasoning. Students hold other variables constant while they explore a living system, predict direction or relative magnitude, construct the symbolic relationship, and transfer the same formula to a new setting with the output withheld. Perfect for building conceptual understanding of direct, inverse, and nonlinear formulas before calculation or memorization. ESSENTIAL for middle-school and high-school algebra, physics, chemistry, and quantitative science.',
     constraints: 'Use only scalar formulas expressible with 2-3 numeric input variables and restricted +, -, *, /, and ^ arithmetic. The manifest must NOT supply specific per-challenge values, variable settings, predictions, or answers — the generator builds the local value pool and derives every challenge deterministically. Supply only topic, grade-level context, and session-level formula metadata.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
-    tutoring: {
-      taskDescription:
-        'Investigate how {{changedVariable}} affects {{outputName}} in {{challengeType}} mode. '
-        + 'Relationship available to the student: {{formulaContext}}. Experiment {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: [
-        'title',
-        'context',
-        'formulaContext',
-        'outputName',
-        'challengeType',
-        'changedVariable',
-        'currentChallengeIndex',
-        'totalChallenges',
-        'predictionLocked',
-        'predictionDirection',
-        'currentInputValue',
-        'targetInputValue',
-        'challengeComplete',
-      ],
-      scaffoldingLevels: {
-        level1: 'Ask one question that points the student to the role {{changedVariable}} plays in the displayed relationship.',
-        level2:
-          'Prompt the student to hold every other input constant, compare {{currentInputValue}} with {{targetInputValue}}, '
-          + 'and decide whether {{changedVariable}} is multiplied, divided, or raised to a power before testing.',
-        level3:
-          'Guide a three-step check without supplying the result: identify the structural role of {{changedVariable}}, '
-          + 'state a prediction in words, then test it against the living system and explain any mismatch.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Predicts that the output changes in the same direction in every experiment',
-          response: 'Ask the student to locate {{changedVariable}} and name whether it is a multiplier, divisor, or exponent before revising the prediction.',
-        },
-        {
-          pattern: 'Tries to move the input before committing a prediction',
-          response: 'Pause the test and ask for a signed prediction first; explain that prediction-before-testing makes the experiment informative.',
-        },
-        {
-          pattern: 'Reasons as though several inputs changed at once',
-          response: 'Restate that only {{changedVariable}} changes while every other input is held constant, then ask which comparison isolates its effect.',
-        },
-        {
-          pattern: 'Starts arithmetic without interpreting the relationship structure',
-          response: 'Ask for a verbal description of the variable role and expected change before any substitution or calculation.',
-        },
-        {
-          pattern: 'Repeatedly assembles the formula tokens in an invalid order',
-          response: 'Coach one operation or parenthesized group at a time without naming the next token or revealing the completed expression.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'FORMULA LAB ANSWER BOUNDARIES',
-          instruction:
-            'Treat {{formulaContext}} as the exact visibility boundary. If it says the expression is withheld, never infer, state, '
-            + 'or confirm the formula or token order. Before predictionLocked is true, never state the actual direction or magnitude. '
-            + 'Before challengeComplete is true, never state a withheld output. Scaffold from variable roles, controlled comparison, '
-            + 'substitution, and operation order without completing the student\'s response.',
-        },
-        {
-          title: 'TAGGED FORMULA LAB MOMENTS',
-          instruction:
-            'For [ACTIVITY_START], orient briefly without previewing a result. For [PREDICTION_LOCKED], give one short testing cue '
-            + 'without revealing the outcome. For [ANSWER_INCORRECT], give one actionable hint rather than the answer. '
-            + 'For [ANSWER_CORRECT], connect the observed evidence to the relationship in one or two sentences. '
-            + 'For [NEXT_ITEM], introduce only the supplied visible task data. For [ALL_COMPLETE], celebrate the reasoning habits practiced.',
-        },
-      ],
-    },
     evalModes: [
       {
         evalMode: 'free-explore',
@@ -5843,7 +3632,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict-direction',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['manipulate'] },
         label: 'Predict Direction (Tier 2)',
         beta: 2.5,
         discrimination: 1.6,
@@ -5883,51 +3672,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks every answer itself, and you are not told the answer. In free explore the learner drags '
-        + 'the slider to the target, and reaching it finishes the experiment. In the predict modes the learner places a '
-        + 'prediction on the track (left is less, right is more, distance from the centre is how strong) and presses Lock '
-        + 'prediction; the output stays hidden until a prediction is credited. In construct the learner taps tokens in order '
-        + 'and presses Check formula; the formula is hidden, and any order that gives the same relationship is credited. In '
-        + 'transfer the learner types the output for the new inputs and presses Check. Before a credited answer, never say '
-        + 'which way or how strongly the output changes, the hidden formula or any part of its order, or the output value. '
-        + 'Teaching is the role of the changed quantity with every other input held fixed (multiplied, divided, or raised to '
-        + 'a power), and the learner applies it to this item. So before a credit do not apply it for them: do not say the '
-        + 'output gets bigger or smaller, which side of the track to use, which quantity is squared, multiplied or divided, or '
-        + 'which token comes next, not even as an either-or question that leans one way. Ask where the changed quantity sits '
-        + 'in the formula and what that role does, and let the learner say it. In transfer the scene still shows the starting '
-        + 'values; the answer uses the new inputs on the card, and writing those inputs into the formula is help, not the '
-        + 'answer. You cannot move the slider, place the prediction, pick tokens, type, or press a button.',
-      // Every checked mode declares levers (`formulaLabLevers.ts`); every miss is answered by a help lever on every item.
-      // free-explore credits every finished move, names no miss and has no lever.
-      levers: true,
-      // The activity's own check (`formulaMiss`).
-      misses: missLists<FormulaLabMiss>(FORMULA_MISSES_BY_MODE),
-    },
   },
   {
     id: 'parameter-explorer',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks every answer itself, and you are not told the answer. Every item starts from the '
-        + 'starting values its ask states. In explore the learner moves sliders (a lock holds one) and presses Done '
-        + 'Exploring; any move is credited. In predict-direction the learner chooses Increase, Decrease or Stay Same; in '
-        + 'predict-value the learner types the output at the new setting; in both the output readout stays hidden until an '
-        + 'answer is credited. In identify-relationship the learner chooses the parameter whose doubling, with the others '
-        + 'held, changes the output the most. Before a credited answer never say which way the output moves, its value at '
-        + 'the new setting, or which parameter leads, and never tell the learner which choice to try. On these items the '
-        + 'rule for a role is the answer, so before a credit do not say what a numerator, a denominator, a factor or a '
-        + 'power does to the output, do not answer your own question, and do not give an example with the same shape (a '
-        + 'fraction for a fraction, a square for a square). Teaching is where the parameter sits in the formula: ask where '
-        + 'it sits, then ask what that does when it grows, and let the learner say it. You cannot move a slider, choose, '
-        + 'type, or press a button.',
-      // Every checked mode declares levers (`parameterExplorerLevers.ts`); every miss is answered by a help lever on
-      // every item. explore credits every move, names no miss and has no lever.
-      levers: true,
-      // The activity's own check (`parameterMiss`); explore credits every move and names none.
-      misses: missLists<ParameterExplorerMiss>(PARAMETER_MISSES_BY_MODE),
-    },
+    ...bossEntry(parameterExplorerCard),
     description: 'Multi-variable formula explorer with interactive sliders. Students adjust parameters via continuous sliders to observe how output changes in real-time. Supports prediction checkpoints and hold-and-vary (lock variables). Perfect for exploring STEM relationships (physics, chemistry, economics). ESSENTIAL for grade 6-12 science and math.',
     constraints: 'Requires jsExpression (JS-evaluable formula) alongside LaTeX formula. Parameters need numeric min/max/step ranges. Works best with 2-3 parameters.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
@@ -5969,45 +3717,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Quantitative prediction of the output value after a parameter change',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is exploring the formula {{formula}} by adjusting parameter sliders. They are investigating how changing {{outputName}} relates to the parameters.',
-      contextKeys: ['formula', 'outputName', 'paramValues', 'outputValue', 'exploredParams', 'lockedParams', 'currentChallengeType'],
-      scaffoldingLevels: {
-        level1: '"Which parameter do you think has the biggest effect on the output? Try moving one slider at a time."',
-        level2: '"Look at the formula — {{outputName}} depends on the parameters. Try locking all variables except one (click the lock icon) and observe what happens as you change it."',
-        level3: '"Let\'s think step by step. The formula is {{formula}}. If you increase {{varyParameter}}, look at where it appears in the formula — is it in the numerator or denominator? What does that tell you about the direction of change?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student has not moved any sliders after 30 seconds', response: 'Encourage the student to start by picking any parameter and moving its slider slowly to see what happens.' },
-        { pattern: 'Student is moving all sliders at once', response: 'Suggest using the lock feature to hold all variables constant except one — this is called "controlling variables" and helps isolate each effect.' },
-        { pattern: 'Student incorrectly predicts direction for inversely related variable', response: 'Guide the student to look at where the variable appears in the formula — if it is in the denominator, increasing it will decrease the output.' },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'equation-workspace',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks every operation itself, and you are not told the solution path. In guided-solve, '
-        + 'solve and multi-step the learner taps an operation from the menu: the next step of the solution is applied to '
-        + 'both sides and its new line appears; any other operation is a wrong answer and nothing is applied. The item is '
-        + 'finished when the variable is alone. Under identify-operation the learner chooses one operation and presses '
-        + 'Check; only the next step is right. Until the variable is alone, and after a wrong choice, never name, quote or '
-        + 'point to the operation to use next, never say which menu item is right or which are wrong, and never say the '
-        + 'solved value or a line the learner has not reached. When one operation is highlighted, you may tell the learner '
-        + 'to look at the highlight; do not read it. Teaching is that an operation done to both sides keeps the equation '
-        + 'equal; that the inverse undoes what is attached to the variable (adding and subtracting undo each other, so do '
-        + 'multiplying and dividing); and that layers come off in reverse order, the last thing done to the variable '
-        + 'first. Ask what is attached to the variable and what would undo it. You cannot tap an operation or press Check.',
-      // Every mode declares levers (`equationWorkspaceLevers.ts`); every miss is answered by a help lever on every item.
-      levers: true,
-      // The activity's own check (`equationMiss`), every mode.
-      misses: { ...EQUATION_MISSES_BY_MODE },
-    },
-    description: 'Step-by-step algebraic manipulation workspace where students isolate a target variable by selecting operations (divide, multiply, take arcsin, square root, etc.) applied to both sides of an equation. Supports guided-solve with highlighted hints, identify-operation multiple choice, free-solve, and multi-step challenges requiring 4+ operations. Covers linear, quadratic, trigonometric, and calculus-level equations. Pedagogical moments: STEP_CORRECT (after each correct operation), ANSWER_CORRECT (equation solved), ANSWER_INCORRECT (wrong operation selected), NEXT_ITEM (advancing to next challenge), ALL_COMPLETE (all challenges done). ESSENTIAL for grades 9-12+ algebra through calculus.',
+    ...bossEntry(equationWorkspaceCard),
+    description: 'Step-by-step algebraic manipulation workspace where students isolate a target variable by selecting operations (divide, multiply, take arcsin, square root, etc.) applied to both sides of an equation. Supports guided-solve with highlighted hints, identify-operation multiple choice, free-solve, and multi-step challenges requiring 4+ operations. Covers linear, quadratic, trigonometric, and calculus-level equations. ESSENTIAL for grades 9-12+ algebra through calculus.',
     constraints: 'Best for grades 9-12+. Requires equation string and target variable. Multi-step mode requires equations needing 4+ operations. Guided-solve highlights valid operations as hints.',
-    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 8 },
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: 'apply', minutes: 8 },
     evalModes: [
       {
         evalMode: 'guided-solve',
@@ -6015,6 +3732,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 2,
         challengeTypes: ['guided-solve'],
+        // The learner works the equation down, one operation applied to both sides at a time.
+        affordances: { answers: ['manipulate'] },
         description: 'Operations highlighted as hints, student clicks in order',
       },
       {
@@ -6023,6 +3742,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 3,
         challengeTypes: ['identify-operation'],
+        affordances: { answers: ['tap'] },
         description: 'Given partially-solved equation, identify the next valid step (MC)',
       },
       {
@@ -6031,6 +3751,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 4,
         challengeTypes: ['solve'],
+        // The learner works the equation down, one operation applied to both sides at a time.
+        affordances: { answers: ['manipulate'] },
         description: 'Student picks operations freely, single-path validation',
       },
       {
@@ -6039,46 +3761,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.0,
         scaffoldingMode: 5,
         challengeTypes: ['multi-step'],
+        // The learner works the equation down, one operation applied to both sides at a time.
+        affordances: { answers: ['manipulate'] },
         description: 'Longer equations requiring 4+ steps to solve',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is solving the equation {{equation}} for {{targetVariable}} by selecting algebraic operations step by step.',
-      contextKeys: ['equation', 'targetVariable', 'solutionSteps', 'context', 'variableDefinitions'],
-      scaffoldingLevels: {
-        level1: '"What operation would help you move terms away from {{targetVariable}}?"',
-        level2: '"Look at what\'s attached to {{targetVariable}} — what\'s the inverse operation? Try working from the outside in."',
-        level3: '"To isolate {{targetVariable}}, first {{solutionSteps[0].operation}}, then continue step by step."',
-      },
-      commonStruggles: [
-        { pattern: 'Student repeatedly selects arithmetic operations when algebraic ones are needed', response: 'Guide them to think about what operation "undoes" what is currently applied to the target variable' },
-        { pattern: 'Student applies operations in wrong order', response: 'Remind them to work from the outermost operation inward — peel off layers one at a time' },
-        { pattern: 'Student uses hints frequently', response: 'Encourage them to read the equation carefully and identify what is being done to the target variable before looking at operations' },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'function-sketch',
-    teachingWorkspace: {
-      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks every answer itself, and you are not told it. On classify-shape the learner taps one '
-        + 'family and presses Check; on compare-functions they tap the button for one curve, then Check. On '
-        + 'identify-features they tap each key feature on the curve (roots, turning points, intercepts, asymptotes); Check '
-        + 'credits only when every one is found. On sketch-match they tap points on the empty graph to sketch the function '
-        + 'described, then Check; it is scored on how close the sketch passes to the key features. You do not see the '
-        + 'curves, so never describe a curve\'s shape yourself: ask the learner what they see, where it crosses each axis, '
-        + 'where it turns, how it behaves at each end, whether it changes by equal steps or faster and faster. A family\'s '
-        + 'defining property may be explained in general. Before a check and after a wrong one, never '
-        + 'name the family, never say which curve, never say where a feature is or give its coordinates, and never work '
-        + 'out the roots, turning points or shape from the expression for them. You cannot tap the graph, choose, or '
-        + 'press Check.',
-      // Every mode declares levers (`functionSketchLevers.ts`).
-      levers: true,
-      // The activity's own check (`functionSketchMiss`), every mode.
-      misses: { ...FUNCTION_SKETCH_MISSES_BY_MODE },
-    },
-    description: 'Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session walks the student through 3-6 distinct functions in the same eval mode (orchestrator-same-mode pattern). Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
+    ...bossEntry(functionSketchCard),
+    description: 'Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session walks the student through 3-6 distinct functions in the same eval mode (orchestrator-same-mode pattern). Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
     constraints: 'Best for grades 9-12. The manifest must NOT supply specific functions, expressions, curves, or features — the generator picks 3-6 distinct functions locally per the selected eval mode via N parallel Gemini sub-generator calls. Requires only a title and context string at the session level. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
     affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 6 },
     evalModes: [
@@ -6116,54 +3809,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Place control points to sketch a described function',
       },
     ],
-    tutoring: {
-      taskDescription: 'Function-sketch session: {{challengeType}}, {{totalChallenges}} functions. Currently on function {{currentChallengeIndex}}/{{totalChallenges}} in "{{title}}" — {{context}}.',
-      contextKeys: ['title', 'context', 'challengeType', 'currentChallengeIndex', 'totalChallenges'],
-      scaffoldingLevels: {
-        level1: '"What do you notice about the shape of this function? What familiar patterns do you see?"',
-        level2: '"Look at where the function crosses the x-axis — those are roots. Where does it reach its highest/lowest points? Use {{context}} to guide your thinking."',
-        level3: '"Let me walk through this step by step: First, identify the general family (linear, quadratic, trig, exponential). Then look for key features: intercepts, turning points, symmetry, and end behavior."',
-      },
-      commonStruggles: [
-        { pattern: 'Confuses roots with extrema', response: 'Roots are where the curve crosses the x-axis (y=0). Extrema are the peaks and valleys of the curve.' },
-        { pattern: 'Places control points too close together', response: 'Try spreading your points across the full x-range. Focus on getting the key features (peaks, zeros, intercepts) in roughly the right positions.' },
-        { pattern: 'Cannot distinguish function families', response: 'Linear = straight line. Quadratic = single U or arch. Exponential = starts slow then grows fast (or decays). Periodic = repeats.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'MULTI-FUNCTION PACING',
-          instruction:
-            'This is a multi-function session — the student is on function {{currentChallengeIndex}} of {{totalChallenges}}. '
-            + 'Each function is fresh content (different family, expression, or curve pair). Do not re-explain the strategy from scratch every time — '
-            + 'scaffold on function 1, encourage independence on function 2+, and celebrate cross-function patterns (e.g. "you spotted the parabola again — what gives it away?").',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
   {
     id: 'distribution-explorer',
-    teachingWorkspace: {
-      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'The activity checks every answer itself, and you are not told it. On identify, compute and shape items the '
-        + 'learner taps one choice and presses Check; on explore they move a slider or change the family, then press Got it, '
-        + 'which is credited only after the workbench moved. On explore the learner finds the pattern by looking: say which '
-        + 'slider to try, never what the chart will do or the value where it happens, and ask what they noticed. Before a '
-        + 'check and after a wrong one, never name the family, the value or the shape that answers, never say which choice '
-        + 'is right, and never work the calculation through to its number. When one formula is the whole item (a mean, a '
-        + 'variance), stating that formula is the answer: ask which formula fits, do not say it. Ask what the scenario '
-        + 'counts or measures, whether it is discrete or continuous, and which probability is asked (exactly, at most, more '
-        + 'than). On identify the workbench hides the family\'s name, formula and sliders until the check; on compute it '
-        + 'hides the mean, variance and the chart\'s value readout. Read the question aloud. You cannot tap a choice, move '
-        + 'a slider, or press Check or Got it.',
-      // Every mode declares levers (`distributionExplorerLevers.ts`).
-      levers: true,
-      // The activity's own check (`distributionMiss`), every mode.
-      misses: { ...DISTRIBUTION_MISSES_BY_MODE },
-    },
+    ...bossEntry(distributionExplorerCard),
     description: 'Live workbench for probability distributions (binomial, Poisson, exponential). Students manipulate parameter sliders and watch the PMF/PDF, CDF, and moments update in real time. Supports four phase-gated challenge modes: free guided exploration, family identification from shape/moments, basic single-distribution probability computation, and advanced conditional/tail/percentile reasoning. ESSENTIAL for probability, statistics, and actuarial topics.',
     constraints: 'Requires a topic with a probabilistic structure. Each eval mode produces phase-appropriate challenges: explore (no graded answer), identify (family MCQ), compute (multiple choice), predict_shape (multiple choice). Math is computed client-side from the chosen family — Gemini authors framing + challenges only.',
-    affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
+    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
@@ -6185,7 +3838,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compute_basic',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['tap'] },
         label: 'Compute Basic (Tier 3)',
         beta: 4.5,
         scaffoldingMode: 3,
@@ -6194,7 +3847,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compute_advanced',
-        affordances: { answers: ['type', 'tap'] },
+        affordances: { answers: ['tap'] },
         label: 'Compute Advanced (Tier 4)',
         beta: 6.5,
         scaffoldingMode: 5,
@@ -6202,46 +3855,6 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Conditional probabilities, tail probabilities, percentile lookups, and shape prediction.',
       },
     ],
-    tutoring: {
-      taskDescription: 'Student is exploring the {{family}} distribution in eval mode "{{evalMode}}" with parameters {{parameters}}. Current challenge: {{currentPrompt}}.',
-      contextKeys: ['family', 'evalMode', 'parameters', 'currentPrompt', 'currentChallengeType', 'attemptNumber', 'lastAnswer', 'momentSnapshot'],
-      scaffoldingLevels: {
-        level1: '"What does the chart tell you about how likely each outcome is? Try changing one parameter and watch what shifts."',
-        level2: '"Look at the moments panel — the mean tells you the average, variance tells you the spread. How does that match the {{family}} formulas?"',
-        level3: '"For {{family}}, the mean and variance follow specific formulas. For Binomial(n,p): E[X]=np, Var[X]=np(1-p). For Poisson(λ): both equal λ. For Exponential(rate): E[X]=1/rate, Var=1/rate²."',
-      },
-      commonStruggles: [
-        { pattern: 'Confusing rate vs mean for exponential', response: '"For Exponential(rate=λ), the MEAN is 1/λ, not λ. A higher rate means events happen MORE often, so the mean wait time is SHORTER."' },
-        { pattern: 'Treating Poisson as continuous', response: '"Poisson is DISCRETE — it counts events. The PMF gives P(X=k) for integer k. There is no probability at non-integer values."' },
-        { pattern: 'Ignoring memorylessness on exponential conditionals', response: '"Exponential is memoryless: P(T > s+t | T > s) = P(T > t). The past does not matter — only how much more time you ask about."' },
-        { pattern: 'Forgetting Binomial parameter constraints', response: '"Binomial needs an integer n and 0 < p < 1. The mean np must be between 0 and n."' },
-        { pattern: 'Reading PMF probabilities as densities', response: '"For discrete families (binomial, Poisson), each bar is the actual probability P(X=k). For continuous (exponential), the curve is a density — you need to integrate to get a probability."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'PARAMETER-DRIVEN COACHING',
-          instruction:
-            'When the student manipulates the sliders, narrate the visible change in pedagogical terms. '
-            + '"You raised λ from 2 to 5 — notice how the Poisson distribution shifted right and the variance grew (because mean = variance = λ)." '
-            + 'Always tie a parameter change to one of: mean, variance, support, shape (skewness), or tail behavior. '
-            + 'Never reveal the answer to a pending challenge through a parameter observation.',
-        },
-        {
-          title: 'EVAL-MODE-AWARE GUIDANCE',
-          instruction:
-            'For EXPLORE: validate the student\'s observation, do not push to a specific answer. The phase has no graded outcome. '
-            + 'For IDENTIFY: contrast distractor families — "Why not Poisson here? Look at the support." Use shape, support, and the mean/variance relationship. '
-            + 'For COMPUTE BASIC: walk through the formula, then plug values. Make sure the student understands WHICH probability is being asked (P(X=k), P(X≤k), P(X>k)). '
-            + 'For COMPUTE ADVANCED: emphasize the conditional structure. "Given X has already happened, what is the new sample space?" For exponential conditionals, invoke memorylessness explicitly.',
-        },
-        {
-          title: 'NO ANSWER LEAKAGE',
-          instruction:
-            'Never name the correct family before an identify challenge is committed. '
-            + 'Never compute the answer to a compute challenge before the student attempts it — even if asked directly. Instead, restate the problem and offer a structural hint.',
-        },
-      ],
-    },
     supportsEvaluation: true,
   },
 ];

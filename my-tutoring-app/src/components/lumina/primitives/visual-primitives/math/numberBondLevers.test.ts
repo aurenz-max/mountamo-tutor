@@ -3,11 +3,17 @@
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { buildBondItems, type NumberBondItem } from './numberBondScript';
+import { buildBondItems, type NumberBondItem } from './numberBondDomain';
 import { expandNumberBondInteractions } from './numberBondModes';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { COUNTERS_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_LEVER, WAYS_LEVER, leverFacts, madeWaysOrder, numberBondLevers,
+import { COUNTERS_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_LEVER, WAYS_LEVER, madeWaysOrder, NUMBER_BOND_LEVERS, type NumberBondLeverContext,
   smallerTeen } from './numberBondLevers';
+
+/** The lever set's offer and scene fact, with the lesson's lever state (`NumberBondLeverContext`). */
+const numberBondLevers = (item: NumberBondItem, pulled: readonly string[], view: Partial<NumberBondLeverContext>) =>
+  NUMBER_BOND_LEVERS.declare(item, { pairsMade: 0, countersOpen: false, ...view }, pulled);
+const leverFacts = (item: NumberBondItem, pulled: readonly string[]) =>
+  NUMBER_BOND_LEVERS.onScreen(item, { pairsMade: 1, countersOpen: false }, pulled);
 
 const items = (challenges: object[], band: 'K' | '1' = 'K', maxNumber = 19) =>
   expandNumberBondInteractions(buildBondItems(challenges as never, { band, maxNumber }).items);

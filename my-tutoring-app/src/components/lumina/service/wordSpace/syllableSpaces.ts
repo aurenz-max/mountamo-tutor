@@ -18,7 +18,7 @@ import type { WordSpaceItem } from './pick';
 import { isInflected } from './scope';
 import {
   hasStableSyllableCount, isCompoundPartWord, isSayableSyllableWord,
-} from '../../primitives/visual-primitives/literacy/syllableClapperScript';
+} from '../../primitives/visual-primitives/literacy/syllableClapperDomain';
 
 export type SyllableSpaceTask = 'count_parts' | 'blend_syllables' | 'delete_compound';
 export interface SyllablePayload {

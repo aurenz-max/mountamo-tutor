@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isFairRampTest, measureRampTrial, requiredPushForce, selectRampChallenges, type RampInvestigationChallenge } from './rampChallenges';
-import { rampExplanationPack } from './rampExplanationScript';
-import { validateJudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { askLeaks } from '../../../components/live-activity/spokenKey';
+import { hearQuestionRequest, rampAsk, rampConclusion, rampKey } from './rampLabWorkspace';
 
 const jobs = selectRampChallenges(['explain_from_trials'], 99) as RampInvestigationChallenge[];
 describe('ramp investigation evidence contract', () => {
@@ -28,18 +28,16 @@ describe('ramp investigation evidence contract', () => {
         expect(trial.lastStillForce).toBeLessThanOrEqual(force);
       }
       directions.add(trials[0].firstMovingForce < trials[1].firstMovingForce ? 'a' : 'b');
-      const pack = rampExplanationPack(job, trials);
-      expect(validateJudgedScriptPack(pack)).toEqual([]);
-      expect(pack.items).toHaveLength(1);
-      expect(pack.pronounceCue!(pack.items[0])).not.toContain('needed less push');
+      // The key is computed from the setups the bench measures, and the ask never says it.
+      const key = rampKey(job)!;
+      expect(key.meaning!.idea).toContain(rampConclusion(job));
+      expect(askLeaks(rampAsk(job), key)).toEqual([]);
+      expect(hearQuestionRequest(job)).not.toContain('needed less push');
     }
     expect(directions).toEqual(new Set(['a', 'b']));
   });
-  it('refuses missing or corrupted observations instead of inventing evidence', () => {
-    const job = jobs[0], a = measureRampTrial('a', job.scenarios.a), b = measureRampTrial('b', job.scenarios.b);
-    expect(rampExplanationPack(job, [a]).items).toHaveLength(0);
-    expect(rampExplanationPack(job, [a, { ...b, firstMovingForce: 999 }]).items).toHaveLength(0);
-    expect(rampExplanationPack(job, [a, a]).items).toHaveLength(0);
+  it('measures a copy of the setup: a later edit to the challenge does not change a recorded trial', () => {
+    const job = jobs[0], a = measureRampTrial('a', job.scenarios.a);
     const oldMass = a.scenario.loadWeight;
     job.scenarios.a.loadWeight += 1;
     expect(a.scenario.loadWeight).toBe(oldMass);

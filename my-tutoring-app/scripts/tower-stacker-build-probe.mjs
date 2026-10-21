@@ -43,7 +43,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateTowerStacker } = await loader.import('/src/components/lumina/service/engineering/gemini-tower-stacker.ts');
   const { towerStackerOracle } = await loader.import('/src/components/lumina/service/qa/oracles/tower-stacker.ts');
-  const { validateTowerStackerData } = await loader.import('/src/components/lumina/components/live-activity/adapters/towerStackerLive.ts');
+  const { validateTowerStackerData } = await loader.import('/src/components/lumina/primitives/visual-primitives/engineering/towerStacker.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/engineering/towerWorkspace.ts');
   /** Replay the journey's inputs through the real drop rule, then the real check. */
   const replay = (c, wrong) => {

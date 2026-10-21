@@ -1,14 +1,17 @@
 /**
- * Life cycle sequencer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md, C14).
+ * Life cycle sequencer's domain on the boss (`lifeCycleSequencer.boss.ts`): the item, the bank order, the check, the
+ * miss and the scene.
  *
- * Pure: the component, the journey row and any probe read the same item, bank order, assignment and scene. The
- * payload is ONE sequence (no `challenges` array), so the session has one item, `cycle`. The learner fills every
- * slot and presses Check Answer; the activity's own check is the judge, so the tutor is never handed
- * `correctPosition`, `transitionToNext` or the misconception correction (each can state the order).
+ * Pure: the component, the boss and any probe read the same item, bank order and scene. The payload is ONE sequence
+ * (no `challenges` array), so the session has one item, `cycle`. The learner fills every slot and presses Check
+ * Answer; the activity's own check is the judge, so the tutor is never handed `correctPosition`, `transitionToNext` or
+ * the misconception correction (each can state the order).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { LifeCycleSequencerData, LifeCycleStage } from './LifeCycleSequencer';
+import type { CycleMiss } from './lifeCycleSequencer.card';
+
+export { CYCLE_MISSES, type CycleMiss } from './lifeCycleSequencer.card';
 
 export const CYCLE_ITEM_ID = 'cycle';
 
@@ -28,10 +31,6 @@ export const lifeCycleItem = (data: Pick<LifeCycleSequencerData, 'title' | 'inst
 
 /** At K-2 tapping a picture places it in the next empty slot (reader-fit PRE); older bands tap a card, then a slot. */
 export const tapPlaces = (item: Pick<LifeCycleItem, 'gradeBand'>) => item.gradeBand === 'K-2';
-
-export function workspaceAssignment(item: LifeCycleItem): TeachingAssignment {
-  return { id: item.id, task: item.instructions, response: 'gesture' };
-}
 
 /** How many neighbouring cards in `order` are neighbouring stages (either way; across the end on a circle). */
 function linkedPairs(order: readonly LifeCycleStage[], circular: boolean): number {
@@ -79,18 +78,6 @@ export function describeCycleWork(item: LifeCycleItem, slots: readonly (string |
   return 'Placed: ' + labels.map((l, i) => `slot ${i + 1} ${l ? `"${l}"` : 'empty'}`).join(', ');
 }
 
-/**
- * What a wrong order shows (`TeachingAttempt.miss`, handoff 20), read from the placed order alone:
- * - `cycle_rotated`: a circle, every stage followed by the right next one, but started from another stage;
- * - `reversed`: last to first, every stage mirrored;
- * - `adjacent_swap`: two neighbouring stages traded places, the rest right;
- * - `two_swapped`: two stages further apart traded places, the rest right;
- * - `one_moved`: one stage put in the wrong place, the others in the right order around it;
- * - `mixed_order`: anything else.
- */
-export type CycleMiss = 'cycle_rotated' | 'reversed' | 'adjacent_swap' | 'two_swapped' | 'one_moved' | 'mixed_order';
-export const CYCLE_MISSES: readonly CycleMiss[] = ['cycle_rotated', 'reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'];
-
 /** The correct position of the stage in each slot; null while a slot is empty. */
 function placedPositions(item: LifeCycleItem, slots: readonly (string | null)[]): number[] | null {
   const seq = item.stages.map((_, i) => item.stages.find(s => s.id === slots[i])?.correctPosition);
@@ -118,12 +105,12 @@ export function cycleMiss(item: LifeCycleItem | null, slots: readonly (string | 
 }
 
 /** What is drawn and asked. The cards are listed in the bank's order; the true order is not. */
-export function workspaceScene(item: LifeCycleItem, view: CycleView): WorkspaceScene {
+export function workspaceScene(item: LifeCycleItem, view: CycleView): SceneOf {
   const bank = bankOrder(item);
   const n = item.stages.length;
   const facts: Record<string, string | number> = {
     kind: item.cycleType === 'circular'
-      ? 'a cycle: after the last stage it starts again'
+      ? 'a cycle: after the last stage it starts again; slot 1 is the stage this item starts from'
       : 'a life in a line: it has a beginning and an end',
     title: item.title,
     slots: `${n} numbered slots, 1 to ${n}, filled in order of time`,
@@ -137,9 +124,5 @@ export function workspaceScene(item: LifeCycleItem, view: CycleView): WorkspaceS
     facts.checkedMarks = `The screen marks ${view.marked.right.length} of ${n} slots right (green check`
       + `${list(view.marked.right)}) and ${view.marked.wrong.length} wrong (red cross${list(view.marked.wrong)})`;
   }
-  facts.constraints = (tapPlaces(item)
-    ? 'The learner taps a picture and it goes into the next empty slot (tapping a placed picture takes it back out). '
-    : 'The learner taps a card, then a numbered slot to place it, or drags it there (tapping a placed card takes it back out). ')
-    + 'With every slot filled they press Check Answer and the activity checks the order itself. You cannot place cards for the learner.';
   return { objects: [], facts };
 }

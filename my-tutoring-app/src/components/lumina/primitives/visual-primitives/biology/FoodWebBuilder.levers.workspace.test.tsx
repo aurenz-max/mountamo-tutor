@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * food-web-builder `complete_web` levers (`foodWebLevers.ts` `webLevers`), mounted the way a lesson mounts it. Help
+ * food-web-builder `complete_web` levers (`foodWebLevers.ts` `FOOD_WEB_LEVERS`), mounted the way a lesson mounts it. Help
  * levers draw on the learner's own web in the same commit as their scene fact; the arrow counts come from the web's
  * relations and never move as arrows are drawn; the smaller web is ungraded and gives the whole web back empty.
  */
@@ -19,8 +19,11 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { Connection, FoodWebBuilderData, FoodWebChallenge, Organism } from './FoodWebBuilder';
 import { FOOD_WEB_MISSES, smallerWebAsk } from './foodWebWorkspace';
 import {
-  ARROW_COUNTS_LEVER, ARROW_WORDS_LEVER, FOOD_TAGS_LEVER, SMALLER_WEB_LEVER, foodWebLevers, smallerWeb, webArrowCounts, webLevers,
+  ARROW_COUNTS_LEVER, ARROW_WORDS_LEVER, FOOD_TAGS_LEVER, FOOD_WEB_LEVERS, SMALLER_WEB_LEVER, smallerWeb, webArrowCounts,
 } from './foodWebLevers';
+
+const declare = (c: FoodWebChallenge, organisms: Organism[], relations: Connection[], pulled: string[]) =>
+  FOOD_WEB_LEVERS.declare(c, { organisms, relations }, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -60,7 +63,7 @@ describe('the lever rules', () => {
     expect(smallerWeb(WHOLE, WEB_ORGS, [rel('g', 'r'), rel('g', 'm')])).toBeNull();
     // Never on a smaller web, never on a chain.
     expect(smallerWeb(small, BIG_ORGS, BIG)).toBeNull();
-    expect(webLevers(small, BIG_ORGS, BIG, [])).toEqual([]);
+    expect(FOOD_WEB_LEVERS.simpler(small, { organisms: BIG_ORGS, relations: BIG }, SMALLER_WEB_LEVER)).toBeNull();
   });
 
   it('over many random webs the smaller web is the same task, in the web, at least two relations, and fewer than the source', () => {
@@ -93,11 +96,11 @@ describe('the lever rules', () => {
     ['missing_arrows', [ARROW_COUNTS_LEVER], SMALLER_WEB_LEVER], ['wrong_arrows', [FOOD_TAGS_LEVER], SMALLER_WEB_LEVER],
     ['backwards_arrows', [ARROW_WORDS_LEVER], FOOD_TAGS_LEVER],
   ])('after %s with %j pulled, the next lever is %s', (miss, pulled, want) => {
-    expect(nextLever(webLevers(WHOLE, WEB_ORGS, WEB, pulled as string[]), miss)).toBe(want);
+    expect(nextLever(declare(WHOLE, WEB_ORGS, WEB, pulled as string[]), miss)).toBe(want);
   });
 
   it('lever texts name no living thing, and every whole-web miss has a lever (J9)', () => {
-    const ls = foodWebLevers(WHOLE, BIG_ORGS, BIG, []);
+    const ls = declare(WHOLE, BIG_ORGS, BIG, []);
     expect(ls.map(l => [l.id, l.kind])).toEqual([[ARROW_WORDS_LEVER, 'help'], [FOOD_TAGS_LEVER, 'help'],
       [ARROW_COUNTS_LEVER, 'help'], [SMALLER_WEB_LEVER, 'simplify']]);
     for (const l of ls) expect(`${l.when} ${l.does}`).not.toMatch(/grass|mouse|hawk|snake|rabbit|frog|berries|bacteria|\d/i);

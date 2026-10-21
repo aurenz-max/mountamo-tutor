@@ -17,8 +17,8 @@
  *  5. Corrections re-model then re-elicit, and they are the FIRST place the
  *     answer is spoken. Each names its signature error and its accept clause.
  *  6. Hand items carry a SILENCE contract; the verdict is code-computed.
- *  7. The catalog keeps its side: template keys resolve against exactly what
- *     the pack pushes, and no catalog sentence opens with a verdict sentinel.
+ *  7. The catalog steers the manifest at the modality (its tutoring block left
+ *     with the move onto the boss, 2026-10-20).
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -51,7 +51,6 @@ import {
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
-  checkDiCatalogEntry,
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
@@ -422,10 +421,6 @@ describe('ten-frame pack · session frame', () => {
 
 describe('ten-frame catalog · DI frame', () => {
   const entry = MATH_CATALOG.find((p) => p.id === 'ten-frame')!;
-
-  it('keeps its side of the contract: audio mode, contextKeys, template keys, sentinel scan', () => {
-    expect(checkDiCatalogEntry(entry, pack, SUBITIZE)).toEqual([]);
-  });
 
   it('steers the manifest at the modality, not at a Check button', () => {
     // "tap the tiles" prose routes a primitive wrong forever; this entry has to

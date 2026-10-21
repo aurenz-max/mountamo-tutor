@@ -1,12 +1,12 @@
 # Contract: histogram
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C19) for the workspace and lever requirements only. A full `/primitive-contract histogram` derivation (consumers per statistics skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/Histogram.tsx` · **Workspace:** `histogramWorkspace.ts` · **Levers:** `histogramLevers.ts` · **Generator:** `service/math/gemini-histogram.ts` · **Oracle:** `service/qa/oracles/histogram.ts` · **Adapter:** `components/live-activity/adapters/histogramLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`histogram`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/Histogram.tsx` · **Workspace:** `histogramWorkspace.ts` · **Levers:** `histogramLevers.ts` · **Generator:** `service/math/gemini-histogram.ts` · **Oracle:** `service/qa/oracles/histogram.ts` · **Boss:** `histogram.card.ts`, `histogram.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`histogram`)
 
 ## Requirements
 
 ### R1 — every mode binds the shared teaching workspace with no key reaching the tutor · OBSERVED (2026-10-09)
-- **Property:** all four modes are gesture items checked by the activity's own check (`histogramCorrect`: the shape chip, the tapped bar's start, the typed count exactly, the typed center within the item's tolerance). Each wrong check names a `HistogramMiss` from the catalog list. Scene facts name the bars' span and width, the axis labelling, whether counts are printed, the stats panel as drawn, the outlined bin, the tolerance and the learner's work; never the shape, the tallest bar, any bar height, the asked count or the center. Try again clears the chip, the tapped bar or the box. The hint, the hint button and the scripted Try Again are not shown on the workspace path; the scripted auto-advance timer does not run there.
+- **Property:** all four modes are gesture items checked by the activity's own check (`histogramCorrect`: the shape chip, the tapped bar's start, the typed count exactly, the typed center within the item's tolerance). Each wrong check names a `HistogramMiss` from the catalog list. Scene facts name the bars' span and width, the axis labelling, whether counts are printed, the stats panel as drawn, the outlined bin, the tolerance and the learner's work; never the shape, the tallest bar, any bar height, the asked count or the center. Try again clears the chip, the tapped bar or the box. The hint, the hint button and the scripted Try Again are not shown; there is no scripted path.
 - **Demanded by:** qa/workspace-rollout/ROLLOUT.md C19.
 - **Evidence:** `Histogram.workspace.test.tsx` 11; sweep J1-J13 on 4 payloads (20 items), 0 findings; replay 4 x 5 (`qa/tutor-reports/histogram-w1-2026-10-09.md`).
 - **Probe:** `Histogram.workspace.test.tsx`; `journeySweep -t histogram`.
@@ -16,7 +16,7 @@
 - **Probe:** `Histogram.workspace.test.tsx` ("the frequency axis is labelled on whole counts").
 
 ### R3 — every mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
-- **Property:** `histogramLevers.ts` declares levers on every mode and every catalog miss is answered by a help lever on every item. Help: outline_tops, tail_model, peak_model (identify); level_line (modal); isolate_bar, axis_names, count_marks (read); axis_names, count_labels (only where the session withdrew them), balance_model (center). Leak rules in code: no lever text or fact carries a digit or the item's shape name; a model's shape is never the item's; the level line sits at the tapped bar's height and is refused with nothing tapped; count marks and the balance model carry no number. Simplify (`simpler_graph`, every mode) opens a clean same-mode graph with its own `~simpler` id and ask whose answer is not the item's (`practiceLeaks`), ungraded; the full item comes back blank.
+- **Property:** `histogramLevers.ts` declares levers on every mode and every catalog miss is answered by a help lever on every item. Help: outline_tops, tail_model, peak_model (identify); level_line (modal); isolate_bar, axis_names, count_marks (read); axis_names, count_labels (only where the session withdrew them), balance_model (center). Leak rules in code: no lever text or fact carries a digit or the item's shape name; a model's shape is never the item's; the level line sits at the tapped bar's height (pulled before a tap, it is drawn at the next one); count marks and the balance model carry no number. Simplify (`simpler_graph`, every mode) opens a clean same-mode graph with its own `~simpler` id and ask whose answer is not the item's (`practiceLeaks`), ungraded; the full item comes back blank.
 - **Evidence:** `histogramLevers.test.ts`, `Histogram.levers.workspace.test.tsx`; sweep J9/J12/J13 0 findings (`qa/eval-reports/histogram-levers-2026-10-09.md`).
 
 ### R4 — the key is what the drawn bars show · OBSERVED (2026-10-09)
@@ -26,3 +26,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C19); R4 added (closed last bin, drawn-shape key).
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (outline, level line, isolate, axis names, count marks and count labels as marks; tail, peak and balance graphs as models, timed by each item's `supportTier`, which the generator now stamps; simpler graph as easier), workspace-only export; the scripted path, hint button, adapter and catalog guidance/tutoring prose deleted. The level line is no longer refused before a tap. R1-R4 otherwise unchanged.

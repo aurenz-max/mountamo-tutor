@@ -4,7 +4,8 @@
   workspace, oracle, w1 payloads, tests to 2026-09-29. No census run.
 - **Component:** `primitives/visual-primitives/math/EquationBuilder.tsx` + `equationBuilderWorkspace.ts` · **Generator:**
   `service/math/gemini-equation-builder.ts` · **Oracle:** `service/qa/oracles/equation-builder.ts` · **Catalog:**
-  `service/manifest/catalog/math.ts` (`equation-builder`)
+  `service/manifest/catalog/math.ts` (`equation-builder`) · **Boss:** `equationBuilder.card.ts` + `equationBuilder.boss.ts`
+  (levers: `EQUATION_BUILDER_LEVERS` in `equationBuilderLevers.ts`)
 - **Status:** ACTIVE (no open conflicts)
 
 ## Consumers (blast radius)
@@ -41,7 +42,7 @@
 ### R4 — no key reaches the tutor · OBSERVED
 - **Property:** every challenge is a gesture checked by the builder; the assignment publishes no expected answer.
 - **Demanded by:** workspace consumer.
-- **Evidence:** `equationBuilderAssignment`; `EquationBuilder.workspace.test.tsx`.
+- **Evidence:** `equationBuilderBoss.assignment` (`bossAssignment`, no key); `EquationBuilder.workspace.test.tsx`.
 - **Probe:** `npm test -- EquationBuilder.workspace`.
 
 ### R5 — make-n accepts every sentence that makes the total, and nothing that only names it · OBSERVED
@@ -112,3 +113,7 @@ None.
 - 2026-10-07 — make-n (open build) added as a fork (R5); R1-R4 untouched. Existing equation-builder tests and the
   live-activity suite green; the other modes' Try again still clears the row.
 - 2026-10-09 — R6: levers on the six other modes (`/add-support-tiers`). Edit is additive; R1-R5 tests green (80/80).
+- 2026-10-20 — moved onto a boss (wave 3): `equationBuilder.card.ts` + `equationBuilder.boss.ts` replace
+  `adapters/equationBuilderLive.ts` and the catalog guidance/tutoring blocks; levers are one lever set (`rewrite_model` is now a
+  `model` lever, so the item's `supportTier` says when it comes); Pip from the runner. R1-R6 unchanged; equation-builder
+  tests green. Catalog affordances: missing-result/missing-operand `tap`, balance-both-sides `type` (what the screen takes).

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaCallout, LuminaChallengeCounter, LuminaFeedbackCard, LuminaInlineStat,
@@ -15,17 +14,19 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CAR_ORDER, carButtonName, carCount, carFor, chosenKind, describeLoad, emptyConsist, engineFor, roadComparison, runTrain,
   TRAIN_CARS, yardConsist,
   type Consist, type TrainCarType, type TrainRun, type TrainYardChallenge, type TrainYardMiss, type TrainYardTask,
 } from './trainYardModel';
-import { describeTrainWork, trainYardAssignment, trainYardMiss, trainYardScene } from './trainYardWorkspace';
+import { describeTrainWork, trainYardMiss, trainYardScene } from './trainYardWorkspace';
 import {
-  CARGO_LOOKS, MODEL_LEVER, PICTURE_LEVER, TALLY_LEVER, WEIGHT_LEVER, WORKED_LEVER, carTally, isPracticeJob, leverFacts,
-  modelMatch, simplerJob, startLevers, trainWeight, trainYardLevers, workedHill,
+  CARGO_LOOKS, MODEL_LEVER, PICTURE_LEVER, TALLY_LEVER, TRAIN_LEVERS, WEIGHT_LEVER, WORKED_LEVER, carTally, isPracticeJob,
+  modelMatch, startLevers, trainWeight, workedHill, type TrainLeverCtx,
 } from './trainYardLevers';
+import { trainYardBoss } from './trainYard.boss';
 
 export type { TrainYardChallenge } from './trainYardModel';
 
@@ -422,7 +423,6 @@ type Phase = 'building' | 'running' | 'ran';
 const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, gradeBand, supportTier, instanceId, skillId, subskillId, objectiveId, exhibitId,
     onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceId = useRef(instanceId || `train-yard-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
@@ -434,7 +434,7 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
   const [lastCorrect, setLastCorrect] = useState(false);
   const [runs, setRuns] = useState(0);
   const animRef = useRef<number | null>(null);
-  // In-item levers (`trainYardLevers.ts`), keyed by the session job they were pulled on, and the easier job a
+  // In-item levers (`TRAIN_LEVERS`), keyed by the session job they were pulled on, and the easier job a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<TrainYardChallenge | null>(null);
@@ -442,7 +442,7 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
   const progress = useTrainYardProgress<TrainYardChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: trainYardAssignment,
+    workspace, assignment: trainYardBoss.assignment!,
     // A fresh job and Try again both empty the yard. On Try again the last run's evidence stays on
     // screen (and in the scene), so the learner rebuilds from what the run showed.
     onItemOpened: (_index, retry) => {
@@ -570,21 +570,15 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
     submitResult(correctCount === total, accuracy, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmitted, challenges, challengeType, challengeResults, submitResult, progress.recordsEvaluation]);
 
-  // ── Pip: the yard as a whole; never a car type (matching the cargo is the task) ──
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: 'The train yard',
-    solved: lastCorrect,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current || !sessionChallenge) return;
-    const scene = trainYardScene(current, { consist: train, phase, lastRun, runs });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, consist);
-    const levers = practice ? [] : trainYardLevers(sessionChallenge, pulledLevers, gradeBand);
+    const leverCtx: TrainLeverCtx = { band: gradeBand, consist, train };
+    const levers = practice ? [] : TRAIN_LEVERS.declare(sessionChallenge, leverCtx, pulledLevers);
+    const scene = leverScene(trainYardScene(current, { consist: train, phase, lastRun, runs }), {
+      support: practice ? '' : TRAIN_LEVERS.support(sessionChallenge, leverCtx),
+      onScreen: practice ? '' : TRAIN_LEVERS.onScreen(sessionChallenge, leverCtx, pulledLevers),
+    });
     const clearYard = () => {
       if (animRef.current !== null) cancelAnimationFrame(animRef.current);
       animRef.current = null;
@@ -592,7 +586,6 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
     };
     workspace.current = {
       ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -600,10 +593,10 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerJob(sessionChallenge, gradeBand);
+          const easier = TRAIN_LEVERS.simpler(sessionChallenge, leverCtx, id);
           if (!easier) return 'This job has no easier version; try a help lever.';
           setLeverState(pulled); clearYard(); setPractice(easier);
-          return { practice: trainYardAssignment(easier) };
+          return { practice: trainYardBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -640,6 +633,7 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
         <div className="flex flex-wrap items-center justify-between gap-2">
           <LuminaCardTitle>{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaBadge accent="orange">{gradeBand}</LuminaBadge>
             <LuminaChallengeCounter current={Math.min(currentIndex + 1, challenges.length)} total={challenges.length} />
           </div>
@@ -700,8 +694,9 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
               </div>
             )}
 
-            {pip.store && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the yard as one target. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
               <div className="overflow-hidden rounded-xl border border-white/10">
                 <canvas ref={routeRef} width={1280} height={480} className="block aspect-[8/3] w-full"
                   aria-label={`The route from ${current.from} over ${current.hillName} to ${current.to}`} />
@@ -841,7 +836,7 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
                   </div>
                 </LuminaFeedbackCard>
               )}
-            </div>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

@@ -1,12 +1,15 @@
 /**
- * Array grid on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md), plus the open build `make_array` (/add-eval-modes references/build-mode.md).
+ * Array grid on the shared tutor/JEV teaching workspace, on a boss (`arrayGrid.card.ts`, `arrayGrid.boss.ts`), plus the
+ * open build `make_array` (/add-eval-modes references/build-mode.md).
  *
- * Pure: the component, the journey row and any probe read the same assignment, scene, check and misses. Every
- * challenge is answered on the screen and checked by the activity, so the tutor is never handed the total.
+ * Pure: the component, the boss and any probe read the same items, ask, scene, check and misses. Every challenge is
+ * answered on the screen and checked by the activity, so the tutor is never handed the total.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { ArrayGridChallenge, ArrayGridChallengeType } from './ArrayGrid';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { ArrayGridChallenge, ArrayGridChallengeType, ArrayGridData, ArrayGridIconType } from './ArrayGrid';
+import type { ArrayMiss, ArrayTotalMiss, MakeArrayMiss } from './arrayGrid.card';
+
+export { ARRAY_MISSES_BY_MODE, MAKE_ARRAY_MISSES, type ArrayMiss, type ArrayTotalMiss, type MakeArrayMiss } from './arrayGrid.card';
 
 // ── make_array: the build grid and its shape ────────────────────────────────
 
@@ -51,16 +54,7 @@ export const makeArrayAsk = (total: number, ways: 1 | 2 = 1) => ways === 2
   ? `Make an array with ${total} squares. Then make a different array with ${total} squares.`
   : `Make an array with ${total} squares.`;
 
-/**
- * What a wrong make shows (`TeachingAttempt.miss`):
- * - `ragged`: the squares are not one full rectangle (rows of different lengths, or a gap);
- * - `one_line_short` / `one_line_over`: a rectangle one row or one column away from `total`;
- * - `too_few` / `too_many`: any other rectangle of the wrong size;
- * - `same_as_first`: on the second ask, the same rows and columns as the first array (a turned array is different).
- */
-export type MakeArrayMiss = 'ragged' | 'one_line_short' | 'one_line_over' | 'too_few' | 'too_many' | 'same_as_first';
-export const MAKE_ARRAY_MISSES: readonly MakeArrayMiss[] = ['ragged', 'one_line_short', 'one_line_over', 'too_few', 'too_many', 'same_as_first'];
-
+/** What a wrong make shows (`MakeArrayMiss`, `arrayGrid.card.ts`). */
 export function makeArrayMiss(total: number, cells: readonly string[], first?: { rows: number; columns: number } | null): MakeArrayMiss | undefined {
   const s = arrayShape(cells);
   if (!s.rectangular) return 'ragged';
@@ -73,7 +67,24 @@ export function makeArrayMiss(total: number, cells: readonly string[], first?: {
 
 const arrayWords = (a: { rows: number; columns: number }) => `${a.rows} row${a.rows === 1 ? '' : 's'} of ${a.columns}`;
 
-// ── Every mode: assignment, work, misses, scene ─────────────────────────────
+// ── Every mode: items, ask, work, misses, scene ─────────────────────────────
+
+/** One item as the boss and the levers read it: the challenge with the session's mode and icon stamped on it. */
+export type ArrayItem = ArrayGridChallenge & { mode: ArrayGridChallengeType; icon: ArrayGridIconType };
+
+/** The lesson's items. make_array always builds squares: the ask names them. */
+export const arrayItems = (d: ArrayGridData): ArrayItem[] => (d.challenges ?? []).map(c => ({ ...c, mode: d.challengeType,
+  icon: d.challengeType === 'make_array' ? 'square' : d.iconType ?? 'star' }));
+
+/** What the learner is asked on one item. Never the total. */
+export function arrayAsk(c: ArrayItem): string {
+  switch (c.mode) {
+    case 'make_array': return c.instruction ?? makeArrayAsk(c.total ?? 0, c.ways);
+    case 'build_array': return `Build an array with ${c.targetRows} rows and ${c.targetColumns} columns, then type how many ${c.icon}s there are in all.`;
+    case 'count_array': return `How many ${c.icon}s are in the array? Type the total.`;
+    default: return 'Write the multiplication sentence for the array: rows × columns = total.';
+  }
+}
 
 /** What the component reads off the screen for the check, the description and the scene. */
 export interface ArrayGridView {
@@ -89,14 +100,6 @@ export interface ArrayGridView {
   /** make_array: the squares on the grid, and the first array on a two-ways item once it passed. */
   cells: readonly string[];
   firstWay: { rows: number; columns: number } | null;
-}
-
-export function workspaceAssignment(challenge: ArrayGridChallenge, mode: ArrayGridChallengeType, icon: string): TeachingAssignment {
-  const task = mode === 'make_array' ? challenge.instruction ?? makeArrayAsk(challenge.total ?? 0, challenge.ways)
-    : mode === 'build_array' ? `Build an array with ${challenge.targetRows} rows and ${challenge.targetColumns} columns, then type how many ${icon}s there are in all.`
-    : mode === 'count_array' ? `How many ${icon}s are in the array? Type the total.`
-    : 'Write the multiplication sentence for the array: rows × columns = total.';
-  return { id: challenge.id, task, response: 'gesture' };
 }
 
 const typed = (text: string) => text.trim() || '?';
@@ -119,15 +122,6 @@ export function describeArrayWork(view: ArrayGridView): string {
   }
 }
 
-/**
- * The observable pattern of a wrong typed answer, every mode but make_array:
- * - a total: `added_sides` (rows + columns), `one_row_off` (a row too many or too few), `one_column_off`,
- *   `off_by_one`, `other_total`;
- * - multiply_array's sides: `swapped_sides` (rows and columns exchanged), `wrong_side` (another number).
- */
-export type ArrayTotalMiss = 'added_sides' | 'one_row_off' | 'one_column_off' | 'off_by_one' | 'other_total';
-export type ArrayMiss = ArrayTotalMiss | 'swapped_sides' | 'wrong_side' | MakeArrayMiss;
-
 function totalMiss(got: number, rows: number, columns: number): ArrayTotalMiss | undefined {
   const product = rows * columns, off = Math.abs(got - product);
   if (got === product) return undefined;
@@ -149,31 +143,29 @@ export function arrayMiss(challenge: ArrayGridChallenge | null, view: ArrayGridV
   return Number.isNaN(got) ? undefined : totalMiss(got, r, c);
 }
 
-const CONSTRAINTS = 'The learner answers on the screen and presses Check; the activity checks the work itself. '
-  + 'You cannot tap, build or type for the learner.';
-
-/** What is drawn and asked. No total is ever published. */
-export function workspaceScene(challenge: ArrayGridChallenge, view: ArrayGridView): WorkspaceScene {
+/** What is drawn and asked. No total is ever published. The moves and the rules are the card's. */
+export function workspaceScene(challenge: ArrayGridChallenge, view: ArrayGridView): SceneOf {
   const drawn: Record<string, string | number> = { kind: view.mode };
   if (view.mode === 'make_array') {
     const s = arrayShape(view.cells);
     // The made array as numbers, so the shared work history records a revision (`squaresMade 0 → 13 → 12`).
-    drawn.grid = 'an empty grid of cells with no numbers; the learner taps a cell to put a square in or take it out';
+    drawn.grid = 'a grid of empty cells with no numbers';
     drawn.rowsMade = s.rows; drawn.columnsMade = s.columns; drawn.squaresMade = s.squares;
     if (challenge.ways === 2) {
       drawn.way = view.firstWay ? 'second' : 'first';
       if (view.firstWay) drawn.firstArray = `${arrayWords(view.firstWay)}, drawn small beside the grid`;
     }
-    return { objects: [], facts: { ...drawn, learnerWork: describeArrayWork(view),
-      constraints: 'The learner taps cells to make squares and presses "I\'m done!"; the activity checks the array itself. '
-        + 'You cannot tap or build for the learner.' } };
+    return { objects: [], facts: { ...drawn, learnerWork: describeArrayWork(view) } };
   }
   drawn.labels = view.labelsShown ? 'every row and column numbered' : 'hidden';
   if (view.mode === 'build_array') {
     drawn.asked = `${challenge.targetRows} rows and ${challenge.targetColumns} columns`;
     drawn.rowsBuilt = view.rows; drawn.columnsBuilt = view.columns;
+  } else if (view.mode === 'count_array') {
+    // On count the rows and columns are the learner's to find: the tutor is told the array, never its size.
+    drawn.array = `${view.icon}s in equal rows`;
   } else {
     drawn.array = `${challenge.targetRows} rows of ${challenge.targetColumns} ${view.icon}s`;
   }
-  return { objects: [], facts: { ...drawn, learnerWork: describeArrayWork(view), constraints: CONSTRAINTS } };
+  return { objects: [], facts: { ...drawn, learnerWork: describeArrayWork(view) } };
 }

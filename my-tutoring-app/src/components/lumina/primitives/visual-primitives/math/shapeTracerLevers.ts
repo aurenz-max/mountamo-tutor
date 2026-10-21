@@ -5,29 +5,34 @@
  * The generator's tier guides (outline, numbers, next-dot glow) stay the starting positions: a guide the tier already
  * shows is declared pulled. Every other lever starts released.
  *
- * - `dotted_outline` (help; trace, complete): the dashed outline of the whole shape through its corners (on trace with
+ * Declared once as a lever set (`SHAPE_TRACER_LEVERS`, `bossLevers.ts`); its context is the learner's work on the
+ * item (`ShapeWork`), because the side bars draw nothing until there is a side to show.
+ *
+ * - `dotted_outline` (marks; trace, complete): the dashed outline of the whole shape through its corners (on trace with
  *   the moving arrows). The corners are on screen and the shape is named, so the outline is the path, not a secret.
- * - `order_numbers` (help; trace): the corner numbers 1, 2, 3 ...
- * - `next_glow` (help; trace, complete): the pulsing ring on the corner that comes next. Leak rule (`glowOffered`):
+ * - `order_numbers` (marks; trace): the corner numbers 1, 2, 3 ...
+ * - `next_glow` (marks; trace, complete): the pulsing ring on the corner that comes next. Leak rule (`glowOffered`):
  *   never on connect-dots, where which dot comes next IS the answer.
- * - `number_strip` (help; connect_dots): a strip of the dots' numbers in counting order above the canvas, ticking the
+ * - `number_strip` (legend; connect_dots): a strip of the dots' numbers in counting order above the canvas, ticking the
  *   ones joined. It marks no dot on the canvas: the learner still finds the next number among the dots.
- * - `fade_joined` (help; connect_dots): joined dots turn into green ticks, so they stop looking like dots to tap.
- *   Refused while no dot is joined (it would change nothing).
- * - `corner_rings` (help; draw_from_description): a row of empty rings, one per corner the clue asks for, filling one
+ * - `fade_joined` (marks; connect_dots): joined dots turn into green ticks, so they stop looking like dots to tap.
+ *   Offered from the start: its miss (`went_back`) needs a joined dot, so the tutor pulls it with one on screen, and
+ *   pulled earlier it turns each dot into a tick as it is joined.
+ * - `corner_rings` (marks; draw_from_description): a row of empty rings, one per corner the clue asks for, filling one
  *   per corner the learner places; a corner past the clue's count shows as a red ring after the row. The count is the
  *   clue's (on screen as words); the rings show the learner's own count against it, as pictures for a pre-reader.
- * - `side_bars` (help; draw_from_description when the clue asks for equal sides): one bar per side of the learner's own
+ * - `side_bars` (layout; draw_from_description when the clue asks for equal sides): one bar per side of the learner's own
  *   shape, as long as the side, lined up from the left. Leak rule (`sideBars`): drawn from the learner's corners only;
- *   it never marks a grid dot or says which side to change.
- * - `simpler_item` (simplify): an ungraded item of the same mode, built here, then the full item back. trace and
+ *   it never marks a grid dot or says which side to change. Offered once two corners are placed.
+ * - `simpler_item` (easier): an ungraded item of the same mode, built here, then the full item back. trace and
  *   connect_dots: a triangle (none on a three-corner item); complete: a shape with one open corner (none when only one
  *   is open); draw_from_description: a three-sided clue with no equal sides (none when that is the clue). Leak rule
  *   (`practiceLeaks`): never the item's own corners, dots or clue, and always fewer to do.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ShapeTracerChallenge } from './ShapeTracer';
-import { tierGuides, type Point, type ShapeTracerMiss, type TracerGuides } from './shapeTracerWorkspace';
+import { DOT_MISSES, DRAW_MISSES } from './shapeTracer.card';
+import { tierGuides, type Point, type TracerGuides } from './shapeTracerWorkspace';
 
 export const OUTLINE_LEVER = 'dotted_outline';
 export const NUMBERS_LEVER = 'order_numbers';
@@ -145,63 +150,75 @@ export function practiceLeaks(parent: ShapeTracerChallenge, p: ShapeTracerChalle
   }
 }
 
-// ── declarations ─────────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────────
 
-const DOT_MISSES: ShapeTracerMiss[] = ['started_elsewhere', 'skipped_number'];
-const COUNT_MISSES: ShapeTracerMiss[] = ['too_few_sides', 'too_many_sides'];
+/** The learner's work on the session item, which decides whether a lever would change anything yet. */
+export interface ShapeWork { placed: number }
 
-export function shapeTracerLevers(c: ShapeTracerChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeShape(c)) return [];
-  const g = tierGuides(c), levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly ShapeTracerMiss[], when: string, does: string,
-    shown = false, carrier: WorkspaceLever['carrier'] = 'shown') =>
-    levers.push({ id, kind, carrier, pulled: shown || pulled.includes(id), answers, when, does });
+/** The eval mode of an item (`connect-dots` → `connect_dots`). */
+export const shapeModeOf = (c: ShapeTracerChallenge) => c.type.replace(/-/g, '_');
 
-  if (c.type === 'trace' || c.type === 'complete') {
-    add(OUTLINE_LEVER, 'help', [], 'The learner cannot see where the sides of the shape go.',
-      c.type === 'trace' ? 'Draws the dashed outline of the whole shape through its corners, with arrows moving along it.'
-        : 'Draws the dashed outline of the whole shape, through the open corners too.',
-      c.type === 'trace' && g.guidePath);
-    if (c.type === 'trace') add(NUMBERS_LEVER, 'help', [], 'The learner taps corners out of turn and loses the way round.',
-      'Writes a number on each corner, in the order to tap them.', g.orderNumbers, 'both');
-    add(GLOW_LEVER, 'help', [], 'The learner does not know which corner comes next.',
-      'Puts a pulsing ring on the corner that comes next.', g.nextCue);
-  }
-  if (c.type === 'connect-dots') {
-    add(STRIP_LEVER, 'help', DOT_MISSES, 'The learner starts at another number or skips a number.',
-      'Shows the dots\' numbers in counting order in a strip above the picture, with a tick on each number already '
-        + 'joined. No dot on the picture is marked.', false, 'both');
-    add(FADE_LEVER, 'help', ['went_back'], 'The learner taps a dot that is already joined.',
-      'Turns every joined dot into a green tick, so only the dots still to join look like dots.');
-  }
-  if (c.type === 'draw-from-description') {
-    add(RINGS_LEVER, 'help', COUNT_MISSES, 'The learner places too few or too many corners for the clue.',
-      'Shows a row of empty rings under the grid, one for each corner the clue asks for; each corner the learner places '
-        + 'fills one, and a corner too many shows as a red ring after the row.');
-    if (c.requiredProperties?.allSidesEqual) add(BARS_LEVER, 'help', ['sides_unequal'],
-      'The clue asks for sides of one length and the learner\'s sides are not.',
-      'Shows one bar for each side of the learner\'s shape, as long as that side, lined up so they can be compared.');
-  }
-  if (practiceItem(c)) add(SIMPLER_LEVER, 'simplify',
-    c.type === 'connect-dots' ? DOT_MISSES : c.type === 'draw-from-description' ? [...COUNT_MISSES, 'sides_unequal'] : [],
-    'A help lever is already on screen and the learner still cannot do this one.',
-    c.type === 'complete' ? 'Opens an easier one first: another shape with one corner left to tap. Not graded; the full item comes back after it.'
-      : c.type === 'draw-from-description' ? 'Opens an easier one first: a clue for a shape with three sides. Not graded; the full item comes back after it.'
-        : c.type === 'connect-dots' ? 'Opens an easier one first: fewer dots to join. Not graded; the full item comes back after it.'
-          : 'Opens an easier one first: a shape with fewer corners. Not graded; the full item comes back after it.');
-  return levers;
+/** Where an item's guide levers start (its tier's guides), as lever ids. Not a pull: never recorded. */
+export function startingLevers(c: ShapeTracerChallenge): string[] {
+  const g = tierGuides(c);
+  if (c.type === 'trace') return [...(g.guidePath ? [OUTLINE_LEVER] : []), ...(g.orderNumbers ? [NUMBERS_LEVER] : []),
+    ...(g.nextCue ? [GLOW_LEVER] : [])];
+  return c.type === 'complete' && g.nextCue ? [GLOW_LEVER] : [];
 }
 
-/** What the pulled levers put on screen beyond the guides the scene already reports, for the tutor. No digit. */
-export function leverFacts(c: ShapeTracerChallenge | null, pulled: readonly string[]): string {
-  if (!c) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    c.type === 'complete' && on(OUTLINE_LEVER) && 'A dashed outline of the whole shape runs through every corner, the open ones too.',
-    on(STRIP_LEVER) && 'A strip above the picture shows the dots\' numbers in counting order, with a tick on each one joined.',
-    on(FADE_LEVER) && 'Every joined dot is a green tick.',
-    on(RINGS_LEVER) && 'A row of rings under the grid has one ring for each corner the clue asks for; each corner placed '
-      + 'fills one, and a corner too many shows as a red ring after the row.',
-    on(BARS_LEVER) && 'Under the grid, one bar per side of the learner\'s shape shows how long each side is.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const WHEN_SIMPLER = 'A help lever is already on screen and the learner still cannot do this one.';
+const PRACTICE_THEN = 'Not graded; the full item comes back after it.';
+
+/** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
+export const SHAPE_TRACER_LEVERS = leverSet<ShapeTracerChallenge, ShapeWork>({
+  modeOf: shapeModeOf,
+  missesOf: mode => (mode === 'connect_dots' ? DOT_MISSES : mode === 'draw_from_description' ? DRAW_MISSES : []),
+  specs: [
+    { id: OUTLINE_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: [],
+      when: 'The learner cannot see where the sides of the shape go.',
+      does: c => (c.type === 'trace' ? 'Draws the dashed outline of the whole shape through its corners, with arrows moving along it.'
+        : 'Draws the dashed outline of the whole shape, through the open corners too.'),
+      // On a trace the scene reports the outline itself (`dottedOutline`).
+      fact: (_content, c) => (c.type === 'complete' ? 'A dashed outline of the whole shape runs through every corner, the open ones too.' : '') },
+    { id: NUMBERS_LEVER, type: 'marks', modes: ['trace'], carrier: 'both', answers: [],
+      when: 'The learner taps corners out of turn and loses the way round.',
+      does: 'Writes a number on each corner, in the order to tap them.' },
+    // Leak rule (`glowOffered`): never on connect-dots, where the next dot is the answer.
+    { id: GLOW_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: [],
+      when: 'The learner does not know which corner comes next.',
+      does: 'Puts a pulsing ring on the corner that comes next.' },
+    { id: STRIP_LEVER, type: 'legend', modes: ['connect_dots'], carrier: 'both', answers: ['started_elsewhere', 'skipped_number'],
+      when: 'The learner starts at another number or skips a number.',
+      does: 'Shows the dots\' numbers in counting order in a strip above the picture, with a tick on each number already '
+        + 'joined. No dot on the picture is marked.',
+      fact: 'A strip above the picture shows the dots\' numbers in counting order, with a tick on each one joined.' },
+    { id: FADE_LEVER, type: 'marks', modes: ['connect_dots'], answers: ['went_back'],
+      when: 'The learner taps a dot that is already joined.',
+      does: 'Turns every joined dot into a green tick, so only the dots still to join look like dots.',
+      fact: 'Every joined dot is a green tick.' },
+    { id: RINGS_LEVER, type: 'marks', modes: ['draw_from_description'], answers: ['too_few_sides', 'too_many_sides'],
+      when: 'The learner places too few or too many corners for the clue.',
+      does: 'Shows a row of empty rings under the grid, one for each corner the clue asks for; each corner the learner places '
+        + 'fills one, and a corner too many shows as a red ring after the row.',
+      fact: 'A row of rings under the grid has one ring for each corner the clue asks for; each corner placed '
+        + 'fills one, and a corner too many shows as a red ring after the row.' },
+    { id: BARS_LEVER, type: 'layout', modes: ['draw_from_description'], answers: ['sides_unequal'],
+      when: 'The clue asks for sides of one length and the learner\'s sides are not.',
+      does: 'Shows one bar for each side of the learner\'s shape, as long as that side, lined up so they can be compared.',
+      content: c => (c.requiredProperties?.allSidesEqual ? true : null),
+      offer: (_c, work) => work.placed >= 2,
+      fact: 'Under the grid, one bar per side of the learner\'s shape shows how long each side is.' },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['trace'], answers: [], when: WHEN_SIMPLER,
+      does: `Opens an easier one first: a shape with fewer corners. ${PRACTICE_THEN}`,
+      content: c => practiceItem(c) },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['complete'], answers: [], when: WHEN_SIMPLER,
+      does: `Opens an easier one first: another shape with one corner left to tap. ${PRACTICE_THEN}`,
+      content: c => practiceItem(c) },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['connect_dots'], answers: ['started_elsewhere', 'skipped_number'], when: WHEN_SIMPLER,
+      does: `Opens an easier one first: fewer dots to join. ${PRACTICE_THEN}`,
+      content: c => practiceItem(c) },
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['draw_from_description'], answers: DRAW_MISSES, when: WHEN_SIMPLER,
+      does: `Opens an easier one first: a clue for a shape with three sides. ${PRACTICE_THEN}`,
+      content: c => practiceItem(c) },
+  ],
+});

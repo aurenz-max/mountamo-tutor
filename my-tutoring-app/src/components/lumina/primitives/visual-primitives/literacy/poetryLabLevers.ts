@@ -1,33 +1,32 @@
 /**
- * poetry-lab's in-item levers (/add-support-tiers; report qa/eval-reports/poetry-lab-levers-2026-10-09.md).
- * No real-learner evidence: the misses are what `poetryMiss` observes; the catalog's commonStruggles name "taps words
- * that share a beginning sound" and "waits without choosing". Every key here is a fact about THIS poem (which two
- * words rhyme, its mood, where its figures are, its scheme), so no lever marks a card, a choice or a word of the poem:
- * help levers show a model OUTSIDE the item or count what is on screen, and simplify levers open a different, shorter
- * practice item of the same kind, built in code.
+ * poetry-lab's in-item levers (/add-support-tiers; report qa/eval-reports/poetry-lab-levers-2026-10-09.md), declared
+ * once as a lever set (`POETRY_LEVERS`, `bossLevers.ts`). No real-learner evidence: the misses are what `poetryMiss`
+ * observes. Every key here is a fact about THIS poem (which two words rhyme, its mood, where its figures are, its
+ * scheme), so no lever marks a card, a choice or a word of the poem: model levers show a solved example OUTSIDE the
+ * item, the others put the same thing on every choice or count what is on screen, and easier levers open a different,
+ * shorter practice item of the same kind, built in code.
  *
  * rhyme_hunt (`same_start`, `one_of_pair`, `neither_of_pair`):
- * - `rhyme_model` (help) two pictured words that rhyme and one that only starts the same, from a family no round uses.
- * - `fewer_cards` (simplify) a three-line practice poem ("I see a ...") with three pictured cards, from free families.
- * analysis, mood (`other_mood`): `mood_faces` (help) a face on EVERY mood choice, offered only when every printed mood
- *   has one; `easier_mood` (simplify) a two-line pool poem with two moods.
- * analysis, figurative (`literal_picked`, `missed_some`): `figure_models` (help) one example of each kind of figure,
- *   none sharing a word with the poem; `phrase_count` (help) "N phrases to find", offered when the tier hides it;
- *   `easier_figures` (simplify) a two-line pool poem with one figure.
- * analysis, rhyme (`aabb_abab`, `other_scheme`): `end_words` (help) the last word of every line in a column, unmarked;
- *   `easier_scheme` (simplify) a four-line pool poem with two scheme choices.
- * composition (every form miss): `model_poem` (help) a finished poem of the same form on another subject (copying one
- *   of its lines fails the check); `syllable_beats` (help, counted forms) a dot per counted syllable under each word the
- *   learner typed; `first_letters` (help, acrostic) the first letter of each typed line beside its letter;
- *   `one_line` (simplify) one line of the same form on a pool subject.
+ * - `rhyme_model` (model) two pictured words that rhyme and one that only starts the same, from a family no round uses.
+ * - `fewer_cards` (easier) a three-line practice poem ("I see a ...") with three pictured cards, from free families.
+ * analysis, mood (`other_mood`): `mood_faces` (meaning) a face on EVERY mood choice, offered only when every printed
+ *   mood has one; `easier_mood` (easier) a two-line pool poem with two moods.
+ * analysis, figurative (`literal_picked`, `missed_some`): `figure_models` (model) one example of each kind of figure,
+ *   none sharing a word with the poem; `phrase_count` (clue) "N phrases to find", offered when the tier hides it;
+ *   `easier_figures` (easier) a two-line pool poem with one figure.
+ * analysis, rhyme (`aabb_abab`, `other_scheme`): `end_words` (layout) the last word of every line in a column,
+ *   unmarked; `easier_scheme` (easier) a four-line pool poem with two scheme choices.
+ * composition (every form miss): `model_poem` (model) a finished poem of the same form on another subject (copying
+ *   one of its lines fails the check); `syllable_beats` (marks, counted forms) a dot per counted syllable under each
+ *   word the learner typed; `first_letters` (marks, acrostic) the first letter of each typed line beside its letter;
+ *   `one_line` (easier) one line of the same form on a pool subject.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { freeFamilies, pickModelRhymeSet, rimeOfWord, sessionWords, type PicturedWord, type RhymeModelSet } from './rhymeModels';
 import type { PoetryLabData, RhymeHuntRound } from './PoetryLab';
+import { poetryLabCard } from './poetryLab.card';
 import {
-  ANALYSIS_MISSES, COMPOSITION_MISSES, RHYME_HUNT_MISSES, countSyllables, lineCount, workspaceAssignment,
-  type PoetryItem, type PoetryMiss,
+  countSyllables, lineCount, showsFigurativeCount, type PoetryItem, type PoetryItemKind,
 } from './poetryLabWorkspace';
 
 export const RHYME_MODEL_LEVER = 'rhyme_model';
@@ -52,9 +51,6 @@ const seedOf = (s: string) => Array.from(s).reduce((n, ch) => (n * 31 + ch.charC
 export const practiceId = (id: string) => `${id}${PRACTICE_SUFFIX}`;
 export const practiceSource = (id: string | null | undefined): string | null =>
   id?.endsWith(PRACTICE_SUFFIX) ? id.slice(0, -PRACTICE_SUFFIX.length) : null;
-
-/** A practice item: the item it stands in for, and the data it is drawn from. */
-export interface PoetryPractice { item: PoetryItem; data: PoetryLabData }
 
 // ── rhyme_hunt ─────────────────────────────────────────────────────────────
 
@@ -219,117 +215,121 @@ export const syllableBeats = (line: string) => line.trim().split(/\s+/).filter(B
 
 // ── practice ───────────────────────────────────────────────────────────────
 
-export function practiceFor(item: PoetryItem, d: PoetryLabData): PoetryPractice | null {
+/** The practice item a simplify lever opens on a session item: the same kind, shorter, drawn from its own lesson. */
+export function practiceFor(item: PoetryItem, d: PoetryLabData): PoetryItem | null {
+  if (item.practice) return null;
   if (item.kind === 'rhyme_hunt') {
     const round = item.round && practiceRound(item.round, d);
-    return round ? { item: { id: round.id, kind: 'rhyme_hunt', round }, data: { ...d, rounds: [round] } } : null;
+    return round ? { id: round.id, kind: 'rhyme_hunt', round, practice: { ...d, rounds: [round] } } : null;
   }
-  if (item.kind === 'compose') {
-    const p = oneLinePractice(d);
-    return p ? { item: { id: practiceId(item.id), kind: 'compose' }, data: p } : null;
-  }
-  const p = analysisPractice(item.kind, d);
-  return p ? { item: { id: practiceId(item.id), kind: item.kind }, data: p } : null;
+  const p = item.kind === 'compose' ? oneLinePractice(d) : analysisPractice(item.kind, d);
+  return p ? { id: practiceId(item.id), kind: item.kind, ...(item.tier ? { tier: item.tier } : {}),
+    ...(p.compositionPrompt ? { prompt: p.compositionPrompt } : {}), practice: p } : null;
 }
 
-export function practiceAssignment(p: PoetryPractice): TeachingAssignment {
-  const base = workspaceAssignment(p.item, p.data);
-  return { ...base, task: `Practice: ${base.task}` };
-}
+// ── the lever set ──────────────────────────────────────────────────────────
 
-// ── declarations ───────────────────────────────────────────────────────────
+/** What the levers read: the session's lesson, and the learner's typed lines (the composition marks show them). */
+export interface PoetryCtx { data: PoetryLabData; lines?: readonly string[] }
 
-const lever = (pulled: readonly string[], id: string, kind: WorkspaceLever['kind'], answers: readonly PoetryMiss[],
-  when: string, does: string, carrier: WorkspaceLever['carrier'] = 'shown'): WorkspaceLever =>
-  ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-
-/** The levers on a session item. A practice item carries none. */
-export function poetryLevers(item: PoetryItem | null | undefined, d: PoetryLabData, pulled: readonly string[],
-    shown: { figurativeCount?: boolean } = {}): WorkspaceLever[] {
-  if (!item) return [];
-  const simpler = (id: string, answers: readonly PoetryMiss[], when: string, does: string) =>
-    practiceFor(item, d) ? [lever(pulled, id, 'simplify', answers, when, does)] : [];
-  const BACK = 'It is not graded; this item comes back after it, blank.';
-  if (item.kind === 'rhyme_hunt') return [
-    ...(rhymeModel(d) ? [lever(pulled, RHYME_MODEL_LEVER, 'help', RHYME_HUNT_MISSES,
-      'The learner taps two cards that do not rhyme, often two that start the same.',
-      'Shows a model above the poem with pictures: two words that rhyme and one that only starts the same, none from this '
-        + 'poem. Say the model words aloud and stretch their endings; it marks no card.', 'both')] : []),
-    ...simpler(FEWER_CARDS_LEVER, RHYME_HUNT_MISSES, 'The learner still cannot find the pair among four cards.',
-      `Opens a practice poem of three short lines ("I see a ...") with three pictured cards, two of which rhyme. ${BACK}`),
-  ];
-  if (item.kind === 'mood') return [
-    ...(moodFacesLeak(d) ? [] : [lever(pulled, MOOD_FACES_LEVER, 'help', ['other_mood'],
-      'The learner picks a mood the poem\'s words do not support, or cannot tell the mood words apart.',
-      'Puts a face on every mood choice, so each feeling word has a picture. Every choice gets one; none is marked.')]),
-    ...simpler(EASIER_MOOD_LEVER, ['other_mood'], 'The learner cannot find the mood in a poem this long yet.',
-      `Opens a two-line practice poem with two mood choices. ${BACK}`),
-  ];
-  if (item.kind === 'figurative') return [
-    ...(figureModels(d).length >= 3 ? [lever(pulled, FIGURE_MODELS_LEVER, 'help', ['literal_picked', 'missed_some'],
-      'The learner taps words that mean just what they say, or misses figures, as if unsure what figurative language is.',
-      'Shows one short example of each kind of figure (a simile, a metaphor, personification and others), none from this '
-        + 'poem. It marks no word of the poem.')] : []),
-    ...(shown.figurativeCount ? [] : [lever(pulled, PHRASE_COUNT_LEVER, 'help', ['missed_some'],
-      'The learner stops before finding every figure.',
-      'Shows how many figurative phrases the poem has. It says how many, never where.')]),
-    ...simpler(EASIER_FIGURES_LEVER, ['literal_picked', 'missed_some'], 'The learner cannot find figures in a poem this long yet.',
-      `Opens a two-line practice poem with one figure in it. ${BACK}`),
-  ];
-  if (item.kind === 'rhyme') return [
-    lever(pulled, END_WORDS_LEVER, 'help', ['aabb_abab', 'other_scheme'],
-      'The learner picks a scheme that does not fit the line endings, as if not comparing the last words.',
-      'Lists the last word of every line in a column beside the poem, in line order, with no letters or colors. It does not '
-        + 'mark which ones rhyme.'),
-    ...simpler(EASIER_SCHEME_LEVER, ['aabb_abab', 'other_scheme'], 'The learner cannot work out the scheme of this poem yet.',
-      `Opens a four-line practice poem with two scheme choices. ${BACK}`),
-  ];
-  const tc = d.templateConstraints;
-  return [
-    ...(modelPoem(d) ? [lever(pulled, MODEL_POEM_LEVER, 'help', COMPOSITION_MISSES,
-      'The learner does not know what a finished poem of this form looks like.',
-      'Shows a finished poem of the same form on another subject. Copying one of its lines does not pass the check.')] : []),
-    ...(tc?.syllablesPerLine ? [lever(pulled, SYLLABLE_BEATS_LEVER, 'help', ['syllables_off'],
-      'A line has too many or too few syllables.',
-      'Under each line, puts a dot for every syllable the counter hears in each word the learner typed. Their own words only.')] : []),
-    ...(tc?.acrosticWord ? [lever(pulled, FIRST_LETTERS_LEVER, 'help', ['wrong_first_letter'],
-      'A line does not start with its letter.',
-      'Beside each line, shows the letter that line starts with now, next to the letter it should start with.')] : []),
-    ...simpler(ONE_LINE_LEVER, COMPOSITION_MISSES, 'The learner cannot write a whole poem in this form yet.',
-      `Opens a practice: one line of the same form about something else. ${BACK}`),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor. Never a card, a choice or a word of the poem marked. */
-export function poetryLeverFacts(item: PoetryItem, d: PoetryLabData, pulled: readonly string[], lines: readonly string[] = []): string {
-  const has = (id: string) => pulled.includes(id);
-  const out: string[] = [];
-  if (item.kind === 'rhyme_hunt' && has(RHYME_MODEL_LEVER)) {
-    const m = rhymeModel(d);
-    if (m) out.push(`A model with pictures, from no round: ${m.words[0].word} and ${m.words[1].word} rhyme (same ending sound); `
-      + `${m.words[0].word} and ${m.onsetFoil.word} start the same but do not rhyme.`);
-  }
-  if (item.kind === 'mood' && has(MOOD_FACES_LEVER) && !moodFacesLeak(d)) out.push('Every mood choice shows a face for its feeling word.');
-  if (item.kind === 'figurative') {
-    if (has(FIGURE_MODELS_LEVER)) out.push(`Examples of figures, none from the poem: ${figureModels(d).map(m => `${m.kind}: "${m.example}"`).join('; ')}.`);
-    if (has(PHRASE_COUNT_LEVER)) out.push(`The screen says the poem has ${d.figurativeInstances?.length ?? 0} figurative phrases.`);
-  }
-  if (item.kind === 'rhyme' && has(END_WORDS_LEVER)) out.push(`The last word of each line is listed, unmarked: ${endWords(d).join(', ')}.`);
-  if (item.kind === 'compose') {
-    const m = modelPoem(d);
-    if (has(MODEL_POEM_LEVER) && m) out.push(`A model poem of this form about ${m.subject}: ${m.lines.join(' / ')}.`);
-    if (has(SYLLABLE_BEATS_LEVER)) out.push(`Syllable dots under each typed word: ${Array.from({ length: lineCount(d) },
-      (_, i) => `line ${i + 1}: ${syllableBeats(lines[i] ?? '') || '(empty)'}`).join('; ')}.`);
-    if (has(FIRST_LETTERS_LEVER)) out.push(`Each line's first letter now: ${Array.from({ length: lineCount(d) },
-      (_, i) => `line ${i + 1}: ${(lines[i] ?? '').trim().charAt(0).toUpperCase() || '(empty)'}`).join(', ')}.`);
-  }
-  return out.join(' ');
-}
-
-/** Every miss each mode can name, for the coverage test. */
-export const MODE_MISSES: Record<string, readonly PoetryMiss[]> = {
-  rhyme_hunt: RHYME_HUNT_MISSES, analysis: ANALYSIS_MISSES, composition: COMPOSITION_MISSES,
+const MODE_OF: Record<PoetryItemKind, string> = {
+  rhyme_hunt: 'rhyme_hunt', mood: 'analysis', figurative: 'analysis', rhyme: 'analysis', compose: 'composition',
 };
+const at = (...kinds: PoetryItemKind[]) => (item: PoetryItem) => kinds.includes(item.kind);
+const BACK = 'It is not graded; this item comes back after it, blank.';
+/** The model lever's words for the support fact, by step. */
+const MODEL_WORDS: Partial<Record<PoetryItemKind, { different: string; own: string }>> = {
+  rhyme_hunt: { different: 'a rhyming pair from no round', own: 'which two cards rhyme' },
+  figurative: { different: 'figures from no poem in this lesson', own: 'which words of this poem are figurative' },
+  compose: { different: 'a finished poem of this form on another subject', own: "a line or a word of the learner's poem" },
+};
+const lineList = (ctx: PoetryCtx, show: (line: string) => string) => Array.from({ length: lineCount(ctx.data) },
+  (_, i) => `line ${i + 1}: ${show(ctx.lines?.[i] ?? '')}`);
+
+/**
+ * The levers, declared once (`bossLevers.ts`); none on a practice item (the component declares nothing while one is
+ * on screen). Each is offered on its own step only.
+ */
+export const POETRY_LEVERS = leverSet<PoetryItem, PoetryCtx>({
+  modeOf: item => MODE_OF[item.kind],
+  missesOf: mode => poetryLabCard.modes[mode]?.misses ?? [],
+  // What a worded lever must never name: the item's key.
+  answersOf: (item, { data }) => (item.kind === 'rhyme_hunt' && item.round ? [item.round.rhymeWordA, item.round.rhymeWordB]
+    : item.kind === 'mood' ? [data.correctMood ?? ''] : item.kind === 'rhyme' ? [data.rhymeScheme ?? '']
+    : item.kind === 'figurative' ? (data.figurativeInstances ?? []).map(f => f.text) : []).filter(Boolean),
+  // rhyme_hunt items carry no tier (the K-1 band contract), so its model comes after a miss.
+  support: { tier: item => item.tier ?? 'medium', different: item => MODEL_WORDS[item.kind]?.different ?? 'a model',
+    own: item => MODEL_WORDS[item.kind]?.own ?? "this item's answer" },
+  specs: [
+    { id: RHYME_MODEL_LEVER, type: 'model', modes: ['rhyme_hunt'], answers: 'all',
+      when: 'The learner taps two cards that do not rhyme, often two that start the same.',
+      does: 'Shows a model above the poem with pictures: two words that rhyme and one that only starts the same, none from this '
+        + 'poem. Say the model words aloud and stretch their endings; it marks no card.',
+      content: (_item, { data }) => rhymeModel(data),
+      fact: (m: RhymeModelSet) => `A model with pictures, from no round: ${m.words[0].word} and ${m.words[1].word} rhyme (same ending `
+        + `sound); ${m.words[0].word} and ${m.onsetFoil.word} start the same but do not rhyme.` },
+    { id: FEWER_CARDS_LEVER, type: 'easier', modes: ['rhyme_hunt'], answers: 'all', carrier: 'shown',
+      when: 'The learner still cannot find the pair among four cards.',
+      does: `Opens a practice poem of three short lines ("I see a ...") with three pictured cards, two of which rhyme. ${BACK}`,
+      content: (item, { data }) => practiceFor(item, data) },
+    { id: MOOD_FACES_LEVER, type: 'meaning', modes: ['analysis'], answers: ['other_mood'], carrier: 'shown',
+      when: "The learner picks a mood the poem's words do not support, or cannot tell the mood words apart.",
+      does: 'Puts a face on every mood choice, so each feeling word has a picture. Every choice gets one; none is marked.',
+      offer: (item, { data }) => item.kind === 'mood' && !moodFacesLeak(data),
+      fact: 'Every mood choice shows a face for its feeling word.' },
+    { id: EASIER_MOOD_LEVER, type: 'easier', modes: ['analysis'], answers: ['other_mood'], carrier: 'shown',
+      when: 'The learner cannot find the mood in a poem this long yet.',
+      does: `Opens a two-line practice poem with two mood choices. ${BACK}`,
+      offer: at('mood'), content: (item, { data }) => practiceFor(item, data) },
+    { id: FIGURE_MODELS_LEVER, type: 'model', modes: ['analysis'], answers: ['literal_picked', 'missed_some'], carrier: 'shown',
+      when: 'The learner taps words that mean just what they say, or misses figures, as if unsure what figurative language is.',
+      does: 'Shows one short example of each kind of figure (a simile, a metaphor, personification and others), none from this '
+        + 'poem. It marks no word of the poem.',
+      offer: at('figurative'),
+      content: (_item, { data }) => (figureModels(data).length >= 3 ? figureModels(data) : null),
+      fact: (models: Array<{ kind: string; example: string }>) =>
+        `Examples of figures, none from the poem: ${models.map(m => `${m.kind}: "${m.example}"`).join('; ')}.` },
+    { id: PHRASE_COUNT_LEVER, type: 'clue', modes: ['analysis'], answers: ['missed_some'], carrier: 'shown',
+      when: 'The learner stops before finding every figure.',
+      does: 'Shows how many figurative phrases the poem has. It says how many, never where.',
+      offer: item => item.kind === 'figurative' && !showsFigurativeCount(item.tier),
+      content: (_item, { data }) => data.figurativeInstances?.length ?? 0,
+      fact: (n: number) => `The screen says the poem has ${n} figurative phrases.` },
+    { id: EASIER_FIGURES_LEVER, type: 'easier', modes: ['analysis'], answers: ['literal_picked', 'missed_some'], carrier: 'shown',
+      when: 'The learner cannot find figures in a poem this long yet.',
+      does: `Opens a two-line practice poem with one figure in it. ${BACK}`,
+      offer: at('figurative'), content: (item, { data }) => practiceFor(item, data) },
+    { id: END_WORDS_LEVER, type: 'layout', modes: ['analysis'], answers: ['aabb_abab', 'other_scheme'],
+      when: 'The learner picks a scheme that does not fit the line endings, as if not comparing the last words.',
+      does: 'Lists the last word of every line in a column beside the poem, in line order, with no letters or colors. It does not '
+        + 'mark which ones rhyme.',
+      offer: at('rhyme'),
+      fact: (_c, _item, { data }) => `The last word of each line is listed, unmarked: ${endWords(data).join(', ')}.` },
+    { id: EASIER_SCHEME_LEVER, type: 'easier', modes: ['analysis'], answers: ['aabb_abab', 'other_scheme'], carrier: 'shown',
+      when: 'The learner cannot work out the scheme of this poem yet.',
+      does: `Opens a four-line practice poem with two scheme choices. ${BACK}`,
+      offer: at('rhyme'), content: (item, { data }) => practiceFor(item, data) },
+    { id: MODEL_POEM_LEVER, type: 'model', modes: ['composition'], answers: 'all', carrier: 'shown',
+      when: 'The learner does not know what a finished poem of this form looks like.',
+      does: 'Shows a finished poem of the same form on another subject. Copying one of its lines does not pass the check.',
+      content: (_item, { data }) => modelPoem(data),
+      fact: (m: { subject: string; lines: string[] }) => `A model poem of this form about ${m.subject}: ${m.lines.join(' / ')}.` },
+    { id: SYLLABLE_BEATS_LEVER, type: 'marks', modes: ['composition'], answers: ['syllables_off'],
+      when: 'A line has too many or too few syllables.',
+      does: 'Under each line, puts a dot for every syllable the counter hears in each word the learner typed. Their own words only.',
+      offer: (_item, { data }) => !!data.templateConstraints?.syllablesPerLine,
+      fact: (_c, _item, ctx) => `Syllable dots under each typed word: ${lineList(ctx, l => syllableBeats(l) || '(empty)').join('; ')}.` },
+    { id: FIRST_LETTERS_LEVER, type: 'marks', modes: ['composition'], answers: ['wrong_first_letter'],
+      when: 'A line does not start with its letter.',
+      does: 'Beside each line, shows the letter that line starts with now, next to the letter it should start with.',
+      offer: (_item, { data }) => !!data.templateConstraints?.acrosticWord,
+      fact: (_c, _item, ctx) => `Each line's first letter now: ${lineList(ctx, l => l.trim().charAt(0).toUpperCase() || '(empty)').join(', ')}.` },
+    { id: ONE_LINE_LEVER, type: 'easier', modes: ['composition'], answers: 'all', carrier: 'shown',
+      when: 'The learner cannot write a whole poem in this form yet.',
+      does: `Opens a practice: one line of the same form about something else. ${BACK}`,
+      content: (item, { data }) => practiceFor(item, data) },
+  ],
+});
 
 /** The rime check, so a practice round's pair truly rhymes and its foil does not. */
 export const rhymes = (a: string, b: string) => norm(a) !== norm(b) && rimeOfWord(a) === rimeOfWord(b);

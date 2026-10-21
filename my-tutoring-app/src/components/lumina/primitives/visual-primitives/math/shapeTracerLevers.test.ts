@@ -1,6 +1,7 @@
 /**
- * shape-tracer levers (`shapeTracerLevers.ts`): each leak rule per mode, each easier-item builder, the miss → lever
- * table, and that every miss the catalog lists for a mode is answered on every saved payload item (J12 per item).
+ * shape-tracer levers (`SHAPE_TRACER_LEVERS`): each leak rule per mode, each easier-item builder, the miss → lever
+ * table, the offer conditions on the learner's work, and that every miss the catalog lists for a mode is answered on
+ * every saved payload item (J12 per item).
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
@@ -8,11 +9,16 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { ShapeTracerChallenge } from './ShapeTracer';
 import { checkShapeProperties, drawCorners, gridDots, shapeTracerMiss } from './shapeTracerWorkspace';
 import {
-  BARS_LEVER, FADE_LEVER, GLOW_LEVER, NUMBERS_LEVER, OUTLINE_LEVER, RINGS_LEVER, SIMPLER_LEVER, STRIP_LEVER, cornerRings,
-  glowOffered, guidesWith, leverFacts, practiceItem, practiceLeaks, practiceParent, shapeTracerLevers, sideBars,
+  BARS_LEVER, FADE_LEVER, GLOW_LEVER, NUMBERS_LEVER, OUTLINE_LEVER, RINGS_LEVER, SHAPE_TRACER_LEVERS, SIMPLER_LEVER,
+  STRIP_LEVER, cornerRings, glowOffered, guidesWith, practiceItem, practiceLeaks, practiceParent, sideBars, startingLevers,
+  type ShapeWork,
 } from './shapeTracerLevers';
 
 const ids = (levers: { id: string }[]) => levers.map(l => l.id);
+/** Work on the item where every miss can happen: three corners placed. */
+const WORKED: ShapeWork = { placed: 3 };
+const declare = (c: ShapeTracerChallenge, pulled: readonly string[] = [], work = WORKED) =>
+  SHAPE_TRACER_LEVERS.declare(c, work, [...startingLevers(c), ...pulled]);
 const ring = (n: number, r = 120, cx = 250, cy = 200) =>
   Array.from({ length: n }, (_, k) => ({ x: Math.round(cx + r * Math.cos(-Math.PI / 2 + (2 * Math.PI * k) / n)),
     y: Math.round(cy + r * Math.sin(-Math.PI / 2 + (2 * Math.PI * k) / n)) }));
@@ -34,7 +40,7 @@ describe('leak rules', () => {
   it('no next-dot glow on connect-dots, where the next dot is the answer', () => {
     expect(glowOffered('connect-dots')).toBe(false);
     expect(glowOffered('draw-from-description')).toBe(false);
-    for (const n of [3, 4, 5, 6]) expect(ids(shapeTracerLevers(dots(n), []))).not.toContain(GLOW_LEVER);
+    for (const n of [3, 4, 5, 6]) expect(ids(declare(dots(n)))).not.toContain(GLOW_LEVER);
     expect(guidesWith({ ...dots(4), showNextCue: false }, [GLOW_LEVER]).nextCue).toBe(false);
   });
   it('the side bars are the learner\'s own sides only; the rings are the clue\'s count against the learner\'s', () => {
@@ -47,16 +53,22 @@ describe('leak rules', () => {
   });
   it('lever texts and facts carry no digit and name no shape, on every mode with every lever pulled', () => {
     for (const c of [trace(4), complete(4, 2), dots(5), draw(4, true), draw(3, false)]) {
-      const all = ids(shapeTracerLevers(c, []));
-      expect(leverFacts(c, all), c.type).not.toMatch(/\d|triangle|square|rectangle|pentagon|hexagon/i);
-      for (const l of shapeTracerLevers(c, [])) expect(`${l.when} ${l.does}`, `${c.type} ${l.id}`).not.toMatch(/\d|triangle|square/i);
+      const all = ids(declare(c));
+      expect(SHAPE_TRACER_LEVERS.onScreen(c, WORKED, all), c.type).not.toMatch(/\d|triangle|square|rectangle|pentagon|hexagon/i);
+      for (const l of declare(c)) expect(`${l.when} ${l.does}`, `${c.type} ${l.id}`).not.toMatch(/\d|triangle|square/i);
     }
   });
   it('a guide the tier shows is declared pulled; a pulled guide lever turns the guide on', () => {
     const easy = trace(4), hard = trace(4, { showGuidePath: false, showDirectionArrows: false, showNextCue: false, showOrderNumbers: false });
-    expect(shapeTracerLevers(easy, []).filter(l => l.kind === 'help').every(l => l.pulled)).toBe(true);
-    expect(shapeTracerLevers(hard, []).filter(l => l.kind === 'help').some(l => l.pulled)).toBe(false);
+    expect(declare(easy).filter(l => l.id !== SIMPLER_LEVER).every(l => l.pulled)).toBe(true);
+    expect(declare(hard).some(l => l.pulled)).toBe(false);
     expect(guidesWith(hard, [OUTLINE_LEVER, NUMBERS_LEVER])).toEqual({ guidePath: true, arrows: true, nextCue: false, orderNumbers: true });
+  });
+  it('the side bars are not offered before two corners are placed: they would draw nothing', () => {
+    expect(ids(declare(draw(4, true), [], { placed: 1 }))).toEqual([RINGS_LEVER, SIMPLER_LEVER]);
+    expect(ids(declare(draw(4, true), [], { placed: 2 }))).toEqual([RINGS_LEVER, BARS_LEVER, SIMPLER_LEVER]);
+    // Bars only when the clue asks for equal sides.
+    expect(ids(declare(draw(4, false)))).not.toContain(BARS_LEVER);
   });
 });
 
@@ -64,7 +76,7 @@ describe('simpler items', () => {
   it('trace and connect_dots: a triangle, never on a three-corner item', () => {
     for (const n of [3, 4, 5, 6]) for (const c of [trace(n), dots(n)]) {
       const p = practiceItem(c);
-      if (n === 3) { expect(p).toBeNull(); expect(ids(shapeTracerLevers(c, []))).not.toContain(SIMPLER_LEVER); continue; }
+      if (n === 3) { expect(p).toBeNull(); expect(ids(declare(c))).not.toContain(SIMPLER_LEVER); continue; }
       expect(p).toMatchObject({ id: `${c.id}~simpler`, type: c.type, targetShape: 'triangle' });
       expect(practiceLeaks(c, p!), `${c.type} ${n}`).toBe(false);
     }
@@ -88,10 +100,10 @@ describe('simpler items', () => {
       expect(checkShapeProperties(corners, p.requiredProperties!).correct).toBe(true);
     }
   });
-  it('a practice item offers no levers and no further practice; the parent is found from its id', () => {
+  it('a practice item offers no further practice; the parent is found from its id', () => {
     const c = dots(4), p = practiceItem(c)!;
     expect(practiceItem(p)).toBeNull();
-    expect(shapeTracerLevers(p, [])).toEqual([]);
+    expect(SHAPE_TRACER_LEVERS.simpler(c, WORKED, SIMPLER_LEVER)).toEqual(p);
     expect(practiceParent(p.id, [dots(5), c])).toBe(c);
     expect(practiceParent(c.id, [c])).toBeNull();
   });
@@ -106,14 +118,14 @@ describe('the miss → lever table', () => {
     ['draw_from_description', draw(3, false), 'too_many_sides', RINGS_LEVER],
     ['draw_from_description', draw(4, true), 'sides_unequal', BARS_LEVER],
   ] as const)('%s: %s → %s', (_mode, c, miss, lever) => {
-    expect(nextLever(shapeTracerLevers(c, []), miss)).toBe(lever);
+    expect(nextLever(declare(c), miss)).toBe(lever);
   });
   it('the observed miss names match the table', () => {
     expect(shapeTracerMiss(dots(4), { tapped: [], points: [], wrongDot: 2 })).toBe('started_elsewhere');
     expect(shapeTracerMiss(draw(3, false), { tapped: [], points: ring(4) })).toBe('too_many_sides');
   });
   it('after the strip, a skipped number on a four-dot item gets the triangle', () => {
-    expect(nextLever(shapeTracerLevers(dots(4), [STRIP_LEVER]), 'skipped_number')).toBe(SIMPLER_LEVER);
+    expect(nextLever(declare(dots(4), [STRIP_LEVER]), 'skipped_number')).toBe(SIMPLER_LEVER);
   });
 });
 
@@ -125,7 +137,7 @@ it('every miss the catalog lists for a mode is answered by an open lever on ever
     const payload = await import(`../../../components/live-activity/runtime/testing/w1-payloads/shape-tracer.${mode}.json`);
     const data = (payload.default ?? payload).data;
     for (const c of data.challenges as ShapeTracerChallenge[]) {
-      const levers = shapeTracerLevers(c, []);
+      const levers = declare(c);
       expect(levers.length, `${mode} ${c.id}`).toBeGreaterThan(0);
       for (const m of misses[mode] ?? []) {
         // sides_unequal is only possible when the clue asks for equal sides.

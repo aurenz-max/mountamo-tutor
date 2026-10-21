@@ -13,10 +13,13 @@
  *   `two_choices` (simplify) another worked solution, a different strategy, and two choices that draw different
  *   pictures.
  * - compare credits every choice: no miss, no lever.
+ *
+ * Declared once as a lever set (`STRATEGY_PICKER_LEVERS`, `bossLevers.ts`).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { StrategyId, StrategyPickerChallenge, StrategyPickerData } from './StrategyPicker';
-import { PICTURE_KIND, strategyLabel, type StrategyPickerMiss } from './strategyPickerWorkspace';
+import { PICTURE_KIND, strategyLabel } from './strategyPickerWorkspace';
+import { STRATEGY_PICKER_MISSES_BY_MODE } from './strategyPicker.card';
 
 export const PARTS_LEVER = 'two_parts';
 export const SMALLER_LEVER = 'smaller_numbers';
@@ -30,12 +33,6 @@ type Op = Problem['operation'];
 
 /** The picker draws at most ten (the ten frame has ten cells). */
 const CAP = 10;
-const NUMBER_MISSES: readonly StrategyPickerMiss[] = ['other_operation', 'printed_number', 'one_short', 'one_over',
-  'short_by_more', 'over_by_more'];
-const MATCH_MISSES: readonly StrategyPickerMiss[] = ['similar_strategy', 'different_strategy'];
-
-const solves = (c: StrategyPickerChallenge) =>
-  c.type === 'guided-strategy' || c.type === 'try-another' || c.type === 'choose-your-strategy';
 
 export function makeProblem(a: number, b: number, operation: Op): Problem {
   return { equation: `${a} ${operation === 'addition' ? '+' : '-'} ${b}`, operation, operand1: a, operand2: b,
@@ -280,29 +277,66 @@ export function practiceLeaks(p: StrategyPickerChallenge, c: StrategyPickerChall
     || (p.strategySteps ?? []).some(step => new RegExp(`\\b${result}\\b`).test(step) && result !== a && result !== b);
 }
 
-/** The levers a session item declares, with their state. A practice item declares none. */
-export function strategyPickerLevers(c: StrategyPickerChallenge, data: Pick<StrategyPickerData, 'challenges' | 'maxNumber' | 'strategiesIntroduced' | 'supportTier'>,
-  pulled: readonly string[]): WorkspaceLever[] {
-  const easy = (c.supportTier ?? data.supportTier) === 'easy';
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], answers: readonly StrategyPickerMiss[], when: string, does: string, startsOn = false) =>
-    levers.push({ id, kind, carrier: 'both', pulled: startsOn || pulled.includes(id), answers, when, does });
-  const simpler = practiceItem(c, data);
-  if (solves(c)) {
-    add(PARTS_LEVER, 'help', NUMBER_MISSES,
-      'The learner answers with one of the two numbers, puts the numbers together the other way, or miscounts the picture.',
-      'Marks the parts of the strategy picture: on a number line a ring on the start and each hop numbered in order; '
-      + 'otherwise each number\'s part in its own colour with that number beside it. Count along with the learner; never '
-      + 'say the total or where the picture ends.', easy);
-    if (simpler) add(SMALLER_LEVER, 'simplify', NUMBER_MISSES, 'The learner still cannot get the number after help.',
-      'Opens an easier practice problem first: the same kind of task with smaller numbers. Not graded; the full problem comes back after it.');
-  } else if (c.type === 'match-strategy') {
-    add(PICTURES_LEVER, 'help', MATCH_MISSES, 'The learner taps a strategy the worked solution did not use.',
-      'Draws a small picture of every choice under the worked solution, each on its own example problem, the same for '
-      + 'every choice. Ask which picture fits what the solver did; never name or point to the one that matches.',
-      easy || !!c.showStrategyExemplars);
-    if (simpler) add(TWO_CHOICES_LEVER, 'simplify', MATCH_MISSES, 'The learner still cannot tell the strategies apart after help.',
-      'Opens an easier practice item first: another worked solution and only two choices that look very different. Not graded; the full item comes back after it.');
-  }
-  return levers;
+// ── the lever set ────────────────────────────────────────────────────────
+
+/** The lesson the levers read, and the strategy picked from the menu on a choose item (null before the pick). */
+export interface StrategyPickerLeverCtx {
+  data: Pick<StrategyPickerData, 'challenges' | 'maxNumber' | 'strategiesIntroduced' | 'supportTier'>;
+  chosen: StrategyId | null;
 }
+
+const MODE_OF: Record<StrategyPickerChallenge['type'], string> = {
+  'guided-strategy': 'guided', 'try-another': 'try_another', 'choose-your-strategy': 'choose', 'match-strategy': 'match',
+  compare: 'compare',
+};
+export const strategyPickerMode = (c: StrategyPickerChallenge) => MODE_OF[c.type];
+const NUMBER_MODES = ['guided', 'try_another', 'choose'];
+const MATCH_MODES = ['match'];
+
+/** The strategy the item's picture draws: the named one, or the menu pick on a choose item. */
+const drawnOf = (c: StrategyPickerChallenge, ctx: StrategyPickerLeverCtx) =>
+  c.assignedStrategy ?? (c.type === 'choose-your-strategy' ? ctx.chosen : null);
+
+/**
+ * The help a session item starts with on screen, which is not a pull: the parts marked on the easy tier, and the
+ * option pictures on the easy tier or when the item asks for exemplars.
+ */
+export function leversStartOn(c: StrategyPickerChallenge, data: Pick<StrategyPickerData, 'supportTier'>): string[] {
+  const easy = (c.supportTier ?? data.supportTier) === 'easy';
+  if (c.type === 'match-strategy') return easy || c.showStrategyExemplars ? [PICTURES_LEVER] : [];
+  return easy && c.type !== 'compare' ? [PARTS_LEVER] : [];
+}
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing
+ * while one is on screen. `two_parts` is offered once a picture is drawn (on choose, after the menu pick).
+ */
+export const STRATEGY_PICKER_LEVERS = leverSet<StrategyPickerChallenge, StrategyPickerLeverCtx>({
+  modeOf: strategyPickerMode,
+  missesOf: mode => STRATEGY_PICKER_MISSES_BY_MODE[mode] ?? [],
+  specs: [
+    { id: PARTS_LEVER, type: 'marks', carrier: 'both', modes: NUMBER_MODES, answers: 'all',
+      when: 'The learner answers with one of the two numbers, puts the numbers together the other way, or miscounts the picture.',
+      does: 'Marks the parts of the strategy picture: on a number line a ring on the start and each hop numbered in order; '
+        + 'otherwise each number\'s part in its own colour with that number beside it. Count along with the learner; never '
+        + 'say the total or where the picture ends.',
+      content: (c, ctx) => drawnOf(c, ctx),
+      fact: (strategy: StrategyId, c) => partsFact(strategy, c.problem) },
+    { id: SMALLER_LEVER, type: 'easier', modes: NUMBER_MODES, answers: 'all',
+      when: 'The learner still cannot get the number after help.',
+      does: 'Opens an easier practice problem first: the same kind of task with smaller numbers. Not graded; the full '
+        + 'problem comes back after it.',
+      content: (c, ctx) => practiceItem(c, ctx.data) },
+    { id: PICTURES_LEVER, type: 'legend', carrier: 'both', modes: MATCH_MODES, answers: 'all',
+      when: 'The learner taps a strategy the worked solution did not use.',
+      does: 'Draws a small picture of every choice under the worked solution, each on its own example problem, the same for '
+        + 'every choice. Ask which picture fits what the solver did; never name or point to the one that matches.',
+      content: c => { const pics = optionPictures(c); return picturesLeak(pics, c) ? null : pics; },
+      fact: (pics: ReturnType<typeof optionPictures>) => picturesFact(pics) },
+    { id: TWO_CHOICES_LEVER, type: 'easier', modes: MATCH_MODES, answers: 'all',
+      when: 'The learner still cannot tell the strategies apart after help.',
+      does: 'Opens an easier practice item first: another worked solution and only two choices that look very different. '
+        + 'Not graded; the full item comes back after it.',
+      content: (c, ctx) => practiceItem(c, ctx.data) },
+  ],
+});

@@ -1,20 +1,42 @@
 /**
- * Place value chart on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/live-runtime-handoffs/15-workspace-rollout.md).
- *
- * Pure: the component and any probe read the same assignment and scene. The items
- * still come from `itemsFromChallenges` in `placeValueScript.ts`. The analyze kinds
- * are spoken against `answerText`; a dictated number is written into the chart and
- * checked by code, so the tutor is not handed its digits.
+ * What the tutor and the observer read on a place-value-chart item: the spoken key and known misses of a printed
+ * number's place and value asks, the miss a written chart shows, and the scene. Pure and React-free: the boss, the
+ * component and the probes read it. A dictated number is written into the chart and checked by code, so it has no key
+ * and the tutor is never handed its digits.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { askFor, type PlaceValueItem } from './placeValueScript';
+import { namesChoices, type PlaceValueItem } from './placeValueDomain';
+import type { PlaceValueMiss } from './placeValueChart.card';
 import { digitValueWord, digitWord, MAX_SPOKEN_PLACE, placeWord, spokenIntegerWord } from './spokenNumberWords';
 
-/** What a wrong spoken place or value shows (handoff 20 Part B). */
-export type SpokenPlaceValueMiss = 'said_value' | 'said_digit' | 'next_place' | 'other_place' | 'said_place' | 'shifted_place'
-  | 'said_number' | 'next_digit_value';
+export { PLACE_VALUE_MISSES, type PlaceValueChartMiss, type PlaceValueMiss, type SpokenPlaceValueMiss } from './placeValueChart.card';
+
+/** The chart's columns a spoken answer may name, low to high. */
+const spokenPlaces = (item: PlaceValueItem) => [...item.chartPlaces].sort((a, b) => a - b).filter(p => p <= MAX_SPOKEN_PLACE);
+
+/**
+ * The key of a printed number's ask; null on a dictated number, which the chart checks. find_place answers with a
+ * place name (from the menu the ask says, at the tiers that say one); say_value with the digit's worth, as a word, a
+ * numeral, or the digit and its place ("four tens").
+ */
+export function placeValueKey(item: PlaceValueItem): SpokenKey | null {
+  if (item.kind === 'build_number') return null;
+  const { digit: d, place: p } = item, dw = digitWord(d), pw = placeWord(p), worth = digitValueWord(d, p);
+  if (item.kind === 'find_place') {
+    const column = p === 4 ? ' A bare "thousands" names the column next to it: this answer carries the "ten".'
+      : p === 3 && item.chartPlaces.includes(4) ? ' "Ten thousands" is the column one further left.' : '';
+    return { answer: pw, alsoAccept: [`${pw} place`],
+      ...(namesChoices(item) ? { menu: spokenPlaces(item).map(placeWord) } : {}),
+      signatureError: `${p > 0 ? `"${worth}", what the digit is worth, or ` : ''}"${dw}", the digit itself, names no place and is wrong.${column}` };
+  }
+  const unit = p > 0 ? [`${dw} ${d === 1 ? pw.replace(/s$/, '') : pw}`] : [];
+  return { answer: worth, alsoAccept: [String(d * 10 ** p), ...unit.filter(u => u !== worth)],
+    signatureError: p > 0
+      ? `"${dw}" alone, the digit with no place, is wrong: it says how many ones, not what the digit is worth here.`
+      : `"${digitValueWord(d, 1)}", the digit one column over, is wrong.` };
+}
 
 /**
  * A spoken ask's known wrong answers, in precedence order, for the `spoken_miss` observer, from the printed number
@@ -56,12 +78,6 @@ export function placeValueSpokenMisses(item: PlaceValueItem): KnownMiss[] {
   ];
 }
 
-export function workspaceAssignment(item: PlaceValueItem): TeachingAssignment {
-  if (item.answerKind === 'gesture') return { id: item.id, task: askFor(item), response: 'gesture' };
-  const misses = placeValueSpokenMisses(item);
-  return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: item.answerText, ...(misses.length ? { misses } : {}) };
-}
-
 /** The chart as written, one entry per column HIGH → LOW; `null` is an empty column. */
 export type WrittenChart = ReadonlyArray<number | null>;
 
@@ -71,18 +87,7 @@ export const chartComplete = (item: PlaceValueItem, written: WrittenChart) =>
 export const chartMatches = (item: PlaceValueItem, written: WrittenChart) =>
   chartComplete(item, written) && item.expectedDigits.every((d, i) => written[i] === d);
 
-/**
- * What a wrong chart shows (`TeachingAttempt.miss`, handoff 20), from the written digits:
- * - `zero_left_empty`: only columns whose digit is zero were left empty; `column_empty`: another column is empty;
- * - `digits_swapped`: the right digits, some in the wrong columns (406 written 046);
- * - `teen_ty_swap`: a teen written as its -ty or the reverse (13 as 30, 30 as 13), in the last two columns;
- * - `one_short` / `one_over` / `one_ten_off`: the written number is one or ten away;
- * - `short_by_more` / `over_by_more`: any other number.
- * Undefined for a right chart and for the spoken kinds.
- */
-export type PlaceValueMiss = 'zero_left_empty' | 'column_empty' | 'digits_swapped' | 'teen_ty_swap'
-  | 'one_short' | 'one_over' | 'one_ten_off' | 'short_by_more' | 'over_by_more';
-
+/** What a wrong chart shows (`PlaceValueMiss` in the card). Undefined for a right chart and for the spoken kinds. */
 export function placeValueMiss(item: PlaceValueItem | null, written: WrittenChart): PlaceValueMiss | undefined {
   if (!item || item.kind !== 'build_number' || chartMatches(item, written)) return undefined;
   const want = item.expectedDigits;
@@ -106,19 +111,19 @@ export function placeValueMiss(item: PlaceValueItem | null, written: WrittenChar
 export const describeChart = (item: PlaceValueItem, written: WrittenChart) =>
   `Wrote ${item.chartPlaces.map((p, i) => `${placeWord(p)}: ${written[i] ?? 'empty'}`).join(', ')}`;
 
-export function workspaceScene(item: PlaceValueItem, view: { written: WrittenChart }): WorkspaceScene {
+/** The scene of one item; `kind` names the card's step. */
+export function workspaceScene(item: PlaceValueItem, view: { written: WrittenChart }): SceneOf {
   const build = item.kind === 'build_number';
   return {
     objects: [],
     facts: {
       kind: item.kind,
-      // Analyze items print the number with one digit glowing; the column headers are
-      // hidden, because on find_place they are the answer.
       ...(build ? { columns: item.chartPlaces.length, columnsFilled: view.written.filter(d => d !== null).length }
         : { printedNumber: item.targetNumber, glowingDigit: item.digit }),
       constraints: build
-        ? 'The tutor says the number; the learner writes one digit in each labelled column. The chart checks what is written once the learner stops, even with a column left empty.'
-        : 'The learner says the answer. The number is printed without column labels.',
+        ? 'The number is never printed: the learner hears it only in the ask.'
+        : 'The number is printed without column labels: on a which-place step a label would be the answer, and the '
+          + 'number read aloud says what its digits are worth.',
     },
   };
 }

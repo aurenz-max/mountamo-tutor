@@ -1,5 +1,5 @@
 /**
- * ramp-lab levers (`rampLabLevers.ts`): each leak rule per mode, each simplify builder over every pool and saved-payload
+ * ramp-lab levers (`RAMP_LEVERS`, `rampLabLevers.ts`): each leak rule per mode, when the log and the bars are offered, each simplify builder over every pool and saved-payload
  * item, the "this miss, then this lever" table, and per-item coverage of every catalog miss (journey J12, offline).
  */
 import { readdirSync, readFileSync } from 'fs';
@@ -9,13 +9,13 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import {
   changedRampVariables, isFairRampTest, maxWorkableAngle, measureRampTrial, minimumPushSetting, requiredPushForce,
-  selectRampChallenges, type RampChallenge, type RampInvestigationChallenge,
+  selectRampChallenges, type RampChallenge, type RampInvestigationChallenge, type RampTrial,
 } from './rampChallenges';
 import {
   BOTH_RAMPS_LEVER, FEWER_ANGLES_LEVER, LIGHTER_LOAD_LEVER, MODEL_EXPLAIN_LEVER, MODEL_PAIR_LEVER, MODEL_PLAN_LEVER,
-  PUSH_BARS_LEVER, SAME_OR_CHANGED_LEVER, TEST_LOG_LEVER, TWO_SETTINGS_LEVER, VARIABLE_NAME, fewerAngles, leverFacts,
-  lighterLoad, modelFor, practiceFromId, pushBars, rampLevers, rampSketches, settingMarks, simplerRamp, startLevers, testLog,
-  testLogLeaks, twoSettings,
+  PUSH_BARS_LEVER, RAMP_LEVERS, SAME_OR_CHANGED_LEVER, TEST_LOG_LEVER, TWO_SETTINGS_LEVER, VARIABLE_NAME, fewerAngles,
+  lighterLoad, modelFor, practiceFromId, pushBars, rampSketches, settingMarks, simplerRamp, startLevers, testLog,
+  testLogLeaks, twoSettings, type RampLeverCtx,
 } from './rampLabLevers';
 import { rampSpokenMisses } from './rampLabWorkspace';
 
@@ -28,6 +28,13 @@ const ALL = [...POOL, ...PAYLOAD_ITEMS];
 const of = <M extends RampChallenge['mode']>(mode: M) => ALL.filter(c => c.mode === mode) as Array<RampChallenge & { mode: M }>;
 const CATALOG = getComponentById('ramp-lab')!.teachingWorkspace!;
 const RANKING = /\b(less|more|easier|harder|smaller|bigger|larger|lower|higher)\b/i;
+/** The scene fact of the pulled levers, from what the learner has done on the item. */
+const leverFacts = (c: RampChallenge, pulled: readonly string[], v: { tested?: readonly number[]; trials?: readonly RampTrial[] }) =>
+  RAMP_LEVERS.onScreen(c, { tested: v.tested ?? [], trials: v.trials ?? [] }, pulled);
+/** An item after the learner has worked it: a value checked, both trials recorded. */
+const worked = (c: RampChallenge): RampLeverCtx => ({ tested: [1],
+  trials: 'variable' in c ? [measureRampTrial('a', c.scenarios.a), measureRampTrial('b', c.scenarios.b)] : [] });
+const rampLevers = (c: RampChallenge, pulled: readonly string[]) => RAMP_LEVERS.declare(c, worked(c), pulled);
 
 describe('leak rules', () => {
   it('test_log shows only what the learner tested, each with what the lab showed', () => {
@@ -101,6 +108,28 @@ describe('leak rules', () => {
       expect(bars.map(x => [x.side, x.push])).toEqual([['a', a.firstMovingForce], ['b', b.firstMovingForce]]);
       expect(Math.max(...bars.map(x => x.widthPercent))).toBe(100);
       expect(leverFacts(c, [PUSH_BARS_LEVER], { trials: [a, b] })).not.toMatch(RANKING);
+    }
+  });
+});
+
+describe('offer conditions', () => {
+  it('test_log is offered once a value is checked, push_bars once both trials are recorded', () => {
+    const ids = (c: RampChallenge, ctx: RampLeverCtx) => RAMP_LEVERS.declare(c, ctx, []).map(l => l.id);
+    for (const c of [...of('find_threshold'), ...of('design_with_budget')]) {
+      expect(ids(c, { tested: [], trials: [] })).not.toContain(TEST_LOG_LEVER);
+      expect(ids(c, worked(c))).toContain(TEST_LOG_LEVER);
+    }
+    for (const c of of('explain_from_trials')) {
+      expect(ids(c, { tested: [], trials: worked(c).trials.slice(0, 1) })).not.toContain(PUSH_BARS_LEVER);
+      expect(ids(c, worked(c))).toContain(PUSH_BARS_LEVER);
+    }
+  });
+
+  it('the support fact names the item\'s model lever, and there is none in a mode without one', () => {
+    for (const c of ALL) {
+      const fact = RAMP_LEVERS.support(c, worked(c));
+      if (c.mode === 'find_threshold' || c.mode === 'design_with_budget') expect(fact).toBe('');
+      else expect(fact).toMatch(/model_(pair|plan|explain)/);
     }
   });
 });

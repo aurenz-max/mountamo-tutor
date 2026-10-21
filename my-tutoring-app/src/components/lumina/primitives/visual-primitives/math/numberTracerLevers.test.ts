@@ -4,9 +4,11 @@ import type { NumberTracerChallenge } from './NumberTracer';
 import { getDigitPaths } from './numberTracerPaths';
 import {
   ARROWS_LEVER, COUNT_DOTS_LEVER, COUNT_ON_LEVER, DOTS_LEVER, FIRST_PART_LEVER, GHOST_LEVER, MODEL_STROKES_LEVER, ONE_DIGIT_LEVER,
-  SEQUENCE_UNANSWERED, TRACE_PART_LEVER, countDots, countDotsLeak, countOnRun, firstPart, firstPartLeaks, leverFacts,
-  leverIdsFor, numberTracerLevers, oneDigit, runLeaks, startingLevers, tracePart,
+  NUMBER_TRACER_LEVERS, SEQUENCE_UNANSWERED, TRACE_PART_LEVER, countDots, countDotsLeak, countOnRun, firstPart, firstPartLeaks,
+  oneDigit, runLeaks, startingLevers, tracePart,
 } from './numberTracerLevers';
+
+const levers = (ch: NumberTracerChallenge, pulled: readonly string[]) => NUMBER_TRACER_LEVERS.declare(ch, null, pulled);
 
 const item = (type: NumberTracerChallenge['type'], digit: number, extra: Partial<NumberTracerChallenge> = {}): NumberTracerChallenge =>
   ({ id: 'c1', type, digit, instruction: `x ${digit}`, strokePaths: [], showModel: type === 'copy', showArrows: false, ...extra });
@@ -22,7 +24,7 @@ describe('which levers an item declares', () => {
     [item('write', 112), [DOTS_LEVER, FIRST_PART_LEVER, ONE_DIGIT_LEVER]],
     [seq([2, 3, 4, 5], 2), [COUNT_DOTS_LEVER, COUNT_ON_LEVER]],
     [seq([2, 3, 4, 5], 3), [COUNT_DOTS_LEVER]],
-  ])('%#', (ch, ids) => { expect(leverIdsFor(ch)).toEqual(ids); });
+  ])('%#', (ch, ids) => { expect(levers(ch, []).map(l => l.id)).toEqual(ids); });
 
   it('starts the tier\'s painted guides as pulled; never on write or sequence', () => {
     expect(startingLevers(item('trace', 2), { ghost: true, arrows: true, startDot: true })).toEqual([GHOST_LEVER, DOTS_LEVER, ARROWS_LEVER]);
@@ -41,10 +43,10 @@ describe('every checked miss has a lever on every item (J12), except the sequenc
   it.each(items.map(ch => [`${ch.type} ${ch.sequenceNumbers?.join(',') ?? ch.digit}`, ch] as const))('%s', (_n, ch) => {
     // Tier easy: every help guide the tier can start is already pulled.
     const pulled = startingLevers(ch, { ghost: true, arrows: true, startDot: true });
-    const levers = numberTracerLevers(ch, pulled);
+    const offered = levers(ch, pulled);
     for (const miss of MISSES) {
       if (ch.type === 'sequence' && SEQUENCE_UNANSWERED.includes(miss)) continue;
-      expect(levers.some(l => l.answers?.includes(miss)), `${miss}`).toBe(true);
+      expect(offered.some(l => l.answers?.includes(miss)), `${miss}`).toBe(true);
     }
   });
 });
@@ -62,7 +64,7 @@ describe('next lever after a miss', () => {
     [seq([2, 3, 4, 5], 2), 'other_numeral', COUNT_DOTS_LEVER, []],
     [seq([12, 13, 14, 15], 2), 'digits_swapped', COUNT_ON_LEVER, []],
   ] as const)('%#: %s', (ch, miss, lever, pulled) => {
-    expect(nextLever(numberTracerLevers(ch, pulled), miss)).toBe(lever);
+    expect(nextLever(levers(ch, pulled), miss)).toBe(lever);
   });
 });
 
@@ -90,8 +92,9 @@ describe('leak rules', () => {
 
   it('a sequence lever never names a number: facts and does carry no digit', () => {
     const ch = seq([5, 6, 7, 8], 2);
-    expect(leverFacts(ch, [COUNT_DOTS_LEVER])).not.toMatch(/\d/);
-    numberTracerLevers(ch, []).forEach(l => expect(`${l.when} ${l.does}`).not.toMatch(/\d/));
+    expect(NUMBER_TRACER_LEVERS.onScreen(ch, null, [COUNT_DOTS_LEVER])).toBe(
+      'Under each shown number is a row of that many dots; nothing is drawn under the gap.');
+    levers(ch, []).forEach(l => expect(`${l.when} ${l.does}`).not.toMatch(/\d/));
   });
 });
 

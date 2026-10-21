@@ -41,7 +41,7 @@ try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { generateAngleWorkshop } = await loader.import('/src/components/lumina/service/math/gemini-angle-workshop.ts');
   const { angleWorkshopOracle } = await loader.import('/src/components/lumina/service/qa/oracles/angle-workshop.ts');
-  const { validateAngleWorkshopData } = await loader.import('/src/components/lumina/components/live-activity/adapters/angleWorkshopLive.ts');
+  const { validateAngleWorkshopData } = await loader.import('/src/components/lumina/primitives/visual-primitives/math/angleWorkshop.boss.ts');
   const ws = await loader.import('/src/components/lumina/primitives/visual-primitives/math/angleWorkshopWorkspace.ts');
   const results = [];
   const saved = new Set();

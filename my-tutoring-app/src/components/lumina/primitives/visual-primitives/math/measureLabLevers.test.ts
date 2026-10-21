@@ -8,8 +8,8 @@ import { getComponentById } from '../../../service/manifest/catalog';
 import type { ContainerShape, MeasureLabChallenge } from './MeasureLab';
 import {
   CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, EASY_PAIR_LEVER, FAR_LEVELS_LEVER, FAR_PAIR_LEVER, LEVEL_LINES_LEVER,
-  ORDER_STEPS, ORDER_STEPS_LEVER, POURED_SHELF_LEVER, SMALLER_POUR_LEVER, easyPairLeaks, farLevelsLeaks, farPairLeaks,
-  leverFacts, measureLabLevers, practiceItem, practiceParent, shelfCups, smallerPourLeaks,
+  MEASURE_LEVERS, ORDER_STEPS, ORDER_STEPS_LEVER, POURED_SHELF_LEVER, SMALLER_POUR_LEVER, easyPairLeaks, farLevelsLeaks,
+  farPairLeaks, practiceItem, practiceParent, shelfCups, smallerPourLeaks,
 } from './measureLabLevers';
 import { EMPTY_VIEW, measureCorrect, measureMiss, type MeasureView } from './measureLabWorkspace';
 import balanceP from '../../../components/live-activity/runtime/testing/w1-payloads/measure-lab.balance_predict.json';
@@ -113,18 +113,19 @@ describe('help levers: what they draw', () => {
   });
   it('no lever text or scene fact carries a number, an object\'s name or a container\'s name', () => {
     for (const c of ALL) {
-      const levers = measureLabLevers(c, []);
+      const levers = MEASURE_LEVERS.declare(c, null, []);
       const names = [c.left?.name, c.right?.name, c.containerA?.name, c.containerB?.name, c.container?.name,
         ...(c.containers ?? []).map(j => j.name)].filter((n): n is string => !!n);
-      const text = [...levers.map(l => `${l.when} ${l.does}`), leverFacts(c, levers.map(l => l.id))].join(' ');
+      const text = [...levers.map(l => `${l.when} ${l.does}`), MEASURE_LEVERS.onScreen(c, null, levers.map(l => l.id))].join(' ');
       expect(text).not.toMatch(/\d/);
       for (const n of names) expect(text.toLowerCase(), `${c.id} ${n}`).not.toMatch(new RegExp(`\\b${n}\\b`));
     }
   });
-  it('a practice item declares no lever and no fact', () => {
-    const p = practiceItem(pours[5])!;
-    expect(measureLabLevers(p, [])).toEqual([]);
-    expect(leverFacts(p, [POURED_SHELF_LEVER])).toBe('');
+  it('the model balance comes by the item\'s tier, and only on a balance item', () => {
+    expect(MEASURE_LEVERS.support(balances[0], null)).toMatch(/after a miss.*down_model/);
+    expect(MEASURE_LEVERS.support({ ...balances[0], supportTier: 'easy' }, null)).toMatch(/before the learner tries/);
+    expect(MEASURE_LEVERS.support({ ...balances[0], supportTier: 'hard' }, null)).toMatch(/model nothing/);
+    for (const c of [capacities[0], pours[0], orders[0]]) expect(MEASURE_LEVERS.support(c, null)).toBe('');
   });
 });
 
@@ -143,19 +144,19 @@ describe('this wrong answer, then this lever', () => {
     [O, { order: [want[1], want[0], want[2]] }, 'two_swapped', LEVEL_LINES_LEVER, FAR_LEVELS_LEVER],
   ] as const)('%#: %o → %s → %s, then %s', (c, over, miss, first, second) => {
     expect(measureMiss(c, { ...EMPTY_VIEW, ...over })).toBe(miss);
-    expect(nextLever(measureLabLevers(c, []), miss)).toBe(first);
-    expect(nextLever(measureLabLevers(c, [first]), miss)).toBe(second);
+    expect(nextLever(MEASURE_LEVERS.declare(c, null, []), miss)).toBe(first);
+    expect(nextLever(MEASURE_LEVERS.declare(c, null, [first]), miss)).toBe(second);
   });
   it('capacity picked_less goes to the cup shelves', () => {
     const c = capacities.find(x => x.containerA!.shape !== 'tall' && x.expectedChoice === 'b')!;
     expect(measureMiss(c, { ...EMPTY_VIEW, prediction: 'a' })).toBe('picked_less');
-    expect(nextLever(measureLabLevers(c, []), 'picked_less')).toBe(CUP_LINES_LEVER);
+    expect(nextLever(MEASURE_LEVERS.declare(c, null, []), 'picked_less')).toBe(CUP_LINES_LEVER);
   });
   it('every catalog miss is answered by a lever on every item, generated and saved (J9, J12)', () => {
     const tw = getComponentById('measure-lab')!.teachingWorkspace!;
     expect(tw.levers).toBe(true);
     for (const c of [...ALL, ...PAYLOADS]) {
-      const levers = measureLabLevers(c, []);
+      const levers = MEASURE_LEVERS.declare(c, null, []);
       for (const m of tw.misses![c.type]) expect(levers.some(l => l.answers?.includes(m)), `${c.id} ${m}`).toBe(true);
     }
   });

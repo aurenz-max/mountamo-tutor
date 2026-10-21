@@ -1,7 +1,7 @@
 # Contract: equation-workspace
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C17) for the workspace and lever requirements only. A full `/primitive-contract equation-workspace` derivation (consumers per algebra skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/EquationWorkspace.tsx` · **Workspace:** `equationWorkspaceDomain.ts` · **Levers:** `equationWorkspaceLevers.ts` · **Generator:** `service/math/gemini-equation-workspace.ts` · **Oracle:** `service/qa/oracles/equation-workspace.ts` · **Adapter:** `components/live-activity/adapters/equationWorkspaceLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`equation-workspace`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/EquationWorkspace.tsx` · **Workspace:** `equationWorkspaceDomain.ts` · **Levers:** `equationWorkspaceLevers.ts` · **Generator:** `service/math/gemini-equation-workspace.ts` · **Oracle:** `service/qa/oracles/equation-workspace.ts` · **Boss:** `primitives/visual-primitives/math/equationWorkspace.card.ts` + `equationWorkspace.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`equation-workspace`)
 
 ## Requirements
 
@@ -26,3 +26,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C17); R4 added the same day (orchestrator follow-up).
+- 2026-10-20 — moved onto a boss (wave 3): card + boss replace the adapter, the catalog guidance and tutoring block; levers are one lever set (`EQUATION_LEVERS`: inverse_reminder and layer_order clue, sides_marked marks offered only while the current line has one variable side, worked_model model with per-item `supportTier`, fewer_steps easier); the scripted path (useLuminaAI cues, Hint/Next buttons) and hand-wired Pip are gone. Solving modes are `manipulate` (catalog per-mode affordances), identify-operation is `tap`. R1-R4 unchanged.

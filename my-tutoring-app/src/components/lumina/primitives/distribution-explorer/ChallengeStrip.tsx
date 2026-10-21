@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, Lightbulb } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Card } from '../../../ui/card';
 import { Button } from '../../../ui/button';
 import { distributionChoices, distributionCorrect } from './distributionExplorerWorkspace';
@@ -10,30 +10,27 @@ import type { DistributionChallenge } from './types';
 
 interface ChallengeStripProps {
   challenges: DistributionChallenge[];
-  /** Currently active challenge index. Parent owns this — strip just signals advance. */
+  /** Currently active challenge index. The runtime advances it. */
   activeIndex: number;
-  /** Per-challenge result: undefined = pending, true = correct/committed, false = wrong (still pending). */
+  /** Per-challenge result: undefined = pending, true = checked correct. A wrong check reopens through Try again. */
   results: Record<string, boolean>;
   /** The choice picked on the active challenge (its `key`). Parent owns it, so the tutor's scene can read it. */
   selected: string | null;
   onSelect: (key: string) => void;
   /** Check (or Got it on a guided exploration). The parent runs the check. */
   onCheck: () => void;
-  onAdvance: () => void;
-  /** With the tutor: no Next (the runtime advances), and a wrong check shows neither the rationale nor the key. */
-  tutorOwned?: boolean;
-  /** With the tutor, while a checked answer waits for Try again: every control is closed. */
+  /** While a checked answer waits for Try again: every control is closed. */
   blocked?: boolean;
   /** A line under each choice, keyed by the choice's `key` (the `family_facts` lever: the same kind of fact on every one). */
   notes?: Record<string, string>;
 }
 
 /**
- * Renders the active challenge with type-specific UI. Once committed, the
- * rationale is shown and the parent can advance to the next challenge.
+ * Renders the active challenge with type-specific UI. Once checked correct, the rationale is shown; the runtime
+ * advances. A wrong check shows neither the rationale nor the key.
  *
  * Gating policy (the checks live in `distributionExplorerWorkspace.ts`):
- *   - guided_exploration → "Got it"; scripted always credits it, the tutor path credits it after the workbench moved.
+ *   - guided_exploration → "Got it", credited after the workbench moved.
  *   - identify           → choice of families; Check compares with correctFamily.
  *   - compute            → 4-option numeric MCQ; Check compares with correctValue.
  *   - predict_shape      → MCQ of shape descriptors; Check matches acceptableAnswers.
@@ -45,8 +42,6 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
   selected,
   onSelect,
   onCheck,
-  onAdvance,
-  tutorOwned = false,
   blocked = false,
   notes,
 }) => {
@@ -63,8 +58,6 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
   }
 
   const isCommitted = results[challenge.id] !== undefined;
-  const isCorrect = results[challenge.id] === true;
-  const hasNext = activeIndex + 1 < challenges.length;
 
   return (
     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-5 space-y-4">
@@ -112,25 +105,10 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="space-y-3"
           >
-            <div
-              className={`flex items-start gap-2 p-3 rounded border-l-2 text-sm leading-relaxed ${
-                isCorrect
-                  ? 'bg-emerald-500/10 border-emerald-400 text-emerald-100'
-                  : 'bg-amber-500/10 border-amber-400 text-amber-100'
-              }`}
-            >
-              {isCorrect ? <Check size={16} className="mt-0.5 flex-shrink-0" /> : <Lightbulb size={16} className="mt-0.5 flex-shrink-0" />}
+            <div className="flex items-start gap-2 p-3 rounded border-l-2 text-sm leading-relaxed bg-emerald-500/10 border-emerald-400 text-emerald-100">
+              <Check size={16} className="mt-0.5 flex-shrink-0" />
               <span>{challenge.rationale}</span>
             </div>
-            {hasNext && !tutorOwned && (
-              <Button
-                variant="ghost"
-                onClick={onAdvance}
-                className="bg-indigo-500/15 border border-indigo-400/30 hover:bg-indigo-500/25 text-indigo-100 gap-1.5"
-              >
-                Next challenge <ChevronRight size={14} />
-              </Button>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -158,7 +136,7 @@ const ChoiceBody: React.FC<{
       <div className={`grid gap-2 ${challenge.type === 'identify' ? 'grid-cols-1 sm:grid-cols-3' : numeric ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {choices.map((c) => {
           const isSelected = selected === c.key;
-          // The key is marked only once the item is committed (scripted: right or wrong; tutor: right only).
+          // The key is marked only once the item is checked correct.
           const isKey = isCommitted && distributionCorrect(challenge, { picked: c.key, explored: false, family: 'binomial', params: {} });
           return (
             <button

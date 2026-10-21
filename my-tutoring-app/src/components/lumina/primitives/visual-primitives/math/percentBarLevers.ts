@@ -22,13 +22,17 @@
  * Mode ids: percent_remaining and percent_total were find_part and find_whole until 10-16 (8.1f); find_part and
  * find_whole are now the part_of and whole_of items, which type an amount.
  *
+ * Declared once as a lever set (`PERCENT_LEVERS`, `bossLevers.ts`). The bar levers (value_bar, tenths, fill_names) are
+ * not offered on a choice step, which shows no bar; part_copies is offered from the first step and draws on the amount
+ * step only. The pictures are `clue` levers: worded hints about this item that never name its numbers.
+ *
  * Leak rules (code): no lever text, picture caption or scene fact carries a digit, so none can name a step's percent,
  * a value or a price; the marks are unlabelled; a practice problem has its own id and scenario and no step percent
  * within the tolerance of any of the item's, and keeps the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { PercentBarAmountStep, PercentBarChallenge, PercentBarPlaceStep, PercentBarStep } from './PercentBar';
-import { amountTarget, challengeSteps, withinTolerance, type PercentBarMiss } from './percentBarWorkspace';
+import { PERCENT_MISSES_BY_MODE, amountTarget, challengeSteps, withinTolerance, type PercentBarMiss } from './percentBarWorkspace';
 
 export const TENTHS_LEVER = 'tenths';
 export const FILL_NAMES_LEVER = 'fill_names';
@@ -38,8 +42,6 @@ export const ADDED_MODEL_LEVER = 'added_model';
 export const COMPARE_MODEL_LEVER = 'compare_model';
 export const PART_COPIES_LEVER = 'part_copies';
 export const SIMPLER_LEVER = 'simpler_problem';
-/** The levers that draw on the bar itself: refused on a step with no bar. */
-export const BAR_LEVERS: readonly string[] = [TENTHS_LEVER, FILL_NAMES_LEVER, VALUE_BAR_LEVER];
 
 const SIMPLER = '~simpler';
 export const isPracticePercent = (c: Pick<PercentBarChallenge, 'id'>) => c.id.endsWith(SIMPLER);
@@ -130,78 +132,107 @@ export function practiceLeaks(parent: PercentBarChallenge, practice: PercentBarC
     || challengeSteps(practice).length !== challengeSteps(parent).length;
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
 export interface PercentLeverContext {
   /** The session already draws the second bar in the whole's units (a starting position). */
   valueBarShown: boolean;
+  /** The step on screen: the bar levers are not offered on a choice step, which shows no bar. */
+  step?: PercentBarStep['kind'];
 }
 
-export function percentLevers(c: PercentBarChallenge | null, pulled: readonly string[], ctx: PercentLeverContext): WorkspaceLever[] {
-  if (!c || isPracticePercent(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly PercentBarMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const discount = c.type === 'subtraction' || c.type === 'comparison';
-  const simpler = simplerPercent(c);
-  const placement: PercentBarMiss[] = ['near_miss', 'too_high', 'too_low'];
-  return [
+/** The eval mode of an item (the catalog's name for its challenge type). */
+const MODE_OF: Record<PercentBarChallenge['type'], string> = {
+  direct: 'identify_percent', part_of: 'find_part', subtraction: 'percent_remaining', addition: 'percent_total',
+  whole_of: 'find_whole', comparison: 'convert',
+};
+const modeOf = (c: PercentBarChallenge) => MODE_OF[c.type];
+
+const PLACEMENT: readonly PercentBarMiss[] = ['near_miss', 'too_high', 'too_low'];
+/** The misses a lever answers, by mode, where they differ by mode; `answers` lists every mode's, `answersOn` the item's. */
+const ANSWERS: Record<string, Record<string, readonly PercentBarMiss[]>> = {
+  [TENTHS_LEVER]: {
+    identify_percent: [...PLACEMENT, 'placed_value'], percent_remaining: [...PLACEMENT, 'placed_value'],
+    percent_total: [...PLACEMENT, 'placed_value'], convert: [...PLACEMENT, 'placed_value'],
+    find_part: [...PLACEMENT, 'placed_value', 'tenth_only', 'percent_as_amount'],
+    find_whole: [...PLACEMENT, 'placed_value', 'percent_as_amount', 'part_times_ten'],
+  },
+  [FILL_NAMES_LEVER]: {
+    identify_percent: ['complement'], percent_remaining: ['placed_discount'], convert: ['placed_discount'],
+    percent_total: ['rate_not_total'], find_part: ['complement', 'rest_not_part'], find_whole: ['complement', 'rest_not_whole'],
+  },
+  [SIMPLER_LEVER]: {
+    identify_percent: [...PLACEMENT, 'complement'], percent_remaining: [...PLACEMENT, 'placed_discount'],
+    percent_total: [...PLACEMENT, 'rate_not_total', 'whole_only', 'took_off_rate'],
+    find_part: [...PLACEMENT, 'rest_not_part', 'percent_as_amount', 'tenth_only'],
+    find_whole: [...PLACEMENT, 'percent_of_part', 'part_times_ten', 'rest_not_whole', 'part_as_whole'],
+  },
+};
+const everyMode = (id: string) => Array.from(new Set(Object.values(ANSWERS[id]).flat()));
+const own = (id: string) => (c: PercentBarChallenge) => ANSWERS[id][modeOf(c)] ?? [];
+/** None is offered on a practice problem (the component declares nothing while one is on screen). */
+const notPractice = (c: PercentBarChallenge) => !isPracticePercent(c);
+/** The bar levers draw on the bar: offered on a step that shows one. */
+const onBar = (c: PercentBarChallenge, ctx: PercentLeverContext) => notPractice(c) && ctx?.step !== 'choice';
+const AMOUNT_TYPES: readonly PercentBarChallenge['type'][] = ['part_of', 'whole_of'];
+
+/** The levers, declared once (`bossLevers.ts`). The context is what the session already draws and the step on screen. */
+export const PERCENT_LEVERS = leverSet<PercentBarChallenge, PercentLeverContext>({
+  modeOf,
+  missesOf: mode => PERCENT_MISSES_BY_MODE[mode] ?? [],
+  answersOf: c => itemKeys(c),
+  specs: [
     // find_part / find_whole draw the amounts as brackets on the bar and fix it on the amount step: no value bar.
-    ...(!ctx.valueBarShown && c.type !== 'part_of' && c.type !== 'whole_of' ? [lever(VALUE_BAR_LEVER, 'help', 'shown', ['placed_value'],
-      'The learner sets the bar to the value (dollars, points) instead of the percent.',
-      'Draws a second bar under the percent bar, in the whole\'s own units, that moves with it; it is labelled only at '
-        + 'its ends, zero and the whole. No value or percent is written.')] : []),
-    lever(TENTHS_LEVER, 'help', 'shown', [...placement, 'placed_value',
-      ...(c.type === 'part_of' ? ['tenth_only', 'percent_as_amount'] : c.type === 'whole_of' ? ['percent_as_amount', 'part_times_ten'] : [])] as PercentBarMiss[],
-      'The learner cannot find where a percent sits on the bar, or lands near it.',
-      'Cuts the bar into ten equal parts with unlabelled marks, each a tenth of the whole. No number is written.'),
-    lever(FILL_NAMES_LEVER, 'help', 'shown', c.type === 'direct' ? ['complement'] : discount ? ['placed_discount']
-      : c.type === 'part_of' ? ['complement', 'rest_not_part'] : c.type === 'whole_of' ? ['complement', 'rest_not_whole'] : ['rate_not_total'],
-      c.type === 'direct' ? 'The learner sets the bar to the rest of the whole instead of the part.'
-        : c.type === 'part_of' || c.type === 'whole_of' ? 'The learner marks or types the rest of the whole instead of the part.'
-          : 'The learner places the wrong part of the whole.',
-      'Names the parts of the bar in words: the filled part from the left is "the part", the empty part is "the rest of the '
-        + 'whole". No number is written.'),
-    ...(discount ? [lever(DISCOUNT_MODEL_LEVER, 'help', 'both', ['placed_discount'],
-      'The learner places the discount instead of what is still paid.',
-      'Shows a picture outside the item: a whole bar with a piece cut off, captioned "taken off" on the piece and "still '
-        + 'paid" on the rest. Read the caption aloud; it uses none of the item\'s numbers.')] : []),
-    ...(c.type === 'addition' ? [lever(ADDED_MODEL_LEVER, 'help', 'both', ['rate_not_total', 'whole_only', 'took_off_rate'],
-      'The learner places only the added rate, only the whole, or takes the rate off.',
-      'Shows a picture outside the item: a whole bar with a piece added past its end line, captioned "the whole" and '
-        + '"added on top", so the total ends past the whole. Read the caption aloud; it uses none of the item\'s numbers.')] : []),
-    ...(c.type === 'comparison' ? [lever(COMPARE_MODEL_LEVER, 'help', 'both', ['bigger_discount', 'other_price'],
-      'The learner picks by the bigger percent off, or the other option, instead of comparing the prices found.',
-      'Shows a picture outside the item: a long price bar with a big piece off that is still longer than a short price '
-        + 'bar with a small piece off, captioned "compare what is still paid". It uses none of the item\'s numbers.')] : []),
-    ...(c.type === 'whole_of' ? [lever(PART_COPIES_LEVER, 'help', 'shown', ['percent_of_part', 'part_times_ten', 'rest_not_whole', 'part_as_whole'],
-      'On the amount step, the learner cannot get from the part to the whole.',
-      'Lays the filled part\'s length end to end along the bar with unlabelled marks, so the learner can count how many '
-        + 'parts fill the whole bar (the last may be a piece of one). No number is written. Works on the amount step only.')] : []),
-    ...(simpler ? [lever(SIMPLER_LEVER, 'simplify', 'shown',
-      [...placement, ...(c.type === 'direct' ? ['complement'] : c.type === 'subtraction' ? ['placed_discount']
-        : c.type === 'part_of' ? ['rest_not_part', 'percent_as_amount', 'tenth_only']
-          : c.type === 'whole_of' ? ['percent_of_part', 'part_times_ten', 'rest_not_whole', 'part_as_whole']
-            : ['rate_not_total', 'whole_only', 'took_off_rate']) as PercentBarMiss[]],
-      'This percent is too hard to place yet.',
-      `Opens an easier problem of the same kind first, on a percent that sits on a guide line or a whole ten${c.type === 'whole_of' ? ', with another whole' : ', with the same whole'}. `
-        + 'It is not graded; the full item comes back after it.')] : []),
-  ];
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: PercentBarChallenge | null, pulled: readonly string[]): string {
-  if (!c || isPracticePercent(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  return [
-    on(VALUE_BAR_LEVER) && 'Under the percent bar is a second bar in the whole\'s units, moving with it, labelled only at zero and the whole.',
-    on(TENTHS_LEVER) && 'The bar is cut into ten equal parts by unlabelled marks.',
-    on(FILL_NAMES_LEVER) && 'The filled part of the bar is named "the part" and the empty part "the rest of the whole".',
-    on(DISCOUNT_MODEL_LEVER) && 'Beside the bar is a picture outside the item: a whole bar with a piece cut off, captioned taken off and still paid.',
-    on(ADDED_MODEL_LEVER) && 'Beside the bar is a picture outside the item: a whole bar with a piece added past its end, captioned the whole and added on top.',
-    on(PART_COPIES_LEVER) && 'On the amount step, the filled part\'s length is laid end to end along the bar by unlabelled marks.',
-    on(COMPARE_MODEL_LEVER) && 'Beside the options is a picture outside the item: a long price bar with a big piece off still longer than a short one with a small piece off, captioned compare what is still paid.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+    { id: VALUE_BAR_LEVER, type: 'layout', modes: ['identify_percent', 'percent_remaining', 'percent_total', 'convert'],
+      answers: ['placed_value'], offer: (c, ctx) => onBar(c, ctx) && !ctx?.valueBarShown,
+      when: 'The learner sets the bar to the value (dollars, points) instead of the percent.',
+      does: 'Draws a second bar under the percent bar, in the whole\'s own units, that moves with it; it is labelled only at '
+        + 'its ends, zero and the whole. No value or percent is written.',
+      fact: 'Under the percent bar is a second bar in the whole\'s units, moving with it, labelled only at zero and the whole.' },
+    { id: TENTHS_LEVER, type: 'marks', answers: everyMode(TENTHS_LEVER), answersOn: own(TENTHS_LEVER), offer: onBar,
+      when: 'The learner cannot find where a percent sits on the bar, or lands near it.',
+      does: 'Cuts the bar into ten equal parts with unlabelled marks, each a tenth of the whole. No number is written.',
+      fact: 'The bar is cut into ten equal parts by unlabelled marks.' },
+    { id: FILL_NAMES_LEVER, type: 'marks', answers: everyMode(FILL_NAMES_LEVER), answersOn: own(FILL_NAMES_LEVER), offer: onBar,
+      when: c => (c.type === 'direct' ? 'The learner sets the bar to the rest of the whole instead of the part.'
+        : AMOUNT_TYPES.includes(c.type) ? 'The learner marks or types the rest of the whole instead of the part.'
+          : 'The learner places the wrong part of the whole.'),
+      does: 'Names the parts of the bar in words: the filled part from the left is "the part", the empty part is "the rest of the '
+        + 'whole". No number is written.',
+      fact: 'The filled part of the bar is named "the part" and the empty part "the rest of the whole".' },
+    { id: DISCOUNT_MODEL_LEVER, type: 'clue', modes: ['percent_remaining', 'convert'], answers: ['placed_discount'], offer: notPractice,
+      when: 'The learner places the discount instead of what is still paid.',
+      does: 'Shows a picture outside the item: a whole bar with a piece cut off, captioned "taken off" on the piece and "still '
+        + 'paid" on the rest. Read the caption aloud; it uses none of the item\'s numbers.',
+      fact: 'Beside the bar is a picture outside the item: a whole bar with a piece cut off, captioned taken off and still paid.' },
+    { id: ADDED_MODEL_LEVER, type: 'clue', modes: ['percent_total'], answers: ['rate_not_total', 'whole_only', 'took_off_rate'],
+      offer: notPractice,
+      when: 'The learner places only the added rate, only the whole, or takes the rate off.',
+      does: 'Shows a picture outside the item: a whole bar with a piece added past its end line, captioned "the whole" and '
+        + '"added on top", so the total ends past the whole. Read the caption aloud; it uses none of the item\'s numbers.',
+      fact: 'Beside the bar is a picture outside the item: a whole bar with a piece added past its end, captioned the whole '
+        + 'and added on top.' },
+    { id: COMPARE_MODEL_LEVER, type: 'clue', modes: ['convert'], answers: ['bigger_discount', 'other_price'], offer: notPractice,
+      when: 'The learner picks by the bigger percent off, or the other option, instead of comparing the prices found.',
+      does: 'Shows a picture outside the item: a long price bar with a big piece off that is still longer than a short price '
+        + 'bar with a small piece off, captioned "compare what is still paid". It uses none of the item\'s numbers.',
+      fact: 'Beside the options is a picture outside the item: a long price bar with a big piece off still longer than a short '
+        + 'one with a small piece off, captioned compare what is still paid.' },
+    // Offered from the first step (journey sweep J9 reads the levers at mount); it draws on the amount step only.
+    { id: PART_COPIES_LEVER, type: 'marks', modes: ['find_whole'],
+      answers: ['percent_of_part', 'part_times_ten', 'rest_not_whole', 'part_as_whole'], offer: notPractice,
+      when: 'On the amount step, the learner cannot get from the part to the whole.',
+      does: 'Lays the filled part\'s length end to end along the bar with unlabelled marks, so the learner can count how many '
+        + 'parts fill the whole bar (the last may be a piece of one). No number is written. Works on the amount step only.',
+      fact: 'On the amount step, the filled part\'s length is laid end to end along the bar by unlabelled marks.' },
+    // convert has none: a simpler compare either drops a step or removes the trap that defines it.
+    { id: SIMPLER_LEVER, type: 'easier', modes: Object.keys(ANSWERS[SIMPLER_LEVER]), answers: everyMode(SIMPLER_LEVER),
+      answersOn: own(SIMPLER_LEVER), content: c => simplerPercent(c),
+      when: 'This percent is too hard to place yet.',
+      does: c => `Opens an easier problem of the same kind first, on a percent that sits on a guide line or a whole ten${
+        c.type === 'whole_of' ? ', with another whole' : ', with the same whole'}. It is not graded; the full item comes back after it.` },
+  ],
+});
 
 /** Leak rule for the levers' words and captions: no digit at all (every key is a number or a price). */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

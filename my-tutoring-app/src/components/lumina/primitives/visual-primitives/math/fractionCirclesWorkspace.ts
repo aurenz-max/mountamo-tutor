@@ -8,21 +8,19 @@
  * gesture checked by code, so no key reaches the tutor: not the typed fraction, not
  * the larger circle, not the matching picture.
  *
- * Pure: the component, the generator, the live adapter and any probe read the same items,
- * assignment and scene.
+ * Pure: the component, the generator, the boss and any probe read the same items and scene. The assignment is the
+ * boss's (`fractionCircles.boss.ts`); the levers and their scene facts are the lever set's (`fractionCirclesLevers.ts`).
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { DiActionContract, JudgedScriptItem } from '../../../hooks/judgedScriptContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { FractionCirclesChallenge } from './FractionCircles';
+import type { TouchMiss } from './fractionCircles.card';
 import { fractionTouchPlan } from './fractionTouchModes';
-import { COUNT_LEVER, TWO_PICTURES_LEVER, leverFacts } from './fractionCirclesLevers';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { COUNT_LEVER } from './fractionCirclesLevers';
 
-// ── identify / build / compare / equivalent (plain surface) ─────────────────
+export type { TouchMiss } from './fractionCircles.card';
 
-export function workspaceAssignment(challenge: FractionCirclesChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
-}
+// ── identify / build / compare / equivalent / build_equal (plain surface) ─────
 
 /** What the learner has entered on the plain surface. */
 export interface FractionCirclesView {
@@ -51,7 +49,7 @@ export function describeWork(challenge: FractionCirclesChallenge, view: Fraction
   }
 }
 
-export function workspaceScene(challenge: FractionCirclesChallenge, view: FractionCirclesView): WorkspaceScene {
+export function workspaceScene(challenge: FractionCirclesChallenge, view: FractionCirclesView): SceneOf {
   const facts: Record<string, string | number> = { kind: challenge.type };
   // The running count is a lever: the learner's own tally reaches the tutor only while it is on screen.
   const countShown = (view.levers ?? []).includes(COUNT_LEVER);
@@ -60,14 +58,12 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
       // The shaded circle is the question; only its printed captions are facts here.
       if (challenge.showTotalPieces !== false) facts.printedCaption = `${challenge.denominator} equal pieces`;
       facts.learnerWork = describeWork(challenge, view);
-      facts.constraints = 'A circle is drawn with some slices shaded. The learner types the fraction (like 1/2) and presses Check; '
-        + 'the circle checks it. You cannot type or shade.';
+      facts.constraints = 'A circle is drawn with some slices shaded.';
       break;
     case 'build':
       facts.printedTarget = `${challenge.numerator}/${challenge.denominator}`;
       facts.slices = challenge.denominator;
       if (countShown) facts.learnerWork = describeWork(challenge, view);
-      facts.constraints = 'The learner taps slices to shade them and presses Check. You cannot shade slices.';
       break;
     case 'compare':
       // With labels withdrawn the comparison is by area alone, so the values stay off the packet too.
@@ -76,15 +72,13 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
         facts.printedRight = `${challenge.compareFraction.numerator}/${challenge.compareFraction.denominator}`;
       } else facts.labels = 'hidden: compare the shaded area only';
       facts.learnerWork = describeWork(challenge, view);
-      facts.constraints = 'Two shaded circles are drawn. The learner picks left larger, equal, or right larger and presses Check. '
-        + 'You cannot choose for them.';
+      facts.constraints = 'Two shaded circles are drawn side by side.';
       break;
     case 'equivalent':
       facts.printedReference = `${challenge.numerator}/${challenge.denominator}`;
       facts.buildSlices = challenge.equivalentDenominator ?? 0;
       if (countShown) facts.learnerWork = describeWork(challenge, view);
-      facts.constraints = 'The learner shades slices on the second circle to show the same amount and presses Check. '
-        + 'You cannot shade slices.';
+      facts.constraints = 'The second circle is shaded to show the same amount as the reference circle.';
       break;
     case 'build_equal':
       // An open build: the made quantity is published as numbers, so the shared work history can name a revision.
@@ -93,13 +87,10 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
       facts.piecesShaded = view.shaded;
       facts.pieceSizes = view.equalPieces === false ? 'not all the same size' : 'all the same size';
       facts.learnerWork = describeWork(challenge, view);
-      facts.constraints = `The learner chooses how many equal pieces to cut the circle into (any number but ${challenge.denominator}), `
-        + "can cut one piece in half, shades pieces, and presses I'm done; the circle checks it. Many answers are right. "
-        + 'You cannot cut or shade.';
+      facts.constraints = `Any equal cut but ${challenge.denominator} pieces can make it, so many answers are right: never name a `
+        + "number of pieces or how many to shade, and never judge the build before I'm done.";
       break;
   }
-  const onScreen = leverFacts(challenge, view.levers ?? []);
-  if (onScreen.length) facts.onScreen = onScreen.join(' ');
   if (view.practice) facts.practice = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
   return { objects: [], facts };
 }
@@ -107,7 +98,8 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
 // ── touch_fraction (picture-touch surface) ──────────────────────────────────
 
 /** The answer is a pictured amount, not its name (which is already in the ask). A single touch
- * closes the gesture and code owns the verdict. All choices remain available on every retry. */
+ * closes the gesture and code owns the verdict. All choices remain available on every retry. The ask is the boss's
+ * (`fractionCirclesAsk`): the instruction the tutor says. */
 export interface FractionPicture { id: string; numerator: number; denominator: number; shaded: number[] }
 export interface FractionTouchItem extends JudgedScriptItem {
   challengeType: 'touch_fraction'; numerator: number; denominator: number;
@@ -148,21 +140,10 @@ export function buildFractionTouchItems(challenges: readonly FractionCirclesChal
   });
 }
 
-/** The ask the tutor must say: the spoken fraction is the stimulus. Nothing about which picture matches. */
-export function touchAssignment(item: FractionTouchItem): TeachingAssignment {
-  return { id: item.id, task: item.actionContract.instruction, response: 'gesture' };
-}
-
 const pictureOf = (item: FractionTouchItem, choiceId: string): FractionPicture | undefined =>
   item.choices.find(c => c.id === choiceId);
 
-/**
- * What a wrong touch shows, by the kind of picture touched, never which one (`TeachingAttempt.miss`):
- * `same_parts_other_shading` (as many equal parts as the fraction, a different amount shaded),
- * `same_shading_other_parts` (as many shaded parts, cut into a different number), `other_fraction`.
- */
-export type TouchMiss = 'same_parts_other_shading' | 'same_shading_other_parts' | 'other_fraction';
-
+/** What a wrong touch shows, by the kind of picture touched, never which one (the card lists them, `TouchMiss`). */
 export function touchMiss(item: FractionTouchItem, choiceId: string): TouchMiss | undefined {
   const picture = pictureOf(item, choiceId);
   if (!picture || touchMatches(item, choiceId)) return undefined;
@@ -184,14 +165,13 @@ export function describeTouch(item: FractionTouchItem, choiceId: string): string
     : 'Touched a picture';
 }
 
-export function touchScene(item: FractionTouchItem): WorkspaceScene {
+export function touchScene(item: FractionTouchItem): SceneOf {
   return {
     objects: [],
     facts: {
       kind: 'touch_fraction',
       pictures: item.choices.length,
-      constraints: `${item.choices.length === 2 ? 'Two' : 'Three'} unlabelled shaded circles are shown and the fraction is not printed: say it. `
-        + 'The learner touches one picture and the activity checks it.',
+      constraints: `${item.choices.length === 2 ? 'Two' : 'Three'} unlabelled shaded circles are shown and the fraction is not printed: say it.`,
       ...(item.id.endsWith('~two') ? { practice: 'An easier practice item is on screen in place of the item: another fraction, two pictures. '
         + 'It is not graded; the full item comes back after it.' } : {}),
     },
@@ -220,12 +200,4 @@ export function twoPictureItem(item: FractionTouchItem): FractionTouchItem | nul
   return { ...target, answerKind: 'gesture', responseClass: 'manipulation', action: 'touch_fraction',
     actionContract: fractionTouchPlan(target).answerStep.actionContract, choices,
     correctChoiceId: choices[pair.indexOf(match)].id };
-}
-
-export function touchLevers(item: FractionTouchItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item || item.choices.length < 3 || !twoPictureItem(item)) return [];
-  return [{ id: TWO_PICTURES_LEVER, kind: 'simplify', carrier: 'shown', pulled: pulled.includes(TWO_PICTURES_LEVER),
-    answers: ['same_parts_other_shading', 'same_shading_other_parts', 'other_fraction'],
-    when: 'The learner picks a picture with the right number of parts but the wrong amount shaded, or cannot choose among three.',
-    does: 'Opens an easier touch first: another fraction, two pictures far apart. It is not graded; the full item comes back after it.' }];
 }

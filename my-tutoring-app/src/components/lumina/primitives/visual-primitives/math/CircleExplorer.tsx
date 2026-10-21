@@ -10,7 +10,6 @@ import {
   LuminaPanel,
   LuminaButton,
   LuminaInput,
-  LuminaPrompt,
   LuminaFeedbackCard,
   LuminaChallengeCounter,
 } from '../../../ui';
@@ -19,25 +18,25 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CircleExplorerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   answerLead as answerLeadOf, circleCorrect, circleMiss, describeCircleWork, parseCircleAnswer, unitSuffix,
-  workspaceAssignment, workspaceScene, type CircleWork,
+  workspaceScene, type CircleWork,
 } from './circleExplorerWorkspace';
 import {
-  AROUND_LEVER, CHAIN_LEVER, CORNERS_LEVER, EDGES_LEVER, FIGURE_LEVERS, FORMULA_LEVER, LEVER_CAPTIONS, OTHER_LENGTH_LEVER,
-  RATIO_FRAME_LEVER, SQUARE_LEVER, TENTHS_LEVER, WHOLE_LEVER,
-  circleLevers, discoverTrack, isPracticeCircle, leverFacts, otherLengthLabel, ratioFrame, simplerCircle, undoChain,
+  AROUND_LEVER, CHAIN_LEVER, CIRCLE_LEVERS, CORNERS_LEVER, EDGES_LEVER, FIGURE_LEVERS, FORMULA_LEVER, LEVER_CAPTIONS,
+  OTHER_LENGTH_LEVER, RATIO_FRAME_LEVER, SQUARE_LEVER, TENTHS_LEVER, WHOLE_LEVER,
+  discoverTrack, isPracticeCircle, otherLengthLabel, ratioFrame, undoChain,
 } from './circleExplorerLevers';
+import { circleExplorerBoss } from './circleExplorer.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -107,7 +106,7 @@ export interface CircleExplorerData {
   gradeBand?: '7';
   /** 3-6 challenges per session. Required. Built by the generator's pool service. */
   challenges: CircleExplorerChallenge[];
-  /** Within-mode support tier (from config.difficulty) — drives the tutor's reveal level. */
+  /** Within-mode support tier (from config.difficulty); each item carries its own reveal (`showFormulaReveal`). */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
@@ -161,23 +160,6 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 // ============================================================================
-// Tutor reveal policy (scripted path) — keep the AI tutor's help in sync with the on-screen tier
-// so it never names a formula the instruction/figure deliberately withheld.
-// ============================================================================
-
-function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
-  switch (tier) {
-    case 'easy':
-      return 'SUPPORT TIER easy: you may name the relevant circle formula and walk the setup step by step.';
-    case 'hard':
-      return 'SUPPORT TIER hard: the instruction and figure deliberately withhold the formula. Do NOT name the formula or the operation — ask what the student sees in the figure (radius, diameter, the unrolled length) and guide conceptually. Never reveal the answer.';
-    case 'medium':
-    default:
-      return 'SUPPORT TIER medium: the formula is on screen in the hint. Nudge the execution and check the radius-vs-diameter choice; do not re-derive the whole formula unprompted.';
-  }
-}
-
-// ============================================================================
 // Component
 // ============================================================================
 
@@ -190,14 +172,14 @@ interface CircleExplorerProps {
   runtimeEvalMode?: string;
 }
 
-const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  CircleExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CircleExplorerChallenge>) => Progress }) => {
+const useCircleProgress = useWorkspaceProgressFor('circle-explorer');
+const PRACTICE_NOTE = 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const CircleExplorerSurface = ({ data, className, runtimePlanItemId }: CircleExplorerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
-    gradeBand = '7',
-    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -211,16 +193,16 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression. On the workspace path the runtime moves the index.
+  // Multi-challenge progression: the teaching workspace moves the index.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useCircleProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: circleExplorerBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -230,10 +212,9 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     results: challengeResults,
     isComplete: allChallengesComplete,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -257,7 +238,6 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   const [answerInput, setAnswerInput] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [showHint, setShowHint] = useState(false);
 
   // Manipulation: unroll the circumference (discover_pi gates on this) / slice into wedges (area).
   const [unrollProgress, setUnrollProgress] = useState(0); // 0..1
@@ -269,9 +249,6 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
 
   // Refs
   const recordedRef = useRef(false);
-  const hintViewedRef = useRef(false);
-  const hintsViewedRef = useRef(0);
-  const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -286,7 +263,7 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   };
 
   /**
-   * A fresh item (both paths) or Try again (workspace): the answer box empty. Try again keeps what the learner already
+   * A fresh item or Try again: the answer box empty. Try again keeps what the learner already
    * unrolled or sliced (exploration, not the answer); a fresh item starts the figure over.
    */
   const resetWork = (keepFigure: boolean) => {
@@ -294,12 +271,10 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     setFeedback('');
     setFeedbackType('');
     if (keepFigure) return;
-    setShowHint(false);
     setUnrollProgress(0);
     setSliceProgress(0);
     setUnrolled(false);
     recordedRef.current = false;
-    hintViewedRef.current = false;
     stopAnimation();
   };
   openItem.current = (_index, retry) => {
@@ -308,15 +283,6 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     setPractice(null);
     resetWork(false);
   };
-
-  // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever the item changes (the scripted path's Next; the workspace path also resets
-  // in `openItem`).
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
-    resetWork(false);
-  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Animation driver (unroll / slice) — drives a 0..1 progress over ANIM_MS.
@@ -790,63 +756,12 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring (scripted path). The legacy context carries the answer; on the workspace path the tutor reads the
-  // scene instead.
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType,
-    currentChallengeIndex: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    radius: currentChallenge?.radius ?? null,
-    given: currentChallenge?.given ?? 'radius',
-    answerKind: currentChallenge?.answerKind ?? 'length',
-    reverseGiven: currentChallenge?.reverseGiven ?? null,
-    compositeShape: currentChallenge?.compositeShape ?? null,
-    unitLabel: currentChallenge?.unitLabel ?? 'units',
-    expectedAnswer: currentChallenge?.expectedAnswer ?? null,
-    gradeBand,
-    supportTier: supportTier ?? 'medium',
-    attemptNumber: currentAttempts + 1,
-  }), [
-    challengeType,
-    currentChallenge,
-    currentChallengeIndex,
-    challenges.length,
-    gradeBand,
-    supportTier,
-    currentAttempts,
-  ]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'circle-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Grade 7',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Circle session: ${challenges.length} circles, mode "${challengeType}", grade 7. `
-      + `Introduce briefly: circumference and area both come from one number, π — the ratio of a circle's distance around to its width. Then read the first task. `
-      + tutorRevealPolicy(supportTier),
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, challengeType, supportTier, sendText]);
-
-  // -------------------------------------------------------------------------
   // Check. Every numeric check commits (right or wrong); an empty or non-numeric entry is not a check.
   // -------------------------------------------------------------------------
   const isCurrentComplete = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
-  /** Input closed once the item is done, and on the workspace path while a checked answer waits for Try again. */
+  /** Input closed once the item is done, and while a checked answer waits for Try again. */
   const inputClosed = allChallengesComplete || hasSubmittedEvaluation || isCurrentComplete || blocked;
 
   const handleCheck = useCallback(() => {
@@ -876,25 +791,12 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
       SoundManager.playCorrect();
       setFeedback(`Correct! ${currentChallenge.expectedAnswer}${suffix ? ' ' + suffix : ''}.`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student answered ${parsed} for a ${challengeType} challenge (radius ${currentChallenge.radius}). `
-        + `Expected ${currentChallenge.expectedAnswer}. Celebrate briefly and reinforce the relationship used.`,
-        { silent: true },
-      );
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Check your formula and whether you used the radius or the diameter, then try again.');
       setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${parsed} but the answer is ${currentChallenge.expectedAnswer} `
-        + `(${challengeType}, radius ${currentChallenge.radius}, ${currentChallenge.answerKind}). `
-        + `Attempt ${currentAttempts + 1}. Point at the specific step that needs another look — do NOT give the answer. `
-        + `Common slip: using diameter where radius is needed, or forgetting to square the radius for area. `
-        + tutorRevealPolicy(supportTier),
-        { silent: true },
-      );
     }
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own score.
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own score.
     progress.commitCheck(describeCircleWork(currentChallenge, work), correct, circleMiss(currentChallenge, work));
     // An easier practice problem (a simplify lever) is not the session's challenge: it records nothing of its own.
     if (correct && !recordedRef.current && !isPracticeCircle(currentChallenge)) {
@@ -905,72 +807,10 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge, hasSubmittedEvaluation, needsUnrollFirst, answerInput, unrolled, sliceProgress, isCurrentComplete,
-    mergeResult, currentAttempts, sendText, challengeType, supportTier, progress.commitCheck,
+    mergeResult, currentAttempts, progress.commitCheck,
   ]);
 
-  const handleShowHint = useCallback(() => {
-    if (showHint) return;
-    setShowHint(true);
-    if (!hintViewedRef.current) {
-      hintViewedRef.current = true;
-      hintsViewedRef.current += 1;
-    }
-  }, [showHint]);
-
-  // Scripted path only: the workspace path hides Next and the runtime advances.
-  const advanceChallenge = useCallback(() => {
-    if (advanceProgress()) {
-      const nextIdx = currentChallengeIndex + 1;
-      const next = challenges[nextIdx];
-      sendText(
-        `[NEXT_ITEM] Circle ${nextIdx + 1} of ${challenges.length} (${next?.type}). `
-        + `Introduce briefly: "Here's the next circle — same idea, new numbers."`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Scripted path: session complete — build metrics and submit exactly once.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (tutorOwned) return;
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-
-    const total = challenges.length;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
-    const avgScore = Math.round(
-      challengeResults.reduce(
-        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
-        0,
-      ) / Math.max(challengeResults.length, 1),
-    );
-
-    const metrics: CircleExplorerMetrics = {
-      type: 'circle-explorer',
-      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'circumference') as CircleExplorerMetrics['challengeType'],
-      totalChallenges: total,
-      correctCount,
-      attemptsCount,
-      firstTryCount,
-      hintsViewed: hintsViewedRef.current,
-      overallAccuracy: avgScore,
-      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
-    };
-
-    submitEvaluation(correctCount === total, avgScore, metrics, { challengeResults });
-
-    sendText(
-      `[ALL_COMPLETE] All ${total} circles done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, π-focused summary.`,
-      { silent: true },
-    );
-  }, [tutorOwned, allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count
   // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0 || progress.recordsEvaluation === false) return;
@@ -1004,18 +844,20 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
     );
   }, [allChallengesComplete, challengeResults]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const shown = leverOn(FORMULA_LEVER) ? { ...currentChallenge, showFormulaReveal: true } : currentChallenge;
     const scene = workspaceScene(shown, { typed: answerInput, unrolled, sliced: sliceProgress >= 1 });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : circleLevers(sessionChallenge, pulledLevers, unrolled);
+    const ctx = { unrolled };
+    const levers = practice ? [] : CIRCLE_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : CIRCLE_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : CIRCLE_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -1023,10 +865,10 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerCircle(sessionChallenge);
+          const easier = CIRCLE_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork(false);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: circleExplorerBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -1038,18 +880,6 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The circle explorer',
-    solved: isCurrentComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
@@ -1073,6 +903,7 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             <LuminaBadge accent="cyan" className="text-xs">Grade 7</LuminaBadge>
+            {practice && <LuminaBadge accent="amber" className="text-xs uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaChallengeCounter
               current={Math.min(currentChallengeIndex + 1, challenges.length)}
               total={challenges.length}
@@ -1108,9 +939,10 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           })}
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the figure and the answer box
+            as one region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
         {/* Canvas — bespoke interaction surface (unroll / slice reveals). */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
@@ -1197,7 +1029,7 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
           </LuminaPanel>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && feedbackType === 'success' && (
@@ -1208,34 +1040,6 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         )}
         {feedback && feedbackType === 'info' && (
           <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
-        )}
-
-        {/* Hint (scripted path; with the tutor, help is the tutor's) */}
-        {!tutorOwned && showHint && (
-          <LuminaPrompt accent="amber">
-            <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-            {currentChallenge.hint}
-          </LuminaPrompt>
-        )}
-
-        {/* Controls. On the workspace path the shell's Try again / Next challenge replace Next. */}
-        {!tutorOwned && (
-          <div className="flex justify-center gap-2 flex-wrap">
-            {isCurrentComplete && !allChallengesComplete && (
-              <LuminaButton
-                tone="primary"
-                className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                onClick={advanceChallenge}
-              >
-                Next Circle →
-              </LuminaButton>
-            )}
-            {!isCurrentComplete && !allChallengesComplete && (
-              <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
-                {showHint ? 'Hint shown' : 'Show hint'}
-              </LuminaButton>
-            )}
-          </div>
         )}
 
         {/* Phase summary */}
@@ -1254,8 +1058,7 @@ const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const CircleExplorer = withWorkspaceController<CircleExplorerProps, ProgressOptions<CircleExplorerChallenge>, Progress>(
-  'circle-explorer', CircleExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('circle-explorer'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const CircleExplorer = withWorkspaceOnly<CircleExplorerProps>('circle-explorer', CircleExplorerSurface, props => props.data.title);
 
 export default CircleExplorer;

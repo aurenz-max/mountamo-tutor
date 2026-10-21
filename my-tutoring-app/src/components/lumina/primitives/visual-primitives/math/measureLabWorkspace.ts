@@ -1,19 +1,16 @@
 /**
- * Measure lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md).
+ * Measure lab on the shared tutor/JEV teaching workspace (the boss is `measureLab.boss.ts`).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the
- * screen (a tapped guess, then the test; a tapped count; three jars tapped in order) and checked by the
- * activity's own check, so the tutor is never handed a weight, a capacity, the winner, the count or the order.
- * What the test shows once it has run (which pan went down, how many cups each container took) is drawn on the
- * screen, so it is a scene fact from then on.
+ * Pure: the component and any probe read the same scene. Every challenge is answered on the screen (a tapped guess,
+ * then the test; a tapped count; three jars tapped in order) and checked by the activity's own check, so the tutor
+ * is never handed a weight, a capacity, the winner, the count or the order. What the test shows once it has run
+ * (which pan went down, how many cups each container took) is drawn on the screen, so it is a scene fact from then on.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ContainerShape, MeasureLabChallenge } from './MeasureLab';
+import type { MeasureMiss } from './measureLab.card';
 
-export function workspaceAssignment(challenge: MeasureLabChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.prompt, response: 'gesture' };
-}
+export { MEASURE_MISSES_BY_MODE, type MeasureMiss } from './measureLab.card';
 
 export interface MeasureView {
   /** The id the learner guessed (balance_predict, capacity_predict). */
@@ -71,18 +68,7 @@ export function describeMeasureWork(challenge: MeasureLabChallenge, view: Measur
   }
 }
 
-/**
- * What a wrong answer shows (`TeachingAttempt.miss`, handoff 20), from the work the check reads:
- * - balance_predict: `picked_lighter` (the guess was the lighter object);
- * - capacity_predict: `tall_means_more` (guessed the tall narrow one, which holds less), `picked_less`;
- * - pour_count: `one_short` / `one_over` (off by one cup), `too_few` / `too_many`;
- * - order_capacity: `most_to_least` (the whole order reversed), `two_swapped` (two jars side by side swapped),
- *   `out_of_order`.
- */
-export type MeasureMiss = 'picked_lighter' | 'tall_means_more' | 'picked_less'
-  | 'one_short' | 'one_over' | 'too_few' | 'too_many'
-  | 'most_to_least' | 'two_swapped' | 'out_of_order';
-
+/** What a wrong answer shows (`TeachingAttempt.miss`), from the work the check reads; the list is the card's. */
 export function measureMiss(challenge: MeasureLabChallenge | null, view: MeasureView): MeasureMiss | undefined {
   if (!challenge) return undefined;
   switch (challenge.type) {
@@ -124,13 +110,11 @@ export function measureCorrect(challenge: MeasureLabChallenge, view: MeasureView
 }
 
 /** What is drawn and asked. Weights, capacities, water levels and the count are never stated before the test shows them. */
-export function workspaceScene(challenge: MeasureLabChallenge, view: MeasureView): WorkspaceScene {
+export function workspaceScene(challenge: MeasureLabChallenge, view: MeasureView): SceneOf {
   const drawn: Record<string, string | number> = {};
   const unit = challenge.unitName || 'cups';
   if (challenge.type === 'balance_predict') {
     drawn.objects = `the ${challenge.left?.name} on the left, the ${challenge.right?.name} on the right; no weights are shown`;
-    drawn.howToAnswer = 'first tap the one you think is heavier, then put each on the pan balance; once both are on, '
-      + 'the scale tips and the activity checks the guess';
     drawn.scale = view.placed.left && view.placed.right
       ? `both on; the ${challenge.left && challenge.right && challenge.left.weight > challenge.right.weight ? 'left' : 'right'} pan went down`
       : view.placed.left || view.placed.right ? 'one object on, the beam still level' : 'empty and level';
@@ -138,29 +122,24 @@ export function workspaceScene(challenge: MeasureLabChallenge, view: MeasureView
     const a = challenge.containerA, b = challenge.containerB;
     drawn.containers = `the ${a?.name} (${shapeWords(a)}) on the left, the ${b?.name} (${shapeWords(b)}) `
       + 'on the right; how much each holds is not shown';
-    drawn.howToAnswer = `first tap the one you think holds more, then press Pour to fill both with ${unit}; the activity checks the guess`;
+    drawn.pouredWith = unit;
     if (a && b && capacityTested(challenge, view))
       drawn.afterPouring = `the left one took ${view.poured[a.id]} ${unit}, the right one took ${view.poured[b.id]} ${unit}`;
   } else if (challenge.type === 'pour_count') {
     const c = challenge.container;
     drawn.container = `the ${c?.name} (${shapeWords(c)}), empty to start`;
-    drawn.howToAnswer = `tap a ${unit.replace(/s$/, '')} to pour it in, one at a time; when it is full, number buttons `
-      + 'appear and the learner taps how many it took';
+    drawn.pouredWith = unit;
     drawn.level = pourFull(challenge, view) ? 'full' : c && view.poured[c.id] ? 'partly filled' : 'empty';
   } else {
     const jars = challenge.containers ?? [];
     drawn.jars = `${jars.length} identical containers (${jars.map(j => j.name).join(', ')}), each with a different amount `
       + 'of water drawn inside; the amounts are not given';
-    drawn.howToAnswer = 'tap the containers from the least water to the most; tapping a chosen one takes it out; '
-      + 'the activity checks when all are tapped';
   }
   return {
     objects: [],
     facts: {
       kind: challenge.type, ...drawn,
       learnerWork: describeMeasureWork(challenge, view),
-      constraints: 'The learner answers on the screen by tapping; the activity runs the test and checks the work itself. '
-        + 'You cannot tap, place or pour for the learner.',
     },
   };
 }

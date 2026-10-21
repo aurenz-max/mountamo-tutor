@@ -14,10 +14,13 @@
  * the letter aloud is letter naming, not finding the key.
  *
  * The arena (click, drag) is one SVG in viewBox units; a press and release on it is read in those units, so the
- * checks below are pure geometry. Pure: the component, the generator, the adapter, the journey row and the tests read
- * the same items, checks, misses and scene.
+ * checks below are pure geometry. Pure: the component, the generator, the boss and the tests read the same items,
+ * checks, misses and scene.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SkillMiss } from './digitalSkillsSim.card';
+
+export { SKILL_MISSES, type ClickMiss, type DragMiss, type SkillMiss, type TypeMiss } from './digitalSkillsSim.card';
 
 export type SkillMode = 'click' | 'drag' | 'type';
 export const SKILL_MODES: SkillMode[] = ['click', 'drag', 'type'];
@@ -126,16 +129,6 @@ export function boxHit(item: DragItem, p: Point, big: boolean): number | null {
 }
 /** A drag starts only on the picture. */
 export const onGrab = (p: Point) => dist(p, DRAG_START) <= DRAG_GRAB;
-
-export type ClickMiss = 'wrong_picture' | 'missed_picture';
-export type DragMiss = 'wrong_box' | 'let_go_outside';
-export type TypeMiss = 'neighbour_key' | 'mirror_letter' | 'wrong_key';
-export type SkillMiss = ClickMiss | DragMiss | TypeMiss;
-export const SKILL_MISSES: Record<SkillMode, readonly SkillMiss[]> = {
-  click: ['wrong_picture', 'missed_picture'],
-  drag: ['wrong_box', 'let_go_outside'],
-  type: ['neighbour_key', 'mirror_letter', 'wrong_key'],
-};
 
 /** Big levers change what counts as on a picture or in a box, so the checks take them. */
 export interface Reach { big: boolean }
@@ -294,17 +287,7 @@ export function skillItems(d: SkillItemsSource): SkillItem[] {
     rng: seededRng(`${d.title ?? 'digital'}:${resolveTheme(d)}`) });
 }
 
-// ── Assignment and scene ─────────────────────────────────────────────────────────────────
-
-const HOW: Record<SkillMode, string> = {
-  click: 'The learner clicks (or taps) one picture in the play area; the activity checks the click.',
-  drag: 'The learner presses on the picture, holds, moves it and lets go over a box; the activity checks where it was let go.',
-  type: 'The learner presses keys on the on-screen keyboard (or a real one); the activity checks each key.',
-};
-
-export function workspaceAssignment(item: SkillItem): TeachingAssignment {
-  return { id: item.id, task: `${askOf(item)} ${HOW[item.mode]}`, response: 'gesture' };
-}
+// ── Scene ────────────────────────────────────────────────────────────────────────────────
 
 const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 const an = (s: string) => (/^[aeiou]/i.test(s) ? `an ${s}` : `a ${s}`);
@@ -322,16 +305,24 @@ export function describeSkillWork(item: SkillItem | undefined, w: SkillWork, rea
   return hit === null ? `Let go of the ${item.thing.name} outside every box` : `Dropped the ${item.thing.name} into the ${item.homes[hit].name}`;
 }
 
+/** This primitive's own facts: the answer is a place on screen, so where a picture, box or key sits is never said. */
 const CONSTRAINTS: Record<SkillMode, string> = {
-  click: 'The activity checks the click. No picture is marked, labelled or highlighted. You cannot click for the learner.',
-  drag: 'The activity checks where the picture is let go. The boxes are pictures with no words and none is marked. You cannot drag for the learner.',
-  type: 'The activity checks each key. No key is marked or highlighted. You cannot press keys for the learner.',
+  click: 'No picture is marked, labelled or highlighted. Where the named picture sits in the play area is part of the answer.',
+  drag: 'No box is marked. Where the named box sits in the play area is part of the answer.',
+  type: 'No key is marked or highlighted. Where the key sits on the keyboard is part of the answer, and so is the capital of a small letter.',
 };
 
 export interface SkillView { work: SkillWork; reach: Reach }
 
 /** What is drawn and asked. Never where the target is or which key is right. */
-export function workspaceScene(item: SkillItem, view: SkillView): WorkspaceScene {
+/** How the hand does the move, which is the skill taught: teaching it is help, never the answer. */
+const HAND_COACHING: Record<SkillItem['mode'], string> = {
+  click: 'Teaching the move is fine: move the pointer onto a picture first, keep the hand still, then click.',
+  drag: 'Teaching the move is fine: press and hold the button on the picture, keep holding while you move, let go only over a box.',
+  type: 'Teaching the move is fine: look across the keys for the letter, then press it once.',
+};
+
+export function workspaceScene(item: SkillItem, view: SkillView): SceneOf {
   const facts: Record<string, string> = { kind: item.mode, question: askOf(item) };
   if (item.mode === 'click') {
     facts.shown = `${item.things.length} pictures spread across a play area, with no words: ${list(item.things.map(x => an(x.name)))}.`;
@@ -345,6 +336,8 @@ export function workspaceScene(item: SkillItem, view: SkillView): WorkspaceScene
   }
   facts.learnerWork = describeSkillWork(item, view.work, view.reach);
   facts.constraints = CONSTRAINTS[item.mode];
+  // The motor skill is what this primitive teaches; coaching the hand never names which picture, box or key.
+  facts.handCoaching = HAND_COACHING[item.mode];
   return { objects: [], facts };
 }
 

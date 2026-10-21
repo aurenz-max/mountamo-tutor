@@ -1,27 +1,28 @@
 /**
- * The in-item levers on train-yard, every mode (`/add-support-tiers`; table and evidence in
+ * The in-item levers on train-yard, every mode (`/add-support-tiers`), declared once as a lever set (`TRAIN_LEVERS`, `bossLevers.ts`); table and evidence in
  * qa/eval-reports/train-yard-levers-2026-10-06.md). No real-learner evidence: the misses are what `trainYardMiss`
  * observes on the journey's scripted wrong builds, plus the birth certificate's "why children fail" plan.
  *
  * Car kind (match_car, build_train) — which car carries the cargo IS the answer, so help shows the cargo itself or
  * a model on a different cargo, never the item's car.
- * - `cargo_picture` (help): a drawing of the cargo as it looks, beside the job ticket. No car, no car-card words.
- * - `model_match` (help): a different cargo, its car, and why that car is built for it.
- * - `two_cars` (simplify, match_car): an ungraded job with a different cargo and two car choices.
+ * - `cargo_picture` (clue): a drawing of the cargo as it looks, beside the job ticket. No car, no car-card words.
+ * - `model_match` (model): a different cargo, its car, and why that car is built for it.
+ * - `two_cars` (easier, match_car): an ungraded job with a different cargo and two car choices.
  * Car count (enough_cars, build_train)
- * - `car_tally` (help): each car the learner coupled shows what the cars of its kind so far hold. Never past theirs.
- * - `whole_loads` (simplify, enough_cars): an ungraded job with a different cargo, whole-car loads and fewer cars.
+ * - `car_tally` (marks): each car the learner coupled shows what the cars of its kind so far hold. Never past theirs.
+ * - `whole_loads` (easier, enough_cars): an ungraded job with a different cargo, whole-car loads and fewer cars.
  * Engines (enough_pull, build_train) — the live "pull needed vs pull given" gauge of the demo is NOT a lever: it
  * turns green at exactly the fewest engines.
- * - `train_weight` (help): what the train weighs now, engines, cars and the whole load, before the run. No pull.
- * - `worked_hill` (help): the rule of the rails worked on a different train and hill.
- * - `round_hill` (simplify, enough_pull): an ungraded job on a whole-number hill that needs 2 engines.
- * - `smaller_job` (simplify, build_train): an ungraded whole build with whole loads, 3-4 cars, a whole-number hill.
+ * - `train_weight` (custom: a yard scale): what the train weighs now, engines, cars and the whole load, before the run. No pull.
+ * - `worked_hill` (model): the rule of the rails worked on a different train and hill.
+ * - `round_hill` (easier, enough_pull): an ungraded job on a whole-number hill that needs 2 engines.
+ * - `smaller_job` (easier, build_train): an ungraded whole build with whole loads, 3-4 cars, a whole-number hill.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet, type LeverSpec } from '../../../components/live-activity/bossLevers';
 import {
-  CAR_FOR_FORM, CAR_ORDER, carFor, engineFor, fewestCars, fewestEngines, instructionFor, ROLLING_PULL_PER_TON, TRAIN_CARS,
-  UNIT_TONS, type CargoForm, type Consist, type TrainCarType, type TrainYardBand, type TrainYardChallenge, type TrainYardMiss,
+  CAR_FOR_FORM, CAR_ORDER, carButtonName, carFor, engineFor, fewestCars, fewestEngines, instructionFor, ROLLING_PULL_PER_TON,
+  TRAIN_CARS, TRAIN_YARD_MISSES_BY_MODE, UNIT_TONS, type CargoForm, type Consist, type TrainCarType, type TrainYardBand,
+  type TrainYardChallenge, type TrainYardMiss,
 } from './trainYardModel';
 
 export const PICTURE_LEVER = 'cargo_picture';
@@ -33,10 +34,10 @@ export const WEIGHT_LEVER = 'train_weight';
 export const WORKED_LEVER = 'worked_hill';
 export const ROUND_HILL_LEVER = 'round_hill';
 export const SMALLER_LEVER = 'smaller_job';
-const SIMPLIFY = new Set([TWO_CARS_LEVER, WHOLE_LOADS_LEVER, ROUND_HILL_LEVER, SMALLER_LEVER]);
 
 const SIMPLER = '~simpler';
 export const isPracticeJob = (c: Pick<TrainYardChallenge, 'id'>) => c.id.endsWith(SIMPLER);
+export const practiceParent = (id: string) => (id.endsWith(SIMPLER) ? id.slice(0, -SIMPLER.length) : null);
 
 // ── What a cargo looks like (cargo_picture, model_match) ─────────────────────
 
@@ -195,76 +196,99 @@ export function startLevers(c: TrainYardChallenge | null, tier?: string): string
   }
 }
 
-const KIND_MISSES: TrainYardMiss[] = ['wrong_car', 'mixed_cars'];
+/** What the levers read besides the item: the session's band, the learner's own part, and the train that will run. */
+export interface TrainLeverCtx { band: TrainYardBand; consist: Consist; train: Consist }
+
+type Spec = LeverSpec<TrainYardChallenge, TrainLeverCtx>;
+type Mode = TrainYardChallenge['type'];
+
+const n = (x: number) => Math.round(x).toLocaleString('en-US');
+const UNGRADED = ' It is not graded; the full job comes back after it.';
+/** The kind misses a mode's run can show: match_car couples one kind, so never mixed cars. */
+const KIND: Record<'match_car' | 'build_train', TrainYardMiss[]> = {
+  match_car: ['wrong_car'], build_train: ['wrong_car', 'mixed_cars'],
+};
 const COUNT_MISSES: TrainYardMiss[] = ['too_few_cars', 'extra_cars'];
 const ENGINE_MISSES: TrainYardMiss[] = ['stalled', 'extra_engines'];
 
-export function trainYardLevers(c: TrainYardChallenge | null, pulled: readonly string[], band: TrainYardBand): WorkspaceLever[] {
-  if (!c) return [];
-  const lever = (id: string, carrier: WorkspaceLever['carrier'], answers: readonly TrainYardMiss[], when: string,
-    does: string): WorkspaceLever => ({ id, kind: SIMPLIFY.has(id) ? 'simplify' : 'help', carrier, pulled: pulled.includes(id),
-    answers: c.type === 'match_car' ? answers.filter(m => m !== 'mixed_cars') : answers, when, does });
-  const model = modelMatch(c);
-  const kind = [
-    lever(PICTURE_LEVER, 'both', KIND_MISSES,
-      `The learner does not picture what ${c.cargo} is like, so cannot tell which car is built for it.`,
-      `Shows a picture of the ${c.cargo} beside the job ticket, as it looks. It shows no car.`),
-    lever(MODEL_LEVER, 'both', KIND_MISSES,
-      'The learner does not connect how a car is built to what it can carry.',
-      `Shows a worked example beside the yard: ${model.cargo}, the car built for it, and why. `
-        + `It is a different cargo; never say which car carries the ${c.cargo}.`),
-  ];
-  const count = lever(TALLY_LEVER, 'shown', COUNT_MISSES,
-    'The learner loses count of how much the cars hold, or stops short of the whole load.',
-    'Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars.');
-  const engines = [
-    lever(WEIGHT_LEVER, 'shown', ENGINE_MISSES,
-      'The learner cannot use the rule of the rails because the train\'s weight is hidden before the run.',
-      'Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs.'),
-    lever(WORKED_LEVER, 'both', ENGINE_MISSES,
-      'The learner does not know how to turn the rule of the rails into a number of engines.',
-      'Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. '
-        + 'Never this train\'s numbers; do not work this train for the learner.'),
-  ];
-  const simpler = simplerJob(c, band);
-  const simplify = (id: string, answers: readonly TrainYardMiss[], when: string, does: string) =>
-    simpler ? [lever(id, 'shown', answers, when, `${does} It is not graded; the full job comes back after it.`)] : [];
-  switch (c.type) {
-    case 'match_car': return [...kind, ...simplify(TWO_CARS_LEVER, ['wrong_car'],
-      'Six kinds of car are too many to choose from yet.',
-      'Opens an easier job first: a different cargo with only two cars to choose from.')];
-    case 'enough_cars': return [count, ...simplify(WHOLE_LOADS_LEVER, COUNT_MISSES,
-      'This load is too big, or its last car is only part full.',
-      'Opens an easier job first: a different cargo that fills a few cars exactly.')];
-    case 'enough_pull': return [...engines, ...simplify(ROUND_HILL_LEVER, ENGINE_MISSES,
-      'The hill\'s numbers are too hard to work with yet.',
-      'Opens an easier job first: a different train on a hill with a whole-number grade.')];
-    default: return [...kind, count, ...engines, ...simplify(SMALLER_LEVER, [...COUNT_MISSES, ...ENGINE_MISSES],
-      'The whole job is too much to build at once yet.',
-      'Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill.')];
-  }
-}
+const kindLevers = (mode: 'match_car' | 'build_train'): Spec[] => [
+  { id: PICTURE_LEVER, type: 'clue', modes: [mode], answers: KIND[mode],
+    when: c => `The learner does not picture what ${c.cargo} is like, so cannot tell which car is built for it.`,
+    does: c => `Shows a picture of the ${c.cargo} beside the job ticket, as it looks. It shows no car.`,
+    fact: (_content, c) => `A picture beside the job ticket shows the ${c.cargo}: ${CARGO_LOOKS[c.cargoForm]}.` },
+  { id: MODEL_LEVER, type: 'model', modes: [mode], answers: KIND[mode],
+    when: 'The learner does not connect how a car is built to what it can carry.',
+    does: c => `Shows a worked example beside the yard: ${modelMatch(c).cargo}, the car built for it, and why. `
+      + `It is a different cargo; never say which car carries the ${c.cargo}.`,
+    content: c => modelMatch(c),
+    fact: (m: ReturnType<typeof modelMatch>) => `A worked example shows ${m.cargo} in the ${TRAIN_CARS[m.car].name.toLowerCase()}: ${m.why}` },
+];
 
-const n = (x: number) => Math.round(x).toLocaleString('en-US');
+const tallyLever = (mode: 'enough_cars' | 'build_train'): Spec => ({
+  id: TALLY_LEVER, type: 'marks', modes: [mode], answers: COUNT_MISSES,
+  when: 'The learner loses count of how much the cars hold, or stops short of the whole load.',
+  does: 'Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars.',
+  content: (_c, ctx) => carTally(ctx.consist),
+  fact: (tally: ReturnType<typeof carTally>) => (tally.length
+    ? `Under the train each coupled car shows what its kind holds so far: ${tally.map(t =>
+      `${t.totals.length} ${TRAIN_CARS[t.kind].name.toLowerCase()}${t.totals.length === 1 ? '' : 's'} hold ${n(t.totals.at(-1)!)} ${TRAIN_CARS[t.kind].unit}`).join('; ')}.`
+    : 'Under the train each car the learner couples will show what its kind holds so far; no cars are coupled yet.'),
+});
 
-/** What the pulled levers put on screen, as a scene fact. Never the car for the cargo, the count, or the engines. */
-export function leverFacts(c: TrainYardChallenge | null, pulled: readonly string[], consist: Consist): string {
-  if (!c) return '';
-  const model = modelMatch(c);
-  const tally = carTally(consist);
-  const w = trainWeight(c, consist);
-  const worked = workedHill(c);
-  return [
-    pulled.includes(PICTURE_LEVER) && `A picture beside the job ticket shows the ${c.cargo}: ${CARGO_LOOKS[c.cargoForm]}.`,
-    pulled.includes(MODEL_LEVER) && `A worked example shows ${model.cargo} in the ${TRAIN_CARS[model.car].name.toLowerCase()}: ${model.why}`,
-    pulled.includes(TALLY_LEVER) && (tally.length
-      ? `Under the train each coupled car shows what its kind holds so far: ${tally.map(t =>
-        `${t.totals.length} ${TRAIN_CARS[t.kind].name.toLowerCase()}${t.totals.length === 1 ? '' : 's'} hold ${n(t.totals.at(-1)!)} ${TRAIN_CARS[t.kind].unit}`).join('; ')}.`
-      : 'Under the train each car the learner couples will show what its kind holds so far; no cars are coupled yet.'),
-    pulled.includes(WEIGHT_LEVER) && `The yard scale shows the train with the whole load aboard: engines ${n(w.engines)} t, `
-      + `cars ${n(w.cars)} t, load ${n(w.load)} t, ${n(w.total)} t in all.`,
-    pulled.includes(WORKED_LEVER) && `A worked example: a ${n(worked.tons)} t train on a ${worked.grade}% hill needs `
-      + `${n(worked.hill)} t of pull for the hill plus ${n(worked.roll)} t to roll, ${n(worked.need)} t; at ${worked.perEngine} t `
-      + `per engine that is ${worked.engines} engines.`,
-  ].filter(Boolean).join(' ');
-}
+const engineLevers = (mode: 'enough_pull' | 'build_train'): Spec[] => [
+  { id: WEIGHT_LEVER, type: 'custom', carrier: 'shown', modes: [mode], answers: ENGINE_MISSES,
+    why: 'It is a reading of the learner\'s own train that the yard hides before the run (a yard scale): not a mark on '
+      + 'what is on screen, not words about the item, and not a different item.',
+    when: 'The learner cannot use the rule of the rails because the train\'s weight is hidden before the run.',
+    does: 'Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs.',
+    content: (c, ctx) => trainWeight(c, ctx.train),
+    fact: (w: ReturnType<typeof trainWeight>) => `The yard scale shows the train with the whole load aboard: engines ${n(w.engines)} t, `
+      + `cars ${n(w.cars)} t, load ${n(w.load)} t, ${n(w.total)} t in all.` },
+  { id: WORKED_LEVER, type: 'model', modes: [mode], answers: ENGINE_MISSES,
+    when: 'The learner does not know how to turn the rule of the rails into a number of engines.',
+    does: 'Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. '
+      + 'Never this train\'s numbers; do not work this train for the learner.',
+    content: c => workedHill(c),
+    fact: (w: ReturnType<typeof workedHill>) => `A worked example: a ${n(w.tons)} t train on a ${w.grade}% hill needs `
+      + `${n(w.hill)} t of pull for the hill plus ${n(w.roll)} t to roll, ${n(w.need)} t; at ${w.perEngine} t `
+      + `per engine that is ${w.engines} engines.` },
+];
+
+const easier = (id: string, mode: Mode, answers: readonly TrainYardMiss[], when: string, does: string,
+  content: (c: TrainYardChallenge, ctx: TrainLeverCtx) => TrainYardChallenge | null): Spec =>
+  ({ id, type: 'easier', modes: [mode], answers, when, does: does + UNGRADED, content });
+
+/**
+ * Every lever, declared once (`bossLevers.ts`), in the order a miss reaches for them: the help levers, then the
+ * mode's easier job. None is offered on a practice job: the component declares nothing while one is on screen.
+ */
+export const TRAIN_LEVERS = leverSet<TrainYardChallenge, TrainLeverCtx>({
+  modeOf: c => c.type,
+  missesOf: mode => TRAIN_YARD_MISSES_BY_MODE[mode as Mode] ?? [],
+  // What a clue must never name: the car for the cargo.
+  answersOf: c => [TRAIN_CARS[carFor(c)].name, carButtonName(carFor(c)).replace(/^an? /, '')],
+  support: {
+    tier: c => c.supportTier ?? 'medium',
+    different: c => (c.type === 'match_car' ? 'a different cargo and the car built for it'
+      : c.type === 'enough_pull' ? 'the rule of the rails worked on a different train and hill'
+        : 'a different cargo and its car, or the rule of the rails worked on a different train'),
+    own: c => (c.type === 'match_car' ? 'which car carries this cargo'
+      : c.type === 'enough_pull' ? 'how many engines this train needs' : 'this job\'s car, its number of cars or its engines'),
+  },
+  specs: [
+    ...kindLevers('match_car'),
+    easier(TWO_CARS_LEVER, 'match_car', ['wrong_car'], 'Six kinds of car are too many to choose from yet.',
+      'Opens an easier job first: a different cargo with only two cars to choose from.', c => twoCars(c)),
+    tallyLever('enough_cars'),
+    easier(WHOLE_LOADS_LEVER, 'enough_cars', COUNT_MISSES, 'This load is too big, or its last car is only part full.',
+      'Opens an easier job first: a different cargo that fills a few cars exactly.', (c, ctx) => wholeLoads(c, ctx.band)),
+    ...engineLevers('enough_pull'),
+    easier(ROUND_HILL_LEVER, 'enough_pull', ENGINE_MISSES, 'The hill\'s numbers are too hard to work with yet.',
+      'Opens an easier job first: a different train on a hill with a whole-number grade.', (c, ctx) => roundHill(c, ctx.band)),
+    ...kindLevers('build_train'),
+    tallyLever('build_train'),
+    ...engineLevers('build_train'),
+    easier(SMALLER_LEVER, 'build_train', [...COUNT_MISSES, ...ENGINE_MISSES], 'The whole job is too much to build at once yet.',
+      'Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill.', c => smallerJob(c)),
+  ],
+});

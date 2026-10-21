@@ -2,19 +2,21 @@
  * matrix-display's in-item levers (/add-support-tiers; report qa/eval-reports/matrix-display-levers-2026-10-09.md).
  * The misses are what `matrixMiss` observes in the typed grid or determinant; there is no real-learner evidence.
  *
- * - `row_bands` (help, transpose): each row of the matrix and the matching column of the answer grid share a colour.
- * - `position_tracking` (help, add / subtract): the box the learner is on is outlined and the entries in the same
+ * Declared once as a lever set (`MATRIX_LEVERS`, `bossLevers.ts`); the lesson context is the answer box being worked,
+ * which the tracking levers follow:
+ * - `row_bands` (layout, transpose): each row of the matrix and the matching column of the answer grid share a colour.
+ * - `position_tracking` (marks, add / subtract): the box the learner is on is outlined and the entries in the same
  *   position in A and B are lit.
- * - `row_column_tracking` (help, multiply): the box the learner is on is outlined, with its row of A and column of B lit.
- * - `term_list` (help, multiply): under the grid, the outlined box written as a sum of products by position
+ * - `row_column_tracking` (marks, multiply): the box the learner is on is outlined, with its row of A and column of B lit.
+ * - `term_list` (layout, multiply): under the grid, the outlined box written as a sum of products by position
  *   (A₁₁·B₁₂ + A₁₂·B₂₂), letters and subscripts only.
- * - `diagonal_marks` (help, 2×2 determinant): the main diagonal tinted green, the other red, "green − red".
- * - `cofactor_signs` (help, 3×3 determinant): + − + over the top row, captioned with the expansion.
- * - `swap_negate_letters` (help, inverse): the entries lettered a b c d and the pattern [[d, −b], [−c, a]] ÷ (ad − bc)
+ * - `diagonal_marks` (marks, 2×2 determinant): the main diagonal tinted green, the other red, "green − red".
+ * - `cofactor_signs` (marks, 3×3 determinant): + − + over the top row, captioned with the expansion.
+ * - `swap_negate_letters` (marks, inverse): the entries lettered a b c d and the pattern [[d, −b], [−c, a]] ÷ (ad − bc)
  *   in letters beside the grid.
- * - `model_example` (help, every type): a worked example outside the item whose every number differs from every
+ * - `model_example` (model, every type; when it comes is the set's `support`): a worked example outside the item whose every number differs from every
  *   entry of the item's answer (transpose: a lettered matrix, no numbers at all).
- * - `simpler_problem` (simplify, every type): the same operation on a smaller or friendlier matrix, built here;
+ * - `simpler_problem` (easier, every type): the same operation on a smaller or friendlier matrix, built here;
  *   ungraded practice.
  *
  * Leak rules (code): no lever's `when`/`does` text or scene fact carries a digit; the tracking, bands, marks, signs
@@ -22,10 +24,10 @@
  * a practice problem has its own id and ask, other values and another key, keeps the operation, and (determinant)
  * shows no number equal to the item's determinant.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { MatrixChallengeType, MatrixDisplayChallenge } from './MatrixDisplay';
 import {
-  addOf, boxName, determinantOf, inverseOf, productOf, subtractOf, transposeOf, type MatrixMiss,
+  MATRIX_MISSES_BY_MODE, MATRIX_MISSES_BY_TYPE, addOf, boxName, determinantOf, inverseOf, productOf, subtractOf, transposeOf,
 } from './matrixDisplayWorkspace';
 
 export const ROW_BANDS_LEVER = 'row_bands';
@@ -197,98 +199,95 @@ export function practiceLeaks(parent: MatrixDisplayChallenge, practice: MatrixDi
   return !!practice.expectedMatrix && !!parent.expectedMatrix && same(practice.expectedMatrix, parent.expectedMatrix);
 }
 
-// ── declarations ─────────────────────────────────────────────────────────
+// ── the lever set ────────────────────────────────────────────────────────
 
-const MISSES: Record<MatrixChallengeType, readonly MatrixMiss[]> = {
-  transpose: ['reshaped', 'sign_error', 'one_entry', 'some_entries'],
-  add: ['wrong_operation', 'sign_error', 'one_entry', 'some_entries'],
-  subtract: ['wrong_operation', 'reversed_subtraction', 'sign_error', 'one_entry', 'some_entries'],
-  multiply: ['entrywise', 'reversed_order', 'row_times_row', 'missed_term', 'sign_error', 'one_entry', 'some_entries'],
-  determinant: ['added_products', 'opposite_sign', 'one_product', 'near_miss', 'too_high', 'too_low'],
-  inverse: ['no_negation', 'no_swap', 'unscaled', 'original', 'sign_error', 'one_entry', 'some_entries'],
+/** The lesson context the levers read: the answer box being worked (row, column), which the tracking levers follow. */
+export interface MatrixLeverCtx { active: [number, number] }
+export const FIRST_BOX: MatrixLeverCtx = { active: [0, 0] };
+
+/** The eval mode an item's type belongs to. */
+const MODE_OF: Record<MatrixChallengeType, string> = {
+  transpose: 'transpose', add: 'add_subtract', subtract: 'add_subtract', multiply: 'multiply',
+  determinant: 'determinant_inverse', inverse: 'determinant_inverse',
 };
+const own = (c: MatrixDisplayChallenge) => MATRIX_MISSES_BY_TYPE[c.challengeType];
+const boxOf = (ctx: MatrixLeverCtx) => `the ${boxName(ctx.active[0], ctx.active[1])} box`;
+const EVERY_MISS = Array.from(new Set(Object.values(MATRIX_MISSES_BY_TYPE).flat()));
 
-export function matrixLevers(c: MatrixDisplayChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!c || isPracticeMatrix(c)) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly MatrixMiss[],
-    when: string, does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const t = c.challengeType, all = MISSES[t];
-  const out: WorkspaceLever[] = [];
-  if (t === 'transpose') {
-    out.push(lever(ROW_BANDS_LEVER, 'help', 'shown', all,
-      'The learner fills the new grid in reading order, or loses track of which row goes where.',
-      'Gives each row of the matrix its own colour band and the matching column of the answer grid the same colour, so '
-        + 'each row visibly becomes a column. No number is written.'));
-  }
-  if (t === 'add' || t === 'subtract') {
-    out.push(lever(POSITION_LEVER, 'help', 'shown', all,
-      'The learner pairs entries from different positions, does the other operation, or slips on one box.',
-      'Outlines the answer box the learner is on, lights the entries in the same position in Matrix A and Matrix B, and '
+/**
+ * The levers, declared once (`bossLevers.ts`). A picture lever is offered on the types it draws for (`offer`); the
+ * misses it answers on an item are that type's (`answersOn`). None is offered on a practice problem: the component
+ * declares nothing while one is on screen.
+ */
+export const MATRIX_LEVERS = leverSet<MatrixDisplayChallenge, MatrixLeverCtx>({
+  modeOf: c => MODE_OF[c.challengeType],
+  missesOf: mode => MATRIX_MISSES_BY_MODE[mode] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'a worked example outside the item, with its own numbers',
+    own: 'this item\'s answer' },
+  specs: [
+    { id: ROW_BANDS_LEVER, type: 'layout', modes: ['transpose'], answers: MATRIX_MISSES_BY_TYPE.transpose,
+      when: 'The learner fills the new grid in reading order, or loses track of which row goes where.',
+      does: 'Gives each row of the matrix its own colour band and the matching column of the answer grid the same colour, so '
+        + 'each row visibly becomes a column. No number is written.',
+      fact: 'Each row of the matrix and the matching column of the answer grid share a colour band.' },
+    { id: POSITION_LEVER, type: 'marks', modes: ['add_subtract'], answers: MATRIX_MISSES_BY_MODE.add_subtract, answersOn: own,
+      when: 'The learner pairs entries from different positions, does the other operation, or slips on one box.',
+      does: 'Outlines the answer box the learner is on, lights the entries in the same position in Matrix A and Matrix B, and '
         + 'writes the box under the grid as A entry plus or minus B entry, in letters with small position marks. It '
-        + 'follows the box the learner clicks. No value is written.'));
-  }
-  if (t === 'multiply') {
-    out.push(lever(ROW_COLUMN_LEVER, 'help', 'shown', ['entrywise', 'reversed_order', 'row_times_row', 'one_entry', 'some_entries'],
-      'The learner multiplies matching entries, reverses the order, or uses the wrong row or column.',
-      'Outlines the answer box the learner is on and lights its row of Matrix A and its column of Matrix B. It follows '
-        + 'the box the learner clicks. No number is written.'));
-    out.push(lever(TERMS_LEVER, 'help', 'shown', ['missed_term', 'entrywise', 'row_times_row', 'sign_error', 'one_entry', 'some_entries'],
-      'The learner drops a product from a sum or loses which entries to multiply.',
-      'Writes the outlined box under the grid as a sum of products by position, A entry times B entry for each term, '
-        + 'in letters with small position marks and no values.'));
-  }
-  if (t === 'determinant' && c.values.length === 2) {
-    out.push(lever(DIAGONALS_LEVER, 'help', 'shown', all,
-      'The learner adds the products, subtracts them the wrong way round, or uses one product only.',
-      'Tints the main diagonal green and the other diagonal red, captioned green product minus red product. No number '
-        + 'is written.'));
-  }
-  if (t === 'determinant' && c.values.length === 3) {
-    out.push(lever(SIGNS_LEVER, 'help', 'shown', all.filter(m => m !== 'one_product'),
-      'The learner adds every term of the expansion or gets the sign wrong.',
-      'Writes plus, minus, plus over the top row, captioned that each top entry is multiplied by the small determinant '
-        + 'left when its row and column are covered. No number is written.'));
-  }
-  if (t === 'inverse') {
-    out.push(lever(LETTERS_LEVER, 'help', 'shown', all,
-      'The learner forgets to swap, to negate, or to divide by the determinant.',
-      'Letters the matrix entries a, b, c and d, and shows beside the grid the pattern d, minus b, minus c, a, all over '
-        + 'a times d minus b times c, in letters only.'));
-  }
-  if (matrixModel(c)) {
-    out.push(lever(MODEL_LEVER, 'help', 'both', all,
-      'The learner does not know how the operation is carried out.',
-      t === 'transpose'
+        + 'follows the box the learner clicks. No value is written.',
+      fact: (_content, c, ctx) => `The answer box being worked (${boxOf(ctx)}) is outlined, the entries in the same position `
+        + 'in Matrix A and Matrix B are lit, and under the grid the box is written as A entry '
+        + `${c.challengeType === 'subtract' ? 'minus' : 'plus'} B entry, in letters.` },
+    { id: ROW_COLUMN_LEVER, type: 'marks', modes: ['multiply'],
+      answers: ['entrywise', 'reversed_order', 'row_times_row', 'one_entry', 'some_entries'],
+      when: 'The learner multiplies matching entries, reverses the order, or uses the wrong row or column.',
+      does: 'Outlines the answer box the learner is on and lights its row of Matrix A and its column of Matrix B. It follows '
+        + 'the box the learner clicks. No number is written.',
+      fact: (_content, _c, ctx) => `The answer box being worked (${boxOf(ctx)}) is outlined, with its row of Matrix A and its `
+        + 'column of Matrix B lit.' },
+    { id: TERMS_LEVER, type: 'layout', modes: ['multiply'],
+      answers: ['missed_term', 'entrywise', 'row_times_row', 'sign_error', 'one_entry', 'some_entries'],
+      when: 'The learner drops a product from a sum or loses which entries to multiply.',
+      does: 'Writes the outlined box under the grid as a sum of products by position, A entry times B entry for each term, '
+        + 'in letters with small position marks and no values.',
+      fact: 'Under the grid the outlined box is written as a sum of products by position, in letters with no values.' },
+    { id: DIAGONALS_LEVER, type: 'marks', modes: ['determinant_inverse'], answers: MATRIX_MISSES_BY_TYPE.determinant,
+      offer: c => c.challengeType === 'determinant' && c.values.length === 2,
+      when: 'The learner adds the products, subtracts them the wrong way round, or uses one product only.',
+      does: 'Tints the main diagonal green and the other diagonal red, captioned green product minus red product. No number '
+        + 'is written.',
+      fact: 'The main diagonal is tinted green and the other diagonal red, captioned green product minus red product.' },
+    { id: SIGNS_LEVER, type: 'marks', modes: ['determinant_inverse'],
+      answers: MATRIX_MISSES_BY_TYPE.determinant.filter(m => m !== 'one_product'),
+      offer: c => c.challengeType === 'determinant' && c.values.length === 3,
+      when: 'The learner adds every term of the expansion or gets the sign wrong.',
+      does: 'Writes plus, minus, plus over the top row, captioned that each top entry is multiplied by the small determinant '
+        + 'left when its row and column are covered. No number is written.',
+      fact: 'Plus, minus, plus is written over the top row, captioned with the expansion along the top row.' },
+    { id: LETTERS_LEVER, type: 'marks', modes: ['determinant_inverse'], answers: MATRIX_MISSES_BY_TYPE.inverse,
+      offer: c => c.challengeType === 'inverse',
+      when: 'The learner forgets to swap, to negate, or to divide by the determinant.',
+      does: 'Letters the matrix entries a, b, c and d, and shows beside the grid the pattern d, minus b, minus c, a, all over '
+        + 'a times d minus b times c, in letters only.',
+      fact: 'The entries are lettered a, b, c, d, and beside the grid is the pattern d, minus b, minus c, a over a times d '
+        + 'minus b times c, in letters.' },
+    { id: MODEL_LEVER, type: 'model', answers: 'all', answersOn: own,
+      when: 'The learner does not know how the operation is carried out.',
+      does: c => (c.challengeType === 'transpose'
         ? 'Shows a worked transpose outside the item, with letters for entries: each row of letters becomes a column. '
           + 'Read it aloud; it never shows the item\'s answer.'
         : 'Shows a worked example outside the item, with its own small numbers, every step written. Read it aloud; '
-          + 'none of its numbers is an entry of the item\'s answer.'));
-  }
-  if (simplerMatrix(c)) {
-    out.push(lever(SIMPLER_LEVER, 'simplify', 'shown', all.filter(m => m !== 'sign_error'),
-      'This matrix is too big or its numbers too hard to work with yet.',
-      'Opens an easier problem with the same operation first, on a smaller or friendlier matrix. It is not graded; the '
-        + 'full item comes back after it.'));
-  }
-  return out;
-}
-
-/** What the pulled help levers put on screen, for the tutor and JEV. No digit, no answer. */
-export function leverFacts(c: MatrixDisplayChallenge | null, pulled: readonly string[], active: [number, number]): string {
-  if (!c || isPracticeMatrix(c)) return '';
-  const on = (id: string) => pulled.includes(id);
-  const box = `the ${boxName(active[0], active[1])} box`;
-  return [
-    on(ROW_BANDS_LEVER) && 'Each row of the matrix and the matching column of the answer grid share a colour band.',
-    on(POSITION_LEVER) && `The answer box being worked (${box}) is outlined, the entries in the same position in Matrix A and Matrix B are lit, and under the grid the box is written as A entry ${c.challengeType === 'subtract' ? 'minus' : 'plus'} B entry, in letters.`,
-    on(ROW_COLUMN_LEVER) && `The answer box being worked (${box}) is outlined, with its row of Matrix A and its column of Matrix B lit.`,
-    on(TERMS_LEVER) && 'Under the grid the outlined box is written as a sum of products by position, in letters with no values.',
-    on(DIAGONALS_LEVER) && 'The main diagonal is tinted green and the other diagonal red, captioned green product minus red product.',
-    on(SIGNS_LEVER) && 'Plus, minus, plus is written over the top row, captioned with the expansion along the top row.',
-    on(LETTERS_LEVER) && 'The entries are lettered a, b, c, d, and beside the grid is the pattern d, minus b, minus c, a over a times d minus b times c, in letters.',
-    on(MODEL_LEVER) && 'Beside the matrices is a worked example outside the item, with its own numbers.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+          + 'none of its numbers is an entry of the item\'s answer.'),
+      content: c => matrixModel(c),
+      fact: 'Beside the matrices is a worked example outside the item, with its own numbers.' },
+    { id: SIMPLER_LEVER, type: 'easier', answers: EVERY_MISS.filter(m => m !== 'sign_error'),
+      answersOn: c => own(c).filter(m => m !== 'sign_error'),
+      when: 'This matrix is too big or its numbers too hard to work with yet.',
+      does: 'Opens an easier problem with the same operation first, on a smaller or friendlier matrix. It is not graded; the '
+        + 'full item comes back after it.',
+      content: c => simplerMatrix(c) },
+  ],
+});
 
 /** Leak rule for the levers' words and facts: no digit at all. */
 export const leverTextLeaks = (text: string) => /\d/.test(text);

@@ -23,12 +23,12 @@ import {
   accentSoftBorder,
   accentSolidBg,
 } from '../../../ui';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CONFLICT_LABELS,
   conflictOptions,
@@ -41,7 +41,6 @@ import {
   storyMapCorrect,
   storyMapItems,
   storyMapMiss,
-  workspaceAssignment,
   workspaceScene,
   type StoryMapItem,
   type StoryMapView,
@@ -53,13 +52,11 @@ import {
   COUNT_LEVER,
   PARTS_LEVER,
   PRACTICE_NOTE,
+  STORY_MAP_LEVERS,
   partPicture,
-  practiceAssignment,
-  practiceFor,
-  storyMapLeverFacts,
-  storyMapLevers,
   type PracticeStory,
 } from './storyMapLevers';
+import { storyMapBoss } from './storyMap.boss';
 
 // =============================================================================
 // Type Definitions
@@ -506,22 +503,18 @@ const InvalidStoryMap = () => (
   </LuminaCard>
 );
 
-type StoryMapSurfaceProps = StoryMapProps & {
-  tutorOwned: boolean;
-  useController: (options: ProgressOptions<StoryMapItem>) => Progress;
-};
+const useStoryMapProgress = useWorkspaceProgressFor('story-map');
 
-const StoryMapSurface = (props: StoryMapSurfaceProps) => {
+const StoryMapSurface = (props: StoryMapProps) => {
   const { data } = props;
   // Defensive check
   if (!data || !data.events || !Array.isArray(data.events) || data.events.length === 0) return <InvalidStoryMap />;
   return <StoryMapBoard {...props} />;
 };
 
-const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }: StoryMapSurfaceProps) => {
+const StoryMapBoard = ({ data, className = '', runtimePlanItemId }: StoryMapProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [startTime] = useState(Date.now());
-  const [scriptedPhase, setPhase] = useState<Phase>('identify');
   const [showPassage, setShowPassage] = useState(true);
 
   // Phase 1: Identify state
@@ -548,8 +541,6 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const [selectedConflict, setSelectedConflict] = useState<string | null>(null);
   const [phase3Checked, setPhase3Checked] = useState(false);
 
-  // General state
-  const [attemptsCount, setAttemptsCount] = useState(0);
 
   // Destructure evaluation props
   const {
@@ -564,7 +555,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
   // Initialize evaluation hook
-  const { submitResult, hasSubmitted, resetAttempt } =
+  const { submitResult, hasSubmitted } =
     usePrimitiveEvaluation<StoryMapMetrics>({
       primitiveType: 'story-map',
       instanceId: resolvedInstanceId,
@@ -575,36 +566,35 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
       onSubmit: onEvaluationSubmit,
     });
 
-  // ── Progress. Each phase is one checked item; on the workspace path the runtime moves the index. ──
+  // ── Progress. Each step is one checked item; the runtime moves the index. ──
   const items = useMemo(() => storyMapItems(data), [data]);
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useStoryMapProgress({
     challenges: items,
     getChallengeId: (item) => item.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (item) => workspaceAssignment(item, data),
+    workspace, assignment: storyMapBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  /** A checked answer stays closed until Try again or Next challenge on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  workspaceClosed.current = progress.canAttempt === false;
   const learnerBlocked = () => workspaceClosed.current;
-  const sessionItem: StoryMapItem | undefined = tutorOwned ? items[progress.currentIndex] : items.find((i) => i.id === scriptedPhase);
-  const phase: Phase = tutorOwned ? (sessionItem?.id ?? items[items.length - 1].id) : scriptedPhase;
-  const workspaceDone = tutorOwned && progress.isComplete;
+  const sessionItem: StoryMapItem | undefined = items[progress.currentIndex];
+  const phase: Phase = sessionItem?.phase ?? items[items.length - 1].phase;
+  const workspaceDone = progress.isComplete;
 
-  // In-item levers (`storyMapLevers.ts`), keyed by the phase they were pulled on, and the shorter practice story a
-  // simplify lever puts in place of this one until the observer returns to it. `shown` is the story on screen.
+  // In-item levers (`STORY_MAP_LEVERS`), keyed by the step they were pulled on, and the practice item a simplify
+  // lever puts in place of this one until the observer returns to it. `shown` is the story on screen.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<PracticeStory | null>(null);
-  const shown: PracticeStory = practice ?? data;
+  const [practice, setPractice] = useState<StoryMapItem | null>(null);
+  const shown: PracticeStory = practice?.story ?? data;
   const pulledLevers = !practice && sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
-  const itemLevers = tutorOwned && !practice && !workspaceDone ? storyMapLevers(sessionItem, data, pulledLevers) : [];
-  /** A help lever is drawn on the session story while pulled, never on a practice story. */
-  const helpOn = (id: string) => itemLevers.some((l) => l.id === id && l.kind === 'help' && l.pulled);
+  /** A runtime pull on the session story; never drawn on a practice story. */
+  const leverOn = (id: string) => !practice && !workspaceDone && pulledLevers.includes(id);
 
   // Arc labels for the structure type
   const arcLabels = useMemo(() => arcLabelsFor(shown), [shown]);
@@ -641,31 +631,18 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
       : null,
   };
 
-  /** The activity's check of the open phase: counts the attempt and, on the workspace path, commits it with its miss. */
-  const commitPhase = (id: Phase): boolean => {
-    const item = { id } as StoryMapItem;
+  /** The activity's check of the open step: counts the attempt and commits it with its miss. */
+  const commitPhase = (phase: Phase): boolean => {
+    const item = { phase };
     const correct = storyMapCorrect(item, shown, view);
     progress.commitCheck(describeStoryWork(item, shown, view), correct, correct ? undefined : storyMapMiss(item, shown, view));
     return correct;
   };
 
-  // Phase helpers
-  const isPhaseComplete = (p: Phase): boolean => {
-    if (tutorOwned) return progress.results.some((r) => r.challengeId === p && r.correct);
-    switch (p) {
-      case 'identify':
-        return phase1Checked;
-      case 'sequence':
-        return phase2Checked;
-      case 'analyze':
-        return phase3Checked;
-      default:
-        return false;
-    }
-  };
+  const isPhaseComplete = (p: Phase): boolean => progress.results.some((r) => r.challengeId === p && r.correct);
 
   // ============================================================================
-  // Phase clearing (a fresh item, or Try again on the workspace path)
+  // Phase clearing (a fresh item, or Try again)
   // ============================================================================
 
   const clearIdentify = () => {
@@ -696,7 +673,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   };
   // Try again keeps a practice story; a fresh item, or the full story back after practice, drops it.
   openItem.current = (index, retry) => {
-    clearPhase(items[index]?.id);
+    clearPhase(items[index]?.phase);
     if (!retry) setPractice(null);
   };
 
@@ -725,16 +702,10 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const checkPhase1 = () => {
     if (learnerBlocked()) return;
     setPhase1Checked(true);
-    setAttemptsCount((prev) => prev + 1);
     const correct = commitPhase('identify');
 
-    if (correct) {
-      SoundManager.playCorrect();
-      // Scripted path: auto-advance to phase 2. The workspace's runtime moves on from the committed check.
-      if (!tutorOwned) setTimeout(() => setPhase('sequence'), 1200);
-    } else {
-      SoundManager.playIncorrect();
-    }
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
   };
 
   // ============================================================================
@@ -792,7 +763,6 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const checkPhase2 = () => {
     if (learnerBlocked()) return;
     setPhase2Checked(true);
-    setAttemptsCount((prev) => prev + 1);
 
     if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
     setShowZoneFlash(true);
@@ -800,18 +770,8 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
 
     const correct = commitPhase('sequence');
 
-    if (correct) {
-      SoundManager.playCorrect();
-      if (tutorOwned) return;
-      if (showConflictPhase) {
-        setTimeout(() => setPhase('analyze'), 1200);
-      } else {
-        // Submit evaluation
-        handleFinalSubmit();
-      }
-    } else {
-      SoundManager.playIncorrect();
-    }
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
   };
 
   // ============================================================================
@@ -826,12 +786,9 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const checkPhase3 = () => {
     if (learnerBlocked()) return;
     setPhase3Checked(true);
-    setAttemptsCount((prev) => prev + 1);
     const correct = commitPhase('analyze');
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
-    // Scripted path: the analysis is the last step either way. The workspace path reopens a miss.
-    if (!tutorOwned) handleFinalSubmit();
   };
 
   // ============================================================================
@@ -907,21 +864,21 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
       totalCharacters: realNames.length,
       charactersCorrect,
       settingCorrect,
-      identifyPhaseComplete: tutorOwned ? isPhaseComplete('identify') : phase1Checked,
+      identifyPhaseComplete: isPhaseComplete('identify'),
 
       // Phase 2
       totalEvents: data.events.length,
       eventsPlaced: placedEvents.length,
       eventsCorrectlyPlaced: eventsCorrectCount,
       allEventsCorrect,
-      sequencePhaseComplete: tutorOwned ? isPhaseComplete('sequence') : phase2Checked,
+      sequencePhaseComplete: isPhaseComplete('sequence'),
       eventPlacementResults: eventResults,
 
       // Phase 3
       conflictTypeCorrect: conflictCorrect,
       selectedConflictType: selectedConflict || undefined,
       correctConflictType: data.elements.conflict?.type,
-      analyzePhaseComplete: showConflictPhase ? (tutorOwned ? isPhaseComplete('analyze') : phase3Checked) : true,
+      analyzePhaseComplete: showConflictPhase ? isPhaseComplete('analyze') : true,
 
       // Overall
       totalAttempts,
@@ -938,15 +895,8 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
     selectedConflict,
   });
 
-  /** Scripted path: one submission for the whole map. */
-  const handleFinalSubmit = () => {
-    if (hasSubmitted || tutorOwned) return;
-    const { metrics, overallSuccess, totalScore } = buildMetrics(attemptsCount + 1);
-    submitResult(overallSuccess, totalScore, metrics, { studentWork: studentWork() });
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     const { metrics } = buildMetrics(result.attemptsCount, result.accuracy);
@@ -956,31 +906,17 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
       undefined, result.diagnosisEvidence);
   };
 
-  // ============================================================================
-  // Reset (scripted path)
-  // ============================================================================
-
-  const handleReset = () => {
-    setPhase('identify');
-    setShowPassage(true);
-    clearIdentify();
-    clearSequence();
-    clearAnalyze();
-    setAttemptsCount(0);
-    resetAttempt();
-  };
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets or presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !sessionItem || workspaceDone) return;
-    const scene = workspaceScene(sessionItem, shown, view);
-    const levers = itemLevers;
-    const onScreen = practice ? ''
-      : storyMapLeverFacts(sessionItem, data, levers.filter((l) => l.kind === 'help' && l.pulled).map((l) => l.id));
+    if (!sessionItem || workspaceDone) return;
+    const levers = practice ? [] : STORY_MAP_LEVERS.declare(sessionItem, data, pulledLevers);
+    const published = leverScene(workspaceScene(sessionItem, shown, view), {
+      support: practice ? '' : STORY_MAP_LEVERS.support(sessionItem, data),
+      onScreen: practice ? '' : STORY_MAP_LEVERS.onScreen(sessionItem, data, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
         const lever = levers.find((l) => l.id === id);
@@ -988,16 +924,16 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already on screen.`;
         const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceFor(sessionItem, data);
+          const easier = STORY_MAP_LEVERS.simpler(sessionItem, data, id);
           if (!easier) return 'There is no shorter practice story for this part.';
-          setLeverState(next); setPractice(easier); clearPhase(sessionItem.id);
-          return { practice: practiceAssignment(sessionItem, easier) };
+          setLeverState(next); setPractice(easier); clearPhase(sessionItem.phase);
+          return { practice: storyMapBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
       },
       // Back to the full story, blank: the practice story is not the learner's work on it.
-      endPractice: () => { setPractice(null); clearPhase(sessionItem.id); },
+      endPractice: () => { setPractice(null); clearPhase(sessionItem.phase); },
     };
   });
 
@@ -1019,22 +955,10 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
   const currentPhaseLabel = phaseSteps.find((ps) => ps.key === phase)?.activeLabel || '';
 
   // Phase success conditions (reused by feedback + advance buttons), from the activity's own check.
-  const phase1Success = storyMapCorrect({ id: 'identify' }, shown, view);
-  const phase2Success = storyMapCorrect({ id: 'sequence' }, shown, view);
-  const phase3Success = storyMapCorrect({ id: 'analyze' }, shown, view);
+  const phase1Success = storyMapCorrect({ phase: 'identify' }, shown, view);
+  const phase2Success = storyMapCorrect({ phase: 'sequence' }, shown, view);
+  const phase3Success = storyMapCorrect({ phase: 'analyze' }, shown, view);
   const finished = hasSubmitted || workspaceDone;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: instanceId || 'story-map',
-    scopeId: finished ? null : phase,
-    label: 'The story and the story map',
-    solved: phase === 'identify' ? phase1Checked && phase1Success : phase === 'sequence' ? phase2Checked && phase2Success : phase3Checked && phase3Success,
-    tutorSpeaking: false,
-  });
 
   return (
     <LuminaCard className={className}>
@@ -1042,6 +966,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
         <div className="flex items-center justify-between flex-wrap gap-2">
           <LuminaCardTitle className="text-2xl">{data.title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaBadge accent="blue">{data.gradeLevel}</LuminaBadge>
             <LuminaBadge accent="purple">
               {data.structureType === 'bme'
@@ -1122,8 +1047,8 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
         )}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !finished && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-6">
+        {!finished && <PipDock />}
+        <PipWorkspace className="space-y-6">
         {/* Passage Section */}
         <div>
           <LuminaButton
@@ -1248,7 +1173,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
 
             {/* The help lever `character_count`: one empty person space per character, filled one per pick. It counts
                 picks and never marks which names. */}
-            {helpOn(COUNT_LEVER) && (
+            {leverOn(COUNT_LEVER) && (
               <div data-lever="character-count" aria-label="Character spaces" className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-slate-400">Characters in this story:</span>
                 {data.elements.characters.map((_, i) => (
@@ -1314,9 +1239,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
               <LuminaActionButton
                 action="check"
                 onClick={checkPhase1}
-                disabled={
-                  selectedCharacters.size === 0 || selectedSetting === null || (tutorOwned && progress.canAttempt === false)
-                }
+                disabled={selectedCharacters.size === 0 || selectedSetting === null || progress.canAttempt === false}
               >
                 Check Answers
               </LuminaActionButton>
@@ -1333,26 +1256,11 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                 ) : (
                   <LuminaFeedbackCard status="incorrect">
                     Not quite right. Look at the passage again carefully.
-                    {/* The workspace's Try again is on the shell. */}
-                    {!tutorOwned && (
-                      <div className="mt-3">
-                        <LuminaActionButton action="retry" onClick={clearIdentify} />
-                      </div>
-                    )}
                   </LuminaFeedbackCard>
                 )}
               </div>
             )}
 
-            {/* Manual advance button (if they got it right; scripted path) */}
-            {phase1Checked && phase1Success && !tutorOwned && (
-              <LuminaActionButton
-                action="next"
-                onClick={() => setPhase('sequence')}
-              >
-                Continue to Sequencing →
-              </LuminaActionButton>
-            )}
           </div>
         )}
 
@@ -1386,7 +1294,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                 Story Arc Positions
               </LuminaSectionLabel>
               {/* The help lever `arc_arrow`: which way the story runs along the parts, drawn on no event. */}
-              {helpOn(ARROW_LEVER) && (
+              {leverOn(ARROW_LEVER) && (
                 <div data-lever="arc-arrow" aria-label="Story starts to story ends" className="mb-2 flex items-center gap-2 text-xs text-sky-300">
                   <span aria-hidden="true">🚩</span>
                   <span>Story starts</span>
@@ -1432,7 +1340,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                         {zone.label}
                       </span>
                       {/* The help lever `part_pictures`: what this part of any story does, never an event. */}
-                      {helpOn(PARTS_LEVER) && (
+                      {leverOn(PARTS_LEVER) && (
                         <span data-lever="part-picture" className="text-center text-xs text-slate-300">
                           <span aria-hidden="true" className="mr-1 text-base">{partPicture(shown, zone.key).icon}</span>
                           {partPicture(shown, zone.key).words}
@@ -1595,7 +1503,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
               <LuminaActionButton
                 action="check"
                 onClick={checkPhase2}
-                disabled={placedEvents.length !== shown.events.length || (tutorOwned && progress.canAttempt === false)}
+                disabled={placedEvents.length !== shown.events.length || progress.canAttempt === false}
               >
                 Check Sequence
               </LuminaActionButton>
@@ -1613,26 +1521,11 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                   <LuminaFeedbackCard status="incorrect">
                     {view.marked?.right.length ?? 0} of {shown.events.length} events are in the right
                     place. Try again!
-                    {/* The workspace's Try again is on the shell. */}
-                    {!tutorOwned && (
-                      <div className="mt-3">
-                        <LuminaActionButton action="retry" onClick={clearSequence} />
-                      </div>
-                    )}
                   </LuminaFeedbackCard>
                 )}
               </div>
             )}
 
-            {/* Manual advance button (scripted path) */}
-            {phase2Checked && showConflictPhase && phase2Success && !tutorOwned && (
-              <LuminaActionButton
-                action="next"
-                onClick={() => setPhase('analyze')}
-              >
-                Continue to Analysis →
-              </LuminaActionButton>
-            )}
           </div>
         )}
 
@@ -1657,7 +1550,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                   const showResult = phase3Checked;
                   const isCorrectAnswer = type === shown.elements.conflict?.type;
                   // The workspace reopens a miss, so a wrong check marks only the pick, never the answer.
-                  const revealKey = !tutorOwned || phase3Success;
+                  const revealKey = phase3Success;
 
                   let choiceState:
                     | 'idle'
@@ -1688,7 +1581,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                         {label}
                       </span>
                       {/* The help lever `conflict_pictures`: a picture on every choice, so none is marked. */}
-                      {helpOn(CONFLICT_PICTURES_LEVER) && (
+                      {leverOn(CONFLICT_PICTURES_LEVER) && (
                         <span aria-hidden="true" data-lever="conflict-picture" className="mt-1 block text-xs text-slate-400">
                           <span className="mr-1 text-base">{CONFLICT_PICTURES[type].icon}</span>
                           {CONFLICT_PICTURES[type].words}
@@ -1705,7 +1598,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
               <LuminaActionButton
                 action="check"
                 onClick={checkPhase3}
-                disabled={selectedConflict === null || (tutorOwned && progress.canAttempt === false)}
+                disabled={selectedConflict === null || progress.canAttempt === false}
               >
                 Check Answer
               </LuminaActionButton>
@@ -1719,14 +1612,9 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
                     Correct! This is a{' '}
                     {CONFLICT_LABELS[shown.elements.conflict!.type]} conflict.
                   </LuminaFeedbackCard>
-                ) : tutorOwned ? (
-                  <LuminaFeedbackCard status="incorrect">
-                    Not quite. Think about who or what the main character struggles against.
-                  </LuminaFeedbackCard>
                 ) : (
                   <LuminaFeedbackCard status="incorrect">
-                    Not quite. The correct answer is{' '}
-                    {shown.elements.conflict ? CONFLICT_LABELS[shown.elements.conflict.type] : ''}.
+                    Not quite. Think about who or what the main character struggles against.
                   </LuminaFeedbackCard>
                 )}
               </div>
@@ -1735,7 +1623,7 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
         )}
 
         {/* ================================================================== */}
-        </div>
+        </PipWorkspace>
 
         {/* Success / Final Section */}
         {/* ================================================================== */}
@@ -1749,19 +1637,12 @@ const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, us
           </LuminaFeedbackCard>
         )}
 
-        {/* Action Buttons (scripted path) */}
-        {hasSubmitted && !tutorOwned && (
-          <div className="flex gap-3">
-            <LuminaActionButton action="retry" onClick={handleReset} />
-          </div>
-        )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const StoryMap = withWorkspaceController<StoryMapProps, ProgressOptions<StoryMapItem>, Progress>(
-  'story-map', StoryMapSurface, useScriptedProgress, useWorkspaceProgressFor('story-map'));
+// Taught only on the workspace: a mount with no tutor shows the shared "needs the tutor" card.
+const StoryMap = withWorkspaceOnly<StoryMapProps>('story-map', StoryMapSurface, (props) => props.data?.title);
 
 export default StoryMap;

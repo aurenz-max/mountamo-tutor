@@ -129,7 +129,7 @@ it('solve-story asking for the change: no pen (it would set the answer apart); t
   h.say('seven'); h.feedback('incorrect', 'retry');
   h.dispatch('pull_lever', { lever: 'smaller_story' });
   expect(h.state().task).toMatchObject({ itemId: 'c1~simpler' });
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^five \(5\)/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"five"/);
   h.say('five'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('c1');
   h.say('three'); h.feedback('correct');

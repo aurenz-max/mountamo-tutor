@@ -20,7 +20,6 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { NumberTracerMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { DigitEvaluationResult } from '../../../service/math/gemini-digit-evaluation';
 import { numberTracerDiagnosisEvidence, type NumberTracerResponse } from './numberTracerEvidence';
 
@@ -43,9 +42,7 @@ async function evaluateDigitDrawing(
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
-import { numberTracerPipPose } from '../../../pip/numberTracerPipPose';
-import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -84,17 +81,17 @@ export interface NumberTracerChallenge {
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
-import { useNumberTracerRuntime } from './useNumberTracerRuntime';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeWriting, numberTracerMiss, workspaceAssignment, workspaceScene } from './numberTracerWorkspace';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { describeWriting, numberTracerMiss, workspaceScene } from './numberTracerWorkspace';
 import { DIGIT_PATHS, getDigitPaths } from './numberTracerPaths';
 import {
-  ARROWS_LEVER, COUNT_DOTS_LEVER, DOTS_LEVER, FIRST_PART_LEVER, GHOST_LEVER, MODEL_STROKES_LEVER, PRACTICE_NOTE,
-  countDots, firstPart, leverFacts, numberTracerLevers, practiceItem, startDots, startingLevers,
+  ARROWS_LEVER, COUNT_DOTS_LEVER, DOTS_LEVER, FIRST_PART_LEVER, GHOST_LEVER, MODEL_STROKES_LEVER, NUMBER_TRACER_LEVERS,
+  PRACTICE_NOTE, countDots, firstPart, startDots, startingLevers,
 } from './numberTracerLevers';
+import { numberTracerBoss } from './numberTracer.boss';
 export { getDigitPaths };
 export interface NumberTracerData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
@@ -346,7 +343,7 @@ interface NumberTracerProps {
   className?: string;
   /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
   runtimePlanItemId?: string;
-  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  /** The RESOLVED plan mode, kept exactly as mounted (the workspace pin reads it). */
   runtimeEvalMode?: string;
 }
 
@@ -354,14 +351,14 @@ interface NumberTracerProps {
 // Component
 // ============================================================================
 
-const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
-  NumberTracerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<NumberTracerChallenge>) => Progress }) => {
+const useTracerProgress = useWorkspaceProgressFor('number-tracer');
+
+const NumberTracerSurface = ({ data, className, runtimePlanItemId }: NumberTracerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
     challenges = [],
-    gradeBand = 'K',
     instanceId,
     skillId,
     subskillId,
@@ -377,25 +374,28 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   const [allStrokes, setAllStrokes] = useState<PathPoint[][]>([]);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [hasChecked, setHasChecked] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  // Levers (numberTracerLevers.ts): runtime pulls on the session item, and the easier item a simplify lever opened.
+  // Levers (`NUMBER_TRACER_LEVERS`): runtime pulls on the session item, and the easier item a simplify lever opened.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<NumberTracerChallenge | null>(null);
 
-  // ── Challenge Progress (shared hooks). On the workspace path the runtime moves the index.
+  /** A fresh item, Try again, or the full item back after practice: an empty canvas. */
+  const resetWork = () => {
+    setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType(''); setLastScore(null);
+  };
+
+  // ── Challenge progression: the teaching workspace owns it. ──
   const stableInstanceIdRef = useRef(instanceId || `number-tracer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const progress = useController({
+  const progress = useTracerProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: numberTracerBoss.assignment!,
     // A fresh challenge and Try again both start from an empty canvas; Try again keeps a practice item open.
     onItemOpened: (_index, retry) => {
-      setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType('');
-      setHasChecked(false); setLastScore(null);
+      resetWork();
       if (!retry) setPractice(null);
     },
   });
@@ -405,10 +405,9 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked writing stays closed until Try again or Next challenge on the shell. */
-  const learnerClosed = tutorOwned && progress.canAttempt === false;
+  /** A checked writing stays closed until Try again or the next item. */
+  const learnerClosed = progress.canAttempt === false;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -472,70 +471,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring Integration ─────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? 'trace',
-    digit: currentChallenge?.digit ?? 0,
-    instruction: currentChallenge?.instruction ?? '',
-    showModel: currentChallenge?.showModel ?? true,
-    showArrows: currentChallenge?.showArrows ?? true,
-    supportTier: currentChallenge?.supportTier,
-    attemptNumber: currentAttempts + 1,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    lastScore,
-  }), [currentChallenge, currentAttempts, gradeBand, challenges.length, currentChallengeIndex, lastScore]);
-
-  // Tier-aware reveal policy: at HARD the tracing scaffolds are withdrawn on the
-  // canvas, so the tutor must not narrate the strokes or trace the digit for the
-  // student — it encourages recall of the digit's shape instead. At easy/medium it
-  // may walk the stroke order. Never reveals a sequence-mode answer at any tier.
-  const tutorRevealClause = useCallback((ch: NumberTracerChallenge | null): string => {
-    if (!ch) return '';
-    if (ch.type === 'sequence') {
-      return ' [SEQUENCE] No tracing guide is shown, and the missing number is the answer — never say it, '
-        + 'trace it, or describe its strokes; ask the student to count on from the first number.';
-    }
-    if (ch.supportTier === 'hard') {
-      return ' [SUPPORT_TIER hard] The on-screen tracing guides are withdrawn — do NOT narrate the '
-        + 'individual strokes or trace the digit for the student; encourage them from memory of the '
-        + `digit's shape (e.g. "picture how a ${ch.digit} looks, then write it"). Never reveal the answer.`;
-    }
-    if (ch.supportTier === 'medium') {
-      return ' [SUPPORT_TIER medium] A faint guide and start dot remain but the stroke arrows are gone — '
-        + 'nudge the stroke direction only; do not over-narrate every stroke.';
-    }
-    if (ch.supportTier === 'easy') {
-      return ' [SUPPORT_TIER easy] Full tracing guides are on — you may name the stroke order and walk '
-        + 'the student along the dotted path and start dot.';
-    }
-    return '';
-  }, []);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'number-tracer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-    // The workspace packet replaces this context.
-    enabled: !tutorOwned,
-  });
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (tutorOwned || !isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Number Tracer activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges covering numeral writing. `
-      + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}, digit: ${currentChallenge?.digit}). `
-      + `Introduce warmly: "Let's practice writing numbers! We'll trace, copy, and write them."`,
-      { silent: true },
-    );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, tutorOwned]);
-
   const submitSession = useCallback((overallPct: number) => {
     const types = Array.from(new Set(challenges.map(c => c.type)));
     submitEvaluation(
@@ -557,60 +492,18 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     );
   }, [challenges, challengeResults, submitEvaluation]);
 
-  // ── Auto-submit evaluation when all challenges complete ─────────────
-  // The action buttons are hidden when allChallengesComplete is true,
-  // so handleNextChallenge is never called for the last challenge.
-  // Once per session: re-renders after completion must not submit again before `hasSubmitted` commits.
+  // ── Submit once when the session completes, and only under an evaluation provider (the live host has none). ──
   const completionHandled = useRef(false);
   useEffect(() => { completionHandled.current = false; }, [challenges]);
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0 || completionHandled.current) return;
     completionHandled.current = true;
-
     const overallPct = Math.round(
       challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0)
       / Math.max(1, challengeResults.length),
     );
-
-    // The live host has no evaluation provider; a workspace family submits only under one.
     if (progress.recordsEvaluation !== false) submitSession(overallPct);
-    if (tutorOwned) return;
-
-    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Give encouraging phase-specific feedback about numeral writing progress.`,
-      { silent: true },
-    );
-  }, [
-    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
-    phaseResults, submitSession, sendText, progress.recordsEvaluation, tutorOwned,
-  ]);
-
-  // ── Pip shared surface ──────────────────────────────────────────────
-  // A projection of this item's check state and the child's ink; Pip never
-  // draws, checks, or advances. Tutor audio counts only while the tutor is on
-  // this block — another block's speech is not a cue here.
-  const pip = usePipTargets(currentChallenge?.id ?? null, false);
-  const tutorSpeaking = isAudioPlaying && activePrimitiveId === resolvedInstanceId;
-  const speechOnItem = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
-  const hasInk = allStrokes.length > 0 || isDrawing;
-  const pipStore = usePipSurface(() => {
-    if (!pip.dock.current || !currentChallenge || allChallengesComplete || hasSubmittedEvaluation) return null;
-    const targets = [
-      ...(canvasRef.current ? [{ id: 'canvas', label: 'Writing canvas', element: canvasRef.current }] : []),
-      ...pip.targets(['model', 'gap'], (id) => (id === 'model' ? 'Model number' : 'Missing number')),
-    ];
-    const pose = numberTracerPipPose({
-      running: true, preparing: false, currentSolved: isCurrentChallengeComplete, revealHeld: false,
-      judging: isEvaluating, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnItem,
-      challengeType: currentChallenge.type, visibleIds: targets.map((target) => target.id), hasInk,
-    });
-    return {
-      instanceId: resolvedInstanceId, scopeId: currentChallenge.id, label: 'Number writing',
-      dock: pip.dock.current, targets, pose,
-    };
-  });
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, submitSession, progress.recordsEvaluation]);
 
   // ── Canvas Drawing ──────────────────────────────────────────────────
 
@@ -644,7 +537,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     setCurrentStroke([p]);
     setFeedback('');
     setFeedbackType('');
-  }, [hasSubmittedEvaluation, isCurrentChallengeComplete, currentChallenge?.type, getCanvasCoords, learnerClosed]);
+  }, [hasSubmittedEvaluation, isCurrentChallengeComplete, getCanvasCoords, learnerClosed]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return;
@@ -799,7 +692,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     }
   }, [currentChallenge, idealPaths, allStrokes, currentStroke, canvasGuides]);
 
-  // ── Check / Submit Handlers ────────────────────────────────────────
+  // ── Check ───────────────────────────────────────────────────────────
 
   const handleCheckDrawing = useCallback(async () => {
     if (!currentChallenge || isEvaluating || learnerClosed) return;
@@ -810,7 +703,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       return;
     }
 
-    setHasChecked(true);
     const guides = paintedGuides(currentChallenge);
     // A practice item (a simplify lever's easier item) is ungraded: no response record, no session result.
     const isPractice = !!practice;
@@ -860,11 +752,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
         accuracy,
         coverage,
       });
-      if (!tutorOwned) sendText(
-        `[ANSWER_CORRECT] Student wrote digit ${currentChallenge.digit} (${currentChallenge.type}) `
-        + `geo score ${geoScore}%. Celebrate excellent form!`,
-        { silent: true },
-      );
       return;
     }
 
@@ -907,12 +794,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
           geminiScore: geminiResult?.score,
           geminiVariant: geminiResult?.variant,
         });
-        if (!tutorOwned) sendText(
-          `[ANSWER_CORRECT] Student wrote digit ${currentChallenge.digit} (${currentChallenge.type}). `
-          + `Geo: ${geoScore}%, Gemini: ${geminiResult?.score ?? 'n/a'}% (${geminiResult?.variant ?? ''}). `
-          + `Final: ${finalScore}%. Attempt ${currentAttempts + 1}. Praise the effort.`,
-          { silent: true },
-        );
       } else {
         SoundManager.playIncorrect();
         const feedbackMsg = geminiResult?.feedback
@@ -921,104 +802,34 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
             : 'Try again — write the whole number clearly.');
         setFeedback(feedbackMsg);
         setFeedbackType('error');
-        if (!tutorOwned) sendText(
-          `[ANSWER_INCORRECT] Student wrote digit ${currentChallenge.digit} (${currentChallenge.type}). `
-          + `Geo: ${geoScore}%, Gemini: ${geminiResult?.score ?? 'n/a'}% (${geminiResult?.variant ?? ''}). `
-          + `Final: ${finalScore}%. Attempt ${currentAttempts + 1}. Give a hint.`
-          + tutorRevealClause(currentChallenge),
-          { silent: true },
-        );
       }
     } finally {
       setIsEvaluating(false);
     }
-  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, recordResult, sendText, tutorRevealClause,
-      learnerClosed, progress, tutorOwned, practice]);
+  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, recordResult, learnerClosed, progress, practice]);
 
   const handleClear = useCallback(() => {
     setAllStrokes([]);
     setCurrentStroke([]);
     setFeedback('');
     setFeedbackType('');
-    setHasChecked(false);
     setLastScore(null);
     setIsEvaluating(false);
   }, []);
 
-  const handleNextChallenge = useCallback(() => {
-    // Reset drawing state
-    setAllStrokes([]);
-    setCurrentStroke([]);
-    setFeedback('');
-    setFeedbackType('');
-    setHasChecked(false);
-    setLastScore(null);
-
-    if (!advanceProgress()) {
-      // All challenges done — submit evaluation
-      const overallPct = Math.round(
-        challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0)
-        / Math.max(1, challengeResults.length),
-      );
-
-      if (!hasSubmittedEvaluation) submitSession(overallPct);
-
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about numeral writing progress.`,
-        { silent: true },
-      );
-      return;
-    }
-
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-      + `Type: ${challenges[currentChallengeIndex + 1]?.type}, digit: ${challenges[currentChallengeIndex + 1]?.digit}. `
-      + `Instruction: "${challenges[currentChallengeIndex + 1]?.instruction}". Introduce briefly.`
-      + tutorRevealClause(challenges[currentChallengeIndex + 1] ?? null),
-      { silent: true },
-    );
-  }, [
-    advanceProgress, challengeResults, challenges, currentChallengeIndex,
-    hasSubmittedEvaluation, phaseResults, sendText, submitSession, tutorRevealClause,
-  ]);
-
-  // ── Live tutor runtime ──────────────────────────────────────────────
-  // The tutor drives the learner's OWN handlers; grading and progression are
-  // untouched. `promptRef` exists so `replay` has a real, focusable effect
-  // rather than a claim, and the label matches the shared journey probe.
-  const promptRef = useRef<HTMLDivElement | null>(null);
-  const runtimeHint = useNumberTracerRuntime({
-    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    evalMode: runtimeEvalMode || currentChallenge?.type || 'trace',
-    challenge: currentChallenge, index: currentChallengeIndex, attempts: currentAttempts,
-    checked: hasChecked, correct: hasChecked && feedbackType === 'success',
-    incorrect: hasChecked && feedbackType === 'error', completed: allChallengesComplete,
-    score: lastScore, strokeCount: allStrokes.length,
-    guideStrokeCount: idealPaths.length,
-    inkPoints: allStrokes.reduce((total, stroke) => total + stroke.length, 0),
-    guidePoints: idealPaths.reduce((total, stroke) => total + stroke.length, 0),
-    advance: handleNextChallenge,
-    clear: handleClear,
-    disabled: tutorOwned,
-    replay: () => { promptRef.current?.focus(); return !!promptRef.current && document.activeElement === promptRef.current; },
-    // Ending the stroke is the whole of this canvas's quiescing: there is no
-    // timer here, and a half-drawn stroke left live would land after the detour.
-    cancelStroke: () => { setIsDrawing(false); setCurrentStroke([]); },
-  });
-
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // ── What the tutor and the observer are shown, republished every render. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { strokes: allStrokes.length });
     // Levers belong to the session item; a practice item offers none. A starting guide (the tier's) shows as pulled.
-    const levers = practice ? [] : numberTracerLevers(sessionChallenge, leversOn);
-    const onScreen = practice ? undefined : leverFacts(sessionChallenge, leversOn);
+    const levers = practice ? [] : NUMBER_TRACER_LEVERS.declare(sessionChallenge, null, leversOn);
+    const published = leverScene(scene, {
+      support: practice ? '' : NUMBER_TRACER_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : NUMBER_TRACER_LEVERS.onScreen(sessionChallenge, null, leversOn),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+      ...published,
+      facts: { ...published.facts,
         ...(practice ? { practice: practice.strokePart ? `${PRACTICE_NOTE} It is one stroke of the numeral.` : PRACTICE_NOTE } : {}) },
       readyForResponse: !isEvaluating,
       levers,
@@ -1028,19 +839,15 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
         if (lever.pulled) return `${id} is already on the screen.`;
         const next = { item: sessionChallenge.id, pulled: [...runtimePulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = practiceItem(sessionChallenge, id);
+          const easier = NUMBER_TRACER_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'There is no easier item for this one.';
-          setLeverState(next); setPractice(easier);
-          setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType(''); setHasChecked(false); setLastScore(null);
-          return { practice: workspaceAssignment(easier) };
+          setLeverState(next); setPractice(easier); resetWork();
+          return { practice: numberTracerBoss.assignment!(easier) };
         }
         setLeverState(next);
         return true as const;
       },
-      endPractice: () => {
-        setPractice(null);
-        setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType(''); setHasChecked(false); setLastScore(null);
-      },
+      endPractice: () => { setPractice(null); resetWork(); },
     };
   });
 
@@ -1077,8 +884,9 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
               </LuminaBadge>
             )}
+            {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
             <LuminaChallengeCounter
-              current={currentChallengeIndex + 1}
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
               total={challenges.length}
             />
           </div>
@@ -1090,120 +898,119 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-2">
-            <div ref={promptRef} tabIndex={-1} aria-label="Current instruction" className="outline-none">
-              <LuminaPrompt center>
-                <span className="text-lg">{currentChallenge.instruction}</span>
-              </LuminaPrompt>
-            </div>
+            <LuminaPrompt center>
+              <span className="text-lg">{currentChallenge.instruction}</span>
+            </LuminaPrompt>
             {currentChallenge.hint && currentAttempts >= 2 && (
               <p className="text-center text-sm text-blue-400">{currentChallenge.hint}</p>
             )}
           </div>
         )}
 
-        {/* Copy mode: show model digit alongside */}
-        {currentChallenge?.type === 'copy' && (currentChallenge.showModel || showModelStrokes) && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaPanel className="p-3 flex items-center gap-3">
-              <div>
-                <p className="text-xs text-slate-500 text-center mb-1">Model</p>
-                <div ref={pip.ref('model')} data-pip-object="model" className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
-                  {currentChallenge.digit}
+        {!allChallengesComplete && currentChallenge && (
+          <>
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the model or counting run
+                and the canvas as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
+              {/* Copy mode: show model digit alongside */}
+              {currentChallenge.type === 'copy' && (currentChallenge.showModel || showModelStrokes) && (
+                <div className="flex justify-center">
+                  <LuminaPanel className="p-3 flex items-center gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500 text-center mb-1">Model</p>
+                      <div className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
+                        {currentChallenge.digit}
+                      </div>
+                    </div>
+                    {/* `model_strokes`: the model as its strokes, a numbered start dot and an arrow on each; the canvas stays blank */}
+                    {showModelStrokes && (
+                      <svg data-lever="model-strokes" width={120} height={96} viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`} aria-hidden>
+                        {idealPaths.map((stroke, si) => {
+                          const last = stroke[stroke.length - 1], prev = stroke[stroke.length - 2] ?? stroke[0];
+                          const angle = Math.atan2(last.y - prev.y, last.x - prev.x) * 180 / Math.PI;
+                          return (
+                            <g key={si} data-stroke={si + 1}>
+                              <polyline points={stroke.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="rgba(203, 213, 225, 0.8)"
+                                strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M -18 -14 L 10 0 L -18 14 Z" fill="rgba(96, 165, 250, 0.95)"
+                                transform={`translate(${last.x},${last.y}) rotate(${angle})`} />
+                              <circle cx={stroke[0].x} cy={stroke[0].y} r={22} fill="rgba(34, 197, 94, 0.9)" />
+                              <text x={stroke[0].x} y={stroke[0].y + 10} textAnchor="middle" fontSize={30} fontWeight="bold" fill="#052e16">{si + 1}</text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    )}
+                  </LuminaPanel>
+                </div>
+              )}
+
+              {/* Sequence context (shown above canvas in sequence mode) */}
+              {isSequenceMode && currentChallenge.sequenceNumbers && (
+                <div className="flex justify-center">
+                  <LuminaPanel className="rounded-xl px-6 py-3">
+                    <div className="flex items-center gap-2 text-4xl font-bold">
+                      {/* Defensive cap: the generator builds bounded runs (≤5), but never
+                          let a malformed array stretch off-screen and OOM the tab again. */}
+                      {currentChallenge.sequenceNumbers.slice(0, 12).map((num, i) => (
+                        <React.Fragment key={i}>
+                          <span className="inline-flex flex-col items-center">
+                            <span className={i === currentChallenge.missingIndex
+                              ? 'text-blue-400 border-b-2 border-blue-400 px-2'
+                              : 'text-slate-200 px-1'
+                            }>
+                              {i === currentChallenge.missingIndex ? '?' : num}
+                            </span>
+                            {/* `count_dots`: as many dots as the shown number; nothing under the gap */}
+                            {dotRows && (
+                              <span data-lever="count-dots" data-dots={dotRows[i] ?? 'gap'}
+                                className="mt-1 grid grid-cols-5 gap-0.5 min-h-[8px] w-[44px] justify-items-center">
+                                {Array.from({ length: dotRows[i] ?? 0 }, (_, k) => (
+                                  <span key={k} className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                                ))}
+                              </span>
+                            )}
+                          </span>
+                          {i < Math.min(currentChallenge.sequenceNumbers!.length, 12) - 1 && (
+                            <span className="text-slate-600 text-2xl">,</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 text-center mt-1">Write the missing number below</p>
+                  </LuminaPanel>
+                </div>
+              )}
+
+              {/* Canvas (all drawing modes) — bespoke interaction surface */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <canvas
+                    ref={canvasRef}
+                    data-pip-object="canvas"
+                    data-guides={guideNames || undefined}
+                    width={CANVAS_WIDTH}
+                    height={CANVAS_HEIGHT}
+                    className="rounded-xl border border-white/10 bg-slate-950/60 cursor-crosshair touch-none"
+                    style={{ width: '100%', maxWidth: 500, aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
+                    onMouseDown={handlePointerDown}
+                    onMouseMove={handlePointerMove}
+                    onMouseUp={handlePointerUp}
+                    onMouseLeave={handlePointerUp}
+                    onTouchStart={handlePointerDown}
+                    onTouchMove={handlePointerMove}
+                    onTouchEnd={handlePointerUp}
+                  />
+                  {lastScore !== null && isCurrentChallengeComplete && (
+                    <LuminaBadge accent="emerald" className="absolute top-3 right-3 text-lg font-bold">
+                      {lastScore}%
+                    </LuminaBadge>
+                  )}
                 </div>
               </div>
-              {/* `model_strokes`: the model as its strokes, a numbered start dot and an arrow on each; the canvas stays blank */}
-              {showModelStrokes && (
-                <svg data-lever="model-strokes" width={120} height={96} viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`} aria-hidden>
-                  {idealPaths.map((stroke, si) => {
-                    const last = stroke[stroke.length - 1], prev = stroke[stroke.length - 2] ?? stroke[0];
-                    const angle = Math.atan2(last.y - prev.y, last.x - prev.x) * 180 / Math.PI;
-                    return (
-                      <g key={si} data-stroke={si + 1}>
-                        <polyline points={stroke.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="rgba(203, 213, 225, 0.8)"
-                          strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M -18 -14 L 10 0 L -18 14 Z" fill="rgba(96, 165, 250, 0.95)"
-                          transform={`translate(${last.x},${last.y}) rotate(${angle})`} />
-                        <circle cx={stroke[0].x} cy={stroke[0].y} r={22} fill="rgba(34, 197, 94, 0.9)" />
-                        <text x={stroke[0].x} y={stroke[0].y + 10} textAnchor="middle" fontSize={30} fontWeight="bold" fill="#052e16">{si + 1}</text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              )}
-            </LuminaPanel>
-          </div>
-        )}
-
-        {/* Sequence context (shown above canvas in sequence mode) */}
-        {isSequenceMode && currentChallenge?.sequenceNumbers && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaPanel className="rounded-xl px-6 py-3">
-              <div className="flex items-center gap-2 text-4xl font-bold">
-                {/* Defensive cap: the generator builds bounded runs (≤5), but never
-                    let a malformed array stretch off-screen and OOM the tab again. */}
-                {currentChallenge.sequenceNumbers.slice(0, 12).map((num, i) => (
-                  <React.Fragment key={i}>
-                    <span className="inline-flex flex-col items-center">
-                      <span ref={i === currentChallenge.missingIndex ? pip.ref('gap') : undefined}
-                        data-pip-object={i === currentChallenge.missingIndex ? 'gap' : undefined} className={i === currentChallenge.missingIndex
-                        ? 'text-blue-400 border-b-2 border-blue-400 px-2'
-                        : 'text-slate-200 px-1'
-                      }>
-                        {i === currentChallenge.missingIndex ? '?' : num}
-                      </span>
-                      {/* `count_dots`: as many dots as the shown number; nothing under the gap */}
-                      {dotRows && (
-                        <span data-lever="count-dots" data-dots={dotRows[i] ?? 'gap'}
-                          className="mt-1 grid grid-cols-5 gap-0.5 min-h-[8px] w-[44px] justify-items-center">
-                          {Array.from({ length: dotRows[i] ?? 0 }, (_, k) => (
-                            <span key={k} className="h-1.5 w-1.5 rounded-full bg-amber-300" />
-                          ))}
-                        </span>
-                      )}
-                    </span>
-                    {i < Math.min(currentChallenge.sequenceNumbers!.length, 12) - 1 && (
-                      <span className="text-slate-600 text-2xl">,</span>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-              <p className="text-xs text-slate-500 text-center mt-1">Write the missing number below</p>
-            </LuminaPanel>
-          </div>
-        )}
-
-        {/* Canvas (all drawing modes) — bespoke interaction surface */}
-        {!allChallengesComplete && (
-          <div className="flex justify-center">
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                data-pip-object="canvas"
-                data-guides={guideNames || undefined}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
-                className="rounded-xl border border-white/10 bg-slate-950/60 cursor-crosshair touch-none"
-                style={{ width: '100%', maxWidth: 500, aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
-                onMouseDown={handlePointerDown}
-                onMouseMove={handlePointerMove}
-                onMouseUp={handlePointerUp}
-                onMouseLeave={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
-              />
-              {lastScore !== null && isCurrentChallengeComplete && (
-                <LuminaBadge accent="emerald" className="absolute top-3 right-3 text-lg font-bold">
-                  {lastScore}%
-                </LuminaBadge>
-              )}
-            </div>
-          </div>
-        )}
-
-        {pipStore && !allChallengesComplete && (
-          <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
-            className="mx-auto flex min-h-28 w-full max-w-[500px] items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
+            </PipWorkspace>
+          </>
         )}
 
         {/* Feedback / evaluating indicator */}
@@ -1228,7 +1035,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
           <div className="text-center text-sm font-medium text-slate-400">{feedback}</div>
         )}
 
-        {/* Action buttons */}
+        {/* Clear and Check; the runtime retries and advances. */}
         {!allChallengesComplete && currentChallenge && (
           <div className="flex justify-center gap-3">
             <LuminaButton
@@ -1245,11 +1052,6 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
                 disabled={allStrokes.length === 0 || isEvaluating || learnerClosed}
               >
                 {isEvaluating ? 'Checking…' : 'Check'}
-              </LuminaActionButton>
-            )}
-            {!tutorOwned && isCurrentChallengeComplete && (
-              <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
               </LuminaActionButton>
             )}
           </div>
@@ -1274,8 +1076,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   );
 };
 
-// The workspace path never registers the tool-lab mount, whose advance command would compete with the observer.
-const NumberTracer = withWorkspaceController<NumberTracerProps, ProgressOptions<NumberTracerChallenge>, Progress>(
-  'number-tracer', NumberTracerSurface, useScriptedProgress, useWorkspaceProgressFor('number-tracer'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const NumberTracer = withWorkspaceOnly<NumberTracerProps>('number-tracer', NumberTracerSurface, props => props.data.title);
 
 export default NumberTracer;

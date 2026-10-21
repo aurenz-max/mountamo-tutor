@@ -22,7 +22,6 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FunctionSketchMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -41,21 +40,21 @@ import {
   drawFeatureMarkers,
 } from './canvas-2d/shapes';
 import type { CurvePoint, FeatureMarker } from './canvas-2d/types';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  axesOf, canCheck, checkWork, describeSketchWork, featureAt, functionSketchMiss, workspaceAssignment, workspaceScene,
+  axesOf, canCheck, checkWork, describeSketchWork, featureAt, functionSketchMiss, workspaceScene,
   type SketchWork,
 } from './functionSketchWorkspace';
 import {
-  AXIS_GLOW, EQUAL_STEPS, FAMILY_GALLERY, FEATURE_GUIDE, FEATURE_MODEL, FEATURE_NAMES, FLIP_MODEL, MODEL_FEATURES,
-  SKETCH_STEPS, TURN_MARKS, curvesOf, functionSketchLevers, galleryPanels, isPracticeItem, leverFacts, simplerItem,
-  staircase, turnsAndCrossings,
+  AXIS_GLOW, EQUAL_STEPS, FAMILY_GALLERY, FEATURE_GUIDE, FEATURE_MODEL, FEATURE_NAMES, FLIP_MODEL, FUNCTION_SKETCH_LEVERS,
+  MODEL_FEATURES, SKETCH_STEPS, TURN_MARKS, curvesOf, galleryPanels, isPracticeItem, staircase, turnsAndCrossings,
 } from './functionSketchLevers';
+import { functionSketchBoss } from './functionSketch.boss';
 import { FEATURE_COLORS } from './canvas-2d/shapes';
 
 // Re-export shared types so existing call sites (manifest schemas, etc.)
@@ -122,7 +121,7 @@ export interface FunctionSketchChallenge {
   // Rings default on; names show only when true (the easy tier), so no tier behaves as medium.
   showFeatureHints?: boolean;
   showFeatureLabels?: boolean;
-  // The resolved tier for this challenge — calibrates the AI tutor's reveal level.
+  // The resolved tier for this challenge — when the lever set's model comes (`FUNCTION_SKETCH_LEVERS.support`).
   supportTier?: 'easy' | 'medium' | 'hard';
 }
 
@@ -164,25 +163,6 @@ function renderLatex(latex: string): string {
   }
 }
 
-/**
- * Reveal-level clause appended to the AI tutor's hint prompt (scripted path) so it never leaks
- * what the support tier withheld on screen. easy → may name the strategy and
- * the feature types; medium → nudge the next step without naming the answer;
- * hard → do NOT name features/family, ask what the student observes.
- */
-function tutorRevealClause(tier?: string, type?: string): string {
-  if (!tier) return '';
-  if (tier === 'hard') {
-    return type === 'identify-features'
-      ? ' [TIER hard] Do NOT name the features or their locations; ask what the student notices about the curve\'s direction and where it crosses or turns.'
-      : ' [TIER hard] Do NOT name the function family or reveal the answer; ask what the student observes about the shape.';
-  }
-  if (tier === 'medium') {
-    return ' [TIER medium] Nudge toward the next step without naming the answer outright.';
-  }
-  return ' [TIER easy] You may name the strategy and the feature types to look for; keep it brief and encouraging.';
-}
-
 /** y = a·x² on -3..3, for the flip model. */
 const sampleParabola = (a: number): CurvePoint[] => Array.from({ length: 31 }, (_, i) => { const x = -3 + i * 0.2; return { x, y: a * x * x }; });
 
@@ -222,8 +202,10 @@ interface FunctionSketchProps {
   runtimeEvalMode?: string;
 }
 
-const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useController }:
-  FunctionSketchProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FunctionSketchChallenge>) => Progress }) => {
+const useFunctionSketchProgress = useWorkspaceProgressFor('function-sketch');
+const PRACTICE_NOTE = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const FunctionSketchSurface = ({ data, runtimePlanItemId }: FunctionSketchProps) => {
   const {
     title,
     description,
@@ -239,7 +221,6 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   // ── Evaluation ─────────────────────────────────────────────────
-  // A fallback id made once: an id minted per render re-registers Pip's surface every render.
   const fallbackInstanceId = useRef(`function-sketch-${Date.now()}`).current;
   const resolvedInstanceId = instanceId || fallbackInstanceId;
 
@@ -253,29 +234,15 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring (scripted path; on the workspace path the tutor reads the scene instead) ──
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'function-sketch',
-    instanceId: resolvedInstanceId,
-    // supportTier is session-uniform (difficulty is a student property), so the
-    // first challenge's tier represents the session for the tutor's framing.
-    primitiveData: { title, context, challengeCount: challenges.length, supportTier: challenges[0]?.supportTier },
-    gradeLevel: '9-12',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace owns it. ──
   /** Bound below, once the setters exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useFunctionSketchProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: functionSketchBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
@@ -285,10 +252,9 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
     results: challengeResults,
     isComplete: allChallengesComplete,
     mergeResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -333,7 +299,7 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
   const recordedRef = useRef(false);
   const [submittedResult, setSubmittedResult] = useState<PrimitiveEvaluationResult<FunctionSketchMetrics> | null>(null);
 
-  /** A fresh item (both paths) or Try again (workspace): nothing found, chosen or placed, the feedback gone. */
+  /** A fresh item or Try again: nothing found, chosen or placed, the feedback gone. */
   const resetWork = () => {
     setHitFeatures(new Set());
     setStrayTaps(0);
@@ -399,7 +365,7 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
       // Student curve
       if (splinePoints.length > 0) drawCurve(ctx, splinePoints, cfg, '#38bdf8', 2);
       drawControlPoints(ctx, controlPoints, cfg);
-      // Reveal curve (after a check; on the workspace path only after a credited one)
+      // Reveal curve, only after a credited sketch: a wrong one is tried again, so the answer stays hidden.
       if (showReveal && challenge.revealCurve) {
         drawCurve(ctx, challenge.revealCurve, cfg, '#22c55e', 2);
       }
@@ -470,7 +436,6 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
       next.add(i);
       setHitFeatures(next);
       SoundManager.snap();        // ← feature lands / discovered
-      sendText(`[FEATURE_FOUND] Student correctly identified "${challenge.features[i].label}" (${challenge.features[i].type}). ${next.size}/${challenge.features.length} found.`, { silent: true });
     }
 
     if (challenge.type === 'sketch-match') {
@@ -496,13 +461,12 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challenge, feedback, cfg, hitFeatures, controlPoints, sendText]);
+  }, [challenge, feedback, cfg, hitFeatures, controlPoints]);
 
   // ── Check answer. Every check commits, right or wrong. ─────────
   const handleCheck = useCallback(() => {
     if (!challenge || learnerBlocked()) return;
-    // Stale-state guard (PRD §6a #8): user could (in principle) click Check Answer
-    // a second time before the reset effect for the next challenge runs.
+    // Stale-state guard (PRD §6a #8): a second Check before the reset effect for the next challenge runs.
     if (recordedRef.current) return;
     if (!canCheck(challenge, work)) return;
     const type = challenge.type;
@@ -514,112 +478,41 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
         correct,
         message: correct
           ? `Great! You identified ${work.found.length}/${total} features.`
-          : tutorOwned
-            ? `You found ${work.found.length}/${total} features. Not quite.`
-            : `You found ${work.found.length}/${total} features. Try clicking near the marked locations.`,
+          : `You found ${work.found.length}/${total} features. Not quite.`,
       });
     }
-
     if (type === 'classify-shape') {
-      setFeedback({
-        correct,
-        message: correct
-          ? 'Correct classification!'
-          : tutorOwned ? 'Not quite.' : `Not quite. The correct type is "${challenge.correctType}". ${challenge.classifyExplanation ?? ''}`,
-      });
+      setFeedback({ correct, message: correct ? 'Correct classification!' : 'Not quite.' });
     }
-
     if (type === 'sketch-match') {
-      // The actual function is drawn after a credited sketch; on the scripted path also after a wrong one, which
-      // moves on. On the workspace path a wrong sketch is tried again, so the answer stays hidden.
-      if (correct || !tutorOwned) setShowReveal(true);
+      // The actual function is drawn only after a credited sketch: a wrong one is tried again.
+      if (correct) setShowReveal(true);
       setFeedback({
         correct,
         message: correct
           ? `Nice sketch! Feature match: ${score}%. The green curve shows the actual function.`
-          : tutorOwned
-            ? `Feature match: ${score}%. Not quite.`
-            : `Score: ${score}%. The green curve shows the actual function. Compare your sketch to it.`,
+          : `Feature match: ${score}%. Not quite.`,
       });
     }
-
     if (type === 'compare-functions') {
-      setFeedback({
-        correct,
-        message: correct
-          ? `Correct! Curve ${challenge.correctCurve} matches.`
-          : tutorOwned ? 'Not quite.' : `Not quite. The answer is Curve ${challenge.correctCurve}. ${challenge.compareExplanation ?? ''}`,
-      });
+      setFeedback({ correct, message: correct ? `Correct! Curve ${challenge.correctCurve} matches.` : 'Not quite.' });
     }
-
-    sendText(
-      correct
-        ? `[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Congratulate briefly.`
-        : `[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Give a hint.${tutorRevealClause(challenge.supportTier, type)}`,
-      { silent: true },
-    );
 
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
 
     recordedRef.current = true;
-    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    // The checked gesture (counts the attempt, records the verdict), then this primitive's own fields.
     progress.commitCheck(describeSketchWork(challenge, work), correct, functionSketchMiss(challenge, work));
-    // The scripted path moves on after one check, so it records a wrong one too; the workspace path records only credit.
-    // An easier practice item (a simplify lever) is not the session's challenge: it records nothing of its own.
-    if ((correct || !tutorOwned) && !isPracticeItem(challenge)) {
+    // Only credit is recorded; an easier practice item (a simplify lever) records nothing of its own.
+    if (correct && !isPracticeItem(challenge)) {
       mergeResult({ challengeId: challenge.id, correct, attempts: currentAttempts + 1, score, type });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challenge, currentIndex, challenges.length, currentAttempts, work, tutorOwned, sendText, mergeResult, progress.commitCheck]);
+  }, [challenge, currentAttempts, work, mergeResult, progress.commitCheck]);
 
-  // ── Advance (scripted path; the workspace path has no Next and the runtime advances) ──
-  const handleNext = useCallback(() => {
-    if (tutorOwned) return;
-    if (!advanceProgress()) {
-      // All done — submit aggregate evaluation (PRD §6a #11 flattened shape).
-      const totalChallenges = challengeResults.length;
-      const overallAccuracy = totalChallenges > 0
-        ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / totalChallenges)
-        : 0;
-      const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const firstTryCount = challengeResults.filter(r => r.correct && r.attempts === 1).length;
-      const hintsViewed = challengeResults.filter(r => r.attempts > 1).length;
-      const averageAttemptsPerChallenge = totalChallenges > 0
-        ? Math.round((attemptsCount / totalChallenges) * 10) / 10
-        : 0;
-
-      const result = submitResult(
-        overallAccuracy >= 60,
-        overallAccuracy,
-        {
-          type: 'function-sketch',
-          challengeType: (challenges[0]?.type ?? 'identify-features') as FunctionSketchMetrics['challengeType'],
-          totalChallenges,
-          correctCount,
-          attemptsCount,
-          firstTryCount,
-          hintsViewed,
-          overallAccuracy,
-          averageAttemptsPerChallenge,
-        },
-      );
-
-      setSubmittedResult(result);
-
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallAccuracy}%. Give encouraging phase-specific feedback.`, { silent: true });
-    } else {
-      sendText(`[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`, { silent: true });
-    }
-  }, [
-    tutorOwned, advanceProgress, challengeResults, challenges,
-    currentIndex, phaseResults, sendText, submitResult,
-  ]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
+  // evidence carries each wrong check's named miss.
   const submittedRef = useRef(false);
   finish.current = (result) => {
     if (hasSubmitted || submittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
@@ -640,16 +533,18 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
     setSubmittedResult(submitted);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render. ──
+  // ── What the tutor and the observer are shown, republished every render. ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !challenge || !sessionChallenge) return;
+    if (!challenge || !sessionChallenge) return;
     const scene = workspaceScene(challenge, { work });
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : functionSketchLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : FUNCTION_SKETCH_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : FUNCTION_SKETCH_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : FUNCTION_SKETCH_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -657,10 +552,10 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerItem(sessionChallenge);
+          const easier = FUNCTION_SKETCH_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: functionSketchBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -671,18 +566,6 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
 
   // ── Check if current challenge can be submitted ────────────────
   const canSubmit = !!challenge && !feedback && !blocked && canCheck(challenge, work);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted ? null : challenge?.id ?? null,
-    label: 'The function graph and your answer',
-    solved: challengeResults.some((r) => r.challengeId === challenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   if (!challenges || challenges.length === 0) {
     return (
@@ -730,7 +613,10 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
           <>
             {/* Instruction + expression */}
             <LuminaPrompt>
-              <p className="text-slate-200 text-sm font-medium">{challenge.instruction}</p>
+              <div className="flex items-center gap-2">
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
+                <p className="text-slate-200 text-sm font-medium">{challenge.instruction}</p>
+              </div>
               {challenge.expression && (
                 <div
                   className="mt-2 text-blue-300 text-lg text-center"
@@ -751,9 +637,10 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
               )}
             </LuminaPrompt>
 
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the graph and its
+                controls as one region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
             {/* Canvas — bespoke interaction surface */}
             <div className="flex justify-center">
               <canvas
@@ -887,32 +774,25 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
               </div>
             )}
 
-            </div>
+            </PipWorkspace>
 
-            {/* Feedback. With the tutor, Try again is the shell's and the hint is the tutor's. */}
+            {/* Feedback. Try again is the shell's and the hint is the tutor's. */}
             {feedback && (
               <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'} className="p-4">
                 <p className="text-sm">{feedback.message}</p>
               </LuminaFeedbackCard>
             )}
 
-            {/* Action buttons. The workspace path has no Next: the runtime advances. */}
-            <div className="flex gap-2 justify-end">
-              {!feedback ? (
+            {/* Check. There is no Next: the runtime advances. */}
+            {!feedback && (
+              <div className="flex gap-2 justify-end">
                 <LuminaActionButton
                   action="check"
                   disabled={!canSubmit}
                   onClick={handleCheck}
                 />
-              ) : !tutorOwned && (
-                <LuminaActionButton
-                  action="next"
-                  onClick={handleNext}
-                >
-                  {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-                </LuminaActionButton>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </LuminaCardContent>
@@ -920,8 +800,7 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const FunctionSketch = withWorkspaceController<FunctionSketchProps, ProgressOptions<FunctionSketchChallenge>, Progress>(
-  'function-sketch', FunctionSketchSurface, useScriptedProgress, useWorkspaceProgressFor('function-sketch'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const FunctionSketch = withWorkspaceOnly<FunctionSketchProps>('function-sketch', FunctionSketchSurface, props => props.data.title);
 
 export default FunctionSketch;

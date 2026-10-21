@@ -28,6 +28,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
 import TenFrame, { type TenFrameChallenge, type TenFrameData } from './TenFrame';
+import { tenFrameItems } from './tenFrame.boss';
 /** The submission waits for the scoring pass (a fetch that rejects in jsdom, so every spoken attempt keeps its flow verdict). */
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 
@@ -161,7 +162,7 @@ it('subitize: speech waits for the presented flash, and a credited answer restor
   expect(h.state().task!.demand.presentation).toBe('ready');
   h.say('five');
   expect(h.state().task!.workspace!.pendingResponse).toMatchObject({ text: 'five' });
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('5');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"five"\./);
   h.feedback('correct');
   expect(h.counters()).toBe(5);
   expect(h.view.container.textContent).toContain('5 — five counters!');
@@ -205,7 +206,7 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   expect(h.state().task!.itemId).toBe('s1');
   expect(h.counters()).toBe(0);
   expect(tutorTools(h)).toEqual(['begin_help', 'present', 'pull_lever']);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('3');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"three"\./);
   h.dispatch('present'); act(() => { vi.advanceTimersByTime(1000); });
   h.say('three'); h.feedback('correct', 'advance');
   // split: the whole group arrives, taps flip, and no spoken key is published
@@ -220,4 +221,53 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
   expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
+});
+
+// The stage pins the scripted-path reader-fit suite held (contract R2, R4, R9, R10), on the workspace mount.
+const cells = (h: ReturnType<typeof mount>) => h.view.container.querySelectorAll('[data-pip-object^="cell-"]').length;
+
+it('decompose: the group arrives all red, empty boxes are inert, and a flip turned back leaves one group (R9)', () => {
+  const h = mount('decompose', [challenge('d1', 'split', 5)]);
+  expect(h.counters()).toBe(5);
+  h.tap(7); h.settle();
+  expect(h.counters()).toBe(5);
+  expect(h.state().task!.evidence.attemptNumber).toBe(0);
+  h.tap(0, 0); h.settle();
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  expect(h.view.container.textContent).not.toMatch(/Counters:|\d \+ \d/);
+});
+
+it('build_teen: twenty boxes at K, the ten is fixed, and a full frame waits for stillness (R2 fork, R10)', () => {
+  const h = mount('build_teen', [challenge('t1', 'build_teen', 13)]);
+  expect(cells(h)).toBe(20);
+  expect(h.counters()).toBe(10);
+  h.tap(0);
+  expect(h.counters()).toBe(10);
+  h.tap(...Array.from({ length: 10 }, (_, i) => 10 + i));
+  expect(h.state().task!.evidence.attemptNumber).toBe(0);
+  h.settle();
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  h.dispatch('retry');
+  expect(h.counters()).toBe(10);
+  h.tap(10, 11, 12); h.settle();
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  expect(h.view.container.textContent).toContain('10 + 3 = 13');
+});
+
+it('decompose_teen: the group is scattered so no frame is full; ten turned yellow is right (R10)', () => {
+  const h = mount('decompose_teen', [challenge('t1', 'decompose_teen', 14)]);
+  const [item] = tenFrameItems({ challenges: [challenge('t1', 'decompose_teen', 14)], mode: 'double', gradeBand: 'K' });
+  expect(h.counters()).toBe(14);
+  expect([0, 1].map(f => item.seedCells!.filter(c => Math.floor(c / 10) === f).length)).not.toContain(10);
+  h.tap(...item.seedCells!.slice(0, 10)); h.settle();
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  expect(h.view.container.textContent).toContain('10 + 4 = 14');
+});
+
+it('operate: the frame is a working surface with no count readout, which would be the spoken answer', () => {
+  const h = mount('operate', [challenge('o1', 'add', 7, { addend1: 3, addend2: 4 })], '1-2');
+  h.tap(0, 1, 2); h.settle();
+  expect(h.counters()).toBe(3);
+  expect(h.state().task!.evidence.attemptNumber).toBe(0);
+  expect(h.view.container.querySelector('[data-lever="running-count"]')).toBeNull();
 });

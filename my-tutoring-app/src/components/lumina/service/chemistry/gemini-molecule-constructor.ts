@@ -624,6 +624,8 @@ GENERAL REQUIREMENTS:
       showBondType: result.showOptions?.showBondType ?? gradeBand === "6-8",
     };
 
+    // The lesson's difficulty sets when the model lever comes (`MOLECULE_LEVERS.support`); absent, the item reads 'medium'.
+    const supportTier = (["easy", "medium", "hard"] as const).find((t) => t === config.difficulty);
     // Ensure every challenge has required fields and consistent target data
     if (result.challenges) {
       result.challenges = result.challenges.map((ch, idx) => {
@@ -672,6 +674,7 @@ GENERAL REQUIREMENTS:
           hint: states(ch.hint) ? "Count the atoms of each element in the drawing." : ch.hint || "Look at the formula and count the atoms!",
           narration:
             ch.narration || ch.instruction || "Great work building that molecule!",
+          ...(supportTier ? { supportTier } : {}),
         };
       });
     }

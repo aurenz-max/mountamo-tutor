@@ -10,6 +10,7 @@
  * - Winter: each animal has one winter place (bear: den; bird: flies south; squirrel: its tree hollow with stored
  *   nuts; deer: stays in the meadow and finds food).
  */
+import { ECOSYSTEM_MISSES_BY_MODE } from './ecosystemDiorama.card';
 
 // ── Weather and seasons ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ export interface PlantSetup {
   extras: AnimalThing[];
 }
 
-export const PLANT_NEEDS_MISSES = ['no_sun', 'no_water', 'no_soil', 'gave_animal_things'] as const;
+export const PLANT_NEEDS_MISSES = ECOSYSTEM_MISSES_BY_MODE.plant_needs;
 export type PlantNeedsMiss = typeof PLANT_NEEDS_MISSES[number];
 
 /** What the plant is missing, in the order the check names them. */
@@ -139,7 +140,7 @@ export const WINTER_WHY: Record<Animal, string> = {
   deer: 'The deer grows a thick coat and stays, looking for twigs and bark to eat.',
 };
 
-export const SEASON_BEHAVIOR_MISSES = ['wrong_place'] as const;
+export const SEASON_BEHAVIOR_MISSES = ECOSYSTEM_MISSES_BY_MODE.season_behavior;
 export type SeasonBehaviorMiss = typeof SEASON_BEHAVIOR_MISSES[number];
 
 /** `count` animals for one winter, bear or bird always in (the two with the clearest winter change). */

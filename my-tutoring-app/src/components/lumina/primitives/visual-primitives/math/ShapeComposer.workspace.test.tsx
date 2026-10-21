@@ -32,7 +32,7 @@ afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 const flushScoring = () => act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
 
 /** The pieces on the board, with the top-left each is drawn at. */
-const board = (h: WorkspaceHarness) => Array.from(h.view.container.querySelectorAll<SVGGElement>('[data-pip-object^="piece-"]'))
+const board = (h: WorkspaceHarness) => Array.from(h.view.container.querySelectorAll<SVGGElement>('[data-piece]'))
   .map(el => {
     const [, x, y] = /translate\(([-\d.]+), ([-\d.]+)\)/.exec(el.getAttribute('transform') ?? '')!;
     return { el, shape: el.getAttribute('data-shape')!, x: Number(x), y: Number(y) };
@@ -40,7 +40,7 @@ const board = (h: WorkspaceHarness) => Array.from(h.view.container.querySelector
 /** Drag the last-placed piece of a shape so its top-left lands at (x, y). */
 const drag = (h: WorkspaceHarness, shape: string, x: number, y: number) => {
   const piece = board(h).filter(p => p.shape === shape).at(-1)!;
-  const svg = h.view.container.querySelector('[data-pip-object="canvas"] svg')!;
+  const svg = h.view.container.querySelector('[data-part="canvas"] svg')!;
   act(() => { fireEvent.pointerDown(piece.el, { clientX: piece.x + 1, clientY: piece.y + 1 }); });
   act(() => { fireEvent.pointerMove(svg, { clientX: x + 1, clientY: y + 1 }); });
   act(() => { fireEvent.pointerUp(svg); });
@@ -159,7 +159,7 @@ it('the live host (no evaluation provider) never submits', async () => {
 
 it('decompose offers shapes that are not parts, and no button turns green when enough are tapped', () => {
   const h = mountWorkspace({ primitiveId: 'shape-composer', evalMode: 'decompose', data: lesson([CASES.decompose.c]) });
-  const choices = () => Array.from(h.view.container.querySelectorAll('[data-pip-object="choices"] button'));
+  const choices = () => Array.from(h.view.container.querySelectorAll('[data-part="choices"] button'));
   expect(choices().map(b => b.getAttribute('aria-label'))).toEqual(['circle', 'rectangle', 'square', 'triangle']);
   h.press('triangle'); h.press('triangle');
   expect(choices().some(b => /emerald/.test(b.className))).toBe(false);

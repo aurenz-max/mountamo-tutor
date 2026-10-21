@@ -1,7 +1,8 @@
 /**
- * Ecosystem diorama on the shared tutor/JEV teaching workspace (born bound, plain shape). Every item is one gesture
- * item: the world runs what the learner sets up, and code judges. No key ever reaches the tutor; the scene carries
- * what is drawn (thermometer marks, the pictures in a weather log, where each animal is).
+ * Ecosystem diorama's scene on the shared tutor/JEV teaching workspace. Every item is one gesture item: the world
+ * runs what the learner sets up, and code judges (the card, `ecosystemDiorama.card.ts`, names each mode's moves; the
+ * boss gives the assignment). No key ever reaches the tutor; the scene carries what is drawn (thermometer marks, the
+ * pictures in a weather log, where each animal is) and only this tank's own facts, never the moves the card says.
  *
  * - sun_test: tap a guess, move the sun, tap the thing that got warmer (the check).
  * - season_from_log: play the month (the log fills), pick a season, then tap the weather that shows it (the check).
@@ -10,7 +11,7 @@
  * - season_behavior: bring winter, move each animal to a winter place, then Done (the check).
  * - keep_it_cool: build shade (or move the thing into the hut), then move the sun across the sky; the day's end is the check.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import {
   COOL_LINE, DAY_DONE, LOG_DAYS, PLACE_SHORT, compareAskText, coolFill, coverWords, dayWord, thermoFill, thermoMarks, thingOn,
   warmthAt, weatherDays,
@@ -19,12 +20,8 @@ import {
 } from './ecosystemModel';
 import { countWeather, WEATHERS, type Animal } from './ecosystemLife';
 
-export {
-  readMatches, readMiss, describeRead, ECOSYSTEM_MISSES, type EcosystemMiss,
-} from './ecosystemModel';
-
-export const ecosystemAssignment = (c: EcosystemChallenge): TeachingAssignment =>
-  ({ id: c.id, task: c.instruction, response: 'gesture' });
+export { readMatches, readMiss, describeRead } from './ecosystemModel';
+export { ECOSYSTEM_MISSES_BY_MODE, type EcosystemMiss } from './ecosystemDiorama.card';
 
 export type SunTestStep = 'guess' | 'run' | 'read';
 
@@ -65,8 +62,10 @@ function logFacts(days: readonly Weather[], shown: number): string {
   return `${shown} of ${LOG_DAYS} days filled in: ${parts.join(', ')}`;
 }
 
-export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): WorkspaceScene {
-  const facts: Record<string, string | number> = { tank: TANK };
+export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): SceneOf {
+  // Safety, every mode: the sun is a lamp in the tank. A K learner told to "look at the sun" may look at the real one.
+  const facts: Record<string, string | number> = { tank: TANK,
+    sun: 'a pretend sun in the tank: talk about where it is in the tank, and never tell the learner to look at the sun' };
   switch (c.type) {
     case 'sun_test': {
       const sunP = view.sunP ?? 0;
@@ -82,9 +81,8 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
           ? `red line by ${c.left.name}: ${marksWord(thermoMarks(fills.left))}; red line by ${c.right.name}: ${marksWord(thermoMarks(fills.right))}`
           : 'both red lines sit at the bottom, below the first mark',
         ...(view.lastPick ? { lastPick: `tapped ${thingOn(c, view.lastPick).name} as the warmer one` } : {}),
-        constraints: 'The learner taps a thing to guess, drags the sun along its path (or presses Let the day go by), then taps the '
-          + 'thing that got warmer; that tap is the check. Each thing has a picture thermometer beside it: a red line that rises '
-          + 'past five marks, a snowflake at the cold end and a sun at the hot end. No numbers or temperatures are shown.',
+        constraints: 'Each thing has a picture thermometer beside it: a red line that rises past five marks, a snowflake at the '
+          + 'cold end and a sun at the hot end. No numbers or temperatures are shown.',
       });
       break;
     }
@@ -96,10 +94,8 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
         todayInTheTank: shown > 0 && shown <= LOG_DAYS ? `${c.days[shown - 1]} weather` : 'not started',
         seasonPicked: view.season ?? 'none yet',
         ...(view.evidence ? { weatherPicked: weatherDays(view.evidence) } : {}),
-        constraints: 'The learner plays the month (Play the month, or Next day); each day the tank shows that day\'s weather and its '
-          + 'picture goes into the log, which also shows a picture graph with one row per kind of weather. Then the learner taps a '
-          + 'season card, then taps the row of weather in the log that shows the season; that tap is the check. The tree and '
-          + 'animals do not change in this activity: the log is the evidence.',
+        constraints: 'Each day the tank shows that day\'s weather and its picture goes into the log, which also shows a picture '
+          + 'graph with one row per kind of weather. The tree and animals do not change in this activity: the log is the evidence.',
       });
       break;
     }
@@ -111,8 +107,7 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
         logA: `${c.a.label}: ${logFacts(c.a.days, Math.min(shown, LOG_DAYS))}`,
         logB: `${c.b.label}: ${logFacts(c.b.days, Math.max(0, shown - LOG_DAYS))}`,
         ...(view.logPick ? { lastPick: (view.logPick === 'a' ? c.a : c.b).label } : {}),
-        constraints: 'Both months play in the tank one after the other and fill two picture logs, each with a picture graph. Then '
-          + 'the learner taps the log that answers the question; that tap is the check.',
+        constraints: 'Both months play in the tank one after the other and fill two picture logs, each with a picture graph.',
       });
       break;
     }
@@ -125,9 +120,8 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
         watered: s.watered ? 'yes (the soil is dark and wet)' : 'no (dry)',
         animalThingsAdded: s.extras.length ? s.extras.join(', ') : 'none',
         ...(view.grown ? { lastGrowth: view.grown === 'grew' ? 'it grew tall in the time-lapse' : 'it drooped in the time-lapse' } : {}),
-        constraints: 'The learner moves the pot (sunny sand or shade hut), fills it (soil or pebbles), waters it, and may add a den '
-          + 'or berries (things for animals). Watch it grow runs two weeks of days and is the check: the plant grows with '
-          + 'sunlight, water and soil, and the check also wants nothing it does not need.',
+        constraints: 'The pot stands on the sunny sand or in the shade hut and is filled with soil or pebbles; a den and berries '
+          + 'are things for animals. Watch it grow runs two weeks of days as a time-lapse.',
       });
       break;
     }
@@ -138,8 +132,6 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
         animals: c.animals.map(a => `the ${a}: ${moves[a] ? `moved to ${PLACE_SHORT[moves[a]!]}` : 'still in its summer place'}`).join('; '),
         winterPlaces: 'a cave den on the hill, an arrow at the edge of the tank that says south, a hollow in the big tree, the open meadow',
         ...(view.holding ? { holding: `the ${view.holding} (picked up, waiting for a place)` } : {}),
-        constraints: 'The learner presses Bring winter, then taps an animal and taps a winter place for it, and presses Done; Done '
-          + 'is the check. Animals can be moved again before Done.',
       });
       break;
     }
@@ -152,9 +144,7 @@ export function ecosystemScene(c: EcosystemChallenge, view: EcosystemView): Work
         built: coverWords(view.cover ?? null),
         sun: sunP >= DAY_DONE ? 'across the sky: the day is over' : sunP > 0.02 ? `moving (${dayWord(sunP)})` : 'low in the morning sky',
         thermometer: `red line ${marksWord(thermoMarks(fill))}; the blue cool line is at mark 2, and the red is ${fill < COOL_LINE ? 'below' : 'above'} it`,
-        constraints: 'The learner picks a cover (or moves the thing into the hut), then drags the sun across the sky or presses Let '
-          + 'the day go by. The end of the day is the check: the red line must stay below the blue cool line. Change the cover only '
-          + 'before the sun moves.',
+        constraints: 'The red line must stay below the blue cool line all day. The cover can change only before the sun moves.',
       });
       break;
     }

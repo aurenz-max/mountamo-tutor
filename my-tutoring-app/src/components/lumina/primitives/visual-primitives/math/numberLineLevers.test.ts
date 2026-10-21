@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hopsLeak, jumpLevers, jumpMiss, learnerHops, modelHop, simplerJump, wayArrow, wayArrowLeak } from './numberLineLevers';
+import { NUMBER_LINE_LEVERS, hopsLeak, jumpMiss, learnerHops, modelHop, simplerJump, wayArrow, wayArrowLeak,
+  type NumberLineLeverContext } from './numberLineLevers';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { NumberLineChallenge, NumberLineOperation } from './NumberLine';
 
@@ -8,6 +9,13 @@ const op = (type: 'add' | 'subtract', startValue: number, changeValue: number): 
 const land = (o: NumberLineOperation) => o.type === 'add' ? o.startValue + o.changeValue : o.startValue - o.changeValue;
 const item = (ops: NumberLineOperation[], id = 'j'): NumberLineChallenge => ({ id, type: 'show_jump', instruction: 'Hop.', hint: 'Count.',
   startValue: ops[0].startValue, targetValues: ops.map(land), operations: ops });
+
+/** The lever set's context, as the component builds it: the line, and the learner's work on it. */
+const ctx = (range: { min: number; max: number }, over: Partial<NumberLineLeverContext> = {}): NumberLineLeverContext =>
+  ({ range, settled: null, pulled: [], points: [], endpoints: [], tried: null, hops: [], ...over });
+/** The levers the lever set declares on a jump, with these levers on screen and these landings placed. */
+const jumpLevers = (ch: NumberLineChallenge, pulled: string[], range: { min: number; max: number }, endpoints: number[] = []) =>
+  NUMBER_LINE_LEVERS.declare(ch, ctx(range, { pulled, endpoints }), pulled);
 
 describe('numbered hops: leak rule', () => {
   it('the model hop is hop 1 from the start and never reaches the landing, for every K-2 jump', () => {

@@ -4,8 +4,12 @@ import {
   cutInto, equalBuildMiss, equalTargets, equalWays, halvePiece, makesEqual, readBuild, smallerTarget, toggleShade, wholeCircle,
   type Piece,
 } from './fractionEqualBuild';
-import { fractionLevers, leverFacts, leverTextLeaks, simplerItem, startLevers } from './fractionCirclesLevers';
-import { describeWork, workspaceAssignment, workspaceScene } from './fractionCirclesWorkspace';
+import { FRACTION_CIRCLES_LEVERS, leverTextLeaks, simplerItem, startLevers } from './fractionCirclesLevers';
+import { describeWork, workspaceScene } from './fractionCirclesWorkspace';
+import { fractionCirclesBoss } from './fractionCircles.boss';
+
+const fractionLevers = (ch: FractionCirclesChallenge, pulled: string[], band?: string) =>
+  FRACTION_CIRCLES_LEVERS.declare(ch, { band }, pulled);
 
 const item = (numerator: number, denominator: number): FractionCirclesChallenge => ({ id: 'q', type: 'build_equal', numerator,
   denominator, instruction: `Make a fraction equal to ${numerator}/${denominator}.`, hint: '', narration: '' });
@@ -71,7 +75,7 @@ describe('build_equal levers', () => {
       expect(l.answers?.length).toBeGreaterThan(0);
     }
     expect(levers.find(l => l.id === 'running_count')!.does).toMatch(/never whether the two are equal/i);
-    for (const fact of leverFacts(item(3, 4), ['running_count', 'show_reference'])) expect(leverTextLeaks(fact)).toBe(false);
+    expect(leverTextLeaks(FRACTION_CIRCLES_LEVERS.onScreen(item(3, 4), {}, ['running_count', 'show_reference']))).toBe(false);
   });
 
   it('simplify opens a target with fewer pieces, halves first, never an equal value; none for halves', () => {
@@ -86,7 +90,7 @@ describe('build_equal levers', () => {
 
 describe('build_equal on the workspace', () => {
   it('is a gesture item whose scene carries the made pieces as numbers and no verdict', () => {
-    expect(workspaceAssignment(item(3, 4))).toMatchObject({ response: 'gesture' });
+    expect(fractionCirclesBoss.assignment!(item(3, 4))).toMatchObject({ response: 'gesture' });
     const view = { typed: '', shaded: 6, choice: '' as const, pieces: 8, equalPieces: true };
     const { facts } = workspaceScene(item(3, 4), view);
     expect(facts).toMatchObject({ kind: 'build_equal', printedTarget: '3/4', piecesCut: 8, piecesShaded: 6, pieceSizes: 'all the same size' });

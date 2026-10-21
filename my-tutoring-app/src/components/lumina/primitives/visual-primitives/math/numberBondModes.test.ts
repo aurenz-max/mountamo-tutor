@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { bondMiss, expandNumberBondInteractions, type BondWork } from './numberBondModes';
-import { buildBondItems, type NumberBondItem } from './numberBondScript';
+import { buildBondItems, type NumberBondItem } from './numberBondDomain';
 
 const phases = (type: string, whole: number, part1?: number) => expandNumberBondInteractions(buildBondItems(
   [{ id: type, type, whole, part1, part2: part1 === undefined ? undefined : whole - part1 }], { band: '1', maxNumber: 19 }).items);

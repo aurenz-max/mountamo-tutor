@@ -52,14 +52,13 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PracticeProblemMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { SoundManager } from '../../../utils/SoundManager';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import type {
   PracticeProblemSolution,
   PracticeStep,
@@ -69,27 +68,27 @@ import {
   describePracticeWork,
   flaggedLines,
   practiceMiss,
-  workspaceAssignment,
   workspaceScene,
+  type PracticeChallenge,
 } from './practiceProblemWorkspace';
 import {
   MARK_LINES_LEVER,
-  markedFact,
-  practiceProblemLevers,
+  PRACTICE_LEVERS,
   startingLevers,
   supportWith,
 } from './practiceProblemLevers';
+import { practiceProblemBoss } from './practiceProblem.boss';
 
 // ═══════════════════════════════════════════════════════════════════════
-// PracticeProblem — standalone canvas-based derivation primitive.
+// PracticeProblem — standalone canvas-based derivation primitive, taught on
+// the live tutor's workspace (boss: practiceProblem.boss.ts).
 //
 // Single problem. Student writes their derivation by hand on the canvas;
 // transcription + live coaching keep them oriented; pressing Done dispatches
-// a compareWork judge call. Scripted path: one attempt, a verdict and a
-// side-by-side comparison against the canonical solution. Workspace path
-// (the live tutor owns the lesson): the verdict is the activity's checked
-// gesture; a not-correct verdict keeps the worked solution hidden and the
-// learner's work on the board until the runtime reopens it (Try again).
+// a compareWork judge call. The verdict is the activity's checked gesture; a
+// not-correct verdict keeps the worked solution hidden and the learner's
+// work on the board until the runtime reopens it (Try again). A correct one
+// shows the side-by-side comparison against the canonical solution.
 //
 // Distinct from AnnotatedExample's Try-It act: not portal-mounted, not
 // gated on a watched worked example, and authored independently by the
@@ -119,9 +118,6 @@ export interface PracticeProblemData
   exhibitId?: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PracticeProblemMetrics>) => void;
 }
-
-/** The lesson's one problem as a workspace item. */
-type PracticeChallenge = PracticeProblemData & { id: string };
 
 // ── Judge envelope adapter ──────────────────────────────────────────
 //
@@ -191,8 +187,9 @@ type Phase =
   | { kind: 'solving' }
   | { kind: 'judging'; snapshot: TranscribedLine[] }
   | { kind: 'judge-error'; message: string }
+  /** A correct verdict: the side-by-side comparison with the worked solution. */
   | { kind: 'reveal'; snapshot: TranscribedLine[]; verdict: JudgeVerdict }
-  /** Workspace path: a not-correct verdict, the work still on the board, the worked solution hidden. */
+  /** A not-correct verdict, the work still on the board, the worked solution hidden. */
   | { kind: 'checked'; snapshot: TranscribedLine[]; verdict: JudgeVerdict };
 
 interface PracticeProblemProps {
@@ -203,12 +200,6 @@ interface PracticeProblemProps {
   /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
   runtimeEvalMode?: string;
 }
-
-const VERDICT_TO_SCORE: Record<JudgeVerdict['verdict'], number> = {
-  correct: 100,
-  partial: 60,
-  incorrect: 0,
-};
 
 function verdictMetrics(
   data: PracticeProblemData, verdict: JudgeVerdict, snapshot: TranscribedLine[], strokeCount: number,
@@ -234,8 +225,9 @@ function verdictMetrics(
   };
 }
 
-const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  PracticeProblemProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PracticeChallenge>) => Progress }) => {
+const usePracticeProgress = useWorkspaceProgressFor('practice-problem');
+
+const PracticeProblemSurface = ({ data, className, runtimePlanItemId }: PracticeProblemProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const canvasRef = useRef<WhiteboardRef>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -245,23 +237,22 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
   const stableInstanceIdRef = useRef(data.instanceId ?? `practice-problem-${Date.now()}`);
   const resolvedInstanceId = data.instanceId ?? stableInstanceIdRef.current;
 
-  // ── Progress. One item, the problem; on the workspace path the runtime owns it. ──
+  // ── Progress. One item, the problem; the runtime owns it. ──
   const challenges = useMemo<PracticeChallenge[]>(() => [{ ...data, id: PROBLEM_ID }], [data]);
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = usePracticeProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: practiceProblemBoss.assignment!,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
   });
-  /** Workspace path: a checked answer stays closed until Try again on the shell. */
+  /** A checked answer stays closed until Try again on the shell. */
   const workspaceClosed = useRef(false);
-  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
-  const learnerBlocked = () => workspaceClosed.current;
+  workspaceClosed.current = progress.canAttempt === false;
   // The judge's verdict is the workspace's checked gesture. A ref, so `handleDone` keeps its deps.
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
@@ -274,15 +265,15 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
     showFirstStepHint: true,
     showStrategyPreview: true,
   };
-  // Levers (practiceProblemLevers.ts): the tutor's pulls on this problem, and the learner's lines the last check
-  // flagged. The tier's scaffolds are where the levers start; a pull adds to them, never removes one.
+  // Levers (`PRACTICE_LEVERS`): the tutor's pulls on this problem, and the learner's lines the last check flagged.
+  // The tier's scaffolds are where the levers start; a pull adds to them, never removes one.
   const [pulled, setPulled] = useState<string[]>([]);
   const [flagged, setFlagged] = useState<string[]>([]);
   const leversOn = useMemo(() => Array.from(new Set([...startingLevers(tierSupport), ...pulled])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.support, pulled]);
   const support = supportWith(tierSupport, leversOn);
-  const markedLines = tutorOwned && pulled.includes(MARK_LINES_LEVER) ? flagged : [];
+  const markedLines = pulled.includes(MARK_LINES_LEVER) ? flagged : [];
   const firstStep = data.steps[0];
 
   const { submitResult, hasSubmitted, elapsedMs } =
@@ -297,36 +288,6 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
       // callback at the boundary so the hook accepts it.
       onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
     });
-
-  const aiPrimitiveData = useMemo(
-    () => ({
-      title: data.title,
-      problem: data.problem.statement,
-      equations: data.problem.equations ?? [],
-      difficulty: data.difficulty,
-      // Support tier so the tutor calibrates how much it reveals (mirrors the
-      // on-screen scaffold withdrawal). easy → may walk the first step; hard →
-      // names no step. Absent → 'medium' default reveal posture.
-      supportTier: data.supportTier ?? 'medium',
-      stepCount: data.steps.length,
-      currentPhase: phase.kind,
-      strokeCount: strokes.length,
-    }),
-    [data, phase.kind, strokes.length],
-  );
-
-  // Its context carries the problem's tier policy for the scripted tutor; off on the workspace path, where the
-  // scripted cues send nothing.
-  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'practice-problem',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel,
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
 
   const addToHistory = useCallback((stroke: Stroke) => {
     if (workspaceClosed.current) return;
@@ -347,39 +308,13 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
     setFlagged([]);
   }, [data]);
 
-  // Workspace path: the item opens on an empty board; Try again reopens it with the learner's work kept, so they
-  // fix the line that went wrong rather than rewrite the derivation.
+  // The item opens on an empty board; Try again reopens it with the learner's work kept, so they fix the line that
+  // went wrong rather than rewrite the derivation.
   openItem.current = (retry) => {
     setPhase({ kind: 'solving' });
     if (retry) return;
     setStrokes([]); setPulled([]); setFlagged([]);
   };
-
-  // Tell the tutor which problem is loaded — bracketed system message,
-  // not student-facing chat. The tutor can use this for opening context
-  // if the student requests help.
-  useEffect(() => {
-    // Tier-aware reveal policy: mirrors the on-screen scaffold withdrawal so the
-    // tutor can't hand back what a hard tier hid. NEVER reveals the final answer
-    // at any tier.
-    const tier = data.supportTier ?? 'medium';
-    const revealClause =
-      tier === 'easy'
-        ? 'SUPPORT TIER easy: the student keeps the worked-step skeleton and a first-step prompt on screen. ' +
-          'If they ask for help you MAY name the strategy and walk them through the FIRST step only — never compute it for them, never reveal the final answer.'
-        : tier === 'hard'
-          ? 'SUPPORT TIER hard: the student has NO worked-step skeleton and NO first-step prompt. ' +
-            'Do NOT name any solution step or the strategy. Ask what the problem is asking and what they notice; let them choose the method. Never reveal the answer.'
-          : 'SUPPORT TIER medium: the student sees the worked-step skeleton (step titles) but no first-step prompt. ' +
-            'Nudge execution of the step they are on; do not pre-name the first move or reveal the answer.';
-    sendText(
-      `[PROBLEM_LOADED] Practice problem "${data.title}" (${data.difficulty ?? 'unspecified'} step band). ` +
-        `Statement: ${data.problem.statement}. ${data.steps.length} canonical steps. ${revealClause}`,
-      { silent: true },
-    );
-    // sendText is stable across renders; firing on every problem swap is correct.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.title]);
 
   const problemContext = useMemo(() => {
     const parts: string[] = [];
@@ -413,7 +348,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
       inset: data.problem.inset,
     });
 
-  /** The last judged attempt, for the workspace path's submission. */
+  /** The last judged attempt, for the session's submission. */
   const lastJudged = useRef<{ verdict: JudgeVerdict; snapshot: TranscribedLine[]; strokeCount: number } | null>(null);
 
   const handleDone = useCallback(async () => {
@@ -454,32 +389,17 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
       const verdict = (await response.json()) as JudgeVerdict;
       const success = verdict.verdict === 'correct';
       lastJudged.current = { verdict, snapshot, strokeCount: strokes.length };
-      // The worked solution is shown once the problem is solved, or on the scripted path's single attempt.
-      setPhase(success || !tutorOwned ? { kind: 'reveal', snapshot, verdict } : { kind: 'checked', snapshot, verdict });
+      // The worked solution is shown once the problem is solved.
+      setPhase(success ? { kind: 'reveal', snapshot, verdict } : { kind: 'checked', snapshot, verdict });
       if (success) SoundManager.playCorrect();
-      else if (tutorOwned) SoundManager.playIncorrect();
+      else SoundManager.playIncorrect();
       // The lines `mark_lines` can mark: the learner's own, as the checker flagged them on this check.
       setFlagged(success ? [] : flaggedLines(verdict));
 
-      // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+      // The checked gesture: counts the attempt and records its named miss.
       const written = snapshot.map((l) => l.latex);
       commitCheck.current(describePracticeWork(written, strokes.length), success,
         success ? undefined : practiceMiss(written, verdict));
-
-      // The workspace path submits the scored session from `onFinished` (below).
-      if (!tutorOwned && !hasSubmitted) {
-        const metrics = verdictMetrics(data, verdict, snapshot, strokes.length, 1, elapsedMs);
-        submitResult(success, VERDICT_TO_SCORE[verdict.verdict], metrics, { snapshot, verdict });
-      }
-
-      const aligned = verdict.stepAnalysis.filter((a) => a.status === 'aligned').length;
-      sendText(
-        `[VERDICT_${verdict.verdict.toUpperCase()}] Practice problem judge resolved. ` +
-          `Aligned ${aligned}/${data.steps.length} canonical steps. ` +
-          `Final answer: "${verdict.finalAnswer}" vs canonical "${verdict.canonicalAnswer}". ` +
-          `Summary: ${verdict.summary}`,
-        { silent: true },
-      );
     } catch (error) {
       setPhase({
         kind: 'judge-error',
@@ -494,15 +414,10 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
     problemContext,
     richSteps,
     data,
-    elapsedMs,
-    hasSubmitted,
-    submitResult,
-    sendText,
-    tutorOwned,
   ]);
 
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item score counts
-  // corrections and whose evidence carries each not-correct verdict's named miss.
+  // Under a lesson's evaluation provider only: the scored session, whose item score counts corrections and whose
+  // evidence carries each not-correct verdict's named miss.
   finish.current = (result) => {
     if (hasSubmitted) return;
     const last = lastJudged.current;
@@ -557,18 +472,17 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
   /** The learner may write and press Done: never while a checked answer waits for Try again. */
   const canEdit = canvasReady && !workspaceClosed.current;
 
-  // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // What the tutor and the observer are shown, republished every render. No demonstration targets, no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned) return;
+    const item = challenges[0];
+    const ctx = { flagged };
     const scene = workspaceScene(data, {
       lines: lines.map((l) => l.latex), strokes: strokes.length, support,
       stepsReached: liveReview?.completedSteps ?? 0, judging: isJudging,
     });
-    const levers = practiceProblemLevers(data, leversOn, flagged);
+    const levers = PRACTICE_LEVERS.declare(item, ctx, leversOn);
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(markedLines.length ? { markedLines: markedFact(markedLines) } : {}) },
+      ...leverScene(scene, { support: PRACTICE_LEVERS.support(item, ctx), onScreen: PRACTICE_LEVERS.onScreen(item, ctx, pulled) }),
       readyForResponse: !isJudging,
       levers,
       pullLever: (id: string) => {
@@ -579,20 +493,6 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
         return true as const;
       },
     };
-  });
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // Pip outlines the whiteboard during the tutor's cue, looks where the child
-  // writes, receives the work while the judge compares it, and celebrates only
-  // a correct verdict. It never reads, corrects, or submits the derivation.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: 'problem',
-    label: 'Your whiteboard',
-    solved: phase.kind === 'reveal' && phase.verdict.verdict === 'correct',
-    checking: isJudging,
-    handover: true,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   return (
@@ -613,7 +513,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
         <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
         {/* Pip's dock stays in the header so it holds one position through solving,
             judging, and the reveal overlay. */}
-        {pip.store && <div {...pip.dock} className={`${pip.dock.className} mt-3`} />}
+        <PipDock />
       </LuminaCardHeader>
 
       <LuminaCardContent className="p-0">
@@ -625,9 +525,9 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
                 sibling={revealSibling}
                 studentLines={phase.snapshot}
                 verdict={phase.verdict}
-                // Workspace path: the problem is solved and the runtime owns what comes next, so closing keeps the work.
-                onShowMeAgain={tutorOwned ? () => setPhase({ kind: 'solving' }) : handleReset}
-                onClose={tutorOwned ? () => setPhase({ kind: 'solving' }) : handleReset}
+                // The problem is solved and the runtime owns what comes next, so closing keeps the work.
+                onShowMeAgain={() => setPhase({ kind: 'solving' })}
+                onClose={() => setPhase({ kind: 'solving' })}
               />
             )}
           </AnimatePresence>
@@ -777,7 +677,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
                     </div>
                   </div>
 
-                  {/* Workspace path: a not-correct verdict, said without the worked solution or the checker's notes. */}
+                  {/* A not-correct verdict, said without the worked solution or the checker's notes. */}
                   {checkedMiss && (
                     <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100" role="status">
                       {checkedMiss.verdict === 'partial'
@@ -786,8 +686,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
                     </div>
                   )}
 
-                  <div
-                    {...pip.workspace}
+                  <PipWorkspace
                     className={`flex-1 min-h-[420px] relative ${
                       phase.kind === 'solving' && canEdit ? '' : 'pointer-events-none'
                     }`}
@@ -840,7 +739,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
                               className="bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
                             >
                               {/* The shell's own Try again reopens a checked answer; this one only re-sends the check. */}
-                              {tutorOwned ? 'Check again' : 'Try again'}
+                              Check again
                             </LuminaButton>
                             <LuminaButton
                               size="sm"
@@ -853,7 +752,7 @@ const PracticeProblemSurface = ({ data, className, runtimePlanItemId, tutorOwned
                         </div>
                       </div>
                     )}
-                  </div>
+                  </PipWorkspace>
                 </div>
 
                 {/* Transcription rail — simple stacked list. The y-anchored
@@ -1117,8 +1016,7 @@ const TranscriptionRail: React.FC<TranscriptionRailProps> = ({
 };
 
 
-// The workspace path never mounts the scripted progress; the runtime owns the lesson there.
-const PracticeProblem = withWorkspaceController<PracticeProblemProps, ProgressOptions<PracticeChallenge>, Progress>(
-  'practice-problem', PracticeProblemSurface, useScriptedProgress, useWorkspaceProgressFor('practice-problem'));
+// Taught only on the live tutor's workspace; a mount with no tutor shows the shared "needs the tutor" card.
+const PracticeProblem = withWorkspaceOnly<PracticeProblemProps>('practice-problem', PracticeProblemSurface, props => props.data.title);
 
 export default PracticeProblem;

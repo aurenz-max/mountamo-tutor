@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * pattern-builder levers (`patternBuilderLevers.ts`), mounted the way a lesson mounts it. create: the model row is the
+ * pattern-builder levers (`PATTERN_LEVERS`, `patternBuilderLevers.ts`), mounted the way a lesson mounts it. create: the model row is the
  * asked shape in pictures off the palette, the A B practice row is ungraded. extend / find_rule / identify_core /
  * translate: a help picture changes the screen and the scene fact in one commit and leaves the answer to the learner;
  * the simpler row is ungraded and gives the full item back blank; only the full item's answer is credited, with the
@@ -23,10 +23,14 @@ import {
   type PatternBuilderView,
 } from './patternBuilderWorkspace';
 import {
-  AB_LEVER, CORE_MODEL_LEVER, GROUPS_LEVER, LINE_LEVER, MARKER_LEVER, MODEL_LEVER, SIMPLER_LEVER, abPractice, coreModel,
-  coreModelLeaks, lineLeaks, markerFact, modelLeaks, numberLine, patternBuilderLevers, practiceItem, practiceLeaks,
-  practiceParent, repeatGroups, shapeModel,
+  AB_LEVER, CORE_MODEL_LEVER, GROUPS_LEVER, LINE_LEVER, MARKER_LEVER, MODEL_LEVER, PATTERN_LEVERS, SIMPLER_LEVER, abPractice,
+  coreModel, coreModelLeaks, lineLeaks, markerFact, modelLeaks, numberLine, practiceItem, practiceLeaks, practiceParent,
+  repeatGroups, shapeModel, startsShown,
 } from './patternBuilderLevers';
+
+/** The levers the set declares on an item, with nothing placed yet. */
+const patternBuilderLevers = (c: PatternBuilderChallenge, data: PatternBuilderData, pulled: readonly string[]) =>
+  PATTERN_LEVERS.declare(c, { session: data, placed: 0 }, pulled);
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -125,14 +129,23 @@ it('the A B practice row is ungraded and keeps its row on Try again; the full it
   h.close();
 });
 
-it('easy starts with the model shown, and that is not a pull', () => {
-  const h = mountWorkspace({ primitiveId: 'pattern-builder', evalMode: 'create', data: lesson([make('c1', 'AAB', 'easy')]) as never });
-  expect(levers(h).find(l => l.id === MODEL_LEVER)!.pulled).toBe(true);
-  expect(q(h, '[data-lever="shape-model"]')[0].textContent).toBe('Like this:🍎🍎🐟🍎🍎🐟');
-  tap(h, ['red', 'red', 'blue', 'red', 'red', 'blue']);
-  h.press("I'm done!");
-  expect(last(h)).toMatchObject({ correct: true });
-  expect(last(h)!.levers).toBeUndefined();
+it('when the model comes is the tier\'s: easy models first, medium after a miss, hard never before a try', () => {
+  const support = (tier: 'easy' | 'medium' | 'hard') => {
+    const h = mountWorkspace({ primitiveId: 'pattern-builder', evalMode: 'create', data: lesson([make('c1', 'AAB', tier)]) as never });
+    const fact = String(h.state().task!.demand.support);
+    // The model is the tutor's pull, never drawn before it.
+    expect(levers(h).find(l => l.id === MODEL_LEVER)!.pulled).toBe(false);
+    expect(q(h, '[data-lever="shape-model"]')).toHaveLength(0);
+    h.close(); cleanup();
+    return fact;
+  };
+  expect(support('easy')).toMatch(/before the learner tries, pull the model lever \(shape_model\)/);
+  expect(support('medium')).toMatch(/after a miss, model/);
+  expect(support('hard')).toMatch(/model nothing before the learner tries, and never say which tokens to tap/);
+  // An older create with no asked shape has no model, so no support rule.
+  const h = mountWorkspace({ primitiveId: 'pattern-builder', evalMode: 'create',
+    data: lesson([{ ...make('c1', 'AAB', 'easy'), createShape: undefined }]) as never });
+  expect(h.state().task!.demand.support).toBeUndefined();
   h.close();
 });
 
@@ -281,11 +294,15 @@ describe('which lever comes next', () => {
   ] as const)('%#: %s after %s with %j pulled -> %s', (c, miss, pulled, want) => {
     expect(nextLever(patternBuilderLevers(c, data, pulled as unknown as string[]), miss)).toBe(want);
   });
-  it('easy starts each help shown, and the simpler row released', () => {
-    for (const c of [e, i, f, t]) {
-      expect(patternBuilderLevers({ ...c, supportTier: 'easy' }, data, []).map(l => [l.kind, l.pulled]))
+  it('easy starts each help shown but the model (the tutor pulls that first), and the simpler row released', () => {
+    for (const c of [e, f, t]) {
+      const easy = { ...c, supportTier: 'easy' as const };
+      expect(patternBuilderLevers(easy, data, startsShown(easy)).map(l => [l.kind, l.pulled]))
         .toEqual([['help', true], ['simplify', false]]);
     }
+    const easy = { ...i, supportTier: 'easy' as const };
+    expect(startsShown(easy)).toEqual([]);
+    expect(PATTERN_LEVERS.support(easy, { session: data, placed: 0 })).toMatch(/pull the model lever \(core_model\)/);
   });
 });
 

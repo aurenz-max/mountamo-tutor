@@ -5,8 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { CoordinateGraphChallenge } from './CoordinateGraph';
+import type { Grid } from './coordinateGraphLevers';
 import {
-  MODEL_LINE, MODEL_POINT, SIMPLER, captionLeaks, coordinateLevers, leverFacts, leverTextLeaks, lineModel, pointModel,
+  COORDINATE_LEVERS, MODEL_LINE, MODEL_POINT, SIMPLER, captionLeaks, leverTextLeaks, lineModel, pointModel,
   practiceLeaks, ratioText, simplerItem,
 } from './coordinateGraphLevers';
 import {
@@ -48,6 +49,8 @@ function items(type: CoordinateGraphMode): CoordinateGraphChallenge[] {
   return out;
 }
 const MODES = Object.keys(COORDINATE_MISSES_BY_MODE) as CoordinateGraphMode[];
+const coordinateLevers = (c: CoordinateGraphChallenge, g: Grid, pulled: readonly string[]) => COORDINATE_LEVERS.declare(c, g, pulled);
+const leverFacts = (c: CoordinateGraphChallenge, g: Grid, pulled: readonly string[]) => COORDINATE_LEVERS.onScreen(c, g, pulled);
 
 it('the hand-built items are what the adapter accepts', () => {
   for (const t of MODES) for (const c of items(t)) if (t !== 'plot_point') {
@@ -148,9 +151,9 @@ describe('every miss the check names has a lever on every item; this wrong answe
     expect(coordinateMiss(hard, { placed: null, chosen: 0 })).toBe('opposite_sign');
   });
 
-  it('a practice item offers no levers; simplify is the last resort', () => {
+  it('a practice item has no simpler item; simplify is the last resort', () => {
     const c = items('plot_point')[0];
-    expect(coordinateLevers(simplerItem(c, G), G, [])).toEqual([]);
+    expect(COORDINATE_LEVERS.simpler(simplerItem(c, G)!, G, SIMPLER)).toBeNull();
     expect(coordinateLevers(c, G, []).at(-1)?.id).toBe(SIMPLER);
     expect(coordinateLevers(c, G, []).map(l => l.id)).toContain(MODEL_POINT);
   });

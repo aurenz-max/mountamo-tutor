@@ -11,33 +11,34 @@
  * "I'm done!" tests the tower with code (`towerMiss`): plain statics, and on windproof a wind load. Many towers pass.
  * Code owns every target (`towerChallenges`); the model writes only the title.
  *
- * On the shared teaching workspace (W1) every check commits through `progress.commitCheck` with the tower in words and
- * a named miss; the runtime owns progression, so the scripted Next is hidden there and the scored session is
- * submitted from `onFinished`.
+ * Taught only on the shared teaching workspace (`withWorkspaceOnly`; its wiring is `towerStacker.card.ts` +
+ * `towerStacker.boss.ts`): every check commits through `progress.commitCheck` with the tower in words and a named
+ * miss; the runtime owns progression, and the scored session is submitted from `onFinished`.
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  LuminaActionButton, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
+  LuminaBadge, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaFeedbackCard,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult, type TowerStackerMetrics } from '../../../evaluation';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
   PIECE_KINDS, PIECES, WATCH_NEVER_SAY, blownCut, describeTower, dropPiece, fallingPart, leftEdgeFor, pieceSize, restingOn,
-  towerCuts, towerMiss, workspaceAssignment, workspaceScene,
+  towerCuts, towerMiss, workspaceScene,
   type PieceKind, type TowerChallenge, type TowerMiss, type TowerMode, type TowerPiece,
 } from './towerWorkspace';
-import { BALANCE_LEVER, COUNT_LEVER, GUST_LEVER, leverFacts, shorterTower, towerLevers } from './towerLevers';
+import { BALANCE_LEVER, COUNT_LEVER, GUST_LEVER, TOWER_LEVERS } from './towerLevers';
+import { towerStackerBoss } from './towerStacker.boss';
 import { TowerScene, type FallingPart } from './TowerScene';
 
 // ============================================================================
@@ -98,8 +99,10 @@ const PASS_FEEDBACK: Record<TowerMode, string> = {
 // Component
 // ============================================================================
 
-const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  TowerStackerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TowerChallenge>) => Progress }) => {
+const useTowerProgress = useWorkspaceProgressFor('tower-stacker');
+const PRACTICE_NOTE = 'An easier practice tower is on screen in place of the item. It is not graded; the full item comes back after it.';
+
+const TowerStackerSurface = ({ data, className, runtimePlanItemId }: TowerStackerProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const challenges = useMemo(() => (data.challenges ?? []).filter(c => PHASE_CONFIG[c.type]), [data.challenges]);
@@ -107,21 +110,21 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
   const stableInstanceId = useRef(instanceId || `tower-stacker-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // ── Challenge progress: the teaching workspace moves the index. ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useTowerProgress({
     challenges,
     getChallengeId: c => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: towerStackerBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
   });
-  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  const { currentIndex, results, isComplete, mergeResult } = progress;
+  const learnerBlocked = () => progress.canAttempt === false;
 
-  // Levers (`towerLevers.ts`), keyed by the session item they were pulled on, and the easier ask a simplify lever put
+  // Levers (`TOWER_LEVERS`), keyed by the session item they were pulled on, and the easier ask a simplify lever put
   // on screen in its place. The item starts bare: no lever comes from the tier.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<TowerChallenge | null>(null);
@@ -157,7 +160,7 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
 
-  // Workspace path: a fresh item ends any practice. Try again KEEPS the tower and the verdict's words, so the learner
+  // A fresh item ends any practice. Try again KEEPS the tower and the verdict's words, so the learner
   // revises it; the fallen part stands back up.
   openItem.current = (index, retry) => {
     if (!retry) {
@@ -188,18 +191,7 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     accuracy, attemptsCount, firstTryCount: firstTry,
   });
 
-  // ── Scripted session complete → submit (the workspace path submits from `onFinished`) ──
-  const sessionSubmitted = useRef(false);
-  useEffect(() => {
-    if (!isComplete || sessionSubmitted.current || tutorOwned || hasSubmitted) return;
-    sessionSubmitted.current = true;
-    const built = results.filter(r => r.correct).length;
-    const accuracy = Math.round(results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length));
-    submitResult(built === challenges.length, accuracy, sessionMetrics(built, accuracy, results.reduce((s, r) => s + r.attempts, 0),
-      results.filter(r => Number(r.score ?? 0) === 100).length), { studentWork: { targets: challenges } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isComplete, results, challenges, tutorOwned, hasSubmitted, submitResult]);
-
+  // Under a lesson's evaluation provider only: the scored session, from the runtime's result.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     submitResult(result.passed, result.accuracy,
@@ -286,15 +278,17 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
     setFalling(cut ? { ids: cut.ids, pivotX: cut.hi, pivotY: cut.level, toRight: true } : null);
   };
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, pieces);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : towerLevers(sessionChallenge, pulledLevers);
+    if (!currentChallenge || !sessionChallenge) return;
+    const levers = practice ? [] : TOWER_LEVERS.declare(sessionChallenge, null, pulledLevers);
+    const published = leverScene(workspaceScene(currentChallenge, pieces), {
+      support: practice ? '' : TOWER_LEVERS.support(sessionChallenge, null),
+      onScreen: practice ? '' : TOWER_LEVERS.onScreen(sessionChallenge, null, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -302,10 +296,10 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = shorterTower(sessionChallenge);
+          const easier = TOWER_LEVERS.simpler(sessionChallenge, null, id);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: towerStackerBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -328,15 +322,6 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
       numbers: 'never',
       neverSay: WATCH_NEVER_SAY,
     },
-  });
-
-  // ── Pip shared surface ─────────────────────────────────────────
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: isComplete ? null : currentChallenge?.id ?? null,
-    label: 'The tower and the building pieces',
-    solved: challengeDone,
-    tutorSpeaking: false,
   });
 
   // ── Render ─────────────────────────────────────────────────────
@@ -373,15 +358,17 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
         <div className="space-y-1 text-center">
           {challenges.length > 1 && (
             <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
-              Tower {currentIndex + 1} / {challenges.length}{practice ? ' · practice' : ''}
+              Tower {currentIndex + 1} / {challenges.length}
             </p>
           )}
+          {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
           <h4 className="text-lg font-semibold text-amber-200">{currentChallenge?.instruction}</h4>
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the scene and the tray as one
+            region. */}
+        <PipDock />
+        <PipWorkspace className="space-y-4">
           <TowerScene ref={sceneRef} pieces={pieces} targetHeight={currentChallenge?.targetHeight ?? 0}
             windy={currentChallenge?.type === 'build_windproof'} preview={preview} falling={falling} balance={balance}
             disabled={!buildOpen} onTapColumn={tapColumn} onHoverColumn={setHoverColumn} onTapPiece={tapPiece} />
@@ -414,7 +401,7 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
                 disabled={!buildOpen} className="min-h-11">Turn</LuminaButton>
             )}
           </div>
-        </div>
+        </PipWorkspace>
 
         {hint && <LuminaCallout accent="amber" label="Hint" className="p-3">{hint}</LuminaCallout>}
         {gust && (
@@ -428,27 +415,22 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
           </LuminaFeedbackCard>
         )}
 
-        {/* Actions. The build commits with "I'm done!"; there is no auto-check. */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {!challengeDone ? (
-            <>
-              <LuminaButton disabled={!buildOpen || !pieces.length} onClick={clearAll}>Clear</LuminaButton>
-              {leverOn(GUST_LEVER) && (
-                <LuminaButton disabled={!buildOpen || !pieces.length} onClick={tryGust}>💨 Try a gust</LuminaButton>
-              )}
-              <LuminaButton tone="primary" disabled={!buildOpen || !pieces.length} onClick={checkTower}>I&apos;m done!</LuminaButton>
-            </>
-          ) : !tutorOwned && currentIndex + 1 < challenges.length && !practice ? (
-            <LuminaActionButton action="next" onClick={() => advance()}>Next tower →</LuminaActionButton>
-          ) : null}
-        </div>
+        {/* Actions. The build commits with "I'm done!"; there is no auto-check. The runtime retries and advances. */}
+        {!challengeDone && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <LuminaButton disabled={!buildOpen || !pieces.length} onClick={clearAll}>Clear</LuminaButton>
+            {leverOn(GUST_LEVER) && (
+              <LuminaButton disabled={!buildOpen || !pieces.length} onClick={tryGust}>💨 Try a gust</LuminaButton>
+            )}
+            <LuminaButton tone="primary" disabled={!buildOpen || !pieces.length} onClick={checkTower}>I&apos;m done!</LuminaButton>
+          </div>
+        )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const TowerStacker = withWorkspaceController<TowerStackerProps, ProgressOptions<TowerChallenge>, Progress>(
-  'tower-stacker', TowerStackerSurface, useScriptedProgress, useWorkspaceProgressFor('tower-stacker'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const TowerStacker = withWorkspaceOnly<TowerStackerProps>('tower-stacker', TowerStackerSurface, props => props.data.title);
 
 export default TowerStacker;

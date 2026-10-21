@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
   LuminaBadge, LuminaButton, LuminaActionButton, LuminaChallengeCounter, LuminaFeedbackCard, LuminaPrompt,
@@ -14,7 +13,7 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import EcosystemScene, { type LifeState } from './EcosystemScene';
 import type { EcoTarget, TankFocus } from './ecosystem3d';
 import {
@@ -25,9 +24,8 @@ import {
   type Weather, type WinterMoves,
 } from './ecosystemModel';
 import type { Animal, WinterPlace } from './ecosystemLife';
-import {
-  describeRead, ecosystemAssignment, ecosystemScene, readMatches, readMiss, sunTestFills,
-} from './ecosystemWorkspace';
+import { describeRead, ecosystemScene, readMatches, readMiss, sunTestFills } from './ecosystemWorkspace';
+import { ecosystemDioramaBoss } from './ecosystemDiorama.boss';
 import { CoverTray, DayBadge, PlantTray, SeasonCards, WeatherLog, WinterTray } from './EcosystemPanels';
 
 export type { EcosystemChallenge } from './ecosystemModel';
@@ -108,7 +106,6 @@ const useEcosystemProgress = useWorkspaceProgressFor('ecosystem-diorama');
 const EcosystemDioramaSurface: React.FC<EcosystemDioramaProps> = ({ data, className, runtimePlanItemId }) => {
   const { title, description, challenges = [], challengeType, gradeBand, islandName, instanceId, skillId, subskillId,
     objectiveId, exhibitId, onEvaluationSubmit } = data;
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
   const stableInstanceId = useRef(instanceId || `ecosystem-diorama-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceId.current;
@@ -147,7 +144,7 @@ const EcosystemDioramaSurface: React.FC<EcosystemDioramaProps> = ({ data, classN
   const progress = useEcosystemProgress<EcosystemChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: ecosystemAssignment,
+    workspace, assignment: ecosystemDioramaBoss.assignment!,
     // A fresh item resets the world for its task. Try again keeps what the learner set up and what the world showed
     // (the finished day, the filled logs, the pot, the animals' places) and clears only the answer.
     onItemOpened: (index, retry) => {
@@ -313,21 +310,12 @@ const EcosystemDioramaSurface: React.FC<EcosystemDioramaProps> = ({ data, classN
     submitResult(correctCount === total, accuracy, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmitted, challenges, challengeType, challengeResults, submitResult, progress.recordsEvaluation, guessesMatched]);
 
-  // ── Pip: the tank as a whole; never one answer ────────────────────────────
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmitted || !current ? null : current.id,
-    label: 'The island tank',
-    solved: verdict === 'correct',
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current) return;
-    workspace.current = { ...ecosystemScene(current, {
+    workspace.current = ecosystemScene(current, {
       step, guess, sunP, lastPick: picked, daysShown, season, evidence, logPick, plant: setup, grown, moves, holding, cover,
-    }) };
+    });
   });
 
   const localScore = useMemo(() => phaseResults.length
@@ -401,8 +389,8 @@ const EcosystemDioramaSurface: React.FC<EcosystemDioramaProps> = ({ data, classN
           </LuminaPrompt>
         )}
 
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-3">
+        <PipDock />
+        <PipWorkspace className="space-y-3">
           <div className="relative overflow-hidden rounded-xl border border-white/10">
             <EcosystemScene className="h-[min(64vh,560px)] min-h-[340px] w-full"
               islandName={islandName}
@@ -489,7 +477,7 @@ const EcosystemDioramaSurface: React.FC<EcosystemDioramaProps> = ({ data, classN
               <p>{feedback.text}</p>
             </LuminaFeedbackCard>
           )}
-        </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );

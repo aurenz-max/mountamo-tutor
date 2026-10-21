@@ -18,16 +18,20 @@
  *   Answers `unfinished_equation`. Leak rule: no number and no + or − is drawn (`frameLeaks`).
  * - `printed_dots` (help, missing-result, missing-operand, true-false, balance-both-sides): dots under each number
  *   printed in the equation. Leak rule: none under the ?, never a side's total (`printedDots`).
- * - `rewrite_model` (help, rewrite): an example equation and the same one turned around the =, in numbers the item
+ * - `rewrite_model` (model, rewrite): an example equation and the same one turned around the =, in numbers the item
  *   does not use. Leak rule: no number of the item, not an accepted form (`rewriteModelLeaks`).
  * - `match_marks` (help, rewrite): a ring on each pool tile showing a number printed in the equation; never a sign.
  * - `smaller_numbers` (simplify, all six): an ungraded practice item of the same type and sign, numbers about half
  *   (`practiceItem`). Leak rule: never the item's numbers (`repeatsItem`), and never the item's missing number.
  * Easy starts with the dots lever shown (a starting position, never a recorded pull); make-n starts bare.
+ *
+ * Declared once as a lever set (`EQUATION_BUILDER_LEVERS`, `bossLevers.ts`): the dots and match marks are `marks`, the
+ * frames `layout`, the rewrite example `model` (when it comes is the set's `support`), the practice items `easier`.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { EquationBuilderChallenge } from './EquationBuilder';
-import { parseEquationTokens } from './equationBuilderWorkspace';
+import { EQUATION_BUILDER_MISSES_BY_MODE, equationBuilderMode, parseEquationTokens, type EquationBuilderMiss,
+  type EquationBuilderTier } from './equationBuilderWorkspace';
 
 export const DOTS_LEVER = 'number_dots';
 export const FRAME_LEVER = 'sentence_frame';
@@ -42,37 +46,6 @@ export function smallerMakeN(c: EquationBuilderChallenge): EquationBuilderChalle
   const numbers = Array.from({ length: target }, (_, i) => String(i + 1));
   return { id: `${c.id}${PRACTICE_SUFFIX}`, type: 'make-n', target, ways: 1, availableTiles: [...numbers, '+'],
     instruction: `Make a number sentence that equals ${target}.` };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly string[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-/** The levers on a make-n session item (none on another type, or while the easier practice item is up). */
-export function makeNLevers(c: EquationBuilderChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (c?.type !== 'make-n') return [];
-  return [
-    lever(DOTS_LEVER, 'help', ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      'The learner\'s sentence makes one more, one less, or a different amount than the total.',
-      'Puts dots under each number tile the learner placed, as many as that tile says. Never the amount the sentence makes.',
-      pulled),
-    lever(FRAME_LEVER, 'help', ['bare_number', 'unfinished_sentence'],
-      'The learner puts down one number alone, or tiles that are not a sentence yet (two numbers together, a sign at an end).',
-      'Shows the shape of a number sentence beside the row: empty boxes for a number, a + or −, and a number. Nothing is filled in.',
-      pulled),
-    ...(smallerMakeN(c) ? [lever(SMALLER_LEVER, 'simplify', ['short_by_more', 'over_by_more'],
-      'The learner\'s sentence is far from the total, or they cannot start.',
-      'Opens an easier ask first: a smaller total, about half, one way, with only the + tile. It is not graded; the full item comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-/** What the pulled levers put on screen, for the tutor's `onScreen` fact. */
-export function makeNLeverFacts(pulled: readonly string[]): string | undefined {
-  const notes = [
-    pulled.includes(DOTS_LEVER) && 'Each number tile in the row has that many dots under it.',
-    pulled.includes(FRAME_LEVER) && 'An empty sentence shape (number, sign, number) is beside the row.',
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 // ── The other six modes ─────────────────────────────────────────────────────
@@ -289,70 +262,88 @@ export function rewriteModelLeaks(m: RewriteModel, c: EquationBuilderChallenge):
 export const matchMarked = (c: EquationBuilderChallenge, tile: string) =>
   c.type === 'rewrite' && isNum(tile) && parseEquationTokens(c.originalEquation ?? '').includes(tile);
 
-const NUMBER_MISSES = ['printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
+// ── The lever set ───────────────────────────────────────────────────────────
 
 /** The dots lever a type starts with on an easy tier (a starting position, not a pull); make-n starts bare. */
 export const dotsLeverFor = (c: EquationBuilderChallenge) =>
   c.type === 'make-n' ? null : c.type === 'build' || c.type === 'rewrite' ? DOTS_LEVER : PRINTED_DOTS_LEVER;
 
-/**
- * The levers on a session item: make-n's own, else this type's. `pulled` holds this item's runtime pulls; an easy
- * `tier` starts the dots lever shown.
- */
-export function equationBuilderLevers(c: EquationBuilderChallenge | null, pulled: readonly string[],
-  tier?: 'easy' | 'medium' | 'hard'): WorkspaceLever[] {
-  if (!c) return [];
-  if (c.type === 'make-n') return makeNLevers(c, pulled);
-  const shown = (leverId: string) => pulled.includes(leverId) || (tier === 'easy' && dotsLeverFor(c) === leverId);
-  const help = (leverId: string, answers: readonly string[], when: string, does: string): WorkspaceLever =>
-    ({ id: leverId, kind: 'help', carrier: 'shown', when, does, answers, pulled: shown(leverId) });
-  const out: WorkspaceLever[] = [];
-  const rowDots = () => help(DOTS_LEVER, ['false_equation'], 'The learner\'s equation is not true: its two sides are not the same amount.',
-    'Puts dots under each number tile in the learner\'s row, as many as that tile says. Never the amount either side makes.');
-  const printed = (answers: readonly string[]) => help(PRINTED_DOTS_LEVER, answers,
-    'The learner\'s number is off, or they pick without working out each side.',
-    'Puts dots under each number printed in the equation, as many as that number says; the ? gets none. Never a side\'s total.');
-  switch (c.type) {
-    case 'build':
-      out.push(rowDots(), help(EQ_FRAME_LEVER, ['unfinished_equation'],
-        'The learner\'s tiles are not an equation yet (no =, a sign at an end, two numbers together).',
-        'Draws the empty shape of the equation above the row: a box for each number, a circle for the sign, and the = in its place. Nothing is filled in.'));
-      break;
-    case 'rewrite':
-      if (rewriteModel(c)) out.push(help(REWRITE_MODEL_LEVER, ['same_as_printed', 'other_form', 'unfinished_equation'],
-        'The learner builds the printed equation again, or does not know what writing it another way means.',
-        'Shows an example beside the printed equation, in other numbers: an equation and the same equation turned around the =. Never the learner\'s numbers.'));
-      out.push(rowDots(), help(MATCH_LEVER, ['other_numbers'], 'The learner uses numbers that are not in the printed equation.',
-        'Puts a ring on each pool tile that shows a number printed in the equation. No order and no sign is marked.'));
-      break;
-    case 'missing-value': out.push(printed(NUMBER_MISSES)); break;
-    case 'balance': out.push(printed(['other_side_total', ...NUMBER_MISSES])); break;
-    case 'true-false': out.push(printed(['said_true', 'said_false'])); break;
-  }
-  if (practiceItem(c)) {
-    const answers = c.type === 'build' ? ['other_operation', 'other_numbers', 'false_equation']
-      : c.type === 'rewrite' ? ['other_form', 'same_as_printed', 'other_numbers', 'false_equation']
-      : c.type === 'true-false' ? ['said_true', 'said_false']
-      : ['sum_of_printed', 'short_by_more', 'over_by_more'];
-    out.push({ id: SMALLER_NUMBERS_LEVER, kind: 'simplify', carrier: 'shown', answers, pulled: pulled.includes(SMALLER_NUMBERS_LEVER),
-      when: 'The learner is far off, or the numbers are too big to work yet.',
-      does: 'Opens an easier practice item of the same kind first: the same sign, smaller numbers. It is not graded; the full item comes back after it.' });
-  }
-  return out;
-}
+/** The levers shown before any pull: the dots on an easy tier. Passed to `declare` beside the runtime's pulls. */
+export const startingLevers = (c: EquationBuilderChallenge | null, tier?: EquationBuilderTier): string[] => {
+  const dots = c && tier === 'easy' ? dotsLeverFor(c) : null;
+  return dots ? [dots] : [];
+};
 
-/** What the shown levers put on screen, for the tutor's `onScreen` fact: what is drawn, never what it adds up to. */
-export function equationLeverFacts(c: EquationBuilderChallenge | null, levers: readonly WorkspaceLever[]): string | undefined {
-  if (!c) return undefined;
-  const on = (leverId: string) => levers.some(l => l.id === leverId && l.pulled);
-  if (c.type === 'make-n') return makeNLeverFacts(levers.filter(l => l.pulled).map(l => l.id));
-  const model = on(REWRITE_MODEL_LEVER) ? rewriteModel(c) : null;
-  const notes = [
-    on(DOTS_LEVER) && 'Each number tile in the row has that many dots under it.',
-    on(EQ_FRAME_LEVER) && 'An empty equation shape is above the row: a box for each number, a circle for the sign, and the = in its place.',
-    on(PRINTED_DOTS_LEVER) && 'Each number printed in the equation has that many dots under it; the ? has none.',
-    model && `An example in other numbers is beside the printed equation: ${model.from} written as ${model.to}.`,
-    on(MATCH_LEVER) && 'Each pool tile showing a number from the printed equation has a ring.',
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
-}
+const OFF: EquationBuilderMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
+const NUMBER_MISSES: EquationBuilderMiss[] = ['printed_number', ...OFF];
+const TILE_MODES = ['build-simple', 'rewrite'];
+const PRINTED_MODES = ['missing-result', 'missing-operand', 'true-false', 'balance-both-sides'];
+
+/** The misses a lever answers on each item type; its `answers` lists every type's, `answersOn` keeps the item's. */
+const ANSWERS: Record<string, Partial<Record<EquationBuilderChallenge['type'], readonly EquationBuilderMiss[]>>> = {
+  [DOTS_LEVER]: { 'make-n': OFF, build: ['false_equation'], rewrite: ['false_equation'] },
+  [PRINTED_DOTS_LEVER]: { 'missing-value': NUMBER_MISSES, balance: ['other_side_total', ...NUMBER_MISSES],
+    'true-false': ['said_true', 'said_false'] },
+  [SMALLER_NUMBERS_LEVER]: { build: ['other_operation', 'other_numbers', 'false_equation'],
+    rewrite: ['other_form', 'same_as_printed', 'other_numbers', 'false_equation'], 'true-false': ['said_true', 'said_false'],
+    'missing-value': ['sum_of_printed', 'short_by_more', 'over_by_more'], balance: ['short_by_more', 'over_by_more'] },
+};
+const everyType = (id: string) => Array.from(new Set(Object.values(ANSWERS[id]).flat())) as EquationBuilderMiss[];
+const own = (id: string) => (c: EquationBuilderChallenge) => ANSWERS[id][c.type] ?? [];
+
+/**
+ * The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing
+ * while one is on screen.
+ */
+export const EQUATION_BUILDER_LEVERS = leverSet<EquationBuilderChallenge, null>({
+  modeOf: equationBuilderMode,
+  missesOf: mode => EQUATION_BUILDER_MISSES_BY_MODE[mode] ?? [],
+  support: { tier: c => c.supportTier ?? 'medium', different: 'an equation in other numbers written another way',
+    own: 'a way to write this equation' },
+  specs: [
+    { id: REWRITE_MODEL_LEVER, type: 'model', modes: ['rewrite'], answers: ['same_as_printed', 'other_form', 'unfinished_equation'],
+      when: 'The learner builds the printed equation again, or does not know what writing it another way means.',
+      does: 'Shows an example beside the printed equation, in other numbers: an equation and the same equation turned '
+        + 'around the =. Never the learner\'s numbers.',
+      content: c => rewriteModel(c),
+      fact: (m: RewriteModel) => `An example in other numbers is beside the printed equation: ${m.from} written as ${m.to}.` },
+    { id: DOTS_LEVER, type: 'marks', modes: [...TILE_MODES, 'make-n'], answers: everyType(DOTS_LEVER), answersOn: own(DOTS_LEVER),
+      when: c => (c.type === 'make-n'
+        ? 'The learner\'s sentence makes one more, one less, or a different amount than the total.'
+        : 'The learner\'s equation is not true: its two sides are not the same amount.'),
+      does: c => (c.type === 'make-n'
+        ? 'Puts dots under each number tile the learner placed, as many as that tile says. Never the amount the sentence makes.'
+        : 'Puts dots under each number tile in the learner\'s row, as many as that tile says. Never the amount either side makes.'),
+      fact: 'Each number tile in the row has that many dots under it.' },
+    { id: EQ_FRAME_LEVER, type: 'layout', modes: ['build-simple'], answers: ['unfinished_equation'],
+      when: 'The learner\'s tiles are not an equation yet (no =, a sign at an end, two numbers together).',
+      does: 'Draws the empty shape of the equation above the row: a box for each number, a circle for the sign, and the = '
+        + 'in its place. Nothing is filled in.',
+      content: c => (equationFrame(c).length ? equationFrame(c) : null),
+      fact: 'An empty equation shape is above the row: a box for each number, a circle for the sign, and the = in its place.' },
+    { id: FRAME_LEVER, type: 'layout', modes: ['make-n'], answers: ['bare_number', 'unfinished_sentence'],
+      when: 'The learner puts down one number alone, or tiles that are not a sentence yet (two numbers together, a sign at an end).',
+      does: 'Shows the shape of a number sentence beside the row: empty boxes for a number, a + or −, and a number. Nothing is filled in.',
+      fact: 'An empty sentence shape (number, sign, number) is beside the row.' },
+    { id: PRINTED_DOTS_LEVER, type: 'marks', modes: PRINTED_MODES, answers: everyType(PRINTED_DOTS_LEVER),
+      answersOn: own(PRINTED_DOTS_LEVER),
+      when: 'The learner\'s number is off, or they pick without working out each side.',
+      does: 'Puts dots under each number printed in the equation, as many as that number says; the ? gets none. Never a side\'s total.',
+      fact: 'Each number printed in the equation has that many dots under it; the ? has none.' },
+    { id: MATCH_LEVER, type: 'marks', modes: ['rewrite'], answers: ['other_numbers'],
+      when: 'The learner uses numbers that are not in the printed equation.',
+      does: 'Puts a ring on each pool tile that shows a number printed in the equation. No order and no sign is marked.',
+      fact: 'Each pool tile showing a number from the printed equation has a ring.' },
+    { id: SMALLER_LEVER, type: 'easier', modes: ['make-n'], answers: ['short_by_more', 'over_by_more'],
+      when: 'The learner\'s sentence is far from the total, or they cannot start.',
+      does: 'Opens an easier ask first: a smaller total, about half, one way, with only the + tile. It is not graded; the '
+        + 'full item comes back after it.',
+      content: c => smallerMakeN(c) },
+    { id: SMALLER_NUMBERS_LEVER, type: 'easier', modes: [...TILE_MODES, ...PRINTED_MODES], answers: everyType(SMALLER_NUMBERS_LEVER),
+      answersOn: own(SMALLER_NUMBERS_LEVER),
+      when: 'The learner is far off, or the numbers are too big to work yet.',
+      does: 'Opens an easier practice item of the same kind first: the same sign, smaller numbers. It is not graded; the '
+        + 'full item comes back after it.',
+      content: c => practiceItem(c) },
+  ],
+});

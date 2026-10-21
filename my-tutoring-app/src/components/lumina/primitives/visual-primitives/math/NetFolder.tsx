@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -17,29 +17,29 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { NetFolderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   baseFaces, baseView, cellNet, cellsOf, foldCubeCells, projectSolid, sharedEdges, solidModel, solidNet, boxNet,
   CROSS_NET, type Cell, type NetFace, type Point,
 } from './netFolderGeometry';
 import {
   boxDims, countsOf, describeNetWork, itemSolid, matchTarget, netCorrect, netFolderMiss, netFolds, solidWords,
-  surfaceTotal, workspaceAssignment, workspaceScene, type NetWork,
+  surfaceTotal, workspaceScene, type NetWork,
 } from './netFolderWorkspace';
 import {
-  AREA_VS_VOLUME, BASE_OUTLINE, FAMILY_MODEL, FOLD_GUIDES, MATCH_LIST, NET_BESIDE, OPPOSITE_RULE, PAIR_COLORS,
+  AREA_VS_VOLUME, BASE_OUTLINE, FAMILY_MODEL, FOLD_GUIDES, MATCH_LIST, NET_BESIDE, NET_LEVERS, OPPOSITE_RULE, PAIR_COLORS,
   PART_NAMES, PRACTICE_NOTE, SEE_THROUGH, SIX_FACES_MODEL, THIRD_LABEL, TURN_TO_BASE, VALID_MODEL, WRAP_MODEL,
-  familyModelSolids, isPracticeNet, leverFacts, netLevers, simplerNet, solidOf, thirdLabelCell, validModelNet,
+  familyModelSolids, solidOf, thirdLabelCell, validModelNet, type NetLeverContext,
 } from './netFolderLevers';
+import { netFolderBoss } from './netFolder.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -138,8 +138,7 @@ export interface NetFolderData {
   };
   imagePrompt?: string | null;
   gradeBand?: '3-4' | '4-5';
-  /** Within-mode support tier (config.difficulty). Surfaced to the live tutor so
-   *  its reveal level stays in sync with the on-screen fold scaffolds. */
+  /** Within-mode support tier (config.difficulty); the generator sets the fold scaffolds' starting position from it. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
@@ -342,43 +341,6 @@ const MiniCells: React.FC<{ cells: Cell[]; marks?: number[]; unit?: number }> = 
 };
 
 // ============================================================================
-// Tutor reveal policy — keep the live tutor in sync with the fold scaffolds (scripted path)
-// ============================================================================
-
-/**
- * How much the live tutor may reveal, calibrated to the on-screen support tier
- * and the eval mode. The tutor is a second information channel: at 'hard' the UI
- * withdraws the fold-line guides and (where shown) the face-match highlighting,
- * so the tutor must not narrate that withheld help either. For the recognition
- * modes where the correspondence IS the answer (match_faces / valid_net), the
- * tutor never names which faces meet or whether the net folds, at ANY tier.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  mode: NetFolderChallenge['type'],
-): string {
-  if (!tier) return '';
-  const answerGuard =
-    mode === 'match_faces'
-      ? 'Never name which face on the solid the highlighted net face folds to — discovering the correspondence IS the task.'
-      : mode === 'valid_net'
-        ? 'Never say whether the net is valid or invalid, or whether the faces will overlap — judging the fold IS the task.'
-        : mode === 'surface_area'
-          ? 'Never state a face area or the total surface area for the student.'
-          : mode === 'identify_solid'
-            ? 'Never name the solid for the student.'
-            : 'Never state the face/edge/vertex counts for the student.';
-  switch (tier) {
-    case 'easy':
-      return `SUPPORT TIER easy: maximum scaffolding. The fold-line guides are visible on the net; you may point to where the net hinges and folds, and (when face-match highlighting is shown) talk through which net face lines up with which solid face. ${answerGuard}`;
-    case 'medium':
-      return `SUPPORT TIER medium: the fold-line guides are shown but face-match highlighting is withdrawn. Nudge the student to trace the fold lines themselves; do not call out specific face pairings. ${answerGuard}`;
-    default:
-      return `SUPPORT TIER hard: the fold-line guides and the face-match highlighting are BOTH withdrawn. Do NOT supply the fold lines or name any face pairing — ask the student to imagine folding the net up edge by edge and reason it out themselves. ${answerGuard}`;
-  }
-}
-
-// ============================================================================
 // Props
 // ============================================================================
 
@@ -394,12 +356,13 @@ interface NetFolderProps {
 const EMPTY_WORK: NetWork = { selected: null, total: '', faces: '', edges: '', vertices: '' };
 const DEFAULT_ROTATION = { x: -25, y: 35 };
 
+const useNetFolderProgress = useWorkspaceProgressFor('net-folder');
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  NetFolderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<NetFolderChallenge>) => Progress }) => {
+const NetFolderSurface = ({ data, className, runtimePlanItemId }: NetFolderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -408,8 +371,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     net,
     challenges = [],
     showOptions = {},
-    gradeBand = '3-4',
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -434,28 +395,26 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Challenge progress. On the workspace path the runtime moves the index.
+  // Challenge progress: the teaching workspace owns it.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useNetFolderProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: netFolderBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: (result) => finish.current(result),
   });
   const {
     currentIndex: currentChallengeIndex,
-    currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -478,8 +437,8 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
 
-  // In-item levers (`netFolderLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place.
+  // In-item levers (`NET_LEVERS`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<NetFolderChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
@@ -537,57 +496,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration (scripted path; its context carries the counts, so it is off with the tutor)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    solidType: solid.type,
-    solidName: solid.name,
-    faces: solid.faces,
-    edges: solid.edges,
-    vertices: solid.vertices,
-    netLayout: net.layout,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    challengeType: currentChallenge?.type ?? 'identify_solid',
-    instruction: currentChallenge?.instruction ?? '',
-    attemptNumber: currentAttempts + 1,
-    isFolded,
-    supportTier: supportTier ?? null,
-  }), [
-    solid, net.layout, gradeBand, challenges.length,
-    currentChallengeIndex, currentChallenge, currentAttempts, isFolded, supportTier,
-  ]);
-
-  const revealPolicy = tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'identify_solid');
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'net-folder',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '3-4' ? 'Grade 3-4' : 'Grade 4-5',
-    enabled: !tutorOwned,
-  });
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] This is a 3D shapes activity${asksName ? '' : ` about ${solid.name} (${solid.type})`}. `
-      + `The student will explore a solid, its net, and answer ${challenges.length} challenges. `
-      + `Grade band: ${gradeBand}. `
-      + `Introduce warmly: "Today we're going to explore a 3D shape! Let's discover its faces, edges, and how it unfolds."`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, solid, gradeBand, revealPolicy, sendText, asksName]);
-
-  // -------------------------------------------------------------------------
   // Rotation and face taps
   // -------------------------------------------------------------------------
   const handleRotate = useCallback((delta: { x: number; y: number }) => {
@@ -629,7 +537,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
           break;
         }
       }
-      sendText(`[ANSWER_CORRECT] Student answered the ${ch.type} challenge correctly (${response}). Celebrate briefly.`, { silent: true });
       progress.commitCheck(response, true);
       return;
     }
@@ -650,17 +557,13 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         break;
       }
     }
-    sendText(
-      `[ANSWER_INCORRECT] Student ${response} on a ${ch.type} challenge. Hint: "${ch.hint}"`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true },
-    );
     progress.commitCheck(response, false, netFolderMiss(ch, shownSolid, work));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, hasSubmittedEvaluation, shownSolid, work, sendText, revealPolicy, progress.commitCheck]);
+  }, [currentChallenge, hasSubmittedEvaluation, shownSolid, work, progress.commitCheck]);
 
   // -------------------------------------------------------------------------
-  // Advance (scripted path; the workspace path hides Next and the runtime advances)
+  // Evaluation: under a lesson's evaluation provider only, the scored session, whose item scores count corrections
+  // and whose evidence carries each wrong check's named miss.
   // -------------------------------------------------------------------------
   const metricsFrom = (solved: (type: string) => { correct: number; total: number }, totalAttempts: number, accuracy: number): NetFolderMetrics => {
     const id = solved('identify_solid'), match = solved('match_faces'), valid = solved('valid_net');
@@ -678,43 +581,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     };
   };
 
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      const overallPct = Math.round((challengeResults.filter(r => r.correct).length / Math.max(challenges.length, 1)) * 100);
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ')}. `
-        + `Overall: ${overallPct}%. Give encouraging phase-specific feedback about their 3D shape understanding!`,
-        { silent: true }
-      );
-      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false && !tutorOwned) {
-        const correct = challengeResults.filter(r => r.correct).length;
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const score = Math.round((correct / Math.max(challenges.length, 1)) * 100);
-        const byType = (type: string) => {
-          const ofType = challengeResults.filter(r => challenges.find(c => c.id === r.challengeId)?.type === type);
-          return { correct: ofType.filter(r => r.correct).length, total: ofType.length };
-        };
-        submitEvaluation(correct === challenges.length, score, metricsFrom(byType, totalAttempts, score), { challengeResults });
-      }
-      return;
-    }
-    resetWork();
-    resetView();
-    const next = challenges[currentChallengeIndex + 1];
-    if (next) {
-      sendText(
-        `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-        + `Type: ${next.type}. Instruction: "${next.instruction}". Introduce it briefly.`
-        + (() => { const p = tutorRevealPolicy(supportTier, next.type); return p ? ` ${p}` : ''; })(),
-        { silent: true }
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advanceProgress, phaseResults, challengeResults, challenges, currentChallengeIndex, hasSubmittedEvaluation,
-    supportTier, sendText, submitEvaluation, tutorOwned, progress.recordsEvaluation]);
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
-  // corrections and whose evidence carries each wrong check's named miss.
   finish.current = (result) => {
     if (hasSubmittedEvaluation || challenges.length === 0) return;
     const byType = (type: string) => {
@@ -748,7 +614,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
 
   const currentSolved = !practice && challengeResults.some(r => r.challengeId === sessionChallenge?.id && r.correct);
   const practiceSolved = !!practice && feedbackType === 'success';
-  const showNextButton = !tutorOwned && currentSolved;
 
   // -------------------------------------------------------------------------
   // Nets
@@ -808,18 +673,22 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
     ? `cell-${currentChallenge.highlightCell}` : null;
 
   // -------------------------------------------------------------------------
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`netFolderLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. Every mode declares levers (`NET_LEVERS`).
   // -------------------------------------------------------------------------
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { ...work, solid: shownSolid, netShown, showLabels: showFaceLabels, foldGuides });
     const sessionSolid = itemSolid(solid, sessionChallenge);
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : netLevers(sessionChallenge, pulledLevers, { solid: sessionSolid, foldGuidesShown: showFoldGuides, netShown: netShown && !leverOn(NET_BESIDE) });
+    // `netShown` counts only an Unfold the learner pressed: a pulled net_beside stays declared, as pulled.
+    const ctx: NetLeverContext = { solid: sessionSolid, foldGuidesShown: showFoldGuides, netShown: netShown && !leverOn(NET_BESIDE) };
+    const levers = practice ? [] : NET_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : NET_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : NET_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
@@ -827,12 +696,12 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerNet(sessionChallenge, sessionSolid);
+          const easier = NET_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetWork(); resetView();
-          return { practice: workspaceAssignment(easier) };
+          return { practice: netFolderBoss.assignment!(easier) };
         }
-        if (id === NET_BESIDE && netShown) return 'The net is already open beside the solid.';
+        // What a pull moves on screen: the net opened, or the solid turned to its base.
         if (id === NET_BESIDE || id === MATCH_LIST) setIsFolded(false);
         if (id === TURN_TO_BASE) setRotation(baseView(sessionSolid.type));
         setLeverState(pulled);
@@ -863,7 +732,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         return (
           <div className="flex flex-wrap gap-2">
             {(currentChallenge.options || []).map(opt => (
-              <LuminaButton key={opt} onClick={() => choose(opt)} disabled={inputClosed || blocked}
+              <LuminaButton key={opt} onClick={() => choose(opt)} disabled={inputClosed}
                 className={optionClass(work.selected === opt)}>
                 {solidWords(opt)}
               </LuminaButton>
@@ -874,7 +743,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         return (
           <div className="flex flex-wrap gap-2">
             {(currentChallenge.faceOptions || []).map(opt => (
-              <LuminaButton key={opt} onClick={() => choose(opt)} disabled={inputClosed || blocked}
+              <LuminaButton key={opt} onClick={() => choose(opt)} disabled={inputClosed}
                 className={optionClass(work.selected === opt)}>
                 {opt}
               </LuminaButton>
@@ -884,11 +753,11 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
       case 'valid_net':
         return (
           <div className="flex gap-3">
-            <LuminaButton aria-label="Valid net" onClick={() => choose('valid')} disabled={inputClosed || blocked}
+            <LuminaButton aria-label="Valid net" onClick={() => choose('valid')} disabled={inputClosed}
               className={`flex-1 ${work.selected === 'valid' ? 'bg-emerald-600/40 border-emerald-400 text-white' : ''}`}>
               Valid Net ✓
             </LuminaButton>
-            <LuminaButton aria-label="Invalid net" onClick={() => choose('invalid')} disabled={inputClosed || blocked}
+            <LuminaButton aria-label="Invalid net" onClick={() => choose('invalid')} disabled={inputClosed}
               className={`flex-1 ${work.selected === 'invalid' ? 'bg-red-600/40 border-red-400 text-white' : ''}`}>
               Invalid Net ✗
             </LuminaButton>
@@ -914,7 +783,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                 aria-label="Total surface area"
                 value={work.total}
                 onChange={e => setField('total', e.target.value)}
-                disabled={inputClosed || blocked}
+                disabled={inputClosed}
                 placeholder="Total"
                 className="w-40"
               />
@@ -934,7 +803,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                   aria-label={field[0].toUpperCase() + field.slice(1)}
                   value={work[field]}
                   onChange={e => setField(field, e.target.value)}
-                  disabled={inputClosed || blocked}
+                  disabled={inputClosed}
                   className="w-full"
                 />
               </div>
@@ -952,18 +821,6 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const localOverallScore = challenges.length > 0
     ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
     : 0;
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The solid, its net, and the challenge',
-    solved: currentSolved,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
 
   const shownTitle = asksName ? title.split(solid.name).join('a 3D Shape') : title;
   const shownDescription = asksName && description ? description.split(solid.name).join('a 3D shape')
@@ -1007,9 +864,10 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
           </div>
         )}
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the solid, its net and the
+            challenge as one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <LuminaPanel>
             <div className="text-xs text-slate-400 text-center mb-2 font-medium">3D Solid</div>
@@ -1129,7 +987,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
           </div>
         )}
 
-        {/* Challenge area */}
+        {/* Challenge area. The shell's Try again and Next challenge follow a check. */}
         {currentChallenge && !allChallengesComplete && (
           <LuminaPanel className="space-y-3">
             <div className="flex items-center gap-2">
@@ -1157,28 +1015,19 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
               </div>
             )}
 
-            {/* Action buttons. On the workspace path the shell's Try again / Next challenge replace Next. */}
-            <div className="flex gap-2">
-              {!currentSolved && !practiceSolved && (
+            {!currentSolved && !practiceSolved && (
+              <div className="flex gap-2">
                 <LuminaActionButton
                   action="check"
                   onClick={handleCheckAnswer}
                   disabled={!canCheck || hasSubmittedEvaluation || blocked}
                 />
-              )}
-              {showNextButton && (
-                <LuminaActionButton
-                  action="next"
-                  onClick={advanceToNextChallenge}
-                >
-                  {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish!'}
-                </LuminaActionButton>
-              )}
-            </div>
+              </div>
+            )}
           </LuminaPanel>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {/* Summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1196,8 +1045,7 @@ const NetFolderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const NetFolder = withWorkspaceController<NetFolderProps, ProgressOptions<NetFolderChallenge>, Progress>(
-  'net-folder', NetFolderSurface, useScriptedProgress, useWorkspaceProgressFor('net-folder'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const NetFolder = withWorkspaceOnly<NetFolderProps>('net-folder', NetFolderSurface, props => props.data.title);
 
 export default NetFolder;

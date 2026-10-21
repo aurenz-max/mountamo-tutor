@@ -1,7 +1,7 @@
 # Contract: two-way-table
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C19) for the workspace and lever requirements only. A full `/primitive-contract two-way-table` derivation (consumers per probability skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/TwoWayTable.tsx` · **Workspace:** `twoWayTableWorkspace.ts` · **Levers:** `twoWayTableLevers.ts` · **Generator:** `service/math/gemini-two-way-table.ts` · **Oracle:** `service/qa/oracles/two-way-table.ts` · **Adapter:** `components/live-activity/adapters/twoWayTableLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`two-way-table`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/TwoWayTable.tsx` · **Workspace:** `twoWayTableWorkspace.ts` · **Levers:** `twoWayTableLevers.ts` · **Generator:** `service/math/gemini-two-way-table.ts` · **Oracle:** `service/qa/oracles/two-way-table.ts` · **Boss:** `twoWayTable.card.ts` + `twoWayTable.boss.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`two-way-table`)
 
 ## Requirements
 
@@ -16,9 +16,10 @@
 - **Probe:** `TwoWayTable.workspace.test.tsx` (adapter, older payload).
 
 ### R3 — every mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
-- **Property:** `twoWayTableLevers.ts` declares levers on every mode, and every miss the check can name on an item is answered by a lever on that item. Help: outline_question, sum_frame (only where a needed total is hidden), out_of_frame, model_table. Leak rules in code: no lever text or fact carries a digit; the out-of frame carries no digit outside the category names; the sum frame never writes a sum; the model's answer is outside the item's tolerance. Simplify (`simpler_table`, every mode) opens the same kind of question on a 2 x 2 table of ten with the item's first category names and its own `~simpler` id, ask, counts and answer (`practiceLeaks`), ungraded; the full item comes back blank.
+- **Property:** `twoWayTableLevers.ts` declares levers on every mode as one lever set (`TWO_WAY_LEVERS`), and every miss the check can name on an item is answered by a lever on that item. Help: outline_question, sum_frame (only where a needed total is hidden), out_of_frame, model_table. Leak rules in code: no lever text or fact carries a digit; the out-of frame carries no digit outside the category names; the sum frame never writes a sum; the model's answer is outside the item's tolerance. Simplify (`simpler_table`, every mode) opens the same kind of question on a 2 x 2 table of ten with the item's first category names and its own `~simpler` id, ask, counts and answer (`practiceLeaks`), ungraded; the full item comes back blank.
 - **Evidence:** `twoWayTableLevers.test.ts` 17, `TwoWayTable.levers.workspace.test.tsx` 3; sweep J9/J12/J13 0 findings (`qa/eval-reports/two-way-table-levers-2026-10-09.md`).
 
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C19).
+- 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss`, levers as a lever set (outline marks, sum layout, out-of clue, model, easier), workspace-only export; the scripted path, hint button, adapter and catalog guidance/tutoring prose deleted. R1-R3 unchanged.

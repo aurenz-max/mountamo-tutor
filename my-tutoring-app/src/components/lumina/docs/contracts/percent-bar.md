@@ -1,7 +1,7 @@
 # Contract: percent-bar
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C15) for the workspace and lever requirements only. A full `/primitive-contract percent-bar` derivation (consumers per percent skill, grade bands) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/math/PercentBar.tsx` · **Workspace:** `percentBarWorkspace.ts` · **Levers:** `percentBarLevers.ts` · **Generator:** `service/math/gemini-percent-bar.ts` · **Oracle:** `service/qa/oracles/percent-bar.ts` · **Adapter:** `components/live-activity/adapters/percentBarLive.ts` · **Catalog:** `service/manifest/catalog/math.ts` (`percent-bar`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/math/PercentBar.tsx` · **Workspace:** `percentBarWorkspace.ts` · **Levers:** `percentBarLevers.ts` · **Generator:** `service/math/gemini-percent-bar.ts` · **Oracle:** `service/qa/oracles/percent-bar.ts` · **Boss:** `percentBar.card.ts` + `percentBar.boss.ts` (`bossAdapter`, `bossJourney`) · **Catalog:** `service/manifest/catalog/math.ts` (`percent-bar`)
 
 ## Requirements
 
@@ -16,7 +16,7 @@
 - **Probe:** `PercentBar.workspace.test.tsx` (the slider reads 0 on mount); oracle `percent-bar.test.ts`.
 
 ### R3 — every mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
-- **Property:** `percentBarLevers.ts` declares levers on every mode and every catalog miss is answered by a help lever on every item. Help: value_bar (where the session does not draw it; not on find_part / find_whole), tenths, fill_names (every mode); discount_model (percent_remaining, convert); added_model (percent_total); part_copies (find_whole, amount step only); compare_model (convert). Leak rules in code: no lever text, caption or fact carries a digit; the tenth marks are unlabelled; the bar levers are refused on a compare step. Simplify (`simpler_problem`, identify / percent_remaining / percent_total / find_part / find_whole) opens a same-mode problem on a friendlier percent with its own `~simpler` id and scenario and no step percent within tolerance of the item's (`practiceLeaks`), ungraded; the full item comes back blank. convert has no simplify. Starting positions are the existing tier's aids (labels, guide lines, value bar, calculation panel); they are not pulls.
+- **Property:** `percentBarLevers.ts` declares levers on every mode and every catalog miss is answered by a help lever on every item. Help: value_bar (where the session does not draw it; not on find_part / find_whole), tenths, fill_names (every mode); discount_model (percent_remaining, convert); added_model (percent_total); part_copies (find_whole, amount step only); compare_model (convert). Leak rules in code: no lever text, caption or fact carries a digit; the tenth marks are unlabelled; the bar levers are not offered on a compare step (an offer condition on `PERCENT_LEVERS`). Simplify (`simpler_problem`, identify / percent_remaining / percent_total / find_part / find_whole) opens a same-mode problem on a friendlier percent with its own `~simpler` id and scenario and no step percent within tolerance of the item's (`practiceLeaks`), ungraded; the full item comes back blank. convert has no simplify. Starting positions are the existing tier's aids (labels, guide lines, value bar, calculation panel); they are not pulls.
 - **Evidence:** `percentBarLevers.test.ts`, `PercentBar.levers.workspace.test.tsx`; sweep J9/J12/J13 0 findings (`qa/eval-reports/percent-bar-levers-2026-10-09.md`).
 
 ### R4 — find_part and find_whole ask for an amount, and nothing on screen or in the scene states it · OBSERVED (2026-10-16)
@@ -29,3 +29,4 @@
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C15).
 - 2026-10-16 — 8.1f: modes find_part / find_whole renamed percent_remaining / percent_total (they ask a percent); new find_part / find_whole (amount steps, R4). No calibration was stored under the old ids.
+- 2026-10-20 — moved onto a boss (wave 3): card `percentBar.card.ts` (misses live there; per-mode answer manipulate / type on find_part, find_whole / tap on convert, matching the catalog's per-mode affordances), boss `percentBar.boss.ts` (validate moved from the deleted `adapters/percentBarLive.ts`), levers one `PERCENT_LEVERS` set (marks, layout, clue pictures, easier), workspace-only component (scripted intro/hint/Next, `useLuminaAI`, tier reveal clauses and hand-wired Pip deleted). The catalog's prose guidance and tutoring block are gone; the tutor reads the card's words.

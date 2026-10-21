@@ -16,23 +16,22 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { RegroupingWorkbenchMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
-  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
   describeRegroupWork, operandsOf, regroupMiss, regroupingMatches, resultOf, startBlocks, typedValue,
-  workspaceAssignment, workspaceScene, type RegroupView,
+  workspaceScene, type RegroupView,
 } from './regroupingWorkbenchWorkspace';
 import {
-  COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_MARKS_LEVER, TRADE_MODEL_LEVER,
-  leverFacts, regroupLevers, smallerProblem,
+  COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_LEVERS, REGROUP_MARKS_LEVER, TRADE_MODEL_LEVER,
 } from './regroupingWorkbenchLevers';
+import { regroupingWorkbenchBoss } from './regroupingWorkbench.boss';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -94,7 +93,7 @@ export interface RegroupingWorkbenchData {
     imagePrompt?: string;
   };
   gradeBand?: '1-2' | '3-4';
-  /** Support tier ('easy' | 'medium' | 'hard') — calibrates the tutor's reveal level. */
+  /** Support tier ('easy' | 'medium' | 'hard'), the session's; each challenge carries its own. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
@@ -210,12 +209,14 @@ interface RegroupingWorkbenchProps {
   runtimeEvalMode?: string;
 }
 
+const useRegroupProgress = useWorkspaceProgressFor('regrouping-workbench');
+const PRACTICE_NOTE = 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.';
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  RegroupingWorkbenchProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RegroupingChallenge>) => Progress }) => {
+const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: RegroupingWorkbenchProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -228,7 +229,6 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
     showOptions = {},
     wordProblemContext,
     gradeBand = '1-2',
-    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -268,15 +268,15 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Challenge progress. On the workspace path the runtime moves the index.
+  // Challenge progress: the teaching workspace owns it.
   // -------------------------------------------------------------------------
   /** Bound below, once the setters exist; the progress hook calls it only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
-  const progress = useController({
+  const progress = useRegroupProgress({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: (ch) => workspaceAssignment(ch, operation, fallback),
+    workspace, assignment: regroupingWorkbenchBoss.assignment!,
     onItemOpened: (index, retry) => openItem.current(index, retry),
   });
   const {
@@ -285,10 +285,9 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    advance: advanceProgress,
   } = progress;
-  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
-  const blocked = tutorOwned && progress.canAttempt === false;
+  /** A checked answer stays closed until Try again or the next item. */
+  const blocked = progress.canAttempt === false;
   const workspaceClosed = useRef(false);
   workspaceClosed.current = blocked;
   const learnerBlocked = () => workspaceClosed.current;
@@ -303,8 +302,8 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
 
   const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
 
-  // Levers (`regroupingWorkbenchLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
-  // simplify lever put on screen in its place. The tier's regroup marks and place labels are starting positions.
+  // Levers (`REGROUP_LEVERS`), keyed by the session item they were pulled on, and the easier problem a simplify lever
+  // put on screen in its place. The tier's regroup marks and place labels are starting positions.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<RegroupingChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] || null;
@@ -351,9 +350,9 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
     setFeedbackType('');
     setChallengeStartTime(Date.now());
   };
-  // Workspace path. A fresh challenge opens blank. Try again clears the checked digits and keeps the trades: the
-  // typed number is what was checked, and the blocks are the learner's own tool. Try again on a practice problem keeps
-  // it; only a fresh item (or the return from practice) ends it.
+  // A fresh challenge opens blank. Try again clears the checked digits and keeps the trades: the typed number is what
+  // was checked, and the blocks are the learner's own tool. Try again on a practice problem keeps it; only a fresh item
+  // (or the return from practice) ends it.
   openItem.current = (index, retry) => {
     if (retry) {
       setAnswerDigits(new Array(places).fill(null));
@@ -385,84 +384,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration (the scripted path; off on the workspace path, whose packet carries no answer)
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    operation,
-    operand1,
-    operand2,
-    correctAnswer,
-    maxPlace,
-    gradeBand,
-    blocks: blocks.map((b, i) => `${PLACE_LABELS[i]}: ${b}`).join(', '),
-    carries: carries.join(', '),
-    currentPhase,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.problem ?? `${operand1} ${operation === 'addition' ? '+' : '−'} ${operand2}`,
-    attemptNumber: currentAttempts + 1,
-    requiresRegrouping: currentChallenge?.requiresRegrouping ?? false,
-    wordProblem: wordProblemContext?.story ?? '',
-    supportTier: currentChallenge?.supportTier ?? supportTier ?? '',
-  }), [
-    operation, operand1, operand2, correctAnswer, maxPlace, gradeBand,
-    blocks, carries, currentPhase, challenges.length, currentChallengeIndex,
-    currentChallenge, currentAttempts, wordProblemContext, supportTier,
-  ]);
-
-  // Tutor reveal level — keep the AI tutor in sync with what each tier hides.
-  // hard: never name WHEN/HOW to regroup; ask what the student sees in each
-  // column; never reveal the answer. easy: name the strategy and walk the setup.
-  const tutorRevealClause = useMemo(() => {
-    const tier = currentChallenge?.supportTier ?? supportTier;
-    if (tier === 'hard') {
-      return ' [TIER hard: the on-screen regroup hints and place-value labels are WITHDRAWN. '
-        + 'Do NOT name which column to carry/borrow or when to regroup. Ask the student what they see in each column '
-        + 'and let them decide. Never reveal the final answer.]';
-    }
-    if (tier === 'medium') {
-      return ' [TIER medium: place labels are shown but regroup hints are off. Nudge the student to check each column '
-        + 'themselves; only confirm once they notice an overflow. Do not pre-name the column to regroup.]';
-    }
-    if (tier === 'easy') {
-      return ' [TIER easy: maximum scaffolding is on. You may name the strategy and walk through the setup column by column.]';
-    }
-    return '';
-  }, [currentChallenge, supportTier]);
-
-  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'regrouping-workbench',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-4',
-    enabled: !tutorOwned,
-  });
-  // Its cues carry the answer, so on the workspace path they send nothing.
-  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
-    if (!tutorOwned) sendLegacyText(text, options);
-  }, [tutorOwned, sendLegacyText]);
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    const opWord = operation === 'addition' ? 'adding' : 'subtracting';
-    sendText(
-      `[ACTIVITY_START] This is a regrouping workbench for ${gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 3-4'}. `
-      + `Operation: ${operation}. First problem: ${currentChallenge?.problem || `${operand1} ${operation === 'addition' ? '+' : '−'} ${operand2}`}. `
-      + `${currentChallenge?.requiresRegrouping ? 'This problem requires regrouping!' : 'No regrouping needed.'} `
-      + `${wordProblemContext?.story ? `Story context: "${wordProblemContext.story}". ` : ''}`
-      + `Introduce warmly: "Today we're going to practice ${opWord} with blocks! Let's see what happens when we combine numbers." `
-      + `Then read the first problem.`
-      + tutorRevealClause,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, operation, operand1, operand2, gradeBand, currentChallenge, wordProblemContext, sendText, tutorRevealClause]);
-
-  // -------------------------------------------------------------------------
-  // Submit the evaluation when all challenges complete
+  // Submit the evaluation when all challenges complete (under a lesson's evaluation provider only)
   // -------------------------------------------------------------------------
   /** Once per session: the evaluation hook's own flag lands a render later. */
   const submittedRef = useRef(false);
@@ -494,23 +416,11 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
     };
 
     submitEvaluation(totalCorrect === challenges.length, score, metrics, { challengeResults });
-
-    const phaseScoreStr = phaseResults
-      .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-      .join(', ');
-    sendText(
-      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${score}%. `
-      + `Student completed all ${challenges.length} regrouping problems! `
-      + `Celebrate and give encouraging phase-specific feedback about ${operation} with regrouping.`,
-      { silent: true },
-    );
   }, [
-    challenges, challengeResults, phaseResults, algorithmConnectionMade, incorrectRegroupAttempts, stepByStepUsed,
-    wordProblemContext, submitEvaluation, sendText, operation,
+    challenges, challengeResults, algorithmConnectionMade, incorrectRegroupAttempts, stepByStepUsed,
+    wordProblemContext, submitEvaluation,
   ]);
 
-  // The "Next Problem" button is hidden when allChallengesComplete is true,
-  // so advanceToNextChallenge is never called for the last challenge.
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
     // The live host has no evaluation provider; a workspace family submits only under one.
@@ -543,23 +453,11 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
         SoundManager.snap();
         setFeedback(`Traded 10 ${PLACE_LABELS[placeIndex].toLowerCase()} for 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()}!`);
         setFeedbackType('success');
-
-        sendText(
-          `[REGROUP_CARRY] Student traded 10 ${PLACE_LABELS[placeIndex].toLowerCase()} for 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()}. `
-          + `This is carrying! The carry digit "${carries[placeIndex + 1] + 1}" appears above the ${PLACE_LABELS[placeIndex + 1].toLowerCase()} column. `
-          + `Celebrate: "Great trade! 10 ones become 1 ten. See the 1 carry above?"`,
-          { silent: true }
-        );
       } else if (blocks[placeIndex] < 10) {
         setIncorrectRegroupAttempts(c => c + 1);
         SoundManager.invalid();
         setFeedback(`You only have ${blocks[placeIndex]} ${PLACE_LABELS[placeIndex].toLowerCase()}. You need 10 to regroup!`);
         setFeedbackType('error');
-        sendText(
-          `[REGROUP_NOT_NEEDED] Student tried to regroup ${PLACE_LABELS[placeIndex].toLowerCase()} but only has ${blocks[placeIndex]}. `
-          + `Guide: "You only have ${blocks[placeIndex]} ${PLACE_LABELS[placeIndex].toLowerCase()}. You need at least 10 to trade for a ${PLACE_LABELS[placeIndex + 1].toLowerCase()}."`,
-          { silent: true }
-        );
       }
     } else {
       // Borrow: if blocks at this place < operand2's digit, borrow from next place
@@ -581,13 +479,6 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
         SoundManager.snap();
         setFeedback(`Borrowed 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} = 10 ${PLACE_LABELS[placeIndex].toLowerCase()}!`);
         setFeedbackType('success');
-
-        sendText(
-          `[REGROUP_BORROW] Student borrowed 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} to get 10 more ${PLACE_LABELS[placeIndex].toLowerCase()}. `
-          + `Now ${PLACE_LABELS[placeIndex].toLowerCase()} has ${blocks[placeIndex] + 10}. `
-          + `Explain: "We traded 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} for 10 ${PLACE_LABELS[placeIndex].toLowerCase()} so we have enough to subtract."`,
-          { silent: true }
-        );
       } else if (blocks[placeIndex] < d2[placeIndex]) {
         // Nothing in the next column to break yet (a borrow across a zero starts one column further up).
         SoundManager.invalid();
@@ -600,7 +491,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
         setFeedbackType('error');
       }
     }
-  }, [operation, blocks, carries, places, maxPlace, operand2, hasSubmittedEvaluation, sendText]);
+  }, [operation, blocks, places, maxPlace, operand2, hasSubmittedEvaluation]);
 
   // -------------------------------------------------------------------------
   // Answer Submission
@@ -643,15 +534,8 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
       setCurrentPhase('connect');
       setFeedback(`Correct! ${currentChallenge.problem} = ${correctAnswer}`);
       setFeedbackType('success');
-      sendText(
-        `[SOLVE_CORRECT] Student got ${currentChallenge.problem} = ${correctAnswer}. `
-        + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
-        + `Regroups: ${regroupedPlaces.size}/${expectedRegroups}. Time: ${Math.round(timeMs / 1000)}s. `
-        + `Celebrate and connect to the algorithm: "See how the blocks match the numbers? Each trade is a carry!"`,
-        { silent: true }
-      );
-      // The primitive's own fields; the commit below adds the verdict and the attempt count on both paths. A practice
-      // problem (a simplify lever) is not the session's challenge and records nothing.
+      // The primitive's own fields; the commit below adds the verdict and the attempt count. A practice problem (a
+      // simplify lever) is not the session's challenge and records nothing.
       if (!practice) recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -666,41 +550,9 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
       setFeedback(`Your answer is ${studentAnswer}. Not quite. Check each column again.`);
       setFeedbackType('error');
       setCurrentPhase('solve');
-      sendText(
-        `[SOLVE_INCORRECT] Student answered ${studentAnswer} but correct is ${correctAnswer}. `
-        + `Problem: ${currentChallenge.problem}. Attempt ${currentAttempts + 1}. `
-        + `${regroupedPlaces.size < expectedRegroups ? `Needs ${expectedRegroups - regroupedPlaces.size} more regroup(s). ` : ''}`
-        + `Guide: "Let's check each column. Start with the ${PLACE_LABELS[0].toLowerCase()}: what do you get?"`
-        + tutorRevealClause,
-        { silent: true }
-      );
     }
     progress.commitCheck(describeRegroupWork(work), correct, correct ? undefined : regroupMiss(work));
   };
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation (scripted path; the workspace path hides Next and the runtime advances)
-  // -------------------------------------------------------------------------
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) submitAll();
-      return;
-    }
-
-    // advanceProgress() already incremented index and reset attempts.
-    const nextIndex = currentChallengeIndex + 1;
-    const nextChallenge = challenges[nextIndex];
-    resetBoard(nextChallenge ?? null);
-    setCurrentPhase('explore');
-
-    sendText(
-      `[PHASE_TRANSITION] Moving to problem ${nextIndex + 1} of ${challenges.length}: `
-      + `"${nextChallenge.problem}". ${nextChallenge.requiresRegrouping ? 'Regrouping needed!' : 'No regrouping.'} `
-      + `Read the problem and encourage them.`,
-      { silent: true }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advanceProgress, challenges, sendText, hasSubmittedEvaluation, progress.recordsEvaluation, submitAll, currentChallengeIndex]);
 
   // -------------------------------------------------------------------------
   // Computed Values
@@ -730,32 +582,32 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
     }
   }, [operation, blocks, operand2, maxPlace, places]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
-  // presentation; every mode declares levers (`regroupingWorkbenchLevers.ts`).
+  // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; every
+  // mode declares levers (`REGROUP_LEVERS`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view());
-    const ctx = { operation, fallback, marksShown: showRegroupHints };
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, operation);
-    const levers = practice ? [] : regroupLevers(sessionChallenge, pulledLevers, ctx);
-    const tradeNeededNow = blocks.some((_, i) => i < places - 1 && needsRegroup(i));
+    const ctx = { operation, fallback, marksShown: showRegroupHints,
+      tradeNeeded: blocks.some((_, i) => i < places - 1 && needsRegroup(i)) };
+    const levers = practice ? [] : REGROUP_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
+    const published = leverScene(scene, {
+      support: practice ? '' : REGROUP_LEVERS.support(sessionChallenge, ctx),
+      onScreen: practice ? '' : REGROUP_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers),
+    });
     workspace.current = {
-      ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      ...published,
+      facts: { ...published.facts, ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (id === REGROUP_MARKS_LEVER && !tradeNeededNow) {
-          return 'No column needs a trade now: the learner has made the trades. Ask what each column shows.';
-        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallerProblem(sessionChallenge, operation, fallback);
+          const easier = REGROUP_LEVERS.simpler(sessionChallenge, ctx, id);
           if (!easier) return 'This item has no easier version; try a help lever.';
           setLeverState(pulled); setPractice(easier); resetBoard(easier);
-          return { practice: workspaceAssignment(easier, operation, fallback) };
+          return { practice: regroupingWorkbenchBoss.assignment!(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -767,18 +619,6 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The blocks and the written problem',
-    solved: isCurrentChallengeComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   const inputClosed = allChallengesComplete || blocked;
 
   return (
@@ -831,18 +671,17 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
         )}
 
         {/* Problem Display */}
-        {practice && (
-          <p className="text-center text-cyan-300 text-xs">An easier one first.</p>
-        )}
-        <div className="text-center">
+        <div className="flex items-center justify-center gap-2">
+          {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
           <span className="text-2xl font-bold text-slate-100 font-mono">
             {operand1} {operation === 'addition' ? '+' : '−'} {operand2} = ?
           </span>
         </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the blocks and the written
+            problem as one region. */}
+        {!allChallengesComplete && <PipDock />}
+        <PipWorkspace className="space-y-4">
         {/* Main Split View */}
         <div className={`grid ${showAlgorithm ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
           {/* Left: Base-Ten Blocks */}
@@ -1039,7 +878,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
 
         {leverOn(TRADE_MODEL_LEVER) && <TradeModel addition={operation === 'addition'} />}
         {leverOn(OPERATION_MODEL_LEVER) && <OperationModel addition={operation === 'addition'} />}
-        </div>
+        </PipWorkspace>
 
         {/* Feedback */}
         {feedback && (
@@ -1052,33 +891,15 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
           </div>
         )}
 
-        {/* Action Buttons */}
-        {challenges.length > 0 && (
+        {/* Check; the runtime retries and advances. */}
+        {challenges.length > 0 && !isCurrentChallengeComplete && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="check"
-                onClick={handleCheckAnswer}
-                disabled={hasSubmittedEvaluation || blocked || answerDigits.every(d => d === null)}
-              />
-            )}
-            {/* Scripted path only: on the workspace the runtime advances. */}
-            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
-              >
-                Next Problem
-              </LuminaActionButton>
-            )}
+            <LuminaActionButton
+              action="check"
+              onClick={handleCheckAnswer}
+              disabled={hasSubmittedEvaluation || blocked || answerDigits.every(d => d === null)}
+            />
           </div>
-        )}
-
-        {/* Hint (scripted path; on the workspace the tutor teaches) */}
-        {!tutorOwned && currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPanel className="p-2 text-center">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </LuminaPanel>
         )}
 
         {/* Phase Summary Panel */}
@@ -1097,8 +918,8 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorO
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const RegroupingWorkbench = withWorkspaceController<RegroupingWorkbenchProps, ProgressOptions<RegroupingChallenge>, Progress>(
-  'regrouping-workbench', RegroupingWorkbenchSurface, useScriptedProgress, useWorkspaceProgressFor('regrouping-workbench'));
+// Taught only on the workspace: an unbound mount shows the shared "needs the tutor" card.
+const RegroupingWorkbench = withWorkspaceOnly<RegroupingWorkbenchProps>('regrouping-workbench', RegroupingWorkbenchSurface,
+  props => props.data.title);
 
 export default RegroupingWorkbench;

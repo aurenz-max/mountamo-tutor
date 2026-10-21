@@ -9,8 +9,11 @@
  * Serves LA002-02-a/b/c (curriculum design review 2026-10-07): opening with the topic, grouping facts that belong,
  * closing without a new fact. Writing a sentence is NOT judged here (that is brief 1); this is organization.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
+import type { ParagraphMiss } from './paragraphArchitect.card';
+
+export { PARAGRAPH_MISSES, type ParagraphMiss } from './paragraphArchitect.card';
 
 export type CardRole = 'topic' | 'detail' | 'off_topic' | 'closing';
 export interface SentenceCard { id: string; text: string; role: CardRole }
@@ -20,6 +23,8 @@ export interface ParagraphItem {
   /** What the paragraph is about, in a child's words ("sharks"). Printed in the ask. */
   topic: string;
   cards: SentenceCard[];
+  /** The lesson's support tier, stamped on each paragraph (when the model lever comes). */
+  supportTier?: SupportTier;
 }
 
 export interface ParagraphBuildData {
@@ -29,9 +34,6 @@ export interface ParagraphBuildData {
   gradeLevel?: string;
   supportTier?: 'easy' | 'medium' | 'hard';
 }
-
-export type ParagraphMiss = 'topic_not_first' | 'closing_not_last' | 'too_few_details' | 'off_topic_detail';
-export const PARAGRAPH_MISSES: readonly ParagraphMiss[] = ['topic_not_first', 'closing_not_last', 'too_few_details', 'off_topic_detail'];
 
 export const MAX_CARD_CHARS = 110;
 /** A closing opens with a wrap-up phrase, so it cannot also serve as the topic sentence. */
@@ -69,6 +71,10 @@ export function askableParagraph(item: ParagraphItem): ParagraphItem | null {
 export const paragraphsFrom = (items: readonly ParagraphItem[]) =>
   items.map(askableParagraph).filter((i): i is ParagraphItem => !!i).map((i, n) => ({ ...i, id: i.id || `p${n + 1}` }));
 
+/** A lesson's askable paragraphs, each stamped with the lesson's support tier. */
+export const paragraphItemsOf = (d: { paragraphs?: readonly ParagraphItem[]; supportTier?: SupportTier }) =>
+  paragraphsFrom(d.paragraphs ?? []).map(p => (d.supportTier ? { ...p, supportTier: d.supportTier } : p));
+
 /** The board order: stable per item id (the same order on every render), never the paragraph's order. */
 export function boardOrder(item: ParagraphItem): SentenceCard[] {
   let h = 0;
@@ -83,23 +89,22 @@ export function boardOrder(item: ParagraphItem): SentenceCard[] {
 export const askFor = (item: ParagraphItem) =>
   `Build a paragraph about ${item.topic}: a sentence that tells the topic first, at least two facts that belong, and a closing sentence last.`;
 
-export const paragraphAssignment = (item: ParagraphItem): TeachingAssignment =>
-  ({ id: item.id, task: askFor(item), response: 'gesture' });
-
 export const describeParagraph = (item: ParagraphItem, order: readonly string[]) =>
   order.length ? `Built: ${order.map(id => item.cards.find(c => c.id === id)?.text ?? '').join(' ')}` : 'Built nothing';
 
-/** What the tutor is told: the cards and the learner's paragraph as text, never which card has which job. */
-export function paragraphScene(item: ParagraphItem, order: readonly string[], inspectorSaid?: string): WorkspaceScene {
+/**
+ * What the tutor is told: the cards in board order (never a passing order, `boardOrder`) and the learner's paragraph
+ * as text, never which card has which job. The moves are the card's; this says what the builder checks.
+ */
+export function paragraphScene(item: ParagraphItem, order: readonly string[], inspectorSaid?: string): SceneOf {
   return { objects: [], facts: {
     ask: askFor(item),
     cards: boardOrder(item).map(c => c.text).join(' | '),
     paragraph: order.length ? order.map(id => item.cards.find(c => c.id === id)?.text ?? '').join(' ') : 'empty',
     sentencesPlaced: order.length,
     ...(inspectorSaid ? { inspectorSaid } : {}),
-    constraints: 'The learner taps sentence cards into the paragraph in order (tap one in the paragraph to take it back), '
-      + 'may tap a card\'s speaker to hear it read, and presses "I\'m done!". The builder checks the order and that every '
-      + 'fact belongs to the topic. Many paragraphs pass. You cannot move a card.',
+    constraints: 'The builder checks the order and that every fact belongs to the topic. Many paragraphs pass: any two '
+      + 'or more facts that belong, in any order. Ask what the paragraph is about and whether each fact tells about it.',
   } };
 }
 
@@ -117,39 +122,18 @@ export const MODEL_PARAGRAPH = {
     'Now you know about frogs.'],
 };
 
+/** A model paragraph is not offered on a lesson about frogs: it would be the learner's own topic. */
+export const modelParagraphFor = (item: ParagraphItem) => (/\bfrogs?\b/i.test(item.topic) ? null : MODEL_PARAGRAPH);
+
+const FEWER = '~fewer';
 /** The easier practice set: the topic, two details, the closing, one off-topic card. */
 export function fewerCardsFor(item: ParagraphItem): ParagraphItem | null {
+  if (item.id.endsWith(FEWER)) return null;
   const pick = (r: CardRole, n: number) => item.cards.filter(c => c.role === r).slice(0, n);
   const cards = [...pick('topic', 1), ...pick('detail', 2), ...pick('off_topic', 1), ...pick('closing', 1)];
-  return cards.length < item.cards.length ? { id: `${item.id}~fewer`, topic: item.topic, cards } : null;
+  return cards.length < item.cards.length ? { id: `${item.id}${FEWER}`, topic: item.topic, cards } : null;
 }
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly ParagraphMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function paragraphLevers(item: ParagraphItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  return [
-    lever(FRAME_LEVER, 'help', ['topic_not_first', 'closing_not_last', 'too_few_details'],
-      'The learner puts the topic sentence or the closing in the wrong place, or uses fewer than two facts.',
-      'Shows labelled spaces above the paragraph: Topic sentence, Fact, Fact, Closing sentence. No card is placed or named.', pulled),
-    lever(MODEL_LEVER, 'help', ['off_topic_detail', 'topic_not_first', 'closing_not_last'],
-      'The learner keeps a fact about something else, or the order is still not right after the frame.',
-      'Shows a solved paragraph about frogs (not this topic) with its parts labelled, so the learner sees what belongs.', pulled),
-    ...(fewerCardsFor(item) ? [lever(FEWER_LEVER, 'simplify', ['off_topic_detail', 'too_few_details'],
-      'The learner cannot sort the cards on a board of eight.',
-      'Opens a practice set of five cards (one topic sentence, two facts, one fact about something else, one closing), ungraded. The full set comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function paragraphLeverFacts(pulled: readonly string[]): string | undefined {
-  const notes = [
-    pulled.includes(FRAME_LEVER) && 'Labelled spaces above the paragraph: Topic sentence, Fact, Fact, Closing sentence.',
-    pulled.includes(MODEL_LEVER) && `A solved paragraph about ${MODEL_PARAGRAPH.topic} is shown with its parts labelled.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
-}
+export const fewerParent = (id: string) => id.replace(/~fewer$/, '');
 
 export function paragraphMissWords(miss: ParagraphMiss | undefined, topic: string): string {
   switch (miss) {

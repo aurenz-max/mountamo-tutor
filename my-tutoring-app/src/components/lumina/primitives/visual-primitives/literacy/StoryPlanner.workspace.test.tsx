@@ -27,7 +27,8 @@ import kPayload from '../../../components/live-activity/runtime/testing/w1-paylo
 import g2Payload from '../../../components/live-activity/runtime/testing/w1-payloads/story-planner.character_setting.json';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { storyItems, storyLevers, writeShapeMiss } from './storySteps';
+import { storyItems, writeShapeMiss } from './storySteps';
+import { STORY_LEVERS } from './storyPlannerLevers';
 
 const k = (kPayload as unknown as { data: StoryPlannerData }).data;
 const g2 = (g2Payload as unknown as { data: StoryPlannerData }).data;
@@ -114,7 +115,7 @@ describe('story-planner @ grade 2+', () => {
     for (const [mode, data] of [['story_structure', k], ['character_setting', g2]] as const) {
       expect(workspaceBinding({ instanceId: mode, primitiveId: 'story-planner', pin: mode, objectiveIds: ['o'], data }), mode).not.toBeNull();
     }
-    const answered = new Set([...storyItems(k), ...storyItems(g2)].flatMap(i => storyLevers(i, [])).flatMap(l => l.answers ?? []));
+    const answered = new Set([...storyItems(k), ...storyItems(g2)].flatMap(i => STORY_LEVERS.declare(i, { boxEmpty: true }, [])).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.character_setting) expect(answered.has(m) || tw.unanswered!.character_setting.includes(m), m).toBe(true);
   });
 
@@ -136,12 +137,28 @@ describe('picture helpers', () => {
     expect(splitPictureOption('🐶 A happy puppy')).toEqual({ emoji: '🐶', label: 'A happy puppy', raw: '🐶 A happy puppy' });
     expect(splitPictureOption('A happy puppy')).toEqual({ emoji: '', label: 'A happy puppy', raw: 'A happy puppy' });
   });
-  it('the arc tray is a deterministic derangement', () => {
-    for (const events of [['a', 'b'], ['a', 'b', 'c'], ['a', 'b', 'c', 'd', 'e']]) {
+  it('the arc tray is stable, never the story order, and never lists three events in story order', () => {
+    const inOrder = (list: string[], events: string[]) => {
+      const ranks = list.map(e => events.indexOf(e));
+      return ranks.some((a, i) => ranks.some((b, j) => j > i && b > a && ranks.some((c, m) => m > j && c > b)));
+    };
+    for (const events of [['a', 'b'], ['a', 'b', 'c'], ['a', 'b', 'c', 'd'], ['a', 'b', 'c', 'd', 'e'], ['a', 'b', 'c', 'd', 'e', 'f']]) {
       const shuffled = shuffleArcEvents(events, events.join('|'));
       expect(shuffled.slice().sort()).toEqual(events.slice().sort());
-      events.forEach((e, i) => expect(shuffled[i]).not.toBe(e));
+      expect(shuffled).not.toEqual(events);
+      expect(inOrder(shuffled, events), shuffled.join()).toBe(false);
       expect(shuffleArcEvents(events, events.join('|'))).toEqual(shuffled);
     }
+  });
+
+  it('levers: the starter only into an empty box; place_first only with three or more events; none on a plan', () => {
+    const [plan, arc] = storyItems(k);
+    const write = storyItems(g2)[0];
+    expect(STORY_LEVERS.declare(plan, { boxEmpty: true }, [])).toEqual([]);
+    expect(STORY_LEVERS.declare(write, { boxEmpty: true }, []).map(l => l.id)).toEqual(['model_card', 'card_starter']);
+    expect(STORY_LEVERS.declare(write, { boxEmpty: false }, []).map(l => l.id)).toEqual(['model_card']);
+    const ids = STORY_LEVERS.declare(arc, { boxEmpty: true }, []).map(l => l.id);
+    expect(ids.includes('place_first')).toBe(arc.kind === 'order' && arc.events.length > 2);
+    expect(STORY_LEVERS.onScreen(write, { boxEmpty: true }, ['model_card'])).toContain('different story');
   });
 });
