@@ -4,7 +4,7 @@
  * Every mode is one equation to solve for a variable by choosing operations from a menu, and the activity checks each
  * choice against the solution path. In guided-solve, solve and multi-step the learner works the equation down step by
  * step (each right operation is applied to both sides); under identify-operation they choose one operation and press
- * Check. Bespoke: the stepped solving modes are not one tap.
+ * Check. Every mode is TAP_ONE: a solving item takes several checked taps, which `tapBoss` plays.
  */
 import { TAP_ONE, defineCard } from '../../../components/live-activity/boss';
 
@@ -24,8 +24,8 @@ export const EQUATION_MISSES_BY_MODE: Record<string, readonly EquationMiss[]> = 
   'guided-solve': MISSES, 'identify-operation': MISSES, solve: MISSES, 'multi-step': MISSES,
 };
 
-/** The solving modes: the learner manipulates the equation one operation at a time until the variable is alone. */
-const STEPS = { answer: 'manipulate', judge: 'activity', flow: 'one-at-a-time', misses: MISSES,
+/** The solving modes: the learner taps operations one at a time until the variable is alone. */
+const STEPS = { ...TAP_ONE, misses: MISSES,
   moves: 'taps operations in the menu one at a time: the right next step is applied to both sides and its new line '
     + 'appears, any other operation is not applied, and the item is finished when the variable is alone' } as const;
 

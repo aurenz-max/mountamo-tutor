@@ -242,17 +242,23 @@ export function spokenBoss<D extends { title: string }, I extends { id: string }
 }
 
 /**
- * A tap boss: every item is one choice the learner taps, and the activity's own check judges it (the tutor never
- * sees the key). The primitive gives the ask and the harness's right and wrong targets.
+ * A tap boss: every item is answered by tapping, and the activity's own check judges each tap (the tutor never sees
+ * the key). An item may take one tap or several (each operation that solves an equation). The primitive gives the ask
+ * and the harness's taps: right and wrong targets, or, when its taps are not workspace targets (menu buttons found by
+ * label, a run that depends on the line reached so far), its own `play`.
  */
 export function tapBoss<D extends { title: string }, I extends { id: string }, M extends string>(def: BossBase<D, I, M> & {
   choice: {
     ask: (item: I) => string;
-    /** The journey's taps: the right target, and a wrong one (null when there is none). */
-    targets: (item: I, data: D) => { correct: string; wrong: string | null };
-    /** The button pressed after the tap to commit it ("Check"), when the activity has one. Name it in the card's `moves`. */
+  } & ({
+    /** The journey's taps: the right target or targets in order, and a wrong one (null when there is none). */
+    targets: (item: I, data: D) => { correct: string | readonly string[]; wrong: string | null };
+    /** The button pressed after the taps to commit them ("Check"), when the activity has one. Name it in the card's `moves`. */
     commit?: string;
-  };
+  } | {
+    /** The journey's taps as real learner input, for taps that are not workspace targets. */
+    play: (right: boolean, item: I, ctx: JourneyContext) => DriverInput[];
+  });
   drive: Drive<I>;
 }): Boss<D, I, M> & Required<Pick<Boss<D, I, M>, 'assignment'>> {
   const { choice, drive, ...rest } = def;
@@ -261,11 +267,12 @@ export function tapBoss<D extends { title: string }, I extends { id: string }, M
     preset: 'tap',
     ask: choice.ask,
     assignment: item => bossAssignment(item.id, choice.ask(item), null),
-    drive: { ...drive, play: (right, item, ctx) => {
+    drive: { ...drive, play: 'play' in choice ? choice.play : (right, item, ctx) => {
       const targets = choice.targets(item, ctx.data as D);
       const target = right ? targets.correct : targets.wrong;
       if (!target) throw new Error(`${def.card.id}: no wrong choice to tap`);
-      return [{ type: 'touch', target }, ...(choice.commit ? [{ type: 'choose' as const, label: choice.commit }] : [])];
+      const taps = (typeof target === 'string' ? [target] : target).map(t => ({ type: 'touch' as const, target: t }));
+      return [...taps, ...(choice.commit ? [{ type: 'choose' as const, label: choice.commit }] : [])];
     } },
   };
 }

@@ -1,10 +1,10 @@
 /**
- * equation-workspace's boss (`components/live-activity/boss.ts`), bespoke because the solving modes are a run of
- * operations the activity checks one at a time, not one tap: the card is `equationWorkspace.card.ts`; this file
- * validates a lesson, lists its equations, asks one, carries the lever set and plays the harness.
+ * equation-workspace's boss (`components/live-activity/boss.ts`), a `tapBoss` whose solving items take a run of
+ * operations the activity checks one at a time: the card is `equationWorkspace.card.ts`; this file validates a
+ * lesson, lists its equations, asks one, carries the lever set and plays the harness.
  */
 import type { EquationWorkspaceChallenge, EquationWorkspaceData } from './EquationWorkspace';
-import { bossAssignment, defineBoss } from '../../../components/live-activity/boss';
+import { tapBoss } from '../../../components/live-activity/boss';
 import type { DriverInput, JourneyContext } from '../../../components/live-activity/liveJourneySpec';
 import { validateChallengePool } from '../../../components/live-activity/adapters/adapterContract';
 import { equationHarnessChoices, mergeCommutingSteps, stepsDoneFrom, workspaceTask } from './equationWorkspaceDomain';
@@ -41,20 +41,13 @@ function currentEquationItem(ctx: JourneyContext): EquationWorkspaceChallenge | 
   return parent && parentId !== ctx.itemId ? fewerSteps(parent) ?? undefined : parent;
 }
 
-export const equationWorkspaceBoss = defineBoss<EquationWorkspaceData, EquationWorkspaceChallenge, EquationMiss>({
+export const equationWorkspaceBoss = tapBoss<EquationWorkspaceData, EquationWorkspaceChallenge, EquationMiss>({
   card: equationWorkspaceCard,
   validate: validateEquationWorkspaceData,
   items: d => d.challenges.map(mergeCommutingSteps),
-  ask: workspaceTask,
-  // Operations the activity checks: no key reaches the tutor.
-  assignment: c => bossAssignment(c.id, workspaceTask(c), null),
   levers: EQUATION_LEVERS,
-  drive: {
-    component: 'primitives/visual-primitives/math/EquationWorkspace.tsx',
-    instanceId: 'equation',
-    defaults: { grade: 'Grade 8', mode: 'solve', topic: 'Solving two-step linear equations' },
-    mounted: '[data-pip-object="workspace"]',
-    current: currentEquationItem,
+  choice: {
+    ask: workspaceTask,
     // Every mode through its real controls, from the line the scene reports (Try again keeps the applied steps): tap
     // each remaining step's operation by its label, or under identify-operation choose one and press Check. A wrong
     // answer is the item's signature error from `equationMiss`: the opposite operation on the same number, else a
@@ -66,5 +59,12 @@ export const equationWorkspaceBoss = defineBoss<EquationWorkspaceData, EquationW
       const taps = labels.map((label): DriverInput => ({ type: 'choose', label }));
       return c.type === 'identify-operation' ? [...taps, { type: 'check' }] : taps;
     },
+  },
+  drive: {
+    component: 'primitives/visual-primitives/math/EquationWorkspace.tsx',
+    instanceId: 'equation',
+    defaults: { grade: 'Grade 8', mode: 'solve', topic: 'Solving two-step linear equations' },
+    mounted: '[data-pip-object="workspace"]',
+    current: currentEquationItem,
   },
 });

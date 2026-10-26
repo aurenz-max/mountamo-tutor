@@ -257,13 +257,23 @@ describe('the ask never says the answer (askLeaks)', () => {
       drive: { component: '', instanceId: '', defaults: { grade: '', mode: 'm', topic: '' }, mounted: '' },
     });
     expect(tap.drive.play(true, { id: 'i' }, ctx)).toEqual([{ type: 'touch', target: 'opt-a' }, { type: 'choose', label: 'Check' }]);
+    // An item that takes several checked taps plays them in order.
+    const run = tapBoss<{ title: string }, { id: string }, string>({
+      card: { id: 't', grades: [], modes: { m: { ...TAP_ONE, misses: [] } }, words: { job: '', answer: '', question: '' } } as unknown as Card,
+      validate: v => v as { title: string }, items: () => [],
+      choice: { ask: () => 'Tap each step.', targets: () => ({ correct: ['s1', 's2'], wrong: 'x' }) },
+      drive: { component: '', instanceId: '', defaults: { grade: '', mode: 'm', topic: '' }, mounted: '' },
+    });
+    expect(run.drive.play(true, { id: 'i' }, ctx)).toEqual([{ type: 'touch', target: 's1' }, { type: 'touch', target: 's2' }]);
+    expect(run.drive.play(false, { id: 'i' }, ctx)).toEqual([{ type: 'touch', target: 'x' }]);
   });
 });
 
 describe('boss cards in the catalog', () => {
   it.each(carded.map(c => c.id))('%s: guidance is the doctrine, and each answer channel is one the curator knows', id => {
     const entry = getComponentById(id)!;
-    expect(LIVE_ADAPTERS[id as LivePrimitiveId].guidance).toContain(ROTATION_DOCTRINE(entry.teachingWorkspace!.card!));
+    const { card, ungraded } = entry.teachingWorkspace!;
+    expect(LIVE_ADAPTERS[id as LivePrimitiveId].guidance).toContain(ungraded ? TEACHING_ROTATION(card!) : ROTATION_DOCTRINE(card!));
     for (const [mode, wiring] of Object.entries(entry.teachingWorkspace!.card!.modes)) {
       const def = entry.evalModes!.find(m => m.evalMode === mode)!;
       for (const { step, wiring: w } of wiringsOf(wiring))

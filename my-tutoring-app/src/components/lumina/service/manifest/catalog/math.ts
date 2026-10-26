@@ -3724,7 +3724,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ...bossEntry(equationWorkspaceCard),
     description: 'Step-by-step algebraic manipulation workspace where students isolate a target variable by selecting operations (divide, multiply, take arcsin, square root, etc.) applied to both sides of an equation. Supports guided-solve with highlighted hints, identify-operation multiple choice, free-solve, and multi-step challenges requiring 4+ operations. Covers linear, quadratic, trigonometric, and calculus-level equations. ESSENTIAL for grades 9-12+ algebra through calculus.',
     constraints: 'Best for grades 9-12+. Requires equation string and target variable. Multi-step mode requires equations needing 4+ operations. Guided-solve highlights valid operations as hints.',
-    affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: 'apply', minutes: 8 },
+    affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 8 },
     evalModes: [
       {
         evalMode: 'guided-solve',
@@ -3732,8 +3732,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 2,
         challengeTypes: ['guided-solve'],
-        // The learner works the equation down, one operation applied to both sides at a time.
-        affordances: { answers: ['manipulate'] },
+        // The learner works the equation down, tapping one operation at a time, each applied to both sides.
+        affordances: { answers: ['tap'] },
         description: 'Operations highlighted as hints, student clicks in order',
       },
       {
@@ -3751,8 +3751,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 4,
         challengeTypes: ['solve'],
-        // The learner works the equation down, one operation applied to both sides at a time.
-        affordances: { answers: ['manipulate'] },
+        // The learner works the equation down, tapping one operation at a time, each applied to both sides.
+        affordances: { answers: ['tap'] },
         description: 'Student picks operations freely, single-path validation',
       },
       {
@@ -3761,8 +3761,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.0,
         scaffoldingMode: 5,
         challengeTypes: ['multi-step'],
-        // The learner works the equation down, one operation applied to both sides at a time.
-        affordances: { answers: ['manipulate'] },
+        // The learner works the equation down, tapping one operation at a time, each applied to both sides.
+        affordances: { answers: ['tap'] },
         description: 'Longer equations requiring 4+ steps to solve',
       },
     ],

@@ -153,7 +153,7 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
    behavior. **Choose a preset first:**
    - spoken + tutor-judged: `SPOKEN` modes and `spokenBoss({ speech: { ask, key, misses, say } })`, model
      `direct-instruction/diSpokenPractice.{card,boss}.ts`;
-   - one tap the activity checks: `TAP_ONE` and `tapBoss({ choice: { ask, targets } })`, model
+   - taps the activity checks (one, or several in order): `TAP_ONE` and `tapBoss({ choice: { ask, targets } })`, model
      `biology/classificationSorter.{card,boss}.ts`;
    - otherwise bespoke `defineBoss`, model `biology/cellBuilder.{card,boss}.ts` (board).
 
