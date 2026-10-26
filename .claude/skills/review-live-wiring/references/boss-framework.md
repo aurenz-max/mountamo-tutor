@@ -30,6 +30,12 @@ mix said, shown and board items is still one `spokenBoss`: its shown items retur
 | The learner taps (one choice, or several checked taps in order); the activity checks | `{ ...TAP_ONE, misses }` | `tapBoss({ card, validate, items, levers?, choice: { ask, targets, commit? } or { ask, play }, drive })` | the ask; the harness's `{ correct, wrong }` targets (`correct` may list several taps in order); `commit`: the button pressed after the taps ("Check"), named in the card's `moves`; `play` instead of `targets` when the taps are not workspace targets (menu buttons by label, a run from the line reached so far: equation-workspace) |
 | Every mode a board, a build, a simulation | spell `answer`/`judge`/`flow` | `defineBoss({ card, validate, items, ask, drive })` | its own assignment in the component, `drive.play` |
 
+**An ungraded teaching surface** (curator-brief, adaptation-investigator; USER RULING 2026-10-26) is a card with
+`ungraded: true` and no modes: the catalog declares no eval modes and it binds as `mixed`. `words.job` is what the learner
+looks at and does, `words.question` what the tutor teaches from, `words.special` how to cover this content;
+`TEACHING_ROTATION` and `TEACHING_DOCTRINE` write its guidance. Its boss is bespoke: `items` are the things it can show
+(the opening counts them), `drive.teach` looks at one thing and finishes with Done, and the journey is a teaching one.
+
 **A mode whose items are steps wired differently** (say the story kind, place the cards, say the answer) is
 `{ steps: { <step>: BossMode, … }, misses }`, keyed by the step name the item's scene publishes as `kind`, and the
 boss gives `stepOf(item)` (the guard requires it). The doctrine then speaks of steps ("In the big_number steps: …")
