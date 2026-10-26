@@ -10,7 +10,12 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { studioItems } from './readAloudPhrasing';
 import type { ReadAloudMode } from './readAloudStudioScript';
-import { READ_ALOUD_MISSES, readAloudLevers, shortLine, shortLineLeak } from './readAloudStudioLevers';
+import type { StudioItem } from './readAloudPhrasing';
+import { READ_ALOUD_LEVERS, READ_ALOUD_MISSES, shortLine, shortLineLeak } from './readAloudStudioLevers';
+
+/** The lever set as the component calls it: the lesson context is the session's items. */
+const readAloudLevers = (item: StudioItem, pulled: readonly string[], all: readonly StudioItem[]) =>
+  READ_ALOUD_LEVERS.declare(item, all, pulled);
 
 const items = (mode: ReadAloudMode) => studioItems(JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/read-aloud-studio.${mode}.json`), 'utf8')).data.lines, mode);

@@ -101,10 +101,10 @@ describe('the lesson opening on the workspace', () => {
   });
 });
 
-describe('without the tutor', () => {
-  it('renders the same screen at once, with the read-aloud, and never waits on the picture', () => {
+describe('one path: the screen renders on the workspace', () => {
+  it('renders at once and never waits on the picture', () => {
     vi.mocked(generateConceptImage).mockImplementationOnce(() => new Promise(() => {}));
-    render(<CuratorBrief data={BRIEF} />);
+    mount();
     expect(screen.getByText(BRIEF.bigIdea.statement)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start' })).toBeTruthy();
     expect(document.querySelector('[data-picture="drawing"]')).toBeTruthy();
@@ -113,15 +113,16 @@ describe('without the tutor', () => {
   });
 
   it('a pre-reader gets picture choices and an icon Start', () => {
-    render(<CuratorBrief data={{ ...BRIEF, gradeLevel: 'Kindergarten' }} />);
+    mountWorkspace({ primitiveId: 'curator-brief', evalMode: 'mixed', data: { ...data, gradeLevel: 'Kindergarten' } });
     expect(document.querySelector('[data-brief-reader="pre"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start' }).textContent?.trim()).toBe('');
     expect(screen.getByRole('button', { name: 'I wonder what astronauts see' }).textContent).toContain('🚀');
   });
 
-  it('still renders a legacy intro payload', () => {
-    render(<CuratorBrief data={{ hook: 'Imagine a garden.', objectives: ['Name plant parts'] } as any} />);
-    expect(screen.getByText('Imagine a garden.')).toBeTruthy();
+  it('an unbound mount shows the shared "needs the tutor" card (the legacy read-aloud was retired)', () => {
+    render(<CuratorBrief data={BRIEF} />);
+    expect(document.querySelector('[data-workspace-unbound="curator-brief"]')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
   });
 });
 

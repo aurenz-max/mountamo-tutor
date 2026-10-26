@@ -1,33 +1,50 @@
 /**
- * Read aloud studio on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C7). Its only teaching path: the scripted
- * runner was retired (LA-14, user ruling 09-23: one path).
- *
- * Pure: the component and the journey read the same assignment and scene. Every scored item is
+ * Read aloud studio on the shared tutor/JEV teaching workspace; its wiring is `readAloudStudio.card.ts` +
+ * `readAloudStudio.boss.ts`. Pure: the component, the boss and the journey read the same items, keys and scene. Every scored item is
  * one printed line read aloud, judged word for word against the print (never how it sounded).
  * accuracy is a cold read; dialogue hears the line in the character's voice first. expression
  * runs three steps per line: a phrase plan (page work the activity commits, never graded), a
  * first read, then a reread after the tutor models the groups; only the reread is scored.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import { markedGroups, phraseAsk, type StudioItem } from './readAloudPhrasing';
-import { askFor } from './readAloudStudioScript';
+import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { bossAssignment } from '../../../components/live-activity/boss';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import { markedGroups, phraseAsk, studioItems, type StudioItem } from './readAloudPhrasing';
+import { askFor, type ReadAloudLineLike, type ReadAloudMode } from './readAloudStudioScript';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { lineReadingMisses } from './spokenReadingMisses';
 
+/** The items exactly as the component builds them. */
+export const readAloudItems = (data: { lines?: ReadAloudLineLike[]; fluencyFocus?: ReadAloudMode }) =>
+  studioItems(data.lines ?? [], data.fluencyFocus ?? 'accuracy');
+
 /** The ask for this item, without the pack's "Your turn." hand-over. */
-const ask = (item: StudioItem) => (item.step ? phraseAsk(item)
+export const readAloudAsk = (item: StudioItem) => (item.step ? phraseAsk(item)
   : item.kind === 'accuracy' ? item.actionContract.instruction : askFor(item))
   .replace(/\s*Your turn\.\s*/, ' ').replace(/\s+/g, ' ').trim();
+const ask = readAloudAsk;
+
+/** The step an item is: expression's `mark`, `first_read` or `reread` (the card's steps); a plain read otherwise. */
+export const readAloudStep = (item: StudioItem): string => item.step ?? item.kind;
+
+/** A read's key: the printed line, word for word. The phrase plan is page work with no key. */
+export function readAloudKey(item: StudioItem): SpokenKey | null {
+  if (item.step === 'mark') return null;
+  return { answer: item.text, alsoAccept: [],
+    acceptRule: 'The printed line read aloud, every word in order. A self-corrected slip and slow sounding-out that lands '
+      + 'on the right words count. How it sounds (phrasing, voice, speed) is never graded.',
+    signatureError: 'A word skipped, added or read as a different word is wrong.'
+      + (item.kind === 'dialogue' ? ' Saying the idea in other words is not reading it.' : '') };
+}
+
+/** What the ask says by design: the model a dialogue line and the expression reread carry before the learner reads. */
+export const readAloudGiven = (item: StudioItem): string[] =>
+  (item.kind === 'dialogue' || item.step === 'reread' ? [item.text] : []);
 
 export function readAloudAssignment(item: StudioItem): TeachingAssignment {
-  if (item.step === 'mark') return { id: item.id, task: ask(item), response: 'gesture' };
-  const misses = readAloudSpokenMisses(item);
-  return { id: item.id, task: ask(item), response: 'speech',
-    expectedAnswer: `The printed line read aloud, every word in order: "${item.text}". A self-corrected slip and slow `
-      + 'sounding-out that lands on the right words count. A word skipped, added or read as a different word is wrong. '
-      + (item.kind === 'dialogue' ? 'Saying the idea in other words is not reading it. ' : '')
-      + 'How it sounds (phrasing, voice, speed) is never graded.', ...(misses.length ? { misses } : {}) };
+  const key = readAloudKey(item);
+  return bossAssignment(item.id, ask(item), key, key ? readAloudSpokenMisses(item) : []);
 }
 
 /**
@@ -40,7 +57,7 @@ export function readAloudSpokenMisses(item: StudioItem): KnownMiss[] {
 }
 
 export function readAloudScene(item: StudioItem, breaks: readonly number[]): WorkspaceScene {
-  const facts: Record<string, string> = { line: item.text };
+  const facts: Record<string, string> = { line: item.text, ...(item.step ? { kind: item.step } : {}) };
   if (item.kind === 'dialogue' && item.speaker) facts.speaker = `${item.speaker} says the line.`;
   if (item.step === 'mark') facts.plan = `The learner's phrase marks so far: ${markedGroups(item.text, breaks).join(' / ')}`;
   if (item.step === 'reread') facts.model = `Model the groups in order: ${item.modelGroups.join(' / ')}`;

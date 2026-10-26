@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { validateJudgedScriptPack } from '../../../../hooks/judgedScriptContract';
 import type { JudgedRunSummary } from '../../../../hooks/useJudgedScriptRunner';
-import {
-  markedGroups, phraseGroupsFor, phrasePlanCue, readingSummary, studioHearCue,
-  studioItemCue, studioItems, studioMoveCue,
-} from '../readAloudPhrasing';
+import { markedGroups, phraseAsk, phraseGroupsFor, readingSummary, studioItems } from '../readAloudPhrasing';
+import { readAloudAssignment, readAloudGiven, readAloudKey, readAloudScene, readAloudStep } from '../readAloudStudioWorkspace';
 
 const lines = [{ text: 'After the rain, the birds sang.', phraseGroups: ['After the rain,', 'the birds sang.'], stressWord: 'sang' }];
 const [mark, first, reread] = studioItems(lines, 'expression');
-const quote = (cue: string) => cue.match(/Say exactly: "([^"]*)"/)?.[1];
 
 describe('phrase, read, model and reread', () => {
   it('builds three ordered steps per line with separate response channels', () => {
@@ -16,31 +12,27 @@ describe('phrase, read, model and reread', () => {
     expect(items.map((item) => item.step)).toEqual(['mark', 'first_read', 'reread', 'mark', 'first_read', 'reread']);
     expect(items.map((item) => item.answerKind)).toEqual(['gesture', 'voice', 'voice', 'gesture', 'voice', 'voice']);
     expect(new Set(items.map((item) => item.id)).size).toBe(6);
-    expect(validateJudgedScriptPack({ primitiveType: 'read-aloud-studio', activityLine: 'reading',
-      items, itemCue: studioItemCue, moveOnCue: studioMoveCue, completeCue: () => 'Done.',
-      contextFor: () => ({}) })).toEqual([]);
+    // Each step is the card's step name, published as the scene's kind.
+    expect(items.slice(0, 3).map(readAloudStep)).toEqual(['mark', 'first_read', 'reread']);
+    expect(readAloudScene(mark, []).facts.kind).toBe('mark');
+    // The plan is page work with no key; both reads are judged against the line.
+    expect(readAloudAssignment(mark).response).toBe('gesture');
+    expect(readAloudKey(first)?.answer).toBe(lines[0].text);
   });
 
-  it('never reads or reveals the model in the planning or first-read ask/replay', () => {
+  it('never reads the line in the planning or first-read ask; the reread ask carries the model by design', () => {
     for (const item of [mark, first]) {
-      for (const cue of [studioItemCue(item, { opening: true }), studioHearCue(item)]) {
-        expect(quote(cue)).not.toContain(lines[0].text);
-        expect(quote(cue)).not.toContain('After the rain');
-      }
+      expect(phraseAsk(item)).not.toContain('After the rain');
+      expect(readAloudGiven(item)).toEqual([]);
     }
-    expect(studioItemCue(first)).toContain('Do NOT read the line or model any words before this first attempt');
-    expect(studioItemCue(mark)).toContain('Do not judge microphone speech');
-    expect(phrasePlanCue(mark, [3])).toContain('Acknowledge completion only, not correctness');
+    expect(phraseAsk(reread)).toContain(`Listen: ${lines[0].text}`);
+    expect(readAloudGiven(reread)).toEqual([lines[0].text]);
   });
 
   it('carries learner marks to the first read and models a suggestion on reread', () => {
-    expect(studioItemCue(first, {}, [2])).toContain('["After the","rain, the birds sang."]');
-    expect(studioItemCue(reread)).toContain('["After the rain,","the birds sang."]');
-    expect(quote(studioItemCue(reread))).toContain(`Listen: ${lines[0].text}`);
-    expect(studioItemCue(reread)).toContain('A flat or plain reading that gets every word right is CORRECT');
-    expect(studioItemCue(reread)).toContain('Only a word error can trigger a correction');
-    expect(studioMoveCue(first, reread)).toContain(`Listen: ${lines[0].text}`);
-    expect(studioMoveCue(reread, mark)).toContain('Wait for [RA_PLAN]');
+    expect(readAloudScene(first, [2]).facts.plan).toBeUndefined();
+    expect(readAloudScene(mark, [2]).facts.plan).toContain('After the / rain, the birds sang.');
+    expect(readAloudScene(reread, []).facts.model).toContain('After the rain, / the birds sang.');
   });
 
   it('accepts no marks and all editable boundaries without inventing a correctness key', () => {
@@ -73,6 +65,6 @@ describe('phrase, read, model and reread', () => {
     expect(studioItems(lines, 'accuracy')).toHaveLength(1);
     const dialogue = studioItems([{ text: 'We can go now.', speaker: 'Mia' }], 'dialogue');
     expect(dialogue).toHaveLength(1);
-    expect(quote(studioItemCue(dialogue[0]))).toContain('Mia says: We can go now.');
+    expect(readAloudGiven(dialogue[0])).toEqual(['We can go now.']);
   });
 });

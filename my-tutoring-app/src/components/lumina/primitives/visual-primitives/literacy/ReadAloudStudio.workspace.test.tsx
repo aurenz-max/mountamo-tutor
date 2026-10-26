@@ -14,7 +14,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../compo
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../../../pip/PipSurfaceStore';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -27,8 +26,8 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   expression: { title: 'Phrases', gradeLevel: '3', lexileLevel: '500L', fluencyFocus: 'expression',
     lines: [{ text: 'When the rain stopped, we ran outside.', phraseGroups: ['When the rain stopped,', 'we ran outside.'] }] },
 };
-const mount = (mode: string, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'read-aloud-studio', evalMode: mode, data: PAYLOADS[mode], instanceId: 'read-aloud-studio', pipStore });
+const mount = (mode: string) =>
+  mountWorkspace({ primitiveId: 'read-aloud-studio', evalMode: mode, data: PAYLOADS[mode], instanceId: 'read-aloud-studio' });
 
 it.each(Object.keys(PAYLOADS))('%s binds on its first item', mode => {
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'read-aloud-studio', pin: mode, objectiveIds: ['o'], data: PAYLOADS[mode] })).not.toBeNull();
@@ -114,15 +113,6 @@ it('expression: a one-phrase plan is fine, and only the modeled reread is scored
   expect(work.lineResults).toHaveLength(1);
   expect(work.firstReadResults).toHaveLength(1);
   expect(work.phrasePlans[0].learnerGroups).toEqual(['When the rain stopped, we ran outside.']);
-});
-
-it('Pip outlines the printed line and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('read-aloud-studio');
-  const h = mount('accuracy', store);
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('Sam reads a book'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a passage with no askable line', () => {

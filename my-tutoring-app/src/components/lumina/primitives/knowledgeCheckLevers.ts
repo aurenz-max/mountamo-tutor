@@ -17,9 +17,10 @@
  *   answer. Withheld by `spreadLeak`; the boxes carry no number and the scene fact never says how many.
  *
  * Every other kind (true/false, match, sort, blank, the production kinds) declares no lever; its misses are listed as
- * unanswered in the catalog with the reason.
+ * unanswered on the card with the reason.
  */
-import type { WorkspaceLever } from '../components/live-activity/runtime/contract';
+import { leverSet } from '../components/live-activity/bossLevers';
+import { KNOWLEDGE_CHECK_MISSES } from './knowledgeCheck.card';
 import { normalizeWord, type KnowledgeCheckItem } from './knowledgeCheckScript';
 import type { KnowledgeCheckMiss } from './knowledgeCheckWorkspace';
 
@@ -126,39 +127,36 @@ const CUE_ANSWERS = ['other_choice'] satisfies KnowledgeCheckMiss[];
 const DROP_ANSWERS = ['one_less', 'one_more', 'other_number', 'other_choice'] satisfies KnowledgeCheckMiss[];
 const SPREAD_ANSWERS = ['one_less', 'one_more', 'other_number'] satisfies KnowledgeCheckMiss[];
 
-/** The levers this item declares, with their state. A lever that cannot be pulled now and was not pulled is left out. */
-export function knowledgeCheckLevers(item: KnowledgeCheckItem | null | undefined, s: KnowledgeCheckLeverState): WorkspaceLever[] {
-  if (!item || !isChoice(item)) return [];
-  const levers: WorkspaceLever[] = [];
-  if (cueFor(item)) levers.push({ id: CUE_LEVER, kind: 'help', carrier: 'both', pulled: s.pulled.includes(CUE_LEVER), answers: CUE_ANSWERS,
-    when: 'The learner picks a wrong choice, or is stuck, on a question about a thing they may not picture.',
-    does: 'Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice.' });
-  if (!spreadLeak(item)) levers.push({ id: SPREAD_LEVER, kind: 'help', carrier: 'shown', pulled: s.pulled.includes(SPREAD_LEVER),
-    answers: SPREAD_ANSWERS,
-    when: 'The learner picks a number one off, or another number, when counting the pictures in the question.',
-    does: 'Draws the pictures from the question again, spread apart, one per box; touching a box marks it counted. '
-      + 'The boxes carry no numbers. Never say how many there are; the learner counts.' });
-  const dropPulled = s.pulled.includes(DROP_LEVER);
-  if (dropPulled || farChoice(item, s)) levers.push({ id: DROP_LEVER, kind: 'simplify', carrier: 'shown', pulled: dropPulled,
-    answers: DROP_ANSWERS,
-    when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
-    does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.' });
-  return levers;
-}
-
-/** What the pulled levers put on screen, for the tutor and JEV. Names the greyed-out choice, never the key. */
-export function leversOnScreen(item: KnowledgeCheckItem, s: KnowledgeCheckLeverState): string | null {
-  const parts: string[] = [];
-  const cue = s.pulled.includes(CUE_LEVER) ? cueFor(item) : null;
-  if (cue) parts.push(`a picture beside the question: ${cue.picture} (${cue.shows}). Say what it shows; it is not a choice`);
-  if (s.pulled.includes(SPREAD_LEVER) && !spreadLeak(item)) {
-    parts.push(`under the question, the ${pictureRuns(item.prompt).map(r => r.picture).join(' and the ')} from the question `
-      + 'are drawn again spread apart, one per box, with no numbers; the learner can touch a box to mark it counted');
-  }
-  const options = item.options ?? [];
-  for (const id of s.dropped) {
-    const i = options.findIndex(o => o.id === id);
-    if (i >= 0) parts.push(`choice ${i + 1}, "${options[i].text}", is greyed out and is not the answer`);
-  }
-  return parts.length ? parts.join('; ') : null;
-}
+/**
+ * The levers as one lever set (`bossLevers.ts`); the lesson context is the item's lever state. Every mode offers the
+ * same three: each lever's content decides the items it is offered on (choice kinds only).
+ */
+export const KNOWLEDGE_CHECK_LEVERS = leverSet<KnowledgeCheckItem, KnowledgeCheckLeverState>({
+  missesOf: () => KNOWLEDGE_CHECK_MISSES,
+  answersOf: item => [keyText(item) ?? ''].filter(Boolean),
+  specs: [
+    { id: CUE_LEVER, type: 'clue', answers: CUE_ANSWERS,
+      when: 'The learner picks a wrong choice, or is stuck, on a question about a thing they may not picture.',
+      does: 'Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice.',
+      content: item => cueFor(item),
+      fact: (cue: NonNullable<KnowledgeCheckItem['cue']>) =>
+        `a picture beside the question: ${cue.picture} (${cue.shows}). Say what it shows; it is not a choice` },
+    { id: SPREAD_LEVER, type: 'layout', answers: SPREAD_ANSWERS,
+      when: 'The learner picks a number one off, or another number, when counting the pictures in the question.',
+      does: 'Draws the pictures from the question again, spread apart, one per box; touching a box marks it counted. '
+        + 'The boxes carry no numbers. Never say how many there are; the learner counts.',
+      content: item => (spreadLeak(item) ? null : pictureRuns(item.prompt)),
+      fact: (runs: PictureRun[]) => `under the question, the ${runs.map(r => r.picture).join(' and the ')} from the question `
+        + 'are drawn again spread apart, one per box, with no numbers; the learner can touch a box to mark it counted' },
+    { id: DROP_LEVER, type: 'custom', carrier: 'shown', answers: DROP_ANSWERS,
+      why: 'It narrows this item in place (one wrong choice greyed out) rather than opening a practice item.',
+      when: 'The learner still picks a wrong choice after help, or is stuck with too many choices.',
+      does: 'Greys out one wrong choice that is easy to rule out, so fewer choices remain. The next answer counts as helped.',
+      // Offered while one more can be greyed out; once pulled, its fact names every greyed-out choice.
+      content: (item, s) => (isChoice(item) && (s.pulled.includes(DROP_LEVER) || farChoice(item, s)) ? s.dropped : null),
+      fact: (dropped: readonly string[], item) => dropped.flatMap(id => {
+        const i = (item.options ?? []).findIndex(o => o.id === id);
+        return i >= 0 ? [`choice ${i + 1}, "${item.options![i].text}", is greyed out and is not the answer`] : [];
+      }).join('; ') },
+  ],
+});

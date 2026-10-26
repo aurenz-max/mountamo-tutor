@@ -24,6 +24,8 @@ const TF = { ...base, type: 'true_false', id: 'tf1', statement: 'A spider has ei
 // The stem names its own answer, so the spoken menu cannot ask it (class 11).
 const LEAKY = { ...base, type: 'multiple_choice', id: 'mc1', question: 'Which animal is the cow that says moo?', correctOptionId: 'A',
   options: [{ id: 'A', text: 'cow', emoji: '🐄' }, { id: 'B', text: 'duck', emoji: '🦆' }, { id: 'C', text: 'frog', emoji: '🐸' }] };
+// A stem that opens with "Yes" is not spoken either; its answer is not in the ask, so it can be said aloud.
+const SENTINEL = { ...LEAKY, id: 'mc2', question: 'Yes, animals make sounds. Which one says moo?' };
 const data = (problems: unknown[]) => ({ problems, instanceId: 'check' });
 const mount = (problems: unknown[]) =>
   mountWorkspace({ primitiveId: 'knowledge-check', evalMode: 'recall', data: data(problems), instanceId: 'check' });
@@ -37,12 +39,12 @@ it('the unaskable problem is worked on screen: its check is the verdict, a retry
   const h = mount([TF, LEAKY]);
   h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
 
-  // The problem's own surface renders inside the session; a multiple-choice problem takes its answer said aloud too
-  // (user ruling 10-12), so the tutor is told either one answers it.
+  // The problem's own surface renders inside the session. Its stem says its answer, so an answer said aloud would be an
+  // echo of the ask: this one is worked on the screen only.
   expect(document.querySelector('[data-on-screen="p1-screen"]')).not.toBeNull();
-  expect(h.state().task!.demand.response).toBe('speech');
-  expect(h.state().task!.demand.constraints).toMatch(/answer out loud or work this problem on the screen/);
-  expect(h.state().task!.task).toBe('Which animal is the cow that says moo? Tell me, or show me on the screen.');
+  expect(h.state().task!.demand.response).toBe('gesture');
+  expect(h.state().task!.demand.constraints).toMatch(/works this problem on the screen with their hands/);
+  expect(h.state().task!.task).toBe('Which animal is the cow that says moo? Do it on the screen.');
 
   answer('duck');
   expect(h.state().task!.workspace!.lastResponse?.correct).toBe(false);
@@ -60,9 +62,10 @@ it('the unaskable problem is worked on screen: its check is the verdict, a retry
   expect(sent.map(r => r.instanceId).sort()).toEqual(['check::p0', 'check::p1']);
 });
 
-it('a multiple-choice problem worked on screen is credited from the answer said aloud', async () => {
+it('a multiple-choice problem worked on screen is credited from the answer said aloud (user ruling 10-12)', async () => {
   seam.evaluationContext = recordingEvaluationContext();
-  const h = mount([TF, LEAKY]);
+  const h = mount([TF, SENTINEL]);
+  expect(knowledgeCheckItems(data([TF, SENTINEL]) as never).items.map(i => i.kind)).toEqual(['true_false', 'on_screen']);
   h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"cow"/);
   h.say('the cow'); h.feedback('correct', 'advance'); h.confirmVisible();

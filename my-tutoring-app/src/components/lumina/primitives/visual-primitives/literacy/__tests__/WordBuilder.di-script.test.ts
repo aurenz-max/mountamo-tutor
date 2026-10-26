@@ -2,59 +2,33 @@
  * wordBuilderScript — the pedagogy lives here, so this is where it is pinned.
  * Pure, no jsdom, no mocked live loop.
  *
- * What this locks in:
- *  1. The pack passes the family's structural gates (benched response classes,
- *     sentinel discipline over every cue, no performed stage directions, no
- *     byte-identical consecutive ask).
- *  2. THE FORK: ALL-VOICE. The port was queued as a hybrid — tap to build, then
+ * What this locks in (the scripted cues were retired when the family moved onto its boss, 2026-10-26):
+ *  1. THE FORK: ALL-VOICE. The port was queued as a hybrid — tap to build, then
  *     speak — and the user overturned it: *"kind of disagree on tap, this feels
  *     like a pure spoken with cards on the board"*. Moving any mode back to a
- *     gesture is the regression this locks out, and the reason is testable
- *     rather than doctrinal: a spoken word CARRIES its morphemes, so the
- *     arrangement is not an answer without a spoken form.
- *  3. THE BOARD IS PRINT. Cards stay (they are what makes this construction
- *     rather than recall) and nothing about them is an answer surface.
- *  4. Build gates DROP rather than repair: parts that do not spell the word,
- *     a one-letter morpheme with no spoken form, a clue holding its own answer,
- *     and — the one only this port needs — a target word THIS PACK ALREADY SAYS
- *     in its own how-to-play.
- *  5. The correction re-models the ROUTE (meanings) and never the assembly
- *     (morphemes in order ARE the word); the cap closes the link.
- *  6. The catalog keeps its side: template keys resolve against exactly what
- *     the pack pushes, no prose sentence opens with a verdict sentinel, and no
- *     directive survives for the deleted drag-and-Check channel.
+ *     gesture is the regression this locks out.
+ *  2. The ask states the clue and never the word; the key accepts the word built
+ *     aloud part by part and names the root said back as wrong.
+ *  3. Build gates DROP rather than repair: parts that do not spell the word,
+ *     a one-letter morpheme with no spoken form, a clue holding its own answer.
+ *  4. The catalog keeps its side: no tutoring block, wiring from the boss card,
+ *     and no directive for the deleted drag-and-Check channel.
  */
 import { describe, it, expect } from 'vitest';
 import {
   answerKindFor,
   collidesWithSpokenFrame,
-  completeCue,
-  GREETING,
-  howToPlayFor,
-  itemCue,
   itemFromTarget,
   itemsFromTargets,
-  moveOnCue,
-  pronounceCue,
   responseClassFor,
   rootPartOf,
-  stimulusFor,
   wordBuilderHarnessAnswers,
-  wordBuilderPackBase,
   type TargetWordLike,
   type WordBuilderComplexity,
   type WordBuilderItem,
   type WordPartLike,
 } from '../wordBuilderScript';
-import {
-  findSentinelCollisions,
-  spokenSpanOf,
-  spokenSpansOf,
-  type JudgedScriptPack,
-} from '../../../../hooks/judgedScriptContract';
-import {
-  checkPackGates,
-} from '../../../../hooks/judgedScriptContract.testkit';
+import { asSpokenBuilder, hearClueRequest, wordBuilderAsk, wordBuilderKey } from '../wordBuilderWorkspace';
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
 
 // ── Fixtures — a shared pool and a SESSION-SHAPED set of targets ────────────
@@ -128,57 +102,9 @@ const ITEMS: WordBuilderItem[] = itemsFromTargets(
 
 const [UNHELP, REPLAY, TELE] = ITEMS;
 
-/** The pack exactly as the component assembles it — the EXPORTED surface, not
- *  a copy. A hand-rolled literal here is the drift 19f found on both sides of
- *  letter-spotter's wire. */
-const pack: JudgedScriptPack<WordBuilderItem> = wordBuilderPackBase(ITEMS);
-
-const spokenLine = spokenSpanOf;
-
-const affirmLine = (cue: string): string =>
-  cue.match(/If the answer is right, say exactly:\s*"([\s\S]*?)"/)?.[1] ?? '';
-const correctionLine = (cue: string): string =>
-  cue.match(/If it is wrong, say exactly:\s*"([\s\S]*?)"/)?.[1] ?? '';
-
-/** Every line the tutor can SPEAK for one item, across its whole life. */
-const everySpokenLine = (item: WordBuilderItem): string =>
-  [
-    spokenLine(itemCue(item, { opening: true, howToPlay: true })),
-    spokenLine(itemCue(item)),
-    correctionLine(itemCue(item)),
-    spokenLine(pronounceCue(item)),
-  ].join('\n');
-
-// ── 1. Structural gates ─────────────────────────────────────────────────────
-
-describe('word-builder pack · structural gates', () => {
-  it('builds every fixture target — the gates are not paying for themselves', () => {
-    expect(ITEMS).toHaveLength(3);
-    expect(ITEMS.map((i) => i.word)).toEqual(['unhelpful', 'replayable', 'telescope']);
-  });
-
-  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
-    expect(checkPackGates(pack)).toEqual([]);
-  });
-
-  it('the clue varies every item, so three same-action asks in a row are distinct', () => {
-    // This pack has ONE action, so consecutive items ALWAYS share it — the
-    // repeat gate is live on every pair of a real session, not just on a
-    // contrived fixture. The ask carries new information each round because the
-    // clue does; there is nothing to shorten and nothing to recite.
-    const asks = ITEMS.map((item) => spokenLine(itemCue(item)));
-    expect(new Set(asks).size).toBe(asks.length);
-    for (const ask of asks) expect(ask).toContain('Say the whole word.');
-  });
-
-  it('a byte-identical repeated ask WOULD be refused (the gate is awake)', () => {
-    // The revert-bite for the assertion above: same action, same clue twice.
-    const twin = { ...UNHELP, id: 'twin' };
-    expect(checkPackGates({ ...pack, items: [UNHELP, twin] })).toEqual([
-      expect.stringContaining('consecutive asks recite a byte-identical'),
-    ]);
-  });
-});
+/** The key the tutor judges against, as the boss builds it. */
+const keyOf = (item: WordBuilderItem) => wordBuilderKey(asSpokenBuilder(item))!;
+const askOf = (item: WordBuilderItem) => wordBuilderAsk(asSpokenBuilder(item));
 
 // ── 2. The answer-material fork ─────────────────────────────────────────────
 
@@ -198,16 +124,10 @@ describe('word-builder pack · the fork is ALL-VOICE', () => {
     }
   });
 
-  it('never emits a gesture item, so no cue ever asks for silence', () => {
+  it('never emits a gesture item: every word has a spoken key', () => {
     for (const item of ITEMS) {
       expect(item.answerKind).toBe('voice');
-      const cue = itemCue(item);
-      expect(cue).not.toContain('answers by TAPPING');
-      expect(cue).not.toContain('Do not judge anything you hear');
-      // A spoken item gets the target, the accept clause and BOTH verdict lines.
-      expect(cue).toContain('you then stay silent while the learner thinks');
-      expect(affirmLine(cue)).not.toBe('');
-      expect(correctionLine(cue)).not.toBe('');
+      expect(keyOf(item).answer).toBe(item.word);
     }
   });
 });
@@ -215,48 +135,27 @@ describe('word-builder pack · the fork is ALL-VOICE', () => {
 // ── 3. The answer never leaks ───────────────────────────────────────────────
 
 describe('word-builder pack · answer-leak rule', () => {
-  it('no spoken line says the word, or its parts in order, before a verdict', () => {
+  it('the ask states the clue and never says the word', () => {
     for (const item of ITEMS) {
-      const spoken = everySpokenLine(item).toLowerCase();
-      expect(spoken).not.toContain(item.word.toLowerCase());
-      // The morphemes in order ARE the word said slowly — the correction
-      // therefore walks MEANINGS, never the parts.
-      for (const part of item.parts) {
-        expect(spoken).not.toContain(`${part.text.toLowerCase()},`);
-      }
+      expect(askOf(item)).toContain(item.clue);
+      expect(askOf(item).toLowerCase()).not.toContain(item.word.toLowerCase());
     }
   });
 
-  it('the ask STATES the clue aloud — the whole question side is spoken', () => {
-    for (const item of ITEMS) {
-      expect(spokenLine(itemCue(item))).toContain(item.clue);
-    }
+  it('the key accepts the word built aloud part by part and names the root said back as wrong', () => {
+    const key = keyOf(UNHELP);
+    expect(key.acceptRule).toContain('un + help + ful');
+    expect(key.acceptRule).toContain('part by part counts when the whole word arrives at the end');
+    expect(key.signatureError).toContain(`"${rootPartOf(UNHELP).text}"`);
   });
 
-  it('pushes only the answer-free question side through the context channel', () => {
-    for (const item of ITEMS) {
-      const stimulus = stimulusFor(item);
-      expect(stimulus.toLowerCase()).not.toContain(item.word.toLowerCase());
-      // Not the part COUNT either: two-part or three-part narrows the search a
-      // long way, and the state block is the channel a tutor has been caught
-      // narrating.
-      for (const numberWord of ['two', 'three', 'four']) {
-        expect(stimulus.toLowerCase()).not.toContain(numberWord);
-      }
-    }
-    // Constant across a session, so the state signature never changes and
-    // PrimitiveState.attach fires at most once per run.
-    expect(new Set(ITEMS.map((i) => stimulusFor(i))).size).toBe(1);
-  });
-
-  it('re-speaks the QUESTION on tap-to-hear, never the answer', () => {
-    const cue = pronounceCue(UNHELP);
-    expect(spokenLine(cue)).toContain(UNHELP.clue);
-    expect(spokenLine(cue)).toContain('Say the whole word.');
-    expect(spokenLine(cue).toLowerCase()).not.toContain('unhelpful');
-    // The context sentence rides here too — a second route into the same clue,
-    // available without spending a correction.
-    expect(spokenLine(cue)).toContain('The broken lift was hmm for anyone pushing a pram.');
+  it('re-asks the QUESTION on tap-to-hear, never the answer', () => {
+    const request = hearClueRequest(UNHELP);
+    expect(request).toContain(UNHELP.clue);
+    expect(request).toContain('Say the whole word.');
+    expect(request.toLowerCase()).not.toContain('unhelpful');
+    // The context sentence rides here too: a second route into the same clue.
+    expect(request).toContain('The broken lift was hmm for anyone pushing a pram.');
   });
 });
 
@@ -385,7 +284,7 @@ describe('word-builder pack · build gates', () => {
     const noBlank = build({ ...UNHELPFUL, sentenceContext: 'The lift was broken today.' });
     expect(noBlank).not.toBeNull();
     expect(noBlank.spokenSentence).toBeUndefined();
-    expect(spokenLine(pronounceCue(noBlank))).toContain(noBlank.clue);
+    expect(hearClueRequest(noBlank)).toContain(noBlank.clue);
 
     const leaky = build({
       ...UNHELPFUL,
@@ -442,160 +341,15 @@ describe('word-builder pack · one word, answered once', () => {
   });
 });
 
-// ── 6. Corrections earn the answer ──────────────────────────────────────────
+// ── 8. The journey harness ──────────────────────────────────────────────────
 
-describe('word-builder pack · corrections', () => {
-  it('opens "My turn:", walks the MEANINGS, and re-elicits', () => {
-    const line = correctionLine(itemCue(UNHELP));
-    expect(line.startsWith('My turn:')).toBe(true);
-    expect(line).toContain('One part means not.');
-    expect(line).toContain('One part means to help.');
-    expect(line).toContain('One part means full of.');
-    expect(line).toContain('say the whole word');
-    // The route, never the answer: a retry that hands back what it is retrying
-    // for is free (letter-spotter's name-it rule).
-    expect(line.toLowerCase()).not.toContain('unhelpful');
-  });
-
-  it('uses the context sentence as a second route where the item has one', () => {
-    expect(correctionLine(itemCue(UNHELP)))
-      .toContain('Here it is in a sentence: The broken lift was hmm');
-    const noSentence = build({ ...TELESCOPE, sentenceContext: undefined });
-    expect(correctionLine(itemCue(noSentence))).not.toContain('in a sentence');
-    expect(correctionLine(itemCue(noSentence))).toContain('My turn:');
-  });
-
-  it('names BOTH signature errors, and the accept clause is the second one\'s twin', () => {
-    const cue = itemCue(UNHELP);
-    // 1. The root said straight back: a real word, printed on the board, the
-    //    carrier of the target's meaning, and the thing the correction itself
-    //    says the meaning of.
-    expect(rootPartOf(UNHELP).text).toBe('help');
-    expect(cue).toContain('Saying only "help" is NOT an answer');
-    // 2. The parts without the word — every phoneme of the answer, no answer.
-    expect(cue).toContain('without ever joining them into a whole word is NOT an answer');
-    // …and its twin: the same walk that LANDS on the word is how this is taught.
-    expect(cue).toContain('built out loud part by part so long as the whole');
-    expect(cue).toContain('A different real word built from only some of the parts is wrong.');
-    expect(cue).toContain('The parts said in the wrong order are wrong.');
-  });
-
-  it('affirms with the canonical word and teaches the assembly', () => {
-    expect(affirmLine(itemCue(UNHELP))).toBe('Yes, unhelpful — un, help, ful.');
-    expect(affirmLine(itemCue(TELE))).toBe('Yes, telescope — tele, scope.');
-  });
-
-  it('closes the link at the cap — the corrections deliberately never did', () => {
-    const line = spokenLine(moveOnCue(UNHELP, null, {}));
-    expect(line).toContain('The word is unhelpful — un means not, help means to help, and ful means full of.');
-    expect(moveOnCue(UNHELP, null, {})).toContain('Then stop');
-    // With a next item the move-on carries its ask AND its contract.
-    const withNext = moveOnCue(UNHELP, TELE, {});
-    expect(spokenLine(withNext)).toContain(TELE.clue);
-    expect(withNext).toContain('The correct answer is the word "telescope"');
-  });
-});
-
-// ── 7. Session frame ────────────────────────────────────────────────────────
-
-describe('word-builder pack · session frame', () => {
-  it('the opening cue has ONE job: greeting + how-to-play + model + ask', () => {
-    const opening = spokenLine(itemCue(UNHELP, { opening: true, howToPlay: true }));
-    expect(opening).toContain(GREETING.trim());
-    expect(opening).toContain(howToPlayFor().trim());
-    expect(opening).toContain('Every part carries a piece of what the word means');
-    expect(opening).toContain(UNHELP.clue);
-    // The how-to-play asks for the same thing the ask does — a stale verb here
-    // is how letter-spotter told a child to "tap" a mode that was spoken.
-    expect(opening.toLowerCase()).not.toContain('tap');
-    expect(opening.toLowerCase()).not.toContain('drag');
-  });
-
-  it('the model line is spoken ONCE per action, never on every ask', () => {
-    const repeat = spokenLine(itemCue(UNHELP));
-    expect(repeat).not.toContain('Every part carries a piece');
-    expect(repeat).not.toContain('The board shows word parts');
-    // The QUESTION is never withdrawn with it.
-    expect(repeat).toContain(UNHELP.clue);
-  });
-
-  it('gives every cue the NEVER_PERFORM tail and states the wait as a FACT', () => {
-    const tail = 'never announce that you are waiting or listening';
-    for (const item of ITEMS) {
-      expect(itemCue(item, { opening: true, howToPlay: true })).toContain(tail);
-      expect(moveOnCue(item, TELE, { howToPlay: true })).toContain(tail);
-      expect(pronounceCue(item)).toContain(tail);
-      expect(itemCue(item)).not.toMatch(/Then WAIT|WAIT silently/i);
-    }
-  });
-
-  it('states the TWO-BRANCH LAW before the branches (18d, script side)', () => {
-    const cue = itemCue(UNHELP);
-    expect(cue).toContain('A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all');
-    expect(cue.indexOf('no scaffolding line')).toBeLessThan(cue.indexOf('If the answer is right'));
-  });
-
-  it('never opens a cue sentence with a verdict sentinel', () => {
-    expect(findSentinelCollisions([
-      { label: 'itemCue-opening', text: itemCue(UNHELP, { opening: true, howToPlay: true }) },
-      { label: 'itemCue', text: itemCue(TELE) },
-      { label: 'moveOnCue', text: moveOnCue(UNHELP, TELE, { howToPlay: true }) },
-      { label: 'moveOnCue-last', text: moveOnCue(TELE, null, {}) },
-      { label: 'pronounceCue', text: pronounceCue(UNHELP) },
-      { label: 'completeCue', text: completeCue() },
-    ])).toEqual([]);
-  });
-
-  it('the complete cue stops the tutor', () => {
-    expect(completeCue()).toContain('Then stop — the activity is over.');
-  });
-});
-
-// ── 8. The wire: what the DI drive harness reads ────────────────────────────
-
-describe('word-builder pack · the DI wire', () => {
-  /** The harness's leak scan, byte for byte (run_tutor_live.py `_norm`). */
-  const norm = (s: string) =>
-    s.toLowerCase().replace(/[*_`]/g, '').replace(/[^a-z0-9 ]+/g, ' ').trim();
-  const scanFinds = (spoken: string, token: string) =>
-    new RegExp(`\\b${norm(token)}\\b`).test(norm(spoken));
-
-  it('exposes ask / affirm / correction as the three spans the plan binds', () => {
-    expect(spokenSpansOf(itemCue(UNHELP))).toHaveLength(3);
-    expect(pack.primitiveType).toBe('word-builder');
-    expect(pack.contextFor(UNHELP)).toEqual({
-      challengeType: 'compound_affix',
-      stimulus: 'a board of word parts with their meanings, and a spoken clue about what the word means',
-    });
-  });
-
-  it('hands the harness the contract\'s OWN named miss as the signature wrong', () => {
-    const answers = wordBuilderHarnessAnswers(UNHELP);
-    expect(answers.correct).toBe('unhelpful');
-    expect(answers.signatureWrong.text).toBe('help');
-    // The claim and the contract have to be the same claim.
-    expect(itemCue(UNHELP)).toContain('Saying only "help" is NOT an answer');
+describe('word-builder · harness answers', () => {
+  it('hands the harness the root said back as the signature wrong', () => {
+    for (const item of ITEMS) expect(wordBuilderHarnessAnswers(item).signatureWrong.text).toBe(rootPartOf(item).text);
   });
 
   it('drives the ORDERING half of the skill with its plain wrong', () => {
-    // Every other port's plain wrong is an unrelated token. Here it is the
-    // parts in the wrong order — the one miss the printed board cannot help
-    // with, because the cards say what each part MEANS and nothing about where
-    // it goes.
-    const answers = wordBuilderHarnessAnswers(UNHELP);
-    expect(answers.plainWrong).toBe('fulhelpun');
-    expect(answers.plainWrong).not.toBe(answers.correct);
-    expect(wordBuilderHarnessAnswers(TELE).plainWrong).toBe('scopetele');
-  });
-
-  it('keeps a FLAT leak oracle — no exempt span anywhere', () => {
-    for (const item of ITEMS) {
-      const answers = wordBuilderHarnessAnswers(item);
-      expect(answers.leakTokens).toEqual([item.word]);
-      expect(answers).not.toHaveProperty('leakExemptSpan');
-      const ask = spokenLine(itemCue(item, { opening: true, howToPlay: true }));
-      expect(scanFinds(ask, item.word)).toBe(false);
-    }
+    expect(wordBuilderHarnessAnswers(UNHELP).plainWrong).toBe('fulhelpun');
   });
 });
 
@@ -604,12 +358,12 @@ describe('word-builder pack · the DI wire', () => {
 describe('word-builder catalog · DI frame', () => {
   const entry = LITERACY_CATALOG.find((p) => p.id === 'word-builder')!;
 
-  it('carries no tutoring block: the workspace sends `tutoring: null` (WB-5)', () => {
+  it('carries no tutoring block, and its wiring is the boss card (WB-5)', () => {
     // The runner-era block ordered [WB_ITEM] turns and "the scripted correction
-    // line". Word-builder is workspace-only, so it reached no tutor; the
-    // no-answer rule lives in teachingWorkspace.guidance.
+    // line". The no-answer rule is the shared rotation doctrine, from the card.
     expect(entry.tutoring).toBeUndefined();
-    expect(entry.teachingWorkspace?.guidance).toMatch(/Never say the word/);
+    expect(entry.teachingWorkspace?.card).toBeDefined();
+    expect(entry.teachingWorkspace?.guidance).toBeUndefined();
   });
 
   it('carries no steering for the deleted drag-and-Check channel', () => {

@@ -4,9 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { itemFromTarget, itemsFromTargets, type WordBuilderComplexity } from './wordBuilderScript';
-import { wordBuilderSpokenMisses } from './wordBuilderWorkspace';
-import { MODEL_LEVER, POOL, SLOTS_LEVER, SMALL_BOARD_LEVER, leversOnScreen, modelFor, modelLeak, practiceLeak, slotFrame,
-  smallBoardWordFor, startingLevers, wordBuilderLevers } from './wordBuilderLevers';
+import type { WordBuilderItem, WordPartLike } from './wordBuilderScript';
+import { asSpokenBuilder, wordBuilderSpokenMisses } from './wordBuilderWorkspace';
+import { MODEL_LEVER, POOL, SLOTS_LEVER, SMALL_BOARD_LEVER, WORD_BUILDER_LEVERS, modelFor, modelLeak, practiceLeak, slotFrame,
+  smallBoardWordFor, startingLevers } from './wordBuilderLevers';
+
+/** The lever set as the component calls it. */
+const wordBuilderLevers = (item: WordBuilderItem, items: readonly WordBuilderItem[], board: readonly WordPartLike[],
+  pulled: readonly string[], starting: readonly string[] = []) =>
+  WORD_BUILDER_LEVERS.declare(asSpokenBuilder(item), { items, board, starting }, pulled);
+const leversOnScreen = (pulled: readonly string[], item: WordBuilderItem, items: readonly WordBuilderItem[], board: readonly WordPartLike[]) =>
+  WORD_BUILDER_LEVERS.onScreen(asSpokenBuilder(item), { items, board, starting: [] }, pulled) || null;
 
 const DIR = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
 // The spoken modes' payloads; the open build (build_affix) has its own levers (affixBuild.ts).

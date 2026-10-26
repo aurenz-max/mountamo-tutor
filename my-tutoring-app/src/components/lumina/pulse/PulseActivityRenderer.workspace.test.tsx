@@ -190,17 +190,8 @@ it('binds an item with no resolved mode (a frontier probe) as mixed, on the work
   expect(seam.runtime.getSnapshot()).toMatchObject({ owner: 'tutor', evalMode: 'mixed' });
 });
 
-it.each([
-  // A family that still keeps a scripted drill beside its workspace (counting-board is workspace-only since its boss).
-  ['a mode the family does not have', { family: 'number-sequencer', mode: 'identify' }],
-] as const)('keeps the scripted drill and the per-item AI helper for %s', async (_, input) => {
-  await mount([input as ItemInput]);
-  expect(workspace()).toBeNull();
-  expect(useJudgedScriptRunner).toHaveBeenCalled();
-  expect(screen.getByTestId('ai-helper')).toBeTruthy();
-  expect(screen.queryByTestId('tutor-face')).toBeNull();
-  expect(seam.ai.connectLesson).not.toHaveBeenCalled();
-});
+// No family keeps a scripted drill beside its workspace any more (boss migration wave 4, 2026-10-26: the scripted
+// fallback ratchet is 0), so there is no unbound Pulse drill left to pin here.
 
 it.each(Object.keys(FAMILIES) as Family[])('%s submits once, and Pulse records what the scripted drill records', async family => {
   const h = await mount([{ family }]);

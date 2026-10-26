@@ -40,8 +40,8 @@ it('spoken choice: the cue shows in the pull; after a wrong answer a 3-choice me
   expect(h.view.container.querySelector('[data-lever-cue]')?.textContent).toBe('🍯');
   // The journey's screen probe counts [data-lever] (LB-20).
   expect(h.view.container.querySelectorAll('[data-lever="cue-picture"]')).toHaveLength(1);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toContain('a jar of honey');
-  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/bee/);
+  expect(String(receipt.state.task!.demand.onScreen)).toContain('a jar of honey');
+  expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/bee/);
 
   h.say('an ant'); h.feedback('incorrect');
   // The wrong answer is not yet retried: the drop would leave the key and the learner's own pick.
@@ -66,7 +66,7 @@ it('touched choice: the farthest untried choice greys out, cannot be touched, an
   expect(receipt.status).toBe('committed');
   expect(dropped(h)).toEqual(['3']);
   expect(Array.from(h.view.container.querySelectorAll('[data-lever="drop-far-choice"]')).map(e => e.textContent)).toEqual(['3']);
-  expect(String(receipt.state.task!.demand.levers_on_screen)).toBe('choice 4, "3", is greyed out and is not the answer');
+  expect(String(receipt.state.task!.demand.onScreen)).toBe('choice 4, "3", is greyed out and is not the answer');
   expect(levers(h)).toEqual([['drop_far_choice', true]]);
   expect(h.offer('pull_lever')).toBeFalsy();
 
@@ -99,7 +99,7 @@ it('count on a 3-choice menu: after a wrong touch the spread answers one_less; a
   const boxes = h.view.container.querySelectorAll('[data-lever="spread-pictures"] [data-spread-box]');
   expect(boxes).toHaveLength(5);
   expect(h.view.container.querySelector('[data-lever="spread-pictures"]')!.textContent).not.toMatch(/\d/);
-  const fact = String(receipt.state.task!.demand.levers_on_screen);
+  const fact = String(receipt.state.task!.demand.onScreen);
   expect(fact).toContain('⭐');
   expect(fact).not.toMatch(/\d/);
   expect(levers(h)).toEqual([['spread_pictures', true]]);
@@ -107,7 +107,7 @@ it('count on a 3-choice menu: after a wrong touch the spread answers one_less; a
   // Touching a box marks it; the mark is the learner's own count and never reaches the scene.
   fireEvent.click(boxes[0]);
   expect(h.view.container.querySelectorAll('[data-spread-box][data-marked]')).toHaveLength(1);
-  expect(String(h.state().task!.demand.levers_on_screen)).toBe(fact);
+  expect(String(h.state().task!.demand.onScreen)).toBe(fact);
 
   h.dispatch('retry'); h.confirmVisible();
   expect(h.view.container.querySelectorAll('[data-lever="spread-pictures"] [data-spread-box]')).toHaveLength(5);

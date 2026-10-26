@@ -217,6 +217,14 @@ export const TEACHING_DOCTRINE = 'Nothing on this screen is graded: you are teac
   + 'Answer their questions and follow their curiosity back to the screen. The transcript is noisy supporting context. '
   + 'There is no score: never quiz for one, and call no recording or progression tool. The learner presses Done when ready.';
 
+/**
+ * The rules an UNGRADED boss card makes true (`Card.ungraded`): what the learner does, what the tutor teaches from, and
+ * the card's own facts about covering this content. `TEACHING_DOCTRINE` follows it in the guidance.
+ */
+export const TEACHING_ROTATION = ({ words }: BossCard) => `The learner's job is to ${words.job}. ${cap(words.question)} `
+  + 'are what you teach from: say them freely and as often as needed, in your own words for a learner who cannot read.'
+  + `${words.special ? ` ${words.special}` : ''}`;
+
 /** The mount state of an ungraded teaching surface: what it teaches and how many things it can show. */
 export const teachingOpening = ({ title, task, steps }: { title: string; task: string; steps: number }) => ({
   title, instruction: task, teachingOwner: 'tutor', totalSteps: steps,
@@ -269,7 +277,8 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
       lessons: ungraded ? [[UNGRADED_MODE, 'Teach'] as const] : (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
     lessonStart: workspaceLessonStart(primitiveId, primitiveId),
     guidance: declared.card
-      ? workspaceGuidance(ROTATION_DOCTRINE(declared.card), !!declared.levers)
+      ? ungraded ? `${TEACHING_ROTATION(declared.card)} ${TEACHING_DOCTRINE}`
+        : workspaceGuidance(ROTATION_DOCTRINE(declared.card), !!declared.levers)
       : ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance, !!declared.levers),
     validate: domain.validate,
     initialState: domain.initialState,
@@ -284,6 +293,8 @@ export function bossAdapter<D extends { title: string }>(boss: Boss<D>): LiveAct
   const interaction = bossInteraction(boss.card);
   const adapter = workspaceAdapter<D>(boss.card.id, { validate: boss.validate, initialState: data => {
     const items = boss.items(data);
+    // An ungraded surface counts the things it can show; nothing on it is judged.
+    if (boss.card.ungraded) return teachingOpening({ title: data.title, task: boss.ask(items[0], data), steps: items.length });
     return { ...workspaceOpening({ title: data.title, task: boss.ask(items[0], data), total: items.length }), interaction };
   } });
   const types = new Set(boss.levers?.specs.map(s => s.type) ?? []);

@@ -6,8 +6,8 @@
  * The host's rules (`AffixBuildRules`: `affixBuild.ts` by default, `inflectBuild.ts` for word-flip) check the row in
  * code; a row that passes goes to the shared literacy judge (route `judgeWordBuild`), which reads the word against the
  * ask. Try again keeps the row and the verdict words; a new item opens an empty row. Mounted by its host for a build
- * payload, on the teaching workspace only. A host on the boss framework passes `boss`: its assignment and its bound
- * lever set replace the rules' (`rules.assignment`, `rules.levers`), and Pip comes from the runner.
+ * payload, on the teaching workspace only. Every host is on the boss framework and passes `boss`: its assignment and
+ * its bound lever set (word-builder's `WORD_BUILDER_LEVERS`, word-flip's `FLIP_LEVERS`), and Pip comes from the runner.
  */
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -23,7 +23,6 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { WordBuildVerdict, WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
 import {
@@ -81,8 +80,8 @@ export interface WordBuildAffixProps {
   rules?: AffixBuildRules;
   /** The host's metrics from the session summary. */
   metrics?: (s: AffixBuildSummary) => object;
-  /** A boss host's wiring (`boss.ts`, `bossLevers.ts`): the assignment and the lever set bound to this lesson. */
-  boss?: AffixBuildBoss;
+  /** The host boss's wiring (`boss.ts`, `bossLevers.ts`): the assignment and the lever set bound to this lesson. */
+  boss: AffixBuildBoss;
 }
 
 /** What a boss host hands the surface in place of the rules' assignment and levers. */
@@ -96,15 +95,9 @@ export interface AffixBuildBoss {
   };
 }
 
-/** The answer region Pip watches: from the runner on a boss host, from the hand-wired surface otherwise. */
-function PipRegion({ boss, hand, className, children }: { boss: boolean; hand: ReturnType<typeof useWorkspacePipSurface>['workspace'];
-  className: string; children: React.ReactNode }) {
-  return boss ? <PipWorkspace className={className}>{children}</PipWorkspace> : <div {...hand} className={className}>{children}</div>;
-}
-
 export default function WordBuildAffix({ data, className, runtimePlanItemId, primitiveId = 'word-builder',
   rules = wordBuilderAffixRules, metrics = wordBuilderMetrics, boss }: WordBuildAffixProps) {
-  const assignment = boss?.assignment ?? rules.assignment;
+  const { assignment } = boss;
   const { title, availableParts = [], instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -223,29 +216,15 @@ export default function WordBuildAffix({ data, className, runtimePlanItemId, pri
       { challengeResults: results });
   }, [allDone, hasSubmitted, items.length, results, submitResult, progress.recordsEvaluation, metrics]);
 
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    // A boss host takes Pip from the runner (`<PipDock />`, `<PipWorkspace>`); the rules' default still wires it here.
-    scopeId: boss || allDone || hasSubmitted || !current ? null : current.id,
-    label: 'The word-part board',
-    solved: phase === 'checked' && !!verdict?.met,
-    checking: phase === 'checking',
-    handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
-  });
-
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current || !sessionItem) return;
     const scene = rules.scene(current, onBoard, rowWork, phase === 'checked' && verdict ? verdict.words : undefined);
-    const levers = practice ? [] : boss ? boss.levers.declare(sessionItem, pulled) : rules.levers?.(sessionItem, board, pulled) ?? [];
+    const levers = practice ? [] : boss.levers.declare(sessionItem, pulled);
     const practiceFact: Record<string, string> = practice ? { practice: 'The same ask on a smaller board, one word, ungraded. The full item comes back after it.' } : {};
-    // A boss host's lever set writes the support and on-screen facts (`leverScene`); the rules' default writes its own.
-    const published: WorkspaceScene = boss
-      ? leverScene({ ...scene, facts: { ...scene.facts, ...practiceFact } }, {
-        support: practice ? '' : boss.levers.support(sessionItem), onScreen: practice ? '' : boss.levers.onScreen(sessionItem, pulled) })
-      : (() => { const onScreen = practice ? undefined : rules.leverFacts?.(pulled, sessionItem, board);
-        return { ...scene, facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...practiceFact } }; })();
+    // The boss's lever set writes the support and on-screen facts (`leverScene`).
+    const published: WorkspaceScene = leverScene({ ...scene, facts: { ...scene.facts, ...practiceFact } }, {
+      support: practice ? '' : boss.levers.support(sessionItem), onScreen: practice ? '' : boss.levers.onScreen(sessionItem, pulled) });
     workspace.current = {
       ...published,
       levers,
@@ -256,7 +235,7 @@ export default function WordBuildAffix({ data, className, runtimePlanItemId, pri
         if (lever.pulled) return `${id} is already pulled.`;
         const next = { item: sessionItem.id, pulled: [...pulled, id] };
         if (lever.kind === 'simplify') {
-          const easier = boss ? boss.levers.simpler(sessionItem, id) : rules.smallBoardFor(sessionItem, board);
+          const easier = boss.levers.simpler(sessionItem, id);
           if (!easier) return 'There is no smaller board for this item.';
           setLeverState(next); setVerdict(null); setPhase('building'); setPractice(easier);
           return { practice: assignment(easier) };
@@ -303,8 +282,9 @@ export default function WordBuildAffix({ data, className, runtimePlanItemId, pri
               </div>
             </LuminaPrompt>
 
-            {boss ? <PipDock /> : pip.store && <div {...pip.dock} />}
-            <PipRegion boss={!!boss} hand={pip.workspace} className="space-y-3">
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the build as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-3">
               {rowWork.made.length > 0 && (
                 <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-slate-300" data-testid="wb-made">
                   <span>Made:</span>
@@ -381,7 +361,7 @@ export default function WordBuildAffix({ data, className, runtimePlanItemId, pri
                   <p className="text-base font-semibold">{verdict.words}</p>
                 </LuminaFeedbackCard>
               )}
-            </PipRegion>
+            </PipWorkspace>
           </>
         )}
       </LuminaCardContent>

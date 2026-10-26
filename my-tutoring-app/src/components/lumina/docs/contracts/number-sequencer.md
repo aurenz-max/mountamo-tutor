@@ -140,6 +140,8 @@ while retaining the generic ≤100 default and the five existing mode identities
 
 ## Changelog
 
+- 2026-10-26 — **onto its boss (COMPATIBLE; boss migration wave 4).** `numberSequencer.card.ts` + `numberSequencer.boss.ts` on the spoken preset: five `SPOKEN` modes (the key is a `SpokenKey`: the number in digits or words, with the same signature miss per mode) and `order_cards` `TAP_ONE` (the train checks the order). The two lever modules are one lever set (`NUMBER_SEQUENCER_LEVERS`); `model_train` now gets the shared tier rule. The scripted drill (`useJudgedScriptRunner`), `numberSequencerScript.ts`, `NumberSequencerTeaching.tsx`, the DI_PORTS row and the catalog `tutoring` block are deleted; an unbound mount shows the "needs the tutor" card. All six eval modes kept.
+
 - 2026-08-04 — contract derived for reader-fit 14h; 8 requirements; Grade-1
   100-vs-120 conflict resolved structurally via scoped widening + local windows.
 - 2026-08-04 — `--check` COMPATIBLE after implementation: R1–R8 verified;

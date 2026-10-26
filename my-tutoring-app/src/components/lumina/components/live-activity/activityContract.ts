@@ -11,7 +11,7 @@
 import { numberLineBoss, validateNumberLineData } from '../../primitives/visual-primitives/math/numberLine.boss';
 import { tenFrameBoss, validateTenFrameData } from '../../primitives/visual-primitives/math/tenFrame.boss';
 import { countingBoardBoss } from '../../primitives/visual-primitives/math/countingBoard.boss';
-import { numberSequencerLiveDomain } from './adapters/numberSequencerLive';
+import { numberSequencerBoss } from '../../primitives/visual-primitives/math/numberSequencer.boss';
 import { numberBondBoss } from '../../primitives/visual-primitives/math/numberBond.boss';
 import { ordinalLineBoss } from '../../primitives/visual-primitives/math/ordinalLine.boss';
 import { compareObjectsBoss } from '../../primitives/visual-primitives/math/compareObjects.boss';
@@ -67,8 +67,8 @@ import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instr
 import { diSentenceReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diSentenceReading.boss';
 import { letterSoundLinkBoss } from '../../primitives/visual-primitives/literacy/letterSoundLink.boss';
 import { phonicsBlenderBoss } from '../../primitives/visual-primitives/literacy/phonicsBlender.boss';
-import { adaptationInvestigatorLiveDomain } from './adapters/adaptationInvestigatorLive';
-import { curatorBriefLiveDomain } from './adapters/curatorBriefLive';
+import { adaptationInvestigatorBoss } from '../../primitives/visual-primitives/biology/adaptationInvestigator.boss';
+import { curatorBriefBoss } from '../../primitives/curatorBrief.boss';
 import { wordFlipBoss } from '../../primitives/visual-primitives/literacy/wordFlip.boss';
 import { soundSwapBoss } from '../../primitives/visual-primitives/literacy/soundSwap.boss';
 import { spellingPatternExplorerBoss } from '../../primitives/visual-primitives/literacy/spellingPatternExplorer.boss';
@@ -76,7 +76,7 @@ import { cvcSpellerBoss } from '../../primitives/visual-primitives/literacy/cvcS
 import { syllableClapperBoss } from '../../primitives/visual-primitives/literacy/syllableClapper.boss';
 import { rhymeStudioBoss } from '../../primitives/visual-primitives/literacy/rhymeStudio.boss';
 import { wordWorkoutBoss } from '../../primitives/visual-primitives/literacy/wordWorkout.boss';
-import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
+import { wordBuilderBoss } from '../../primitives/visual-primitives/literacy/wordBuilder.boss';
 import { pictureVocabularyBoss } from '../../primitives/visual-primitives/literacy/pictureVocabulary.boss';
 import { letterSpotterBoss } from '../../primitives/visual-primitives/literacy/letterSpotter.boss';
 import { letterWorkshopBoss } from '../../primitives/visual-primitives/literacy/letterWorkshop.boss';
@@ -114,8 +114,8 @@ import { sentenceAnalyzerBoss } from '../../primitives/visual-primitives/literac
 import { causeEffectChainBoss } from '../../primitives/visual-primitives/history/causeEffectChain.boss';
 import { eraExplorerBoss } from '../../primitives/visual-primitives/history/eraExplorer.boss';
 import { periodicTableBoss } from '../../primitives/periodicTable.boss';
-import { knowledgeCheckLiveDomain } from './adapters/knowledgeCheckLive';
-import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
+import { knowledgeCheckBoss } from '../../primitives/knowledgeCheck.boss';
+import { readAloudStudioBoss } from '../../primitives/visual-primitives/literacy/readAloudStudio.boss';
 import { solarSystemBoss } from '../../primitives/visual-primitives/astronomy/solarSystem.boss';
 import { planetaryExplorerBoss } from '../../primitives/visual-primitives/astronomy/planetaryExplorer.boss';
 import { constellationBuilderBoss } from '../../primitives/visual-primitives/astronomy/constellationBuilder.boss';
@@ -188,7 +188,7 @@ export const LIVE_ADAPTERS = {
   'number-line': bossAdapter(numberLineBoss),
   'ten-frame': bossAdapter(tenFrameBoss),
   'counting-board': bossAdapter(countingBoardBoss),
-  'number-sequencer': workspaceAdapter('number-sequencer', numberSequencerLiveDomain),
+  'number-sequencer': bossAdapter(numberSequencerBoss),
   'number-bond': bossAdapter(numberBondBoss),
   'ordinal-line': bossAdapter(ordinalLineBoss),
   'sorting-station': bossAdapter(sortingStationBoss),
@@ -240,8 +240,8 @@ export const LIVE_ADAPTERS = {
   'letter-sound-link': bossAdapter(letterSoundLinkBoss),
   'bar-model': bossAdapter(barModelBoss),
   'phonics-blender': bossAdapter(phonicsBlenderBoss),
-  'adaptation-investigator': workspaceAdapter('adaptation-investigator', adaptationInvestigatorLiveDomain),
-  'curator-brief': workspaceAdapter('curator-brief', curatorBriefLiveDomain),
+  'adaptation-investigator': bossAdapter(adaptationInvestigatorBoss),
+  'curator-brief': bossAdapter(curatorBriefBoss),
   'word-flip': bossAdapter(wordFlipBoss),
   'sound-swap': bossAdapter(soundSwapBoss),
   'cvc-speller': bossAdapter(cvcSpellerBoss),
@@ -250,7 +250,7 @@ export const LIVE_ADAPTERS = {
   'rhyme-studio': bossAdapter(rhymeStudioBoss),
   'phoneme-explorer': bossAdapter(phonemeExplorerBoss),
   'word-workout': bossAdapter(wordWorkoutBoss),
-  'word-builder': workspaceAdapter('word-builder', wordBuilderLiveDomain),
+  'word-builder': bossAdapter(wordBuilderBoss),
   'word-sorter': bossAdapter(wordSorterBoss),
   'picture-vocabulary': bossAdapter(pictureVocabularyBoss),
   'letter-spotter': bossAdapter(letterSpotterBoss),
@@ -289,8 +289,8 @@ export const LIVE_ADAPTERS = {
   'cause-effect-chain': bossAdapter(causeEffectChainBoss),
   'era-explorer': bossAdapter(eraExplorerBoss),
   'periodic-table': bossAdapter(periodicTableBoss),
-  'knowledge-check': workspaceAdapter('knowledge-check', knowledgeCheckLiveDomain),
-  'read-aloud-studio': workspaceAdapter('read-aloud-studio', readAloudStudioLiveDomain),
+  'knowledge-check': bossAdapter(knowledgeCheckBoss),
+  'read-aloud-studio': bossAdapter(readAloudStudioBoss),
   'oral-sentence-studio': bossAdapter(oralSentenceStudioBoss),
   'states-of-matter': bossAdapter(statesOfMatterBoss),
   'solar-system-explorer': bossAdapter(solarSystemBoss),

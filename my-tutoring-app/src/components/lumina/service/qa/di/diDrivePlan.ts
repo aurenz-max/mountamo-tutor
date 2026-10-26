@@ -1,4 +1,3 @@
-import { buildSequencerItems, sequencerPackBase, sequencerHarnessAnswers, sequencerOrderCue, type SequencerItem } from '../../../primitives/visual-primitives/math/numberSequencerScript';
 import type { NumberSequencerChallenge } from '../../../primitives/visual-primitives/math/NumberSequencer';
 /**
  * diDrivePlan — the judged loop, serialized so a headless student can drive it.
@@ -47,13 +46,6 @@ import {
 } from '@/components/lumina/hooks/judgedScriptContract';
 import { checkPackGates } from '@/components/lumina/hooks/judgedScriptContract.testkit';
 import { DI_SENTINELS } from '@/components/lumina/hooks/judgedLoopModel';
-import {
-  itemsFromProblems as kcItemsFromProblems,
-  knowledgeCheckHarnessAnswers,
-  knowledgeCheckPackBase,
-  tapVerdictCue as kcTapVerdictCue,
-  type KnowledgeCheckItem,
-} from '@/components/lumina/primitives/knowledgeCheckScript';
 import type { OpenSetProbe } from './openSetWordBench';
 import { numberWordFor } from '@/components/lumina/primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 import {
@@ -63,16 +55,6 @@ import {
   type StoryTalkChallengeLike,
   type StoryTalkItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/storyTalkScript';
-import {
-  itemsFromTargets as wordBuilderItems,
-  wordBuilderHarnessAnswers,
-  wordBuilderPackBase,
-  type TargetWordLike as WordBuilderTargetLike,
-  type WordBuilderComplexity,
-  type WordBuilderItem,
-  type WordPartLike as WordBuilderPartLike,
-} from '@/components/lumina/primitives/visual-primitives/literacy/wordBuilderScript';
-
 // ---------------------------------------------------------------------------
 // The plan a harness replays
 // ---------------------------------------------------------------------------
@@ -260,15 +242,6 @@ export interface DiPortAdapter<Item extends JudgedScriptItem> {
   gestureVerdictCue?: (item: Item, gesture: number | string) => string;
 }
 
-const numberSequencerAdapter: DiPortAdapter<SequencerItem> = {
-  build: data => {
-    const { items, droppedChallenges } = buildSequencerItems((data.challenges ?? []) as NumberSequencerChallenge[]);
-    return { items, dropped: droppedChallenges, surface: sequencerPackBase(items) };
-  },
-  answersFor: sequencerHarnessAnswers,
-  gestureVerdictCue: (item, gesture) => sequencerOrderCue(item, String(gesture).split(',').map(Number)),
-};
-
 /**
  * story-talk (fifteenth literacy port). ALL-VOICE — the picture menu is deleted,
  * so there is no `gestureVerdictCue` and every item is judged from the answer
@@ -287,96 +260,13 @@ const storyTalkAdapter: DiPortAdapter<StoryTalkItem> = {
 };
 
 /**
- * word-builder — the FIRST judged port above the K-2 band (grades 3-8
- * morphology). ALL-VOICE across all four complexity tiers, so there is no
- * gesture commit; the tiers are DIFFICULTY, not task identities, so one session
- * is one `action` and the how-to-play is spoken once.
- *
- * ⚠️ Its `build` reads TWO fields, not one. Every other adapter maps
- * `data.challenges`; a word-builder item is a target word joined to the shared
- * `availableParts` pool, and the pool is where the morphemes and their meanings
- * live — an adapter that passed only the targets would build zero items and
- * report the generator as broken.
- *
- * What is different about its answer material:
- *
- *  1. **`plainWrong` is a real morphology error rather than an unrelated
- *     token.** It is the parts IN THE WRONG ORDER ("fulhelpun"), which is the
- *     one miss the printed board cannot help with — the cards say what each
- *     part MEANS and nothing about where it goes. Every other port's plain
- *     wrong is arbitrary; this one drives the ordering half of the skill.
- *  2. **The signature wrong is the ROOT said straight back** ("help" for
- *     unhelpful, "scope" for telescope) — picture-vocabulary's base-word shape,
- *     sharpened by the board: the root is a real word, it is printed in front
- *     of the child, it carries the target's core meaning, and the tutor's own
- *     correction says what it means out loud. A judge listening for "did they
- *     say something from the parts" affirms it.
- *  3. **The leak oracle is FLAT with no exemption anywhere.** The two ports
- *     before it needed one because their answer was a single character; a
- *     multi-syllable word collides with nothing, the ask never says it, and the
- *     build gate drops any clue or context sentence that contains it.
- */
-const wordBuilderAdapter: DiPortAdapter<WordBuilderItem> = {
-  build: (data) => {
-    const targets = (data.targets ?? []) as WordBuilderTargetLike[];
-    const pool = (data.availableParts ?? []) as WordBuilderPartLike[];
-    const complexity = ((data.complexityLevel as WordBuilderComplexity)
-      ?? 'compound_affix') as WordBuilderComplexity;
-    const items = wordBuilderItems(targets, pool, complexity);
-    return {
-      items,
-      dropped: targets.length - items.length,
-      surface: wordBuilderPackBase(items),
-    };
-  },
-  answersFor: wordBuilderHarnessAnswers,
-};
-
-/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
  * four fields every judged item has (`JudgedScriptItem`), and the adapter's own
  * closures keep their concrete type internally.
  */
-/**
- * knowledge-check (item 23 slice 2) — the first CROSS-CUTTING port: not a
- * subject primitive but the closing assessment carrier, so one payload mixes
- * up to five judged kinds (true_false / choice / choice_tap / blank / match /
- * sort) and ONE gesture (`choice_tap`, the point-at-a-KaTeX-choice fork).
- *
- * ⚠️ ITS BUILD IS ALL-OR-NOTHING, and the adapter mirrors it. Completion is
- * gated per problem (`::pN`), so the component refuses a judged session that
- * cannot ask every problem — a set with a sequencing/scenario problem, or one
- * whose only MCQ failed the leak gate, runs as taps instead. The adapter
- * returns ZERO items for those payloads (never a partial session the child
- * would not get), and `dropped` then counts every candidate.
- *
- * The signature wrongs are per kind, each one the miss its own contract names:
- * a fragment of the STATEMENT on true_false (engaged-sounding, judges
- * nothing), a word-bank distractor on blank (on screen, on topic, wrong), the
- * focus item said back on sort/match (fluent non-placement), the short form
- * of a WRONG card on choice (the accept clause pointed at the wrong option).
- */
-const knowledgeCheckAdapter: DiPortAdapter<KnowledgeCheckItem> = {
-  build: (data) => {
-    const problems = (data.problems ?? []) as import('../../../types').ProblemData[];
-    const { items, judgedViable, dropped } = kcItemsFromProblems(problems);
-    return {
-      items: judgedViable ? items : [],
-      dropped: judgedViable ? dropped : dropped + items.length,
-      surface: knowledgeCheckPackBase(judgedViable ? items : []),
-    };
-  },
-  answersFor: knowledgeCheckHarnessAnswers,
-  gestureVerdictCue: (item, gesture) =>
-    kcTapVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
-};
-
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
-  'knowledge-check': knowledgeCheckAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'word-builder': wordBuilderAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
-  'number-sequencer': numberSequencerAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 

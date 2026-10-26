@@ -1,23 +1,13 @@
 /**
- * KnowledgeCheck.di-script — machine gates + pedagogy pins for the judged
- * knowledge-check pack (qa/di/BACKLOG.md item 23 slice 2).
- *
- * Plumbing comes from the shared testkit (`checkPackGates` /
- * `checkDiCatalogEntry`) — never re-typed. The pins below are the file's
- * point: the answer-material fork both directions, the per-kind judging
- * contracts, the build gates (KEEP-OR-DROP + the all-or-nothing rule this
- * pack alone carries), and the harness answer material each contract's
- * claims are tested with.
+ * KnowledgeCheck.di-script — pedagogy pins for the knowledge-check items
+ * (qa/di/BACKLOG.md item 23 slice 2): the answer-material fork both
+ * directions, each kind's spoken key (the judging contracts' claims, re-based
+ * onto `SpokenKey` when the family moved onto its boss, 2026-10-26), the build
+ * gates (KEEP-OR-DROP), and the harness answer material.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import {
-  checkPackGates,
-  checkDiCatalogEntry,
-} from '../../hooks/judgedScriptContract.testkit';
-import { spokenSpansOf } from '../../hooks/judgedScriptContract';
-import { ASSESSMENT_CATALOG } from '../../service/manifest/catalog/assessment';
 import type {
   ProblemData,
   TrueFalseProblemData,
@@ -32,21 +22,14 @@ import {
   blankSpokenSentence,
   choiceSpokenReason,
   choicesSpokenFor,
-  itemCue,
   itemsFromProblems,
   knowledgeCheckHarnessAnswers,
-  knowledgeCheckPackBase,
-  moveOnCue,
-  closeLineFor,
   askFor,
-  correctionLine,
-  affirmLine,
-  stimulusFor,
-  tapVerdictCue,
   MAX_SESSION_ITEMS,
   type KnowledgeCheckItem,
   type KnowledgeCheckItemKind,
 } from '../knowledgeCheckScript';
+import { knowledgeCheckAsk, knowledgeCheckAssignment, knowledgeCheckKey, knowledgeCheckMiss } from '../knowledgeCheckWorkspace';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -114,45 +97,6 @@ const fullSet = (): ProblemData[] => [
 
 const buildAll = () => itemsFromProblems(fullSet());
 
-const catalogEntry = ASSESSMENT_CATALOG.find((c) => c.id === 'knowledge-check')!;
-
-// ── The gates ───────────────────────────────────────────────────────────────
-
-describe('pack gates (shared testkit)', () => {
-  it('the full mixed pack passes every structural gate', () => {
-    const { items, judgedViable } = buildAll();
-    expect(judgedViable).toBe(true);
-    expect(checkPackGates(knowledgeCheckPackBase(items))).toEqual([]);
-  });
-
-  it('the catalog entry passes the DI catalog contract', () => {
-    const { items } = buildAll();
-    const pack = knowledgeCheckPackBase(items);
-    expect(checkDiCatalogEntry(catalogEntry, pack, items[0])).toEqual([]);
-  });
-
-  // ⚠️ The one-item-per-mode fixture above can never trigger the repeat-ask
-  // gate. This is the REAL session shape: several same-action items back to
-  // back (a whole sort, then consecutive true/false problems).
-  it('a real session shape (consecutive same-action items) passes the repeat-ask gate', () => {
-    const { items, judgedViable } = itemsFromProblems([
-      sortProblem({
-        id: 'ca2',
-        categorizationItems: [
-          { itemText: 'cow', correctCategory: 'Farm' },
-          { itemText: 'shark', correctCategory: 'Ocean' },
-          { itemText: 'pig', correctCategory: 'Farm' },
-          { itemText: 'crab', correctCategory: 'Ocean' },
-        ],
-      }),
-      tfProblem({ id: 'tf2', statement: 'A cow lives in the ocean', correct: false }),
-      tfProblem({ id: 'tf3', statement: 'A crab has a hard shell', correct: true }),
-    ]);
-    expect(judgedViable).toBe(true);
-    expect(checkPackGates(knowledgeCheckPackBase(items))).toEqual([]);
-  });
-});
-
 // ── The answer-material fork, both directions ───────────────────────────────
 
 describe('answer-material fork', () => {
@@ -199,80 +143,51 @@ describe('answer-material fork', () => {
   });
 });
 
-// ── Per-kind cue contracts ──────────────────────────────────────────────────
+// ── Per-kind spoken keys ────────────────────────────────────────────────────
 
-describe('cue contracts', () => {
+describe('spoken keys', () => {
   const itemsByKind = () => {
     const { items } = buildAll();
     return new Map(items.map((i) => [i.kind, i]));
   };
 
-  it('every VOICE cue carries ask + affirm + correction spans; affirm opens Yes, correction opens My turn', () => {
-    for (const item of buildAll().items.filter((i) => i.answerKind === 'voice')) {
-      const spans = spokenSpansOf(itemCue(item));
-      expect(spans.length).toBeGreaterThanOrEqual(3);
-      expect(spans[1].startsWith('Yes')).toBe(true);
-      expect(spans[2].startsWith('My turn')).toBe(true);
-      expect(itemCue(item)).toContain('stay silent');
+  it('every VOICE item has a key and a spoken assignment; a touched item has neither key nor expected answer', () => {
+    for (const item of buildAll().items) {
+      const assignment = knowledgeCheckAssignment(item);
+      if (item.answerKind === 'voice') {
+        expect(knowledgeCheckKey(item)).not.toBeNull();
+        expect(assignment.response).toBe('speech');
+      } else {
+        expect(assignment.response).toBe('gesture');
+        expect(assignment.expectedAnswer).toBeUndefined();
+      }
     }
   });
 
-  it('the TAP cue carries the silence contract and NO verdict branches (the verdict cue is separate)', () => {
-    const tap = itemsByKind().get('choice_tap')!;
-    const cue = itemCue(tap);
-    expect(spokenSpansOf(cue)).toHaveLength(1); // the ask alone
-    expect(cue).toContain('nothing for you to listen for');
-    expect(cue).not.toContain('If the answer is right');
-  });
-
   it('true_false accepts the natural verdict forms and refuses the statement echoed back', () => {
-    const tf = itemsByKind().get('true_false')!;
-    const cue = itemCue(tf);
-    expect(cue).toContain('"yes"');
-    expect(cue).toContain('"yeah"');
-    expect(cue).toContain('said back to you is NOT an answer');
-    // The correction may not name the verdict — with two options, naming is
-    // handing over. The verdict is earned at the cap (closeLine).
-    expect(correctionLine(tf)).not.toContain('That one is');
-    expect(closeLineFor(tf)).toContain('That one is true');
+    const key = knowledgeCheckKey(itemsByKind().get('true_false')!)!;
+    expect(key.alsoAccept).toEqual(expect.arrayContaining(['yes', 'yeah']));
+    expect(key.signatureError).toContain('The statement said back');
   });
 
   it('menu kinds accept the short form and the position, and speak the menu in on-screen order', () => {
     const choice = itemsByKind().get('choice')!;
-    const cue = itemCue(choice);
-    expect(cue).toContain('the part that tells it apart');
-    expect(cue).toContain('"the second one"');
+    expect(knowledgeCheckKey(choice)!.acceptRule).toContain('the part that tells it apart');
+    expect(knowledgeCheckKey(choice)!.acceptRule).toContain('"the second one"');
     expect(choicesSpokenFor(choice)).toBe('cow, duck, or frog');
   });
 
   it('sort names the groups inside the ask (the mats are not a costume) and refuses the item echoed back', () => {
     const sort = itemsByKind().get('sort')!;
-    const cue = itemCue(sort);
-    expect(spokenSpansOf(cue)[0]).toContain('Farm, or Ocean');
-    expect(cue).toContain(`Saying "${sort.focusText}" back to you names no group`);
+    expect(knowledgeCheckAsk(sort)).toContain('Farm, or Ocean');
+    expect(knowledgeCheckKey(sort)!.signatureError).toContain(`"${sort.focusText}" said back names no group`);
   });
 
-  it('the capped close names the answer; corrections never did', () => {
-    const choice = itemsByKind().get('choice')!;
-    expect(closeLineFor(choice)).toContain('cow');
-    expect(moveOnCue(choice, null)).toContain('The answer is cow');
-  });
-
-  it('tap verdict cues carry the code-computed match', () => {
+  it('a touched choice is checked in code', () => {
     const tap = itemsByKind().get('choice_tap')!;
-    expect(tapVerdictCue(tap, 0)).toContain('That is the correct choice');
-    expect(tapVerdictCue(tap, 0)).toContain(affirmLine(tap));
-    expect(tapVerdictCue(tap, 1)).toContain('That is not the correct choice');
-  });
-
-  it('the context channel is answer-free: the question side only, never the menu or the key', () => {
-    const { items } = buildAll();
-    const choice = items.find((i) => i.kind === 'choice')!;
-    expect(stimulusFor(choice)).toBe(choice.prompt);
-    expect(stimulusFor(choice)).not.toContain('cow');
-    const blank = items.find((i) => i.kind === 'blank')!;
-    expect(stimulusFor(blank)).toContain('hmm');
-    expect(stimulusFor(blank)).not.toContain('morning');
+    expect(knowledgeCheckMiss(tap, tap.correctOptionId!)).toBeUndefined();
+    const wrong = tap.options!.find((o) => o.id !== tap.correctOptionId)!;
+    expect(knowledgeCheckMiss(tap, wrong.id)).toBeDefined();
   });
 });
 
@@ -370,7 +285,7 @@ describe('build gates', () => {
     ])).toEqual(['choice', 'on_screen']);
   });
 
-  it('a sequencing problem is worked on screen inside the session; its close names the order', () => {
+  it('a sequencing problem is worked on screen inside the session, with no spoken key', () => {
     const { judgedViable, items } = itemsFromProblems([
       mcProblem(),
       { ...base, type: 'sequencing_activity', id: 'sq1', instruction: 'Put the steps in order', items: ['wake', 'eat', 'play'] },
@@ -378,7 +293,7 @@ describe('build gates', () => {
     expect(judgedViable).toBe(true);
     expect(items.map((i) => i.kind)).toEqual(['choice', 'on_screen']);
     expect(items[1]).toMatchObject({ problemIndex: 1, answerKind: 'gesture', prompt: 'Put the steps in order' });
-    expect(closeLineFor(items[1])).toBe('The answer is wake, then eat, then play. ');
+    expect(knowledgeCheckKey(items[1])).toBeNull();
     expect(askFor(items[1])).toBe('Your turn. Put the steps in order Do it on the screen.');
   });
 

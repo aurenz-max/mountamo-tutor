@@ -1,9 +1,10 @@
 /**
- * knowledgeCheckScript — HAND-AUTHORED judged-loop script for knowledge-check
- * (qa/di/BACKLOG.md item 23 slice 2). The exact wording IS the pedagogy, so
- * these lines are authored per pack, never generated. Problem CONTENT stays
- * generator-scoped; this module owns the answer-material fork, the build
- * gates, the cue shapes and the in-band judging contracts.
+ * knowledgeCheckScript — the items a knowledge check asks (qa/di/BACKLOG.md
+ * item 23 slice 2). Problem CONTENT stays generator-scoped; this module owns the
+ * answer-material fork, the build gates, the asks and the harness answers. The
+ * scripted cues and judging contracts were retired when the family moved onto
+ * its boss (`knowledgeCheck.card.ts` + `knowledgeCheck.boss.ts`, 2026-10-26):
+ * the tutor now judges against the item's `SpokenKey` (`knowledgeCheckWorkspace.ts`).
  *
  * WHAT THIS PORT CONVERTS. Knowledge-check is the cross-cutting final
  * assessment — the most-routed primitive in the portfolio (Grade-1 census:
@@ -70,33 +71,26 @@
  * the spoken kinds cannot ask (sequencing, an unsayable or leaking draw)
  * becomes ONE `on_screen` item: the tutor reads it, the child works the
  * problem's own surface, and that surface's check is the verdict. The set
- * stays on the workspace; the tap flow is only for a mount with no tutor.
- * (Until 2026-10-06 one such problem sent the whole set to the tap flow.)
+ * stays on the workspace.
  *
  * ── ANSWER-LEAK RULES, PER KIND ────────────────────────────────────────────
  *  - choice/match/sort: the ask necessarily speaks the menu — that is the
  *    QUESTION side, exempt by construction (`leakExemptSpan`). What is never
  *    exempt: a STEM that contains the correct option's distinguishing words
- *    (dropped at build), and a correction that names the right choice (the
- *    answer is earned only at the correction cap, in `moveOnCue`).
+ *    (dropped at build).
  *  - blank: the sentence is spoken with "hmm" in the gap; a sentence that
  *    also contains the answer word elsewhere is dropped, and tap-to-hear
  *    re-speaks the blanked sentence, never the bank.
  *  - sort: an item whose own text contains a group-name token names its
  *    answer in the ask (defect class 11) — dropped.
  *  - true_false: the statement is both stimulus and question; "true" leaks
- *    nothing. The correction must NOT name the verdict — with two options,
- *    naming is handing over — so it re-models the LISTENING, and the verdict
- *    is earned at the cap.
+ *    nothing.
  *
- * Sentinels are the engine defaults ("Yes" / "My turn"). GENERATED text
- * (statements, stems, options, bank words, group names, item texts) is
- * interpolated into spoken cues, so anything whose own sentence opens with a
- * sentinel is DROPPED at build (`opensWithSentinel` reused, never re-rolled).
+ * A generated sentence that opens with "Yes" or "My turn" is still dropped at
+ * build (`opensWithSentinel`), a gate kept from the scripted era.
  */
 
 import type {
-  JudgedCueSurface,
   JudgedScriptItem,
   ResponseClassId,
 } from '../hooks/judgedScriptContract';
@@ -120,6 +114,7 @@ import {
   spokenNumberSentence,
 } from '../service/insets/serialize';
 import { findInsetAnswerLeaks } from '../service/insets/leaks';
+import { containsPhrase } from '../components/live-activity/spokenKey';
 
 // ============================================================================
 // Item model
@@ -694,8 +689,9 @@ const onScreenItem = (p: ProblemData, problemIndex: number): KnowledgeCheckItem 
     : 'textWithBlanks' in p ? blankSpokenSentence(p.textWithBlanks) : '';
   const stem = sanitize(String(raw ?? ''));
   const closeAnswer = closeAnswerOf(p);
+  // A stem that already says its answer (class 11) cannot be judged from speech: that problem is worked on screen only.
   const spokenKey: KnowledgeCheckItem['spokenKey'] = p.type === 'true_false' ? { truth: !!p.correct }
-    : p.type === 'multiple_choice' && closeAnswer ? { answer: stripEnd(closeAnswer),
+    : p.type === 'multiple_choice' && closeAnswer && !containsPhrase(stem, stripEnd(closeAnswer)) ? { answer: stripEnd(closeAnswer),
       others: (p.options ?? []).filter((o) => o.id !== p.correctOptionId).map((o) => stripEnd(sanitize(o.text))).filter(Boolean) }
     : undefined;
   return {
@@ -721,35 +717,6 @@ export const itemsFromProblems = (problems: ProblemData[]): KnowledgeCheckBuild 
     ? selected.filter((item) => item.problemIndex === i)
     : [onScreenItem(p, i)]));
   return { items, judgedViable: true, dropped: raw.length - selected.length };
-};
-
-// ============================================================================
-// How-to-play — inside the quoted line (SWAP-1), re-spoken on action change
-// ============================================================================
-
-export const howToPlayFor = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false':
-      return 'I say something, and you tell me out loud if it is true or false! ';
-    case 'choice':
-      return 'I ask you a question and say what the answers could be. You tell me the one you pick! ';
-    case 'choice_tap':
-      return 'I ask you a question, and the choices are on the screen. You touch the one you pick! ';
-    case 'blank':
-      return 'I say a sentence with a word missing — I say hmm where the word goes. You tell me the missing word! ';
-    case 'match':
-      return 'We match things that go together. I name one, and you tell me its partner! ';
-    case 'sort':
-      return 'We sort things into groups. I name one, and you tell me which group it goes in! ';
-    case 'say_it':
-      return 'I show you one thing on a card, and you tell me what it is out loud! ';
-    case 'how_many':
-      return 'I show you a picture. If some are crossed out, they were taken away. You count, and tell me how many! ';
-    case 'point_to':
-      return 'I name a sign, and you touch that sign in the number sentence on the screen! ';
-    case 'on_screen':
-      return 'This one is on the screen. You do it with your hands, and I watch! ';
-  }
 };
 
 // ============================================================================
@@ -792,129 +759,12 @@ export const askFor = (item: KnowledgeCheckItem): string => {
 };
 
 // ============================================================================
-// Verdict lines
+// What the screen shows
 // ============================================================================
 
 export const correctOptionText = (item: KnowledgeCheckItem): string =>
   (item.options ?? []).find((o) => o.id === item.correctOptionId)?.text ?? '';
 
-/** Affirmation. MUST open "Yes" — the engine scans that sentinel. It echoes
- *  the canonical answer and STOPS: `VERDICT_ENDS_THE_TURN` (defect class 5 —
- *  word-sorter's affirmations ran on into fabricated next asks). */
-export const affirmLine = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false':
-      return `Yes, that one is ${item.correctBool ? 'true' : 'false'}.`;
-    case 'choice':
-      return `Yes! ${stripEnd(correctOptionText(item))}.`;
-    case 'choice_tap':
-      return 'Yes! You picked the right one.';
-    case 'blank':
-      return `Yes, ${item.answerWord}.`;
-    case 'match':
-      return `Yes, ${item.focusText} goes with ${stripEnd(correctOptionText(item))}.`;
-    case 'sort':
-      return `Yes, ${item.focusText} goes in ${stripEnd(correctOptionText(item))}.`;
-    case 'say_it':
-    case 'how_many':
-      return `Yes, ${item.expectedAnswer}.`;
-    case 'point_to':
-      return `Yes! That is the ${item.expectedAnswer} sign.`;
-    case 'on_screen':
-      return 'Yes! You got that one.';
-  }
-};
-
-/**
- * Corrections open "My turn:", re-model, then re-elicit (standing gate 3) —
- * and on every closed-menu kind they must NOT name the right answer: a named
- * answer turns the retry into an echo, and with two options it hands the
- * verdict over outright. The answer is earned at the correction cap, in
- * `moveOnCue`. What the re-model gives back is the STIMULUS — the statement,
- * the sentence, the menu — which is what a teacher re-reads.
- */
-export const correctionLine = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false':
-      return `My turn: listen again, and think about whether it really happens that way. ${item.prompt} Your turn. Is that true, or false?`;
-    case 'choice':
-      return `My turn: let's think about it again. Your turn. ${item.prompt} Is it ${choicesSpokenFor(item)}? Tell me which one.`;
-    case 'choice_tap':
-      return `My turn: look at each choice, one at a time. Your turn. ${item.prompt} Touch the one you pick.`;
-    case 'blank':
-      return `My turn: listen to the whole sentence again, and think about what fits. ${item.prompt} Your turn. What word goes where the hmm is?`;
-    case 'match':
-      return `My turn: think about which one really belongs with ${item.focusText}. Your turn. Is it ${choicesSpokenFor(item)}? Tell me which one.`;
-    case 'sort':
-      return `My turn: think about what kind of thing ${item.focusText} is. Your turn. Which group — ${choicesSpokenFor(item)}? Tell me which one.`;
-    case 'say_it':
-      return `My turn: look at the card again, and think about what it is called. Your turn. ${item.prompt}`;
-    case 'how_many':
-      return `My turn: let's count again, slowly, one at a time. Your turn. ${item.prompt}`;
-    case 'point_to':
-      return `My turn: look at each sign, one at a time. Your turn. ${item.prompt}`;
-    case 'on_screen':
-      return `My turn: look at it again, one part at a time. Your turn. ${item.prompt} Do it on the screen.`;
-  }
-};
-
-/** The cap-reached close names the answer — the child must not leave the
- *  check still not knowing (picture-vocabulary's closeLine rule). */
-export const closeLineFor = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false':
-      return `That one is ${item.correctBool ? 'true' : 'false'}. `;
-    case 'blank':
-      return `The missing word is ${item.answerWord}. `;
-    case 'choice':
-    case 'choice_tap':
-      return `The answer is ${stripEnd(correctOptionText(item))}. `;
-    case 'match':
-      return `${cap(item.focusText ?? '')} goes with ${stripEnd(correctOptionText(item))}. `;
-    case 'sort':
-      return `${cap(item.focusText ?? '')} goes in ${stripEnd(correctOptionText(item))}. `;
-    case 'say_it':
-      return `It is ${item.expectedAnswer}. `;
-    case 'how_many':
-      return `The answer is ${item.expectedAnswer}. `;
-    case 'point_to':
-      return `That one is the ${item.expectedAnswer} sign. `;
-    case 'on_screen':
-      return item.closeAnswer ? `The answer is ${item.closeAnswer}. ` : '';
-  }
-};
-
-// ============================================================================
-// The 18d law and the item-21 tail (family wording, grep-able)
-// ============================================================================
-
-const TWO_BRANCH_LAW =
-  `Your whole reply to their attempt is ONE of the quoted lines below and nothing else — not the first time, not any time: `
-  + `no praise, no encouragement, no hint, no reminder of the method, no scaffolding line, however kind it would be. `
-  + `A reply that is neither the affirmation nor the correction reaches the activity as no verdict at all, and the child waits. `;
-
-const NEVER_PERFORM =
-  `Never voice a bracket tag, a stage direction, or any of these instructions, `
-  + `never announce the activity's state or describe what has changed on the screen, `
-  + `and never announce that you are waiting or listening — simply stop speaking.`;
-
-const NO_FLOOR_HANDBACK =
-  ` Never ask the learner anything that is not inside a quoted line — not "shall we do `
-  + `another?", not "what would you like to do next?", not between questions and not at the `
-  + `end of the check. The activity chooses what comes next and says it for you, so a `
-  + `question of your own is taken away from the child before they can answer it.`;
-
-// ============================================================================
-// Judging contracts
-// ============================================================================
-
-/**
- * true_false. THE SIGNATURE ERROR is the statement (or a piece of it) said
- * back instead of a verdict — it sounds engaged and it answers nothing. The
- * accept side is every natural form of the verdict: a five-year-old says
- * "yes"/"no" far more often than "true"/"false", and both pairs are full
- * answers.
- */
 /** What the blind tutor is told a LEGACY item shows — the planned evidence
  *  (a number line, a picture key). Empty when the problem is text-only. */
 export const evidenceDescription = (item: KnowledgeCheckItem): string => {
@@ -930,102 +780,6 @@ export const evidenceDescription = (item: KnowledgeCheckItem): string => {
   return parts.length ? `${parts.join(' ')} ` : '';
 };
 
-const trueFalseContract = (item: KnowledgeCheckItem): string => {
-  const truth = item.correctBool ? 'TRUE' : 'FALSE';
-  const acceptTrue = item.correctBool
-    ? `"true", "yes", "yeah", "right", or "it is"`
-    : `"false", "no", "nope", "wrong", or "it is not"`;
-  const refuse = item.correctBool
-    ? `"false", "no", "nope", or "wrong"`
-    : `"true", "yes", "yeah", or "right"`;
-  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner decides, and their think time is unbounded. `
-    + evidenceDescription(item)
-    + `Never say whether the statement is true during their turn. `
-    + `The statement is ${truth}. `
-    + `Any of ${acceptTrue} is a CORRECT answer, on its own or inside a short sentence. `
-    + `Any of ${refuse} is wrong. `
-    + `The statement, or a piece of it, said back to you is NOT an answer — it sounds thoughtful and it judges nothing; treat it as wrong only when it clearly takes the wrong side, otherwise stay silent and let them finish. `
-    + TWO_BRANCH_LAW
-    + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
-    + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
-    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-};
-
-/**
- * Spoken choice from a spoken menu (choice / match / sort). The accept side
- * is the whole design: the child names a choice with the whole thing, the
- * distinguishing part, the picture, or the position — a young child answers
- * with the short form far more often than the full string, and the short form
- * is a full answer. Ear-separability is a build gate, so one choice is named
- * or none is.
- *
- * Per-kind signature error, named so the judge refuses it:
- *  - sort: the ITEM said back ("spoon") instead of a group — fluent, engaged,
- *    and not a placement.
- *  - match: the FOCUS said back instead of a partner.
- *  - choice: a menu word said inside a "both"/"maybe" hedge — one choice must
- *    be committed to.
- */
-const spokenChoiceContract = (item: KnowledgeCheckItem): string => {
-  const options = item.options ?? [];
-  const numbered = options.map((o, i) => `${i + 1}) "${stripEnd(o.text)}"`).join(' ');
-  const correctIndex = options.findIndex((o) => o.id === item.correctOptionId) + 1;
-  const signature = item.kind === 'sort'
-    ? `Saying "${item.focusText}" back to you names no group — it is the thing being sorted, not a placement; treat it as no answer and stay silent while they think. `
-    : item.kind === 'match'
-      ? `Saying "${item.focusText}" back to you names no partner; treat it as no answer and stay silent while they think. `
-      : `Naming two choices, or hedging between them, commits to nothing; stay silent and let them settle on one. `;
-  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. `
-    + evidenceDescription(item)
-    + `Never say which one is right and never hint at it. `
-    + `The learner answers OUT LOUD, by telling you which choice they pick. `
-    + `The choices, in the order you just said them, are: ${numbered}. `
-    + `The correct one is number ${correctIndex}. `
-    + `They have named a choice if they say the whole thing, OR just the part that tells it apart from the others, OR what its picture shows, OR where it is in the list ("the second one", "the last one"). `
-    + `A young child answers with the short form far more often than the whole thing, and the short form is a full answer, not a lesser one. `
-    + signature
-    + TWO_BRANCH_LAW
-    + `If they named the correct choice, say exactly: "${affirmLine(item)}" and stop. `
-    + `If they named a different one, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
-    + `If you truly cannot tell WHICH choice they meant — they trailed off, or what they said fits two of them — do not guess and do not judge: `
-    + `say exactly "Tell me that one again." and wait for them. `
-    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-};
-
-/**
- * Spoken blank. THE SIGNATURE ERROR is a word-bank distractor said fluently —
- * it is on screen, it is on topic, and it does not fit the sentence; that is
- * the exact discrimination this problem type exists to measure. The accept
- * side is the answer inside a phrase, or the whole sentence said with the
- * answer in place — a child who re-says the sentence correctly filled has
- * answered.
- */
-const blankContract = (item: KnowledgeCheckItem): string =>
-  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. `
-  + `Never say the missing word during their turn. `
-  + `The missing word is "${item.answerWord}". `
-  + `The word said on its own, inside a phrase, or inside the whole sentence said back with the word in its place — all of those are CORRECT; affirm and echo "${item.answerWord}". `
-  + `A different word — including a word they can see in the word bank on the screen — that does not truly fit the sentence is wrong, however confident it sounds. `
-  + `The sentence said back with "hmm" still in it is not an answer. `
-  + TWO_BRANCH_LAW
-  + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
-  + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
-  + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-
-/**
- * The tap kind's turn contract — FACTS, never orders (a stated imperative
- * gets performed; ten-frame's "[WAIT silently]" was read aloud to a child).
- * The verdict for a tap arrives by a separate [KC_TAP] cue with the match
- * code-computed, so this contract carries no verdict branches at all.
- */
-const tapContract = (item: KnowledgeCheckItem): string =>
-  `The quoted line is the ONLY thing you say on this turn. ${evidenceDescription(item)}The learner answers with their hands, `
-  + `${item.kind === 'on_screen' ? 'by working the problem on the screen' : 'by touching a choice on the screen'} — there is nothing for you to listen for, and anything you `
-  + `hear while they work is thinking out loud, not an answer. The activity tells you what they `
-  + `chose and which line to say; until it does, you have nothing to judge and nothing to say. `
-  + `Never say which choice is right, and never describe the choices beyond the question you just asked. `
-  + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-
 /** What the blind tutor is told the child is LOOKING at. The tutor needs it
  *  to judge ("is that the numeral on the card?"); it never enters the runtime
  *  state block (answer-free by construction — see `stimulusFor`). */
@@ -1039,192 +793,6 @@ export const stimulusDescription = (item: KnowledgeCheckItem): string => {
     default: return '';
   }
 };
-
-const acceptedForms = (item: KnowledgeCheckItem): string => {
-  const forms = [item.expectedAnswer ?? '', ...(item.alternates ?? [])].filter(Boolean).map((a) => `"${a}"`);
-  return forms.join(', ');
-};
-
-/**
- * say_it. The child names ONE shown thing. Accept the name on its own or in a
- * short sentence; for a letter card the letter's SOUND is a right answer too
- * (letter_name class notes: a five-year-old gives either). THE SIGNATURE
- * ERROR is a near neighbour said fluently — the next numeral, a look-alike
- * letter, a shape with one more side — which the contract must refuse.
- */
-const sayItContract = (item: KnowledgeCheckItem): string => {
-  const letter = item.stimulus?.insetType === 'glyph-card' && item.stimulus.glyphKind === 'letter';
-  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner looks and thinks, and their think time is unbounded. `
-    + stimulusDescription(item)
-    + `Never say what it is called during their turn. `
-    + `The answer is ${acceptedForms(item)}. `
-    + `Any of those said on its own, or inside a short sentence, is CORRECT. `
-    + (letter ? `The letter's SOUND, said on its own, is also correct — a young child gives the sound as readily as the name. ` : '')
-    + `A different name, number or word — however confident — is wrong. `
-    + TWO_BRANCH_LAW
-    + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
-    + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
-    + `If they trail off and you truly cannot tell what they said, do not guess and do not judge: say exactly "Tell me that one again." and wait for them. `
-    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-};
-
-/**
- * how_many. The child counts what is shown and says the total (or what is
- * left). Counting aloud is THINKING — the answer is the number they land on
- * and stop at. THE SIGNATURE ERROR on a take-away picture is the START count
- * (every object counted, the cross-outs ignored); on a plain picture it is
- * an off-by-one.
- */
-const howManyContract = (item: KnowledgeCheckItem): string => {
-  const digits = (item.alternates ?? []).find((a) => /^\d+$/.test(a)) ?? '';
-  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. `
-    + stimulusDescription(item)
-    + `Never say the count during their turn. `
-    + `The correct answer is "${item.expectedAnswer}"${digits ? ` (${digits})` : ''}. `
-    + `The number word or the numeral, said on its own or inside a short sentence ("${item.expectedAnswer} left"), is the answer. `
-    + `Counting out loud — one, two, three — is thinking, not an answer: wait for the number they stop on. If they stop on a number and say nothing more, that number is their answer. `
-    + `A different number is wrong, however confident. `
-    + TWO_BRANCH_LAW
-    + `If the answer is right, say exactly: "${affirmLine(item)}" and stop. `
-    + `If it is wrong, say exactly: "${correctionLine(item)}" and stop — the learner tries again while you stay silent. `
-    + `Never begin any other sentence with the word "Yes" or the words "My turn".`;
-};
-
-const contractFor = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false': return trueFalseContract(item);
-    case 'choice':
-    case 'match':
-    case 'sort': return spokenChoiceContract(item);
-    case 'blank': return blankContract(item);
-    case 'choice_tap':
-    case 'point_to':
-    case 'on_screen': return tapContract(item);
-    case 'say_it': return sayItContract(item);
-    case 'how_many': return howManyContract(item);
-  }
-};
-
-// ============================================================================
-// Cues
-// ============================================================================
-
-export interface KnowledgeCheckCueOptions {
-  opening?: boolean;
-  howToPlay?: boolean;
-}
-
-const GREETING = 'Time to show what you know! ';
-
-export const itemCue = (
-  item: KnowledgeCheckItem,
-  opts: KnowledgeCheckCueOptions = {},
-): string => {
-  const greeting = opts.opening ? GREETING : '';
-  const how = opts.opening || opts.howToPlay ? howToPlayFor(item) : '';
-  return `[KC_ITEM] Say exactly: "${greeting}${how}${askFor(item)}" `
-    + `${contractFor(item)} ${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-};
-
-const SORRY = 'Good try. ';
-const END_OF_CHECK = 'That is the end of our check.';
-
-export const moveOnCue = (
-  item: KnowledgeCheckItem,
-  next: KnowledgeCheckItem | null,
-  opts: KnowledgeCheckCueOptions = {},
-): string => {
-  const close = closeLineFor(item);
-  if (!next) {
-    return `[KC_MOVE] Say exactly: "${SORRY}${close}${END_OF_CHECK}" `
-      + `Then stop — the activity is over. ${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-  }
-  const how = opts.howToPlay ? howToPlayFor(next) : '';
-  return `[KC_MOVE] Stop correcting "${item.id}". Say exactly: `
-    + `"${SORRY}${close}${how}${askFor(next)}" `
-    + `${contractFor(next)} ${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-};
-
-export const completeCue = (): string =>
-  `[KC_COMPLETE] Say exactly: "You finished the whole check. Great thinking today!" `
-  + `Then stop — the activity is over. ${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-
-/** Tap-to-hear: the QUESTION side again — the ask, whole, never the answer
- *  and never a hint ladder. */
-export const pronounceCue = (item: KnowledgeCheckItem): string =>
-  `[KC_HEAR] The learner tapped to hear the question again. Say ONLY this, warmly, then wait: "${askFor(item)}" `
-  + `Do not treat anything you just heard as an answer, add nothing, and never say the answer. `
-  + NEVER_PERFORM + NO_FLOOR_HANDBACK;
-
-/**
- * The tap verdict — the match is CODE-COMPUTED by the stage and this cue
- * tells the tutor which line to say. `tappedIndex` is 0-based.
- */
-export const tapVerdictCue = (
-  item: KnowledgeCheckItem,
-  tappedIndex: number,
-): string => {
-  // point_to: the index is a TOKEN position in the printed sentence.
-  if (item.kind === 'point_to' && item.stimulus?.insetType === 'number-sentence') {
-    const tokens = item.stimulus.tokens;
-    const correct = tokens.findIndex((t) => t.id === item.targetTokenId);
-    const isRight = tappedIndex === correct;
-    const touched = tokens[tappedIndex];
-    const line = isRight ? affirmLine(item) : correctionLine(item);
-    return `[KC_TAP] The learner touched the "${touched?.text ?? '?'}" in position ${tappedIndex + 1} of ${tokens.length}. `
-      + `${isRight ? 'That is the correct sign.' : 'That is not the correct sign.'} `
-      + `Say exactly: "${line}" and stop${isRight ? '' : ' — the learner tries again while you stay silent'}. `
-      + `${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-  }
-  const options = item.options ?? [];
-  const correct = options.findIndex((o) => o.id === item.correctOptionId);
-  const isRight = tappedIndex === correct;
-  const line = isRight ? affirmLine(item) : correctionLine(item);
-  return `[KC_TAP] The learner touched choice ${tappedIndex + 1} of ${options.length}. `
-    + `${isRight ? 'That is the correct choice.' : 'That is not the correct choice.'} `
-    + `Say exactly: "${line}" and stop${isRight ? '' : ' — the learner tries again while you stay silent'}. `
-    + `${NEVER_PERFORM}${NO_FLOOR_HANDBACK}`;
-};
-
-/**
- * Runtime state, ANSWER-FREE by construction: every kind pushes its QUESTION
- * side and nothing else — never the key, never the correct option, and never
- * the menu (the judging contract already carries the numbered choices at the
- * moment the tutor needs them; a second copy in the state block is a second
- * channel to leak from). The blank sentence is already blanked.
- */
-export const stimulusFor = (item: KnowledgeCheckItem): string => {
-  switch (item.kind) {
-    case 'true_false': return item.prompt;
-    case 'blank': return item.prompt;
-    case 'choice':
-    case 'choice_tap': return item.prompt;
-    case 'match': return `Which one goes with ${item.focusText}?`;
-    case 'sort': return `Which group does ${item.focusText} go in?`;
-    case 'say_it':
-    case 'how_many':
-    case 'point_to':
-    case 'on_screen': return item.prompt; // the stimulus description lives in the contract
-  }
-};
-
-// ── THE WIRE — what the tutor is told, shared with the DI drive harness ──────
-
-export const knowledgeCheckPackBase = (
-  items: KnowledgeCheckItem[],
-): JudgedCueSurface<KnowledgeCheckItem> => ({
-  primitiveType: 'knowledge-check',
-  activityLine: 'live direct instruction knowledge check — the closing questions of the lesson, answered out loud',
-  items,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({
-    challengeType: item.kind,
-    stimulus: stimulusFor(item),
-  }),
-});
 
 // ============================================================================
 // Harness answer material — what a right and a wrong child sound like

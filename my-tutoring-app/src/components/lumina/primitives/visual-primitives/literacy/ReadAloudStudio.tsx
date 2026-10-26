@@ -63,17 +63,19 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import DiActionPanel from '../../../components/DiActionPanel';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  studioItems, phrasePlanCue, markedGroups, scoredReadingItems, readingSummary, type StudioItem,
+  studioItems, markedGroups, scoredReadingItems, readingSummary, type StudioItem,
 } from './readAloudPhrasing';
 import {
   passageFrom,
   type ReadAloudLineLike,
   type ReadAloudMode,
 } from './readAloudStudioScript';
-import { describePhrasePlan, readAloudAssignment, readAloudScene } from './readAloudStudioWorkspace';
-import { DOTS_LEVER, TRACK_LEVER, leversOnScreen, readAloudLevers, shortLine } from './readAloudStudioLevers';
+import { describePhrasePlan, readAloudScene } from './readAloudStudioWorkspace';
+import { DOTS_LEVER, READ_ALOUD_LEVERS, TRACK_LEVER } from './readAloudStudioLevers';
+import { readAloudStudioBoss } from './readAloudStudio.boss';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -225,7 +227,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
 
   const runner = useWorkspaceRunner<StudioItem>({
     primitiveId: 'read-aloud-studio',
-    assignment: readAloudAssignment,
+    assignment: readAloudStudioBoss.assignment!,
     items,
     workspace,
     objectiveId,
@@ -259,13 +261,12 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : readAloudLevers(sessionItem, pulledLevers, items);
+    const levers = practice ? [] : READ_ALOUD_LEVERS.declare(sessionItem, items, pulledLevers);
     const scene = readAloudScene(currentItem, practice ? [] : phrasePlansRef.current[currentItem.lineId] ?? []);
-    const onScreen = practice ? null : leversOnScreen(pulledLevers);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts,
-        ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice line of three new words, not from the passage, ungraded. The line comes back after it.' } : {}) },
+    workspace.current = {
+      ...leverScene({ ...scene, facts: { ...scene.facts,
+        ...(practice ? { practice: 'An easier practice line of three new words, not from the passage, ungraded. The line comes back after it.' } : {}) } },
+      { support: '', onScreen: practice ? '' : READ_ALOUD_LEVERS.onScreen(sessionItem, items, pulledLevers) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -273,11 +274,11 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
         if (!lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         if (lever.kind === 'simplify') {
-          const simpler = shortLine(sessionItem, items);
+          const simpler = READ_ALOUD_LEVERS.simpler(sessionItem, items, id);
           if (!simpler) return 'There is no easier line here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          return { practice: readAloudAssignment(simpler) };
+          return { practice: readAloudStudioBoss.assignment!(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -286,13 +287,6 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
     };
   });
 
-  // Pip: the printed line is the whole question side. A phrase plan is a hands
-  // answer, so Pip receives the line while the plan is open; it never marks a
-  // break itself.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The line', finished: showSummary,
-    handover: currentItem?.step === 'mark',
-  });
   const updateBreak = (boundary: number) => {
     if (!currentItem || !canMark) return;
     const previous = phrasePlansRef.current[currentItem.lineId] ?? [];
@@ -305,7 +299,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
     if (!currentItem || !canMark) return;
     const breaks = phrasePlansRef.current[currentItem.lineId] ?? [];
     commitGesture(runner, { response: describePhrasePlan(currentItem, breaks), correct: true,
-      cue: () => phrasePlanCue(currentItem, breaks) });
+      cue: () => '' });
   };
 
   // ============================================================================
@@ -355,10 +349,12 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
               />
             </div>
 
-            {pip.store && <div {...pip.dock} />}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the line as its region. */}
+            <PipDock />
             {/* One printed line persists through planning, reading and modeling. */}
             {currentItem && (
-              <div {...pip.target('stimulus')} className="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+              <PipWorkspace>
+              <div data-pip-object="stimulus" className="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
                 {currentItem.kind === 'dialogue' && currentItem.speaker && (
                   <LuminaBadge accent="amber" className="text-xs">🎭 {currentItem.speaker} says</LuminaBadge>
                 )}
@@ -421,6 +417,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
                         : currentItem.kind === 'accuracy' ? 'read it' : 'listen, then say it back'}
                 </div>
               </div>
+              </PipWorkspace>
             )}
 
             {/* Expression keeps its step rail: plan, first read, reread. */}
@@ -475,7 +472,8 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   );
 };
 
-/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
+/** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. Its wiring is
+ *  `readAloudStudio.card.ts` + `readAloudStudio.boss.ts`. */
 const ReadAloudStudio = withWorkspaceOnly<ReadAloudStudioProps>('read-aloud-studio', ReadAloudStudioSurface,
   (props) => props.data.title);
 

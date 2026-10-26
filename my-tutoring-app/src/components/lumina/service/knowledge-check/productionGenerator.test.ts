@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildProductionProblem } from './productionGenerator';
 import { planKnowledgeCheckSlots, type KcPlanObjective, type KcProductionSlot } from './knowledgeCheckPlan';
 import { knowledgeCheckOracle } from '../qa/oracles/knowledge-check';
-import { itemsFromProblems, knowledgeCheckPackBase } from '../../primitives/knowledgeCheckScript';
-import { checkPackGates } from '../../hooks/judgedScriptContract.testkit';
+import { itemsFromProblems } from '../../primitives/knowledgeCheckScript';
 import type { ProductionProblemData } from '../../types';
 
 /** A seeded PRNG so every draw is reproducible. */
@@ -80,11 +79,10 @@ describe('buildProductionProblem — the K subtraction pilot', () => {
     expect(build.items.map((i) => i.answerKind)).toEqual(['voice', 'voice', 'gesture', 'gesture']);
   });
 
-  it('two consecutive how_many items pass the pack gates — the ask is a SHORT invariant signal, not a recited block', () => {
+  it('two consecutive how_many items both build', () => {
     const problems = buildAll([{ id: 'obj1', text: 'Combine two groups of physical objects to find the total amount' }]);
     const build = itemsFromProblems(problems);
     expect(build.items.map((i) => i.kind)).toEqual(['how_many', 'how_many']);
-    expect(checkPackGates(knowledgeCheckPackBase(build.items))).toEqual([]);
   });
 
   it('the K addition package (xr70): two-group how_many for combine, point_to for + and =, explain stays legacy', () => {

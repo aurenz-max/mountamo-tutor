@@ -6,7 +6,6 @@ import fixtures from './testing/workspaceFixtures.json';
 import { expectClassicWorkspace, mountWithStore } from './testing/classicSurface';
 import DayNightSeasons from '../primitives/visual-primitives/astronomy/DayNightSeasons';
 import MoonPhasesLab from '../primitives/visual-primitives/astronomy/MoonPhasesLab';
-import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
@@ -38,9 +37,8 @@ const SPEAKING: Array<[string, AnyPrimitive]> = [
   ['day-night-seasons', DayNightSeasons], ['moon-phases-lab', MoonPhasesLab],
 ];
 const SILENT: Array<[string, AnyPrimitive]> = [
-  // ramp-lab, classification-sorter, cell-builder, food-web-builder, life-cycle-sequencer, light-shadow-lab, constellation-builder, mixing-and-dissolving, reaction-lab, ph-explorer, gas-laws-simulator, energy-of-reactions, equation-balancer, stoichiometry-lab, molecule-constructor, atom-builder and telescope-simulator are workspace-only (boss families): unbound they render
+  // ramp-lab, classification-sorter, cell-builder, food-web-builder, life-cycle-sequencer, light-shadow-lab, constellation-builder, mixing-and-dissolving, reaction-lab, ph-explorer, gas-laws-simulator, energy-of-reactions, equation-balancer, stoichiometry-lab, molecule-constructor, atom-builder, telescope-simulator and adaptation-investigator are workspace-only (boss families): unbound they render
   // NeedsTutor, and pip/WorkspacePip.surface.test.tsx holds their Pip contract.
-  ['adaptation-investigator', AdaptationInvestigator],
   ['microscope-viewer', MicroscopeViewer], ['bio-process-animator', ProcessAnimator],
   ['dna-explorer', DnaExplorer], ['energy-cycle-engine', EnergyCycleEngine],
   ['inheritance-lab', InheritanceLab],

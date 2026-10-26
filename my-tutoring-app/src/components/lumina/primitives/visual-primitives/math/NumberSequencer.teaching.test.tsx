@@ -30,8 +30,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
   playStreak: vi.fn(), tap: vi.fn(), snap: vi.fn(), invalid: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/JudgedMicPanel', () => ({ default: () => null }));
-import NumberSequencer, { type NumberSequencerChallenge, type NumberSequencerData } from './NumberSequencer';
-import NumberSequencerTeaching from './NumberSequencerTeaching';
+import NumberSequencer, { NumberSequencerSurface as NumberSequencerTeaching, type NumberSequencerChallenge, type NumberSequencerData } from './NumberSequencer';
 import { NUMBER_SEQUENCER_WORKSPACE_MODES } from './numberSequencerDomain';
 
 type Kind = NumberSequencerChallenge['type'];

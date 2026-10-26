@@ -114,11 +114,10 @@ describe('the teaching surface', () => {
 });
 
 describe('without the tutor', () => {
-  it('keeps the standalone investigation: open panels, phases and no Done', () => {
+  it('an unbound mount shows the shared "needs the tutor" card (the standalone investigation was retired)', () => {
     render(<AdaptationInvestigator data={DATA} />);
-    expect(screen.getByText(/Step 1: Explore/)).toBeTruthy();
-    expect(screen.getByText('Bright pink is easy for bees and butterflies to see.')).toBeTruthy();
-    expect(screen.queryByText('Done')).toBeNull();
+    expect(document.querySelector('[data-workspace-unbound="adaptation-investigator"]')).not.toBeNull();
+    expect(screen.queryByText(/Step 1: Explore/)).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
   });
 });

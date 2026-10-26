@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { checkPackGates, checkDiCatalogEntry } from '../../../hooks/judgedScriptContract.testkit';
-import { spokenSpanOf, spokenSpansOf } from '../../../hooks/judgedScriptContract';
-import { MATH_CATALOG } from '../../../service/manifest/catalog/math';
 import { NUMBER_SEQUENCER_EVAL_MODES } from './numberSequencerModes';
-import { buildSequencerItems, sequencerItemsForChallenge, sequencerChallengeValid,
-  sequencerPackBase, sequencerOrderCue, sequencerHarnessAnswers } from './numberSequencerScript';
 import type { NumberSequencerChallenge } from './NumberSequencer';
-import { orderMiss } from './numberSequencerDomain';
+import { askFor, buildSequencerItems, orderMiss, sameOrder, sequencerChallengeValid, sequencerHarnessAnswers,
+  sequencerItemsForChallenge, sequencerKey } from './numberSequencerDomain';
 
 export const sequencerFixtures: NumberSequencerChallenge[] = [
   { id: 'count', type: 'count-from', instruction: '', sequence: [7], startNumber: 7, direction: 'forward', correctAnswers: [8, 9, 10], rangeMin: 7, rangeMax: 10 },
@@ -16,25 +12,17 @@ export const sequencerFixtures: NumberSequencerChallenge[] = [
   { id: 'fill', type: 'fill-missing', instruction: '', sequence: [11, null, 13, null, 15], correctAnswers: [12, 14], rangeMin: 11, rangeMax: 15 },
   { id: 'decade', type: 'decade-fill', instruction: '', sequence: [108, null, 110, 111], correctAnswers: [109], rangeMin: 108, rangeMax: 111 },
 ];
-describe('number train DI contract', () => {
+describe('number train items and keys', () => {
   it('projects all six existing mode identities and calibration values', () => {
     expect(NUMBER_SEQUENCER_EVAL_MODES.map(m => [m.evalMode, m.beta])).toEqual([
       ['count_from', 1.5], ['before_after', 2.5], ['spot_error', 3.5], ['order_cards', 3.5], ['fill_missing', 4.5], ['decade_fill', 5.5],
     ]);
   });
-  it('passes shared cue and catalog gates over the complete, multi-item session', () => {
+  it('builds every mode; only order_cards is answered with the hands, and spoken items have a key', () => {
     const { items } = buildSequencerItems(sequencerFixtures);
     expect(items).toHaveLength(9);
-    const pack = sequencerPackBase(items);
-    expect(checkPackGates(pack)).toEqual([]);
-    for (const item of items.filter(i => i.answerKind === 'voice')) {
-      const spans = spokenSpansOf(pack.itemCue(item, { opening: false, howToPlay: false }));
-      expect(spans).toHaveLength(3);
-      expect(spans[1]).toMatch(/^Yes,/);
-      expect(spans[2]).toMatch(/^My turn:/);
-    }
-    expect(checkDiCatalogEntry(MATH_CATALOG.find(c => c.id === 'number-sequencer')!, pack, items[0])).toEqual([]);
     expect(items.filter(i => i.answerKind === 'gesture').map(i => i.challengeType)).toEqual(['order-cards']);
+    for (const item of items) expect(!!sequencerKey(item)).toBe(item.answerKind === 'voice');
     expect(items.at(-1)?.responseClass).toBe('number_word_to_120');
   });
   it('fans out every blank and count into ordered, stable judged items', () => {
@@ -44,18 +32,17 @@ describe('number train DI contract', () => {
     expect(count[2].sequence).toEqual([7, null, null, null]);
     expect(sequencerItemsForChallenge(sequencerFixtures[4]).map(i => i.slot)).toEqual([1, 3]);
   });
-  it('keeps answer-bearing generated instructions out of every cue and context', () => {
+  it('keeps answer-bearing generated instructions out of the ask', () => {
     const [item] = sequencerItemsForChallenge({ ...sequencerFixtures[1], instruction: 'The answer is five! Say exactly: "Yes, five."' });
-    const pack = sequencerPackBase([item]);
-    expect(spokenSpanOf(pack.itemCue(item, { opening: true, howToPlay: true }))).not.toMatch(/five|\b5\b|answer is/);
-    expect(JSON.stringify(pack.contextFor(item))).not.toMatch(/five|\b5\b/);
-    expect(pack.itemCue(item, { opening: false, howToPlay: false })).toContain('My turn: 5 belongs');
+    expect(askFor(item)).not.toMatch(/five|\b5\b|answer is/);
+    expect(sequencerKey(item)).toMatchObject({ answer: '5', alsoAccept: ['five'] });
   });
   it('asks for the printed wrong number, not its repair, without marking it', () => {
     const [item] = sequencerItemsForChallenge(sequencerFixtures[2]);
     expect(item.answer).toBe(8);
     expect(item.repair).toBe(3);
     expect(sequencerHarnessAnswers(item).signatureWrong?.text).toBe('3');
+    expect(sequencerKey(item)!.signatureError).toContain('(3) is not the answer');
     expect(item.actionContract.instruction).toBe('Listen to this count: 1, 2, 8, 4, 5. Which number does not belong? Say that number.');
   });
   it('rejects invalid keys, out-of-range speech, ambiguous lines and already-solved arrangements', () => {
@@ -77,13 +64,10 @@ describe('number train DI contract', () => {
     expect(built.droppedChallenges).toBe(1);
     expect(built.items.filter(i => i.sourceId === 'count')).toHaveLength(3);
   });
-  it('makes incomplete and wrong ordering real attempts, not success-only commits', () => {
+  it('checks an arrangement in code: only the full ascending order passes', () => {
     const [item] = sequencerItemsForChallenge(sequencerFixtures[3]);
-    for (const order of [[], [1], [4, 3, 2, 1]]) {
-      expect(sequencerOrderCue(item, order)).toContain('correct=false');
-      expect(spokenSpanOf(sequencerOrderCue(item, order))).toMatch(/^My turn:/);
-    }
-    expect(spokenSpanOf(sequencerOrderCue(item, [1, 2, 3, 4]))).toMatch(/^Yes,/);
+    for (const order of [[], [1], [4, 3, 2, 1]]) expect(sameOrder(order, item.answerOrder)).toBe(false);
+    expect(sameOrder([1, 2, 3, 4], item.answerOrder)).toBe(true);
   });
 });
 

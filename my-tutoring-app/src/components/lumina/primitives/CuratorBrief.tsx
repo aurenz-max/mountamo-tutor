@@ -7,10 +7,10 @@
  * (the hook, the big idea, what the learner will do), a strip of the lesson steps, two or three
  * "I wonder" choices and a Start button. Nothing is graded.
  *
- * Inside a live lesson the catalog's ungraded `teachingWorkspace` binds it: the tutor receives the
- * captions as scene facts and, because a bound surface owns the lesson opening, the greeting and the
- * hook are one turn. Outside a runtime the same screen renders with a read-aloud button that sends
- * the same facts through the legacy channel.
+ * It runs only on the teaching workspace (its wiring is `curatorBrief.card.ts` + `curatorBrief.boss.ts`,
+ * an ungraded card): the tutor receives the captions as scene facts and, because a bound surface owns
+ * the lesson opening, the greeting and the hook are one turn. An unbound mount shows the shared
+ * "needs the tutor" card (the legacy read-aloud channel was retired 2026-10-26).
  *
  * The picture sets the scene only. Image models get counts, orders and aligned rows wrong, so the
  * prompt forbids them (`hookPicturePrompt`), and the screen never waits on it.
@@ -20,17 +20,15 @@ import { CheckCircle2, ChevronRight, Lightbulb, Play, Sparkles, Target } from 'l
 import type { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
 import { resolveHookVisual } from '../utils/hookVisual';
-import { useLuminaAI } from '../hooks/useLuminaAI';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { hookPicturePrompt } from '../service/curator-brief/briefOpening';
-import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
-import { withWorkspaceController } from '../components/live-activity/runtime/withTeachingWorkspace';
-import { useNoTeachingSurface, useTeachingSurface, type TeachingSurface, type TeachingSurfaceOptions }
-  from '../components/live-activity/runtime/useTeachingSurface';
+import { PipDock, PipWorkspace, useRunnerPip } from '../pip/WorkspacePip';
+import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { useTeachingSurface } from '../components/live-activity/runtime/useTeachingSurface';
 import { BRIEF_START_EVENT, briefCaptions, briefSteps, briefWonders, isPreReaderGrade, teachingScene, WONDER_ACCENTS, type PictureState }
   from './curatorBriefWorkspace';
 import {
-  LuminaBadge, LuminaButton, LuminaCard, LuminaPanel, LuminaReadAloud,
+  LuminaBadge, LuminaButton, LuminaCard, LuminaPanel,
   accentSoftBg, accentSoftBorder, accentText, type LuminaAccent,
 } from '../ui';
 
@@ -40,11 +38,6 @@ interface CuratorBriefProps {
   runtimeEvalMode?: string;
   runtimePlanItemId?: string;
 }
-
-type SurfaceProps = CuratorBriefProps & {
-  tutorOwned: boolean;
-  useController: (options: TeachingSurfaceOptions) => TeachingSurface | null;
-};
 
 // Older payloads carry only a hook string and objective strings (contract R9).
 const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic'): IntroBriefingData => ({
@@ -80,25 +73,7 @@ const CAPTION_ROWS = [
   { id: 'today', accent: 'cyan', Icon: Target },
 ] as const;
 
-/** The legacy (unbound) channel: the same facts the workspace sends, on the learner's request. */
-const LegacyReadAloud: React.FC<{ brief: IntroBriefingData; instanceId: string; preReader: boolean }> = ({ brief, instanceId, preReader }) => {
-  const { sendText } = useLuminaAI({
-    primitiveType: 'curator-brief', instanceId, exhibitId: brief.topic, gradeLevel: brief.gradeLevel,
-    primitiveData: { topic: brief.topic, gradeLevel: brief.gradeLevel, isPreReader: preReader },
-  });
-  const speak = () => {
-    const c = briefCaptions(brief);
-    const wonders = briefWonders(brief);
-    SoundManager.pop();
-    sendText(`[BRIEF_OPENING] The learner asked to hear the lesson opening for "${brief.topic}". `
-      + `The hook: ${brief.hook.content} The big idea: ${c.bigIdea} Today: ${c.today}`
-      + (wonders.length ? ` The "I wonder" choices: ${wonders.map((w, i) => `${i + 1}, ${w.text}`).join('; ')}.` : '')
-      + (preReader ? ' The learner is a pre-reader and cannot read the screen.' : ''), { silent: true });
-  };
-  return <LuminaReadAloud onClick={speak} size={preReader ? 'lg' : 'md'} />;
-};
-
-const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }) => {
+const CuratorBriefSurface: React.FC<CuratorBriefProps> = ({ data, className = '', runtimePlanItemId }) => {
   const brief = useMemo(() => (isIntroBriefingData(data) ? data : convertToIntroBriefing(data)), [data]);
   const raw = data as unknown as Record<string, unknown>;
   const instanceId = String(raw.instanceId || raw.__instanceId || 'curator-brief');
@@ -123,13 +98,13 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
   const startedRef = useRef(started); startedRef.current = started;
   const markedRef = useRef(marked); markedRef.current = marked;
 
-  const surface = useController({
+  const surface = useTeachingSurface({
     instanceId, primitiveId: 'curator-brief', objectiveId, planItemId: runtimePlanItemId,
     scene: () => ({ ...teachingScene(brief, { picture: pictureRef.current, picked: pickedRef.current, started: startedRef.current }),
       marked: markedRef.current, finished: startedRef.current }),
     show: ids => { markedRef.current = ids; setMarked(ids); },
   });
-  useLayoutEffect(() => { surface?.publish(); });
+  useLayoutEffect(() => { surface.publish(); });
 
   // The picture draws itself in the background; the screen never waits on it.
   useEffect(() => {
@@ -153,7 +128,7 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
     pickedRef.current = i;
     setPicked(i);
     // A pre-reader cannot read what they tapped: the tutor hears it as host facts.
-    surface?.learnerOpened(`"I wonder" choice ${i + 1}, which says: ${wonders[i].text}`);
+    surface.learnerOpened(`"I wonder" choice ${i + 1}, which says: ${wonders[i].text}`);
   };
 
   const start = () => {
@@ -161,7 +136,7 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
     SoundManager.pop();
     startedRef.current = true;
     setStarted(true);
-    surface?.finish();
+    surface.finish();
     window.dispatchEvent(new CustomEvent(BRIEF_START_EVENT, { detail: { instanceId } }));
     // Scroll layout: bring the first activity into view. The K stage advances on the event instead.
     const section = rootRef.current?.closest('[data-primitive-instance-id]');
@@ -170,9 +145,7 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
     next?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
 
-  const pip = useWorkspacePipSurface({
-    instanceId, scopeId: started ? null : 'brief', label: 'The lesson opening', solved: started, tutorSpeaking: false,
-  });
+  useRunnerPip({ instanceId, itemId: started ? null : 'brief', running: !started, solved: started });
 
   const pictureRing = ringed('picture');
 
@@ -202,9 +175,10 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
             </div>
           )}
 
-          {pip.store && !started && <div {...pip.dock} />}
+          {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the captions and choices as its region. */}
+          {!started && <PipDock />}
 
-          <div {...pip.workspace} className="space-y-5">
+          <PipWorkspace className="space-y-5">
             {/* Three captions, the tutor's three beats. A pre-reader hears them; the text stays small. */}
             <div className="space-y-2">
               {CAPTION_ROWS.map(({ id, accent, Icon }) => {
@@ -257,7 +231,7 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
                 </div>
               </div>
             )}
-          </div>
+          </PipWorkspace>
 
           {/* At most one line of the connections; the rest stays in the data. */}
           {!preReader && realWorld && (
@@ -276,7 +250,6 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
                 {!preReader && 'Start'}
               </LuminaButton>
             )}
-            {!tutorOwned && !started && <LegacyReadAloud brief={brief} instanceId={instanceId} preReader={preReader} />}
           </div>
         </div>
       </LuminaCard>
@@ -284,9 +257,8 @@ const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', run
   );
 };
 
-// Inside a live lesson the catalog's ungraded `teachingWorkspace` mounts the teaching surface;
-// everywhere else the same screen with the legacy read-aloud.
-export const CuratorBrief = withWorkspaceController<CuratorBriefProps, TeachingSurfaceOptions, TeachingSurface | null>(
-  'curator-brief', CuratorBriefSurface, useNoTeachingSurface, useTeachingSurface);
+// Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card.
+export const CuratorBrief = withWorkspaceOnly<CuratorBriefProps>('curator-brief', CuratorBriefSurface,
+  props => ('topic' in props.data ? props.data.topic : undefined));
 
 export default CuratorBrief;

@@ -82,5 +82,7 @@ None open. The tabbed layout had no code consumer. R4 (pre-reader voicing) and R
 
 ## Changelog
 
+- 2026-10-26 — **onto an ungraded boss card (COMPATIBLE; USER RULING 10-26).** `curatorBrief.card.ts` + `curatorBrief.boss.ts`: the hand guidance is now the card's words (`TEACHING_ROTATION`) plus `TEACHING_DOCTRINE`. The unbound read-aloud channel (`LegacyReadAloud`, `useLuminaAI`) is deleted: an unbound mount (BriefLab, a layout item with no objective) shows the shared "needs the tutor" card. Pip is the shared runner's. R1-R4 unchanged (R3: the quick-check answer is still in no fact or caption).
+
 - 2026-10-11: derived (initial, static). 9 requirements, 0 open conflicts. Done before the one-screen rebuild.
 - 2026-10-11: one-screen rebuild, checked against R1-R9. **COMPATIBLE.** Added fields only (`hook.question`, `hook.imagePrompt`, `today`, `wonders`); objectives prompt and cap unchanged. R3 is held in code (`briefOpening.finishOpeningFields` drops any field naming the answer; the quick check is off the screen and out of the tutor's facts). R7: a bound brief sends `owns_opening`. Probes: `CuratorBrief.workspace.test.tsx` (8), workspaceContract, lessonBench, exhibitAssembly and build-stream suites green; three real briefs rendered in headless Chromium.

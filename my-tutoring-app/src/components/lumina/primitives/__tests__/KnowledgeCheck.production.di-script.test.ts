@@ -7,22 +7,13 @@
  * Plumbing from the shared testkit, never re-typed.
  */
 import { describe, it, expect } from 'vitest';
-import { checkPackGates, checkDiCatalogEntry } from '../../hooks/judgedScriptContract.testkit';
-import { spokenSpansOf } from '../../hooks/judgedScriptContract';
-import { ASSESSMENT_CATALOG } from '../../service/manifest/catalog/assessment';
 import { buildArrangement, buildGlyphCard, buildNumberSentence, MINUS } from '../../service/insets/build';
 import type { ProblemData, ProductionProblemData, TrueFalseProblemData } from '../../types';
-import {
-  affirmLine,
-  closeLineFor,
-  correctionLine,
-  itemCue,
-  itemsFromProblems,
-  knowledgeCheckHarnessAnswers,
-  knowledgeCheckPackBase,
-  stimulusFor,
-  tapVerdictCue,
-} from '../knowledgeCheckScript';
+import { itemsFromProblems, knowledgeCheckHarnessAnswers } from '../knowledgeCheckScript';
+import { knowledgeCheckAsk, knowledgeCheckAssignment, knowledgeCheckKey, knowledgeCheckMiss, knowledgeCheckScene,
+  knowledgeCheckStep } from '../knowledgeCheckWorkspace';
+
+const shown = (item: Parameters<typeof knowledgeCheckScene>[0]) => Object.values(knowledgeCheckScene(item, false).facts).join(' ');
 
 const base = {
   difficulty: 'easy' as const,
@@ -81,24 +72,20 @@ const shapeProblem = (): ProductionProblemData => sayItProblem({
 
 const productionSet = (): ProblemData[] => [howManyProblem(), pointToProblem(), sayItProblem(), tfProblem()];
 
-const catalogEntry = ASSESSMENT_CATALOG.find((c) => c.id === 'knowledge-check')!;
-
-describe('production kinds — pack gates', () => {
-  it('a mixed set with all three production kinds passes every structural gate and is judged-viable', () => {
+describe('production kinds — items', () => {
+  it('a mixed set with all three production kinds is judged-viable, each item on its step', () => {
     const { items, judgedViable } = itemsFromProblems(productionSet());
     expect(judgedViable).toBe(true);
     expect(items.map((i) => i.kind)).toEqual(['how_many', 'point_to', 'say_it', 'true_false']);
-    expect(checkPackGates(knowledgeCheckPackBase(items))).toEqual([]);
-    expect(checkDiCatalogEntry(catalogEntry, knowledgeCheckPackBase(items), items[0])).toEqual([]);
+    expect(items.map(knowledgeCheckStep)).toEqual(['said', 'touched', 'said', 'said']);
   });
 
-  it('point_to is the honest gesture: manipulation class, tap contract, no verdict branches in the ask cue', () => {
+  it('point_to is the honest gesture: manipulation class, no key, a gesture assignment', () => {
     const [item] = itemsFromProblems([pointToProblem()]).items;
     expect(item.answerKind).toBe('gesture');
     expect(item.responseClass).toBe('manipulation');
-    const cue = itemCue(item);
-    expect(cue).toContain('answers with their hands');
-    expect(cue).not.toContain('If the answer is right');
+    expect(knowledgeCheckKey(item)).toBeNull();
+    expect(knowledgeCheckAssignment(item).response).toBe('gesture');
   });
 
   it('say_it narrows its response class per card: numeral → number word, letter → letter_name, shape → shape_name', () => {
@@ -107,58 +94,35 @@ describe('production kinds — pack gates', () => {
   });
 });
 
-describe('production kinds — cue contracts', () => {
-  it('say_it and how_many tell the blind tutor what is on screen, carry the accepted forms, and never leak in the ask', () => {
+describe('production kinds — keys and scene', () => {
+  it('say_it and how_many show the tutor what is on screen, carry the accepted forms, and never leak in the ask', () => {
     const items = itemsFromProblems([howManyProblem(), sayItProblem()]).items;
-    const howMany = itemCue(items[0]);
-    expect(howMany).toContain('The screen shows 5 apples in a row, 2 crossed out (taken away).');
-    expect(howMany).toContain('The correct answer is "three" (3).');
-    expect(howMany).toContain('Counting out loud — one, two, three — is thinking, not an answer');
-    expect(spokenSpansOf(howMany)[0]).toContain('How many are left?');
-    expect(spokenSpansOf(howMany)[0]).not.toContain('three');
-    const sayIt = itemCue(items[1]);
-    expect(sayIt).toContain('The screen shows a card showing the numeral 7.');
-    expect(sayIt).toContain('The answer is "seven", "7".');
-    expect(spokenSpansOf(sayIt)[0]).not.toMatch(/seven|\b7\b/);
+    expect(shown(items[0])).toContain('5 apples in a row, 2 crossed out (taken away)');
+    expect(knowledgeCheckKey(items[0])).toMatchObject({ answer: 'three', alsoAccept: ['3'] });
+    expect(knowledgeCheckKey(items[0])!.acceptRule).toContain('Counting aloud is thinking');
+    expect(knowledgeCheckKey(items[0])!.signatureError).toContain('including 5, the count before any were taken away');
+    expect(knowledgeCheckAsk(items[0])).toContain('How many are left?');
+    expect(knowledgeCheckAsk(items[0])).not.toContain('three');
+    expect(shown(items[1])).toContain('a card showing the numeral 7');
+    expect(knowledgeCheckKey(items[1])).toMatchObject({ answer: 'seven', alsoAccept: ['7'] });
+    expect(knowledgeCheckAsk(items[1])).not.toMatch(/seven|\b7\b/);
   });
 
-  it('a letter card accepts the SOUND as well as the name', () => {
+  it('a letter card accepts the sound as well as the name', () => {
     const [item] = itemsFromProblems([letterProblem()]).items;
-    expect(itemCue(item)).toContain("The letter's SOUND, said on its own, is also correct");
+    expect(knowledgeCheckKey(item)!.acceptRule).toContain("The letter's sound counts too.");
   });
 
-  it('affirmations open Yes and echo the answer; corrections open My turn; the cap close names it', () => {
-    const items = itemsFromProblems(productionSet()).items;
-    for (const item of items.filter((i) => i.kind !== 'true_false')) {
-      expect(affirmLine(item)).toMatch(/^Yes/);
-      expect(correctionLine(item)).toMatch(/^My turn:/);
-      expect(closeLineFor(item).toLowerCase()).toContain(item.expectedAnswer!.toLowerCase());
-    }
-    // Spoken kinds never name the answer in the correction (it is earned at
-    // the cap). point_to is the exemption: the sign's NAME is the question side
-    // ("touch the minus sign"), so the re-ask necessarily carries it.
-    for (const item of items.filter((i) => i.kind === 'say_it' || i.kind === 'how_many')) {
-      expect(correctionLine(item).toLowerCase()).not.toContain(item.expectedAnswer!.toLowerCase());
-    }
-  });
-
-  it('the point verdict cue is code-computed over TOKEN positions', () => {
+  it('the point check is code-computed over TOKEN positions', () => {
     const [item] = itemsFromProblems([pointToProblem()]).items;
-    expect(tapVerdictCue(item, 1)).toContain('That is the correct sign.');
-    expect(tapVerdictCue(item, 1)).toContain('Yes! That is the minus sign.');
-    expect(tapVerdictCue(item, 3)).toContain('That is not the correct sign.');
-    expect(tapVerdictCue(item, 3)).toContain('touched the "="');
-  });
-
-  it('the context channel stays answer-free: the ask only, never the card or the count', () => {
-    const items = itemsFromProblems(productionSet()).items;
-    expect(stimulusFor(items[0])).toBe('Some apples are crossed out. How many are left?');
-    expect(stimulusFor(items[2])).toBe('What number is this?');
+    expect(knowledgeCheckMiss(item, 't2')).toBeUndefined();
+    expect(knowledgeCheckMiss(item, 't4')).toBe('sign_token');
+    expect(knowledgeCheckMiss(item, 't1')).toBe('other_number_token');
   });
 });
 
 describe('legacy evidence reaches the judged surface', () => {
-  it('a choice item carries its planned inset and the contract describes it to the blind tutor', () => {
+  it('a choice item carries its planned inset and the scene describes it to the tutor', () => {
     const numberLine = { insetType: 'number-line' as const, min: 0, max: 10, ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], points: [{ value: 5, label: 'start' }] };
     const [item] = itemsFromProblems([{
       ...base, type: 'multiple_choice', id: 'mc9', question: 'Hop two from the dot. What number do you land on?',
@@ -168,8 +132,8 @@ describe('legacy evidence reaches the judged surface', () => {
     }]).items;
     expect(item.kind).toBe('choice');
     expect(item.inset).toEqual(numberLine);
-    expect(itemCue(item)).toContain('The screen shows this evidence: Number line [0, 10]');
-    expect(itemCue(item)).toContain('start@5');
+    expect(shown(item)).toContain('The screen shows this evidence: Number line [0, 10]');
+    expect(shown(item)).toContain('start@5');
   });
 
   it('a text-only choice item carries no evidence line', () => {
@@ -179,7 +143,7 @@ describe('legacy evidence reaches the judged surface', () => {
       correctOptionId: 'A',
     }]).items;
     expect(item.inset).toBeUndefined();
-    expect(itemCue(item)).not.toContain('The screen shows');
+    expect(shown(item)).not.toContain('The screen shows');
   });
 });
 

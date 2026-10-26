@@ -14,19 +14,15 @@
  * The phrase-plan step is page work, not a read, and gets no lever. Spoken misses (`READ_ALOUD_MISSES`) are
  * emitted by `readAloudSpokenMisses`.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { practiceLine, printedSet, wordsOf } from './decodablePracticeLines';
 import type { StudioItem } from './readAloudPhrasing';
+import { READ_ALOUD_MISSES, readAloudStudioCard } from './readAloudStudio.card';
 
+export { READ_ALOUD_MISSES };
 export const TRACK_LEVER = 'tracking_underline';
 export const DOTS_LEVER = 'sound_dots';
 export const SHORT_LINE_LEVER = 'short_line';
-
-export const READ_ALOUD_MISSES = {
-  accuracy: ['word_swap', 'word_drop'],
-  expression: ['word_swap', 'word_drop'],
-  dialogue: ['word_swap', 'word_drop', 'paraphrase'],
-} as const;
 
 /** Every word the passage prints, speakers included. */
 export const passageWords = (items: readonly StudioItem[]) => printedSet(...items.flatMap(i => [i.text, i.speaker]));
@@ -44,36 +40,32 @@ export function shortLine(item: StudioItem, items: readonly StudioItem[]): Studi
 export const shortLineLeak = (practice: StudioItem, items: readonly StudioItem[]) =>
   wordsOf(practice.text).some(w => passageWords(items).has(w));
 
-/** What the pulled levers put on screen, for the scene. Names the marks, never a word. */
-export function leversOnScreen(pulled: readonly string[]): string | null {
-  const on: string[] = [];
-  if (pulled.includes(TRACK_LEVER)) on.push('an underline under each word of the line, left to right');
-  if (pulled.includes(DOTS_LEVER)) on.push('a dot under each sound of every word of the line');
-  return on.length ? `${on.join('; ')}; nothing is said` : null;
-}
+/** A cold read (accuracy, the expression first read) hears nothing; dialogue and the expression reread already have
+ *  the tutor's one model in the ask. */
+const quiet = (item: StudioItem) => (item.kind === 'dialogue' || item.step === 'reread'
+  ? ' Say the line only as your model, as the ask says; add no other reading of it.'
+  : ' Nothing is said: do not read the line or any word of it.');
+/** Not on the phrase-plan step: it is page work, not a read. */
+const reading = (item: StudioItem) => item.step !== 'mark';
 
-const lever = (id: string, kind: 'help' | 'simplify', pulled: readonly string[], answers: readonly string[], when: string,
-  does: string): WorkspaceLever => ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers: [...answers], when, does });
-
-/** The levers this item declares, with their state. None on the phrase-plan step. */
-export function readAloudLevers(item: StudioItem | null, pulled: readonly string[], items: readonly StudioItem[]): WorkspaceLever[] {
-  if (!item || item.step === 'mark') return [];
-  // A cold read (accuracy, the expression first read) hears nothing; dialogue and the expression reread already have
-  // the tutor's one model in the ask.
-  const quiet = item.kind === 'dialogue' || item.step === 'reread'
-    ? ' Say the line only as your model, as the ask says; add no other reading of it.'
-    : ' Nothing is said: do not read the line or any word of it.';
-  const out = [
-    lever(TRACK_LEVER, 'help', pulled, ['word_swap', 'word_drop'], 'The learner swaps or drops a small word.',
-      'Draws an underline under each word of the line, left to right, so every word is its own place to look.' + quiet),
-    lever(DOTS_LEVER, 'help', pulled, ['word_swap'], 'The learner reads a word as a different word.',
-      'Puts a dot under each sound of every word of the line.' + quiet),
-  ];
-  if (shortLine(item, items)) out.push(lever(SHORT_LINE_LEVER, 'simplify', pulled,
-    item.kind === 'dialogue' ? ['word_swap', 'word_drop', 'paraphrase'] : ['word_swap', 'word_drop'],
-    'The learner cannot yet read a line this long.',
-    'Opens an easier practice line first: three new words, not from the passage. It is not graded; the line comes back after it.'
-      + (item.step === 'reread' ? ' Model only the practice line, as its ask says; when the line comes back, its own ask'
-        + ' gives its model. Never read the passage line or a word of it during the practice.' : '')));
-  return out;
-}
+/** The levers as one lever set (`bossLevers.ts`); the lesson context is the session's items. */
+export const READ_ALOUD_LEVERS = leverSet<StudioItem, readonly StudioItem[]>({
+  modeOf: item => item.kind,
+  missesOf: mode => readAloudStudioCard.modes[mode].misses,
+  specs: [
+    { id: TRACK_LEVER, type: 'marks', answers: ['word_swap', 'word_drop'], offer: reading,
+      when: 'The learner swaps or drops a small word.',
+      does: item => 'Draws an underline under each word of the line, left to right, so every word is its own place to look.' + quiet(item),
+      fact: 'an underline under each word of the line, left to right; nothing is said' },
+    { id: DOTS_LEVER, type: 'marks', answers: ['word_swap'], offer: reading,
+      when: 'The learner reads a word as a different word.',
+      does: item => 'Puts a dot under each sound of every word of the line.' + quiet(item),
+      fact: 'a dot under each sound of every word of the line; nothing is said' },
+    { id: SHORT_LINE_LEVER, type: 'easier', carrier: 'shown', answers: 'all', answersOn: item => READ_ALOUD_MISSES[item.kind],
+      when: 'The learner cannot yet read a line this long.',
+      does: item => 'Opens an easier practice line first: three new words, not from the passage. It is not graded; the line '
+        + 'comes back after it.' + (item.step === 'reread' ? ' Model only the practice line, as its ask says; when the line '
+        + 'comes back, its own ask gives its model. Never read the passage line or a word of it during the practice.' : ''),
+      content: (item, items) => shortLine(item, items) },
+  ],
+});

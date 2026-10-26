@@ -32,9 +32,9 @@ import { cvcSpellerCard } from '../../../primitives/visual-primitives/literacy/c
 import { wordWorkoutCard } from '../../../primitives/visual-primitives/literacy/wordWorkout.card';
 import { syllableClapperCard } from '../../../primitives/visual-primitives/literacy/syllableClapper.card';
 import { wordFlipCard } from '../../../primitives/visual-primitives/literacy/wordFlip.card';
+import { wordBuilderCard } from '../../../primitives/visual-primitives/literacy/wordBuilder.card';
+import { readAloudStudioCard } from '../../../primitives/visual-primitives/literacy/readAloudStudio.card';
 import { pictureVocabularyCard } from '../../../primitives/visual-primitives/literacy/pictureVocabulary.card';
-import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
-import type { AffixBuildMiss } from '../../../primitives/visual-primitives/literacy/affixBuild';
 import { spellingPatternExplorerCard } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorer.card';
 import { spatialPathCard } from '../../../primitives/visual-primitives/math/spatialPath.card';
 import { youAndMeCard } from '../../../primitives/visual-primitives/literacy/youAndMe.card';
@@ -52,7 +52,6 @@ import { opinionBuilderCard } from '../../../primitives/visual-primitives/litera
 import { revisionWorkshopCard } from '../../../primitives/visual-primitives/literacy/revisionWorkshop.card';
 import { evidenceFinderCard } from '../../../primitives/visual-primitives/literacy/evidenceFinder.card';
 import { storyPlannerCard } from '../../../primitives/visual-primitives/literacy/storyPlanner.card';
-import { missLists } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
@@ -320,33 +319,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + '(happy+ly, run+ing) are excluded. The answer is SPOKEN, so pick this for objectives about building '
       + 'or unpacking word meaning, not for spelling objectives — those need a written surface.',
     affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
-    teachingWorkspace: {
-      // Grade 1-2 opens for build_affix (user ruling R11, 10-07: no heavy grade floors; the build's scope follows the lesson
-      // grade). The spoken levels keep their own floors in the generator (contract R6).
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'A board of prefixes, roots and suffixes, each printed with its meaning, stays on screen. You tell the '
-        + 'learner what a word means (the clue) and the learner says the whole word out loud, built from parts on the '
-        + 'board. Building it aloud part by part counts when the whole '
-        + 'word arrives at the end. Only the root, the parts never joined, the parts in the wrong order, or a word '
-        + 'from only some of the parts is not yet it. Open each word with the clue and ask for the whole word. '
-        + 'Never say the word, name which parts or meanings make it, or ask about one part; after '
-        + 'an attempt, pull a lever, and never walk the meanings of the parts in order. Say the clue again '
-        + 'asks you to repeat the clue only. You cannot mark or move a part. On build_affix the learner instead taps part '
-        + 'cards into a row to MAKE a word for a meaning and presses "I\'m done!"; many words can fit. Never say a word that '
-        + 'would fit or which parts to use; when they stop, invite them to read the word in their row and think what it means.',
-      levers: true,
-      // Every item is one spoken word: its known wrong answers (`wordBuilderSpokenMisses`, handoff 20 Part B; the lever
-      // table 2026-10-03 adds four). A 2-part simple_affix word cannot show part_missing.
-      misses: missLists<SpokenWordBuilderMiss | AffixBuildMiss>({
-        simple_affix: ['root_only', 'other_part_only', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'],
-        ...Object.fromEntries(['compound_affix', 'greek_latin', 'multi_morpheme'].map(m => [m, ['root_only', 'other_part_only',
-          'part_missing', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'] as SpokenWordBuilderMiss[]])),
-        // The open build: the row's shape (code), then the shared literacy judge (`affixBuild.ts`).
-        build_affix: ['root_only', 'affix_only', 'parts_out_of_order', 'same_word', 'not_a_word', 'wrong_meaning'],
-      }),
-      // build_affix `same_word` has no lever: the word already made stays on screen above the row.
-      unanswered: { build_affix: ['same_word'] },
-    },
+    // The live wiring is the boss card (`wordBuilder.card.ts`); the behavior is `wordBuilder.boss.ts`.
+    ...bossEntry(wordBuilderCard),
     // ── SPOKEN MODALITY (2026-08-16, user ruling) — all voice, no tap. The port
     // was queued as a hybrid ("tap to build, then speak"); the user overturned
     // it: "kind of disagree on tap, this feels like a pure spoken with cards on
@@ -358,7 +332,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // THE OPEN-SET HALF WAS REFRAMED, NOT BENCHED. "tele means far, so what does
     // telescope mean?" is open-set, so the ask runs the other way: the clue
     // states the meaning and the child produces the word (one target).
-    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'build_affix',
@@ -1998,14 +1971,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // judge asked "did that sound expressive?" rubber-stamps. expression and
     // dialogue model the delivery and grade the WORDS, and every contract on
     // those modes carries an explicit clause forbidding a sound-based refusal.
-    // Cue lines, delivery notes, the cold-read guard and the judging contracts
-    // live in `readAloudStudioScript.ts` (hand-authored, DISTAR); lines that
-    // cannot be asked honestly (outside the word window, a sentence opening
-    // with a verdict sentinel, dialogue with no speaker) are DROPPED at build.
-    // SENTINEL DISCIPLINE (standing gate 2) re-checked on every line below: no
-    // taskDescription, scaffolding level, struggle response or directive
-    // sentence begins with "Yes" or with "My turn".
-    audioInput: { manual_activity: true },
+    // Lines that cannot be asked honestly (outside the word window, a sentence
+    // opening with a verdict sentinel, dialogue with no speaker) are DROPPED at
+    // build (`readAloudStudioScript.ts`). The scripted cues and judging
+    // contracts were retired onto the boss (2026-10-26).
+    // The live wiring is the boss card (`readAloudStudio.card.ts`); the behavior is `readAloudStudio.boss.ts`.
+    ...bossEntry(readAloudStudioCard),
     evalModes: [
       // βs raised with the STRUCTURE (skill rule: only then). Every mode went
       // from an ungraded button press to unaided spoken production judged word
@@ -2017,143 +1988,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'dialogue', label: 'Character Voice (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['dialogue'], description: 'The tutor models one character\'s line in that character\'s voice; the child reads it back their way.' },
     ],
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'One printed line at a time, read aloud and judged word for word against the print. Read It is a cold read: '
-        + 'never say the line or any word of it before the learner reads it. Character Voice: read the line in the '
-        + 'character voice first, then the learner reads it back. Phrase and Read: the learner taps pause marks and '
-        + 'commits a phrase plan (any plan is fine, it is not graded), reads the line once without a model, then you read '
-        + 'the given groups and the learner rereads. A skipped, added or swapped word is wrong; a self-correction and slow '
-        + 'sounding-out count. Never grade phrasing, voice or speed. You cannot tap the pause marks.',
-      levers: true,
-      // Spoken misses (`readAloudStudioLevers.ts`), emitted by `readAloudSpokenMisses`. `unanswered` stays the levers' own
-      // list (`readAloudStudioLevers.test.ts` pins it). Expression's reads are answered (underline, dots, short line on
-      // the reread; 2026-10-09), so it has no unanswered entry.
-      misses: { accuracy: ['word_swap', 'word_drop'], expression: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
-      unanswered: { accuracy: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
-    },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction read-aloud practice. A short passage is on the child\'s screen ONE LINE '
-        + 'AT A TIME. Word accuracy is scored. Expression includes an unscored phrase plan, a first read, '
-        + 'then a modeled reread; the current application cue owns the step and its response channel. Right now the mode is '
-        + '"{{challengeType}}" and the line in front of them is "{{stimulus}}". You speak the exact scripted '
-        + 'lines from each bracketed application message and nothing else, then you judge the audio you heard '
-        + 'against the printed words. The application decides which line comes next; never introduce one '
-        + 'yourself and never read ahead to a line the child has not reached.',
-      // Trimmed 11 -> 2, to exactly what the component pushes through
-      // updateContext (and that the connect-time primitive_data also carries).
-      // There is nothing to WITHHOLD in the stimulus here — unlike the sibling
-      // packs, the printed line is both the question and the target and it is
-      // already on the child's screen. What must not happen is the tutor
-      // SPEAKING an accuracy line early, and the per-item cold-read guard in
-      // readAloudStudioScript forbids that on every cue that can reach it.
-      contextKeys: ['challengeType', 'stimulus'],
-      // Correction territory, not answer territory: every level describes what
-      // happens AFTER an attempt. Re-modeling is the scripted correction's job,
-      // and on an accuracy line NOTHING here may read the line — that is the
-      // second channel the cold-read guard exists to close.
-      // 18d, fixed OFF-QUEUE from port 8's census (the sweep's own rule: census
-      // every DI catalog entry, not the queue — this entry is a shipped DI port
-      // still waiting for its adapter, so the stall is live). Both rungs said
-      // "say the instruction once more", which opens with neither sentinel: the
-      // reducer records no verdict, the correction counter freezes, and the
-      // child waits on a loop that cannot advance. GATE-COVERED, NOT DRIVEN —
-      // 19h-i-b port 9 drives these when read-aloud-studio gets its adapter.
-      scaffoldingLevels: {
-        level1: 'Use the scripted correction line for this item exactly as the cue quotes it, then wait for them alone.',
-        level2: 'Use the same scripted correction line again, said more slowly. Add nothing to it, and do not read the line for them outside that quote.',
-        level3: 'Use the scripted correction line for this item, then hand the reading back one more time.',
-      },
-      // Observable behaviours only, with PERFORMABLE responses (script moves a
-      // tutor can speak or do — never meta-instructions, which get recited to
-      // the child verbatim).
-      commonStruggles: [
-        {
-          pattern: 'Swaps a small word for another small word - "the" for "a", "and" for "then", "her" for "his"',
-          response: 'Treat it as a miss however fluent it sounded: the scripted correction names the words they said, reads the line correctly, and asks again.',
-        },
-        {
-          pattern: 'Drops a word out of the middle of a smooth, confident reading',
-          response: 'Treat the missing word as a miss: the scripted correction names it, reads the line correctly, and asks again.',
-        },
-        {
-          pattern: 'Says the IDEA of the line in their own words instead of reading the printed words',
-          response: 'Treat a retelling as not yet read: the scripted correction reads the printed words, then asks them to read it again.',
-        },
-        {
-          pattern: 'Sounds out slowly, word by word, but lands on every word correctly',
-          // The accept-side 18d, same row as decodable-reader's and fixed in
-          // the same census pass. Gate-covered, not driven — see the rungs above.
-          response: 'Treat it as correct: say the cue\'s scripted affirmation line for this item, word for word, and nothing else. Effortful decoding that reaches the right words is reading.',
-        },
-        {
-          pattern: 'Stops in the middle of a line and starts again',
-          response: 'Wait for them to finish the whole line, then judge the reading they finished on.',
-        },
-        {
-          pattern: 'Goes quiet after being asked',
-          response: 'Say the instruction once more, then wait for them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [RA_ITEM], [RA_PLAN], [RA_MOVE], [RA_COMPLETE] or [RA_HEAR] contain the only lesson words you '
-            + 'may speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. '
-            + 'Each carries a judging rule: affirmations must begin with "Yes" and corrections must begin with '
-            + '"My turn", using the exact quoted lines. Never begin any other sentence with those words. Judge '
-            + 'honestly from the audio, word by word, and do not praise a misread to be kind.',
-        },
-        {
-          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
-          instruction:
-            'The first [RA_ITEM] of a session, and any later one that carries a how-to-play sentence, has the '
-            + 'greeting, the action and the instruction INSIDE its quoted line. Speak that quote exactly and add '
-            + 'nothing of your own: no separate greeting, no how-to-play in your own wording, no rephrased '
-            + 'instruction. This OVERRIDES any "keep it to one sentence" cap from a lesson switch.',
-        },
-        {
-          title: 'NEVER READ A LINE THE CHILD HAS NOT READ YET',
-          instruction:
-            'In the "accuracy" mode the child is decoding the printed line cold, and that is the whole '
-            + 'measurement. Do NOT read that line, or any part of it, before they do — not to help, not to '
-            + 'check, not as an example, and not because a scaffolding instruction seems to invite it. In the '
-            + 'expression mode, wait through phrase planning and the first reading before the modeled reread. '
-            + 'During planning do not judge microphone speech or phrase correctness; acknowledge only an explicit '
-            + '[RA_PLAN] commit. The first-read cue also forbids an early model. In dialogue mode the cue quotes '
-            + 'a model first. Speak a model only when the current cue explicitly quotes it. Never '
-            + 'read a line further down the passage than the one the application has put in front of them.',
-        },
-        {
-          title: 'THE WORDS ARE THE VERDICT, NOT THE SOUND OF IT',
-          instruction:
-            'Judge whether every printed word was read, correctly and in order. Do NOT judge how the reading '
-            + 'sounded: a flat, plain, unexpressive delivery with every word right is CORRECT, and so is a slow, '
-            + 'effortful, sounded-out reading that lands on the right words. Speed is never judged. Where a cue '
-            + 'asks you to model a phrase or a character voice, that model is TEACHING — it never becomes a '
-            + 'standard you then refuse the child against.',
-        },
-        {
-          title: 'WAIT (the silence is theirs)',
-          instruction:
-            'After you ask, STOP and stay silent until the child has finished reading the whole line. Do not '
-            + 're-ask, do not fill the pause, do not read along with them, and do not finish a word they are '
-            + 'working out. A reader pauses in the middle of a line and that pause is part of ONE reading, not '
-            + 'the end of it. If they tap to hear the instruction again you will receive a separate [RA_HEAR] '
-            + 'message: answer that and nothing more, then go back to waiting.',
-        },
-        {
-          title: 'INSTRUCTION ON DEMAND ([RA_HEAR])',
-          instruction:
-            'When you receive a message starting with [RA_HEAR], immediately say ONLY what it quotes and '
-            + 'nothing else, then wait again. Do not treat anything you just heard as a reading to judge, do '
-            + 'not add commentary, and on an accuracy line do not read the line itself — the child is asking to '
-            + 'hear the INSTRUCTION again, which is how a reader recovers what they were asked to do.',
-        },
-      ],
-    },
   },
 
   // ===== LANGUAGE (L) =====

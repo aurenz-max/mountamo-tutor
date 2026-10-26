@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Knowledge check on the teaching workspace: what is its own, plus its Pip surface (ported from the
- * runner-mock `pip/KnowledgeCheck.surface.test.tsx`). The generic W1 contract
- * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
+ * Knowledge check on the teaching workspace: what is its own. The generic W1 contract
+ * (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance; Pip is the shared boss
+ * contract (`pip/WorkspacePip.surface.test.tsx`).
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -16,7 +16,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../components/
 import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../components/live-activity/activityContract';
 import { workspaceBinding } from '../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../pip/PipSurfaceStore';
 import { KnowledgeCheck } from './KnowledgeCheck';
 import { knowledgeCheckItems } from './knowledgeCheckWorkspace';
 
@@ -32,17 +31,17 @@ const KATEX = { ...base, type: 'multiple_choice', id: 'mc2', question: 'Which ex
 const PROBLEMS = [TF, MC, KATEX];
 const data = (problems: unknown[] = PROBLEMS) => ({ problems, instanceId: 'check' });
 const items = knowledgeCheckItems(data() as never).items;
-const mount = (problems: unknown[] = PROBLEMS, pipStore?: PipSurfaceStore) =>
-  mountWorkspace({ primitiveId: 'knowledge-check', evalMode: 'recall', data: data(problems), instanceId: 'check', pipStore });
+const mount = (problems: unknown[] = PROBLEMS) =>
+  mountWorkspace({ primitiveId: 'knowledge-check', evalMode: 'recall', data: data(problems), instanceId: 'check' });
 
 it('binds in a lesson; spoken kinds publish a key and the touched kind does not', () => {
   expect(items.map(i => i.kind)).toEqual(['true_false', 'choice', 'choice_tap']);
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'knowledge-check', pin: 'recall', objectiveIds: ['o'], data: data() })).not.toBeNull();
   const h = mount();
   expect(h.state().task!.task).toBe('A spider has eight legs. Is that true, or false?');
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^true: the statement is true/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"true" \(also accept "yes", "yeah", "right", "it is"\)\. The statement is true/);
   h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"cow" \(choice 1 of 3\).*"duck", "frog" are wrong/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"cow"\. It is choice 1 of 3\..*"duck", "frog" are wrong/);
   expect(h.state().task!.demand.choices).toBe('Printed choices, in order: 1. cow; 2. duck; 3. frog.');
   h.say('cow'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.demand.response).toBe('gesture');
@@ -82,23 +81,6 @@ it('completion submits once per problem (the ::pN bridges)', async () => {
   expect(seam.submit).toHaveBeenCalledTimes(3);
   expect(seam.submit.mock.calls.map(c => c[2].problemType)).toEqual(['true_false', 'multiple_choice', 'multiple_choice']);
   expect(seam.submit.mock.calls.every(c => c[0] === true)).toBe(true);
-});
-
-it('Pip docks above the question card, points only at it, watches a touched choice and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('check');
-  const h = mount(PROBLEMS, store);
-  expect(document.querySelector('[data-pip-dock="check"]')).not.toBeNull();
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['question']);
-  h.say('yes'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
-  h.dispatch('advance'); h.confirmVisible();
-  h.say('cow'); h.feedback('correct', 'advance'); h.confirmVisible();
-  fireEvent.click(document.querySelector('[data-pip-object="option-B"]')!);
-  h.dispatch('retry'); h.confirmVisible();
-  expect(store.getActive()?.pose).toMatchObject({ gesture: 'look', targetId: 'question' });
-  h.view.unmount();
-  expect(store.getActive()).toBeNull();
 });
 
 it('a problem the spoken kinds cannot ask is worked on screen, so the set still binds; an empty set is rejected', () => {

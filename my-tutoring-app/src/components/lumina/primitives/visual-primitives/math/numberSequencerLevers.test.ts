@@ -4,7 +4,12 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { orderMiss, sequencerItemsForChallenge, type SequencerItem } from './numberSequencerDomain';
-import { MARKS_LEVER, STEPS_LEVER, THREE_LEVER, leverFacts, sequencerLevers, threeCards, trainSteps } from './numberSequencerLevers';
+import { MARKS_LEVER, NUMBER_SEQUENCER_LEVERS, STEPS_LEVER, THREE_LEVER, threeCards, trainSteps } from './numberSequencerLevers';
+
+/** The order_cards levers as the component declares them (the lever set covers every mode). */
+const sequencerLevers = (item: SequencerItem, pulled: readonly string[]) =>
+  item.challengeType === 'order-cards' ? NUMBER_SEQUENCER_LEVERS.declare(item, { session: [], band: '1' }, pulled) : [];
+const leverFacts = (item: SequencerItem, pulled: readonly string[]) => NUMBER_SEQUENCER_LEVERS.onScreen(item, { session: [], band: '1' }, pulled);
 
 const cardsItem = (sequence: number[]): SequencerItem => {
   const correctAnswers = [...sequence].sort((a, b) => a - b);

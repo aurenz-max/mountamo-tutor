@@ -4,20 +4,9 @@
  * that expand one challenge into its asks, the asks themselves, the workspace
  * assignment and scene, and the harness answer material.
  *
- * Sunset slice S1 for this primitive (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md),
- * following `countingBoardDomain` and `shapeSorterDomain`. `NumberSequencerTeaching`
- * — the tutor/JEV binding — needs the sequence, the slot and the ask and nothing
- * else, but reaching them through `numberSequencerScript` pulled the sentinel
- * scanner, the correction wording and the pack base into the destination
- * architecture's import graph. The split is by ownership:
- *
- *   - HERE: the task and its validity gates. Which trains can be asked, how a
- *     challenge expands into asks, what the child is asked and what counts as the
- *     answer.
- *   - `numberSequencerScript`: the retiring control protocol — affirmation and
- *     correction wording, the judging contract, the cues and the pack base.
- *     It re-exports this module, so the generator, the tester and the drive
- *     plan keep one address.
+ * The wiring is `numberSequencer.card.ts` + `numberSequencer.boss.ts` (2026-10-26); the scripted drill and its
+ * cue module (`numberSequencerScript`) were retired then. This module holds the task and its validity gates: which
+ * trains can be asked, how a challenge expands into asks, what the child is asked and what counts as the answer.
  *
  * `DiActionContract` is imported as a TYPE only. It describes the learner-facing
  * action, not the cue protocol, and carries no runtime code from the legacy engine.
@@ -25,8 +14,10 @@
 import type { DiHarnessAnswers } from '../../../service/qa/di/diDrivePlan';
 import type { DiActionContract } from '../../../hooks/judgedScriptContract';
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { NumberSequencerChallenge } from './NumberSequencer';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
+import type { NumberSequencerChallenge, NumberSequencerData } from './NumberSequencer';
 import { NUMBER_SEQUENCER_MODES, numberSequencerModePlan } from './numberSequencerModes';
 import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss }
   from '../../../components/live-activity/runtime/spokenMissContract';
@@ -61,6 +52,8 @@ export interface SequencerItem extends TeachingItem {
   repair?: number;
   rangeMin: number;
   rangeMax: number;
+  /** The lesson's support tier (when the model lever comes); stamped by `sequencerItems`. */
+  supportTier?: SupportTier;
 }
 
 /** Independent key check. Cached and generated content pass the same gate.
@@ -150,6 +143,13 @@ export function buildSequencerItems(challenges: NumberSequencerChallenge[]) {
   }
   return { items, droppedChallenges };
 }
+
+/** A lesson's items, each stamped with the lesson's support tier. */
+export const sequencerItems = (data: Pick<NumberSequencerData, 'challenges' | 'supportTier'>): SequencerItem[] =>
+  buildSequencerItems(data.challenges ?? []).items.map(item => ({ ...item, supportTier: data.supportTier ?? 'medium' }));
+
+/** The eval mode an item belongs to (`order-cards` is `order_cards`). */
+export const sequencerModeOf = (item: SequencerItem): string => item.challengeType.replace(/-/g, '_');
 
 /**
  * The modes the tutor/JEV teaching workspace binds: every mode, derived from the mode
@@ -265,14 +265,22 @@ export function numberSequencerSpokenMisses(item: SequencerItem): KnownMiss[] {
   }
 }
 
-/** The item as the tutor and the outcome observer are told it. Gesture items are checked
- *  by the train; the ordered string is what the tutor sees, not a parser. */
-export const workspaceAssignment = (item: SequencerItem): TeachingAssignment => {
-  const misses = numberSequencerSpokenMisses(item);
-  return { id: item.id, task: askFor(item),
-    expectedAnswer: item.answerKind === 'gesture' ? item.answerOrder.join(', ') : String(item.answer),
-    response: item.answerKind === 'gesture' ? 'gesture' : 'speech', ...(misses.length ? { misses } : {}) };
-};
+/** A spoken item's key: the number, in digits or words. An arrangement has none: the train checks it. */
+export function sequencerKey(item: SequencerItem): SpokenKey | null {
+  if (item.answerKind === 'gesture') return null;
+  const wrong = item.challengeType === 'spot-error'
+    ? `The number that should be there instead (${item.repair}) is not the answer: the question asks for the printed number that breaks the count.`
+    : item.challengeType === 'count-from'
+      ? `The starting number ${item.previous} said again, or counting the other way, is not it.`
+      : 'A number already printed beside the gap is not it.';
+  return { answer: String(item.answer), alsoAccept: [spokenIntegerWord(item.answer)],
+    acceptRule: 'In digits or number words, alone or in a short sentence. A negated answer, or several guesses left unresolved, is not an answer.',
+    signatureError: wrong };
+}
+
+/** What the ask says by design: spot_error reads the whole count, the number that breaks it included. */
+export const sequencerGiven = (item: SequencerItem): string[] =>
+  (item.challengeType === 'spot-error' ? [askFor(item)] : []);
 
 /** `shown` is the drawn train, with slots of this challenge answered earlier filled in;
  *  `placed` is the learner's arrangement so far on an order-cards item. */

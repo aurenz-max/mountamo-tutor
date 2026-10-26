@@ -1,23 +1,57 @@
 /**
- * Word builder on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C2). Its only teaching path: the scripted
- * runner was retired (LA-14, user ruling 09-23: one path).
+ * Word builder's domain, on the shared tutor/JEV teaching workspace; its wiring is `wordBuilder.card.ts` +
+ * `wordBuilder.boss.ts`. Pure: the component, the boss and the journey read the same items, keys and scene.
  *
- * Pure: the component and the journey read the same assignment and scene. Every item is one
- * spoken word built from the morpheme parts on the board, asked by its meaning.
+ * A spoken item is one word built from the morpheme parts on the board, asked by its meaning. A build_affix item is
+ * the shared word-part build (`affixBuild.ts`): no key, the row is checked in code and by the word judge.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
-import { rootPartOf, wordBuilderHarnessAnswers, type WordBuilderItem } from './wordBuilderScript';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { SupportTier } from '../../../components/live-activity/supportFact';
+import type { WordBuilderData } from '../../../types';
+import { itemsFromTargets, rootPartOf, wordBuilderHarnessAnswers, type WordBuilderItem, type WordPartLike } from './wordBuilderScript';
+import { buildItemsFrom, type AffixBuildItem, type BuildPart } from './affixBuild';
 
-const ask = (item: WordBuilderItem) => `Here is what the word means: ${item.clue} Say the whole word.`;
+/** A spoken word, with the lesson's tier and the board it is built from (a practice word's own small board). */
+export type SpokenBuilderItem = WordBuilderItem & { mode: WordBuilderItem['complexity']; supportTier: SupportTier; board?: WordPartLike[] };
+/** An open-build item, with the lesson's tier. */
+export type AffixBuilderItem = AffixBuildItem & { mode: 'build_affix'; supportTier: SupportTier };
+export type WordBuilderBossItem = SpokenBuilderItem | AffixBuilderItem;
 
-export function wordBuilderAssignment(item: WordBuilderItem, board: readonly BoardPart[] = []): TeachingAssignment {
-  const misses = wordBuilderSpokenMisses(item, board);
-  return { id: item.id, task: ask(item), response: 'speech',
-    expectedAnswer: `${item.word} (${item.parts.map(p => p.text).join(' + ')}). Built out loud part by part counts `
-      + `when the whole word arrives at the end. Only "${rootPartOf(item).text}", the parts never joined, the parts in the `
-      + 'wrong order, or a word from only some of the parts is not it.', ...(misses.length ? { misses } : {}) };
+export const isAffixBuild = (item: WordBuilderBossItem): item is AffixBuilderItem => item.mode === 'build_affix';
+const tierOf = (tier?: string): SupportTier => (tier === 'easy' || tier === 'hard' ? tier : 'medium');
+
+export const asSpokenBuilder = (item: WordBuilderItem, tier?: string, board?: WordPartLike[]): SpokenBuilderItem =>
+  ({ ...item, mode: item.complexity, supportTier: tierOf(tier), ...(board ? { board } : {}) });
+export const asAffixBuilder = (item: AffixBuildItem, tier?: string): AffixBuilderItem =>
+  ({ ...item, mode: 'build_affix', supportTier: tierOf(tier) });
+
+/** The spoken words a lesson asks, drop-gated (`itemsFromTargets`), each with the lesson's board. */
+export const spokenBuilderItems = (data: WordBuilderData): SpokenBuilderItem[] =>
+  itemsFromTargets(data.targets ?? [], data.availableParts ?? [], data.complexityLevel ?? 'compound_affix')
+    .map(item => asSpokenBuilder(item, data.supportTier, data.availableParts ?? []));
+
+/** Every item of a lesson: the open build's asks, or the spoken words. */
+export const wordBuilderItems = (data: WordBuilderData): WordBuilderBossItem[] => (data.task === 'build_affix'
+  ? buildItemsFrom(data.buildItems ?? [], (data.availableParts ?? []) as BuildPart[], data.supportTier).map(i => asAffixBuilder(i, data.supportTier))
+  : spokenBuilderItems(data));
+
+const spokenAsk = (item: WordBuilderItem) => `Here is what the word means: ${item.clue} Say the whole word.`;
+const waysLine = (item: AffixBuildItem) => (item.ways === 2 ? ' Then make a different word that means it too.' : '');
+
+/** What the learner is asked: a spoken word's meaning, or the open build's ask. */
+export const wordBuilderAsk = (item: WordBuilderBossItem): string =>
+  (isAffixBuild(item) ? `${item.ask}${waysLine(item)}` : spokenAsk(item));
+
+/** A spoken word's key; an open build has none (code and the word judge check it, and many words pass). */
+export function wordBuilderKey(item: WordBuilderBossItem): SpokenKey | null {
+  if (isAffixBuild(item)) return null;
+  const parts = item.parts.map(p => p.text).join(' + ');
+  return { answer: item.word, alsoAccept: [],
+    acceptRule: `It is built from ${parts}. Building it out loud part by part counts when the whole word arrives at the end.`,
+    signatureError: `Only "${rootPartOf(item).text}", the parts never joined, the parts in the wrong order, or a word `
+      + 'from only some of the parts is not it.' };
 }
 
 /** What a wrong spoken word shows (handoff 20 Part B; the last four from the lever table, 2026-10-03). */
@@ -71,7 +105,7 @@ export function wordBuilderScene(item: WordBuilderItem, board: ReadonlyArray<{ t
 
 /** What "Say the clue again" asks the tutor to say: the clue (and sentence), never the word. */
 export const hearClueRequest = (item: WordBuilderItem) =>
-  `The learner asked to hear the clue again. Say only this, once: "${ask(item)}"`
+  `The learner asked to hear the clue again. Say only this, once: "${spokenAsk(item)}"`
   + (item.spokenSentence ? ` You may add the sentence: "${item.spokenSentence}"` : '');
 
 /** The journey's answers: the word, or its parts in reverse order. */

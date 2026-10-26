@@ -1,4 +1,3 @@
-import { missLists, sameMisses } from './missLists';
 import { bossEntry } from '../../../components/live-activity/boss';
 import { arrayGridCard } from '../../../primitives/visual-primitives/math/arrayGrid.card';
 import { additionSubtractionSceneCard } from '../../../primitives/visual-primitives/math/additionSubtractionScene.card';
@@ -48,7 +47,6 @@ import { additionFactStrategiesCard } from '../../../primitives/visual-primitive
 import { angleWorkshopCard } from '../../../primitives/visual-primitives/math/angleWorkshop.card';
 import { numberBondCard } from '../../../primitives/visual-primitives/math/numberBond.card';
 import { numberLineCard } from '../../../primitives/visual-primitives/math/numberLine.card';
-import type { OrderMiss, SpokenSequencerMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
 import { numberTracerCard } from '../../../primitives/visual-primitives/math/numberTracer.card';
 import { shapeTracerCard } from '../../../primitives/visual-primitives/math/shapeTracer.card';
 import { ordinalLineCard } from '../../../primitives/visual-primitives/math/ordinalLine.card';
@@ -65,6 +63,7 @@ import { sortingStationCard } from '../../../primitives/visual-primitives/math/s
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
 import { BASE_TEN_DI_EVAL_MODES } from '../../../primitives/visual-primitives/math/baseTenModes';
 import { NUMBER_SEQUENCER_EVAL_MODES } from '../../../primitives/visual-primitives/math/numberSequencerModes';
+import { numberSequencerCard } from '../../../primitives/visual-primitives/math/numberSequencer.card';
 import { areaModelDeliveryEligible } from '../../math/areaModelRemediation';
 import { barModelDeliveryEligible } from '../../math/barModelRemediation';
 import { baseTenDeliveryEligible } from '../../math/baseTenRemediation';
@@ -2250,48 +2249,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-sequencer',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The glowing car marks the space the current question is about; judge a spoken answer against that question. '
-        + 'On the card-ordering mode the train checks the arrangement itself once the last card is placed; '
-        + 'praise or doubt about a part-built train is teaching, not a verdict. '
-        + 'Use demonstrate with visible car or card IDs to draw purple dashed tutor marks on the cars or cards you are '
-        + 'discussing, and [] to clear them. You cannot fill an empty car, move a card into a place, reorder the train '
-        + 'or count for the learner. Counting along out loud is teaching; the number the learner says is the answer.',
-      // order_cards publishes levers (`numberSequencerLevers.ts`, handoff 21 M2), the spoken modes theirs
-      // (`numberSequencerSpokenLevers.ts`, handoff 23); every miss is answered.
-      levers: true,
-      // The train's own check of an arrangement (`orderMiss`), and the five spoken modes' known wrong numbers
-      // (`numberSequencerSpokenMisses`).
-      misses: missLists<OrderMiss | SpokenSequencerMiss>({
-        order_cards: ['reversed', 'two_swapped', 'other_order'],
-        count_from: ['said_start', 'wrong_direction', 'skipped_one', 'teen_ty_swap', 'decade_word'],
-        before_after: ['said_shown', 'wrong_side', 'skipped_one', 'teen_ty_swap', 'decade_word'],
-        ...sameMisses<SpokenSequencerMiss>(['fill_missing', 'decade_fill'], ['said_neighbor', 'counted_by_one', 'teen_ty_swap', 'decade_word',
-          'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-        spot_error: ['said_repair', 'said_neighbor'],
-      }),
-    },
-    description: 'Live tutor-judged number train practice. Children say missing numbers, continue a count one number at a time, and name the printed number that breaks a sequence. Card ordering remains hands-on arrangement. The tutor asks, judges, corrects, and advances. Six existing task identities for K-1 mathematics.',
+    // The live wiring is the boss card (`numberSequencer.card.ts`); the behavior is `numberSequencer.boss.ts`.
+    ...bossEntry(numberSequencerCard),
+    description: 'Live tutor-judged number train practice. Children say missing numbers, continue a count one number at a time, and name the printed number that breaks a sequence. Card ordering remains hands-on arrangement, checked by the train. Six existing task identities for K-1 mathematics.',
     constraints: 'Requires a microphone for spoken modes; order-cards remains hands-on arrangement. K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
-    audioInput: JUDGED_AUDIO_INPUT,
     evalModes: NUMBER_SEQUENCER_EVAL_MODES,
-    tutoring: {
-      taskDescription: 'Live-judged number sequencing: {{challengeType}}. The question side of the screen, described for you alone and never read aloud: {{stimulus}}.',
-      contextKeys: ['challengeType', 'stimulus'],
-      scaffoldingLevels: {
-        level1: 'Repeat only the current scripted question when asked for help.',
-        level2: 'On a wrong answer use the exact scripted correction and re-ask.',
-        level3: 'The application owns the correction cap and next item; never invent another task.',
-      },
-      commonStruggles: [
-        { pattern: 'Child echoes the start or counts in the wrong direction', response: 'Use the current cue exact correction verdict. A sentiment without the scripted verdict cannot advance the run.' },
-        { pattern: 'Child gives the replacement in spot-error', response: 'The task asks for the printed wrong number. Use the current scripted correction, which contrasts that number with its replacement.' },
-        { pattern: 'Child is arranging cards', response: 'Speech does not submit the arrangement. Only the application supplies the code-computed ordering verdict.' },
-      ],
-      aiDirectives: [{ title: 'LIVE-JUDGED number sequencing', instruction: 'Speak only the quoted current cue. Correct answers use its exact affirmation; incorrect answers use its exact correction. A verdict ends the turn. No fabricated next question, unscripted praise, or floor handback. Never reveal an unasked blank or read answer-bearing context. The app supplies every new item. Numbers above twenty use the standing build-ahead contract with microphone acceptance pending.' }],
-    },
     supportsEvaluation: true,
   },
   {

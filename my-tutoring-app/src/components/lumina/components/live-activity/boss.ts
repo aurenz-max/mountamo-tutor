@@ -58,6 +58,13 @@ export interface Card<M extends string = string> {
   audio?: AudioInputConfig;
   /** The boss declares in-item levers (`bossLevers.ts`); the guidance then carries `LEVER_DOCTRINE`. */
   levers?: true;
+  /**
+   * A teaching surface, not an assessment (user ruling 2026-10-26: an ungraded surface still gets a card, which tells
+   * the tutor how to cover the content). It has no modes (the catalog declares no eval modes and it binds as `mixed`);
+   * `words.job` is what the learner looks at and does, `words.question` what the tutor teaches from, and
+   * `words.special` how to cover this content. `TEACHING_ROTATION` and `TEACHING_DOCTRINE` write its guidance.
+   */
+  ungraded?: true;
 }
 
 export const defineCard = <M extends string>(card: Card<M>): Card<M> => card;
@@ -91,6 +98,7 @@ export function bossWorkspace(card: Card): NonNullable<ComponentDefinition['teac
     card: { modes: Object.fromEntries(modes.map(([k, { misses: _m, unanswered: _u, missFromWords: _w, ...wiring }]) =>
       [k, wiring])), words: card.words },
     grades: card.grades,
+    ...(card.ungraded ? { ungraded: true as const } : {}),
     ...(card.levers ? { levers: true as const } : {}),
     ...(Object.keys(misses).length ? { misses } : {}),
     ...(Object.keys(unanswered).length ? { unanswered } : {}),
@@ -114,6 +122,10 @@ export interface BossDrive<I = any> {
   /** The current item, when it is not one of `items(data)` by id (an easier practice item rebuilt from its parent). */
   current?: (ctx: JourneyContext) => I | undefined;
   play: (right: boolean, item: I, ctx: JourneyContext) => DriverInput[];
+  /** An ungraded boss: how the harness looks at one thing (`explore`) and finishes with the surface's own Done. */
+  teach?: (intent: 'explore' | 'finish', ctx: JourneyContext) => DriverInput[];
+  /** What the learner says to ask for each action, when this surface's own words fit better than the shared ones. */
+  prompts?: Record<string, string>;
   /** The tutor replay's keys when the answer is typed or tapped in parts (`LiveJourney.replayKeys`). */
   replayKeys?: (ctx: JourneyContext) => string[];
 }

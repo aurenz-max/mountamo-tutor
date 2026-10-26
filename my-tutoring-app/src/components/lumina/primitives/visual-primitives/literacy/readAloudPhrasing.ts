@@ -2,11 +2,10 @@
  * Only the reread feeds the existing modeled word-accuracy score. Planning and
  * first-read observations remain separate evidence, never prosody measurements.
  */
-import type { DiActionContract, JudgedCueOptions } from '../../../hooks/judgedScriptContract';
+import type { DiActionContract } from '../../../hooks/judgedScriptContract';
 import type { JudgedRunOutcome, JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 import {
-  itemCue, itemsFromLines, judgingContract, moveOnCue, pronounceCue, sanitizeLine,
-  type ReadAloudItem, type ReadAloudLineLike, type ReadAloudMode,
+  itemsFromLines, sanitizeLine, type ReadAloudItem, type ReadAloudLineLike, type ReadAloudMode,
 } from './readAloudStudioScript';
 
 export type PhrasingStep = 'mark' | 'first_read' | 'reread';
@@ -75,10 +74,6 @@ export function studioItems(lines: ReadAloudLineLike[], mode: ReadAloudMode): St
   });
 }
 
-const planningRules = 'This is an unscored reading plan, not a correct/incorrect phrase test. '
-  + 'Do not judge microphone speech or read the printed line during planning. '
-  + 'Wait for [RA_PLAN] before acknowledging the committed page work. Never speak a verdict before that commit.';
-
 export function phraseAsk(item: StudioItem): string {
   if (item.step === 'mark') return item.actionContract.instruction;
   if (item.step === 'first_read') return item.actionContract.instruction;
@@ -86,41 +81,6 @@ export function phraseAsk(item: StudioItem): string {
     ? 'Words in each group belong together. Listen for a small pause between groups.'
     : 'These words belong together. Listen as I read them smoothly.';
   return `${coaching} Listen: ${item.text} Your turn. Read the line again.`;
-}
-
-function phraseRules(item: StudioItem, breaks: readonly number[]): string {
-  if (item.step === 'mark') return planningRules;
-  const delivery = item.step === 'first_read'
-    ? `Do NOT read the line or model any words before this first attempt. The learner's plan is ${JSON.stringify(markedGroups(item.text, breaks))}. A phrase mark is a pause, never a spoken word. `
-    : `During the Listen model, read these groups in order: ${JSON.stringify(item.modelGroups)}. Keep each group smooth; use a short natural pause between groups. Never speak separators or quote marks. ${item.stressWord ? `Gently stress ${item.stressWord}. ` : ''}The model is ONE possible grouping, not a unique answer key. `;
-  return delivery + judgingContract(item)
-    + ' Phrase placement, pauses, stress and expression are coaching only. Never claim their prosody improved or failed. '
-    + 'Only a word error can trigger a correction. Never penalize a different meaningful grouping.';
-}
-
-export function studioItemCue(item: StudioItem, opts: Partial<JudgedCueOptions> = {}, breaks: readonly number[] = []): string {
-  if (!item.step) return itemCue(item, opts);
-  const opening = opts.opening
-    ? 'Hi! We will mark phrases, read, listen, and read again. You can also keep a line as one phrase. ' : '';
-  return `[RA_ITEM] Say exactly: "${opening}${phraseAsk(item)}" ${phraseRules(item, breaks)} Never read bracket tags aloud.`;
-}
-
-export function studioHearCue(item: StudioItem, breaks: readonly number[] = []): string {
-  if (!item.step) return pronounceCue(item);
-  return `[RA_HEAR] Say exactly: "${phraseAsk(item)}" ${phraseRules(item, breaks)} `
-    + 'This is an instruction replay: do not judge anything just heard. Then wait. Never read bracket tags aloud.';
-}
-
-export function studioMoveCue(item: StudioItem, next: StudioItem | null, opts: Partial<JudgedCueOptions> = {}, breaks: readonly number[] = []): string {
-  if (!item.step && !next?.step) return moveOnCue(item, next, opts);
-  if (!next) return '[RA_MOVE] Say exactly: "Good effort. We have finished our reading practice." Then stop — the activity is over.';
-  return `[RA_MOVE] Stop correcting the previous item. Say exactly: "Good effort. ${phraseAsk(next)}" ${phraseRules(next, breaks)} Never read bracket tags aloud.`;
-}
-
-export function phrasePlanCue(item: StudioItem, breaks: readonly number[]): string {
-  return `[RA_PLAN] The learner committed this reading plan for ${item.lineId}: ${JSON.stringify(markedGroups(item.text, breaks))}. `
-    + 'Acknowledge completion only, not correctness. Say exactly: "Yes, your phrase plan is ready." Then stop. '
-    + 'Do not read the line, judge the placement, or judge microphone speech. Never read bracket tags aloud.';
 }
 
 export function scoredReadingItems(items: StudioItem[]): StudioItem[] {

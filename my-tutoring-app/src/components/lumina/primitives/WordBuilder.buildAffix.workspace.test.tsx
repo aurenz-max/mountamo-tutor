@@ -23,10 +23,12 @@ vi.mock('../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () 
 import WordBuilder from './WordBuilder';
 import type { WordBuilderData } from '../types';
 import payload from '../components/live-activity/runtime/testing/w1-payloads/word-builder.build_affix.json';
-import { affixBuildLevers, affixShapeMiss, askableBuildItem, buildItemsFrom, smallBoardFor, type BuildPart } from './visual-primitives/literacy/affixBuild';
+import { affixShapeMiss, askableBuildItem, buildItemsFrom, smallBoardFor, type BuildPart } from './visual-primitives/literacy/affixBuild';
+import { WORD_BUILDER_LEVERS } from './visual-primitives/literacy/wordBuilderLevers';
+import { asAffixBuilder } from './visual-primitives/literacy/wordBuilderWorkspace';
 import { getComponentById } from '../service/manifest/catalog';
 import { decideWordBuild, secondOpinion } from '../service/build-layer/wordBuildDecision';
-import { validateWordBuilderData } from '../components/live-activity/adapters/wordBuilderLive';
+import { validateWordBuilderData } from './visual-primitives/literacy/wordBuilder.boss';
 
 const data = (payload as unknown as { data: WordBuilderData }).data;
 const board = data.availableParts as BuildPart[];
@@ -95,7 +97,7 @@ describe('build_affix rules (pure)', () => {
   it('every build_affix miss but same_word is answered by a lever; same_word is declared unanswered', () => {
     const tw = getComponentById('word-builder')!.teachingWorkspace!;
     const item = buildItemsFrom(data.buildItems!, board)[0];
-    const answered = new Set(affixBuildLevers(item, board, []).flatMap(l => l.answers ?? []));
+    const answered = new Set(WORD_BUILDER_LEVERS.declare(asAffixBuilder(item), { items: [], board, starting: [] }, []).flatMap(l => l.answers ?? []));
     for (const m of tw.misses!.build_affix) if (m !== 'same_word') expect(answered.has(m), m).toBe(true);
     expect(tw.unanswered!.build_affix).toEqual(['same_word']);
   });

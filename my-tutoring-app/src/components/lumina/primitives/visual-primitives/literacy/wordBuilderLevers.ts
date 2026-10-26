@@ -12,17 +12,27 @@
  *   item gets a 2-part word) on a practice board of its own parts plus one foil per slot type; then the full item
  *   returns. Leak rule (`practiceLeak`): as the model, plus never the model word and no foil that makes a pool word.
  *
+ * build_affix has its own three on the word-part board (`affixBuild.ts`): `part_frame`, `model_word`, `small_board`.
+ * All six are one lever set (`WORD_BUILDER_LEVERS`).
+ *
  * Pools are hand-written (ruling R2): each word's parts spell it exactly and pass the same build gates
  * (`itemFromTarget`) a generated word does.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import { itemFromTarget, type MorphemeType, type WordBuilderComplexity, type WordBuilderItem, type WordPartLike }
   from './wordBuilderScript';
-import type { SpokenWordBuilderMiss } from './wordBuilderWorkspace';
+import { asAffixBuilder, asSpokenBuilder, isAffixBuild, type AffixBuilderItem, type SpokenBuilderItem, type WordBuilderBossItem }
+  from './wordBuilderWorkspace';
+import { SPOKEN_BUILDER_MODES, wordBuilderCard } from './wordBuilder.card';
+import { frameFor, joined, modelFor as affixModelFor, smallBoardFor, type BuildPart } from './affixBuild';
 
 export const SLOTS_LEVER = 'part_slots';
 export const MODEL_LEVER = 'model_word';
 export const SMALL_BOARD_LEVER = 'small_board_word';
+/** build_affix's frame and small board (`affixBuild.ts` re-exports them; declared here so the lever set built below has
+ *  them when affixBuild.ts is still loading: the two modules import each other). */
+export const AFFIX_FRAME_LEVER = 'part_frame';
+export const AFFIX_SMALL_BOARD_LEVER = 'small_board';
 
 type Tier = 'everyday' | 'academic' | 'greek';
 type Part = [text: string, type: MorphemeType, meaning: string];
@@ -219,49 +229,87 @@ export function smallBoardWordFor(item: WordBuilderItem, items: readonly WordBui
 
 // ── the levers ───────────────────────────────────────────────────────────────
 
-const ALL_MISSES: SpokenWordBuilderMiss[] = ['root_only', 'other_part_only', 'part_missing', 'parts_not_joined',
-  'parts_out_of_order', 'swapped_part', 'meaning_word'];
-
-/** What the pulled levers put on screen, for the tutor and the observer. Never the word or which parts make it. */
-export function leversOnScreen(pulled: readonly string[], item: WordBuilderItem, items: readonly WordBuilderItem[],
-  board: readonly WordPartLike[]): string | null {
-  const model = pulled.includes(MODEL_LEVER) ? modelFor(item, items, board) : null;
-  const parts = [
-    pulled.includes(SLOTS_LEVER) && `an empty frame under the clue: ${item.parts.length} boxes labelled `
-      + `${slotFrame(item).join(', ')}, joined by + into one word box. It shows how many parts and their kinds, not which parts`,
-    model && `a model card with another word: "${model.clue}" is ${model.parts.map(p => `${p[0]} (${p[2]})`).join(' + ')}, `
-      + `said "${model.word}". Say it as your turn on that word; it is not this word`,
-  ].filter(Boolean);
-  return parts.length ? parts.join('; ') : null;
+/** The lesson context the lever set reads: the session's words, the board, and the levers the tier starts with. */
+export interface WordBuilderLeverContext {
+  items: readonly WordBuilderItem[];
+  board: readonly WordPartLike[];
+  /** On screen from the tier before any pull (easy starts with the empty frame); not offered. */
+  starting: readonly string[];
 }
 
-/** The levers on `item` with their pulled state. `starting` levers are on screen from the tier and are not offered. */
-export function wordBuilderLevers(item: WordBuilderItem | null, items: readonly WordBuilderItem[], board: readonly WordPartLike[],
-  pulled: readonly string[], starting: readonly string[] = []): WorkspaceLever[] {
-  if (!item) return [];
-  const levers: WorkspaceLever[] = [];
-  const add = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: SpokenWordBuilderMiss[],
-    when: string, does: string) => {
-    if (!starting.includes(id)) levers.push({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  };
-  add(SLOTS_LEVER, 'help', 'shown', ALL_MISSES,
-    'The learner says only some of the parts, says them apart, or says a word not built from the board.',
-    'Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one '
-    + 'word box. It never shows a part, a meaning or a letter. Do not say which parts go in it.');
-  if (modelFor(item, items, board)) add(MODEL_LEVER, 'help', 'both', ALL_MISSES,
-    'The learner does not know how to start, or keeps saying only part of the word.',
-    'Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the '
-    + 'joined word. Once it is on screen, say it as "My turn" on that word, the one the receipt names; never make up '
-    + 'a model word of your own. Never say which board card or which part '
-    + 'of this word matches a model part, and never walk this word\'s parts.');
-  if (smallBoardWordFor(item, items, board)) add(SMALL_BOARD_LEVER, 'simplify', 'both',
-    ['root_only', 'other_part_only', 'part_missing', 'swapped_part', 'meaning_word'],
-    'The learner still cannot build the word after help.',
-    `Opens an easier practice word first, on a small board of its own parts and one extra per kind`
-    + `${item.complexity === 'greek_latin' && item.parts.length === 3 ? ', with two parts' : ''}. Say its clue. It is not `
-    + 'graded; the full word comes back after it.');
-  return levers;
-}
+const SPOKEN = [...SPOKEN_BUILDER_MODES];
+const BUILD = ['build_affix'];
+const spokenOf = (item: WordBuilderBossItem) => (isAffixBuild(item) ? null : item);
+const buildOf = (item: WordBuilderBossItem) => (isAffixBuild(item) ? item : null);
+const affixBoard = (item: AffixBuilderItem, ctx: WordBuilderLeverContext) => (item.board ?? ctx.board) as BuildPart[];
+const modelLine = (m: PoolWord) => m.parts.map(p => `${p[0]} (${p[2]})`).join(' + ');
+
+/**
+ * The levers as one lever set (`bossLevers.ts`). Spoken tiers: the empty part frame, a solved model word of the same
+ * shape, an easier practice word on a small board. build_affix: the same three on the word-part board (an empty word
+ * shape, a solved word from parts NOT on the board, the same ask on a smaller board).
+ */
+export const WORD_BUILDER_LEVERS = leverSet<WordBuilderBossItem, WordBuilderLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => wordBuilderCard.modes[mode].misses,
+  answersOf: (item, ctx) => {
+    const b = buildOf(item);
+    if (!b) return [(item as SpokenBuilderItem).word];
+    const board = affixBoard(b, ctx);
+    return b.examples.map(ids => joined(ids.flatMap(id => board.filter(p => p.id === id)))).filter(Boolean);
+  },
+  // Both models show a different word, solved; the lesson's tier says when.
+  support: { tier: item => item.supportTier, different: 'a solved card for a different word', own: 'this word' },
+  specs: [
+    { id: SLOTS_LEVER, type: 'clue', modes: SPOKEN, carrier: 'shown', answers: 'all',
+      when: 'The learner says only some of the parts, says them apart, or says a word not built from the board.',
+      does: 'Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one '
+        + 'word box. It never shows a part, a meaning or a letter. Do not say which parts go in it.',
+      offer: (_item, ctx) => !ctx.starting.includes(SLOTS_LEVER),
+      content: item => { const w = spokenOf(item); return w ? slotFrame(w) : null; },
+      fact: (frame: MorphemeType[]) => `an empty frame under the clue: ${frame.length} boxes labelled ${frame.join(', ')}, `
+        + 'joined by + into one word box. It shows how many parts and their kinds, not which parts' },
+    { id: MODEL_LEVER, type: 'model', modes: SPOKEN, answers: 'all',
+      when: 'The learner does not know how to start, or keeps saying only part of the word.',
+      does: 'Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the '
+        + 'joined word. Say it as your turn on that word, the one the receipt names; never make up a model word of your '
+        + "own. Never say which board card or which part of this word matches a model part, and never walk this word's parts.",
+      content: (item, ctx) => { const w = spokenOf(item); return w ? modelFor(w, ctx.items, ctx.board) : null; },
+      fact: (m: PoolWord) => `a model card with another word: "${m.clue}" is ${modelLine(m)}, said "${m.word}". `
+        + 'Say it as your turn on that word; it is not this word' },
+    { id: SMALL_BOARD_LEVER, type: 'easier', modes: SPOKEN,
+      answers: ['root_only', 'other_part_only', 'part_missing', 'swapped_part', 'meaning_word'],
+      when: 'The learner still cannot build the word after help.',
+      does: item => 'Opens an easier practice word first, on a small board of its own parts and one extra per kind'
+        + `${!isAffixBuild(item) && item.complexity === 'greek_latin' && item.parts.length === 3 ? ', with two parts' : ''}. `
+        + 'Say its clue. It is not graded; the full word comes back after it.',
+      content: (item, ctx) => {
+        const w = spokenOf(item);
+        const practice = w && smallBoardWordFor(w, ctx.items, ctx.board);
+        return w && practice ? asSpokenBuilder(practice.item, w.supportTier, practice.board) : null;
+      } },
+    { id: AFFIX_FRAME_LEVER, type: 'clue', modes: BUILD, carrier: 'shown', answers: ['root_only', 'affix_only', 'parts_out_of_order'],
+      when: 'The learner puts down a root alone, a prefix or suffix alone, or parts in an order that is not a word shape.',
+      does: 'Shows empty boxes above the row labelled with part types, such as prefix + root. No part is filled in.',
+      content: (item, ctx) => { const b = buildOf(item); const frame = b ? frameFor(b, affixBoard(b, ctx)) : []; return frame.length ? frame : null; },
+      fact: (frame: MorphemeType[]) => `Empty boxes above the row show a word shape: ${frame.join(' + ')}.` },
+    { id: MODEL_LEVER, type: 'model', modes: BUILD, answers: ['not_a_word', 'wrong_meaning'],
+      when: 'The learner makes something that is not a word, or a real word with another meaning.',
+      does: "Shows one solved word made from parts that are NOT on this board, with each part's meaning, so the learner sees "
+        + 'how a part changes a word. It shares no part with this item.',
+      content: (item, ctx) => { const b = buildOf(item); return b ? affixModelFor(affixBoard(b, ctx)) : null; },
+      fact: (m: PoolWord) => `A solved word for another meaning is shown: ${m.parts.map(([t]) => t).join(' + ')} = ${m.word} (${m.clue}).` },
+    { id: AFFIX_SMALL_BOARD_LEVER, type: 'easier', modes: BUILD, answers: ['not_a_word', 'wrong_meaning'],
+      when: 'The learner keeps making words that do not fit, or cannot start on a full board.',
+      does: 'Opens the same ask first on a smaller board with fewer cards, one word only. It is not graded; the full item '
+        + 'comes back after it.',
+      content: (item, ctx) => {
+        const b = buildOf(item);
+        const small = b && smallBoardFor(b, affixBoard(b, ctx));
+        return b && small ? asAffixBuilder(small, b.supportTier) : null;
+      } },
+  ],
+});
 
 /** The levers the tier puts on screen before any pull (Phase 6): easy starts with the empty frame. */
 export const startingLevers = (tier: string | undefined): string[] => (tier === 'easy' ? [SLOTS_LEVER] : []);

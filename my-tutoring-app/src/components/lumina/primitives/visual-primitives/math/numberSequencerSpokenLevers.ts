@@ -12,12 +12,12 @@
  *   dots; an empty car shows none. Answers the teen/-ty swap, "twenty-ten", far off. Leak rule: no marks on an empty car.
  * - `model_train` (spot_error): below the train, a model train with its own numbers, the one that does not belong
  *   circled. Answers the repair said instead, a neighbour said. Leak rule: it shares no number with the item's train.
+ * The lever set over all six modes is `NUMBER_SEQUENCER_LEVERS` (`numberSequencerLevers.ts`).
  * Simplify (an ungraded easier train of the same mode, then the full item):
  * - `smaller_numbers` (every spoken mode but spot_error): the same train shifted down by tens, so the step, the ones
  *   digits and any decade crossing are kept, with one gap only. Offered only when a shift of ten or more fits. Leak
  *   rule: its answer is none of the item's numbers, and no session item's answer where one is free.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { NumberSequencerChallenge } from './NumberSequencer';
 import { sequencerItemsForChallenge, type SequencerItem } from './numberSequencerDomain';
 
@@ -98,43 +98,7 @@ function practiceFor(item: SequencerItem, train: number[], answer: number, shift
   return built && built.answer === answer ? { ...built, id: `${item.id}~simpler` } : null;
 }
 
-export function spokenSequencerLevers(item: SequencerItem | null, pulled: readonly string[],
-  session: readonly SequencerItem[]): WorkspaceLever[] {
-  if (!item || item.answerKind === 'gesture') return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string,
-    carrier: WorkspaceLever['carrier'] = 'shown'): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  if (item.challengeType === 'spot-error') return modelTrain(item) ? [lever(MODEL_TRAIN_LEVER, 'help', ['said_repair', 'said_neighbor'],
-    'The learner says the number that should be there, or one that belongs, instead of the printed one that does not.',
-    'Shows a model train with different numbers below this one, its number that does not belong circled.', 'both')] : [];
-  const arrowAnswers: Record<string, string[]> = {
-    'count-from': ['said_start', 'wrong_direction', 'skipped_one'], 'before-after': ['said_shown', 'wrong_side', 'skipped_one'],
-    'fill-missing': ['said_neighbor', 'counted_by_one', 'one_short', 'one_over'] };
-  const marksAnswers = ['teen_ty_swap', 'decade_word', ...(item.challengeType === 'fill-missing' || item.challengeType === 'decade-fill'
-    ? ['short_by_more', 'over_by_more'] : [])];
-  return [
-    ...(stepArrow(item) ? [lever(STEP_ARROW_LEVER, 'help', arrowAnswers[item.challengeType] ?? arrowAnswers['fill-missing'],
-      'The learner says a number already on the train, goes the wrong way, or takes the wrong size of step.',
-      'Puts an arrow on the car beside the glowing one, pointing at it and marked with the size of one step.', 'both')] : []),
-    ...(item.rangeMax <= 100 ? [lever(CAR_MARKS_LEVER, 'help', marksAnswers,
-      'The learner mixes up a teen and a -ty number, says "twenty-ten", or is far off.',
-      'Shows each printed car\'s amount on it as sticks of ten and dots. Empty cars show none.')] : []),
-    ...(smallerNumbers(item, session) ? [lever(SMALLER_LEVER, 'simplify', marksAnswers,
-      'These numbers are too big to work with yet.',
-      'Opens an easier train first: the same pattern with smaller numbers, one gap. It is not graded; the full item comes back after it.')] : []),
-  ];
-}
-
 const STEP_WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
-const stepPhrase = (step: number) => `${STEP_WORDS[Math.abs(step)] ?? 'one step'} ${step > 0 ? 'more' : 'less'}`;
 
-/** What the pulled levers put on screen, as a scene fact. Never the answer, a car number or a digit. */
-export function spokenLeverFacts(item: SequencerItem | null, pulled: readonly string[]): string {
-  if (!item || item.answerKind === 'gesture') return '';
-  const arrow = stepArrow(item);
-  return [
-    pulled.includes(STEP_ARROW_LEVER) && arrow
-      && `An arrow on the printed car beside the glowing car points at it, marked ${stepPhrase(arrow.step)}.`,
-    pulled.includes(CAR_MARKS_LEVER) && 'Each printed car shows its amount as sticks of ten and dots; the empty cars show none.',
-    pulled.includes(MODEL_TRAIN_LEVER) && 'Below the train, a model train with different numbers has its number that does not belong circled. It shares no number with this train.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The step arrow's words: "one more", "five less". */
+export const stepPhrase = (step: number) => `${STEP_WORDS[Math.abs(step)] ?? 'one step'} ${step > 0 ? 'more' : 'less'}`;

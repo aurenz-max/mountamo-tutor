@@ -38,7 +38,9 @@ import { tenFrameBoss } from '../../primitives/visual-primitives/math/tenFrame.b
 import { numberLineBoss } from '../../primitives/visual-primitives/math/numberLine.boss';
 import { comparisonBuilderBoss } from '../../primitives/visual-primitives/math/comparisonBuilder.boss';
 import { compareObjectsBoss } from '../../primitives/visual-primitives/math/compareObjects.boss';
-import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
+import { adaptationInvestigatorBoss } from '../../primitives/visual-primitives/biology/adaptationInvestigator.boss';
+import { curatorBriefBoss } from '../../primitives/curatorBrief.boss';
+import { numberSequencerBoss } from '../../primitives/visual-primitives/math/numberSequencer.boss';
 import { ordinalLineBoss } from '../../primitives/visual-primitives/math/ordinalLine.boss';
 import { coinCounterBoss } from '../../primitives/visual-primitives/math/coinCounter.boss';
 import { lengthLabBoss } from '../../primitives/visual-primitives/math/lengthLab.boss';
@@ -78,8 +80,6 @@ import { revisionWorkshopBoss } from '../../primitives/visual-primitives/literac
 import { opinionBuilderBoss } from '../../primitives/visual-primitives/literacy/opinionBuilder.boss';
 import { fractionCirclesBoss } from '../../primitives/visual-primitives/math/fractionCircles.boss';
 import { fractionBarBoss } from '../../primitives/visual-primitives/math/fractionBar.boss';
-import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
-  from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
 import { letterSoundLinkBoss } from '../../primitives/visual-primitives/literacy/letterSoundLink.boss';
 import { numberBondBoss } from '../../primitives/visual-primitives/math/numberBond.boss';
@@ -102,8 +102,7 @@ import { youAndMeBoss } from '../../primitives/visual-primitives/literacy/youAnd
 import { syllableClapperBoss } from '../../primitives/visual-primitives/literacy/syllableClapper.boss';
 import { rhymeStudioBoss } from '../../primitives/visual-primitives/literacy/rhymeStudio.boss';
 import { wordWorkoutBoss } from '../../primitives/visual-primitives/literacy/wordWorkout.boss';
-import { itemsFromTargets as builderItems } from '../../primitives/visual-primitives/literacy/wordBuilderScript';
-import { wordBuilderJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
+import { wordBuilderBoss } from '../../primitives/visual-primitives/literacy/wordBuilder.boss';
 import { wordSorterBoss } from '../../primitives/visual-primitives/literacy/wordSorter.boss';
 import { storyRibbonBoss } from '../../primitives/visual-primitives/literacy/storyRibbon.boss';
 import { oralSentenceStudioBoss } from '../../primitives/visual-primitives/literacy/oralSentenceStudio.boss';
@@ -133,13 +132,11 @@ import { atomBuilderBoss } from '../../primitives/visual-primitives/chemistry/at
 import { genreExplorerBoss } from '../../primitives/visual-primitives/literacy/genreExplorer.boss';
 import { textStructureAnalyzerBoss } from '../../primitives/visual-primitives/literacy/textStructureAnalyzer.boss';
 import { sentenceAnalyzerBoss } from '../../primitives/visual-primitives/literacy/sentenceAnalyzer.boss';
-import { readAloudItems } from './adapters/readAloudStudioLive';
-import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
-import { shortLine as readAloudShortLine } from '../../primitives/visual-primitives/literacy/readAloudStudioLevers';
+import { readAloudStudioBoss } from '../../primitives/visual-primitives/literacy/readAloudStudio.boss';
 import { causeEffectChainBoss } from '../../primitives/visual-primitives/history/causeEffectChain.boss';
 import { eraExplorerBoss } from '../../primitives/visual-primitives/history/eraExplorer.boss';
 import { periodicTableBoss } from '../../primitives/periodicTable.boss';
-import { knowledgeCheckItems, knowledgeCheckJourneyAnswers } from '../../primitives/knowledgeCheckWorkspace';
+import { knowledgeCheckBoss } from '../../primitives/knowledgeCheck.boss';
 import { planetaryExplorerBoss } from '../../primitives/visual-primitives/astronomy/planetaryExplorer.boss';
 import { telescopeSimulatorBoss } from '../../primitives/visual-primitives/astronomy/telescopeSimulator.boss';
 import { orbitMechanicsLabBoss } from '../../primitives/visual-primitives/astronomy/orbitMechanicsLab.boss';
@@ -271,8 +268,18 @@ export interface LiveJourney {
 /** What a learner says to ask for each action on any shared-workspace surface. */
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
 
-/** The journey row of a boss (`boss.ts`): every field comes from its `drive`, and warmup asks for nothing. */
-const bossJourney = (boss: Boss): LiveJourney => ({
+/** The journey row of a boss (`boss.ts`): every field comes from its `drive`, and warmup asks for nothing. An ungraded
+ *  boss is a teaching journey: the learner looks at one thing, then finishes with the surface's own Done. */
+const bossJourney = (boss: Boss): LiveJourney => (boss.card.ungraded ? {
+  execution: 'teaching',
+  component: boss.drive.component,
+  instanceId: boss.drive.instanceId,
+  defaults: { ...boss.drive.defaults, di: false },
+  leakTokens: [...(boss.drive.leakTokens ?? [])],
+  prompts: boss.drive.prompts ?? WORKSPACE_PROMPTS,
+  inputsFor: (intent, ctx) => (intent === 'explore' || intent === 'finish' ? boss.drive.teach?.(intent, ctx) ?? [] : []),
+  probes: { mounted: { selector: boss.drive.mounted }, ...boss.drive.probes },
+} : {
   execution: 'workspace',
   component: boss.drive.component,
   instanceId: boss.drive.instanceId,
@@ -328,36 +335,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'number-line': bossJourney(numberLineBoss),
   'ten-frame': bossJourney(tenFrameBoss),
   'counting-board': bossJourney(countingBoardBoss),
-  'number-sequencer': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/math/NumberSequencer.tsx',
-    instanceId: 'train',
-    // `before_after` asks exactly ONE question per generated challenge, so the two
-    // challenges this harness mounts are two items. A mode whose challenge expands
-    // into several asks (count_from, fill_missing, decade_fill) leaves items open
-    // after the program's second correct answer and cannot reach completion here.
-    defaults: { grade: 'Kindergarten', mode: 'before_after', di: false,
-      topic: 'The number that comes just before or just after a given number' },
-    leakTokens: ['NS_'],
-    prompts: WORKSPACE_PROMPTS,
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const built = sequencerItems(ctx.data.challenges ?? []).items;
-      // An easier train (the simplify lever) is not a generated challenge: rebuild it from its parent.
-      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? threeCards(parent, ctx.data.gradeBand ?? 'K') : built.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current number-train assignment');
-      const answers = sequencerHarnessAnswers(item);
-      const text = intent === 'wrong' ? answers.plainWrong : answers.correct;
-      // Page work: the cards carry their own number as their whole label, so a
-      // placement is the shared `choose`, not a primitive-specific verb.
-      return item.answerKind === 'gesture'
-        ? text.split(',').map(label => ({ type: 'choose' as const, label }))
-        : [{ type: 'answer', text }];
-    },
-    probes: { mounted: { selector: '[data-testid^="train-car-"]', kind: 'count' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
-  },
+  'number-sequencer': bossJourney(numberSequencerBoss),
+
 
   'number-bond': bossJourney(numberBondBoss),
   'ordinal-line': bossJourney(ordinalLineBoss),
@@ -415,41 +394,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'sound-swap': bossJourney(soundSwapBoss),
   'cvc-speller': bossJourney(cvcSpellerBoss),
   'spelling-pattern-explorer': bossJourney(spellingPatternExplorerBoss),
-  'adaptation-investigator': {
-    execution: 'teaching',
-    component: 'primitives/visual-primitives/biology/AdaptationInvestigator.tsx',
-    instanceId: 'adapt',
-    defaults: { grade: 'Grade 1', mode: 'mixed', di: false, topic: 'Why pink flowers have bright pink petals' },
-    leakTokens: [],
-    // A young learner's own questions: what the picture is, why, and asking to be shown.
-    prompts: { opening: 'What is that flower?', hint: 'Why is it so pink?', example: 'Can you show me?' },
-    // Nothing is graded, so there is no wrong or correct: the learner opens a card still closed (the
-    // tutor may already have shown one), and later opens the rest and presses Done. A card already
-    // open is tapped again harmlessly.
-    inputsFor: (intent, ctx) => intent === 'explore'
-      ? [{ type: 'touch', target: ['trait', 'environment', 'connection'].find(c => !String(ctx.demand?.cardsOpen ?? '').includes(c)) ?? 'trait' }]
-      : intent === 'finish' ? [{ type: 'touch', target: 'trait' }, { type: 'touch', target: 'environment' },
-        { type: 'touch', target: 'connection' }, { type: 'choose', label: 'Done' }]
-      : [],
-    probes: { mounted: { selector: '[data-pip-object="trait"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
-      closed: { selector: '[aria-label^="Open The"]', kind: 'count' } },
-  },
-  'curator-brief': {
-    execution: 'teaching',
-    component: 'primitives/CuratorBrief.tsx',
-    instanceId: 'brief',
-    defaults: { grade: 'Kindergarten', mode: 'mixed', di: false,
-      topic: 'Recognizing and Creating Patterns: extend AB patterns with colors, shapes, or sounds' },
-    // The retired section-reading tag: a model that voices it is reading the old scaffold.
-    leakTokens: ['READ_SECTION'],
-    prompts: { opening: 'What are we doing today?', hint: 'What does that mean?', example: 'Can you show me?' },
-    // Nothing is graded: the learner taps an "I wonder" choice, and later presses Start.
-    inputsFor: (intent) => intent === 'explore' ? [{ type: 'touch', target: 'wonder-0' }]
-      : intent === 'finish' ? [{ type: 'touch', target: 'wonder-0' }, { type: 'choose', label: 'Start' }]
-      : [],
-    probes: { mounted: { selector: '[data-pip-object="hook"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
-      picture: { selector: '[data-pip-object="picture"] img', kind: 'count' } },
-  },
+  'adaptation-investigator': bossJourney(adaptationInvestigatorBoss),
+
+  'curator-brief': bossJourney(curatorBriefBoss),
+
   'you-and-me': bossJourney(youAndMeBoss),
   'ramp-lab': bossJourney(rampLabBoss),
   'train-yard': bossJourney(trainYardBoss),
@@ -479,28 +427,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'rhyme-studio': bossJourney(rhymeStudioBoss),
   'phoneme-explorer': bossJourney(phonemeExplorerBoss),
   'word-workout': bossJourney(wordWorkoutBoss),
-  'word-builder': {
-    execution: 'workspace',
-    component: 'primitives/WordBuilder.tsx',
-    instanceId: 'builder',
-    defaults: { grade: 'Grade 4', mode: 'compound_affix', di: false,
-      topic: 'Building words from prefixes, roots and suffixes' },
-    leakTokens: ['WB_ITEM', 'WB_MOVE', 'WB_COMPLETE', 'WB_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken word per item (the pool is `targets`): the word, or its parts in reverse order.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      // build_affix is checked by the shared literacy judge (a model), which the dry sweep has none of, as open-builder's
-      // inspector; WordBuildAffix.workspace.test.tsx drives the commit with a stubbed judge.
-      if (ctx.data.task === 'build_affix') throw new Error('word-builder build_affix is judged by the word judge, not driven at W1');
-      const item = builderItems(ctx.data.targets ?? [], ctx.data.availableParts ?? [], ctx.data.complexityLevel ?? 'compound_affix')
-        .find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current word-builder word');
-      const answers = wordBuilderJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="workspace"]' } },
-  },
+  'word-builder': bossJourney(wordBuilderBoss),
   'word-sorter': bossJourney(wordSorterBoss),
   'picture-vocabulary': bossJourney(pictureVocabularyBoss),
   'letter-spotter': bossJourney(letterSpotterBoss),
@@ -552,50 +479,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'genre-explorer': bossJourney(genreExplorerBoss),
   'text-structure-analyzer': bossJourney(textStructureAnalyzerBoss),
   'sentence-analyzer': bossJourney(sentenceAnalyzerBoss),
-  'read-aloud-studio': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/literacy/ReadAloudStudio.tsx',
-    instanceId: 'read-aloud-studio',
-    defaults: { grade: 'Grade 2', mode: 'accuracy', di: false, topic: 'A day at the pond' },
-    leakTokens: ['RA_ITEM', 'RA_MOVE', 'RA_COMPLETE', 'RA_HEAR', 'RA_PLAN'],
-    prompts: WORKSPACE_PROMPTS,
-    // Every scored item is the printed line read aloud. Expression's phrase plan accepts any plan, so it has no
-    // wrong answer: the driver commits the plan as it stands. A practice line (`~simpler`) is rebuilt from its
-    // parent with `shortLine`.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const all = readAloudItems(ctx.data as never);
-      const parent = ctx.itemId?.endsWith('~simpler') ? all.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
-      const item = parent ? readAloudShortLine(parent, all) : all.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current read-aloud-studio item');
-      if (item.step === 'mark') return intent === 'wrong' ? [] : [{ type: 'choose', label: 'Use my phrase plan' }];
-      const answers = readAloudJourneyAnswers(item);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
-  },
+  'read-aloud-studio': bossJourney(readAloudStudioBoss),
+
   'oral-sentence-studio': bossJourney(oralSentenceStudioBoss),
   'cause-effect-chain': bossJourney(causeEffectChainBoss),
   'era-explorer': bossJourney(eraExplorerBoss),
   'periodic-table': bossJourney(periodicTableBoss),
-  'knowledge-check': {
-    execution: 'workspace',
-    component: 'primitives/KnowledgeCheck.tsx',
-    instanceId: 'knowledge-check',
-    defaults: { grade: 'Grade 2', mode: 'recall', di: false, topic: 'Plants and what they need to grow' },
-    leakTokens: ['KC_ITEM', 'KC_MOVE', 'KC_COMPLETE', 'KC_HEAR', 'KC_TAP'],
-    prompts: WORKSPACE_PROMPTS,
-    // Spoken kinds answer with the pack's short form; a symbol menu or a sign in a number sentence is pressed.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = knowledgeCheckItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
-      if (!item) throw new Error('No current knowledge-check item');
-      const answers = knowledgeCheckJourneyAnswers(item);
-      if (answers.press) return [{ type: 'choose', label: intent === 'wrong' ? answers.press.wrong : answers.press.correct }];
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="question"]' } },
-  },
+  'knowledge-check': bossJourney(knowledgeCheckBoss),
   'hundreds-chart': bossJourney(hundredsChartBoss),
   'skip-counting-runner': bossJourney(skipCountingBoss),
   'math-fact-fluency': bossJourney(mathFactFluencyBoss),

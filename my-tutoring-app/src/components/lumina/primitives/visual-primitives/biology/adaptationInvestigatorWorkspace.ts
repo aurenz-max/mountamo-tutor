@@ -1,7 +1,8 @@
 /**
  * Adaptation Investigator as an ungraded teaching surface (user ruling 2026-09-24): the tutor
  * teaches the organism's trait, its home and how the one helps in the other, from the picture and
- * three cards. Nothing is graded; the What If? questions stay on the standalone path only.
+ * three cards. Nothing is graded and the What If? questions are not shown. Its wiring is
+ * `adaptationInvestigator.card.ts` + `adaptationInvestigator.boss.ts` (an ungraded card).
  *
  * Pure, because the server route imports the validator through the live adapter.
  */

@@ -12,7 +12,7 @@ import { UNIVERSAL_CATALOG, getComponentById } from '../../service/manifest/cata
 import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
 import { LIVE_ADAPTERS, type LivePrimitiveId } from './activityContract';
 import { LIVE_JOURNEYS } from './liveJourneySpec';
-import { ROTATION_DOCTRINE } from './adapters/adapterContract';
+import { ROTATION_DOCTRINE, TEACHING_ROTATION } from './adapters/adapterContract';
 import { bossEntry, renderBoss, SAY_OR_SHOW, SPOKEN, spokenBoss, spokenLeaksOf, TAP_ONE, tapBoss, wiringsOf, type Boss, type Card } from './boss';
 import { askLeaks, type SpokenKey } from './spokenKey';
 import { leverScene, leverSet, type SceneOf } from './bossLevers';
@@ -119,9 +119,19 @@ describe('every boss on disk', () => {
     const same = (m: object, preset: object) => Object.entries(preset).every(([k, v]) => (m as any)[k] === v);
     for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
       const modes = Object.values(boss.card.modes);
+      if (!modes.length) continue; // An ungraded card has no modes.
       if (modes.every(m => same(m, SPOKEN))) expect(boss.preset, `${boss.card.id}: every mode is SPOKEN, so build it with spokenBoss`).toBe('spoken');
       if (modes.every(m => same(m, TAP_ONE))) expect(boss.preset, `${boss.card.id}: every mode is TAP_ONE, so build it with tapBoss`).toBe('tap');
       if (boss.preset === 'spoken') expect(boss.card.audio, `${boss.card.id}: a spoken boss sets SPOKEN_AUDIO`).toEqual({ manual_activity: true });
+    }
+  });
+
+  it('an ungraded card has no modes, and its boss drives a teaching journey', async () => {
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      if (!boss.card.ungraded) continue;
+      expect(Object.keys(boss.card.modes), `${boss.card.id}: an ungraded card has no modes`).toEqual([]);
+      expect(boss.drive.teach, `${boss.card.id}: an ungraded boss gives drive.teach (look at one thing, then Done)`).toBeTruthy();
+      expect(LIVE_JOURNEYS[boss.card.id as LivePrimitiveId].execution).toBe('teaching');
     }
   });
 
@@ -448,11 +458,11 @@ describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 3, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-built spoken assignments', /response: 'speech'/, 0, 'spokenBoss builds the assignment from speech.ask/key/misses'],
     ['hand-written spoken key text', /also accept/i, 4, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 8, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
-    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 41, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
-    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 3, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 2, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 34, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
+    ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 0, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
     ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
     expect(count(pattern), `more files than the ratchet allows; use ${instead}`).toBeLessThanOrEqual(ceiling);
@@ -465,6 +475,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(6);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBe(0);
   });
 });

@@ -11,9 +11,9 @@
  * Pure: the component, the generator, the live adapter and the tests read the same rules.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
-import { POOL, type PoolWord } from './wordBuilderLevers';
+import { AFFIX_FRAME_LEVER as FRAME_LEVER, AFFIX_SMALL_BOARD_LEVER as SMALL_BOARD_LEVER, POOL, type PoolWord }
+  from './wordBuilderLevers';
 import type { MorphemeType } from './wordBuilderScript';
 
 export interface BuildPart {
@@ -135,11 +135,10 @@ export function affixBuildScene(item: AffixBuildItem, board: readonly BuildPart[
   } };
 }
 
-// ── Levers (start bare: choosing the parts IS the task) ───────────────────────
+// ── What the levers show (start bare: choosing the parts IS the task; the lever set is `WORD_BUILDER_LEVERS`) ──
 
-export const FRAME_LEVER = 'part_frame';
+export { FRAME_LEVER, SMALL_BOARD_LEVER };
 export const MODEL_LEVER = 'model_word';
-export const SMALL_BOARD_LEVER = 'small_board';
 
 /** The shape the item's first example has, as empty typed boxes: never a part's text. */
 export const frameFor = (item: AffixBuildItem, board: readonly BuildPart[]): MorphemeType[] =>
@@ -159,34 +158,6 @@ export function smallBoardFor(item: AffixBuildItem, board: readonly BuildPart[])
   const small = [...keep, ...foils];
   if (small.length >= board.length) return null;
   return { id: `${item.id}~small`, ask: item.ask, examples: item.examples, ways: 1, board: small };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly AffixBuildMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function affixBuildLevers(item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  return [
-    lever(FRAME_LEVER, 'help', ['root_only', 'affix_only', 'parts_out_of_order'],
-      'The learner puts down a root alone, a prefix or suffix alone, or parts in an order that is not a word shape.',
-      'Shows empty boxes above the row labelled with part types, such as prefix + root. No part is filled in.', pulled),
-    ...(modelFor(board) ? [lever(MODEL_LEVER, 'help', ['not_a_word', 'wrong_meaning'],
-      'The learner makes something that is not a word, or a real word with another meaning.',
-      'Shows one solved word made from parts that are NOT on this board, with each part\'s meaning, so the learner sees how '
-        + 'a part changes a word. It shares no part with this item.', pulled)] : []),
-    ...(smallBoardFor(item, board) ? [lever(SMALL_BOARD_LEVER, 'simplify', ['not_a_word', 'wrong_meaning'],
-      'The learner keeps making words that do not fit, or cannot start on a full board.',
-      'Opens the same ask first on a smaller board with fewer cards, one word only. It is not graded; the full item comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function affixLeverFacts(pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]): string | undefined {
-  const notes = [
-    pulled.includes(FRAME_LEVER) && `Empty boxes above the row show a word shape: ${frameFor(item, board).join(' + ')}.`,
-    pulled.includes(MODEL_LEVER) && (() => { const m = modelFor(board); return m ? `A solved word for another meaning is shown: ${m.parts.map(([t]) => t).join(' + ')} = ${m.word} (${m.clue}).` : ''; })(),
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 /** What a miss says on screen, never a word that passes. */
@@ -231,10 +202,6 @@ export interface AffixBuildRules {
   judgeRequest: (item: AffixBuildItem, view: AffixBuildView, board: readonly BuildPart[], grade?: string) => WordBuildJudgeRequest;
   describe: (view: AffixBuildView) => string;
   scene: (item: AffixBuildItem, board: readonly BuildPart[], view: AffixBuildView, said?: string) => WorkspaceScene;
-  /** The levers and their facts; a boss host passes its lever set instead (`WordBuildAffix`'s `boss`). */
-  levers?: (item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]) => WorkspaceLever[];
-  leverFacts?: (pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]) => string | undefined;
-  smallBoardFor: (item: AffixBuildItem, board: readonly BuildPart[]) => AffixBuildItem | null;
   /** The frame lever's boxes, empty when it is not pulled. */
   frame: (item: AffixBuildItem, board: readonly BuildPart[], pulled: readonly string[]) => FrameBox[];
   /** The model lever's panel, null when it is not pulled. */
@@ -255,9 +222,6 @@ export const wordBuilderAffixRules: AffixBuildRules = {
   judgeRequest: affixJudgeRequest,
   describe: describeAffixBuild,
   scene: affixBuildScene,
-  levers: affixBuildLevers,
-  leverFacts: affixLeverFacts,
-  smallBoardFor,
   frame: (item, board, pulled) => pulled.includes(FRAME_LEVER) ? frameFor(item, board).map(type => ({ type, label: type })) : [],
   panel: (_item, board, pulled) => {
     const m = pulled.includes(MODEL_LEVER) ? modelFor(board) : null;

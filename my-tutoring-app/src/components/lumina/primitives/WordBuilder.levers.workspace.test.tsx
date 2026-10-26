@@ -39,7 +39,7 @@ it('part_slots and model_word change the screen and the scene; neither shows a p
   h.dispatch('pull_lever', { lever: 'model_word' });
   const model = q(h, '[data-lever="model-word"]')[0].textContent!;
   for (const t of ['unhelpful', 'help', 'replayable', 'play']) expect(model).not.toContain(t);
-  const fact = String(h.state().task!.demand.levers_on_screen);
+  const fact = String(h.state().task!.demand.onScreen);
   expect(fact).toMatch(/3 boxes labelled prefix, root, suffix/);
   expect(fact).not.toMatch(/unhelpful|\bhelp\b|\bful\b/);
   h.say('unhelpful'); h.feedback('correct');

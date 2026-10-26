@@ -1,6 +1,6 @@
 /**
- * Knowledge check on the shared tutor/JEV teaching workspace, W1 minimal binding
- * (qa/workspace-rollout/ROLLOUT.md, batch C8). A set whose every problem yields a spoken or
+ * Knowledge check on the shared tutor/JEV teaching workspace; its wiring is `knowledgeCheck.card.ts` +
+ * `knowledgeCheck.boss.ts`, and this module holds the items' keys, steps and scene. A set whose every problem yields a spoken or
  * touched item runs only here (the scripted runner was retired, LA-14, user ruling 09-23: one
  * path); a problem the build gates cannot ask aloud is an `on_screen` item, worked on its own surface.
  *
@@ -11,7 +11,10 @@
  * the tutor. The keys carry what the pack's judging contracts carried: the accepted short forms
  * and each kind's signature miss.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingAssignment } from '../components/live-activity/runtime/useTeachingWorkspace';
+import { bossAssignment } from '../components/live-activity/boss';
+import type { SceneOf } from '../components/live-activity/bossLevers';
+import type { SpokenKey } from '../components/live-activity/spokenKey';
 import { textFacts } from '../components/live-activity/runtime/sceneFacts';
 import { numberMisses, offByMisses, type KnownMiss } from '../components/live-activity/runtime/spokenMissContract';
 import type { ProblemData } from '../types';
@@ -33,56 +36,87 @@ const ask = (item: KnowledgeCheckItem) =>
   askFor(item).replace(/^Your turn\.\s*/, '').replace(/^Listen:\s*/, '').replace(/\s+/g, ' ').trim();
 
 const stripEnd = (text: string) => text.trim().replace(/[.!?]+$/, '');
+const quoteList = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(', ');
+const wrongOthers = (others: readonly string[]) => (others.length
+  ? `${quoteList(others)} ${others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`
+  : 'Naming two choices or hedging between them is wrong.');
 
-function key(item: KnowledgeCheckItem): string | undefined {
+const verdictKey = (truth: boolean): SpokenKey => ({
+  answer: truth ? 'true' : 'false',
+  alsoAccept: truth ? ['yes', 'yeah', 'right', 'it is'] : ['no', 'nope', 'wrong', 'it is not'],
+  acceptRule: `The statement is ${truth ? 'true' : 'false'}; any of these counts alone or in a short sentence.`,
+  signatureError: 'The statement said back gives no verdict and is not it.',
+});
+
+/** The item's spoken key, or null when it is answered on screen and checked by the activity. */
+export function knowledgeCheckKey(item: KnowledgeCheckItem): SpokenKey | null {
   const options = item.options ?? [];
   switch (item.kind) {
     case 'choice_tap':
     case 'point_to':
-      return undefined; // checked by the activity
+      return null; // checked by the activity
     case 'on_screen': {
       // A multiple-choice or true/false problem worked on screen takes its answer said aloud too (user ruling 10-12):
       // the work on screen is checked by the problem, the spoken answer from the tutor's feedback against this key.
       const k = item.spokenKey;
-      if (!k) return undefined;
-      if ('truth' in k) return key({ ...item, kind: 'true_false', correctBool: k.truth });
-      const others = k.others.map(o => `"${o}"`).join(', ');
-      return `"${k.answer}", alone or in a short sentence, or the part of it that tells it apart from the other choices on `
-        + `the screen.${others ? ` ${others} ${k.others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.` : ''}`;
+      if (!k) return null;
+      if ('truth' in k) return verdictKey(k.truth);
+      return { answer: k.answer, alsoAccept: [],
+        acceptRule: 'Alone or in a short sentence, or the part of it that tells it apart from the other choices on the screen.',
+        signatureError: wrongOthers(k.others) };
     }
     case 'true_false':
-      return `${item.correctBool ? 'true' : 'false'}: the statement is ${item.correctBool ? 'true' : 'false'}. `
-        + `${item.correctBool ? '"yes", "yeah", "right", "it is"' : '"no", "nope", "wrong", "it is not"'} count too, alone or in `
-        + 'a short sentence. The statement said back gives no verdict and is not it.';
+      return verdictKey(!!item.correctBool);
     case 'choice':
     case 'match':
     case 'sort': {
       const index = options.findIndex(o => o.id === item.correctOptionId);
-      const others = options.filter(o => o.id !== item.correctOptionId).map(o => `"${stripEnd(o.text)}"`).join(', ');
-      return `"${stripEnd(correctOptionText(item))}" (choice ${index + 1} of ${options.length}). The whole choice, the part that `
-        + 'tells it apart from the others, what its picture shows, or its place in the list ("the second one") all count. '
-        + `${others} ${options.length > 2 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.`
-        + (item.kind === 'sort' ? ` "${item.focusText}" said back names no group and is not it.`
-          : item.kind === 'match' ? ` "${item.focusText}" said back names no partner and is not it.` : '');
+      const others = options.filter(o => o.id !== item.correctOptionId).map(o => stripEnd(o.text));
+      return { answer: stripEnd(correctOptionText(item)), alsoAccept: [],
+        acceptRule: `It is choice ${index + 1} of ${options.length}. The whole choice, the part that tells it apart from the `
+          + 'others, what its picture shows, or its place in the list ("the second one") all count.',
+        signatureError: wrongOthers(others)
+          + (item.kind === 'sort' ? ` "${item.focusText}" said back names no group and is not it.`
+            : item.kind === 'match' ? ` "${item.focusText}" said back names no partner and is not it.` : '') };
     }
     case 'blank':
-      return `"${item.answerWord}", on its own, in a phrase, or in the whole sentence said back with it in place. Another word `
-        + 'from the word bank that does not fit the sentence is wrong, and so is the sentence said back with "hmm" still in it.';
+      return { answer: item.answerWord ?? '', alsoAccept: [],
+        acceptRule: 'On its own, in a phrase, or in the whole sentence said back with it in place.',
+        signatureError: 'Another word from the word bank that does not fit the sentence is wrong, and so is the sentence '
+          + 'said back with "hmm" still in it.' };
     case 'say_it': {
       const letter = item.stimulus?.insetType === 'glyph-card' && item.stimulus.glyphKind === 'letter';
-      const forms = [item.expectedAnswer ?? '', ...(item.alternates ?? [])].filter(Boolean).map(a => `"${a}"`).join(', ');
-      return `${forms}, alone or in a short sentence.${letter ? ' The letter\'s sound counts too.' : ''} A different name, number `
-        + 'or word is wrong, however confident.';
+      return { answer: item.expectedAnswer ?? '', alsoAccept: [...(item.alternates ?? [])],
+        acceptRule: `Alone or in a short sentence.${letter ? ' The letter\'s sound counts too.' : ''}`,
+        signatureError: 'A different name, number or word is wrong, however confident.' };
     }
     case 'how_many': {
-      const digits = (item.alternates ?? []).find(a => /^\d+$/.test(a));
-      return `"${item.expectedAnswer}"${digits ? ` (${digits})` : ''}, alone or in a short sentence. Counting aloud is thinking: `
-        + 'the number the learner stops on is the answer. A different number is wrong'
-        + (item.stimulus?.insetType === 'arrangement' && (item.stimulus.removed ?? 0) > 0
-          ? `, including ${item.stimulus.count}, the count before any were taken away.` : '.');
+      const digits = (item.alternates ?? []).filter(a => /^\d+$/.test(a));
+      const before = item.stimulus?.insetType === 'arrangement' && (item.stimulus.removed ?? 0) > 0 ? item.stimulus.count : undefined;
+      return { answer: item.expectedAnswer ?? '', alsoAccept: digits,
+        acceptRule: 'Alone or in a short sentence. Counting aloud is thinking: the number the learner stops on is the answer.',
+        signatureError: `A different number is wrong${before !== undefined ? `, including ${before}, the count before any were taken away` : ''}.` };
     }
   }
 }
+
+/** What the ask says by design: the menu it reads (a choice's options, true or false), or the statement itself. */
+export function knowledgeCheckGiven(item: KnowledgeCheckItem): string[] {
+  if (item.kind === 'true_false' || (item.kind === 'on_screen' && item.spokenKey && 'truth' in item.spokenKey)) return [ask(item)];
+  if (item.kind === 'choice' || item.kind === 'match' || item.kind === 'sort') return (item.options ?? []).map(o => stripEnd(o.text));
+  return [];
+}
+
+/** The step an item is (the card's step names, published as the scene's `kind`). */
+export type KnowledgeCheckStep = 'said' | 'touched' | 'said_or_worked' | 'worked';
+export function knowledgeCheckStep(item: KnowledgeCheckItem): KnowledgeCheckStep {
+  if (item.kind === 'choice_tap' || item.kind === 'point_to') return 'touched';
+  if (item.kind === 'on_screen') return knowledgeCheckKey(item) ? 'said_or_worked' : 'worked';
+  return 'said';
+}
+
+/** What the learner is asked: the pack's own ask, without its "Your turn." and "Listen:" hand-over words. */
+export const knowledgeCheckAsk = ask;
 
 /**
  * What a checked wrong tap shows (handoff 20). The generated options record no reason for being wrong, so a
@@ -109,14 +143,10 @@ export function knowledgeCheckMiss(item: KnowledgeCheckItem, tappedId: string): 
   return got === want - 1 ? 'one_less' : got === want + 1 ? 'one_more' : 'other_number';
 }
 
+/** An on_screen item with a spoken key is a spoken item whose problem surface also checks a gesture. */
 export function knowledgeCheckAssignment(item: KnowledgeCheckItem): TeachingAssignment {
-  const expectedAnswer = key(item);
-  const misses = expectedAnswer ? knowledgeCheckSpokenMisses(item) : [];
-  // An on_screen item with a spoken key is a spoken item whose problem surface also checks a gesture.
-  return expectedAnswer
-    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}),
-      ...(item.kind === 'on_screen' ? { acceptsGesture: true } : {}) }
-    : { id: item.id, task: ask(item), response: 'gesture' };
+  const k = knowledgeCheckKey(item);
+  return bossAssignment(item.id, ask(item), k, k ? knowledgeCheckSpokenMisses(item) : [], item.kind === 'on_screen');
 }
 
 /**
@@ -179,8 +209,9 @@ export function knowledgeCheckSpokenMisses(item: KnowledgeCheckItem): KnownMiss[
   }
 }
 
-export function knowledgeCheckScene(item: KnowledgeCheckItem, preReader: boolean): WorkspaceScene {
-  const facts: Record<string, string> = {};
+export function knowledgeCheckScene(item: KnowledgeCheckItem, preReader: boolean): SceneOf {
+  // The step names how this item is answered (the card's steps).
+  const facts: Record<string, string> = { kind: knowledgeCheckStep(item) };
   const shown = `${stimulusDescription(item)}${evidenceDescription(item)}`.trim();
   if (shown) Object.assign(facts, textFacts('shown', shown));
   const options = item.options ?? [];

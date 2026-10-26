@@ -35,7 +35,7 @@
  * credit that also advances opens the next item in the SAME dispatch, so a
  * payload cleared there paints on the last item and nowhere else (18b).
  *
- * ── IN-ITEM LEVERS (`wordBuilderLevers.ts`, lever plan 2026-10-03) ──────────
+ * ── IN-ITEM LEVERS (`WORD_BUILDER_LEVERS`, lever plan 2026-10-03) ──────────
  * An empty frame of typed part boxes, a solved model card for another word of the same shape, and an easier
  * practice word on a small board of its own. None marks a part of the learner's word: in order, those ARE the word.
  */
@@ -56,20 +56,19 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import type { WordBuilderMetrics } from '../evaluation/types';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../components/live-activity/runtime/useWorkspaceRunner';
-import {
-  itemsFromTargets,
-  type WordBuilderComplexity,
-  type WordBuilderItem,
-} from './visual-primitives/literacy/wordBuilderScript';
-import { hearClueRequest, wordBuilderAssignment, wordBuilderScene } from './visual-primitives/literacy/wordBuilderWorkspace';
-import { MODEL_LEVER, SLOTS_LEVER, SMALL_BOARD_LEVER, leversOnScreen, modelFor, slotFrame, smallBoardWordFor,
-  startingLevers, wordBuilderLevers, type PracticeWord } from './visual-primitives/literacy/wordBuilderLevers';
-import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
+import type { WordBuilderComplexity } from './visual-primitives/literacy/wordBuilderScript';
+import { asAffixBuilder, hearClueRequest, spokenBuilderItems, wordBuilderScene, type SpokenBuilderItem }
+  from './visual-primitives/literacy/wordBuilderWorkspace';
+import { MODEL_LEVER, SLOTS_LEVER, WORD_BUILDER_LEVERS, modelFor, slotFrame, startingLevers,
+  type WordBuilderLeverContext } from './visual-primitives/literacy/wordBuilderLevers';
+import { wordBuilderBoss } from './visual-primitives/literacy/wordBuilder.boss';
+import type { AffixBuildItem } from './visual-primitives/literacy/affixBuild';
+import { leverScene } from '../components/live-activity/bossLevers';
+import { PipDock, PipWorkspace } from '../pip/WorkspacePip';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary, practiceScore } from '../hooks/usePhaseResults';
 import type { WordBuilderData } from '../types';
@@ -135,7 +134,6 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
   } = data;
 
   const complexity: WordBuilderComplexity = data.complexityLevel ?? 'compound_affix';
-  const ctx = useLuminaAIContext();
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `word-builder-${Date.now()}`);
@@ -144,8 +142,8 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
   // ── Items (drop-gated). Every display below binds to THESE, never to
   //    `targets` by index — a gate that can drop makes a positional binding
   //    render one word while the tutor asks about another. ──
-  const items = useMemo<WordBuilderItem[]>(() => {
-    const built = itemsFromTargets(targets, availableParts, complexity);
+  const items = useMemo<SpokenBuilderItem[]>(() => {
+    const built = spokenBuilderItems(data);
     if (built.length < targets.length) {
       console.warn(
         `[WordBuilder] dropped ${targets.length - built.length} unaskable target(s) `
@@ -153,7 +151,8 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
       );
     }
     return built;
-  }, [targets, availableParts, complexity]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targets, availableParts, complexity, data.supportTier]);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<WordBuilderMetrics>({
@@ -189,18 +188,16 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
 
   // ── The reveal payload. Set on the affirmation, rendered behind
   //    `revealHeld`, and deliberately NOT cleared when the next item opens. ──
-  const [revealed, setRevealed] = useState<WordBuilderItem | null>(null);
+  const [revealed, setRevealed] = useState<SpokenBuilderItem | null>(null);
 
-  // The board feeds the swapped-part miss; it is the session's one board.
-  const assignment = useCallback((item: WordBuilderItem) => wordBuilderAssignment(item, availableParts), [availableParts]);
-  // In-item levers, keyed by the session word they were pulled on, and the practice word a simplify lever put on
-  // screen in its place (ungraded; the full word comes back after it).
+  // In-item levers (`WORD_BUILDER_LEVERS`), keyed by the session word they were pulled on, and the practice word a
+  // simplify lever put on screen in its place (ungraded; the full word comes back after it).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
-  const [practice, setPractice] = useState<PracticeWord | null>(null);
+  const [practice, setPractice] = useState<SpokenBuilderItem | null>(null);
 
-  const runner = useWorkspaceRunner<WordBuilderItem>({
+  const runner = useWorkspaceRunner<SpokenBuilderItem>({
     primitiveId: 'word-builder',
-    assignment,
+    assignment: wordBuilderBoss.assignment,
     items,
     workspace,
     objectiveId,
@@ -213,42 +210,39 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
 
   const sessionItem = runner.currentItem;
   /** What is on screen: the practice word while a simplify lever holds it, else the session word. */
-  const currentItem = practice?.item ?? sessionItem;
-  const board = practice?.board ?? availableParts;
+  const currentItem = practice ?? sessionItem;
+  const board = currentItem?.board ?? availableParts;
   const starting = practice ? [] : startingLevers(data.supportTier);
+  const leverCtx: WordBuilderLeverContext = { items, board: availableParts, starting };
   const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
   const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
   const model = sessionItem && !practice && leverOn(MODEL_LEVER) ? modelFor(sessionItem, items, availableParts) : null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-  // Pip: the clue is the question side; the word-part wall is what the answer
-  // is built from, so Pip points only at the clue.
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The clue', finished: showSummary,
-  });
   const showReveal = runner.revealHeld && revealed != null;
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : wordBuilderLevers(sessionItem, items, availableParts, pulledLevers, starting);
+    const levers = practice ? [] : WORD_BUILDER_LEVERS.declare(sessionItem, leverCtx, pulledLevers);
     const scene = wordBuilderScene(currentItem, board);
-    const onScreen = practice ? null : leversOnScreen([...starting, ...pulledLevers], sessionItem, items, availableParts);
-    workspace.current = { ...scene,
-      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice word on a small board of its own, ungraded. The full word comes back after it.' } : {}) },
+    workspace.current = {
+      ...leverScene({ ...scene, facts: { ...scene.facts,
+        ...(practice ? { practice: 'An easier practice word on a small board of its own, ungraded. The full word comes back after it.' } : {}) } },
+      { support: practice ? '' : WORD_BUILDER_LEVERS.support(sessionItem, leverCtx),
+        onScreen: practice ? '' : WORD_BUILDER_LEVERS.onScreen(sessionItem, leverCtx, [...starting, ...pulledLevers]) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
         const lever = levers.find(l => l.id === id);
         if (!lever) return `No lever ${id} on this word.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === SMALL_BOARD_LEVER) {
-          const simpler = smallBoardWordFor(sessionItem, items, availableParts);
+        if (lever.kind === 'simplify') {
+          const simpler = WORD_BUILDER_LEVERS.simpler(sessionItem, leverCtx, id) as SpokenBuilderItem | null;
           if (!simpler) return 'There is no easier word for this item.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);
-          return { practice: wordBuilderAssignment(simpler.item, simpler.board) };
+          return { practice: wordBuilderBoss.assignment(simpler) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
         return true;
@@ -259,9 +253,8 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
 
   /** Asks the tutor for the clue again: a silent host request, never the word. */
   const hearClue = useCallback(() => {
-    if (!currentItem) return;
-    ctx.sendText(hearClueRequest(currentItem), { silent: true, author: 'host' });
-  }, [ctx, currentItem]);
+    if (currentItem) runner.requestHear(hearClueRequest(currentItem));
+  }, [runner, currentItem]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -316,9 +309,12 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
             {/* The clue — the whole question side, printed AND spoken. This
                 band reads, so print is honest stimulus; the tutor says it too
                 because every correction re-ask inherits the ask. */}
-            {pip.store && <div {...pip.dock} />}
+            {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the clue and the board
+                as its region. */}
+            <PipDock />
+            <PipWorkspace className="space-y-4">
             {(
-              <LuminaPanel {...pip.target('stimulus')} className="text-center">
+              <LuminaPanel data-pip-object="stimulus" className="text-center">
                 <p className="text-xs text-slate-500 font-mono uppercase tracking-widest mb-1">
                   Build the word that means
                 </p>
@@ -429,6 +425,8 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
               </div>
             </div>
 
+            </PipWorkspace>
+
             {/* Every answer here is spoken; the tutor repeats the clue on request. */}
             <div className="text-center">
               <LuminaButton tone="subtle" size="sm" className="text-slate-400" onClick={hearClue}>
@@ -453,12 +451,33 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
   );
 }
 
-/** One mount, one shape: the open build (`build_affix`) has its own surface; every other mode is spoken. */
-function WordBuilderSurface(props: WordBuilderProps) {
-  return props.data.task === 'build_affix' ? <WordBuildAffix {...props} /> : <SpokenWordBuilderSurface {...props} />;
+/** The open build (`build_affix`) on the shared word-part surface, wired from this boss. */
+function AffixBuildSurface({ data, className, runtimePlanItemId }: WordBuilderProps) {
+  const boss = useMemo(() => {
+    const tier = data.supportTier;
+    const ctx: WordBuilderLeverContext = { items: [], board: data.availableParts ?? [], starting: [] };
+    const bound = WORD_BUILDER_LEVERS.bind(ctx);
+    const stamp = (item: AffixBuildItem) => asAffixBuilder(item, tier);
+    return {
+      assignment: (item: AffixBuildItem) => wordBuilderBoss.assignment(stamp(item)),
+      levers: {
+        declare: (item: AffixBuildItem, pulled: readonly string[]) => bound.declare(stamp(item), pulled),
+        onScreen: (item: AffixBuildItem, pulled: readonly string[]) => bound.onScreen(stamp(item), pulled),
+        simpler: (item: AffixBuildItem, lever: string) => bound.simpler(stamp(item), lever) as AffixBuildItem | null,
+        support: (item: AffixBuildItem) => bound.support(stamp(item)),
+      },
+    };
+  }, [data.supportTier, data.availableParts]);
+  return <WordBuildAffix data={data} className={className} runtimePlanItemId={runtimePlanItemId} boss={boss} />;
 }
 
-// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
+/** One mount, one shape: the open build (`build_affix`) has its own surface; every other mode is spoken. */
+function WordBuilderSurface(props: WordBuilderProps) {
+  return props.data.task === 'build_affix' ? <AffixBuildSurface {...props} /> : <SpokenWordBuilderSurface {...props} />;
+}
+
+// The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card. Its wiring is
+// `wordBuilder.card.ts` + `wordBuilder.boss.ts`.
 const WordBuilder = withWorkspaceOnly<WordBuilderProps>('word-builder', WordBuilderSurface, props => props.data.title);
 
 export default WordBuilder;

@@ -1,5 +1,5 @@
 import { NUMBER_SEQUENCER_TYPE_DOCS } from '../../primitives/visual-primitives/math/numberSequencerModes';
-import { sequencerChallengeValid } from '../../primitives/visual-primitives/math/numberSequencerScript';
+import { sequencerChallengeValid } from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { Type, Schema } from "@google/genai";
 import type {
   NumberSequencerChallenge,

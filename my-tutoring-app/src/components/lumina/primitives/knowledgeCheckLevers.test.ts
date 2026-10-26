@@ -3,8 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../components/live-activity/runtime/observerLever';
 import type { KnowledgeCheckItem } from './knowledgeCheckScript';
-import { CUE_LEVER, DROP_LEVER, NO_LEVERS, SPREAD_LEVER, cueLeak, farChoice, knowledgeCheckLevers, leversOnScreen, pictureRuns,
+import { CUE_LEVER, DROP_LEVER, KNOWLEDGE_CHECK_LEVERS, NO_LEVERS, SPREAD_LEVER, cueLeak, farChoice, pictureRuns,
   spreadLeak, type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
+
+/** The lever set as the component calls it: the item's lever state is the lesson context. */
+const knowledgeCheckLevers = (item: KnowledgeCheckItem, s: KnowledgeCheckLeverState) => KNOWLEDGE_CHECK_LEVERS.declare(item, s, s.pulled);
+const leversOnScreen = (item: KnowledgeCheckItem, s: KnowledgeCheckLeverState) => KNOWLEDGE_CHECK_LEVERS.onScreen(item, s, s.pulled) || null;
 
 const choice = (texts: string[], correct: number, extra: Partial<KnowledgeCheckItem> = {}, distances?: ('near' | 'far')[]) => ({
   id: 'p0-mc', kind: 'choice', problemIndex: 0, prompt: 'Which one?', correctOptionId: String.fromCharCode(65 + correct),

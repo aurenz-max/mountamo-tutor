@@ -3,7 +3,7 @@ import { parseActivityRequest, validateNumberLineData, validateTenFrameData, val
   generatedActivityState, LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, type LiveActivityAdapter } from './activityContract';
 import { getComponentById, UNIVERSAL_CATALOG } from '../../service/manifest/catalog';
 
-const PROSE_GUIDANCE_FAMILIES = 6;
+const PROSE_GUIDANCE_FAMILIES = 0;
 import { OFFER_GUIDANCE_MAX } from './adapters/adapterContract';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },

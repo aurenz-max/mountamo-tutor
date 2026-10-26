@@ -7,6 +7,7 @@
 
 import { ComponentDefinition } from '../../../types';
 import { bossEntry } from '../../../components/live-activity/boss';
+import { curatorBriefCard } from '../../../primitives/curatorBrief.card';
 import { fastFactCard } from '../../../primitives/visual-primitives/core/fastFact.card';
 import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/core/vocabularyExplorer.card';
 import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
@@ -22,18 +23,9 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     affordances: { representation: 'symbolic', reader: 'none', role: 'introduce', minutes: 2, maxPerLesson: 1 },
     // The lesson's opening screen, an ungraded teaching surface (2026-10-11). It replaces the tabbed
     // brief and its [READ_SECTION] scaffold: a bound brief owns the lesson opening, so the greeting
-    // and the hook are one turn. Contract: docs/contracts/curator-brief.md.
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
-        'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      ungraded: true,
-      guidance: 'This is the first screen of the lesson and your first words to the learner, so it is also your greeting. '
-        + 'A picture of where the hook happens (it arrives a few seconds in) sits above three short captions: the hook, '
-        + 'the big idea, and what the learner will do today. Below them are the lesson steps, two or three "I wonder" '
-        + 'choices and a Start button, which works as Done on this screen. The captions are three beats of about one sentence each; '
-        + 'the learner may not read yet, so the captions reach them through you, in your own words. A tapped "I wonder" '
-        + 'choice is curiosity with no right answer. The picture sets the scene only. You cannot change a caption or the picture.',
-    },
+    // and the hook are one turn. Its wiring is the ungraded boss card (`curatorBrief.card.ts`). Contract:
+    // docs/contracts/curator-brief.md.
+    ...bossEntry(curatorBriefCard),
   },
   {
     id: 'concept-card-grid',

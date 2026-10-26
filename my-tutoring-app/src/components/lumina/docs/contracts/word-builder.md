@@ -46,6 +46,15 @@ None open.
 
 ## Changelog
 
+- 2026-10-26 — **onto its boss (COMPATIBLE; boss migration, user 10-26).** `wordBuilder.card.ts` + `wordBuilder.boss.ts`
+  on the spoken preset: the four tiers are `SPOKEN` (the key is a `SpokenKey`: the word, its parts, part-by-part counts
+  when the whole word arrives, the root alone and the other partial forms are not it); `build_affix` is a build judged
+  by the activity (row shape in code, then the word judge), with no key. All six levers are one lever set
+  (`WORD_BUILDER_LEVERS`; same levers, same leak rules); the model levers now get the shared tier rule (`supportFact`).
+  `WordBuildAffix` is boss-only (both hosts pass a boss), so its hand-wired Pip and rules-lever path are gone. Deleted:
+  `adapters/wordBuilderLive.ts`, the DI_PORTS row, the scripted cues in `wordBuilderScript.ts`, the hand guidance.
+  R1 (nothing on the board is tapped in the spoken tiers) and R6 (spoken grade floors) unchanged.
+
 - 2026-10-07: R7 added, build_affix fork (open build OB-3L L1). The generator moved from `resolveEvalModeConstraint` to `resolveEvalModes` (unpinned lessons now resolve a level from intent instead of always mixed). Catalog grades gained Grade 1-2 for the build.
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.

@@ -9,8 +9,14 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { NumberSequencerChallenge } from './NumberSequencer';
 import { buildSequencerItems, numberSequencerSpokenMisses, sequencerItemsForChallenge, type SequencerItem } from './numberSequencerDomain';
-import { CAR_MARKS_LEVER, MODEL_TRAIN_LEVER, SMALLER_LEVER, STEP_ARROW_LEVER, modelTrain, smallerNumbers, spokenLeverFacts,
-  spokenSequencerLevers, stepArrow } from './numberSequencerSpokenLevers';
+import { CAR_MARKS_LEVER, MODEL_TRAIN_LEVER, SMALLER_LEVER, STEP_ARROW_LEVER, modelTrain, smallerNumbers, stepArrow }
+  from './numberSequencerSpokenLevers';
+import { NUMBER_SEQUENCER_LEVERS } from './numberSequencerLevers';
+
+/** The spoken modes' levers as the component declares them (the lever set covers every mode). */
+const spokenSequencerLevers = (item: SequencerItem, pulled: readonly string[], session: readonly SequencerItem[]) =>
+  item.answerKind === 'gesture' ? [] : NUMBER_SEQUENCER_LEVERS.declare(item, { session, band: '1' }, pulled);
+const spokenLeverFacts = (item: SequencerItem, pulled: readonly string[]) => NUMBER_SEQUENCER_LEVERS.onScreen(item, { session: [], band: '1' }, pulled);
 
 const MODES = ['count_from', 'before_after', 'spot_error', 'fill_missing', 'decade_fill'] as const;
 const itemsOf = (mode: string) => buildSequencerItems(JSON.parse(readFileSync(join(__dirname,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Word builder on the teaching workspace: what is its own, plus its Pip surface. The generic
+ * Word builder on the teaching workspace: what is its own (Pip is the shared boss contract). The generic
  * W1 contract (runtime/workspaceContract.test.tsx) covers ownership, the packet and self-advance.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
@@ -14,7 +14,6 @@ import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../components/
 import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 import { LIVE_ADAPTERS } from '../components/live-activity/activityContract';
 import { workspaceBinding } from '../components/live-activity/lessonWorkspacePlan';
-import { PipSurfaceStore } from '../pip/PipSurfaceStore';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -38,7 +37,7 @@ it.each(['simple_affix', 'compound_affix', 'greek_latin', 'multi_morpheme'])('%s
   const d = data(mode, UNHELPFUL);
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'word-builder', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
   const h = mountWorkspace({ primitiveId: 'word-builder', evalMode: mode, data: d });
-  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^unhelpful \(un \+ help \+ ful\)/);
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"unhelpful"\. It is built from un \+ help \+ ful\./);
   expect(h.state().task!.task).not.toMatch(/unhelpful/);
   expect(document.body.textContent).not.toMatch(/unhelpful/i);
 });
@@ -66,16 +65,6 @@ it('Say the clue again asks for the clue silently, as the host, never the word',
   expect(text).toContain('Describing someone who does not make things any easier');
   expect(text).not.toMatch(/unhelpful/);
   expect(options).toMatchObject({ silent: true, author: 'host' });
-});
-
-it('Pip points at the clue, never the word-part wall, and celebrates the credit', () => {
-  const store = new PipSurfaceStore();
-  store.setActive('words');
-  const h = mountWorkspace({ primitiveId: 'word-builder', evalMode: 'simple_affix', data: data('simple_affix', UNHELPFUL),
-    instanceId: 'words', pipStore: store });
-  expect(store.getActive()?.targets.map(t => t.id)).toEqual(['stimulus']);
-  h.say('unhelpful'); h.feedback('correct');
-  expect(store.getActive()?.pose).toEqual({ phase: 'celebrating', gesture: 'none' });
 });
 
 it('the adapter refuses a word whose parts do not spell it', () => {

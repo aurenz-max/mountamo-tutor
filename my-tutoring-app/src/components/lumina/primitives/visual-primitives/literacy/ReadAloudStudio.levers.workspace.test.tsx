@@ -74,7 +74,7 @@ it('expression: the plan has no lever; the first read is marked, nothing said, a
   const sent = seam.send.mock.calls.length;
   h.dispatch('pull_lever', { lever: 'tracking_underline' });
   expect(q(h, '[data-track-segment]')).toHaveLength(7);
-  expect(h.state().task!.demand).toMatchObject({ levers_on_screen: expect.stringMatching(/underline under each word/) });
+  expect(h.state().task!.demand).toMatchObject({ onScreen: expect.stringMatching(/underline under each word/) });
   expect(JSON.stringify(h.state().task!.workspace!.levers)).not.toMatch(/short_line/);
   expect(seam.send.mock.calls.length).toBe(sent);
   h.say('In the water, small fish swam.'); h.feedback('incorrect', 'retry'); h.confirmVisible();

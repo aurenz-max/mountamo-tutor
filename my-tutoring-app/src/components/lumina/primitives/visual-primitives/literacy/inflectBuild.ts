@@ -227,7 +227,6 @@ export const inflectBuildRules: AffixBuildRules = {
   }),
   describe: describeAffixBuild,
   scene: inflectBuildScene,
-  smallBoardFor: fewerEndingsFor,
   frame: (item, _board, pulled) => pulled.includes(FRAME_LEVER)
     ? [{ type: 'root', label: (item as InflectBuildItem).baseHint ?? 'word' }, { type: 'suffix', label: 'ending' }] : [],
   panel: (_item, board, pulled) => pulled.includes(CHART_LEVER)

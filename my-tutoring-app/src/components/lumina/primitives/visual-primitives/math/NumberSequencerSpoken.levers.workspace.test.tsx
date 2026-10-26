@@ -59,7 +59,7 @@ it('count_from: smaller_numbers is an ungraded train of the same shape, then the
   const task = h.state().task!;
   expect(task.itemId).toBe(`${full}~simpler`);
   expect(task.workspace!.practice).toEqual({ returnsTo: full });
-  expect(task.workspace!.expectedAnswer).toBe('9');
+  expect(task.workspace!.expectedAnswer).toMatch(/^"9"/);
   expect(cars(h)).toEqual(['8', '?']);
   h.say('nine'); h.feedback('correct', 'advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe(full);
