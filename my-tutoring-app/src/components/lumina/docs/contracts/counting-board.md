@@ -74,7 +74,7 @@
   `take_away` (`targetAnswer === count − changeBy`); `add_more` (`targetAnswer === count + changeBy`, where `count` is what STARTS on the board and the objective's bound caps the total).
   In `take_away`/`add_more` the ask SPEAKS `changeBy`, so a draw where `changeBy === targetAnswer` is refused — the question would recite its answer. `give_me_n` is a gesture item: the ask states the number and the child hands a set back, so its ask is exempt from the answer-leak rule and its `leakTokens` are empty by contract.
 - **Demanded by:** K.CC.B.4b (conservation), K.CC.B.5 (count out a named number), K.OA.A.1 foundations; the five K rows in `qa/curriculum-coverage/math-k` item `counting-extensions`.
-- **Evidence:** `countingBoardScript.ts` (kinds, asks, corrections, `publicValuesFor`, build gate); `gemini-counting-board.ts` (code-owned `changeBy`/pile/`movedCounts`, scope ceiling read in code); `CountingBoard.tsx` (handover commit, removal, faint extras, the move); `counting-board.ts` oracle (per-mode re-derivation + the `answer-leak` check on `changeBy === targetAnswer`).
+- **Evidence:** `countingBoardDomain.ts` (kinds, asks, `publicValuesFor`, build gate); `gemini-counting-board.ts` (code-owned `changeBy`/pile/`movedCounts`, scope ceiling read in code); `CountingBoard.tsx` (handover commit, removal, faint extras, the move); `counting-board.ts` oracle (per-mode re-derivation + the `answer-leak` check on `changeBy === targetAnswer`).
 - **Probe:** `scripts/probe-counting-board-k-family.mjs` — 15/15 live draws clean across three tiers; `CountingBoard.counting-out.test.tsx` drives the board on the real runner; `countingBoardScript.di-script.test.ts` 64/64.
 
 ### R10 — count_on at K covers the started group · OBSERVED

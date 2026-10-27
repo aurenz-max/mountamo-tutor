@@ -4,7 +4,7 @@ vi.mock('../geminiClient', () => ({ ai: { models: { generateContent: vi.fn() } }
 import { ai } from '../geminiClient';
 import { generateCountingBoard } from './gemini-counting-board';
 import { countingBoardOracle } from '../qa/oracles/counting-board';
-import { itemsFromChallenges } from '../../primitives/visual-primitives/math/countingBoardScript';
+import { itemsFromChallenges } from '../../primitives/visual-primitives/math/countingBoardDomain';
 
 const ctxFor = (mode: string, raw: Record<string, unknown> = {}): GenerationContext => ({ componentId: 'counting-board', instanceId: 'test',
   topic: 'Counting to 20', grade: '1', gradeLevel: 'elementary', gradeContext: 'Grade 1', intent: 'Say how many are in the group with more',

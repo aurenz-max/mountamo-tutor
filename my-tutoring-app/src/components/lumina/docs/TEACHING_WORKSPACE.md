@@ -486,8 +486,8 @@ The live host selects this controller and opts out of the old catalog DI scaffol
 `useCountingBoardRuntime` and its mode-specific reminder/misstep inventory were
 removed. The standalone scripted drill still uses its existing controller. Both
 controllers render the same board; the live controller has a small compatibility
-facade for the existing view. Task derivation currently remains in
-`countingBoardScript.ts`; only the standalone controller builds its cue pack.
+facade for the existing view. Task derivation lives in
+`countingBoardDomain.ts`; the scripted cue pack was deleted 10-27.
 
 Attempts are session-local evidence in the dev live host. They are deliberately
 not converted into the legacy drill mastery score. Demonstration is conservatively

@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { CountingBoardData } from "../../primitives/visual-primitives/math/CountingBoard";
-import { buildPlaceFor, numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
+import { buildPlaceFor, numberWordFor } from "../../primitives/visual-primitives/math/countingBoardDomain";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';

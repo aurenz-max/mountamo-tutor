@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { CountingBoardChallenge } from '../../primitives/visual-primitives/math/CountingBoard';
-import { itemFromChallenge } from '../../primitives/visual-primitives/math/countingBoardScript';
+import { itemFromChallenge } from '../../primitives/visual-primitives/math/countingBoardDomain';
 import {
   compiledOneMoreCountOn, compiledSameStartContrast, countingBoardDeliveryEligible, countingBoardTeachingFor,
   eligibleCountingBoardTeaching, legalChanges, selectOneMoreCountOn, selectSameStartContrast,

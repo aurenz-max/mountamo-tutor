@@ -64,7 +64,7 @@ import {
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { MATH_CATALOG } from '../../../../service/manifest/catalog/math';
 import { fallbackFor, VALID_OBJECT_TYPES } from '../../../../service/math/gemini-addition-subtraction-scene';
-import { numberWordFor, objectSingularFor } from '../countingBoardScript';
+import { numberWordFor, objectSingularFor } from '../countingBoardDomain';
 
 // ── Fixtures — one item per mode × band, session-shaped ─────────────────────
 

@@ -91,9 +91,7 @@ try {
   const base = '/src/components/lumina/';
   const { generateCountingBoard } = await runner.import(`${base}service/math/gemini-counting-board.ts`);
   const { countingBoardOracle } = await runner.import(`${base}service/qa/oracles/counting-board.ts`);
-  const script = await runner.import(`${base}primitives/visual-primitives/math/countingBoardScript.ts`);
-  const { checkPackGates } = await runner.import(`${base}hooks/judgedScriptContract.testkit.ts`);
-  const { spokenSpanOf } = await runner.import(`${base}hooks/judgedScriptContract.ts`);
+  const script = await runner.import(`${base}primitives/visual-primitives/math/countingBoardDomain.ts`);
 
   for (const kase of CASES) {
     for (let i = 1; i <= draws; i++) {
@@ -138,7 +136,7 @@ try {
       // 6 — the unthemed case must still reach the enum.
       if (!kase.themed) note(!themed, `unthemed intent produced a custom board (${JSON.stringify(objects)}) — the fallback is not intact`);
 
-      // 3 + 4 — the words the TUTOR SAYS, from the real cue surface.
+      // 3 + 4 — the words the TUTOR SAYS: the how-to-play line and the ask.
       const challenges = data.challenges ?? [];
       const objectWord = objects.word || script.objectWordFor(objects.type ?? 'stars');
       const items = script.itemsFromChallenges(challenges, { objectWord, objectSingular: objects.wordSingular });
@@ -147,8 +145,8 @@ try {
 
       for (const item of items) {
         const spoken = [
-          spokenSpanOf(script.itemCue(item, { opening: true, howToPlay: true })),
-          spokenSpanOf(script.itemCue(item)),
+          script.howToPlayFor(item) + script.askFor(item),
+          script.askFor(item),
         ].join(' ').toLowerCase();
         if (themed) {
           note(spoken.includes(objectWord) || spoken.includes(objects.wordSingular),
@@ -186,12 +184,10 @@ try {
         if (v.check === 'clustering') baseline.push(msg);
         else note(false, msg);
       }
-      const gateFailures = checkPackGates(script.countingBoardPackBase(items));
-      note(gateFailures.length === 0, `pack gates: ${JSON.stringify(gateFailures)}`);
 
       evidence.draws.push({
         label, objects, challengeCount: challenges.length, baselineViolations: baseline,
-        sampleAsk: items[0] ? spokenSpanOf(script.itemCue(items[0], { opening: true, howToPlay: true })) : null,
+        sampleAsk: items[0] ? script.howToPlayFor(items[0]) + script.askFor(items[0]) : null,
         failures,
       });
       if (failures.length) { failed++; console.log(`✗ ${label}\n   ${failures.join('\n   ')}`); }

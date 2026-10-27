@@ -82,9 +82,7 @@ try {
   const base = '/src/components/lumina/';
   const { generateCountingBoard } = await runner.import(`${base}service/math/gemini-counting-board.ts`);
   const { countingBoardOracle } = await runner.import(`${base}service/qa/oracles/counting-board.ts`);
-  const script = await runner.import(`${base}primitives/visual-primitives/math/countingBoardScript.ts`);
-  const { checkPackGates } = await runner.import(`${base}hooks/judgedScriptContract.testkit.ts`);
-  const { spokenSpanOf } = await runner.import(`${base}hooks/judgedScriptContract.ts`);
+  const script = await runner.import(`${base}primitives/visual-primitives/math/countingBoardDomain.ts`);
 
   for (const kase of CASES) {
     for (const tier of tiers) {
@@ -131,23 +129,19 @@ try {
         note(items.length === challenges.length,
           `${challenges.length - items.length} item(s) dropped by the script build gate — a dropped item is never backfilled`);
 
-        // 4 — the family's structural gates on the real cue surface.
-        const gateFailures = checkPackGates(script.countingBoardPackBase(items));
-        note(gateFailures.length === 0, `pack gates: ${JSON.stringify(gateFailures)}`);
-
-        // 5 — the ask never contains the answer word (give_me_n's ask IS it).
+        // 4 — the ask never contains the answer word (give_me_n's ask IS it).
         for (const item of items) {
           const answers = script.countingBoardHarnessAnswers(item);
           const spoken = [
-            spokenSpanOf(script.itemCue(item, { opening: true, howToPlay: true })),
-            spokenSpanOf(script.itemCue(item)),
+            script.howToPlayFor(item) + script.askFor(item),
+            script.askFor(item),
           ].join(' ').toLowerCase();
           for (const token of answers.leakTokens) {
             note(!new RegExp(`\\b${token}\\b`).test(spoken), `item ${item.id} says the answer "${token}" in its ask: ${spoken}`);
           }
         }
 
-        // 6 — K band, and the spoken change is never the answer.
+        // 5 — K band, and the spoken change is never the answer.
         for (const c of challenges) {
           const shown = c.type === 'add_more' ? c.count + (c.changeBy ?? 0) : c.count;
           note(shown <= 10, `${c.id} puts ${shown} objects in play — above what this objective names`);
@@ -183,7 +177,7 @@ try {
             count: c.count, changeBy: c.changeBy, startFrom: c.startFrom,
             targetAnswer: c.targetAnswer, arrangement: c.arrangement,
           })),
-          asks: items.map((it) => spokenSpanOf(script.itemCue(it))),
+          asks: items.map((it) => script.askFor(it)),
         });
         console.log(`${failures.length === 0 ? '✓' : '✗'} ${label}: ${challenges.length} challenges, ${failures.length} failure(s)`);
         for (const f of failures.slice(0, 6)) console.log(`    - ${f}`);

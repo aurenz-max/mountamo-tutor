@@ -16,7 +16,7 @@ const server = await vite.createServer({ configFile: false, root: ROOT, logLevel
   server: { middlewareMode: true, hmr: false, ws: false, watch: null },
   resolve: { alias: { '@': resolve(ROOT, 'src'), 'server-only': resolve(ROOT, 'vitest.stubs/server-only.ts') } } });
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
-const script = await runner.import('/src/components/lumina/primitives/visual-primitives/math/countingBoardScript.ts');
+const script = await runner.import('/src/components/lumina/primitives/visual-primitives/math/countingBoardDomain.ts');
 const { countingBoardOracle } = await runner.import('/src/components/lumina/service/qa/oracles/counting-board.ts');
 const { normalizeGradeLevel } = await runner.import('/src/components/lumina/service/geminiService.ts');
 const { getGenerator } = await runner.import('/src/components/lumina/service/registry/contentRegistry.ts');

@@ -5,8 +5,8 @@
  * and the harness answer material. The boss (`countingBoard.boss.ts`) and the
  * component read it; the generator imports its build gates from it.
  *
- * `countingBoardScript` re-exports this module for the families that still
- * import number words from it, beside the retired scripted cue protocol.
+ * Other math families import their number words from here too. The scripted
+ * cue protocol (`countingBoardScript.ts`) was deleted 10-27 (boss queue 4).
  */
 
 import type { ResponseClassId, TeachingItem } from '../../../hooks/teachingItemContract';

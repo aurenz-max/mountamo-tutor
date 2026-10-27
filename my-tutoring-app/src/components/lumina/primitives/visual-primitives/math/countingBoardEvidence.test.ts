@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { countingBoardEvidenceSummary, countingObservation, countingTask } from './countingBoardEvidence';
-import { itemFromChallenge, type CountingItem } from './countingBoardScript';
+import { itemFromChallenge, type CountingItem } from './countingBoardDomain';
 
 const item = (id: string, type: CountingItem['kind'], count: number, targetAnswer: number, patch: Record<string, number> = {}) =>
   itemFromChallenge({ id, type, count, targetAnswer, ...patch }, { objectWord: 'bears' })!;

@@ -1,4 +1,4 @@
-import { numberWordFor } from './countingBoardScript';
+import { numberWordFor } from './countingBoardDomain';
 import { TEEN_TEN, teenTotalFor, type SplitVerdict, type TenFrameItem, type TenFrameItemKind } from './tenFrameScript';
 
 /** What the learner produced on one judged attempt, and what was on screen besides the frame. */

@@ -1,4 +1,4 @@
-import { numberWordFor, type CountingItem } from './countingBoardScript';
+import { numberWordFor, type CountingItem } from './countingBoardDomain';
 
 /** What the learner produced on one judged attempt, as the board and the runner recorded it. */
 export interface CountingResponse {

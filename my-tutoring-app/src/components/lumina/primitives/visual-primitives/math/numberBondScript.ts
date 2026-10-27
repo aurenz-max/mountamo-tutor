@@ -92,7 +92,7 @@
  */
 
 import type { JudgedCueSurface } from '../../../hooks/judgedScriptContract';
-import { numberWordFor } from './countingBoardScript';
+import { numberWordFor } from './countingBoardDomain';
 import {
   BOND_TEN, BOND_WHOLE_MAX, askFor, bondEquationFaultOf, factFamilyCanonicalKeys, factFamilyForms, parseBondEquation,
   tenAndOnesFaultOf, type NumberBondItem, type BondModelAction,

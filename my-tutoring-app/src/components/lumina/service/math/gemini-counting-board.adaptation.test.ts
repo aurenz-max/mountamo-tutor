@@ -5,7 +5,7 @@ import { ai } from '../geminiClient';
 import { generateCountingBoard } from './gemini-counting-board';
 import { compiledOneMoreCountOn, compiledSameStartContrast } from './countingBoardRemediation';
 import { countingBoardOracle } from '../qa/oracles/counting-board';
-import { itemsFromChallenges } from '../../primitives/visual-primitives/math/countingBoardScript';
+import { itemsFromChallenges } from '../../primitives/visual-primitives/math/countingBoardDomain';
 
 const before = 'On take-away boards the student says how many objects were on the board before any were taken away.';
 const ctxFor = (mode: string, grade = 'K'): GenerationContext => ({ componentId: 'counting-board', instanceId: 'test', topic: 'Counting to 10', grade,

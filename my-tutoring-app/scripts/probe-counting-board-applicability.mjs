@@ -22,7 +22,7 @@ const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: fal
 const MATH = '/src/components/lumina/primitives/visual-primitives/math';
 const { countingBoardEvidenceSummary, countingObservation } = await runner.import(`${MATH}/countingBoardEvidence.ts`);
 const { judgedRunEvidence } = await runner.import('/src/components/lumina/hooks/judgedRunEvidence.ts');
-const script = await runner.import(`${MATH}/countingBoardScript.ts`);
+const script = await runner.import(`${MATH}/countingBoardDomain.ts`);
 const remediation = await runner.import('/src/components/lumina/service/math/countingBoardRemediation.ts');
 const { generateCountingBoard } = await runner.import('/src/components/lumina/service/math/gemini-counting-board.ts');
 const { planLearningAdaptation } = await runner.import('/src/components/lumina/service/generation/planLearningAdaptation.ts');
@@ -102,7 +102,8 @@ if (STAGES.includes('R')) {
 
 // ── Fictional judged runs, recorded as CountingBoard.tsx records them. ───────────────
 // boards: [challenge fields, the wrong first answer said | null]. A wrong board is corrected once, then affirmed.
-const correctionLine = item => (script.itemCue(item).match(/If it is wrong, say exactly: "(.*?)"/) ?? [])[1];
+// What the tutor said on the miss (the boss path records its own correction as judgeFeedback); a fixture line.
+const correctionLine = item => `Let's count them together. There are ${script.numberWordFor(item.target)}.`;
 function judgedRun(boards, band = 'K') {
   const items = boards.map(([ch], i) => script.itemFromChallenge({ id: `c${i + 1}`, ...ch }, { objectWord: 'bears' }));
   if (items.some(item => !item)) throw new Error('fixture board is not askable');
