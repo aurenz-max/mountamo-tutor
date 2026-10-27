@@ -76,6 +76,7 @@ try {
   const { spellingPatternExplorerOracle } = await loader.import('/src/components/lumina/service/qa/oracles/spelling-pattern-explorer.ts');
   const { validateSpellingPatternExplorerData } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/spellingPatternExplorer.boss.ts');
   const lb = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/letterBuild.ts');
+  const { patternBuildLevers } = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/spellingPatternLevers.ts');
   const sp = await loader.import('/src/components/lumina/primitives/visual-primitives/literacy/spellingPatternBuild.ts');
   const results = [];
   const saved = new Set();
@@ -94,7 +95,7 @@ try {
         bank: it.bank.join(' '), boxes: lb.startRow(it).length, examples: it.examples,
         examplesPass: it.examples.every(w => lb.letterShapeMiss(it, w.split('')) === undefined),
         card: lb.patternFor(it), model: lb.modelFor(it), smallBank: lb.smallBankFor(it)?.bank.join(' ') ?? null,
-        levers: lb.letterBuildLevers(it, []).map(l => `${l.id}:${l.answers.join('/')}`) }));
+        levers: patternBuildLevers(data.supportTier).declare(it, []).map(l => `${l.id}:${l.answers.join('/')}`) }));
     } else {
       items = { patternType: data.patternType, highlightPattern: data.highlightPattern, patternWords: data.patternWords,
         dictationWords: data.dictationWords, dictationHints: data.dictationHints, supportTier: data.supportTier };

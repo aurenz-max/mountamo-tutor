@@ -35,10 +35,11 @@ import payload from '../../../components/live-activity/runtime/testing/w1-payloa
 import { getComponentById } from '../../../service/manifest/catalog';
 import { validateCvcSpellerData } from './cvcSpellerDomain';
 import {
-  askableLetterItem, letterBuildLevers, letterItemsFrom, letterShapeMiss, makeLetterItems, smallBankFor, startRow,
+  askableLetterItem, letterItemsFrom, letterShapeMiss, makeLetterItems, smallBankFor, startRow,
   type LetterBuildItem,
 } from './letterBuild';
 import { GIVEN_WORDS } from './letterBuildWords';
+import { cvcBuildLevers, sessionStimuli } from './cvcSpellerLevers';
 
 const data = (payload as unknown as { data: CvcSpellerData }).data;
 const vowelItem: LetterBuildItem = { id: 'v', kind: 'vowel', vowel: 'a', ask: 'Make a real word with the short a sound in the middle.', bank: 'abcghmnpst'.split(''), examples: ['cat', 'map', 'bag'], ways: 1 };
@@ -128,7 +129,8 @@ describe('letter build rules (pure)', () => {
     expect(() => validateCvcSpellerData(data)).not.toThrow();
     const tw = getComponentById('cvc-speller')!.teachingWorkspace!;
     const items = letterItemsFrom(data.buildItems!);
-    const answered = new Set(items.flatMap(i => letterBuildLevers(i, []).flatMap(l => l.answers ?? [])));
+    const levers = cvcBuildLevers({ letterGroup: data.letterGroup, stimuli: sessionStimuli([]), bank: [] }, data.supportTier ?? 'medium');
+    const answered = new Set(items.flatMap(i => levers.declare(i, []).flatMap(l => l.answers ?? [])));
     for (const m of tw.misses!.make_word) if (!tw.unanswered!.make_word.includes(m)) expect(answered.has(m), m).toBe(true);
   });
 });

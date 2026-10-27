@@ -460,8 +460,8 @@ describe('ratchets: the old wiring only shrinks', () => {
   it.each([
     ['hand-built spoken assignments', /response: 'speech'/, 0, 'spokenBoss builds the assignment from speech.ask/key/misses'],
     ['hand-written spoken key text', /also accept/i, 4, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 2, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
-    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 34, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 0, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(|useStimulusPipSurface\(/, 33, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
     ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 0, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
     ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {

@@ -12,12 +12,11 @@
  * Pure: the surface, the generators, the live adapters and the tests read the same rules.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
 import { BLEND_END, BLEND_START, CVC_FAMILIES, CVC_WORDS, GIVEN_WORDS, NOT_FOR_LESSONS } from './letterBuildWords';
 import {
-  SYLLABLE_BUILD_MISSES, askableSyllableItem, describeSyllableBuild, smallSyllableItem, syllableBuildLevers, syllableBuildScene,
-  syllableLeverFacts, syllableMissWords, syllableModelFor, syllableShapeMiss,
+  SYLLABLE_BUILD_MISSES, askableSyllableItem, describeSyllableBuild, smallSyllableItem, syllableBuildScene,
+  syllableMissWords, syllableModelFor, syllableShapeMiss,
 } from './syllableBuild';
 
 import { isPatternId, packedWord, patternBoxes, patternCard, patternMiss, patternMissWords, patternModel, type PatternId } from './spellingPatternBuild';
@@ -289,43 +288,6 @@ export function smallBankFor(item: LetterBuildItem): LetterBuildItem | null {
   const bank = Array.from(new Set(ex.flatMap(w => w.split('')))).sort();
   if (bank.length >= item.bank.length) return null;
   return { ...item, id: `${item.id}~small`, ways: 1, bank, examples: ex };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly LetterBuildMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function letterBuildLevers(item: LetterBuildItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  if (item.kind === 'syllables') return syllableBuildLevers(item, pulled);
-  // The card shows the part the ask fixes, which answers every shape miss whatever the ask's kind.
-  const shapeMisses: LetterBuildMiss[] = ['not_cvc', 'wrong_vowel', 'wrong_family', 'same_as_given', 'changed_more', 'no_blend', 'wrong_order'];
-  return [
-    item.kind === 'pattern' ? lever(PATTERN_LEVER, 'help', ['other_spelling', 'wrong_place', 'no_pattern', 'not_the_sound'],
-      'The learner spells the sound another way, puts the letters of the pattern in the wrong place, leaves the pattern out, or uses the letters in a word where they make a different sound.',
-      'Shows a pattern card above the boxes: the asked spelling in its place with blanks for the other letters, and the sound it makes, such as _ a i _ (ai says long a). No other letter is filled in.',
-      pulled) :
-    lever(PATTERN_LEVER, 'help', shapeMisses,
-      'The learner\'s word does not have the shape the ask needs (the wrong middle sound, a different ending, more than one letter changed, or the given word back).',
-      'Shows a pattern card above the boxes with the part the ask fixes and blanks for the rest, such as _ a _ or _ a t. No letter the learner must choose is filled in.',
-      pulled),
-    ...(modelFor(item) ? [lever(MODEL_LEVER, 'help', ['not_a_word'],
-      'The learner makes letters that are not a real word.',
-      'Shows one solved example of the same kind made with other letters (another vowel, family or word), so the learner sees how a real word comes out. It shares no answer with this item.',
-      pulled)] : []),
-    ...(smallBankFor(item) ? [lever(SMALL_BANK_LEVER, 'simplify', ['not_a_word'],
-      'The learner keeps making letters that are not a word, or cannot start with so many letters.',
-      'Opens the same ask first with a smaller letter bank, one word only. It is not graded; the full item comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function letterLeverFacts(pulled: readonly string[], item: LetterBuildItem): string | undefined {
-  if (item.kind === 'syllables') return syllableLeverFacts(pulled, item);
-  const notes = [
-    pulled.includes(PATTERN_LEVER) && `A pattern card above the boxes shows: ${patternFor(item)}.`,
-    pulled.includes(MODEL_LEVER) && `A solved example on other letters is shown: ${modelFor(item)}.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 export function letterMissWords(miss: LetterBuildMiss | undefined, item: LetterBuildItem, made = ''): string {

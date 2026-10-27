@@ -13,7 +13,6 @@
  * the requests are below), so print is never load-bearing.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { LetterBuildItem, LetterBuildMiss } from './letterBuild';
 import { NOT_FOR_LESSONS } from './letterBuildWords';
 import { SYLLABLE_WORDS, syllableWordsWith } from './syllableBuildWords';
@@ -25,8 +24,6 @@ export const MAX_CARDS = 5;
 export const PART_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five'];
 
 export const CLAP_LEVER = 'clap_cards';
-const MODEL_LEVER = 'model_word';
-const SMALL_BANK_LEVER = 'small_bank';
 
 /**
  * The beats a made word has, from its cards: one per card, unless the cards run together into fewer vowel sounds
@@ -192,38 +189,6 @@ export function smallSyllableItem(item: LetterBuildItem): LetterBuildItem | null
   const bank = [a[0], b[0], a[1], b[1]];
   if (bank.length >= item.bank.length || partsTogether(bank, seedWordsFrom(bank))) return null;
   return { ...item, id: `${item.id}~small`, parts: 2, ask: askFor(2), bank, examples: pick, ways: 1 };
-}
-
-const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly LetterBuildMiss[], when: string, does: string,
-  pulled: readonly string[]): WorkspaceLever => ({ id, kind, carrier: 'shown', when, does, answers, pulled: pulled.includes(id) });
-
-export function syllableBuildLevers(item: LetterBuildItem, pulled: readonly string[]): WorkspaceLever[] {
-  return [
-    lever(CLAP_LEVER, 'help', ['too_few_parts', 'too_many_parts', 'counted_letters'],
-      'The learner\'s word has a different number of parts than the ask, or they count letters instead of the beats they clap.',
-      'Puts a clap mark under each card in the learner\'s word, one per card, so each card reads as one clap. It does not '
-        + 'show the number the ask wants or which cards to use.',
-      pulled),
-    ...(syllableModelFor(item) ? [lever(MODEL_LEVER, 'help', ['not_a_word'],
-      'The learner joins parts that do not make a real word.',
-      'Shows one word made from other cards, with a different number of parts, and a speaker that says its parts and '
-        + 'then the word. It shares no card with this item.',
-      pulled)] : []),
-    ...(smallSyllableItem(item) ? [lever(SMALL_BANK_LEVER, 'simplify', ['too_few_parts', 'too_many_parts', 'not_a_word'],
-      'The learner cannot hold this many parts, or keeps making words that are not real from so many cards.',
-      'Opens a two-part word first, from a bank of only four cards, one word only. It is not graded; the full item '
-        + 'comes back after it.',
-      pulled)] : []),
-  ];
-}
-
-export function syllableLeverFacts(pulled: readonly string[], item: LetterBuildItem): string | undefined {
-  const model = pulled.includes(MODEL_LEVER) ? syllableModelFor(item) : null;
-  const notes = [
-    pulled.includes(CLAP_LEVER) && 'A clap mark shows under each card in the learner\'s word, one per card.',
-    model && `A solved example on other cards is shown: ${model.cards.join(' + ')} = ${model.word}.`,
-  ].filter(Boolean);
-  return notes.length ? notes.join(' ') : undefined;
 }
 
 export function syllableMissWords(miss: LetterBuildMiss | undefined, item: LetterBuildItem): string {
