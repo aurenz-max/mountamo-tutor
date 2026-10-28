@@ -350,7 +350,9 @@ const ceilingOf = (scope: FactScope, gradeLevel: string): number => {
   if (scope.kind === 'within') return scope.maxSum;
   if (scope.kind === 'make_10') return 10;
   if (scope.kind === 'doubles') return 10;
-  return gradeDefaultScope(gradeLevel).maxSum; // named facts → the grade band
+  // Named facts: the band, widened to the largest named sum. A Grade 2 objective naming 8 + 7 and 9 + 9 drew its
+  // subtraction from minuends up to 10 (8 - 3, 9 - 5) while it lists 18 - 9 (design review 2026-10-27).
+  return Math.max(gradeDefaultScope(gradeLevel).maxSum, ...scope.facts.map((f) => f.a + f.b));
 };
 
 // ── Pool builders (deterministic, in code, one per skill) ───────────
@@ -1127,14 +1129,13 @@ Return the wrapper JSON only.`;
   } else {
     const shares = distribute(sessionCount, modeTypes.length);
     const perModePairs = modeTypes.map((t, i) => buildFor(t, shares[i]));
-    // Round-robin interleave so the session alternates skills.
-    const interleaved: Array<{ pair: FactPair; type: DiMathFactsChallengeType }> = [];
-    const maxLen = Math.max(...perModePairs.map((ps) => ps.length));
-    for (let round = 0; round < maxLen; round++) {
-      for (let m = 0; m < modeTypes.length; m++) {
-        const pair = perModePairs[m][round];
-        if (pair) interleaved.push({ pair, type: modeTypes[m] });
-      }
+    // Every mode's share, in a shuffled order: a fixed alternation (+, -, +, -) let a learner answer the
+    // operation from the position, which a mixed set is meant to catch (design review 2026-10-27).
+    const interleaved: Array<{ pair: FactPair; type: DiMathFactsChallengeType }> = perModePairs
+      .flatMap((ps, m) => ps.map((pair) => ({ pair, type: modeTypes[m] })));
+    for (let i = interleaved.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [interleaved[i], interleaved[j]] = [interleaved[j], interleaved[i]];
     }
     challenges = interleaved
       .slice(0, sessionCount)

@@ -113,6 +113,29 @@ export interface SpaceFluencyFact {
   itemSpace: { space: string; structure: string; beta: number };
 }
 
+/**
+ * A lesson that asks for a mixed set of both operations ("a mixed set of addition and subtraction problems").
+ * Its session holds half of each, in a shuffled order (the curriculum's "randomized operation sequence").
+ */
+export function lessonMixesOperations(lesson: string): boolean {
+  const t = lesson.toLowerCase();
+  return /\bmix(ed)?\b|\bboth operations\b|randomi[sz]ed operation/.test(t)
+    && /\badd(ition|ing)?\b|\bsums?\b/.test(t) && /\bsubtract(ion|ing)?\b|\bdifferences?\b/.test(t);
+}
+
+/** Fisher-Yates over a copy. */
+const shuffled = <T>(xs: readonly T[], rand: () => number): T[] => {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+
+type PickFn = (n: number, lo: number, hi: number, rand?: () => number, accept?: (item: any) => boolean) => { beta: number; structure: string }[];
+
+/** The scope of one operation of a mode, for a pick ranked within that operation. */
+export const operationScope = (space: ItemSpaceId, mode: FluencyMode, maxNumber: number, op: FluencyFact['operation']) =>
+  (it: unknown) => itemAsFluencyFact(space, it, mode, maxNumber, true)?.operation === op;
+
 /** `count` facts in the band the mode can use, or empty (the caller keeps its own path). */
 export function pickFluencyFacts(opts: {
   space: ItemSpaceId;
@@ -122,9 +145,26 @@ export function pickFluencyFacts(opts: {
   mode: FluencyMode;
   maxNumber: number;
   subtraction: boolean;
+  /**
+   * A mixed set: half of each operation (subtraction gets the odd one), shuffled, each operation drawn by its own
+   * pick (ranked within that operation, so an easy mixed set has the easiest subtractions, not none).
+   */
+  balance?: { addition: PickFn; subtraction: PickFn };
+  rand?: () => number;
 }): SpaceFluencyFact[] {
   const asFact = (it: unknown) => itemAsFluencyFact(opts.space, it, opts.mode, opts.maxNumber, opts.subtraction);
-  const items = opts.pick(opts.count, opts.band[0], opts.band[1], undefined, (it) => asFact(it) !== null);
+  const rand = opts.rand ?? Math.random;
+  let items: { beta: number; structure: string }[];
+  if (opts.balance && opts.subtraction) {
+    const subCount = Math.ceil(opts.count / 2), addCount = opts.count - subCount;
+    const of = (op: FluencyFact['operation']) => (it: unknown) => asFact(it)?.operation === op;
+    const adds = opts.balance.addition(addCount, opts.band[0], opts.band[1], undefined, of('addition'));
+    const subs = opts.balance.subtraction(subCount, opts.band[0], opts.band[1], undefined, of('subtraction'));
+    if (adds.length < addCount || subs.length < subCount) return [];
+    items = shuffled([...adds, ...subs], rand);
+  } else {
+    items = opts.pick(opts.count, opts.band[0], opts.band[1], undefined, (it) => asFact(it) !== null);
+  }
   if (items.length < opts.count) return [];
   return items.map((it) => ({
     fact: asFact(it)!,

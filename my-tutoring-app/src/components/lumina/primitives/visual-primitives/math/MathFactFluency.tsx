@@ -77,7 +77,7 @@ export interface MathFactFluencyData {
   // analytics/IRT. Never surfaced to the student and never enforced as a deadline.
   targetResponseTime: number;
   adaptiveDifficulty: boolean;
-  gradeBand: 'K' | '1';
+  gradeBand: 'K' | '1' | '2';
 
   // Evaluation props
   instanceId?: string;
@@ -519,9 +519,18 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     const fastCount = challengeResults.filter(r => (r.isFast as boolean)).length;
     const avgResponseTime = responseTimes.length > 0
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0;
+    // First-try accuracy by operation: 100% on + and 50% on - has not met a mixed-set objective.
+    const firstTry = (op: 'addition' | 'subtraction') => {
+      const ids = new Set(challenges.filter(c => c.operation === op).map(c => c.id));
+      const mine = challengeResults.filter(r => ids.has(r.challengeId));
+      return { total: ids.size, firstTry: mine.filter(r => r.correct && r.attempts === 1).length };
+    };
+    const add = firstTry('addition'), sub = firstTry('subtraction');
     const metrics: MathFactFluencyMetrics = {
       type: 'math-fact-fluency',
       accuracy: score,
+      additionFirstTry: add.firstTry, additionTotal: add.total,
+      subtractionFirstTry: sub.firstTry, subtractionTotal: sub.total,
       averageResponseTime: Math.round(avgResponseTime * 1000),
       fastAnswerCount: fastCount,
       bestStreak,
@@ -531,7 +540,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     };
     submitEvaluation(correctCount === challenges.length, score, metrics, { challengeResults });
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges.length,
-    responseTimes, bestStreak, submitEvaluation]);
+    responseTimes, bestStreak, submitEvaluation, challenges]);
 
   // What the tutor and the observer are shown, republished every render. Derived from the challenge
   // alone, so opening an item adds no revision after the advance.
@@ -723,7 +732,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             <LuminaBadge accent="blue" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
+              {gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}
             </LuminaBadge>
             <LuminaBadge accent="amber" className="text-xs">
               Within {maxNumber}

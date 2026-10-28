@@ -98,3 +98,5 @@ None open.
 
 - 2026-10-18: moved onto the boss framework — `diMathFacts.card.ts` + `diMathFacts.boss.ts` (`spokenBoss`); `DiMathFactsTeaching.tsx` folded into `DiMathFacts.tsx`; `adapters/diMathFactsLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: counting route = accept rule, different-number and teen/decade = signature error); levers are one `MATH_FACT_LEVERS` set (ids, order and words kept; `number_path` is `custom`). The guidance and the key changed: one replay sample owed.
 - 2026-10-02: derived (initial, static) with the DI lever pilot. 13 requirements, 0 conflicts. Check: `qa/primitive-contracts/di-math-facts-check-2026-10-02.md`.
+
+- 2026-10-27 — G2 design review brief 5: a named-facts scope's ceiling is the band widened to its largest named sum (an objective naming 9 + 9 drew subtraction from minuends up to 10); a blended session's items are shuffled, not alternated by mode. Probe: eval-test subtraction_fact on OPS002-04-c (minuends to 18); DI suite 684/684.

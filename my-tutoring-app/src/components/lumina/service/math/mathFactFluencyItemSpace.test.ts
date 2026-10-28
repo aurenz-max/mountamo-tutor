@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ADD_SUB_20, addSub20Items } from '../itemSpace/addSub20';
 import { TIER_BANDS, tierPick } from '../itemSpace';
-import { answerOf, fluencyOptions, itemAsFluencyFact, matchEquations, pickFluencyFacts, type FluencyMode } from './mathFactFluencyItemSpace';
+import { answerOf, fluencyOptions, itemAsFluencyFact, lessonMixesOperations, matchEquations, operationScope, pickFluencyFacts, type FluencyMode } from './mathFactFluencyItemSpace';
 
 const MODES: FluencyMode[] = ['visual-fact', 'equation-solve', 'speed-round', 'match', 'missing-number'];
 
@@ -61,5 +61,45 @@ describe('math-fact-fluency item-space adapter', () => {
       expect(results.every((r) => r >= 1 && r <= 20)).toBe(true);
       expect(eqs.filter((e) => Number(e.split('=')[1]) === f.result)).toHaveLength(1);
     }
+  });
+});
+
+const BALANCE = {
+  addition: tierPick(ADD_SUB_20, undefined, operationScope('add-sub-20', 'equation-solve', 20, 'addition')),
+  subtraction: tierPick(ADD_SUB_20, undefined, operationScope('add-sub-20', 'equation-solve', 20, 'subtraction')),
+};
+
+describe('mixed sets (OPS002-04-c)', () => {
+  it('reads a mixed-set lesson, not a one-operation one', () => {
+    expect(lessonMixesOperations('Complete a mixed set of timed addition and subtraction problems within 20. Constraints: randomized operation sequence')).toBe(true);
+    expect(lessonMixesOperations('Develop automaticity with addition facts for sums up to 20')).toBe(false);
+    expect(lessonMixesOperations('Subtraction facts within 20')).toBe(false);
+  });
+
+  it('a mixed set is half of each operation, in no fixed order, every number within 20', () => {
+    const orders = new Set<string>();
+    for (const tier of ['easy', 'medium', 'hard'] as const) for (let run = 0; run < 30; run++) {
+      const scope = (it: unknown) => itemAsFluencyFact('add-sub-20', it, 'equation-solve', 20, true) !== null;
+      const facts = pickFluencyFacts({ space: 'add-sub-20', pick: tierPick(ADD_SUB_20, undefined, scope), band: TIER_BANDS[tier],
+        count: 8, mode: 'equation-solve', maxNumber: 20, subtraction: true, balance: BALANCE });
+      expect(facts).toHaveLength(8);
+      const ops = facts.map((f) => (f.fact.operation === 'addition' ? '+' : '-')).join('');
+      expect(ops.split('-').length - 1).toBe(4);
+      orders.add(ops);
+      for (const { fact } of facts) expect(Math.max(fact.operand1, fact.operand2, fact.result)).toBeLessThanOrEqual(20);
+    }
+    // Not alternating, not blocked: many orders.
+    expect(orders.size).toBeGreaterThan(20);
+  });
+
+  it('within 20 a hard mixed set reaches subtraction from the teens', () => {
+    const scope = (it: unknown) => itemAsFluencyFact('add-sub-20', it, 'equation-solve', 20, true) !== null;
+    let teen = 0;
+    for (let run = 0; run < 30; run++) {
+      const facts = pickFluencyFacts({ space: 'add-sub-20', pick: tierPick(ADD_SUB_20, undefined, scope), band: TIER_BANDS.hard,
+        count: 8, mode: 'equation-solve', maxNumber: 20, subtraction: true, balance: BALANCE });
+      teen += facts.filter(({ fact }) => fact.operation === 'subtraction' && fact.operand1 > 10).length;
+    }
+    expect(teen).toBeGreaterThan(30);
   });
 });

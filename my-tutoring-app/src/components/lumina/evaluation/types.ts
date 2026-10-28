@@ -3060,6 +3060,11 @@ export interface MathFactFluencyMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
   factsWithinTarget: number;
   factsTotal: number;
+  /** First-try correct and total, by operation (a mixed set is met on both, not on the average). */
+  additionFirstTry?: number;
+  additionTotal?: number;
+  subtractionFirstTry?: number;
+  subtractionTotal?: number;
 }
 
 export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {

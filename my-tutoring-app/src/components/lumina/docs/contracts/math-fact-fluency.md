@@ -52,6 +52,10 @@
 - **Property:** a runtime pull is recorded on the next attempt; an easy tier's starting lever is not. `smaller_fact` / `far_match` open an ungraded item of the same type, unknown position and operation, which is never the learner's fact and never has its answer; the full item returns and only its answer is credited.
 - **Probe:** `mathFactFluencyLevers.test.ts` builder sweep; `MathFactFluency.levers.workspace.test.tsx`.
 
+### R9 — a mixed-set lesson is half of each operation, shuffled; Grade 2 reaches 20 · OBSERVED (NEW 2026-10-27)
+- **Property:** a lesson that asks for a mixed set of addition and subtraction (`lessonMixesOperations`) takes its facts from add-sub-20 with or without a tier (no tier = the medium band): half of each operation, each ranked within its own operation (`operationScope`), in a shuffled order. With no lesson window, Grade 2+ (`ctx.grade`) defaults to within 20 (was 10 for every grade above K). `gradeBand` '2' shows "Grade 2". Metrics add first-try correct and total by operation.
+- **Demanded by:** OPS002-04-c. **Probe:** `mathFactFluencyItemSpace.test.ts` "mixed sets"; eval-test route 4 tiers (all 4 + / 4 − within 20, band 2).
+
 ## Conflicts
 
 None open.

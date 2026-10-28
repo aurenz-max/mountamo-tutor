@@ -13,7 +13,7 @@ import { buildScopePromptSection } from "../scopeContext";
 import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
 import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
 import {
-  answerOf, codeAsk, fluencyOptions, fluencySpaceSupported, itemAsFluencyFact, matchEquations, pickFluencyFacts,
+  answerOf, codeAsk, fluencyOptions, fluencySpaceSupported, itemAsFluencyFact, matchEquations, pickFluencyFacts, lessonMixesOperations, operationScope,
   type SpaceFluencyFact,
 } from "./mathFactFluencyItemSpace";
 
@@ -25,9 +25,10 @@ const SPACE_FACT_COUNT = 8;
  */
 async function factsFromItemSpace(opts: {
   difficulty?: string; mode?: ChallengeType; topic: string; intent?: string; grade?: string;
-  maxNumber: number; subtraction: boolean;
+  maxNumber: number; subtraction: boolean; balance: boolean;
 }): Promise<SpaceFluencyFact[]> {
-  const band = difficultyBand(opts.difficulty);
+  // A mixed-set lesson takes the space with or without a tier: only code can promise the balance.
+  const band = difficultyBand(opts.difficulty) ?? (opts.balance ? difficultyBand('medium') : null);
   if (!band || !opts.mode) return [];
   // Lesson first: task-first, "Count objects to 10" resolved to the add/subtract strand.
   const task = opts.mode === 'missing-number' ? 'finds the missing number in an addition or subtraction fact'
@@ -40,6 +41,10 @@ async function factsFromItemSpace(opts: {
   const facts = pickFluencyFacts({
     space, pick: tierPick(getItemSpace(space), (m) => console.log(`[MathFactFluency] Item space ${space}: ${m}`), scope),
     band, count: SPACE_FACT_COUNT, mode, maxNumber: opts.maxNumber, subtraction: opts.subtraction,
+    ...(opts.balance ? { balance: {
+      addition: tierPick(getItemSpace(space), undefined, operationScope(space, mode, opts.maxNumber, 'addition')),
+      subtraction: tierPick(getItemSpace(space), undefined, operationScope(space, mode, opts.maxNumber, 'subtraction')),
+    } } : {}),
   });
   console.log(`[MathFactFluency] Item space ${space} ${mode} band [${band.join(', ')}] within ${opts.maxNumber}: `
     + (facts.length ? facts.map((f) => `${f.itemSpace.structure}@${f.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
@@ -386,7 +391,7 @@ type MathFactFluencyConfig = {
     showVisualAids?: boolean;
     targetResponseTime?: number;
     adaptiveDifficulty?: boolean;
-    gradeBand?: 'K' | '1';
+    gradeBand?: 'K' | '1' | '2';
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
     /**
@@ -432,20 +437,26 @@ export const generateMathFactFluency = async (
   // The scope comes first: the explicit config, else the objective's own number window (shared
   // resolver), else the grade's default; subtraction unless the lesson names addition only.
   const intentText = `${topic} ${config?.intent ?? ''}`.toLowerCase();
+  const balance = pinnedType !== undefined && lessonMixesOperations(intentText);
+  // Grade 2 facts reach 20 (2.OA.B.2); the band default was 10 for every grade above K, so a "within 20" Grade 2
+  // lesson with no tier drew 8 - 3 (design review 2026-10-27).
+  const gradeNum = ctx.grade === 'K' ? 0 : Number(ctx.grade ?? NaN);
+  const gradeDefault = gradeLevel.toLowerCase().includes('kinder') || gradeNum === 0 ? 5 : gradeNum >= 2 ? 20 : 10;
   const spaceMax = config?.maxNumber
-    ?? (difficultyBand(config?.difficulty) && pinnedType
+    ?? ((difficultyBand(config?.difficulty) || balance) && pinnedType
       ? await resolveObjectiveNumberWindow({
         topic, intent: config?.intent, gradeLevel,
-        bandDefault: gradeLevel.toLowerCase().includes('kinder') ? 5 : 10, ceiling: 20, logPrefix: 'MathFactFluency',
+        bandDefault: gradeDefault, ceiling: 20, logPrefix: 'MathFactFluency',
       })
       : null)
-    ?? (gradeLevel.toLowerCase().includes('kinder') ? 5 : 10);
-  const spaceSubtraction = config?.includeSubtraction
-    ?? (/subtract|minus|take away|difference/.test(intentText) || !/\badd|sum|plus/.test(intentText));
+    ?? gradeDefault;
+  const spaceSubtraction = balance || (config?.includeSubtraction
+    ?? (/subtract|minus|take away|difference/.test(intentText) || !/\badd|sum|plus/.test(intentText)));
   const spaceFacts = await factsFromItemSpace({
     difficulty: config?.difficulty, mode: pinnedType, topic, intent: config?.intent, grade: ctx.grade,
-    maxNumber: spaceMax, subtraction: spaceSubtraction,
+    maxNumber: spaceMax, subtraction: spaceSubtraction, balance,
   });
+  if (balance) console.log(`[MathFactFluency] mixed set: ${spaceFacts.map(({ fact: f }) => (f.operation === 'addition' ? '+' : '-')).join('')}`);
   const factSign = (f: SpaceFluencyFact['fact'], slot: 'operand1' | 'operand2' | 'result', v: number) =>
     (f.unknownPosition === slot ? '?' : String(v));
   const spaceSection = spaceFacts.length ? `
@@ -542,10 +553,10 @@ Return the complete math fact fluency configuration.
   // Validation & Defaults
   // -------------------------------------------------------------------------
 
-  // gradeBand default
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
-    data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
-  }
+  // gradeBand: the lesson's grade (a Grade 2 lesson read "Grade 1" on its badge).
+  data.gradeBand = gradeLevel.toLowerCase().includes('kinder') || gradeNum === 0 ? 'K'
+    : gradeNum >= 2 ? '2'
+      : data.gradeBand === 'K' || data.gradeBand === '1' ? data.gradeBand : '1';
 
   // maxNumber default
   if (!data.maxNumber || data.maxNumber < 1) {
