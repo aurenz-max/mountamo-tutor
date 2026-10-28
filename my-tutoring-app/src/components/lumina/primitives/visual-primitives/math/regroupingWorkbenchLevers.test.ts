@@ -141,7 +141,7 @@ describe('the lever set', () => {
   ] as const)('%s %d, %d typed %j: %s, then %s', (op, a, b, digits, miss, lever) => {
     const places = 3;
     const typed = [...digits, ...Array(places - digits.length).fill(null)];
-    expect(regroupMiss({ operation: op, a, b, places, digits: typed, blocks: [], trades: 0, regroupMarks: false,
+    expect(regroupMiss({ operation: op, a, b, places, digits: typed, blocks: [], pending: [], trades: 0, regroupMarks: false,
       placeLabels: true, carryRow: true, columnBadges: false, algorithmShown: true })).toBe(miss);
     const item = ch('x', op, a, b, 'mode');
     expect(nextLever(declare(item, [], ctx(op)), miss)).toBe(lever);

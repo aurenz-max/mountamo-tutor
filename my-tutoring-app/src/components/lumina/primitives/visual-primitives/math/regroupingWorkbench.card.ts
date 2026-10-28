@@ -2,7 +2,8 @@
  * regrouping-workbench's card: how each mode is wired to the live tutor, in the shape every card shares
  * (`components/live-activity/boss.ts`). The catalog reads it; the behavior is `regroupingWorkbench.boss.ts`.
  * Every mode asks for one sum or difference: the learner types one digit in each answer box and presses Check, and the
- * activity checks the number. Trading blocks is the learner's tool and is never checked. One item at a time, typed,
+ * activity checks the number. The blocks are the learner's model and never gate the check; whether they reached the
+ * answer is recorded beside it. One item at a time, typed,
  * activity-judged: a bespoke boss.
  */
 import { defineCard } from '../../../components/live-activity/boss';
@@ -33,7 +34,8 @@ export const REGROUP_MISSES_BY_MODE: Record<RegroupMode, readonly RegroupMiss[]>
 
 const TYPED = { answer: 'type', judge: 'activity', flow: 'one-at-a-time',
   moves: 'types one digit in each answer box under the written problem, ones on the right, then presses Check Answer; '
-    + 'Carry or Borrow under a column of blocks trades on screen first, if the learner wants' } as const;
+    + 'first, on the blocks, Put together (addition) or Take away (subtraction) under each column and Carry or Borrow where '
+    + 'a column needs a trade' } as const;
 
 export const regroupingWorkbenchCard = defineCard<RegroupMiss>({
   id: 'regrouping-workbench',
@@ -46,7 +48,8 @@ export const regroupingWorkbenchCard = defineCard<RegroupMiss>({
     subtract_regroup: { ...TYPED, misses: REGROUP_MISSES_BY_MODE.subtract_regroup },
   },
   words: {
-    job: 'add or subtract two numbers in columns with base-ten blocks beside the written problem: where a column makes '
+    job: 'add or subtract two numbers in columns with base-ten blocks beside the written problem: the learner puts the '
+      + 'two numbers\' blocks together or takes the second away, column by column; where a column makes '
       + 'ten or more, ten of a place are carried as one of the next; where a top digit is too small, one of the next '
       + 'place is broken into ten',
     answer: 'the number they type in the answer boxes',

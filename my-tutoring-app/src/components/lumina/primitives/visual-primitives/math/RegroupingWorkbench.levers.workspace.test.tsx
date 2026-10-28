@@ -58,8 +58,8 @@ it('add: the regroup marks show in the same commit, the fact draws no digit, the
   expect(String(receipt.state.task!.demand.onScreen)).toMatch(/drawn red/);
   expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/\d/);
   expect(receipt.state.task!.demand).toMatchObject({ tradeButton: expect.stringContaining('only under a column that needs a trade') });
-  // The ones column (12 blocks) is marked; nothing of the answer (72) is written.
-  expect(q(h, '.text-red-400.font-mono').map(e => e.textContent)).toEqual(['12']);
+  // The ones column (7, with 5 beside it) is marked; nothing of the answer (72) is written.
+  expect(q(h, '.text-red-400.font-mono').map(e => e.textContent)).toEqual(['7']);
   expect(h.view.container.textContent).not.toMatch(/\b72\b/);
   const before = snapshot(h);
   expect(h.dispatch('pull_lever', { lever: 'regroup_marks' }).status).toBe('blocked');
@@ -71,6 +71,7 @@ it('add: the regroup marks show in the same commit, the fact draws no digit, the
 
 it('the regroup marks are refused, with nothing changed, once the learner has made the trades', () => {
   const h = mount('add_regroup', bench('addition', ADD));
+  h.press('Put together the ones');
   h.press('Carry from the ones');
   const before = snapshot(h);
   expect(h.dispatch('pull_lever', { lever: 'regroup_marks' }).status).toBe('blocked');
@@ -105,13 +106,13 @@ it('the smaller problem is ungraded practice of the same operation; the full ite
   expect(r.state.task!.workspace!.practice).toEqual({ returnsTo: 'a3' });
   const easier = smallerProblem(data.challenges[0], 'addition', data)!;
   const [x, y] = operandsOf(easier, data);
-  expect(r.state.task!.demand).toMatchObject({ problem: `${x} + ${y} = ?`, learnerWork: 'No digits written yet' });
+  expect(r.state.task!.demand).toMatchObject({ problem: `${x} + ${y} = ?`, learnerWork: 'Blocks not used yet. No digits written yet' });
   expect(JSON.stringify(r.state.task!.demand)).not.toMatch(/358|267|625/);
   type(h, digitsOf(resultOf('addition', x, y), String(x + y).length)); h.press('Check Answer');
   expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
   h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('a3');
-  expect(h.state().task!.demand).toMatchObject({ problem: '358 + 267 = ?', blocks: 'hundreds 5, tens 11, ones 15', learnerWork: 'No digits written yet' });
+  expect(h.state().task!.demand).toMatchObject({ problem: '358 + 267 = ?', blocks: 'hundreds 3, tens 5, ones 8', learnerWork: 'Blocks not used yet. No digits written yet' });
   type(h, [5, 2, 6]); h.press('Check Answer');
   expect(attempts(h).map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
     ['a3', false, false], ['a3~simpler', true, true], ['a3', true, false]]);

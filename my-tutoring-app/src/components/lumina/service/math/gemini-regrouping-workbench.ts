@@ -5,7 +5,8 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from '../itemSpace';
 import type { MultiDigitItem } from '../itemSpace/multiDigit';
-import { RW_SPACE_MODES, itemFitsMode, rwChallenge, type RwMode } from './regroupingWorkbenchItemSpace';
+import { RW_SPACE_MODES, itemFitsMode, lessonAllowsOneDigit, rwChallenge, type RwMode } from './regroupingWorkbenchItemSpace';
+import { modeOf } from '../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -752,6 +753,27 @@ Return the complete regrouping workbench configuration.
     return a <= placeLimit && b <= placeLimit && result <= placeLimit && result >= 0;
   });
 
+  // A single pinned mode keeps only problems of its structure: the LLM's "no regroup" subtraction could borrow, and its
+  // "regroup" sum could need none. Checked in code; the range check above never saw it. With none left, code draws
+  // the session from the item space for this mode (no tier: any difficulty).
+  const oneDigitOk = lessonAllowsOneDigit(`${ctx.intent ?? ''} ${topic}`);
+  if (pinnedType && RW_SPACE_MODES.includes(pinnedType)) {
+    const mode = pinnedType as RwMode;
+    const before = data.challenges.length;
+    data.challenges = data.challenges.filter((c: { problem: string }) => /^\s*\d+\s*[+\-−]\s*\d+\s*$/.test(c.problem)
+      && modeOf(c) === mode && (oneDigitOk || Math.min(...(c.problem.match(/\d+/g) ?? []).map(Number)) >= 10));
+    if (data.challenges.length < before) {
+      console.log(`[RegroupingWorkbench] dropped ${before - data.challenges.length} challenge(s) outside ${mode}`);
+    }
+    if (data.challenges.length === 0) {
+      const space = data.maxPlace === 'tens' ? 'add-sub-100' : 'add-sub-1000';
+      const picks = getItemSpace(space).pick(4, -Infinity, Infinity, undefined,
+        (it: MultiDigitItem) => itemFitsMode(it, mode) && (oneDigitOk || it.features.oneDigit === 0)) as MultiDigitItem[];
+      data.challenges = picks.map((it, i) => rwChallenge(it, mode, space, `c${i + 1}`));
+      if (picks[0]) { data.operand1 = picks[0].a; data.operand2 = picks[0].b; }
+    }
+  }
+
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'add_regroup';
     const isAddition = fallbackType.startsWith('add');
@@ -812,7 +834,8 @@ Return the complete regrouping workbench configuration.
     );
     if (space === 'add-sub-100' || space === 'add-sub-1000') {
       const count = Math.max(3, Math.min(5, data.challenges.length));
-      const scope = (it: MultiDigitItem) => itemFitsMode(it, mode);
+      // "Two two-digit numbers" holds at every tier; a one-digit second number only where the lesson names one.
+      const scope = (it: MultiDigitItem) => itemFitsMode(it, mode) && (oneDigitOk || it.features.oneDigit === 0);
       const log = (m: string) => console.log(`[RegroupingWorkbench] Item space ${space}: ${m}`);
       const picks = tierPick(getItemSpace(space), log, scope)(count, band[0], band[1], undefined, scope) as MultiDigitItem[];
       log(`${mode} band [${band.join(', ')}]: ${picks.length >= count ? picks.map((p) => `${p.a}${p.op}${p.b}@${p.beta}`).join(' ') : 'no session fits; own path kept'}`);

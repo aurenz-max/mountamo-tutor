@@ -22,7 +22,7 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import {
-  describeRegroupWork, operandsOf, regroupMiss, regroupingMatches, resultOf, startBlocks, typedValue,
+  blocksModelled, columnSettled, describeRegroupWork, operandsOf, regroupMiss, regroupingMatches, resultOf, startBlocks, typedValue,
   workspaceScene, type RegroupView,
 } from './regroupingWorkbenchWorkspace';
 import {
@@ -127,6 +127,7 @@ const PLACE_LABELS = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
 /** Each place's block colour, carried onto its written column by the column_colors lever. */
 const PLACE_TEXT = ['text-blue-300', 'text-orange-300', 'text-emerald-300', 'text-purple-300'];
 const PLACE_BORDER = ['border-blue-400/70', 'border-orange-400/70', 'border-emerald-400/70', 'border-purple-400/70'];
+const BLOCK_SHAPE = ['w-2.5 h-2.5 bg-blue-400/60', 'w-2.5 h-6 bg-orange-400/60', 'w-6 h-6 bg-emerald-400/60', 'w-6 h-6 bg-purple-400/60'];
 
 // Lever pictures (`regroupingWorkbenchLevers.ts`). Each is drawn only while its lever is pulled; none uses a digit or
 // the item's numbers.
@@ -316,9 +317,12 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
   const [operand1, operand2] = operandsOf(currentChallenge, fallback);
   const correctAnswer = resultOf(operation, operand1, operand2);
 
-  // Block counts per place value [ones, tens, hundreds, thousands]. They start as the problem's own blocks (both
-  // numbers together for addition, the top number for subtraction) and change only by the learner's trades.
-  const [blocks, setBlocks] = useState<number[]>(() => startBlocks(operation, operand1, operand2, places));
+  // Block counts per place value [ones, tens, hundreds, thousands]. They start as the top number's blocks, with the
+  // bottom number's beside them (`pending`); they change only by the learner's own work: Put together / Take away per
+  // column, and Carry / Borrow trades. `removed` is what Take away crossed out, drawn faded.
+  const [blocks, setBlocks] = useState<number[]>(() => startBlocks(operand1, operand2, places).blocks);
+  const [pending, setPending] = useState<number[]>(() => startBlocks(operand1, operand2, places).pending);
+  const [removed, setRemoved] = useState<number[]>(() => new Array(places).fill(0));
 
   // Carry/borrow state per place
   const [carries, setCarries] = useState<number[]>(new Array(places).fill(0));
@@ -342,7 +346,10 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
   /** A challenge's board, blank: its own blocks, no trades, no digits. */
   const resetBoard = (ch: RegroupingChallenge | null) => {
     const [a, b] = operandsOf(ch, fallback);
-    setBlocks(startBlocks(operation, a, b, places));
+    const start = startBlocks(a, b, places);
+    setBlocks(start.blocks);
+    setPending(start.pending);
+    setRemoved(new Array(places).fill(0));
     setCarries(new Array(places).fill(0));
     setRegroupedPlaces(new Set());
     setAnswerDigits(new Array(places).fill(null));
@@ -392,6 +399,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
     if (submittedRef.current) return;
     submittedRef.current = true;
     const totalCorrect = challengeResults.filter(r => r.correct).length;
+    const modelledCorrect = challengeResults.filter(r => r.correct && r.blocksModelled === true).length;
     const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingTotal as number) ?? 0), 0);
     const correctRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingCorrect as number) ?? 0), 0);
     const avgTime = challengeResults.length > 0
@@ -413,6 +421,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
       wordProblemContextEngaged: !!(wordProblemContext?.enabled && wordProblemContext.story),
       averageTimePerProblem: Math.round(avgTime),
       attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+      modelledCorrect,
     };
 
     submitEvaluation(totalCorrect === challenges.length, score, metrics, { challengeResults });
@@ -460,9 +469,8 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
         setFeedbackType('error');
       }
     } else {
-      // Borrow: if blocks at this place < operand2's digit, borrow from next place
-      const d2 = getDigits(operand2, maxPlace, places);
-      if (blocks[placeIndex] < d2[placeIndex] && placeIndex < places - 1 && blocks[placeIndex + 1] > 0) {
+      // Borrow: if this column holds fewer blocks than are still to be taken away, break one of the next place
+      if (blocks[placeIndex] < pending[placeIndex] && placeIndex < places - 1 && blocks[placeIndex + 1] > 0) {
         setBlocks(prev => {
           const next = [...prev];
           next[placeIndex + 1] -= 1;
@@ -479,7 +487,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
         SoundManager.snap();
         setFeedback(`Borrowed 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} = 10 ${PLACE_LABELS[placeIndex].toLowerCase()}!`);
         setFeedbackType('success');
-      } else if (blocks[placeIndex] < d2[placeIndex]) {
+      } else if (blocks[placeIndex] < pending[placeIndex]) {
         // Nothing in the next column to break yet (a borrow across a zero starts one column further up).
         SoundManager.invalid();
         setFeedback(`There are no ${PLACE_LABELS[placeIndex + 1]?.toLowerCase() ?? 'blocks'} to break yet. Look at the next column first.`);
@@ -491,7 +499,30 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
         setFeedbackType('error');
       }
     }
-  }, [operation, blocks, places, maxPlace, operand2, hasSubmittedEvaluation]);
+  }, [operation, blocks, pending, places, hasSubmittedEvaluation]);
+
+  /** Put together (addition) or Take away (subtraction) the bottom number's blocks in one column. */
+  const handleColumnWork = useCallback((placeIndex: number) => {
+    if (hasSubmittedEvaluation || workspaceClosed.current || pending[placeIndex] === 0) return;
+    const place = PLACE_LABELS[placeIndex].toLowerCase();
+    const n = pending[placeIndex];
+    if (operation === 'subtraction' && blocks[placeIndex] < n) {
+      SoundManager.invalid();
+      setFeedback(`You can't take ${n} ${place} from ${blocks[placeIndex]} ${place}.`);
+      setFeedbackType('error');
+      return;
+    }
+    setBlocks(prev => {
+      const next = [...prev];
+      next[placeIndex] += operation === 'addition' ? n : -n;
+      return next;
+    });
+    if (operation === 'subtraction') setRemoved(prev => { const next = [...prev]; next[placeIndex] = n; return next; });
+    setPending(prev => { const next = [...prev]; next[placeIndex] = 0; return next; });
+    SoundManager.snap();
+    setFeedback(operation === 'addition' ? `Put the ${place} together.` : `Took away ${n} ${n === 1 ? place.replace(/s$/, '') : place}.`);
+    setFeedbackType('info');
+  }, [operation, blocks, pending, hasSubmittedEvaluation]);
 
   // -------------------------------------------------------------------------
   // Answer Submission
@@ -510,7 +541,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
 
   /** The learner's work, as the check and the tutor read it. */
   const view = (over: Partial<RegroupView> = {}): RegroupView => ({
-    operation, a: operand1, b: operand2, places, digits: answerDigits, blocks, trades: regroupedPlaces.size,
+    operation, a: operand1, b: operand2, places, digits: answerDigits, blocks, pending, trades: regroupedPlaces.size,
     regroupMarks: marksOn, placeLabels: showPlaceColumns, carryRow: showCarryBorrow,
     columnBadges: showColumnBadges, algorithmShown: showAlgorithm,
     story: wordProblemContext?.enabled ? wordProblemContext.story : undefined,
@@ -522,6 +553,8 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
     const work = view();
     const studentAnswer = typedValue(answerDigits);
     const correct = regroupingMatches(work);
+    // Recorded beside the verdict, never gating it: a typed answer the blocks did not reach is not modelled work.
+    const modelled = blocksModelled(work);
     const timeMs = Date.now() - challengeStartTime;
 
     // Count correct regroups
@@ -542,6 +575,7 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
         attempts: currentAttempts + 1,
         regroupingCorrect,
         regroupingTotal: expectedRegroups,
+        blocksModelled: modelled,
         timeMs,
       });
     } else {
@@ -574,13 +608,14 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
 
   // Does the current place need regrouping?
   const needsRegroup = useCallback((placeIndex: number): boolean => {
+    // Addition counts the blocks still beside the column: a column that will make ten or more once put together needs
+    // a trade (the mark can show before the learner joins them).
     if (operation === 'addition') {
-      return blocks[placeIndex] >= 10;
+      return blocks[placeIndex] + pending[placeIndex] >= 10;
     } else {
-      const d2 = getDigits(operand2, maxPlace, places);
-      return blocks[placeIndex] < d2[placeIndex];
+      return blocks[placeIndex] < pending[placeIndex];
     }
-  }, [operation, blocks, operand2, maxPlace, places]);
+  }, [operation, blocks, pending]);
 
   // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; every
   // mode declares levers (`REGROUP_LEVERS`).
@@ -703,30 +738,39 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
               {Array.from({ length: places }, (_, i) => places - 1 - i).map(placeIdx => (
                 <div key={placeIdx} className="text-center min-w-[70px]">
                   {/* Block count */}
-                  <div className="bg-slate-800/40 rounded-lg p-2 border border-white/10 min-h-[80px] flex flex-col items-center justify-center">
-                    {/* Visual blocks */}
-                    <div className="flex flex-wrap gap-0.5 justify-center mb-1">
-                      {Array.from({ length: Math.min(blocks[placeIdx], 15) }, (_, j) => (
-                        <div
-                          key={j}
-                          className={`rounded-sm ${
-                            placeIdx === 0 ? 'w-2.5 h-2.5 bg-blue-400/60' :
-                            placeIdx === 1 ? 'w-2.5 h-6 bg-orange-400/60' :
-                            placeIdx === 2 ? 'w-6 h-6 bg-emerald-400/60' :
-                            'w-6 h-6 bg-purple-400/60'
-                          }`}
-                        />
+                  <div className={`bg-slate-800/40 rounded-lg p-2 border min-h-[80px] flex flex-col items-center justify-center ${
+                    // Red "regroup needed" cue is a HINT MARK — withdrawn at hard.
+                    marksOn && needsRegroup(placeIdx) ? 'border-red-400/60' : 'border-white/10'
+                  }`}>
+                    {/* Visual blocks: the column's own, then (subtraction) the ones taken away, faded */}
+                    <div data-testid={`blocks-${placeIdx}`} className="flex flex-wrap gap-0.5 justify-center mb-1 max-w-[70px]">
+                      {Array.from({ length: Math.min(blocks[placeIdx], 20) }, (_, j) => (
+                        <div key={j} className={`rounded-sm ${BLOCK_SHAPE[placeIdx]}`} />
                       ))}
-                      {blocks[placeIdx] > 15 && (
-                        <span className="text-slate-500 text-[9px]">+{blocks[placeIdx] - 15}</span>
-                      )}
+                      {Array.from({ length: removed[placeIdx] }, (_, j) => (
+                        <div key={`x${j}`} aria-hidden className={`rounded-sm opacity-25 ${BLOCK_SHAPE[placeIdx]}`} />
+                      ))}
                     </div>
-                    <span className={`text-lg font-bold font-mono ${
-                      // Red "regroup needed" overflow cue is a HINT MARK — withdrawn at hard.
-                      marksOn && needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
-                    }`}>
-                      {blocks[placeIdx]}
-                    </span>
+                    {/* The count is shown while the column still has work; a settled column's count would be the
+                        answer's digit, so the learner counts the blocks there (easy's badge is the tier's aid). */}
+                    {!columnSettled(operation, blocks, pending, placeIdx, places) && (
+                      <span className={`text-lg font-bold font-mono ${
+                        marksOn && needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
+                      }`}>
+                        {blocks[placeIdx]}
+                      </span>
+                    )}
+                    {/* Addition: the bottom number's blocks wait beside the column until put together */}
+                    {operation === 'addition' && pending[placeIdx] > 0 && (
+                      <div className="mt-1 pt-1 border-t border-dashed border-white/20 w-full flex flex-col items-center">
+                        <div className="flex flex-wrap gap-0.5 justify-center max-w-[70px]">
+                          {Array.from({ length: pending[placeIdx] }, (_, j) => (
+                            <div key={j} className={`rounded-sm opacity-60 ${BLOCK_SHAPE[placeIdx]}`} />
+                          ))}
+                        </div>
+                        <span className="text-xs font-mono text-slate-400">{pending[placeIdx]}</span>
+                      </div>
+                    )}
                     {/* Column-count badge: raw stacked count per column (easy tier only).
                         Never the final answer digit — just how many blocks are here. */}
                     {showColumnBadges && (
@@ -735,6 +779,21 @@ const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId }: Regr
                       </span>
                     )}
                   </div>
+
+                  {/* The column's own work: join the bottom number's blocks, or take them away. */}
+                  {!isCurrentChallengeComplete && !allChallengesComplete && pending[placeIdx] > 0 && (
+                    <button
+                      type="button"
+                      aria-label={operation === 'addition'
+                        ? `Put together the ${PLACE_LABELS[placeIdx].toLowerCase()}`
+                        : `Take away the ${PLACE_LABELS[placeIdx].toLowerCase()}`}
+                      disabled={blocked}
+                      className="mt-1 block mx-auto text-[10px] px-2 py-0.5 h-auto rounded-md bg-cyan-500/10 border border-cyan-400/30 hover:bg-cyan-500/20 text-cyan-300 transition-colors disabled:opacity-50"
+                      onClick={() => handleColumnWork(placeIdx)}
+                    >
+                      {operation === 'addition' ? 'Put together' : `Take away ${pending[placeIdx]}`}
+                    </button>
+                  )}
 
                   {/* Regroup button. When hint marks are shown (easy/medium) it only
                       appears on the column that actually needs regrouping (a cue).

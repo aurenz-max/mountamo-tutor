@@ -86,7 +86,7 @@ it.each(CASES)('$mode: typed digits checked by the activity, no key published; a
       .filter(el => !el.disabled && /digit|Carry|Borrow|Check Answer/.test((el.getAttribute('aria-label') ?? '') + el.textContent));
     expect(open).toEqual([]);
     h.dispatch('retry');
-    expect(h.state().task!.demand).toMatchObject({ learnerWork: 'No digits written yet' });
+    expect(h.state().task!.demand).toMatchObject({ learnerWork: 'Blocks not used yet. No digits written yet' });
 
     type(h, right);
     h.press('Check Answer');
@@ -111,8 +111,12 @@ it('the live host (no evaluation provider) never submits', async () => {
 it('the tutor is told what is drawn: the problem, the blocks before and after a trade, the aids; Try again keeps the trade', () => {
   const h = mountWorkspace({ primitiveId: 'regrouping-workbench', evalMode: 'add_regroup',
     data: bench('addition', [challenge('a2', 'add_regroup', '27 + 45', 1)], { showRegroupHints: false, showPlaceColumns: false }) as unknown as Record<string, unknown> });
-  expect(h.state().task!.demand).toMatchObject({ problem: '27 + 45 = ?', blocks: 'tens 6, ones 12', placeLabels: 'hidden',
-    tradeButton: expect.stringContaining('no column is marked') });
+  expect(h.state().task!.demand).toMatchObject({ problem: '27 + 45 = ?', blocks: 'tens 2, ones 7', blocksBeside: 'tens 4, ones 5',
+    placeLabels: 'hidden', tradeButton: expect.stringContaining('no column is marked'), learnerWork: 'Blocks not used yet. No digits written yet' });
+  h.press('Put together the ones');
+  h.press('Put together the tens');
+  expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 6, ones 12' });
+  expect(h.state().task!.demand).not.toHaveProperty('blocksBeside');
   h.press('Carry from the ones');
   expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 7, ones 2', learnerWork: expect.stringContaining('1 carry trade') });
   type(h, [2, 6]);
@@ -134,7 +138,7 @@ it('a borrow across a zero breaks the next column first', () => {
 
 it('regroupMiss names the pattern the typed digits show', () => {
   const v = (operation: 'addition' | 'subtraction', a: number, b: number, digits: (number | null)[]): RegroupView => ({
-    operation, a, b, places: 3, digits, blocks: [], trades: 0, regroupMarks: true, placeLabels: true, carryRow: true,
+    operation, a, b, places: 3, digits, blocks: [], pending: [], trades: 0, regroupMarks: true, placeLabels: true, carryRow: true,
     columnBadges: false, algorithmShown: true });
   expect(regroupMiss(v('addition', 27, 45, [2, 7, null]))).toBeUndefined();
   expect(regroupMiss(v('addition', 27, 45, [2, null, null]))).toBe('left_blank');
@@ -156,4 +160,57 @@ it('the adapter refuses a challenge its own check cannot read', () => {
   expect(() => validate(bench('subtraction', [challenge('x', 'subtract_regroup', '17 - 52', 1)]))).toThrow();
   expect(() => validate(bench('addition', [challenge('x', 'add_regroup', 'twenty plus five', 1)]))).toThrow();
   expect(validate(bench('addition', [CASES[0].data.challenges[0], CASES[2].data.challenges[0]]))).toBeTruthy();
+});
+
+/** The record the session submitted: its metrics. */
+const submittedMetrics = () => (seam.submit as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][2] as Record<string, unknown>;
+/** The blocks drawn in a column, ones = 0 (faded taken-away blocks excluded). */
+const drawn = (h: WorkspaceHarness, place: number) =>
+  h.view.container.querySelectorAll(`[data-testid="blocks-${place}"] > div:not([aria-hidden])`).length;
+
+it('no regroup: the blocks open as the two numbers, never their sum; the learner puts them together and the model is recorded', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'regrouping-workbench', evalMode: 'add_no_regroup',
+    data: bench('addition', [challenge('a1', 'add_no_regroup', '24 + 12', 0)]) as unknown as Record<string, unknown> });
+  // 24 + 12 = 36: no column opens with 3 tens or 6 ones.
+  expect([drawn(h, 0), drawn(h, 1)]).toEqual([4, 2]);
+  expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 2, ones 4', blocksBeside: 'tens 1, ones 2' });
+  expect(h.view.container.textContent).not.toMatch(/\b36\b/);
+  h.press('Put together the ones');
+  h.press('Put together the tens');
+  expect([drawn(h, 0), drawn(h, 1)]).toEqual([6, 3]);
+  // A settled column prints no count: the learner counts the blocks.
+  expect(h.view.container.querySelector('[data-testid="blocks-0"]')!.parentElement!.textContent).not.toMatch(/6/);
+  expect(h.state().task!.demand).toMatchObject({ learnerWork: 'Blocks put together in every column. No digits written yet' });
+  type(h, [6, 3]);
+  h.press('Check Answer');
+  h.dispatch('advance'); h.confirmVisible();
+  await flushScoring();
+  expect(submittedMetrics()).toMatchObject({ problemsCompleted: 1, modelledCorrect: 1 });
+});
+
+it('a typed answer the blocks never reached still checks, but is not recorded as modelled', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'regrouping-workbench', evalMode: 'add_no_regroup',
+    data: bench('addition', [challenge('a1', 'add_no_regroup', '24 + 12', 0)]) as unknown as Record<string, unknown> });
+  type(h, [6, 3]);
+  h.press('Check Answer');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.dispatch('advance'); h.confirmVisible();
+  await flushScoring();
+  expect(submittedMetrics()).toMatchObject({ problemsCompleted: 1, modelledCorrect: 0 });
+});
+
+it('subtraction: Take away needs enough blocks; the learner breaks a ten first (52 − 27)', () => {
+  const h = mountWorkspace({ primitiveId: 'regrouping-workbench', evalMode: 'subtract_regroup',
+    data: bench('subtraction', [challenge('s4', 'subtract_regroup', '52 - 27', 1)], { showRegroupHints: false }) as unknown as Record<string, unknown> });
+  expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 5, ones 2', stillToTakeAway: 'tens 2, ones 7' });
+  h.press('Take away the ones');
+  expect(h.view.container.textContent).toMatch(/can't take 7 ones from 2 ones/);
+  expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 5, ones 2' });
+  h.press('Borrow for the ones');
+  h.press('Take away the ones');
+  h.press('Take away the tens');
+  expect(h.state().task!.demand).toMatchObject({ blocks: 'tens 2, ones 5', learnerWork: expect.stringContaining('Blocks taken away in every column') });
+  expect(h.state().task!.demand).not.toHaveProperty('stillToTakeAway');
 });

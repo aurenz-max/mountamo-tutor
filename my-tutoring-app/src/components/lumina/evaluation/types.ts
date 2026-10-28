@@ -3076,6 +3076,8 @@ export interface RegroupingWorkbenchMetrics extends BasePrimitiveMetrics {
   // Conceptual understanding
   algorithmConnectionMade: boolean; // Linked block action to written algorithm step
   incorrectRegroupAttempts: number; // Count of wrong trades
+  /** Correct answers the blocks also reached (bottom number put together / taken away, every needed trade made). */
+  modelledCorrect?: number;
 
   // Mode
   stepByStepUsed: boolean;

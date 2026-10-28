@@ -23,6 +23,15 @@ export function itemFitsMode(it: MultiDigitItem, mode: RwMode): boolean {
   return it.op === op && (it.features.regroups > 0) === regroup;
 }
 
+/**
+ * Whether the lesson asks for a one-digit number ("add a one-digit number to a two-digit number"). Without it the
+ * problems are two two-digit numbers at every tier: the easy tier's one-digit second number (51 + 3) broke Grade 2's
+ * "add two two-digit numbers" (curriculum design review 2026-10-27).
+ */
+export function lessonAllowsOneDigit(lesson: string): boolean {
+  return /\b(one|single|1)[- ]digit\b/i.test(lesson) && !/\btwo (two|2)[- ]digit\b/i.test(lesson);
+}
+
 export interface RwChallenge {
   id: string;
   type: RwMode;
