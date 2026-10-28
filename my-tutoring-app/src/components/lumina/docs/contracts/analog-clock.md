@@ -75,6 +75,14 @@
 - **Supersedes** the generator docblock's "the tier NEVER changes the time value": the grid (scope) is still the
   grade's; the tier picks the structure inside it. R1 holds: options and the echo rule are unchanged.
 
+### R7 — set_time_ampm: an event's time and its period, scored apart (NEW 2026-10-27)
+- Code-only (`service/math/clockAmPm.ts`): an event table owns every item; the instruction prints the time without its period ("School lunch is at 12:15."). Tier = events: easy plain events on :00/:30, medium any event before :40, hard the confusable ones first (lunch after 12, waking at 6:xx beside dinner at 6:xx, bedtime). No 12:00 noon or midnight. Both periods in every session.
+- The learner drags the hands and picks a.m. or p.m.; Check opens once a period is picked. Correct = both. A wrong time is its time miss; the right time with the wrong period is `wrong_period`. The result records `handMisses` and `periodMisses`. The item's period never reaches the tutor packet. `day_halves` (meaning) answers `wrong_period`: the day as two halves named by what happens in each, no time.
+- Demanded by MEAS002-04-b. Probe: `clockAmPm.test.ts`, `AnalogClock.workspace.test.tsx` "set_time_ampm", browser `qa/curriculum-design-review/math-g2-2026-10-27/verify/clock-ampm-*.png`.
+
+### R8 — no time bar on a set mode; the bar has no day or night (NEW 2026-10-27)
+- set_time and set_time_ampm render no time bar: it reached the target without the hands. The bar elsewhere is a plain track: its sun and moon strip spread 24 hours over the 12-hour bar ("12 PM" sat at 6:00). Probe: workspace tests drag the dial (`dragMinute`) and assert no slider.
+
 ## Gaps
 
 ### G1 — generated read/match hints name the hand positions · OPEN

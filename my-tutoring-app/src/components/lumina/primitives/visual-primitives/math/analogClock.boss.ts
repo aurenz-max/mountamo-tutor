@@ -12,7 +12,7 @@ import { analogClockCard, type ClockMiss } from './analogClock.card';
 import { CLOCK_LEVERS, practiceItem, practiceParent } from './analogClockLevers';
 import { clockAsk, clockHarnessWords, clockItems, clockKey, clockOptions, clockSpokenMisses } from './analogClockWorkspace';
 
-const CHALLENGE_TYPES = ['read', 'set_time', 'match', 'elapsed', 'hand_name', 'count_face', 'hear_time'];
+const CHALLENGE_TYPES = ['read', 'set_time', 'set_time_ampm', 'match', 'elapsed', 'hand_name', 'count_face', 'hear_time'];
 const CHOICE_TYPES = ['read', 'match', 'elapsed', 'hear_time'];
 const hourOk = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 12;
 const minuteOk = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 59;
@@ -55,7 +55,7 @@ export const analogClockBoss = spokenBoss<AnalogClockData, ClockChallenge, Clock
     // count_face has no wrong check: a number out of order restarts the count, so the wrong play is empty. set_time
     // moves the hands by dragging the dial or the bar under it; the driver has no drag input (contract G2).
     show: (right, c) => {
-      if (c.type === 'set_time') throw new Error('analog-clock set_time: the hands move by drag (dial or time bar); the driver has no drag input');
+      if (c.type === 'set_time' || c.type === 'set_time_ampm') throw new Error('analog-clock set_time: the hands move by drag (dial or time bar); the driver has no drag input');
       if (c.type === 'count_face') {
         if (!right) return [];
         return [...Array.from({ length: 12 }, (_, i): DriverInput => ({ type: 'touch', target: `number-${i + 1}` })), check];

@@ -38,6 +38,7 @@ export const MINUTE_NUMBERS_LEVER = 'minute_numbers';
 export const DIGITAL_ECHO_LEVER = 'digital_echo';
 export const START_SWEEP_LEVER = 'start_and_sweep';
 export const SIMPLER_LEVER = 'simpler_item';
+export const DAY_HALVES_LEVER = 'day_halves';
 
 const PRACTICE_SUFFIX = '~simpler';
 export const isPracticeClock = (c: Pick<ClockChallenge, 'id'>) => c.id.endsWith(PRACTICE_SUFFIX);
@@ -76,13 +77,13 @@ export function sweptMinutes(start: { hour: number; minute: number }, now: { hou
 
 // ── which aids a mode may take ───────────────────────────────────────────────
 
-const READS_TIME = new Set<ClockChallenge['type']>(['read', 'match', 'set_time', 'elapsed']);
+const READS_TIME = new Set<ClockChallenge['type']>(['read', 'match', 'set_time', 'set_time_ampm', 'elapsed']);
 /** Leak rule: the legend says which hand is the hour; on hand_name that is the answer. Not on elapsed (no hand miss). */
-export const legendOffered = (mode: ClockChallenge['type']) => mode === 'read' || mode === 'match' || mode === 'set_time';
+export const legendOffered = (mode: ClockChallenge['type']) => mode === 'read' || mode === 'match' || mode === 'set_time' || mode === 'set_time_ampm';
 export const minuteNumbersOffered = (mode: ClockChallenge['type']) => READS_TIME.has(mode);
 /** Leak rule: a digital readout of the dial is the answer everywhere but set_time, whose target is given. */
-export const echoOffered = (mode: ClockChallenge['type']) => mode === 'set_time';
-export const modelOffered = (mode: ClockChallenge['type']) => mode === 'hand_name' || mode === 'read' || mode === 'match' || mode === 'set_time';
+export const echoOffered = (mode: ClockChallenge['type']) => mode === 'set_time' || mode === 'set_time_ampm';
+export const modelOffered = (mode: ClockChallenge['type']) => mode === 'hand_name' || mode === 'read' || mode === 'match' || mode === 'set_time' || mode === 'set_time_ampm';
 
 // ── simpler items ────────────────────────────────────────────────────────────
 
@@ -183,8 +184,10 @@ export function tierPulled(c: ClockChallenge | null, view: ClockLeverView): stri
   ];
 }
 
-const READS = ['read', 'match', 'set_time'];
+const READS = ['read', 'match', 'set_time', 'set_time_ampm'];
 const NEW_PICTURE = 'It draws something new beside or under the clock, not marks on what is already drawn.';
+/** The time misses: the echo helps the hands, never the a.m./p.m. choice. */
+const TIME_ONLY = ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'];
 const SIMPLER = 'Not graded; the full item comes back after it.';
 
 export const CLOCK_LEVERS = leverSet<ClockChallenge, ClockLeverView>({
@@ -222,10 +225,16 @@ export const CLOCK_LEVERS = leverSet<ClockChallenge, ClockLeverView>({
       why: 'It runs a second clock at another time to show how the two hands move, not a solved item of this kind.',
       when: 'The learner reads the hour one number off (near half past), or mixes the hands up.',
       does: RUNNING_MODEL_DOES, fact: RUNNING_MODEL_FACT },
-    { id: DIGITAL_ECHO_LEVER, type: 'custom', carrier: 'shown', modes: ['set_time'], answers: 'all', why: NEW_PICTURE,
+    { id: DIGITAL_ECHO_LEVER, type: 'custom', carrier: 'shown', modes: ['set_time', 'set_time_ampm'], answers: TIME_ONLY, why: NEW_PICTURE,
       when: 'The learner cannot tell whether the hands show the time asked for.',
       does: 'Shows the time the hands show, in digits, under the clock as the hands move.',
       fact: 'The time the hands show is written in digits under the clock as they move.' },
+    { id: DAY_HALVES_LEVER, type: 'meaning', modes: ['set_time_ampm'], answers: ['wrong_period'],
+      when: 'The learner sets the time right but picks a.m. for an afternoon or evening event, or p.m. for a morning one.',
+      does: 'Shows the day in two halves under the clock: a.m. from midnight to noon (sleeping, waking up, breakfast, '
+        + 'morning at school) and p.m. from noon to midnight (lunch, the afternoon, dinner, bedtime). It names no time.',
+      fact: 'The day is shown in two halves: a.m. from midnight to noon (sleeping, waking up, breakfast, morning at '
+        + 'school), p.m. from noon to midnight (lunch, the afternoon, dinner, bedtime).' },
     { id: START_SWEEP_LEVER, type: 'marks', modes: ['elapsed'], answers: ['hour_off', 'too_short', 'too_long'],
       when: 'The learner loses count of the hours or minutes that pass.',
       does: 'Leaves faint copies of the hands where they started, and as the stopwatch runs shades the path the long hand '

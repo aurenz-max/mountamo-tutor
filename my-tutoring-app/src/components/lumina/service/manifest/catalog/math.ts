@@ -3062,6 +3062,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Drag clock hands to show a given time',
       },
       {
+        evalMode: 'set_time_ampm',
+        affordances: { representation: 'concrete', answers: ['manipulate', 'tap'] },
+        label: 'Set Time, a.m. or p.m. (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['set_time_ampm'],
+        description: 'Set the hands to an everyday event\'s time (waking up, lunch, bedtime) and choose a.m. or p.m. from the event; the time is given without it',
+      },
+      {
         evalMode: 'match',
         affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'] },
         label: 'Match (Tier 2)',

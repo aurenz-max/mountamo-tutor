@@ -16,10 +16,11 @@ import { defineCard, SAY_OR_SHOW, SPOKEN_AUDIO, TAP_ONE } from '../../../compone
  *   one), `next_hour` / `previous_hour` (the minutes right, the hour one number off), `wrong_hour`, `minute_as_number`
  *   (the number the long hand points at taken as the minutes: 3:03 for 3:15), `wrong_minute` (the hour right),
  *   `other_time`;
+ * - set_time_ampm: the time misses, then `wrong_period` (the hands right, a.m. and p.m. the other way round).
  * - elapsed: `hour_off` (an hour too long or short), `too_short`, `too_long`.
  * count_face has none: an out-of-order touch starts the count again and Check opens only at 12 in order.
  */
-export type ClockMiss = 'other_hand'
+export type ClockMiss = 'other_hand' | 'wrong_period'
   | 'hands_swapped' | 'next_hour' | 'previous_hour' | 'wrong_hour' | 'minute_as_number' | 'wrong_minute' | 'other_time'
   | 'hour_off' | 'too_short' | 'too_long';
 
@@ -33,6 +34,7 @@ export const CLOCK_MISSES = {
   read: TIME_MISSES,
   match: TIME_MISSES,
   set_time: TIME_MISSES,
+  set_time_ampm: [...TIME_MISSES, 'wrong_period'],
   elapsed: ['hour_off', 'too_short', 'too_long'],
 } as const satisfies Record<string, readonly ClockMiss[]>;
 
@@ -49,14 +51,17 @@ export const analogClockCard = defineCard<ClockMiss>({
     hear_time: { ...TAP_ONE, moves: 'taps a clock face, then presses Check', misses: CLOCK_MISSES.hear_time },
     read: { ...SAY_OR_SHOW, moves: PICK, misses: CLOCK_MISSES.read },
     set_time: { answer: 'manipulate', judge: 'activity', flow: 'board',
-      moves: 'drags round the clock face, or slides the bar under it, to move the hands, then presses Check',
+      moves: 'drags round the clock face to move the hands, then presses Check',
       misses: CLOCK_MISSES.set_time },
+    set_time_ampm: { answer: 'manipulate', judge: 'activity', flow: 'board',
+      moves: 'drags round the clock face to move the hands, picks a.m. or p.m., then presses Check',
+      misses: CLOCK_MISSES.set_time_ampm },
     match: { ...SAY_OR_SHOW, moves: PICK, misses: CLOCK_MISSES.match },
     elapsed: { ...SAY_OR_SHOW, moves: 'may run the stopwatch (Start, Stop, Reset) first; may instead tap a duration, then press Check',
       misses: CLOCK_MISSES.elapsed },
   },
   words: {
-    job: 'name the clock hands, count round the face, or read, set, match and time a clock',
+    job: 'name the clock hands, count round the face, or read, set (with a.m. or p.m. from the event), match and time a clock',
     answer: 'their answer',
     question: 'the ask and the clock on screen',
   },

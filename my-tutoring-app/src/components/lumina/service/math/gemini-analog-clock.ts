@@ -12,6 +12,7 @@ import {
 import { buildScopePromptSection } from "../scopeContext";
 import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
 import { bandFittingTargets, bandForGrid, clockChallenges, clockGrid, elapsedChallenges } from "./analogClockItemSpace";
+import { buildAmPmSession } from "./clockAmPm";
 
 const SPACE_COUNT = 5;
 
@@ -109,6 +110,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Instruction tells the student what time to set (e.g., "Set the clock to 3:15").`,
     schemaDescription: "'set_time' (set clock hands to target time)",
   },
+  set_time_ampm: {
+    promptDoc:
+      `"set_time_ampm": Student sets the hands to an everyday event's time (waking up, lunch, bedtime) and picks a.m. or p.m. from the event.`,
+    schemaDescription: "'set_time_ampm' (set the clock and choose a.m. or p.m.)",
+  },
   match: {
     promptDoc:
       `"match": Student matches an analog clock face to the correct digital time from 4 options. `
@@ -125,7 +131,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 type ChallengeType =
-  | 'read' | 'set_time' | 'match' | 'elapsed'
+  | 'read' | 'set_time' | 'set_time_ampm' | 'match' | 'elapsed'
   // K clock-parts family: the face itself, before the time it tells.
   | 'hand_name' | 'count_face' | 'hear_time';
 
@@ -188,7 +194,7 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
   // so it is off at every tier there. (Answer-leak rule, not a tier decision.)
   const showHandLegend = pinnedType !== 'hand_name' && tier !== 'hard';
   // ANSWER-LEAK guard: echo only on set_time (target given), and only at easy.
-  const showDigitalEcho = pinnedType === 'set_time' && tier === 'easy';
+  const showDigitalEcho = (pinnedType === 'set_time' || pinnedType === 'set_time_ampm') && tier === 'easy';
 
   const promptLines: string[] = [
     `Support tier: ${tier.toUpperCase()} — this sets on-clock READING SUPPORT only (${tier === 'easy' ? 'maximum support: minute-position numbers and a hand-color legend help the student read the dial' : tier === 'medium' ? 'moderate support: only the hand-color legend remains; the student reads the minute position themselves' : 'minimum support: a bare dial — the student reads hand positions unaided and explains what they see'}). The TIME VALUE never changes by tier — keep it on the grade-band granularity and within the eval mode. A harder tier removes reading AIDS, never changes the time.`,
@@ -205,6 +211,7 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       );
       break;
     case 'set_time':
+    case 'set_time_ampm':
       promptLines.push(
         tier === 'easy'
           ? 'The student is told the TARGET time; numbered minute marks, a hand legend, and a digital echo of the current hand position help them check their progress toward the target (the echo shows what they have set, not the answer — the answer was given).'
@@ -546,6 +553,20 @@ export const generateAnalogClock = async (
   const tierSection = tierScaffold
     ? `\n## WITHIN-MODE SUPPORT TIER (reading-aid level — NOT time value)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
+
+  // ── set_time_ampm is code-only: the event table owns every item (clockAmPm.ts); the tier picks the events. ──
+  if (pinnedType === 'set_time_ampm') {
+    const challenges = buildAmPmSession(supportTier);
+    const ampmData: AnalogClockData = {
+      title: 'Set the Clock: a.m. or p.m.?',
+      description: 'Set the hands to the time of each event, then choose a.m. or p.m.',
+      gradeBand: bandFittingTargets('1-2', challenges),
+      challenges,
+    };
+    applySupportTier(ampmData, supportTier, pinnedType);
+    console.log(`[AnalogClock] set_time_ampm ${supportTier ?? 'no tier'}: ${challenges.map((c) => `${c.event} ${c.targetHour}:${String(c.targetMinute).padStart(2, '0')} ${c.period}`).join(' | ')}`);
+    return ampmData;
+  }
 
   // ── Item-space path: with a tier, code picks the times (the tier also keeps its reading aids). ──
   const spaced = await clockFromItemSpace({

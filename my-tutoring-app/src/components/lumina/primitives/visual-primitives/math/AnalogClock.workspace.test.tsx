@@ -124,16 +124,24 @@ it('count_face: twelve numbers in order open Check and pass; one out of order st
   h.close();
 });
 
-it('set_time: the hands move by the time bar; a wrong time is named, Try again puts them back at 12:00', () => {
+/** Drag the minute hand to `minute` on the dial (jsdom draws it at 0,0, so the angle is from there). */
+const dragMinute = (h: WorkspaceHarness, minute: number) => {
+  const dial = h.view.getByTestId('clock-dial'), a = (minute * 6 * Math.PI) / 180;
+  act(() => { fireEvent.pointerDown(dial, { clientX: 0, clientY: -100, pointerId: 1 }); });
+  act(() => { fireEvent.pointerMove(dial, { clientX: Math.sin(a) * 100, clientY: -Math.cos(a) * 100, pointerId: 1 }); });
+  act(() => { fireEvent.pointerUp(dial, { pointerId: 1 }); });
+};
+
+it('set_time: the hands move by dragging, and there is no time bar; a wrong time is named, Try again puts them back at 12:00', () => {
   const h = mount('set_time', [CHALLENGES.set_time]);
-  const slider = () => h.view.getByRole('slider');
+  expect(h.view.queryByRole('slider')).toBeNull();
   check(h);
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'wrong_minute' });
-  act(() => { fireEvent.keyDown(slider(), { key: 'PageUp' }); });
-  // Closed after the check: the bar does not move the hands.
+  dragMinute(h, 30);
+  // Closed after the check: dragging does not move the hands.
   expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 12:00' });
   h.dispatch('retry');
-  act(() => { fireEvent.keyDown(slider(), { key: 'PageUp' }); });
+  dragMinute(h, 30);
   expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 12:30' });
   check(h);
   expect(h.state().task!.evidence.correctness).toBe('correct');
@@ -166,4 +174,29 @@ it('clockMiss names each type\'s signature error', () => {
   expect(timeMiss({ hour: 3, minute: 10 }, { hour: 3, minute: 50 })).toBe('minute_as_number');
   expect(timeMiss({ hour: 1, minute: 0 }, { hour: 12, minute: 0 })).toBe('next_hour');
   expect(timeMiss({ hour: 5, minute: 20 }, { hour: 4, minute: 50 })).toBe('other_time');
+});
+
+it('set_time_ampm: the hands and a.m./p.m. are checked apart; the right time with the wrong period is its own miss', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const lunch = { id: 'p', type: 'set_time_ampm' as const, instruction: 'School lunch is at 12:30. Set the clock, then choose a.m. or p.m.',
+    targetHour: 12, targetMinute: 30, period: 'pm' as const, event: 'School lunch', hint: '' };
+  const h = mount('set_time_ampm', [lunch]);
+  expect(h.view.queryByRole('slider')).toBeNull();
+  // The item's period never reaches the tutor's packet (the levers' own descriptions name a.m. and p.m. generically).
+  expect(JSON.stringify(h.state().task)).not.toMatch(/"period"|"pm"/);
+  // Check stays closed until a period is picked.
+  expect((h.view.getByRole('button', { name: /check/i }) as HTMLButtonElement).disabled).toBe(true);
+  dragMinute(h, 30);
+  h.press('a.m.');
+  expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 12:30; picked a.m.' });
+  check(h);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'wrong_period' });
+  expect(h.dispatch('pull_lever', { lever: 'day_halves' }).status).toBe('committed');
+  expect(h.view.container.querySelector('[data-lever="day-halves"]')!.textContent).not.toMatch(/\d/);
+  h.dispatch('retry');
+  dragMinute(h, 30);
+  h.press('p.m.');
+  check(h);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.close();
 });

@@ -28,7 +28,7 @@ import { leverScene } from '../../../components/live-activity/bossLevers';
 import { analogClockBoss } from './analogClock.boss';
 import { clockMiss, clockScene, describeClockWork, isSpokenClock, type ClockView } from './analogClockWorkspace';
 import {
-  CLOCK_LEVERS, DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER,
+  CLOCK_LEVERS, DAY_HALVES_LEVER, DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER,
   SHORT_HANDS_LEVER, START_SWEEP_LEVER, runningModelHour, sweptMinutes, tierPulled,
 } from './analogClockLevers';
 
@@ -40,6 +40,8 @@ export interface ClockChallenge {
   id: string;
   type:
     | 'read' | 'set_time' | 'match' | 'elapsed'
+    // set_time with a.m./p.m.: the event decides the period; the printed time never carries it.
+    | 'set_time_ampm'
     // K clock-parts family: what the face IS, before what it says.
     | 'hand_name' | 'count_face' | 'hear_time';
   instruction: string;
@@ -58,6 +60,9 @@ export interface ClockChallenge {
   startMinute?: number;
   /** For elapsed: duration description e.g. "1 hour" */
   elapsedDescription?: string;
+  /** set_time_ampm: the period the event happens in, and the event (named in the instruction). Code-owned. */
+  period?: 'am' | 'pm';
+  event?: string;
   /** hand_name: which hand the child has to point at. Code-owned. */
   targetHand?: 'hour' | 'minute';
   hint: string;
@@ -115,21 +120,13 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   hear_time: { label: 'Hear the Time', icon: '👂', accentColor: 'purple' },
   read: { label: 'Read', icon: '🕐', accentColor: 'blue' },
   set_time: { label: 'Set Time', icon: '🖐️', accentColor: 'purple' },
+  set_time_ampm: { label: 'Set Time, a.m. or p.m.', icon: '🌗', accentColor: 'purple' },
   match: { label: 'Match', icon: '🔗', accentColor: 'emerald' },
   elapsed: { label: 'Elapsed', icon: '⏱️', accentColor: 'amber' },
 };
 
-// Timeline bar day-cycle icons and labels
-const DAY_CYCLE = [
-  { pos: 0, label: '12 AM', icon: '🌙' },
-  { pos: 0.125, label: '3 AM', icon: '🌙' },
-  { pos: 0.25, label: '6 AM', icon: '🌅' },
-  { pos: 0.375, label: '9 AM', icon: '☀️' },
-  { pos: 0.5, label: '12 PM', icon: '☀️' },
-  { pos: 0.625, label: '3 PM', icon: '☀️' },
-  { pos: 0.75, label: '6 PM', icon: '🌅' },
-  { pos: 0.875, label: '9 PM', icon: '🌙' },
-];
+/** The modes whose hands the learner sets by dragging. */
+const isSetMode = (type: ClockChallenge['type'] | undefined) => type === 'set_time' || type === 'set_time_ampm';
 
 // ============================================================================
 // Utility Functions
@@ -467,7 +464,8 @@ const RunningModel: React.FC<{ hour: number }> = ({ hour }) => {
   );
 };
 
-/** Timeline scrubber bar with sun/moon icons */
+/** Timeline scrubber bar over the 12 hours of the dial. No sun or moon: a 12-hour dial does not say day or night
+ *  (the old strip put its "12 PM" sun at 6:00). Never on a set mode: the bar reached the target without the hands. */
 const TimelineScrubber: React.FC<{
   hour: number;
   minute: number;
@@ -479,35 +477,13 @@ const TimelineScrubber: React.FC<{
   // Map to slider value 0-100
   const sliderValue = (totalMinutes / 720) * 100;
 
-  // Sky gradient based on time
-  const getGradient = () => {
-    const t = sliderValue / 100;
-    if (t < 0.2 || t > 0.85) return 'from-indigo-950 via-indigo-900 to-slate-900'; // night
-    if (t < 0.3) return 'from-indigo-900 via-orange-900 to-amber-800'; // dawn
-    if (t < 0.7) return 'from-sky-600 via-sky-400 to-sky-600'; // day
-    return 'from-amber-800 via-orange-900 to-indigo-900'; // dusk
-  };
-
   return (
     <div className="w-full mt-4 px-2">
-      {/* Icon strip */}
-      <div className="relative h-6 mb-1">
-        {DAY_CYCLE.map((mark) => (
-          <span
-            key={mark.label}
-            className="absolute text-sm transform -translate-x-1/2"
-            style={{ left: `${mark.pos * 100}%` }}
-            title={mark.label}
-          >
-            {mark.icon}
-          </span>
-        ))}
-      </div>
 
       {/* Gradient track + interactive slider — share a single relative container
            so the invisible Slider's absolute inset-0 is scoped here, not the whole card */}
       <div className="relative h-2">
-        <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${getGradient()} border border-white/10 overflow-hidden`}>
+        <div className="absolute inset-0 rounded-full bg-slate-700/60 border border-white/10 overflow-hidden">
           {/* Position indicator */}
           <div
             className="absolute top-0 h-full w-1 bg-white/80 rounded-full shadow-lg shadow-white/30"
@@ -649,6 +625,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   /** hand_name: the hand the child pointed at. */
   const [pickedHand, setPickedHand] = useState<'hour' | 'minute' | null>(null);
+  // set_time_ampm: the period picked, and this item's wrong checks by part (the hands, the period), recorded with
+  // the result: a right time with the wrong period is a different gap from the reverse.
+  const [pickedPeriod, setPickedPeriod] = useState<'am' | 'pm' | null>(null);
+  const partMisses = useRef({ hands: 0, period: 0 });
   /** count_face: the numerals tapped so far, in the order they were tapped. */
   const [countedNumerals, setCountedNumerals] = useState<number[]>([]);
   const [feedback, setFeedback] = useState('');
@@ -691,8 +671,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
       // target so nothing on screen contradicts the key if it is ever shown.
       setDisplayHour(currentChallenge.targetHour);
       setDisplayMinute(currentChallenge.targetMinute);
-    } else if (currentChallenge.type === 'set_time') {
+    } else if (isSetMode(currentChallenge.type)) {
       // Reset clock to 12:00 — student drags to target
+      setPickedPeriod(null);
+      partMisses.current = { hands: 0, period: 0 };
       setDisplayHour(12);
       setDisplayMinute(0);
       prevMinuteRef.current = 0;
@@ -762,7 +744,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
   // Drag-to-set interaction (for set_time mode)
   // -------------------------------------------------------------------------
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (currentChallenge?.type !== 'set_time' || hasSubmittedEvaluation || learnerBlocked()) return;
+    if (!isSetMode(currentChallenge?.type) || hasSubmittedEvaluation || learnerBlocked()) return;
     setIsDragging(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   }, [currentChallenge?.type, hasSubmittedEvaluation]);
@@ -826,6 +808,13 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
       const dispH = displayHour % 12;
       const targH = currentChallenge.targetHour % 12;
       correct = dispH === targH && displayMinute === currentChallenge.targetMinute;
+    } else if (currentChallenge.type === 'set_time_ampm') {
+      if (pickedPeriod === null) return;
+      const handsRight = displayHour % 12 === currentChallenge.targetHour % 12 && displayMinute === currentChallenge.targetMinute;
+      const periodRight = pickedPeriod === currentChallenge.period;
+      if (!handsRight) partMisses.current.hands += 1;
+      if (!periodRight) partMisses.current.period += 1;
+      correct = handsRight && periodRight;
     } else if (currentChallenge.type === 'elapsed') {
       if (selectedOption === null) return;
       correct = selectedOption === currentChallenge.correctOptionIndex;
@@ -846,6 +835,8 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
           attempts: currentAttempts + 1,
           score: Math.max(100 - (currentAttempts * 25), 25),
           targetTime,
+          ...(currentChallenge.type === 'set_time_ampm'
+            ? { handMisses: partMisses.current.hands, periodMisses: partMisses.current.period } : {}),
         });
       }
     } else {
@@ -860,7 +851,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
       correct ? undefined : clockMiss(currentChallenge, work));
   }, [
     currentChallenge, selectedOption, displayHour, displayMinute,
-    pickedHand, countedNumerals, practice,
+    pickedHand, pickedPeriod, countedNumerals, practice,
     currentAttempts, hasSubmittedEvaluation, recordResult,
   ]);
 
@@ -983,14 +974,14 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
   // The tier's aids are the session item's (a practice item keeps them); a pulled lever turns one on for this item.
   const tierMinuteNumbers = sessionChallenge?.showMinuteNumbers ?? false;
   const tierHandLegend = sessionChallenge?.showHandLegend ?? false;
-  const tierEcho = (sessionChallenge?.showDigitalEcho ?? false) && sessionChallenge?.type === 'set_time';
+  const tierEcho = (sessionChallenge?.showDigitalEcho ?? false) && isSetMode(sessionChallenge?.type);
   const showMinuteNumbers = tierMinuteNumbers || leverOn(MINUTE_NUMBERS_LEVER);
   const showHandLegend = tierHandLegend || leverOn(HAND_LEGEND_LEVER);
   // ANSWER-LEAK guard is upstream (generator only ever enables this on set_time),
   // but defensively re-clamp here so the echo can NEVER show on read/match — the
   // displayed time is the answer there. set_time's target was given, so the echo
   // is a self-check; elapsed keeps its existing stopwatch readout below.
-  const showDigitalEcho = currentChallenge?.type === 'set_time' && (tierEcho || leverOn(DIGITAL_ECHO_LEVER));
+  const showDigitalEcho = isSetMode(currentChallenge?.type) && (tierEcho || leverOn(DIGITAL_ECHO_LEVER));
   const runningModelOn = leverOn(RUNNING_MODEL_LEVER);
   const sweepStart = currentChallenge?.type === 'elapsed'
     ? { hour: currentChallenge.startHour ?? currentChallenge.targetHour, minute: currentChallenge.startMinute ?? 0 } : null;
@@ -1005,7 +996,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
 
   // The learner's work as the check and the tutor read it. Written every render, read by the check handler.
   clockView.current = {
-    selectedOption, pickedHand, countedNumerals, displayHour, displayMinute,
+    selectedOption, pickedHand, pickedPeriod, countedNumerals, displayHour, displayMinute,
     minuteNumbersShown: showMinuteNumbers, handLegendShown: showHandLegend, digitalEchoShown: showDigitalEcho,
   };
 
@@ -1100,8 +1091,9 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
             <div className="flex flex-wrap items-center justify-center gap-3">
             <div
               ref={svgContainerRef}
+              data-testid="clock-dial"
               hidden={currentChallenge?.type === 'hear_time'}
-              className={`relative cursor-${currentChallenge?.type === 'set_time' ? 'grab' : 'default'} touch-none`}
+              className={`relative cursor-${isSetMode(currentChallenge?.type) ? 'grab' : 'default'} touch-none`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
@@ -1127,7 +1119,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
               />
 
               {/* Drag hint overlay for set_time */}
-              {currentChallenge?.type === 'set_time' && !isDragging && !isCurrentChallengeCorrect && (
+              {isSetMode(currentChallenge?.type) && !isDragging && !isCurrentChallengeCorrect && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <span className="text-xs text-slate-500 bg-slate-900/70 px-2 py-1 rounded-full">
                     Drag to set time
@@ -1165,8 +1157,44 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
               </div>
             )}
 
-            {/* Timeline scrubber */}
-            <div className="w-full max-w-sm">
+            {/* day_halves lever: the day as two halves, named by what happens in each; no time. */}
+            {leverOn(DAY_HALVES_LEVER) && (
+              <div data-lever="day-halves" className="grid w-full max-w-md grid-cols-2 gap-2 text-sm">
+                <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-3">
+                  <p className="font-bold text-sky-200">a.m.</p>
+                  <p className="text-slate-300">midnight to noon: sleeping, waking up, breakfast, morning at school</p>
+                </div>
+                <div className="rounded-xl border border-indigo-400/30 bg-indigo-500/10 p-3">
+                  <p className="font-bold text-indigo-200">p.m.</p>
+                  <p className="text-slate-300">noon to midnight: lunch, the afternoon, dinner, bedtime</p>
+                </div>
+              </div>
+            )}
+
+            {/* a.m. / p.m. (set_time_ampm): the event decides it. */}
+            {currentChallenge?.type === 'set_time_ampm' && !isCurrentChallengeCorrect && (
+              <div className="flex gap-3" role="radiogroup" aria-label="a.m. or p.m.">
+                {(['am', 'pm'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    role="radio"
+                    aria-checked={pickedPeriod === p}
+                    aria-label={p === 'am' ? 'a.m.' : 'p.m.'}
+                    disabled={hasSubmittedEvaluation || closed}
+                    onClick={() => { if (!learnerBlocked()) { SoundManager.tick(); setPickedPeriod(p); } }}
+                    className={`px-6 py-2 rounded-xl border-2 text-lg font-bold transition-colors disabled:opacity-50 ${
+                      pickedPeriod === p ? 'border-purple-400 bg-purple-500/20 text-purple-100' : 'border-white/15 bg-white/5 text-slate-300 hover:border-white/30'
+                    }`}
+                  >
+                    {p === 'am' ? 'a.m.' : 'p.m.'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Timeline scrubber: not on a set mode, where it reached the target without the hands. */}
+            {!isSetMode(currentChallenge?.type) && <div className="w-full max-w-sm">
               <TimelineScrubber
                 hour={displayHour}
                 minute={displayMinute}
@@ -1179,7 +1207,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
                   closed
                 }
               />
-            </div>
+            </div>}
 
             {/* Stopwatch controls (elapsed mode) */}
             {currentChallenge?.type === 'elapsed' && !isCurrentChallengeCorrect && (
@@ -1292,7 +1320,9 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
                         ? pickedHand === null
                         : currentChallenge.type === 'count_face'
                           ? countedNumerals.length < 12
-                          : currentChallenge.type !== 'set_time' && selectedOption === null) ||
+                          : currentChallenge.type === 'set_time_ampm'
+                            ? pickedPeriod === null
+                            : currentChallenge.type !== 'set_time' && selectedOption === null) ||
                       stopwatchRunning
                     }
                   />

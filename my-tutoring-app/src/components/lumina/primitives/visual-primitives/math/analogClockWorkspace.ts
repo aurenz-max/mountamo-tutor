@@ -166,6 +166,8 @@ export interface ClockView {
   selectedOption: number | null;
   /** hand_name: the hand touched, by what the learner sees (short = hour hand, long = minute hand). */
   pickedHand: 'hour' | 'minute' | null;
+  /** set_time_ampm: the period picked. */
+  pickedPeriod?: 'am' | 'pm' | null;
   /** count_face: the numbers touched so far, in order. */
   countedNumerals: readonly number[];
   /** The time the hands show now. */
@@ -200,6 +202,9 @@ export function describeClockWork(challenge: ClockChallenge, view: ClockView): s
       return view.selectedOption === null ? 'No clock face picked yet' : `Picked clock face ${view.selectedOption + 1}`;
     case 'set_time':
       return `The hands show ${hhmm(view.displayHour, view.displayMinute)}`;
+    case 'set_time_ampm':
+      return `The hands show ${hhmm(view.displayHour, view.displayMinute)}; ${view.pickedPeriod
+        ? `picked ${view.pickedPeriod === 'am' ? 'a.m.' : 'p.m.'}` : 'no a.m. or p.m. picked yet'}`;
     case 'elapsed':
       return picked ? `Picked ${picked}` : 'No duration picked yet';
     default:
@@ -249,6 +254,10 @@ export function clockMiss(challenge: ClockChallenge | null, view: ClockView): Cl
       return undefined;
     case 'set_time':
       return timeMiss({ hour: view.displayHour, minute: view.displayMinute }, target);
+    case 'set_time_ampm':
+      // The hands first: a wrong time is that miss whatever the period; the right time with the wrong period is its own.
+      return timeMiss({ hour: view.displayHour, minute: view.displayMinute }, target)
+        ?? (view.pickedPeriod && view.pickedPeriod !== challenge.period ? 'wrong_period' : undefined);
     case 'elapsed': {
       if (view.selectedOption === null || view.selectedOption === challenge.correctOptionIndex) return undefined;
       const got = durationMinutes(clockOptions(challenge)[view.selectedOption]);
@@ -289,6 +298,9 @@ function constraintsOf(c: ClockChallenge): string {
       return `${BEFORE} which face shows the time asked for. ${TEACH}`;
     case 'set_time':
       return TEACH;
+    case 'set_time_ampm':
+      return `${BEFORE} whether it is a.m. or p.m. The event decides it: ask when the event happens in the learner's own `
+        + `day (before lunch or after lunch, in the morning or at night). A 12 on the clock does not mean the morning. ${TEACH}`;
     case 'elapsed':
       return `${BEFORE} how long it took or which duration is right. ${TEACH}`;
     default:
@@ -318,6 +330,12 @@ export function clockScene(challenge: ClockChallenge, view: ClockView): SceneOf 
     case 'set_time':
       drawn.clock = 'a clock face whose hands the learner moves; it starts at 12:00';
       drawn.digitalTime = view.digitalEchoShown ? 'shown under the clock as the hands move' : 'hidden';
+      aids();
+      break;
+    case 'set_time_ampm':
+      drawn.clock = 'a clock face whose hands the learner moves; it starts at 12:00';
+      drawn.periodButtons = 'two buttons under the clock, a.m. and p.m.; the learner picks one';
+      drawn.digitalTime = view.digitalEchoShown ? 'shown under the clock as the hands move, with no a.m. or p.m.' : 'hidden';
       aids();
       break;
     case 'elapsed':

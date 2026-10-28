@@ -17,6 +17,7 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { AnalogClockData, ClockChallenge } from './AnalogClock';
 
+
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
 
@@ -163,6 +164,14 @@ it('elapsed: start hands appear on the pull, the sweep follows the learner\'s ow
   expect(q(h, 'button').map(b => b.textContent)).not.toContain('1 hour 30 minutes');
 });
 
+/** Drag the minute hand to `minute` on the dial (jsdom draws it at 0,0, so the angle is from there). */
+const dragMinute = (h: WorkspaceHarness, minute: number) => {
+  const dial = h.view.getByTestId('clock-dial'), a = (minute * 6 * Math.PI) / 180;
+  act(() => { fireEvent.pointerDown(dial, { clientX: 0, clientY: -100, pointerId: 1 }); });
+  act(() => { fireEvent.pointerMove(dial, { clientX: Math.sin(a) * 100, clientY: -Math.cos(a) * 100, pointerId: 1 }); });
+  act(() => { fireEvent.pointerUp(dial, { pointerId: 1 }); });
+};
+
 it('set_time: the digital echo shows the hands\' time as they move; practice sets a whole hour', () => {
   const h = mount('set_time', [{ id: 's', type: 'set_time', instruction: 'Set the clock to 12:30.', targetHour: 12, targetMinute: 30, hint: '' },
     { id: 's2', type: 'set_time', instruction: 'Set the clock to 3:00.', targetHour: 3, targetMinute: 0, hint: '' }]);
@@ -172,7 +181,7 @@ it('set_time: the digital echo shows the hands\' time as they move; practice set
   expect(h.dispatch('pull_lever', { lever: 'digital_echo' }).status).toBe('committed');
   expect(q(h, '.font-mono').map(d => d.textContent)).toEqual(['12:00']);
   h.dispatch('retry');
-  act(() => { fireEvent.keyDown(h.view.getByRole('slider'), { key: 'PageUp' }); });
+  dragMinute(h, 30);
   expect(q(h, '.font-mono').map(d => d.textContent)).toEqual(['12:30']);
   check(h);
   expect(attempts(h).at(-1)).toMatchObject({ correct: true, levers: ['digital_echo'] });

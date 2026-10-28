@@ -44,7 +44,7 @@ export const bandForGrid = (grid: number, grade?: string): 'K' | '1-2' | '3-5' =
 const SNAP: Record<string, number> = { K: 30, '1-2': 15, '3-5': 5 };
 /** A band whose hands can reach every set_time target (a 2:25 on a 15-minute snap cannot be set). */
 export function bandFittingTargets(band: 'K' | '1-2' | '3-5', challenges: { type: string; targetMinute: number }[]): 'K' | '1-2' | '3-5' {
-  const minutes = challenges.filter((c) => c.type === 'set_time').map((c) => c.targetMinute);
+  const minutes = challenges.filter((c) => c.type === 'set_time' || c.type === 'set_time_ampm').map((c) => c.targetMinute);
   if (minutes.every((m) => m % SNAP[band] === 0)) return band;
   return minutes.every((m) => m % 15 === 0) && band === 'K' ? '1-2' : '3-5';
 }
