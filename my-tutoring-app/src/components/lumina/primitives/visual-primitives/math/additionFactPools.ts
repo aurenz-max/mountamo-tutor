@@ -5,7 +5,7 @@
 import type { AdditionFactStrategy } from './AdditionFactStrategies';
 
 export const ADDITION_FACT_STRATEGIES: readonly AdditionFactStrategy[] = [
-  'plus_zero', 'plus_one', 'doubles', 'turnaround', 'plus_two',
+  'plus_zero', 'plus_one', 'doubles', 'near_doubles', 'turnaround', 'plus_two',
   'facts_3_4', 'facts_5_6', 'facts_7_8', 'facts_mixed',
 ];
 
@@ -41,6 +41,8 @@ function familyPool(strategy: AdditionFactStrategy): Pair[] {
     case 'plus_zero': return both(range(1, 9).map((a) => [a, 0] as Pair));
     case 'plus_one': return both(range(1, 9).map((a) => [a, 1] as Pair));
     case 'doubles': return range(1, 9).map((n) => [n, n] as Pair);
+    // A double and one more, both orders: 2 + 3 through 8 + 9 (sums 5-17). One apart only (curriculum examples).
+    case 'near_doubles': return both(range(2, 8).map((n) => [n, n + 1] as Pair));
     case 'turnaround': return REMAIN.concat([[1, 6], [2, 7], [0, 9], [1, 8], [2, 5]]);
     case 'plus_two': return both(range(2, 9).map((a) => [a, 2] as Pair));
     case 'facts_3_4': return both(REMAIN.filter(([a]) => a <= 4));

@@ -22,13 +22,14 @@ export const additionFactStrategiesCard = defineCard<AdditionFactMiss>({
     plus_zero: mode,
     plus_one: mode,
     doubles: mode,
+    near_doubles: mode,
     turnaround: mode,
     plus_two: mode,
     big_facts: mode,
   },
   words: {
     job: 'recall the total of each addition fact with the session\'s strategy, named on screen: adding zero, one more, '
-      + 'doubles, the turn-around, two more, or a fact they know for the big facts',
+      + 'doubles, a double and one more, the turn-around, two more, or a fact they know for the big facts',
     answer: 'the total',
     question: 'the fact and the strategy',
   },

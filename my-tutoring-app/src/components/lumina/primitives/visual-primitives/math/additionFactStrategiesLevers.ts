@@ -33,7 +33,7 @@ export type SupportTier = 'easy' | 'medium' | 'hard';
 
 const BY_MORE = ['short_by_more', 'over_by_more'];
 const NEAR_MISSES = ['one_short', 'one_over', ...BY_MORE];
-const NOT_DOUBLES = ['plus_zero', 'plus_one', 'turnaround', 'plus_two', 'big_facts'];
+const NOT_DOUBLES = ['plus_zero', 'plus_one', 'near_doubles', 'turnaround', 'plus_two', 'big_facts'];
 
 /** Count on from the bigger addend by the smaller one, when the smaller is 1-3. */
 export function hopShape(c: C): { start: number; hops: number } | null {
@@ -81,7 +81,7 @@ export const ADDITION_FACT_LEVERS = leverSet<C, AdditionFactLeverContext>({
       does: 'Shows the flipped fact card: the same two numbers in the other order, with its total.',
       content: c => c.knownFact ?? null,
       fact: 'The flipped fact card is on screen: the same two numbers in the other order, with its total.' },
-    { id: NEAR_LEVER, type: 'layout', modes: ['big_facts', 'turnaround'], answers: NEAR_MISSES,
+    { id: NEAR_LEVER, type: 'layout', modes: ['near_doubles', 'big_facts', 'turnaround'], answers: NEAR_MISSES,
       when: 'The learner cannot reach a big fact from a double it knows.',
       does: 'Draws the double as two equal rows of dots and the extra dots set apart, captioned with the double and "one more" (or "two more"). No total is written.',
       content: nearDouble,

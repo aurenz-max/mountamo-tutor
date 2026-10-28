@@ -100,6 +100,38 @@ export interface AdditionFactSession {
 }
 
 /**
+ * Near doubles: the tier is the order, not the facts (every near double is one structure). easy puts every near
+ * double straight after its double (6 + 6, then 6 + 7); medium, and no tier, opens with two such pairs and ends with
+ * near doubles alone; hard asks them alone. Both orders appear (7 + 6 and 6 + 7). The intro is a near double the
+ * session never asks.
+ */
+export function buildNearDoublesSession(
+  rng: () => number = Math.random, maxSum = MAX_FACT_SUM, tier: 'easy' | 'medium' | 'hard' | null = null,
+): AdditionFactSession {
+  const oriented = strategyPool('near_doubles', maxSum);
+  const allLows = shuffle(Array.from(new Set(oriented.map(([a, b]) => Math.min(a, b)))), rng);
+  // One near double is kept back for the intro's worked example, so the session never asks it.
+  const introLow = allLows.length > 2 ? allLows[allLows.length - 1] : undefined;
+  const lows = introLow === undefined ? allLows : allLows.slice(0, -1);
+  const orient = (n: number): Pair => (rng() < 0.5 ? [n, n + 1] : [n + 1, n]);
+  const count = Math.min(sessionCount('near_doubles', maxSum), 2 * lows.length);
+  const primedPairs = tier === 'easy' ? Math.floor(count / 2) : tier === 'hard' ? 0 : Math.min(2, Math.floor(count / 4));
+  const items: Array<{ pair: Pair; primed?: boolean }> = [];
+  const primedLows = lows.slice(0, primedPairs);
+  for (const n of primedLows) items.push({ pair: [n, n] }, { pair: orient(n), primed: true });
+  // The rest alone: the lows not primed first, then the other order of a fact already asked alone (never the
+  // order just asked, and never straight after its double).
+  const alone: Pair[] = lows.slice(primedPairs).map(orient);
+  for (const [a, b] of alone.slice()) if (items.length + alone.length < count) alone.push([b, a]);
+  const lone = arrange(alone, rng).slice(0, count - items.length);
+  lone.forEach((pair) => items.push({ pair }));
+  const challenges: AdditionFactChallenge[] = items.map(({ pair: [a, b], primed }, i) => ({
+    id: `afs-${i + 1}`, type: 'near_doubles', a, b, sum: a + b, ...(primed ? { primedByDouble: true } : {}),
+  }));
+  return { challenges, ...(introLow !== undefined ? { introExample: { a: introLow, b: introLow + 1 } } : {}) };
+}
+
+/**
  * Pure, Gemini-free session builder. `tierPool`: the tier's window of the family (additionFactItemSpace.ts);
  * the session's facts come from it, the intro example from the whole family.
  */
@@ -182,7 +214,7 @@ export function buildAdditionFactSession(
 // ---------------------------------------------------------------------------
 
 const DEFAULT_EMOJI: Record<AdditionFactStrategy, string> = {
-  plus_zero: '🐸', plus_one: '🐞', doubles: '🌸', turnaround: '🌰', plus_two: '🥕',
+  plus_zero: '🐸', plus_one: '🐞', doubles: '🌸', near_doubles: '🐝', turnaround: '🌰', plus_two: '🥕',
   facts_3_4: '🫐', facts_5_6: '🍪', facts_7_8: '💎', facts_mixed: '⭐',
 };
 
@@ -190,6 +222,7 @@ const DEFAULT_WRAPPER: Record<AdditionFactStrategy, { title: string; description
   plus_zero: { title: 'Adding Zero', description: 'Find out what happens when you add zero to a number.' },
   plus_one: { title: 'One More', description: 'Adding one gives you the next counting number.' },
   doubles: { title: 'Double Trouble', description: 'Practise adding a number to itself.' },
+  near_doubles: { title: 'Near Doubles', description: 'Use a double you know, then add one more.' },
   turnaround: { title: 'Turn-Around Facts', description: 'Switching the order of the numbers gives the same total.' },
   plus_two: { title: 'Two More', description: 'Adding two means counting on two from the bigger number.' },
   facts_3_4: { title: 'Facts with Threes and Fours', description: 'Practise addition facts that start with three and four.' },
@@ -228,6 +261,7 @@ const STRATEGY_DOCS: Record<AdditionFactStrategy, ChallengeTypeDoc> = {
   plus_zero: { promptDoc: '"plus_zero": +0 facts, adding zero (n + 0, 0 + n).', schemaDescription: "'plus_zero' (+0 facts)" },
   plus_one: { promptDoc: '"plus_one": +1 facts, one more, the next number.', schemaDescription: "'plus_one' (+1 facts)" },
   doubles: { promptDoc: '"doubles": doubles 1 + 1 to 9 + 9.', schemaDescription: "'doubles' (doubles)" },
+  near_doubles: { promptDoc: '"near_doubles": near doubles (6 + 7, 8 + 7), a double and one more.', schemaDescription: "'near_doubles' (near doubles)" },
   turnaround: { promptDoc: '"turnaround": turn-around facts, commutative property, order of addends.', schemaDescription: "'turnaround' (turn-around facts)" },
   plus_two: { promptDoc: '"plus_two": +2 facts, two more, counting on two.', schemaDescription: "'plus_two' (+2 facts)" },
   facts_3_4: { promptDoc: '"facts_3_4": big facts with 3s and 4s.', schemaDescription: "'facts_3_4' (3s and 4s)" },
@@ -375,7 +409,9 @@ Rules:
     console.log(`[AdditionFactStrategies] Item space add-sub-20 ${strategy} ${supportTier}: `
       + (tierPool ? `${tierPool.length} of ${strategyPool(strategy, maxSum).length} facts` : 'not on the space; full pool'));
   }
-  const session = buildAdditionFactSession(strategy, Math.random, maxSum, tierPool);
+  const session = strategy === 'near_doubles'
+    ? buildNearDoublesSession(Math.random, maxSum, supportTier)
+    : buildAdditionFactSession(strategy, Math.random, maxSum, tierPool);
   const challenges = session.challenges.filter(
     (c) =>
       Number.isInteger(c.a) && Number.isInteger(c.b) &&

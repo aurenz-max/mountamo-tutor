@@ -8,6 +8,7 @@ import { ai } from '../geminiClient';
 import {
   ADDITION_FACT_STRATEGIES,
   buildAdditionFactSession,
+  buildNearDoublesSession,
   generateAdditionFactStrategies,
   sessionCount,
   strategyPool,
@@ -26,7 +27,7 @@ function seeded(seed: number) {
 
 const pairKey = (a: number, b: number) => (a <= b ? `${a}|${b}` : `${b}|${a}`);
 const EXPECTED_COUNT: Record<string, number> = {
-  plus_zero: 8, plus_one: 8, doubles: 8, turnaround: 8, plus_two: 8,
+  plus_zero: 8, plus_one: 8, doubles: 8, near_doubles: 8, turnaround: 8, plus_two: 8,
   facts_3_4: 8, facts_5_6: 8, facts_7_8: 6, facts_mixed: 10,
 };
 
@@ -202,5 +203,42 @@ describe('generateAdditionFactStrategies', () => {
     const data = await generateAdditionFactStrategies('7s and 8s', 'Grade 2', { strategy: 'facts_7_8' });
     expect(data.strategy).toBe('facts_7_8');
     expect(data.challenges).toHaveLength(6);
+  });
+});
+
+describe('near doubles', () => {
+  const isNear = (c: { a: number; b: number }) => Math.abs(c.a - c.b) === 1;
+  it.each(['easy', 'medium', 'hard', null] as const)('%s: eight facts; a primed near double follows its own double; the rest come alone', (tier) => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const { challenges, introExample } = buildNearDoublesSession(seeded(seed), 18, tier);
+      expect(challenges).toHaveLength(8);
+      challenges.forEach((c, i) => {
+        expect(c.type).toBe('near_doubles');
+        expect(c.sum).toBe(c.a + c.b);
+        expect(c.a === c.b || isNear(c)).toBe(true);
+        if (c.a === c.b) expect(challenges[i + 1]).toMatchObject({ primedByDouble: true, sum: 2 * c.a + 1 });
+        if (c.primedByDouble) expect(challenges[i - 1]).toMatchObject({ a: Math.min(c.a, c.b), b: Math.min(c.a, c.b) });
+        // A near double asked alone never sits right after its double.
+        if (!c.primedByDouble && isNear(c) && i > 0) expect(challenges[i - 1].a === challenges[i - 1].b && challenges[i - 1].a === Math.min(c.a, c.b)).toBe(false);
+      });
+      const primed = challenges.filter((c) => c.primedByDouble).length;
+      expect(primed).toBe(tier === 'easy' ? 4 : tier === 'hard' ? 0 : 2);
+      // Alone ones come after every pair.
+      const firstAlone = challenges.findIndex((c) => isNear(c) && !c.primedByDouble);
+      if (firstAlone >= 0) expect(challenges.slice(firstAlone).some((c) => c.a === c.b)).toBe(false);
+      // The intro is a near double the session never asks.
+      expect(introExample && isNear(introExample)).toBe(true);
+      expect(challenges.some((c) => pairKey(c.a, c.b) === pairKey(introExample!.a, introExample!.b))).toBe(false);
+    }
+  });
+
+  it('both orders appear across sessions, and a sum window holds', () => {
+    const orders = new Set<string>();
+    for (let seed = 1; seed <= 50; seed++) buildNearDoublesSession(seeded(seed), 18, 'hard').challenges.forEach((c) => orders.add(`${c.a}+${c.b}`));
+    expect(orders.has('6+7') && orders.has('7+6')).toBe(true);
+    for (let seed = 1; seed <= 50; seed++) {
+      const { challenges } = buildNearDoublesSession(seeded(seed), 10, 'medium');
+      expect(challenges.every((c) => c.sum <= 10)).toBe(true);
+    }
   });
 });

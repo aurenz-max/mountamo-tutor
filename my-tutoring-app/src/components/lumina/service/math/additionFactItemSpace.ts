@@ -44,7 +44,8 @@ const MIN_GAP = 0.5;
 export function tierFactPool(
   strategy: AdditionFactStrategy, maxSum: number, tier: 'easy' | 'medium' | 'hard', sessionSize: number,
 ): Pair[] | null {
-  if (strategy === 'plus_zero') return null;
+  // plus_zero is one structure; near_doubles' tier is the order of the session (buildNearDoublesSession), not the facts.
+  if (strategy === 'plus_zero' || strategy === 'near_doubles') return null;
   const pool = strategyPool(strategy, maxSum);
   // A fact with a zero (turnaround's 0 + 9) is not in the space; it ranks easiest.
   const ranked = pool.map((p) => ({ p, beta: factItem(p[0], p[1])?.beta ?? -Infinity }));

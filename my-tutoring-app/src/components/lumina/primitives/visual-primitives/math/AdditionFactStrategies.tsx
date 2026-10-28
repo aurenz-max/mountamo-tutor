@@ -37,7 +37,7 @@ import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 /** The fact family a session practises, in the order a learner meets them:
  *  +0 and +1, doubles, turn-around facts, +2, then the remaining facts in bands. */
 export type AdditionFactStrategy =
-  | 'plus_zero' | 'plus_one' | 'doubles' | 'turnaround' | 'plus_two'
+  | 'plus_zero' | 'plus_one' | 'doubles' | 'near_doubles' | 'turnaround' | 'plus_two'
   | 'facts_3_4' | 'facts_5_6' | 'facts_7_8' | 'facts_mixed';
 
 export interface AdditionFactChallenge {
@@ -48,6 +48,9 @@ export interface AdditionFactChallenge {
   b: number;
   /** a + b, computed by the generator. */
   sum: number;
+  /** Near doubles: this near double comes straight after its double (6 + 6, then 6 + 7). Recorded with the result:
+   *  a near double asked with no double before it is the independent evidence. */
+  primedByDouble?: boolean;
   /** Turn-around only: the flipped fact the learner already knows (b + a). Shown only as help after a miss. */
   knownFact?: { a: number; b: number };
   /** Calibration stamp from the add-sub-20 item space when a tier picked the fact. Never rendered or sent to the tutor. */
@@ -99,6 +102,11 @@ const STRATEGY_COPY: Record<AdditionFactStrategy, { name: string; intro: string;
     name: 'Doubles',
     intro: 'Doubles are when both numbers are the same, like the two wings of a butterfly.',
     nudge: 'Both groups are the same size. Count one group, then the other.',
+  },
+  near_doubles: {
+    name: 'Near Doubles',
+    intro: 'A near double is a double and one more. Find the double inside the fact, then add one more.',
+    nudge: 'Which double is inside it? Then one more.',
   },
   turnaround: {
     name: 'Turn-Around Facts',
@@ -239,6 +247,15 @@ const IntroExample: React.FC<{ strategy: AdditionFactStrategy; a: number; b: num
         <LuminaPanel className="px-6 py-3"><FactLine a={a} b={b} /></LuminaPanel>
         <span className="text-2xl" aria-hidden>🔄</span>
         <LuminaPanel accent="amber" className="px-6 py-3"><FactLine a={b} b={a} /></LuminaPanel>
+      </div>
+    );
+  }
+  if (strategy === 'near_doubles') {
+    // The double as two equal rows and the extra one set apart, then the fact solved.
+    return (
+      <div className="space-y-4">
+        <LeverNearDouble double={Math.min(a, b)} extra={Math.abs(a - b)} />
+        <FactLine a={a} b={b} />
       </div>
     );
   }
@@ -416,7 +433,8 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
       tappedCorrect.current = item.id;
       SoundManager.playCorrect();
       const attempts = currentAttempts + 1;
-      recordResult({ challengeId: item.id, correct: true, attempts, score: scoreFor(attempts), a: item.a, b: item.b });
+      recordResult({ challengeId: item.id, correct: true, attempts, score: scoreFor(attempts), a: item.a, b: item.b,
+        ...(item.type === 'near_doubles' ? { primedByDouble: !!item.primedByDouble } : {}) });
     } else {
       SoundManager.playIncorrect();
       setWrong((w) => [...w, value]);

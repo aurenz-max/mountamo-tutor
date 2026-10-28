@@ -34,7 +34,7 @@ const session = (strategy: AdditionFactStrategy, facts: Array<[number, number]>,
 
 /** One hand-built session per catalog mode, from the mode's first strategy. */
 const FACTS: Record<string, Array<[number, number]>> = {
-  plus_zero: [[6, 0]], plus_one: [[1, 7]], doubles: [[6, 6]], turnaround: [[3, 8]], plus_two: [[5, 2]],
+  plus_zero: [[6, 0]], plus_one: [[1, 7]], doubles: [[6, 6]], near_doubles: [[7, 8]], turnaround: [[3, 8]], plus_two: [[5, 2]],
   facts_3_4: [[4, 7]],
 };
 const MODES = (getComponentById('addition-fact-strategies')?.evalModes ?? [])
@@ -46,7 +46,7 @@ function perform(h: ReturnType<typeof mountWorkspace>, data: AdditionFactStrateg
 }
 
 it('every catalog mode binds', () => {
-  expect(MODES.length).toBe(6);
+  expect(MODES.length).toBe(7);
   for (const [mode, strategy] of MODES) {
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'addition-fact-strategies', pin: mode, objectiveIds: ['o'],
       data: session(strategy, FACTS[strategy]) }), mode).not.toBeNull();

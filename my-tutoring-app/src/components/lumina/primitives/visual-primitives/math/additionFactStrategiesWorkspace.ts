@@ -16,7 +16,7 @@ import { spokenIntegerWord } from './spokenNumberWords';
 export { ADDITION_FACT_MISSES, type AdditionFactMiss };
 
 export const STRATEGY_NAMES: Record<AdditionFactStrategy, string> = {
-  plus_zero: 'Adding Zero', plus_one: 'Adding One', doubles: 'Doubles', turnaround: 'Turn-Around Facts',
+  plus_zero: 'Adding Zero', plus_one: 'Adding One', doubles: 'Doubles', near_doubles: 'Near Doubles', turnaround: 'Turn-Around Facts',
   plus_two: 'Adding Two', facts_3_4: 'The 3s and 4s', facts_5_6: 'The 5s and 6s', facts_7_8: 'The 7s and 8s',
   facts_mixed: 'Mixed Big Facts',
 };
@@ -82,6 +82,9 @@ export function additionFactScene(
     constraints: 'Teach the strategy on screen, not counting all from one. Before the learner answers, never count the '
       + 'objects aloud to the end, never say a number that narrows the total ("it is more than ten"), and never say the '
       + 'total of a nearby fact or double that gives it away.',
+    ...(view.strategy === 'near_doubles' && c.a !== c.b ? { nearDouble: 'The strategy is the double inside the fact and '
+      + 'one more. One short of the total is the double alone (the extra one forgotten); one over is the larger number '
+      + 'doubled. Name which double is inside it, never its total.' } : {}),
   } };
 }
 
