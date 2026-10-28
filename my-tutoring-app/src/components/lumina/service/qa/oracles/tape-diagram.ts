@@ -69,7 +69,7 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * honest gap. Leak/tone/quality stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['represent', 'solve_part_whole', 'solve_comparison', 'multi_step']);
+const KNOWN_TYPES = new Set(['represent', 'solve_part_whole', 'solve_comparison', 'multi_step', 'two_step_compare']);
 
 // Grade-band intrinsic ceiling when neither the harness nor the topic names one.
 // Generous (must accommodate a legitimate multi-part Explore sum) — the scope
@@ -170,7 +170,7 @@ export const tapeDiagramOracle: ContentOracle = {
       }
 
       // ── multi_step chain: whole = Σ parts per step bar; each bar starts from the last result ──
-      if (type === 'multi_step') {
+      if (type === 'multi_step' || type === 'two_step_compare') {
         let previousResult: number | undefined;
         for (let b = 0; b < bars.length; b++) {
           const whole = bars[b].whole;

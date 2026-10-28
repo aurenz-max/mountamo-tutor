@@ -29,7 +29,20 @@
 - The lesson's range is read once per session (`resolveScopeRange` inside the grade band from `ctx.grade`: K-1 within 20, 2 within 100, 3-5 10-100). solve_part_whole: code rolls a whole in the range and splits it into four parts (each at least whole/8); the model writes labels only. multi_step: code rolls a chain that stays in the range and mixes adding and taking away; the model writes the story around the given numbers, and an off-spec story ships the plain one. represent: each call rolls its own part pool (parts small enough that their total stays in the range); the story must state each part (logged when not).
 - Probe: `tier-probe.mjs --component tape-diagram --mode <mode> --grade 2`, distinct values across runs.
 
+### R5 — a lesson's step pattern holds on every multi_step path · OBSERVED (NEW 2026-10-27)
+- `lessonStepPattern` reads the lesson: "only addition" draws add-add chains (own path `rollChain(..., 'add')`, and the add-sub-20 path filters its two-step items by `opsFitPattern`); "only subtraction" subtract-subtract; anything else keeps the mixed chain (R3/R4 unchanged).
+- Demanded by OPS002-03-a. Probe: `tapeDiagramTwoStep.test.ts`, `qa/curriculum-design-review/math-g2-2026-10-27/verify/tape-diagram.json` (12 OPS002-03-a stories at four tiers, all add-add).
+
+### R6 — two_step_compare: combine, then compare, with the bar chosen · OBSERVED (NEW 2026-10-27)
+- Step 1 joins the first person's two amounts (whole unknown). Step 2 is a part-whole whose whole is the larger amount; the first person's total is carried from step 1. Tier = shape: easy the consistent word, medium the difference, hard the inconsistent word ("more" with subtraction); no tier any of the three. Code writes every sentence with a number or a comparison (names from a code pool); the model gives only the thing, two kinds and a scene sentence (`compareWordsFit`, `settingFits`). Title and description are code's (the model's named the operation).
+- Before solving step 2 the learner picks its bar from it and its swap (`chooseBarSteps`; the swap is the "more means add" model). A wrong pick is a miss.
+- Demanded by OPS002-03-c. Probe: `tapeDiagramTwoStep.test.ts`, `verify/tape-diagram-compare.json`, browser drive `verify/td-compare-*.png`.
+
+### R7 — first try means no wrong check · OBSERVED (NEW 2026-10-27)
+- Each result records `attempts` (checks, the true count; it was one low because the closure read the count before the increment landed) and `misses` (wrong checks, wrong bar picks, a wrong explore whole). `firstTryCount` and the per-challenge score read `misses`, so a two-step or several-unknown challenge solved without a miss scores 100.
+
 ## History
+- 2026-10-27 — R5-R7 (G2 design review brief 1). Before: multi_step forced one add and one subtract in every chain; no combine-then-compare pattern; attempts recorded one low, so first-try evidence and the score read a 1-unknown first try as 0 attempts and a 2-step first try as 1.
 - 2026-10-16 — R4 (8.1b). Before: represent 4/6/5 and 6/8 every run, part-whole 5|4|3|6 at every tier (four parts of 1-20 summed past a within-20 lesson), multi_step 12 + 5 - 4 at grade 3.
 - 2026-10-16 — R3 (8.1a). Before: one bar held start, change, intermediate and answer as four parts under "Total = 37" for 8 + 6 - 5, the schema never stored step 2's number, and the oracle passed it because the label matched the bar's sum.
 - 2026-10-14 — derived with R1, R2. Before: every tier and run converged ("15 shells vs 9"), "within 100" never went above 20, and the tier forced hard = larger unknown with "more" (the consistent, easier form), so the inconsistent-language problems never appeared.

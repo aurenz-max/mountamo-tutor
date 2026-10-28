@@ -56,7 +56,9 @@ export type TapeDiagramChallengeType =
   | 'represent'
   | 'solve_part_whole'
   | 'solve_comparison'
-  | 'multi_step';
+  | 'multi_step'
+  /** Combine, then compare: step 1 joins two amounts; step 2 compares the total with another person's. */
+  | 'two_step_compare';
 
 /** One tape-diagram challenge. Owns its own bars + word problem + mode-specific data. */
 export interface TapeDiagramChallenge {
@@ -89,6 +91,8 @@ export interface TapeDiagramChallenge {
     solveOrder: number[];
     /** One entry per step: the bar and the unknown segment it asks for (WHOLE_SEGMENT = the bar's whole). */
     steps?: { bar: number; segment: number }[];
+    /** Steps whose bar the learner picks (from it and its whole/first-part swap) before solving it. */
+    chooseBarSteps?: number[];
   };
 
   // ── Support-tier scaffolds (set by the generator when config.difficulty is
@@ -171,7 +175,14 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   solve_part_whole: { label: 'Part-Whole', icon: '⚖️', accentColor: 'emerald' },
   solve_comparison: { label: 'Compare', icon: '🔀', accentColor: 'orange' },
   multi_step: { label: 'Multi-Step', icon: '🧮', accentColor: 'purple' },
+  two_step_compare: { label: 'Combine & Compare', icon: '🧮', accentColor: 'purple' },
 };
+
+/** The wrong model of a step bar, offered beside it when the learner picks the bar: whole and first part swapped. */
+function swappedBar(bar: BarConfig): BarConfig | null {
+  if (!bar.whole || bar.segments.length < 2) return null;
+  return { ...bar, whole: bar.segments[0], segments: [bar.whole, ...bar.segments.slice(1)] };
+}
 
 // ---------------------------------------------------------------------------
 // SegmentStepper — compact numeric input with −/+ steppers and type-in
@@ -357,8 +368,15 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
   // Multi-step within-challenge step state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // two_step_compare: steps whose bar the learner has picked, and how many wrong picks this challenge.
+  const [chosenBars, setChosenBars] = useState<number[]>([]);
+  const [barChoiceMisses, setBarChoiceMisses] = useState(0);
+  const [barChoiceFeedback, setBarChoiceFeedback] = useState('');
 
   const recordedRef = useRef(false);
+  /** Wrong checks on this challenge (any step, the explore whole, a wrong bar pick). A challenge with several
+   *  unknowns is checked once per unknown, so the attempt count alone cannot say "first try". */
+  const missesRef = useRef(0);
   const sessionCompleteFiredRef = useRef(false);
 
   // ── Misconception Loop S1 — session-scoped wrong-answer log ────────────────
@@ -416,6 +434,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     setWholeValue('');
     setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
     setCurrentStepIndex(0);
+    setChosenBars([]);
+    setBarChoiceMisses(0);
+    setBarChoiceFeedback('');
+    missesRef.current = 0;
     recordedRef.current = false;
   }, [currentChallenge?.id]);
 
@@ -510,12 +532,14 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       // belongs to the active challenge.
       if (!stateMatchesChallenge(currentChallenge)) return;
       recordedRef.current = true;
-      // currentAttempts is incremented by the calling handler before this fires
-      // (via incrementAttempts), so currentAttempts here is the final count.
+      // Every caller runs incrementAttempts in the same handler, just before this; the state update has not
+      // landed in this closure, so the final count is one more than `currentAttempts` (it recorded one low:
+      // a first-try solve read as zero attempts).
       recordResult({
         challengeId: currentChallenge.id,
         correct,
-        attempts: currentAttempts,
+        attempts: currentAttempts + 1,
+        misses: missesRef.current,
         hintsUsed: challengeHintCount,
         ...extras,
       });
@@ -537,7 +561,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           return ' SUPPORT=easy: you may name the part-whole strategy (add parts to find the whole; subtract a part from the whole to find another) and walk the setup. Never state a missing value or the total.';
         if (mode === 'solve_comparison')
           return ' SUPPORT=easy: you may name the operation AND the two numbers to compare. Never state the missing answer.';
-        if (mode === 'multi_step')
+        if (mode === 'multi_step' || mode === 'two_step_compare')
           return ' SUPPORT=easy: you may name each step\'s operation explicitly. Never state an intermediate or final value.';
         return ' SUPPORT=easy: you may point out that each number in the story maps to one segment. Never state a value.';
       }
@@ -549,7 +573,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         return ' SUPPORT=hard: do NOT name the operation or strategy the instruction hid. The total is unlabeled — never reveal it. Ask what the bars and the whole show.';
       if (mode === 'solve_comparison')
         return ' SUPPORT=hard: a bar\'s value is hidden — make the student re-read it from the problem. Do NOT name the operation or any number; ask what "how many more" is really asking.';
-      if (mode === 'multi_step')
+      if (mode === 'multi_step' || mode === 'two_step_compare')
         return ' SUPPORT=hard: all steps are unlocked and the total is unlabeled. Do NOT name operations; ask what must be found before the final answer. Never reveal a value.';
       return ' SUPPORT=hard: ask which numbers the problem gave; do not map them for the student. Never reveal a value.';
     },
@@ -640,11 +664,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
     const correctCount = results.filter((r) => r.correct).length;
-    const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
+    // First try: no wrong check on any unknown of the challenge (a two-step story is checked twice when right).
+    const missesOf = (r: typeof results[number]) => Number(r.misses ?? Math.max(0, r.attempts - 1));
+    const firstTryCount = results.filter((r) => r.correct && missesOf(r) === 0).length;
     const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
-    // Per-challenge score: 100 on first try, then decays per extra attempt.
+    // Per-challenge score: 100 on first try, then decays per wrong check.
     const perChallengeScore = (r: typeof results[number]) =>
-      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
+      r.correct ? Math.max(20, 100 - missesOf(r) * 20) : 0;
     const overallAccuracy = Math.round(
       results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
     );
@@ -907,7 +933,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
-      else SoundManager.playIncorrect();
+      else { SoundManager.playIncorrect(); missesRef.current += 1; }
       if (!isCorrect) noteWrongAnswer(`fill in the "${segment.label}" segment`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -1012,6 +1038,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 1500);
       } else {
         SoundManager.playIncorrect();
+        missesRef.current += 1;
         noteWrongAnswer('find the whole (sum of the parts)', inputWhole, actualTotal);
         setFeedback({ explore: 'incorrect' });
         if (supportTier) nudgeOnWrong('solve_part_whole');
@@ -1029,7 +1056,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
-      else SoundManager.playIncorrect();
+      else { SoundManager.playIncorrect(); missesRef.current += 1; }
       if (!isCorrect) noteWrongAnswer(`solve for the missing part "${segment.label}"`, userVal, segment.value);
       setPhaseAttempts((prev) => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
 
@@ -1181,7 +1208,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
-      else SoundManager.playIncorrect();
+      else { SoundManager.playIncorrect(); missesRef.current += 1; }
       if (!isCorrect) noteWrongAnswer(`solve the comparison segment "${segment.label}"`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -1265,6 +1292,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       ? multiStepData.steps
       : (multiStepData?.solveOrder || [2, 3]).map((segment) => ({ bar: 0, segment }));
     const totalSteps = steps.length;
+    const chooseSteps = multiStepData?.chooseBarSteps ?? [];
     const stepOf = (barIdx: number, segIdx: number) =>
       steps.findIndex((st) => st.bar === barIdx && st.segment === segIdx);
     const stepSolved = (i: number) =>
@@ -1302,18 +1330,20 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
-      else SoundManager.playIncorrect();
+      else { SoundManager.playIncorrect(); missesRef.current += 1; }
       if (!isCorrect) noteWrongAnswer(`solve step ${orderIdx + 1} ("${segment.label}")`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
       if (!isCorrect && supportTier) nudgeOnWrong('multi_step');
+      // First try on every step and every bar pick: the independent evidence for a two-step story.
+      const stepExtras = chooseSteps.length ? { barChoiceMisses } : {};
 
       if (isCorrect) {
         if (lockSteps) {
           const nextStep = currentStepIndex + 1;
           if (nextStep >= totalSteps) {
-            completeCurrentChallenge(true);
+            completeCurrentChallenge(true, stepExtras);
           } else {
             setTimeout(() => {
               setCurrentStepIndex(nextStep);
@@ -1323,7 +1353,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         } else {
           // Unlocked (hard): complete once every step is correct.
           const allSolved = steps.every((st) => newFeedback[getSegmentKey(st.bar, st.segment)] === 'correct');
-          if (allSolved) completeCurrentChallenge(true);
+          if (allSolved) completeCurrentChallenge(true, stepExtras);
         }
       }
     };
@@ -1336,6 +1366,49 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     // A bar whose step is still locked is drawn dim: it starts from an answer the learner has not found yet.
     const barStep = (barIdx: number) => steps.findIndex((st) => st.bar === barIdx);
+
+    // A step whose bar the learner picks: its bar stays hidden (a placeholder) until the step is reached,
+    // then shows beside its swapped model; a right pick puts it on screen to solve.
+    const pickPending = (step: number) => chooseSteps.includes(step) && !chosenBars.includes(step);
+    const pickReached = (step: number) => !lockSteps || step <= currentStepIndex;
+    const renderBarChoice = (bar: BarConfig, barIndex: number, step: number) => {
+      const wrong = swappedBar(bar);
+      if (!wrong) return null;
+      // A fixed order per challenge, not always the right one first.
+      const rightFirst = ((currentChallenge?.id ?? '').length + barIndex) % 2 === 0;
+      const options = rightFirst ? [{ bar, right: true }, { bar: wrong, right: false }] : [{ bar: wrong, right: false }, { bar, right: true }];
+      const pick = (right: boolean) => {
+        if (isComplete || recordedRef.current) return;
+        if (right) {
+          SoundManager.playCorrect();
+          setChosenBars((prev) => [...prev, step]);
+          setBarChoiceFeedback('');
+        } else {
+          SoundManager.playIncorrect();
+          missesRef.current += 1;
+          setBarChoiceMisses((n) => n + 1);
+          setBarChoiceFeedback('Not that bar. The whole bar is the larger amount. Who has more?');
+        }
+      };
+      return (
+        <div data-testid={`bar-choice-${step}`} className="space-y-3">
+          <p className="text-sm text-yellow-200 text-center">Which bar shows step {step + 1}?</p>
+          {options.map((o, k) => (
+            <button
+              key={k}
+              type="button"
+              aria-label={`Bar ${k === 0 ? 'A' : 'B'}`}
+              onClick={() => pick(o.right)}
+              className="block w-full text-left p-3 rounded-xl border border-white/10 hover:border-orange-400/60 bg-white/[0.02] transition-colors"
+            >
+              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Bar {k === 0 ? 'A' : 'B'}</div>
+              {renderBar(o.bar, 100 + barIndex * 2 + k, { showUnknownInputs: false, isCarriedKnown: stepSolved })}
+            </button>
+          ))}
+          {barChoiceFeedback && <p className="text-sm text-red-300 text-center">{barChoiceFeedback}</p>}
+        </div>
+      );
+    };
 
     return (
       <>
@@ -1383,7 +1456,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                 {bars.length > 1 && step >= 0 && (
                   <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Step {step + 1}</div>
                 )}
-                {renderBar(bar, barIndex, {
+                {step >= 0 && pickPending(step) ? (
+                  pickReached(step) ? renderBarChoice(bar, barIndex, step) : (
+                    <div className="h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-sm text-slate-500">
+                      You will pick this bar after step {step}.
+                    </div>
+                  )
+                ) : renderBar(bar, barIndex, {
                   showBracket: showBrackets && !bar.whole,
                   bracketLabel: bar.totalLabel || '',
                   showUnknownInputs: true,
@@ -1438,6 +1517,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     solve_part_whole: 'Part-Whole Visualization',
     solve_comparison: 'Comparison Model',
     multi_step: 'Multi-Step Problem',
+    two_step_compare: 'Put Together, Then Compare',
   }[challengeType] || 'Part-Whole Visualization';
 
   // =========================================================================
@@ -1541,7 +1621,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               {challengeType === 'represent' && renderRepresentMode()}
               {challengeType === 'solve_part_whole' && renderPartWholeMode()}
               {challengeType === 'solve_comparison' && renderComparisonMode()}
-              {challengeType === 'multi_step' && renderMultiStepMode()}
+              {(challengeType === 'multi_step' || challengeType === 'two_step_compare') && renderMultiStepMode()}
 
               </div>
 
@@ -1586,7 +1666,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                       ? 'Read the word problem and enter the value for each segment'
                       : challengeType === 'solve_comparison'
                         ? 'Compare the two bars and find the missing value'
-                        : challengeType === 'multi_step'
+                        : challengeType === 'multi_step' || challengeType === 'two_step_compare'
                           ? 'Solve each step in order — later steps unlock as you progress'
                           : 'Follow the 3-step progression: Explore → Practice → Apply'}
                   </span>

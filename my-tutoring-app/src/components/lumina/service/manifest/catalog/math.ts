@@ -675,7 +675,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'represent', label: 'Represent (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['represent'], description: 'Build tape diagram from word problem, identify parts.' },
       { evalMode: 'solve_part_whole', label: 'Part-Whole (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['solve_part_whole'], description: 'Standard part-whole: given parts find total, or vice versa.' },
       { evalMode: 'solve_comparison', label: 'Comparison (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['solve_comparison'], description: 'Comparison problems with different quantity bars.' },
-      { evalMode: 'multi_step', label: 'Multi-Step (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['multi_step'], description: 'Multi-step problems requiring multiple operations.' },
+      { evalMode: 'multi_step', label: 'Multi-Step (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['multi_step'], description: 'Multi-step problems, one bar per step; the lesson sets whether both steps add or the steps mix adding and taking away.' },
+      { evalMode: 'two_step_compare', label: 'Combine and Compare (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['two_step_compare'], description: 'Two-step problems: put two amounts together, then compare the total with another amount (find the other amount or the difference). The learner picks the comparison bar before solving it.' },
     ],
     tutoring: {
       taskDescription: 'Walk through {{totalChallenges}} tape-diagram problems in {{challengeType}} mode. Current: challenge {{currentChallengeIndex}} of {{totalChallenges}}. Phase: {{currentPhase}}. Unknown segments: {{unknownSegments}}.',

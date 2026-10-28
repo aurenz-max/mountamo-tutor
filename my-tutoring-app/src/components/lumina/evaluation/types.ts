@@ -1063,7 +1063,7 @@ export interface TapeDiagramMetrics extends BasePrimitiveMetrics {
   type: 'tape-diagram';
 
   /** Eval mode pinned for this session (all challenges share one mode) */
-  challengeType: 'represent' | 'solve_part_whole' | 'solve_comparison' | 'multi_step';
+  challengeType: 'represent' | 'solve_part_whole' | 'solve_comparison' | 'multi_step' | 'two_step_compare';
 
   // Session-level aggregates (one ChallengeResult per tape-diagram problem)
   totalChallenges: number;

@@ -36,6 +36,11 @@ import type { AddSub20Item } from "../itemSpace/addSub20";
 import { questionFitsSpec } from "../knowledge-check/itemSpaceProblems";
 import { createNumberPool } from "./numberPoolService";
 import { resolveScopeRange } from "../scopeRangeResolver";
+import {
+  compareStepHint, compareWordsFit, fallbackWords, lessonStepPattern, opsFitPattern, plainCompareStory, rollTwoStepCompare,
+  settingFits, twoStepCompareBars,
+  type CompareShape, type CompareWords, type StepPattern,
+} from "./tapeDiagramTwoStep";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -69,6 +74,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Student must find intermediate values before solving for the final unknown. `
       + `Hardest mode — requires synthesis across all segments.`,
     schemaDescription: "'multi_step' (multi-step word problems)",
+  },
+  'two_step_compare': {
+    promptDoc:
+      `"two_step_compare": Two-step problems: put two amounts together, then compare the total with another `
+      + `person's amount ("Tia has 20 red and 5 blue beads. She has 10 more than Sam. How many does Sam have?").`,
+    schemaDescription: "'two_step_compare' (combine, then compare)",
   },
 };
 
@@ -106,12 +117,34 @@ export function splitTotal(total: number, n: number): number[] {
  * A start and `steps` changes that stay inside `range` at every step, mixing adding and taking away
  * (8.1b: the own path's chains converged on 12 + 5 - 4 at every tier). Change sizes are at least 2.
  */
-export function rollChain(range: { min: number; max: number }, steps: number): { start: number; chain: { op: '+' | '-'; value: number }[] } {
+export function rollChain(
+  range: { min: number; max: number }, steps: number, pattern: StepPattern = 'mixed',
+): { start: number; chain: { op: '+' | '-'; value: number }[] } {
   const lo = Math.max(1, range.min);
   for (let guard = 0; guard < 500; guard++) {
-    const ops: ('+' | '-')[] = Array.from({ length: steps }, () => (Math.random() < 0.5 ? '+' : '-'));
-    if (!ops.includes('+')) ops[randInt(0, steps - 1)] = '+';
-    if (!ops.includes('-')) ops[ops.indexOf('+') === 0 ? steps - 1 : 0] = '-';
+    const ops: ('+' | '-')[] = Array.from({ length: steps }, () =>
+      (pattern === 'add' ? '+' : pattern === 'subtract' ? '-' : Math.random() < 0.5 ? '+' : '-'));
+    if (pattern === 'mixed') {
+      if (!ops.includes('+')) ops[randInt(0, steps - 1)] = '+';
+      if (!ops.includes('-')) ops[ops.indexOf('+') === 0 ? steps - 1 : 0] = '-';
+    }
+    // Adding only: start low enough that every step has room (12 + 12 + 4, not 95 + 2 + 2).
+    if (pattern === 'add') {
+      const startCap = Math.max(lo + 2, Math.floor(range.max * 0.6));
+      const start = randInt(lo, startCap);
+      let current = start;
+      const chain: { op: '+' | '-'; value: number }[] = [];
+      let ok = true;
+      for (let i = 0; i < steps; i++) {
+        const room = range.max - current - 2 * (steps - 1 - i);
+        if (room < 2) { ok = false; break; }
+        const value = randInt(2, Math.min(room, Math.max(2, Math.floor(range.max / 2))));
+        current += value;
+        chain.push({ op: '+', value });
+      }
+      if (ok) return { start, chain };
+      continue;
+    }
     let current = randInt(lo, range.max);
     const start = current;
     const chain: { op: '+' | '-'; value: number }[] = [];
@@ -388,7 +421,8 @@ type TapeDiagramChallengeType =
   | 'represent'
   | 'solve_part_whole'
   | 'solve_comparison'
-  | 'multi_step';
+  | 'multi_step'
+  | 'two_step_compare';
 
 type TapeDiagramRemediationMove =
   | 'force_gap_segment'
@@ -406,6 +440,7 @@ function buildTapeRemediationSection(
     represent: 'force_gap_segment',
     solve_comparison: 'require_gap_identification, diagnostic_distractor, or reversed_ask',
     multi_step: 'explicit_intermediate',
+    two_step_compare: 'explicit_intermediate',
   };
   return buildRemediationPrompt(remediationFocus)
     + `\n- Set remediationMove to exactly one supported move for this mode: ${moves[mode]}.`;
@@ -419,6 +454,7 @@ const COUNT_BY_MODE: Record<TapeDiagramChallengeType, number> = {
   solve_comparison: 4,  // T3
   solve_part_whole: 3,  // T4 cut (was 4)
   multi_step: 3,        // T4 cut (was 4)
+  two_step_compare: 3,  // T4: two steps and a bar choice per challenge
 };
 
 // ===========================================================================
@@ -786,6 +822,7 @@ async function generateMultiStepMode(
   scopeSection = '',
   remediationFocus?: string,
   range: { min: number; max: number } = gradeBandRange(undefined),
+  pattern: StepPattern = 'mixed',
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('multi_step', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '')
@@ -794,7 +831,7 @@ async function generateMultiStepMode(
   const stepCount = shape?.stepCount === 3 ? 3 : 2;
   // Code rolls the chain (8.1b: the model's chains converged on 12 + 5 - 4 at every tier); the model
   // writes the story around it and names what is counted.
-  const { start, chain: rolled } = rollChain(range, stepCount);
+  const { start, chain: rolled } = rollChain(range, stepCount, pattern);
   const spec = `${start} ${rolled.map((c) => `${c.op} ${c.value}`).join(' ')}`;
   const prompt = `
 Create a multi-step word problem for teaching "${topic}" to ${gradeLevel} students.
@@ -868,6 +905,86 @@ function plainChainStory(thing: string, start: number, chain: ChainStep[]): stri
 }
 
 // ===========================================================================
+// two_step_compare: combine, then compare (tapeDiagramTwoStep.ts)
+// ===========================================================================
+
+const SHAPE_BY_TIER: Record<SupportTier, CompareShape> = { easy: 'consistent', medium: 'difference', hard: 'inconsistent' };
+const COMPARE_SHAPES: readonly CompareShape[] = ['consistent', 'difference', 'inconsistent'];
+
+const twoStepCompareSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    thing: { type: Type.STRING, description: "What is counted, plural, fitting the lesson (e.g. 'beads')" },
+    part1: { type: Type.STRING, description: "One kind of it, plural (e.g. 'red beads')" },
+    part2: { type: Type.STRING, description: "Another kind of it, plural (e.g. 'blue beads')" },
+    setting: { type: Type.STRING, description: 'One short sentence that sets the scene. No numbers, no names, no comparison.' },
+  },
+  required: ['thing', 'part1', 'part2', 'setting'],
+};
+
+/**
+ * One combine-then-compare problem. Code rolls the numbers and the shape (the tier's: easy the consistent
+ * word, medium the difference, hard the inconsistent word; no tier any of the three) and writes every
+ * sentence that holds a number or a comparison, with names from its own pool. The model supplies only
+ * the thing, its two kinds and a scene sentence; a written story let it bend the comparison ("28 more
+ * cards than a mystery box") past the number check (10-27 probe).
+ */
+async function generateTwoStepCompareMode(
+  topic: string,
+  gradeLevel: string,
+  tier: SupportTier | null = null,
+  scopeSection = '',
+  _remediationFocus?: string,
+  range: { min: number; max: number } = gradeBandRange(undefined),
+): Promise<SubGenResult> {
+  const shape = tier ? SHAPE_BY_TIER[tier] : COMPARE_SHAPES[randInt(0, COMPARE_SHAPES.length - 1)];
+  const spec = rollTwoStepCompare(range, shape);
+  if (!spec) throw new Error(`two_step_compare: no room in ${range.min}-${range.max}`);
+  const fallback = fallbackWords();
+  let data: Record<string, unknown> = {};
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `For a ${gradeLevel} word problem in a lesson on "${topic}": name one kind of thing children count, two kinds `
+        + `of it, and one short scene sentence (no numbers, no names, no comparison).${scopeSection}`,
+      config: { responseMimeType: 'application/json', responseSchema: twoStepCompareSchema, temperature: 1 },
+    });
+    data = result.text ? JSON.parse(result.text) : {};
+  } catch (err) {
+    console.log(`[TapeDiagram] two_step_compare wording failed; code words shipped (${String(err).slice(0, 120)})`);
+  }
+  const written = { ...fallback, thing: String(data.thing ?? ''), part1: String(data.part1 ?? ''), part2: String(data.part2 ?? '') };
+  const words: CompareWords = compareWordsFit(written) ? written : fallback;
+  const setting = settingFits(String(data.setting ?? '')) ? `${String(data.setting).trim()} ` : '';
+  if (words === fallback) console.log(`[TapeDiagram] two_step_compare words off spec, code words shipped: ${JSON.stringify(data).slice(0, 200)}`);
+  const story = setting + plainCompareStory(spec, words);
+  const built = twoStepCompareBars(spec, words);
+  // Code writes the title and description: the model's named the operation ("then subtract to compare"),
+  // which is the decision the hard (inconsistent-word) items ask the learner to make.
+  return {
+    title: 'Put Together, Then Compare',
+    description: 'Find the total first. Then read who has more.',
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'two_step_compare',
+      wordProblem: story,
+      bars: built.bars,
+      comparisonMode: false,
+      showBrackets: false,
+      multiStepData: {
+        step1Hint: multiStepHint('+', spec.a, spec.b, tier),
+        step2Hint: compareStepHint(spec, words, tier),
+        solveOrder: [],
+        steps: built.steps,
+        // The learner picks step 2's bar (who has more is the whole) before solving it.
+        chooseBarSteps: [1],
+      },
+      itemSpace: { space: 'two-step-compare', structure: `${shape}|${spec.ownerLarger ? 'owner-larger' : 'owner-smaller'}`, beta: 0 },
+    },
+  };
+}
+
+// ===========================================================================
 // multi_step from the add-sub-20 item space (two-step items, tapeDiagramItemSpace.ts)
 // ===========================================================================
 
@@ -901,6 +1018,7 @@ const multiStepWordingSchema: Schema = {
  */
 async function multiStepsFromItemSpace(
   topic: string, gradeLevel: string, grade: string | undefined, difficulty: string | undefined, count: number,
+  pattern: StepPattern = 'mixed',
 ): Promise<SubGenResult[] | null> {
   const band = difficultyBand(difficulty);
   const tier = normalizeSupportTier(difficulty);
@@ -911,7 +1029,8 @@ async function multiStepsFromItemSpace(
   );
   if (!space) return null;
   const log = (m: string) => console.log(`[TapeDiagram] Item space ${space}: ${m}`);
-  const twoStep = (it: AddSub20Item) => it.steps.length === 2;
+  // The lesson's pattern holds on this path too: an "only addition" lesson draws only add-add items.
+  const twoStep = (it: AddSub20Item) => it.steps.length === 2 && opsFitPattern(it.steps.map((st) => st.op), pattern);
   const items = tierPick(getItemSpace(space), log, twoStep)(count, band[0], band[1], undefined, twoStep) as AddSub20Item[];
   if (items.length < count) {
     log(`band [${band.join(', ')}] gave ${items.length} of ${count}; own path kept`);
@@ -1037,6 +1156,7 @@ function subGeneratorFor(
     case 'represent':         return generateRepresentMode;
     case 'solve_comparison':  return generateComparisonMode;
     case 'multi_step':        return generateMultiStepMode;
+    case 'two_step_compare':  return generateTwoStepCompareMode;
     case 'solve_part_whole':
     default:                  return generatePartWholeMode;
   }
@@ -1088,7 +1208,13 @@ export const generateTapeDiagram = async (
   // Fan out N parallel calls of the same per-mode sub-generator. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
-  const runOne = subGeneratorFor(challengeType);
+  // Which operations the lesson's two-step chains may use ("involving only addition" -> add-add).
+  const pattern = lessonStepPattern(`${ctx.intent ?? ''} ${topic}`);
+  if (challengeType === 'multi_step' && pattern !== 'mixed') console.log(`[TapeDiagram] multi_step pattern: ${pattern} only`);
+  const runSub = subGeneratorFor(challengeType);
+  const runOne: typeof runSub = challengeType === 'multi_step'
+    ? (t, g, tr, sc, rf, rg) => generateMultiStepMode(t, g, tr, sc, rf, rg, pattern)
+    : runSub;
   // solve_comparison with a tier: the space picks the problems and owns their shape (the tier's forced
   // unknown does not run); scaffolds below still follow the tier. A remediation focus keeps the own path
   // (its moves rewrite the unknown).
@@ -1096,7 +1222,7 @@ export const generateTapeDiagram = async (
     : challengeType === 'solve_comparison'
       ? await comparisonsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
       : challengeType === 'multi_step'
-        ? await multiStepsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
+        ? await multiStepsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount, pattern)
         : null;
   // The lesson's number range, read once (a "within 10" lesson narrows the grade band). Comparison owns
   // its numbers through the LLM or the space and does not take it.
@@ -1139,8 +1265,8 @@ export const generateTapeDiagram = async (
       if (ch.challengeType === 'solve_part_whole') {
         ch.phaseScaffold = sc.phaseScaffold;
       }
-      // multi_step step locking (only meaningful for that mode).
-      if (ch.challengeType === 'multi_step') {
+      // step locking (only meaningful for the two-step modes).
+      if (ch.challengeType === 'multi_step' || ch.challengeType === 'two_step_compare') {
         ch.lockSteps = sc.lockSteps;
       }
       // comparison hard: hide the non-answer bar's value (re-read from problem).
