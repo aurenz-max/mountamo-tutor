@@ -42,6 +42,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 | 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill on every student 10-16. C15, C18 BUILT 10-16, C19 (Pulse beat back) 10-17, committed ea253f49. Next: C16 browser check (parent report OK), C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
 | 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 25 math spaces, 15 word-space primitives. 8.1a-j + o DONE 10-16, both handoffs closed (8.1f + percent-of space committed 09b94299). Next: 8.1p/q levers (`/add-support-tiers`); 8.1n ruling; 8.2q one browser sitting; HUMAN-CHECKS #185-186 |
 | 9 | Every primitive is a boss card | `qa/boss-migration/PLAN-2026-10-18.md` · `/add-live-tutor-tools` | **ACTIVE.** Waves 1-4 DONE 10-26. 10-27: queue 4 FIXED, lever ratchet 0, queue 6 measured (8 families within 100 chars of the cap; trim owed). 33 hand-Pip files have no boss (not cleanup). **Next:** user samples; rulings 2, 3, 8, 9, 10, 11; then close |
+| 10 | Math G2 design review (user 10-27) | `my-tutoring-app/qa/curriculum-design-review/math-g2-2026-10-27/QUEUE.md` · `/add-eval-modes`, `/eval-fix` | **5/5 BUILT 10-27, committed 40e1b9bf..f9f75d00.** regrouping model evidence, tape two-step patterns, near doubles, clock a.m./p.m., mixed facts. Next: user browser check at phone width |
 
 ## Proposed WIP (10-19, user to confirm)
 
