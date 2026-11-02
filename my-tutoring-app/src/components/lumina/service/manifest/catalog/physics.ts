@@ -13,6 +13,7 @@ import { soundWaveExplorerCard } from '../../../primitives/visual-primitives/phy
 import { gravityDropTowerCard } from '../../../primitives/visual-primitives/physics/gravityDropTower.card';
 import { buoyancyHarborCard } from '../../../primitives/visual-primitives/physics/buoyancyHarbor.card';
 import { circuitWorkbenchCard } from '../../../primitives/visual-primitives/physics/circuitWorkbench.card';
+import { volcanoIslandCard } from '../../../primitives/visual-primitives/physics/volcanoIsland.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -237,6 +238,26 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     ...bossEntry(circuitWorkbenchCard),
+  },
+  {
+    id: 'volcano-island',
+    description: 'Volcano island: a 3D kitchen table with two clay volcanoes, A and B, and a measuring stick behind each. Volcano A is mixed with baking soda and vinegar; the learner makes volcano B with a different amount of one ingredient (a fair test: the other stays the same), guesses which will erupt higher, erupts both, watches the foam rise to a mark and spill down the sides, and says which went higher from what happened. One spoon of soda fizzes with one cup of vinegar, so the foam rises only as high as the smaller amount allows: adding more of what there is already too much of does nothing. A reaction model decides the foam. Perfect for lessons on mixing things that change (a new substance makes the fizz), fair tests that change one thing, predicting and comparing results, and volcano eruptions. In cool the rock, the learner cools lava in different places and reads the crystals, glass or holes to say where a found rock cooled. In save the village, the learner places rock walls on a slope map so lava flowing downhill misses the village (4-ESS3-2 reduce the impacts of natural hazards). In layers over time, the learner erupts the volcano, watches the new layer land on top, and orders the layers of a cutaway oldest first (4-ESS1-1 and G4 sequencing events from rock layers). In runny or sticky, the learner erupts the magma of real volcanoes on a 3D island with a village (lava rivers, an explosion and ash cloud, or a lava dome) and decides what a new volcano will do from its magma. ESSENTIAL for K-2 Physical Science (everyday mixes, observing changes), 4-ESS2/4-ESS3 (volcanoes and their hazards, sudden changes to the land), 2-PS1 (changes when materials are mixed), K-2-ETS1-3 (compare test results), and volcanoes in Earth science.',
+    constraints: 'Grades K-5 (built for K-2). Each session is 4 kitchen-volcano tests, 4 runny-or-sticky tests, 4 layer cutaways, 3 village maps, 4 rock samples, or a mix (2 + 2 + 1 + 1 + 1). Code picks every mix and result; config.difficulty sets the structure (easy = change the amount that runs out first, the other locked; medium = the learner keeps the other amount the same; hard = change an amount that is already more than enough, so the foam stays the same; runny or sticky: two kinds easy and medium, three kinds with the dome hard; layers: two old layers easy, three medium, three and a lava crack hard; village: walls needed 1 easy (2 allowed), 2 medium, 3 hard; rocks: two places easy, three medium, plus gassy lava hard). The manifest must NOT supply amounts or say which erupts higher.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['build', 'tap'], role: ['apply'], minutes: 5 },
+    evalModes: [
+      { evalMode: 'kitchen_volcano', affordances: { answers: ['build', 'tap'] }, label: 'Kitchen Volcano', beta: -0.5, scaffoldingMode: 1, challengeTypes: ['kitchen_volcano'],
+        description: 'Make volcano B with a different amount of baking soda or vinegar than volcano A (only that), guess which erupts higher, erupt both, and say which went higher from the foam: more of the ingredient that runs out first makes more fizz' },
+      { evalMode: 'runny_or_sticky', affordances: { answers: ['tap'] }, label: 'Runny or Sticky', beta: 1.2, scaffoldingMode: 2, challengeTypes: ['runny_or_sticky'],
+        description: 'On a 3D island, erupt the magma of real volcanoes (Kilauea, Mount St. Helens, Lassen Peak...) after a guess: runny magma flows far in lava rivers, thick gassy magma explodes with an ash cloud, thick magma with little gas piles up into a dome; then say what a new volcano will do from what its magma is like' },
+      { evalMode: 'layers_over_time', affordances: { answers: ['tap'] }, label: 'Layers Over Time', beta: 2.0, scaffoldingMode: 2, challengeTypes: ['layers_over_time'],
+        description: 'Grade 4 rock layers: guess where a new eruption layer will go, erupt the volcano and watch it land on top, then tap the layers in a cutaway in order, oldest (bottom) first; at hard a lava crack cuts through the old layers, so it is younger than them' },
+      { evalMode: 'save_the_village', affordances: { answers: ['build'] }, label: 'Save the Village', beta: 2.5, scaffoldingMode: 3, challengeTypes: ['save_the_village'],
+        description: 'Open build: on a map of the volcano slope, place rock walls so lava flowing downhill from the crater misses the village on the shore, erupting to test and moving the walls (one wall saves it easy, two medium, three hard); lava follows the lowest ground' },
+      { evalMode: 'cool_the_rock', affordances: { answers: ['tap'] }, label: 'Cool the Rock', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['cool_the_rock'],
+        description: 'Grade 4-5: cool lava samples deep underground (big crystals, granite), on the surface (tiny crystals, basalt) or in the sea (glass, obsidian), with gassy lava making pumice at hard; then say where a found rock cooled from how it looks' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(volcanoIslandCard),
   },
   // Additional physics primitives will be added here
   // Examples could include:

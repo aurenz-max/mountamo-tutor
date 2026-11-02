@@ -1,0 +1,58 @@
+{
+ "source": "qa/tutor-reports/volcano-island-runtime-kitchen_volcano-payload-2026-10-31.json",
+ "primitiveId": "volcano-island",
+ "evalMode": "kitchen_volcano",
+ "data": {
+  "title": "A Fair Volcano Test",
+  "description": "Change just one thing, erupt both volcanoes, and let the foam tell you.",
+  "challenges": [
+   {
+    "id": "kitchen-1",
+    "type": "kitchen_volcano",
+    "instruction": "Volcano A has 4 spoons of baking soda and 1 cup of vinegar. Make volcano B with a different amount of vinegar, and keep the baking soda the same. Which erupts higher?",
+    "a": {
+     "soda": 4,
+     "vinegar": 1
+    },
+    "change": "vinegar",
+    "lockOther": false
+   },
+   {
+    "id": "kitchen-2",
+    "type": "kitchen_volcano",
+    "instruction": "Volcano A has 1 spoon of baking soda and 4 cups of vinegar. Make volcano B with a different amount of baking soda, and keep the vinegar the same. Which erupts higher?",
+    "a": {
+     "soda": 1,
+     "vinegar": 4
+    },
+    "change": "soda",
+    "lockOther": false
+   },
+   {
+    "id": "kitchen-3",
+    "type": "kitchen_volcano",
+    "instruction": "Volcano A has 4 spoons of baking soda and 2 cups of vinegar. Make volcano B with a different amount of vinegar, and keep the baking soda the same. Which erupts higher?",
+    "a": {
+     "soda": 4,
+     "vinegar": 2
+    },
+    "change": "vinegar",
+    "lockOther": false
+   },
+   {
+    "id": "kitchen-4",
+    "type": "kitchen_volcano",
+    "instruction": "Volcano A has 1 spoon of baking soda and 3 cups of vinegar. Make volcano B with a different amount of baking soda, and keep the vinegar the same. Which erupts higher?",
+    "a": {
+     "soda": 1,
+     "vinegar": 3
+    },
+    "change": "soda",
+    "lockOther": false
+   }
+  ],
+  "challengeType": "kitchen_volcano",
+  "gradeBand": "K-2",
+  "supportTier": "medium"
+ }
+}

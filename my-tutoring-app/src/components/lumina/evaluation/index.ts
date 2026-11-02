@@ -170,6 +170,7 @@ export type {
   GravityDropTowerMetrics,
   BuoyancyHarborMetrics,
   CircuitWorkbenchMetrics,
+  VolcanoIslandMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,

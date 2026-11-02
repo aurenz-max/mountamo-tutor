@@ -151,6 +151,7 @@ import { towerStackerBoss } from '../../primitives/visual-primitives/engineering
 import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics/gravityDropTower.boss';
 import { buoyancyHarborBoss } from '../../primitives/visual-primitives/physics/buoyancyHarbor.boss';
 import { circuitWorkbenchBoss } from '../../primitives/visual-primitives/physics/circuitWorkbench.boss';
+import { volcanoIslandBoss } from '../../primitives/visual-primitives/physics/volcanoIsland.boss';
 import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { vehicleComparisonLabBoss } from '../../primitives/visual-primitives/engineering/vehicleComparisonLab.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
@@ -478,6 +479,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'gravity-drop-tower': bossJourney(gravityDropTowerBoss),
   'buoyancy-harbor': bossJourney(buoyancyHarborBoss),
   'circuit-workbench': bossJourney(circuitWorkbenchBoss),
+  'volcano-island': bossJourney(volcanoIslandBoss),
   'stoichiometry-lab': bossJourney(stoichiometryLabBoss),
   'constellation-builder': bossJourney(constellationBuilderBoss),
   'genre-explorer': bossJourney(genreExplorerBoss),

@@ -1157,6 +1157,20 @@ export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
   skippedSegments: number;          // Number of segments skipped after max attempts
 }
 
+export interface VolcanoIslandMetrics extends BasePrimitiveMetrics {
+  type: 'volcano-island';
+  challengeType: 'kitchen_volcano' | 'runny_or_sticky' | 'layers_over_time' | 'save_the_village' | 'cool_the_rock';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Guesses (made before the eruptions) that matched what the foam did. Recorded, never part of the score. */
+  guessesMatched: number;
+}
+
 export interface CircuitWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'circuit-workbench';
   challengeType: 'light_it' | 'find_the_break' | 'conductor_test' | 'magnet_test' | 'add_a_switch' | 'build_device' | 'two_bulbs';
@@ -4038,6 +4052,7 @@ export type PrimitiveMetrics =
   | GravityDropTowerMetrics
   | BuoyancyHarborMetrics
   | CircuitWorkbenchMetrics
+  | VolcanoIslandMetrics
   // Chemistry
   | PeriodicTableMetrics
   | MatterExplorerMetrics

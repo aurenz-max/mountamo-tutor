@@ -9,6 +9,7 @@ import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
+import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
 import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
@@ -23,7 +24,7 @@ interface PhysicsPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower' | 'buoyancy-harbor' | 'circuit-workbench';
+type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower' | 'buoyancy-harbor' | 'circuit-workbench' | 'volcano-island';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -34,6 +35,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'gravity-drop-tower', label: 'Gravity Drop Tower', icon: '🗼', topic: 'Gravity and falling objects' },
   { value: 'buoyancy-harbor', label: 'Sink or Float Harbor (3D)', icon: '🛟', topic: 'Sink or float: what decides it' },
   { value: 'circuit-workbench', label: 'Circuit Workbench (3D)', icon: '💡', topic: 'Make a bulb light: a closed loop' },
+  { value: 'volcano-island', label: 'Volcano Island (3D)', icon: '🌋', topic: 'Baking soda volcanoes: a fair test' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -141,6 +143,17 @@ const PrimitiveRenderer: React.FC<{
             instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'simple-circuits',
             subskillId: 'closed-loop',
+          }}
+        />
+      );
+    case 'volcano-island':
+      return (
+        <VolcanoIsland
+          data={{
+            ...(data as Parameters<typeof VolcanoIsland>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            skillId: 'volcanoes',
+            subskillId: 'kitchen-volcano',
           }}
         />
       );

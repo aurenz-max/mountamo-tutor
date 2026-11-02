@@ -17,6 +17,7 @@ import { generateRaceTrackLab } from '../../physics/gemini-race-track-lab';
 import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-tower';
 import { generateBuoyancyHarbor } from '../../physics/buoyancy-harbor-generator';
 import { generateCircuitWorkbench } from '../../physics/circuit-workbench-generator';
+import { generateVolcanoIsland } from '../../physics/volcano-island-generator';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -75,3 +76,9 @@ registerContextGenerator('circuit-workbench', async (ctx) => ({
   data: await generateCircuitWorkbench(ctx),
 }));
 
+// Volcano Island - 3D kitchen volcanoes: baking soda and vinegar fair tests (K-5). Code-only (Fork C): no model call.
+registerContextGenerator('volcano-island', async (ctx) => ({
+  type: 'volcano-island',
+  instanceId: ctx.instanceId,
+  data: await generateVolcanoIsland(ctx),
+}));

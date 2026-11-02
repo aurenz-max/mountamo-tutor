@@ -181,6 +181,7 @@ import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
+import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
@@ -1979,6 +1980,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'circuit-workbench': {
     component: CircuitWorkbench,
     sectionTitle: 'Circuit Workbench',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'volcano-island': {
+    component: VolcanoIsland,
+    sectionTitle: 'Volcano Island',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -1020,6 +1020,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "build_device": PriorConfig(2.5, "Open build: choose parts from a tray and wire a working device (fan, night light, doorbell, lighthouse)"),
         "two_bulbs": PriorConfig(3.2, "Grade 4: wire two bulbs in a row (series) or side by side (parallel) and test by taking one out"),
     },
+    "volcano-island": {
+        "kitchen_volcano": PriorConfig(-0.5, "Baking soda and vinegar volcanoes: change one amount, erupt both, say which foam went higher"),
+        "cool_the_rock": PriorConfig(3.0, "Grades 4-5: cool lava underground, on the surface or in the sea, read crystals, glass or holes, and say where a found rock cooled"),
+        "save_the_village": PriorConfig(2.5, "Open build: place rock walls on a slope map so lava flowing downhill misses the village; test with eruptions"),
+        "layers_over_time": PriorConfig(2.0, "Grade 4: erupt and watch the new layer go on top, then order a volcano cutaway's layers oldest first; a lava crack is younger than what it cuts"),
+        "runny_or_sticky": PriorConfig(1.2, "Erupt real volcanoes' magma: runny flows, thick and gassy explodes, thick and calm makes a dome; call a new one"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),
