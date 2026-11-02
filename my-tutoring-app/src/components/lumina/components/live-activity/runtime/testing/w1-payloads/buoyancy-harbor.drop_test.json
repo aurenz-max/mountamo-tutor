@@ -1,0 +1,161 @@
+{
+ "source": "code-only generator buildBuoyancyHarbor(seed 20261029), 2026-10-29",
+ "primitiveId": "buoyancy-harbor",
+ "evalMode": "drop_test",
+ "data": {
+  "title": "Harbor Drop Tests",
+  "description": "Test things in the water, write what happens, and use your evidence to decide about each mystery thing.",
+  "challenges": [
+   {
+    "id": "drop-1",
+    "type": "drop_test",
+    "instruction": "Test the rock and the foam ball. Then decide: will the pebble float or sink?",
+    "tested": [
+     {
+      "key": "rock",
+      "name": "rock",
+      "material": "stone",
+      "size": "medium",
+      "shape": "rock"
+     },
+     {
+      "key": "foam-ball",
+      "name": "foam ball",
+      "material": "foam",
+      "size": "medium",
+      "shape": "ball",
+      "color": 16767050
+     }
+    ],
+    "mystery": {
+     "key": "pebble",
+     "name": "pebble",
+     "material": "stone",
+     "size": "small",
+     "shape": "rock"
+    }
+   },
+   {
+    "id": "drop-2",
+    "type": "drop_test",
+    "instruction": "Test the cork board and the marble. Then decide: will the glass paperweight float or sink?",
+    "tested": [
+     {
+      "key": "cork-board",
+      "name": "cork board",
+      "material": "cork",
+      "size": "big",
+      "shape": "board"
+     },
+     {
+      "key": "marble",
+      "name": "marble",
+      "material": "glass",
+      "size": "small",
+      "shape": "ball"
+     }
+    ],
+    "mystery": {
+     "key": "paperweight",
+     "name": "glass paperweight",
+     "material": "glass",
+     "size": "medium",
+     "shape": "dome"
+    }
+   },
+   {
+    "id": "drop-3",
+    "type": "drop_test",
+    "instruction": "Test the rubber doorstop and the birthday candle. Then decide: will the big candle float or sink?",
+    "tested": [
+     {
+      "key": "doorstop",
+      "name": "rubber doorstop",
+      "material": "rubber",
+      "size": "medium",
+      "shape": "block",
+      "color": 5922662
+     },
+     {
+      "key": "birthday-candle",
+      "name": "birthday candle",
+      "material": "wax",
+      "size": "small",
+      "shape": "stick",
+      "color": 16748472
+     }
+    ],
+    "mystery": {
+     "key": "big-candle",
+     "name": "big candle",
+     "material": "wax",
+     "size": "big",
+     "shape": "candle",
+     "color": 16773577
+    }
+   },
+   {
+    "id": "drop-4",
+    "type": "drop_test",
+    "instruction": "Test the rubber doorstop and the block of ice. Then decide: will the eraser float or sink?",
+    "tested": [
+     {
+      "key": "doorstop",
+      "name": "rubber doorstop",
+      "material": "rubber",
+      "size": "medium",
+      "shape": "block",
+      "color": 5922662
+     },
+     {
+      "key": "ice-block",
+      "name": "block of ice",
+      "material": "ice",
+      "size": "big",
+      "shape": "cube"
+     }
+    ],
+    "mystery": {
+     "key": "eraser",
+     "name": "eraser",
+     "material": "rubber",
+     "size": "small",
+     "shape": "block",
+     "color": 16030392
+    }
+   },
+   {
+    "id": "drop-5",
+    "type": "drop_test",
+    "instruction": "Test the big log and the boulder. Then decide: will the twig float or sink?",
+    "tested": [
+     {
+      "key": "log",
+      "name": "big log",
+      "material": "wood",
+      "size": "big",
+      "shape": "log"
+     },
+     {
+      "key": "boulder",
+      "name": "boulder",
+      "material": "stone",
+      "size": "big",
+      "shape": "rock"
+     }
+    ],
+    "mystery": {
+     "key": "twig",
+     "name": "twig",
+     "material": "wood",
+     "size": "small",
+     "shape": "stick"
+    }
+   }
+  ],
+  "challengeType": "drop_test",
+  "gradeBand": "K-2",
+  "supportTier": "medium",
+  "instanceId": "harbor"
+ }
+}

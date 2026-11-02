@@ -15,6 +15,7 @@ import { generateSoundWaveExplorer } from '../../physics/gemini-sound-wave-explo
 import { generatePushPullArena } from '../../physics/gemini-push-pull-arena';
 import { generateRaceTrackLab } from '../../physics/gemini-race-track-lab';
 import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-tower';
+import { generateBuoyancyHarbor } from '../../physics/buoyancy-harbor-generator';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -58,3 +59,12 @@ registerContextGenerator('gravity-drop-tower', async (ctx) => ({
 // ============================================================================
 // Migration status: 5/5 physics primitives registered
 // ============================================================================
+
+// Sink or Float Harbor - 3D water tank drop tests (K-5). Code-only (Fork C): no model call.
+registerContextGenerator('buoyancy-harbor', async (ctx) => ({
+  type: 'buoyancy-harbor',
+  instanceId: ctx.instanceId,
+  data: await generateBuoyancyHarbor(ctx),
+}));
+
+

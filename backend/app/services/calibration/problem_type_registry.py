@@ -1003,6 +1003,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sequence": PriorConfig(3.0, "Order every stage of a life cycle or process"),
         "default":  PriorConfig(3.0, "Sequence biological life stages"),
     },
+    "buoyancy-harbor": {
+        "drop_test": PriorConfig(-0.5, "Test two things in water, then use them to decide if a thing of the same stuff floats or sinks"),
+        "find_the_rule": PriorConfig(0.5, "Test a few things, then sort untested things of the same stuff into float or sink and pick what decides it (material, not size or weight)"),
+        "make_it_float": PriorConfig(1.0, "Reshape a sinking clay ball (shape only) until the same clay floats, then carries pennies"),
+        "build_boat": PriorConfig(1.5, "Open build: make a boat (foil, clay or craft sticks; shape and size) that carries N pennies, testing it in water"),
+        "cargo_two_designs": PriorConfig(2.5, "Build two boats (one change apart from medium), predict, test both to the sink, and say which carried more from the tests"),
+        "salt_water": PriorConfig(3.0, "Stir salt into water until the named foods float and the others stay down"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),

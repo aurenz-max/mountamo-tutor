@@ -1466,6 +1466,23 @@ export interface GravityDropTowerMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface BuoyancyHarborMetrics extends BasePrimitiveMetrics {
+  type: 'buoyancy-harbor';
+  challengeType: 'drop_test' | 'find_the_rule' | 'make_it_float' | 'build_boat' | 'cargo_two_designs' | 'salt_water';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Tests whose guess (made before the drop) matched what the thing did. Session-level prediction practice,
+   *  recorded but never part of the score. */
+  guessesMatched: number;
+  /** Boat tests run in the tank (each launch that sank or was taken out). */
+  boatTests?: number;
+}
+
 // -----------------------------------------------------------------------------
 // Biology Primitives
 // -----------------------------------------------------------------------------
@@ -4005,6 +4022,7 @@ export type PrimitiveMetrics =
   | PushPullArenaMetrics
   | RaceTrackLabMetrics
   | GravityDropTowerMetrics
+  | BuoyancyHarborMetrics
   // Chemistry
   | PeriodicTableMetrics
   | MatterExplorerMetrics

@@ -11,6 +11,7 @@ import { pushPullArenaCard } from '../../../primitives/visual-primitives/physics
 import { raceTrackLabCard } from '../../../primitives/visual-primitives/physics/raceTrackLab.card';
 import { soundWaveExplorerCard } from '../../../primitives/visual-primitives/physics/soundWaveExplorer.card';
 import { gravityDropTowerCard } from '../../../primitives/visual-primitives/physics/gravityDropTower.card';
+import { buoyancyHarborCard } from '../../../primitives/visual-primitives/physics/buoyancyHarbor.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -189,6 +190,28 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     ],
     ...bossEntry(gravityDropTowerCard),
     supportsEvaluation: true,
+  },
+  {
+    id: 'buoyancy-harbor',
+    description: 'Sink or float harbor: a 3D pier by the sea with a glass tank of water. The learner tests everyday things (a twig, a big log, a paper clip, a boulder, an ice cube, a foam pool noodle, a marble...) by guessing float or sink and dropping each one in; the water pushes up and the thing bobs at the top or sinks to the bottom, run by a density model. Then the learner decides whether a new mystery thing made of the same stuff as one test will float or sink, and taps the test that tells them. In find the rule, the learner tests a few things, sorts untested things of the same stuff but another size into float or sink, and picks what decides it (how big, how heavy, or what it is made of). In make it float, a ball of clay sinks and the learner changes only its shape (flat, low sides, tall sides) until the same clay floats, at higher levels carrying pennies. In the boat build, the learner builds a boat from foil, clay or craft sticks (a ball, flat, low sides or tall sides; small or big), puts it in the tank and loads pennies one at a time until it sinks, then makes one that carries a goal number of pennies: a lump of clay sinks but a clay boat with sides floats. In two boats, the learner builds a second boat (or both), guesses which carries more pennies, tests both to the sink and says which carried more from the lab notebook; from medium boat B may change only one thing (a fair test), and at hard the item names the thing to change. In salt water, foods that sink in fresh water (an egg, a grape, a potato chunk) rise as the learner stirs in salt spoon by spoon: salty water is heavier and pushes up harder, and each food needs a different amount, so the learner adds or pours out salt until just the named foods float. What a thing is made of decides it, not its size: busts the misconception that big things sink and small things float. A lab notebook records each guess and result. Perfect for lessons on sinking and floating, properties of materials, observing and recording, and using evidence to predict. ESSENTIAL for K-5 Physical Science: 2-PS1-1 (describe and classify materials by observable properties), 2-PS1-2 (test materials for a purpose), K-2-ETS1-3 (compare test results), and 5-PS1-3 (identify materials by their properties).',
+    constraints: 'Grades K-5 (built for K-2). Each session is 5 drop tests, 4 rule sorts, 4 clay shapes, 4 boat builds, 3 two-boat comparisons, 4 salt tests, or a mix (3 + 2 + 1 + 2 + 1 + 2). Code picks every thing, material and result; config.difficulty sets the structure (hard = a big floater or a small sinker beside a test of the same size made of other stuff; boat goals 2-5 easy, 4-9 medium, 9-15 hard; rule: a floater and a sinker sized as the eye expects easy, both fooling the eye hard; clay: float it empty easy, carry pennies low sides take medium, a load only tall sides carry hard; salt: one food to float easy, float one and keep one down medium, three foods with a one-spoon window hard). The manifest must NOT supply things or say any result. No numbers or densities are shown.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['apply'], minutes: 6 },
+    evalModes: [
+      { evalMode: 'drop_test', affordances: { answers: ['tap'] }, label: 'Drop Test', beta: -0.5, scaffoldingMode: 1, challengeTypes: ['drop_test'],
+        description: 'Guess and drop two things into the water tank, then use the test made of the same stuff to decide whether a mystery thing will float or sink' },
+      { evalMode: 'find_the_rule', affordances: { answers: ['tap'] }, label: 'Find the Rule', beta: 0.5, scaffoldingMode: 2, challengeTypes: ['find_the_rule'],
+        description: 'Test a few things in the tank, then sort untested things of the same stuff but another size into float or sink, and pick what decides it: what a thing is made of, not how big or heavy it is' },
+      { evalMode: 'make_it_float', affordances: { answers: ['build'] }, label: 'Make It Float', beta: 1.0, scaffoldingMode: 2, challengeTypes: ['make_it_float'],
+        description: 'A ball of clay sinks; the learner changes only its shape (flat, low sides, tall sides), guesses, and tests it until the same clay floats, at higher tiers carrying pennies: the clay weighs the same, a shape with sides pushes away more water' },
+      { evalMode: 'build_boat', affordances: { answers: ['build'] }, label: 'Build a Boat', beta: 1.5, scaffoldingMode: 2, challengeTypes: ['build_boat'],
+        description: 'Open build: make a boat from foil, clay or craft sticks (shape and size) that carries a goal number of pennies, testing it in the tank one penny at a time; a shape with sides pushes away more water' },
+      { evalMode: 'cargo_two_designs', affordances: { answers: ['build', 'tap'] }, label: 'Two Boats', beta: 2.5, scaffoldingMode: 3, challengeTypes: ['cargo_two_designs'],
+        description: 'Compare two boat designs: build boat B (both boats at hard), guess which carries more pennies, test each in the tank until it sinks, and say which carried more from the tests; from medium boat B changes one thing, a fair test' },
+      { evalMode: 'salt_water', affordances: { answers: ['manipulate'] }, label: 'Salt Water', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['salt_water'],
+        description: 'Drop foods (egg, grape, potato, carrot, sweet potato) into fresh water, where they sink, then stir in salt one spoon at a time (or pour some out) until the named foods float and the others stay down: salty water is heavier and pushes up harder' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(buoyancyHarborCard),
   },
   // Additional physics primitives will be added here
   // Examples could include:

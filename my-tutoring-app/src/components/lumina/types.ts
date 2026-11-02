@@ -1738,6 +1738,9 @@ export type ComponentId =
   | 'motion-diagram'     // Strobe diagram visualization for teaching kinematics and motion concepts
   | 'sound-wave-explorer' // Interactive sound wave exploration for physics concepts
   | 'gravity-drop-tower'  // Interactive gravity drop tower for physics experiments
+  | 'buoyancy-harbor'  // 3D harbor water tank: sink or float drop tests run by a density model (K-5 science)
+   // 3D workbench: wire a battery and bulbs into a closed loop, lit by a circuit model (K-5 science)
+   // 3D volcanoes: baking soda and vinegar fair tests, foam height from a reaction model (K-5 science)
   | 'push-pull-arena'     // Interactive push and pull force exploration for physics concepts
   | 'race-track-lab'      // Interactive race track laboratory for physics experiments
 
@@ -2375,6 +2378,7 @@ export type { SoundWaveExplorerData } from './primitives/visual-primitives/physi
 export type { PushPullArenaData } from './primitives/visual-primitives/physics/PushPullArena';
 export type { RaceTrackLabData } from './primitives/visual-primitives/physics/RaceTrackLab';
 export type { GravityDropTowerData } from './primitives/visual-primitives/physics/GravityDropTower';
+export type { BuoyancyHarborData } from './primitives/visual-primitives/physics/BuoyancyHarbor';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
 export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';

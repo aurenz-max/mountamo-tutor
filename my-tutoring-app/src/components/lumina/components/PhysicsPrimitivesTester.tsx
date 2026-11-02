@@ -7,6 +7,7 @@ import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWave
 import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
 import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
+import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
@@ -15,13 +16,14 @@ import {
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { PHYSICS_CATALOG } from '../service/manifest/catalog/physics';
+import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 
 interface PhysicsPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower';
-type GradeLevel = '6' | '7' | '8' | '9' | '10' | '11' | '12';
+type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower' | 'buoyancy-harbor';
+type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'motion-diagram', label: 'Motion Diagram', icon: '📍', topic: 'Understanding motion through position markers' },
@@ -29,9 +31,16 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'push-pull-arena', label: 'Push Pull Arena', icon: '🏋️', topic: 'Forces and motion' },
   { value: 'race-track-lab', label: 'Race Track Lab', icon: '🏎️', topic: 'Speed, velocity, and acceleration on a race track' },
   { value: 'gravity-drop-tower', label: 'Gravity Drop Tower', icon: '🗼', topic: 'Gravity and falling objects' },
+  { value: 'buoyancy-harbor', label: 'Sink or Float Harbor (3D)', icon: '🛟', topic: 'Sink or float: what decides it' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
+  { value: 'K', label: 'Kindergarten' },
+  { value: '1', label: 'Grade 1' },
+  { value: '2', label: 'Grade 2' },
+  { value: '3', label: 'Grade 3' },
+  { value: '4', label: 'Grade 4' },
+  { value: '5', label: 'Grade 5' },
   { value: '6', label: 'Grade 6 (Middle School)' },
   { value: '7', label: 'Grade 7 (Middle School)' },
   { value: '8', label: 'Grade 8 (Middle School)' },
@@ -108,6 +117,17 @@ const PrimitiveRenderer: React.FC<{
             instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'gravity-basics',
             subskillId: 'free-fall',
+          }}
+        />
+      );
+    case 'buoyancy-harbor':
+      return (
+        <BuoyancyHarbor
+          data={{
+            ...(data as Parameters<typeof BuoyancyHarbor>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            skillId: 'sink-float',
+            subskillId: 'material-decides',
           }}
         />
       );
@@ -241,6 +261,11 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
   );
   const [generationKey, setGenerationKey] = useState(0);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
+  /** A bound family previews offline (real runtime and lever bench, free) or with the Live tutor (paid). */
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
+  /** Once something is generated the preview takes the full width and the controls fold to one bar. */
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const wide = !!generatedData && !controlsOpen;
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
 
@@ -282,6 +307,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
       const result = await response.json();
       setGeneratedData(result.data || result);
       setGenerationKey(k => k + 1);
+      setControlsOpen(false);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate primitive');
@@ -311,10 +337,28 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
         <p className="text-slate-400">AI-generated physics visualizations for Middle School - High School</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4">
+      {/* A narrow control column beside the preview, so the primitive gets most of the page. */}
+      <div className={`grid grid-cols-1 gap-6 mx-auto px-4 max-w-[1600px] ${wide ? '' : 'lg:grid-cols-[320px_minmax(0,1fr)]'}`}>
+        {wide && (
+          <div className="flex flex-wrap items-center gap-3 bg-slate-800/50 rounded-2xl px-6 py-3 border border-slate-700">
+            <span className="text-xl">{selectedOption.icon}</span>
+            <span className="text-sm font-medium text-white">{selectedOption.label}</span>
+            <span className="text-xs text-slate-400">
+              {evalModes.find(m => m.evalMode === selectedEvalMode)?.label ?? 'Auto (mixed difficulty)'}
+              {' · '}{GRADE_OPTIONS.find(g => g.value === gradeLevel)?.label}
+            </span>
+            <div className="ml-auto flex gap-2">
+              <button onClick={() => setControlsOpen(true)}
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700">Change</button>
+              <button onClick={handleGenerate} disabled={isGenerating}
+                className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white">
+                {isGenerating ? 'Generating...' : 'Generate again'}</button>
+            </div>
+          </div>
+        )}
         {/* Left Column: Controls */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 h-fit">
-          <h3 className="text-2xl font-bold text-white mb-6">Generate</h3>
+        {!wide && <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 h-fit">
+          <h3 className="text-lg font-bold text-white mb-4">Generate</h3>
 
           {/* Primitive Selector */}
           <div className="mb-6">
@@ -328,7 +372,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
                     setSelectedEvalMode(null);
                     setGeneratedData(null);
                   }}
-                  className={`p-3 rounded-lg border transition-all text-left ${
+                  className={`px-3 py-2 rounded-lg border transition-all text-left ${
                     selectedPrimitive === option.value
                       ? 'border-blue-500 bg-blue-500/20 text-blue-300'
                       : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
@@ -447,20 +491,38 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
               ) : null;
             })()}
           </p>
-        </div>
+        </div>}
 
         {/* Right Column: Preview */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-          <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
+        <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-w-0">
+          <h3 className="text-lg font-bold text-white mb-4">Preview</h3>
 
           {generatedData ? (
-            <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-              <PrimitiveRenderer
-                componentId={selectedPrimitive}
-                data={{ ...(generatedData as object), instanceId: previewInstanceId }}
-                onEvaluationSubmit={handleEvaluationSubmit}
-              />
-              <CuratorCompanion />
+            <div className="space-y-4">
+              {testerBinds(selectedPrimitive, previewInstanceId, selectedEvalMode, generatedData) && (
+                <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                  {(['offline', 'live'] as const).map(m => (
+                    <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                      className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                      {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}>
+                {/* A family bound to the teaching workspace previews inside the tester workspace, offline (free) or
+                    Live (paid); outside it, a workspace-only family shows its needs-the-tutor card. */}
+                <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                  offline={tutorMode === 'offline'} data={generatedData} topic={selectedOption.topic}
+                  gradeLevel={gradeLevel} onEvaluationSubmit={handleEvaluationSubmit}>
+                  <PrimitiveRenderer
+                    componentId={selectedPrimitive}
+                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                    onEvaluationSubmit={handleEvaluationSubmit}
+                  />
+                  <CuratorCompanion />
+                </TesterWorkspace>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-slate-500">
@@ -471,7 +533,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
         </div>
 
         {/* Evaluation Results Panel - Third Column */}
-        <div className="lg:col-span-2">
+        <div className={wide ? '' : 'lg:col-span-2'}>
           <EvaluationResultsPanel />
 
           {/* Last Result Quick View */}

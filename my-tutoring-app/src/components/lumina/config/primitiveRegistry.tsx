@@ -179,6 +179,7 @@ import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWave
 import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
 import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
+import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
@@ -1959,6 +1960,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'gravity-drop-tower': {
     component: GravityDropTower,
     sectionTitle: 'Gravity Drop Tower',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'buoyancy-harbor': {
+    component: BuoyancyHarbor,
+    sectionTitle: 'Sink or Float Harbor',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

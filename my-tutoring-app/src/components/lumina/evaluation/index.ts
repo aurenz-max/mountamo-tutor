@@ -168,6 +168,7 @@ export type {
   PushPullArenaMetrics,
   RaceTrackLabMetrics,
   GravityDropTowerMetrics,
+  BuoyancyHarborMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,

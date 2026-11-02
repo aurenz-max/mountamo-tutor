@@ -149,6 +149,7 @@ import { stoichiometryLabBoss } from '../../primitives/visual-primitives/chemist
 import { gasLawsSimulatorBoss } from '../../primitives/visual-primitives/chemistry/gasLawsSimulator.boss';
 import { towerStackerBoss } from '../../primitives/visual-primitives/engineering/towerStacker.boss';
 import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics/gravityDropTower.boss';
+import { buoyancyHarborBoss } from '../../primitives/visual-primitives/physics/buoyancyHarbor.boss';
 import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { vehicleComparisonLabBoss } from '../../primitives/visual-primitives/engineering/vehicleComparisonLab.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
@@ -474,6 +475,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'sound-wave-explorer': bossJourney(soundWaveExplorerBoss),
   'vehicle-comparison-lab': bossJourney(vehicleComparisonLabBoss),
   'gravity-drop-tower': bossJourney(gravityDropTowerBoss),
+  'buoyancy-harbor': bossJourney(buoyancyHarborBoss),
   'stoichiometry-lab': bossJourney(stoichiometryLabBoss),
   'constellation-builder': bossJourney(constellationBuilderBoss),
   'genre-explorer': bossJourney(genreExplorerBoss),
