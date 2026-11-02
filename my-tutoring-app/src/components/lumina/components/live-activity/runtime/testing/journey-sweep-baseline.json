@@ -102,6 +102,9 @@
   "buoyancy-harbor.drop_test": {
     "J1-drivable": "by design: the 3D harbor tank (WebGL) cannot be drawn by jsdom; BuoyancyHarbor.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
   },
+  "circuit-workbench.light_it": {
+    "J1-drivable": "by design: the 3D workbench (WebGL) cannot be drawn by jsdom; CircuitWorkbench.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
   "ecosystem-diorama.plant_needs": {
     "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
   },

@@ -16,6 +16,7 @@ import { generatePushPullArena } from '../../physics/gemini-push-pull-arena';
 import { generateRaceTrackLab } from '../../physics/gemini-race-track-lab';
 import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-tower';
 import { generateBuoyancyHarbor } from '../../physics/buoyancy-harbor-generator';
+import { generateCircuitWorkbench } from '../../physics/circuit-workbench-generator';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -67,4 +68,10 @@ registerContextGenerator('buoyancy-harbor', async (ctx) => ({
   data: await generateBuoyancyHarbor(ctx),
 }));
 
+// Circuit Workbench - 3D workbench: wire a battery and bulbs into a closed loop (K-5). Code-only (Fork C): no model call.
+registerContextGenerator('circuit-workbench', async (ctx) => ({
+  type: 'circuit-workbench',
+  instanceId: ctx.instanceId,
+  data: await generateCircuitWorkbench(ctx),
+}));
 

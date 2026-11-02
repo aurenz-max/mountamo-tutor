@@ -1157,6 +1157,20 @@ export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
   skippedSegments: number;          // Number of segments skipped after max attempts
 }
 
+export interface CircuitWorkbenchMetrics extends BasePrimitiveMetrics {
+  type: 'circuit-workbench';
+  challengeType: 'light_it' | 'find_the_break' | 'conductor_test' | 'magnet_test' | 'add_a_switch' | 'build_device' | 'two_bulbs';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Guesses (made before the battery went in) that matched what lit. Recorded, never part of the score. */
+  guessesMatched: number;
+}
+
 // -----------------------------------------------------------------------------
 // Biology Primitives
 // -----------------------------------------------------------------------------
@@ -4023,6 +4037,7 @@ export type PrimitiveMetrics =
   | RaceTrackLabMetrics
   | GravityDropTowerMetrics
   | BuoyancyHarborMetrics
+  | CircuitWorkbenchMetrics
   // Chemistry
   | PeriodicTableMetrics
   | MatterExplorerMetrics

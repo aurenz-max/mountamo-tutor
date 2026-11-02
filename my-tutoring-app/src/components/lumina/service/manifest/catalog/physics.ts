@@ -12,6 +12,7 @@ import { raceTrackLabCard } from '../../../primitives/visual-primitives/physics/
 import { soundWaveExplorerCard } from '../../../primitives/visual-primitives/physics/soundWaveExplorer.card';
 import { gravityDropTowerCard } from '../../../primitives/visual-primitives/physics/gravityDropTower.card';
 import { buoyancyHarborCard } from '../../../primitives/visual-primitives/physics/buoyancyHarbor.card';
+import { circuitWorkbenchCard } from '../../../primitives/visual-primitives/physics/circuitWorkbench.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -212,6 +213,30 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     ...bossEntry(buoyancyHarborCard),
+  },
+  {
+    id: 'circuit-workbench',
+    description: 'Circuit workbench: a 3D tabletop with a battery (a + end and a - end, each with a clip) and a bulb in a holder with two clips. In find the break, a wired light stays dark because one part is broken (a dead battery, a burnt-out bulb, or a wire whose clip came off), and the learner tries one fix at a time and names the broken part. In magnet test (3-PS2-3/4, G3 magnets), the learner holds a magnet over everyday things and finds that it pulls iron and steel but not every metal. In build a device, the learner chooses parts from a tray (bulb, motor, buzzer, switch) and wires a fan, night light, doorbell or lighthouse that works. In two bulbs (G4), the learner wires two bulbs in a row or side by side and takes one out to test. In add a switch, the learner wires a switch into the loop so it turns the bulb on and off. In conductor test, the learner puts everyday things across a gap in the circuit and sees which light the bulb (metal does, shiny or dull), then calls untested things. In light it, the learner first guesses whether the bulb will light with the wires already on, then the battery goes in, and the learner taps one clip and another to add wires (or removes them) until the bulb lights: electricity flows only round a closed loop, out of one end of the battery, through the bulb and back into the other end. One wire from the battery lights nothing, both bulb clips on one battery end lights nothing, and a wire straight from one battery end to the other is a short circuit (nothing lights, the battery gets warm). At the top level two bulbs sit on the table and only the named one may light. A circuit model decides what lights. Perfect for lessons on simple circuits, closed and open circuits, the parts of a circuit (battery, wire, bulb), and making a device with a battery work. ESSENTIAL for K-5 Physical Science: K energy devices with batteries (circuits), 4-PS3-2 (energy transferred by electric currents), and 4-PS3-4 (build a device that converts energy).',
+    constraints: 'Grades K-5 (built for K-2 and Grade 4 circuits). Each session is 5 light-it items, 4 find-the-break items, 4 conductor tests, 4 switch circuits, 4 two-bulb circuits (G4), 3 device builds, 4 magnet tests, or a mix (3 + 2 + 2 + 1 + 1 + 1 + 1). Code picks the bulbs and the wires already on; config.difficulty sets the structure (easy = one wire on, one more closes the loop; medium = a first try that goes wrong: one end only, both clips on one end, or a short; hard = two bulbs, light only the named one; find the break: a loose wire easy, a dead battery or burnt-out bulb medium, two bulbs in a row hard; conductor test: two tests and one call easy, three and two medium, things whose shine fools the eye hard). The manifest must NOT supply wires or say which wire closes the loop. No circuit symbols; two bulbs are "in a row" and "side by side", not series and parallel.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['build'], role: ['apply'], minutes: 5 },
+    evalModes: [
+      { evalMode: 'light_it', affordances: { answers: ['build'] }, label: 'Light It Up', beta: -0.5, scaffoldingMode: 1, challengeTypes: ['light_it'],
+        description: 'Guess whether the bulb lights with the wires already on, then add or remove wires between the battery and bulb clips until the bulb lights: a closed loop from one battery end, through the bulb, back to the other end' },
+      { evalMode: 'find_the_break', affordances: { answers: ['build', 'tap'] }, label: 'Find the Break', beta: 0.5, scaffoldingMode: 2, challengeTypes: ['find_the_break'],
+        description: 'A wired light stays dark because one part is broken (a dead battery, a burnt-out bulb, or a wire whose clip came off); the learner guesses, tries a new battery, a new bulb or the loose clip one at a time, and names what was broken from the tests (two bulbs in a row at hard)' },
+      { evalMode: 'conductor_test', affordances: { answers: ['tap'] }, label: 'Conductor Test', beta: 1.0, scaffoldingMode: 2, challengeTypes: ['conductor_test'],
+        description: 'A circuit has a gap: the learner guesses, puts everyday things (a metal spoon, an eraser, foil, a straw, a coin, yarn) across the gap one at a time and sees which light the bulb, then calls untested things of the same stuff; metal lets electricity through whatever it looks like (a dull rusty nail lights, a shiny plastic button does not)' },
+      { evalMode: 'magnet_test', affordances: { answers: ['tap'] }, label: 'Magnet Test', beta: 1.5, scaffoldingMode: 2, challengeTypes: ['magnet_test'],
+        description: 'Grade 3 magnets: hold a magnet over everyday things after a guess and see which jump up to it, then decide about untested things: a magnet pulls iron and steel, not every metal (aluminium foil, a copper coin and a brass key stay put); at hard the things to decide are metals'},
+      { evalMode: 'add_a_switch', affordances: { answers: ['build'] }, label: 'Add a Switch', beta: 1.8, scaffoldingMode: 2, challengeTypes: ['add_a_switch'],
+        description: 'Wire a switch into the loop so it turns the bulb on and off, flipping it to test: in the loop it opens and closes the path; wired beside the bulb it works backwards and makes a short when on (start: one wire missing easy, a working loop with no switch medium, the switch wired beside the bulb hard)' },
+      { evalMode: 'two_bulbs', affordances: { answers: ['build'] }, label: 'Two Bulbs', beta: 3.2, scaffoldingMode: 3, challengeTypes: ['two_bulbs'],
+        description: 'Grade 4: wire two bulbs in a row (one path, both dim, take one out and both go out) or side by side (each its own path, both bright, take one out and the other stays on), taking a bulb out to test; hard starts wired the other way' },
+      { evalMode: 'build_device', affordances: { answers: ['build'] }, label: 'Build a Device', beta: 2.5, scaffoldingMode: 3, challengeTypes: ['build_device'],
+        description: 'Open build: choose parts (a bulb, a motor with a fan, a buzzer, a switch) from a tray and wire a device that works: a fan or a reading light (easy), a night light, doorbell or fan with a switch (medium), a lighthouse or alarm with a light and a buzzer on one switch (hard)' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(circuitWorkbenchCard),
   },
   // Additional physics primitives will be added here
   // Examples could include:

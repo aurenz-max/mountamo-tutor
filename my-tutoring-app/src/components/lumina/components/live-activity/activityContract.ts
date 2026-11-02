@@ -131,6 +131,7 @@ import { energyOfReactionsBoss } from '../../primitives/visual-primitives/chemis
 import { stoichiometryLabBoss } from '../../primitives/visual-primitives/chemistry/stoichiometryLab.boss';
 import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics/gravityDropTower.boss';
 import { buoyancyHarborBoss } from '../../primitives/visual-primitives/physics/buoyancyHarbor.boss';
+import { circuitWorkbenchBoss } from '../../primitives/visual-primitives/physics/circuitWorkbench.boss';
 import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { rampLabBoss } from '../../primitives/visual-primitives/engineering/rampLab.boss';
 import { trainYardBoss } from '../../primitives/visual-primitives/engineering/trainYard.boss';
@@ -309,6 +310,7 @@ export const LIVE_ADAPTERS = {
   'stoichiometry-lab': bossAdapter(stoichiometryLabBoss),
   'gravity-drop-tower': bossAdapter(gravityDropTowerBoss),
   'buoyancy-harbor': bossAdapter(buoyancyHarborBoss),
+  'circuit-workbench': bossAdapter(circuitWorkbenchBoss),
   'sound-wave-explorer': bossAdapter(soundWaveExplorerBoss),
   'you-and-me': bossAdapter(youAndMeBoss),
   'ramp-lab': bossAdapter(rampLabBoss),

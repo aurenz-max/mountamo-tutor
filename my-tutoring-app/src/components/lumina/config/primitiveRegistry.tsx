@@ -180,6 +180,7 @@ import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena
 import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
 import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
+import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
@@ -1969,6 +1970,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'buoyancy-harbor': {
     component: BuoyancyHarbor,
     sectionTitle: 'Sink or Float Harbor',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'circuit-workbench': {
+    component: CircuitWorkbench,
+    sectionTitle: 'Circuit Workbench',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

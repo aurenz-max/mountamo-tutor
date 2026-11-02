@@ -1011,6 +1011,15 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "cargo_two_designs": PriorConfig(2.5, "Build two boats (one change apart from medium), predict, test both to the sink, and say which carried more from the tests"),
         "salt_water": PriorConfig(3.0, "Stir salt into water until the named foods float and the others stay down"),
     },
+    "circuit-workbench": {
+        "light_it": PriorConfig(-0.5, "Wire a battery and a bulb into a closed loop so the bulb lights (two bulbs at hard: only the named one)"),
+        "find_the_break": PriorConfig(0.5, "A dark circuit has one broken part (dead battery, burnt-out bulb, loose clip): test one part at a time and name it"),
+        "conductor_test": PriorConfig(1.0, "Test everyday things across a gap in a circuit, then call untested things: metal conducts whatever it looks like"),
+        "magnet_test": PriorConfig(1.5, "Grade 3: test what a magnet pulls, then decide about untested things: iron and steel, not every metal"),
+        "add_a_switch": PriorConfig(1.8, "Wire a switch into the loop so it turns the bulb on and off"),
+        "build_device": PriorConfig(2.5, "Open build: choose parts from a tray and wire a working device (fan, night light, doorbell, lighthouse)"),
+        "two_bulbs": PriorConfig(3.2, "Grade 4: wire two bulbs in a row (series) or side by side (parallel) and test by taking one out"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),

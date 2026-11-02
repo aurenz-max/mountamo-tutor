@@ -1,0 +1,102 @@
+{
+ "source": "qa/tutor-reports/circuit-workbench-runtime-light_it-payload-2026-10-31.json",
+ "primitiveId": "circuit-workbench",
+ "evalMode": "light_it",
+ "data": {
+  "title": "Fix the Circuit",
+  "description": "These circuits do not work yet. Guess, test, and fix the wires so the bulb lights.",
+  "challenges": [
+   {
+    "id": "light-1",
+    "type": "light_it",
+    "instruction": "Use the wires to make the bulb light up.",
+    "bulbs": [
+     "red"
+    ],
+    "target": "red",
+    "start": [
+     [
+      "bat+",
+      "red.right"
+     ]
+    ],
+    "maxWires": 3
+   },
+   {
+    "id": "light-2",
+    "type": "light_it",
+    "instruction": "Use the wires to make the bulb light up.",
+    "bulbs": [
+     "red"
+    ],
+    "target": "red",
+    "start": [
+     [
+      "bat+",
+      "red.left"
+     ]
+    ],
+    "maxWires": 3
+   },
+   {
+    "id": "light-3",
+    "type": "light_it",
+    "instruction": "Use the wires to make the bulb light up.",
+    "bulbs": [
+     "red"
+    ],
+    "target": "red",
+    "start": [
+     [
+      "bat-",
+      "red.right"
+     ]
+    ],
+    "maxWires": 3
+   },
+   {
+    "id": "light-4",
+    "type": "light_it",
+    "instruction": "Use the wires to make the bulb light up.",
+    "bulbs": [
+     "red"
+    ],
+    "target": "red",
+    "start": [
+     [
+      "bat+",
+      "red.left"
+     ],
+     [
+      "bat+",
+      "red.right"
+     ]
+    ],
+    "maxWires": 3
+   },
+   {
+    "id": "light-5",
+    "type": "light_it",
+    "instruction": "Use the wires to make the bulb light up.",
+    "bulbs": [
+     "red"
+    ],
+    "target": "red",
+    "start": [
+     [
+      "bat+",
+      "bat-"
+     ],
+     [
+      "bat+",
+      "red.right"
+     ]
+    ],
+    "maxWires": 3
+   }
+  ],
+  "challengeType": "light_it",
+  "gradeBand": "K-2",
+  "supportTier": "medium"
+ }
+}

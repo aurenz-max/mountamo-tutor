@@ -169,6 +169,7 @@ export type {
   RaceTrackLabMetrics,
   GravityDropTowerMetrics,
   BuoyancyHarborMetrics,
+  CircuitWorkbenchMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,
