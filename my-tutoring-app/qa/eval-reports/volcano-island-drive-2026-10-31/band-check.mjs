@@ -1,0 +1,20 @@
+import { createRequire } from 'node:module';
+const require = createRequire(process.env.PW_DIR + '/');
+const { chromium } = require('playwright-core');
+const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
+let sent = null;
+page.on('request', r => { if (r.url().includes('/api/lumina') && r.method() === 'POST') { try { sent = r.postData()?.slice(0, 600); } catch {} } });
+await page.goto('http://localhost:3000/lumina', { waitUntil: 'domcontentloaded', timeout: 180000 });
+await page.waitForTimeout(5000);
+await page.getByText('Developer Tools').first().click();
+for (let i = 0; i < 10; i++) { await page.getByText(/^Physics/).first().click().catch(() => {}); await page.waitForTimeout(1500); if (await page.getByRole('button', { name: /Volcano Island/ }).count()) break; }
+await page.getByRole('button', { name: /Volcano Island/ }).first().click();
+await page.locator('select').first().selectOption({ label: 'Grade 4' });
+await page.getByRole('button', { name: /Kitchen Volcano/ }).first().click();
+await page.getByRole('button', { name: /Generate with AI/ }).first().click();
+await page.waitForTimeout(12000);
+const badge = await page.getByText(/^(K-2|3-5)$/).first().innerText().catch(() => 'none');
+console.log('BADGE', badge);
+console.log('SENT', sent);
+await browser.close();
