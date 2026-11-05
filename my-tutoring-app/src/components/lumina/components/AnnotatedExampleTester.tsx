@@ -216,7 +216,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
               <span>Annotated Example</span>
             </h1>
             <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-              Orchestrator → Hydrate
+              Agent author
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500">
@@ -387,9 +387,9 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                 <div className="text-center space-y-4">
                   <div className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-indigo-500 animate-spin mx-auto" />
                   <div>
-                    <p className="text-slate-300 font-medium">Authoring + hydrating…</p>
+                    <p className="text-slate-300 font-medium">Agent authoring…</p>
                     <p className="text-slate-500 text-sm mt-1">
-                      Orchestrator → solver → planner → step generators.
+                      Writes the problem, renders each step, checks it, then adds prediction gates.
                     </p>
                   </div>
                 </div>

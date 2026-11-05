@@ -91,6 +91,7 @@ variant or eval-mode split is required.
 ## Changelog
 
 - 2026-08-04 — initial derivation for reader-fit 14j.
+- 2026-11-04 — agentic author (`service/annotated-example/agent/`) is the default generator; the staged pipeline stays as `LUMINA_AE_PIPELINE=legacy` and as the fallback. R1-R7 hold: the contract, operation and pinned-intent checks run over the whole assembled example before it ships, and gates still pass `prediction-review.ts`. Table renderer now allows 8 rows (was 5, which truncated six-item walks) and drops an out-of-range optional highlight instead of rejecting the table. Bench: `scripts/annotated-example-bench.mjs`, results in `qa/annotated-example-bench/`.
 - 2026-09-12 — presentation and content-integrity follow-up. The earlier "Preserve" edit zones were specific to 14j; this authorized repair changes diagram generation, prediction placement, and rendering as described below.
 
 ## Content integrity follow-up — 2026-09-12

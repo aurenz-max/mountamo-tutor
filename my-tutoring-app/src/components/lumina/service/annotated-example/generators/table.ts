@@ -19,6 +19,10 @@ import {
   type StepGeneratorContext,
 } from './_shared';
 
+// A walk through six or seven items (coins, groups, days) needs one row each;
+// five rows truncated or merged them.
+const MAX_ROWS = 8;
+
 const TABLE_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -35,6 +39,12 @@ const TABLE_SCHEMA: Schema = {
     row3col2: { type: Type.STRING, nullable: true }, row3col3: { type: Type.STRING, nullable: true },
     row4col0: { type: Type.STRING, nullable: true }, row4col1: { type: Type.STRING, nullable: true },
     row4col2: { type: Type.STRING, nullable: true }, row4col3: { type: Type.STRING, nullable: true },
+    row5col0: { type: Type.STRING, nullable: true }, row5col1: { type: Type.STRING, nullable: true },
+    row5col2: { type: Type.STRING, nullable: true }, row5col3: { type: Type.STRING, nullable: true },
+    row6col0: { type: Type.STRING, nullable: true }, row6col1: { type: Type.STRING, nullable: true },
+    row6col2: { type: Type.STRING, nullable: true }, row6col3: { type: Type.STRING, nullable: true },
+    row7col0: { type: Type.STRING, nullable: true }, row7col1: { type: Type.STRING, nullable: true },
+    row7col2: { type: Type.STRING, nullable: true }, row7col3: { type: Type.STRING, nullable: true },
     highlightRow: { type: Type.NUMBER, description: 'Row index of the answer cell (optional)', nullable: true },
     highlightCol: { type: Type.NUMBER, description: 'Col index of the answer cell (optional)', nullable: true },
     result: { type: Type.STRING, description: 'KaTeX expression summarizing the table conclusion' },
@@ -54,7 +64,7 @@ async function generateTableStep(
 
 ${contextPrefix}
 
-Create a structured table with 2-4 columns and 2-5 rows. Cells can use KaTeX (wrap in $...$).
+Create a structured table with 2-4 columns and 2-8 rows. Give every item its own row (six nickels = six rows); never combine two items in one row or one cell. Cells can use KaTeX (wrap in $...$).
 Include a result field — the KaTeX expression summarizing what we learn from the table.
 IMPORTANT: Use the GROUNDING PROSE as your source of truth for the values that fill the table.${annotationPromptSuffix(ctx.pedagogicalGoal)}`,
     config: {
@@ -73,7 +83,7 @@ IMPORTANT: Use the GROUNDING PROSE as your source of truth for the values that f
 
   const colCount = headers.length;
   const rows: string[][] = [];
-  for (let r = 0; r < 5; r++) {
+  for (let r = 0; r < MAX_ROWS; r++) {
     const col0 = data[`row${r}col0`];
     if (!col0) break;
     const row: string[] = [col0];
@@ -89,9 +99,10 @@ IMPORTANT: Use the GROUNDING PROSE as your source of truth for the values that f
       : undefined;
 
   if (rows.length < 2 || rows.some(row => row.some(cell => !cell.trim()))) throw new Error('Table has missing rows or cells');
-  if (highlightCell && (!Number.isInteger(highlightCell[0]) || !Number.isInteger(highlightCell[1]) || highlightCell[0] < 0 || highlightCell[0] >= rows.length || highlightCell[1] < 0 || highlightCell[1] >= headers.length)) throw new Error('Table highlight is outside its cells');
+  // The highlight is optional emphasis; an out-of-range one is dropped, not a reason to reject the table.
+  const highlightValid = highlightCell && Number.isInteger(highlightCell[0]) && Number.isInteger(highlightCell[1]) && highlightCell[0] >= 0 && highlightCell[0] < rows.length && highlightCell[1] >= 0 && highlightCell[1] < headers.length;
   return {
-    content: { type: 'table', caption: data.caption, headers, rows, highlightCell },
+    content: { type: 'table', caption: data.caption, headers, rows, ...(highlightValid ? { highlightCell } : {}) },
     annotations: extractAnnotations(data),
     result: data.result,
   };

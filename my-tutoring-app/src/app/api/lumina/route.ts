@@ -215,13 +215,12 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(reviewResult);
       }
 
-      // Orchestrator + hydration. One Gemini call authors the worked
-      // example; the pipeline then hydrates the canonical solution.
+      // Same entry as lessons: agentic author, staged pipeline as fallback.
       case 'generateAnnotatedExample': {
-        const { generateAnnotatedExample } = await import(
-          '@/components/lumina/service/annotated-example/gemini-annotated-example'
+        const { generateWorkedExample } = await import(
+          '@/components/lumina/service/annotated-example/generate-worked-example'
         );
-        const exampleResult = await generateAnnotatedExample({
+        const exampleResult = await generateWorkedExample({
           topic: params.topic,
           gradeContext: params.gradeContext,
           intent: params.intent,

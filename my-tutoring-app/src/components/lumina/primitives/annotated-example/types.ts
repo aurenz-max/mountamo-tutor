@@ -348,6 +348,16 @@ export interface SolverDebugPayload {
    * were not requested for this generation.
    */
   challenger?: ChallengerDebugPayload;
+  /** Present when the agentic author built the example (agent/agent-annotated-example.ts). */
+  agent?: AgentDebugPayload;
+}
+
+export interface AgentDebugPayload {
+  turns: number;
+  seconds: number;
+  /** True when the soft deadline told the agent to finish, or the hard deadline stopped it. */
+  deadline: 'none' | 'soft' | 'hard';
+  toolCalls: Array<{ turn: number; name: string; ms: number; ok: boolean; note?: string }>;
 }
 
 /**

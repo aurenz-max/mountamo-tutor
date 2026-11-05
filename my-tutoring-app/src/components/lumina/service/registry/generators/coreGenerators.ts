@@ -30,7 +30,7 @@ import { DRAWER_GENERATORS } from '../../drawers';
 // Interactive Component Imports (from dedicated service files)
 // ============================================================================
 import { generateScaleSpectrum } from '../../scale-spectrum/gemini-scale-spectrum';
-import { generateAnnotatedExample } from '../../annotated-example/gemini-annotated-example';
+import { generateWorkedExample } from '../../annotated-example/generate-worked-example';
 import { generateGraphBoard } from '../../graph-board/gemini-graph-board';
 import { generateFormulaCard } from '../../formula-card/gemini-formula-card';
 
@@ -221,7 +221,7 @@ registerContextGenerator('scale-spectrum', async (ctx) => {
 // practice on a sibling problem is handled by the standalone
 // `practice-problem` primitive.
 registerContextGenerator('annotated-example', async (ctx) => {
-  const data = await generateAnnotatedExample({
+  const data = await generateWorkedExample({
     topic: ctx.topic,
     gradeContext: ctx.gradeContext,
     intent: ctx.intent,

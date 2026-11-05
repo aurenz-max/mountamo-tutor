@@ -188,7 +188,7 @@ ${guidance}
 Produce the inset payload now. The student will see this rendered above the problem statement; the data must match the problem exactly.`;
 }
 
-async function authorInset(
+export async function authorInset(
   insetType: AuthorableInsetType,
   topic: string,
   gradeLevel: string,

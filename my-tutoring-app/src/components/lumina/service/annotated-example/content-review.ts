@@ -19,6 +19,7 @@ For EVERY table, check EVERY cell's meaning against its column header, source qu
 For diagrams, structured visual is the actual figure: check bounds, jump start/direction/end, group counts, shaded fraction parts, and geometry against the source. Text/alt text cannot excuse an incorrect figure. The code derives dot counts and number-line landing positions from that data. Every group automatically receives its group-number label; scales and fractions also generate their own numeric labels. The legacy labels array may be empty because it is not needed for these structured visuals. Do not demand an image URL or a total label.
 Check annotations and the result agree with the content. Do not flag harmless paraphrases, equivalent math, or style. Do not invent errors. Explain each concrete error sufficiently to regenerate this same move.`,
     config: {
+      ...(ctx.reviewTimeoutMs ? { abortSignal: AbortSignal.timeout(ctx.reviewTimeoutMs) } : {}),
       thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
       responseMimeType: 'application/json',
       responseSchema: { type: Type.OBJECT, properties: { issues: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['issues'] },
@@ -41,6 +42,10 @@ export async function generateVerifiedStep(
       issues = await reviewStepContent(ctx, candidate);
       if (!issues.length) return { ...candidate, generationReview: { attempts: attempt + 1, rejections } };
     } catch (error) {
+      // A timed-out review is not a rejection to repair; fail now so the caller can choose.
+      if (ctx.reviewTimeoutMs && error instanceof Error && /abort|timeout/i.test(`${error.name} ${error.message}`)) {
+        throw new Error(`Worked step review exceeded ${ctx.reviewTimeoutMs} ms`);
+      }
       issues = [error instanceof Error ? error.message : String(error)];
     }
     rejections.push(issues);

@@ -33,6 +33,8 @@ export interface StepGeneratorContext {
   groundingProse: string;
   /** Accepted authoring constraints that every renderer must preserve. */
   authoringGuidance?: string;
+  /** Bound on each content-review call (content-review.ts); unset = no bound. */
+  reviewTimeoutMs?: number;
 }
 
 export function buildStepContextPrefix(ctx: StepGeneratorContext): string {

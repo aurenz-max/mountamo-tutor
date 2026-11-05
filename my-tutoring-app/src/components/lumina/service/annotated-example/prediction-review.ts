@@ -45,7 +45,7 @@ export function directPredictionDisclosure(input: PredictionContext, a: Challeng
   return known.some(s => literal(s) === answer);
 }
 
-export async function reviewPredictions(input: PredictionContext, assignments: ChallengeAssignment[]) {
+export async function reviewPredictions(input: PredictionContext, assignments: ChallengeAssignment[], opts: { timeoutMs?: number } = {}) {
   const dropped: Array<{ assignment: ChallengeAssignment; reason: string }> = [];
   const candidates = assignments.filter(assignment => {
     if (!input.steps[assignment.stepIndex] || directPredictionDisclosure(input, assignment)) {
@@ -66,6 +66,7 @@ export async function reviewPredictions(input: PredictionContext, assignments: C
 Use safe=false for any failed or uncertain check; optional questions may be omitted while retaining the worked example. Return exactly one review per candidate, using its index. State the concrete reason. Do not insist that every example needs a question.
 Candidates: ${JSON.stringify(candidates.map((a, index) => ({ index, question: a, visible: predictionExposure(input, a), hiddenStep: input.steps[a.stepIndex].content })))}`,
       config: {
+        ...(opts.timeoutMs ? { abortSignal: AbortSignal.timeout(opts.timeoutMs) } : {}),
         thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }, responseMimeType: 'application/json',
         responseSchema: { type: Type.OBJECT, properties: { reviews: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
           index: { type: Type.INTEGER }, safe: { type: Type.BOOLEAN }, reason: { type: Type.STRING },
