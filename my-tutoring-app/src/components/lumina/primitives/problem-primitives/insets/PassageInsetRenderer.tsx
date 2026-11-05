@@ -32,8 +32,8 @@ export const PassageInsetRenderer: React.FC<PassageInsetRendererProps> = ({ data
 
       case 'quote':
         return (
-          <div className="relative pl-4">
-            <span className="absolute -left-1 -top-4 text-5xl text-slate-600 font-serif select-none leading-none">
+          <div className="relative pl-6 pt-2">
+            <span className="absolute left-0 top-0 text-5xl text-slate-600 font-serif select-none leading-none">
               &ldquo;
             </span>
             <p className="text-slate-200 text-lg leading-relaxed italic">

@@ -10,7 +10,8 @@ interface NumberLineInsetRendererProps {
 export const NumberLineInsetRenderer: React.FC<NumberLineInsetRendererProps> = ({ data }) => {
   const { min, max, ticks, points, region } = data;
   const range = max - min;
-  const toX = (val: number) => ((val - min) / range) * 100;
+  // A 4-unit margin each side, so the end ticks' labels ("-6") and the arrow tips are not clipped at the edge.
+  const toX = (val: number) => 4 + ((val - min) / range) * 92;
 
   // Wide, short strip: the viewBox aspect (100:24 ≈ 4:1) matches a number line,
   // and `w-full h-auto` lets the SVG fill the figure width with a proportional
@@ -34,11 +35,11 @@ export const NumberLineInsetRenderer: React.FC<NumberLineInsetRendererProps> = (
         )}
 
         {/* Main line */}
-        <line x1={toX(min)} y1={lineY} x2={toX(max)} y2={lineY} stroke="rgba(255,255,255,0.3)" strokeWidth={0.3} />
+        <line x1={1} y1={lineY} x2={99} y2={lineY} stroke="rgba(255,255,255,0.3)" strokeWidth={0.3} />
 
         {/* Arrow tips */}
-        <polygon points={`${toX(min)},${lineY} ${toX(min) + 1.5},${lineY - 1.5} ${toX(min) + 1.5},${lineY + 1.5}`} fill="rgba(255,255,255,0.3)" />
-        <polygon points={`${toX(max)},${lineY} ${toX(max) - 1.5},${lineY - 1.5} ${toX(max) - 1.5},${lineY + 1.5}`} fill="rgba(255,255,255,0.3)" />
+        <polygon points={`1,${lineY} 2.5,${lineY - 1.5} 2.5,${lineY + 1.5}`} fill="rgba(255,255,255,0.3)" />
+        <polygon points={`99,${lineY} 97.5,${lineY - 1.5} 97.5,${lineY + 1.5}`} fill="rgba(255,255,255,0.3)" />
 
         {/* Tick marks */}
         {ticks.map((tick, i) => {
