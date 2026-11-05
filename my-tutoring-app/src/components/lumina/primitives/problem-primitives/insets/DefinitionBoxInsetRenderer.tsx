@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { DefinitionBoxInset } from '../../../types';
+import { LuminaMathText } from '../../../ui';
 
 interface DefinitionBoxInsetRendererProps {
   data: DefinitionBoxInset;
@@ -11,17 +12,17 @@ export const DefinitionBoxInsetRenderer: React.FC<DefinitionBoxInsetRendererProp
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-1.5">
-        <span className="text-lg font-bold text-slate-100">{data.term}</span>
+        <span className="text-lg font-bold text-slate-100"><LuminaMathText text={data.term} /></span>
         {data.partOfSpeech && (
           <span className="text-xs italic text-slate-500">{data.partOfSpeech}</span>
         )}
       </div>
       <p className="text-slate-300 text-sm leading-relaxed mb-2">
-        {data.definition}
+        <LuminaMathText text={data.definition} />
       </p>
       {data.exampleSentence && (
         <p className="text-xs text-slate-400 italic border-l-2 border-white/10 pl-3">
-          &ldquo;{data.exampleSentence}&rdquo;
+          &ldquo;<LuminaMathText text={data.exampleSentence} />&rdquo;
         </p>
       )}
     </div>

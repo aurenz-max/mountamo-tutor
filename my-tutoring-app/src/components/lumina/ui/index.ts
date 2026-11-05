@@ -106,6 +106,7 @@ export {
   type LuminaReadAloudProps,
   type LuminaReadAloudGlyphProps,
 } from './LuminaReadAloud';
+export { LuminaMathText, type LuminaMathTextProps } from './LuminaMathText';
 // Print support for a cold read (handoff 22 L3): visual marks only, never audio.
 export { LuminaPrintSupport, type LuminaPrintSupportProps } from './LuminaPrintSupport';
 export { graphemes, dotsLeak, chunkBreak, changedLetter, printedWords } from './printSupport';

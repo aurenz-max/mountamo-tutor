@@ -12,6 +12,7 @@
  *   <LuminaFillBlankSlot state={isCorrect ? 'correct' : 'incorrect'} value={word} />
  */
 import * as React from 'react';
+import { LuminaMathText } from './LuminaMathText';
 import { cn } from '@/lib/utils';
 import { answerStateClasses, motion } from './tokens';
 
@@ -48,7 +49,7 @@ export const LuminaFillBlankSlot = React.forwardRef<HTMLSpanElement, LuminaFillB
         {...props}
       >
         {value ? (
-          <span className="font-medium">{value}</span>
+          <span className="font-medium"><LuminaMathText text={value} /></span>
         ) : (
           <span className="text-sm">{placeholder}</span>
         )}
