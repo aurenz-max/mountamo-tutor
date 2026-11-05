@@ -43,6 +43,7 @@ import type {
   StepType,
 } from '../../../primitives/annotated-example/types';
 import type { Inset } from '../../../types';
+import { measureGeometry } from '../../../primitives/annotated-example/geometryFigure';
 
 const MODEL = 'gemini-flash-latest';
 const SOFT_DEADLINE_MS = Number(process.env.LUMINA_AE_AGENT_SOFT_MS ?? 50_000);
@@ -179,7 +180,8 @@ async function renderStep(state: AgentState, args: Args, position: number): Prom
 }
 
 function stepView(s: AgentStep, index: number) {
-  return { index, stepType: s.spec.stepType, title: s.spec.title, content: compact(s.step.content, 1500), checks: stepChecks(s.step) };
+  const measured = s.step.content.type === 'geometry' ? { measured: measureGeometry(s.step.content.figure) } : {};
+  return { index, stepType: s.spec.stepType, title: s.spec.title, content: compact(s.step.content, 1500), checks: stepChecks(s.step), ...measured };
 }
 
 function toAssignment(args: Args, stepIndex: number): ChallengeAssignment {
@@ -253,6 +255,9 @@ function exampleChecks(state: AgentState): { blocking: string[]; advisory: strin
   const advisory: string[] = [];
   if (!state.problem) blocking.push('no problem set');
   if (state.steps.length === 0) blocking.push('no steps');
+  else if (state.steps.length === 1) blocking.push('one step is not a worked solution; add the moves that reach the answer');
+  const lastType = state.steps.at(-1)?.step.content.type;
+  if (state.steps.length > 1 && (lastType === 'geometry' || lastType === 'diagram')) blocking.push('the example ends on a figure; add the step that computes and states the answer');
   state.steps.forEach((s, i) => stepChecks(s.step).forEach((issue) => blocking.push(`step ${i}: ${issue}`)));
   for (let i = 1; i < state.steps.length; i++) {
     if (JSON.stringify(state.steps[i].step.content) === JSON.stringify(state.steps[i - 1].step.content)) blocking.push(`step ${i} repeats step ${i - 1}`);

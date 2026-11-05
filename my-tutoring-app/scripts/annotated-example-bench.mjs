@@ -20,6 +20,9 @@ const CASES = {
   'g3-equal-groups': { topic: 'Multiplication as equal groups', gradeContext: 'Grade 3', grade: '3', intent: 'Show a word problem with equal groups solved by multiplying.' },
   'g7-two-step': { topic: 'Two-step linear equations from word problems', gradeContext: 'Grade 7', grade: '7' },
   'hs-area-between': { topic: 'Area between two curves', gradeContext: 'High school calculus', grade: '12' },
+  // Geometry: the figure carries the givens, so the drawing has to match the math.
+  'g3-composite-area': { topic: 'Area of a composite rectilinear shape', gradeContext: 'Grade 3', grade: '3', intent: 'Worked example: find the area of an L-shaped figure by splitting it into two rectangles and adding their areas.' },
+  'g8-pythagoras': { topic: 'Pythagorean theorem', gradeContext: 'Grade 8', grade: '8', intent: 'Worked example: find the missing side of a right triangle using the Pythagorean theorem, with the triangle drawn and labeled.' },
 };
 const selected = arg('cases', Object.keys(CASES).join(',')).split(',');
 

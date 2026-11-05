@@ -226,13 +226,27 @@ export interface CaseSplitStepContent {
   }>;
 }
 
+/**
+ * A to-scale geometry figure: named points in real units, polygons, marked
+ * sides and angles. Code draws it from the coordinates and has checked every
+ * numeric label against the measured length, angle or area (geometryFigure.ts).
+ */
+export interface GeometryStepContent {
+  type: 'geometry';
+  figure: import('./geometryFigure').GeometryFigure;
+  /** One line under the figure. */
+  caption: string;
+  altText: string;
+}
+
 /** Union of all step content types */
 export type StepContent =
   | AlgebraStepContent
   | TableStepContent
   | DiagramStepContent
   | GraphSketchStepContent
-  | CaseSplitStepContent;
+  | CaseSplitStepContent
+  | GeometryStepContent;
 
 export type StepType = StepContent['type'];
 

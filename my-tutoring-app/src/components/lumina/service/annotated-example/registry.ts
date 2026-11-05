@@ -19,6 +19,7 @@ import { tablePrimitive } from './generators/table';
 import { diagramPrimitive } from './generators/diagram';
 import { graphSketchPrimitive } from './generators/graph-sketch';
 import { caseSplitPrimitive } from './generators/case-split';
+import { geometryPrimitive } from './generators/geometry';
 
 export const PRIMITIVE_REGISTRY: Record<StepType, PrimitiveDef> = {
   algebra: algebraPrimitive,
@@ -26,6 +27,7 @@ export const PRIMITIVE_REGISTRY: Record<StepType, PrimitiveDef> = {
   diagram: diagramPrimitive,
   'graph-sketch': graphSketchPrimitive,
   'case-split': caseSplitPrimitive,
+  geometry: geometryPrimitive,
 };
 
 /** All registered step types, in catalog order. */

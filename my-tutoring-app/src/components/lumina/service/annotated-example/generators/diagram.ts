@@ -100,7 +100,7 @@ Include a result — the key conclusion or expression derived from the diagram.$
 
 export const diagramPrimitive: PrimitiveDef = {
   id: 'diagram',
-  whenToUse: 'A real structured visual: number-line jumps, counted groups, fraction bars, or labeled geometry. Prefer it for concrete elementary explanations. Do not repeat a figure already provided unless this step adds a new visual action.',
+  whenToUse: 'A real structured visual: number-line jumps, counted groups, fraction bars, or a schematic sketch. For shapes with lengths, angles or areas use geometry instead. Prefer it for concrete elementary explanations. Do not repeat a figure already provided unless this step adds a new visual action.',
   generate: async (ctx) => {
     // Select representation separately so the content call has a monomorphic
     // schema: its mathematical fields are required, never nullable guesses.

@@ -47,6 +47,7 @@ const STEP_TYPE_COLORS: Record<StepType, string> = {
   diagram: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
   'graph-sketch': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
   'case-split': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+  geometry: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
 };
 
 // ── Evaluation Results Panel ─────────────────────────────────────────
@@ -369,7 +370,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                     planner → step generators in parallel. Pick a topic and click Generate.
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {(['algebra', 'table', 'diagram', 'graph-sketch', 'case-split'] as StepType[]).map((type) => (
+                    {(['algebra', 'table', 'diagram', 'geometry', 'graph-sketch', 'case-split'] as StepType[]).map((type) => (
                       <span
                         key={type}
                         className={`text-[10px] px-2 py-1 rounded-full border ${STEP_TYPE_COLORS[type]}`}

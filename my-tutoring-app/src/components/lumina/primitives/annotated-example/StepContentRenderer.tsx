@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { StructuredDiagram } from './StructuredDiagram';
-import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, X } from 'lucide-react';
+import { GeometryFigureView } from './GeometryFigureView';
+import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, Triangle, X } from 'lucide-react';
 import type {
   StepContent,
   AlgebraStepContent,
@@ -16,6 +17,7 @@ import type {
   DiagramStepContent,
   GraphSketchStepContent,
   CaseSplitStepContent,
+  GeometryStepContent,
 } from './types';
 import {
   CANVAS_WIDTH,
@@ -782,6 +784,15 @@ const TableStepView: React.FC<{ content: TableStepContent }> = ({ content }) => 
   );
 };
 
+const GeometryStepView: React.FC<{ content: GeometryStepContent }> = ({ content }) => (
+  <div className="space-y-2">
+    <div className="rounded-lg bg-slate-950/50 border border-slate-800/50 p-2">
+      <GeometryFigureView figure={content.figure} altText={content.altText} />
+    </div>
+    {content.caption && <p className="text-sm text-slate-400"><MixedContent text={content.caption} /></p>}
+  </div>
+);
+
 const DiagramStepView: React.FC<{ content: DiagramStepContent }> = ({ content }) => {
   return (
     <div className="space-y-3">
@@ -1083,6 +1094,7 @@ const STEP_TYPE_ICONS: Record<string, React.ReactNode> = {
   diagram: <Image size={12} className="text-cyan-400" />,
   'graph-sketch': <TrendingUp size={12} className="text-cyan-400" />,
   'case-split': <GitBranch size={12} className="text-amber-400" />,
+  geometry: <Triangle size={12} className="text-cyan-400" />,
 };
 
 /**
@@ -1106,6 +1118,8 @@ function renderContentBody(
       return <GraphSketchStepView content={content} />;
     case 'case-split':
       return <CaseSplitStepView content={content} />;
+    case 'geometry':
+      return <GeometryStepView content={content} />;
   }
 }
 

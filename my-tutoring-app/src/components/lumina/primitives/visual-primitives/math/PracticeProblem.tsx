@@ -156,6 +156,8 @@ function buildStepContent(step: PracticeStep): StepContent {
       return { type: 'case-split', condition: step.canonicalBody, cases: [] };
     case 'diagram':
       return { type: 'diagram', imagePrompt: '', labels: [], altText: step.canonicalBody };
+    case 'geometry':
+      return { type: 'diagram', imagePrompt: '', labels: [], altText: step.canonicalBody };
   }
 }
 

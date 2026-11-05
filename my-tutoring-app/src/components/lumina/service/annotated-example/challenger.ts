@@ -27,6 +27,7 @@
 
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import { geometrySummary } from '../../primitives/annotated-example/geometryFigure';
 import type { Inset } from '../../types';
 import { reviewPredictions } from './prediction-review';
 import type {
@@ -152,7 +153,7 @@ interface AlgebraStepSummary {
 }
 
 interface NonAlgebraStepSummary {
-  type: 'table' | 'graph-sketch' | 'case-split' | 'diagram';
+  type: 'table' | 'graph-sketch' | 'case-split' | 'diagram' | 'geometry';
   stepIndex: number;
   title: string;
   misconception: string;
@@ -256,6 +257,10 @@ ${rows.join('\n')}${more}`;
       return `splitting on: "${content.condition}"
     cases:
 ${cases || '      (none)'}`;
+    }
+    case 'geometry': {
+      return `figure: ${geometrySummary(content.figure)}
+    caption: "${content.caption}"`;
     }
     case 'diagram': {
       const labels = content.labels
