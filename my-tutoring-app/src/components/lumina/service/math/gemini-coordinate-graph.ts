@@ -11,6 +11,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { shuffleIndexedChoices } from "../../utils/choiceOrder";
 import { optionIsKey, parseNumber, parsePoint } from "../../primitives/visual-primitives/math/coordinateGraphWorkspace";
 
 // ============================================================================
@@ -278,7 +279,10 @@ function repairChoices(ch: CoordinateGraphChallenge, extras: string[]): void {
     }
     seen.add(norm(opts[i]));
   }
-  [ch.option0, ch.option1, ch.option2, ch.option3] = opts;
+  // The model and the key-repair path both favour a fixed slot for the key, so code places it.
+  const placed = shuffleIndexedChoices(opts, key, `${ch.id}|${ch.instruction}|${Math.random()}`);
+  [ch.option0, ch.option1, ch.option2, ch.option3] = placed.options;
+  ch.correctOptionIndex = placed.correctIndex;
 }
 
 /** An instruction that states the answer is replaced by the plain ask. */
