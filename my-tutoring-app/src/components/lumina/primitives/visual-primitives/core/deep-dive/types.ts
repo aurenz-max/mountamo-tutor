@@ -8,6 +8,7 @@
 
 import type { PrimitiveEvaluationResult } from '../../../../evaluation';
 import type { DeepDiveMetrics } from '../../../../evaluation/types';
+import type { ChartInset, DefinitionBoxInset, NumberLineInset, PassageInset } from '../../../../types';
 
 // ── Wrapper Layout Strategies ──────────────────────────────────────
 export type WrapperLayout = 'stack' | 'grid_2col' | 'reveal_progressive' | 'masonry';
@@ -31,7 +32,22 @@ export type BlockType =
   | 'mini-sim'
   | 'perspectives'
   | 'hypothesis-lab'
-  | 'reflection';
+  | 'reflection'
+  // A catalog drawer primitive placed as a section (agentic author and follow-ups)
+  | 'drawer'
+  // A generated display from the display library (service/gen-display), run in a sandboxed iframe
+  | 'display'
+  // Display blocks drawn by the knowledge-check inset renderers
+  | 'chart'
+  | 'number-line'
+  | 'definition'
+  | 'passage'
+  // A solved problem, step by step; at apply/analyze one step is the student's to pick
+  | 'worked-example'
+  // Stages of a one-way process in order (a cycle is the catalog's cycle wheel)
+  | 'process'
+  // A common wrong idea set against what is true
+  | 'misconception';
 
 // ── Base Block Data ─────────────────────────────────────────────────
 export interface BaseBlockData {
@@ -44,6 +60,10 @@ export interface BaseBlockData {
   transitionCue?: string;
   /** Size hint derived from Pretext height measurement — controls visual weight in layout */
   sizeHint?: SizeHint;
+  /** 0-based index into DeepDiveData.sections (agentic author). */
+  section?: number;
+  /** The outline's key ideas this block teaches or tests, as "section.idea" refs ("2.1"). */
+  ideas?: string[];
 }
 
 // ── Display Blocks ──────────────────────────────────────────────────
@@ -297,6 +317,98 @@ export interface PerspectivesBlockData extends BaseBlockData {
 
 // ── Union Type ──────────────────────────────────────────────────────
 
+// ── Embedded drawer ─────────────────────────────────────────────────
+
+/** An ungraded drawer primitive (catalog `drawer-*`) shown as a section: its own generator wrote `spec`, its registered component renders it. */
+export interface DrawerBlockData extends BaseBlockData {
+  blockType: 'drawer';
+  drawerId: string;
+  spec: unknown;
+}
+
+/** One section of the lesson's outline: a subtopic heading and the key ideas it must teach. */
+export interface DeepDiveSection {
+  heading: string;
+  ideas: string[];
+}
+
+/** A generated display: a validated template from the display library, given this lesson's params. Ungraded. */
+export interface GenDisplayBlockData extends BaseBlockData {
+  blockType: 'display';
+  displayId: string;
+  /** The whole sandboxed page (React, the kit, the display, its params), built on the server. */
+  html: string;
+}
+
+/** Real data as a bar, line or pie chart. Ungraded. */
+export interface ChartBlockData extends BaseBlockData {
+  blockType: 'chart';
+  inset: ChartInset;
+  /** Where the data comes from. */
+  caption?: string;
+}
+
+/** Numbers placed on a line: order, distance, fractions, negatives, an interval. Ungraded. */
+export interface NumberLineBlockData extends BaseBlockData {
+  blockType: 'number-line';
+  inset: NumberLineInset;
+  caption?: string;
+}
+
+/** One term the lesson depends on, its meaning and an example. Ungraded. */
+export interface DefinitionBlockData extends BaseBlockData {
+  blockType: 'definition';
+  inset: DefinitionBoxInset;
+}
+
+/** A text the student reads closely: a primary source, a poem, a letter, an excerpt. Ungraded. */
+export interface PassageBlockData extends BaseBlockData {
+  blockType: 'passage';
+  inset: PassageInset;
+  /** One sentence above the text: what to read it for. */
+  intro?: string;
+}
+
+/** A solved problem shown one step at a time, each step with the reason for it. */
+export interface WorkedExampleBlockData extends BaseBlockData {
+  blockType: 'worked-example';
+  /** The problem as posed. */
+  problem: string;
+  /** 2-6 steps in order: the work written down, and why that move. */
+  steps: Array<{ work: string; reason: string }>;
+  /** The result, stated after the last step. */
+  answer: string;
+  /**
+   * Set by code at apply/analyze (evaluable): the student picks this step's work before it is shown. The options
+   * are the real step and three errors a student makes there; steps after it stay hidden until it is answered.
+   */
+  tryStep?: { index: number; options: string[]; correctIndex: number; explanation: string };
+}
+
+/** The stages of a one-way process in order, from a start to an end. Ungraded. A cycle is `drawer-cycle-wheel`. */
+export interface ProcessBlockData extends BaseBlockData {
+  blockType: 'process';
+  /** 3-6 stages in order. */
+  stages: Array<{ icon: string; title: string; description: string }>;
+}
+
+/** A wrong idea students often hold, what is true instead, and the evidence. Ungraded. */
+export interface MisconceptionBlockData extends BaseBlockData {
+  blockType: 'misconception';
+  /** The wrong idea, as a student would say it. */
+  belief: string;
+  /** What is true. */
+  actually: string;
+  /** Why: the evidence or reasoning that settles it. */
+  why: string;
+}
+
+/** A related question the learner can open below the lesson; it runs through the follow-up path. */
+export interface SeeAlsoLink {
+  label: string;
+  question: string;
+}
+
 export type DeepDiveBlock =
   | HeroImageBlockData
   | KeyFactsBlockData
@@ -311,17 +423,42 @@ export type DeepDiveBlock =
   | MiniSimBlockData
   | PerspectivesBlockData
   | HypothesisLabBlockData
-  | ReflectionBlockData;
+  | ReflectionBlockData
+  | DrawerBlockData
+  | GenDisplayBlockData
+  | ChartBlockData
+  | NumberLineBlockData
+  | DefinitionBlockData
+  | PassageBlockData
+  | WorkedExampleBlockData
+  | ProcessBlockData
+  | MisconceptionBlockData;
 
 // ── Evaluable block type guard ──────────────────────────────────────
 
-export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData | PerspectivesBlockData | HypothesisLabBlockData {
+export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData | PerspectivesBlockData | HypothesisLabBlockData | WorkedExampleBlockData {
   if (block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank') return true;
+  if (block.blockType === 'worked-example') return !!(block as WorkedExampleBlockData).tryStep;
   if (block.blockType === 'diagram') return (block as DiagramBlockData).interactionMode === 'label';
   if (block.blockType === 'mini-sim') return !!(block as MiniSimBlockData).prediction;
   if (block.blockType === 'perspectives') return !!(block as PerspectivesBlockData).comprehension;
   if (block.blockType === 'hypothesis-lab') return true;
   return false;
+}
+
+// ── Agent debug (tester only) ───────────────────────────────────────
+
+export interface DeepDiveAgentDebug {
+  turns: number;
+  seconds: number;
+  deadline: 'none' | 'soft' | 'hard';
+  /** The lesson shape the agent chose and the seeded candidates it chose from. */
+  shape: string;
+  shapeCandidates: string[];
+  objective: string;
+  /** Advisory checks still open when the lesson shipped. */
+  advisories: string[];
+  toolCalls: Array<{ turn: number; name: string; ms: number; ok: boolean; note?: string }>;
 }
 
 // ── DeepDive Data (Top-Level) ───────────────────────────────────────
@@ -336,6 +473,12 @@ export interface DeepDiveData {
   narrativeArc?: string;
   /** Wrapper layout strategy — controls how blocks are spatially arranged */
   layout?: WrapperLayout;
+  /** The outline (agentic author): blocks carry `section`; the page shows a heading per section and a contents list. */
+  sections?: DeepDiveSection[];
+  /** Related questions shown under the lesson (agentic author); each opens new sections through the follow-up path. */
+  seeAlso?: SeeAlsoLink[];
+  /** Set by the agentic author (service/core/deep-dive-agent); absent on the staged pipeline. */
+  agentDebug?: DeepDiveAgentDebug;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;

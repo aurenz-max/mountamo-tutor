@@ -4,6 +4,7 @@ import React from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
+  LuminaMathText,
   accentSolidBg,
   accentText,
   text,
@@ -71,7 +72,7 @@ const BlockWrapper: React.FC<BlockWrapperProps> = ({
               luminaAccent ? accentText[luminaAccent] : text.muted
             }`}
           >
-            {label}
+            <LuminaMathText text={label} />
           </div>
         )}
         {children}

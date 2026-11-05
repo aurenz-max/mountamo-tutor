@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { MultipleChoiceBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaAnswerChoice, LuminaActionButton, LuminaFeedbackCard, LuminaReadAloud, type AnswerChoiceState } from '../../../../../ui';
+import { LuminaAnswerChoice, LuminaActionButton, LuminaFeedbackCard, LuminaReadAloud, type AnswerChoiceState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 
@@ -12,6 +12,8 @@ interface MultipleChoiceBlockProps {
   index: number;
   /** Called when the student submits an answer */
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
   /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
@@ -28,14 +30,15 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
   preReader = false,
 }) => {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(answeredProp ? data.correctIndex : null);
   const [attempts, setAttempts] = useState(0);
   const [answered, setAnswered] = useState(answeredProp ?? false);
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(answeredProp ?? false);
   // Pre-reader retry state — the wrongly-tapped picture stays marked until the
   // next tap so feedback lands on the touched object (reader-fit rule 5).
   const [retryIndex, setRetryIndex] = useState<number | null>(null);
@@ -85,12 +88,13 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 
+    onAttempt?.(selectedIndex === data.correctIndex, `Chose "${data.options[selectedIndex]}"`);
     if (selectedIndex === data.correctIndex) {
       SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       onAnswer(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       // After 2 wrong attempts, reveal answer
       SoundManager.playIncorrect();
       setAnswered(true);
@@ -102,7 +106,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
       SoundManager.playIncorrect();
       setSelectedIndex(null);
     }
-  }, [selectedIndex, answered, attempts, data, onAnswer]);
+  }, [selectedIndex, answered, attempts, data, onAnswer, onAttempt]);
 
   // Pre-reader flow: single tap = choose (the selection is atomic, so no Check
   // button — reader-fit rule 2). Same two-attempt policy as the deliberate flow.
@@ -113,13 +117,14 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
       setAttempts(newAttempts);
       setSelectedIndex(optionIndex);
 
+      onAttempt?.(optionIndex === data.correctIndex, `Chose "${data.options[optionIndex]}"`);
       if (optionIndex === data.correctIndex) {
         SoundManager.playCorrect();
         setRetryIndex(null);
         setAnswered(true);
         setShowExplanation(true);
         onAnswer(data.id, true, newAttempts);
-      } else if (newAttempts >= 2) {
+      } else if (!onAttempt && newAttempts >= 2) {
         SoundManager.playIncorrect();
         setRetryIndex(null);
         setAnswered(true);
@@ -131,13 +136,13 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
         // an eyes-free spoken hint (RECOVER beat), never revealing the answer.
         SoundManager.playIncorrect();
         setRetryIndex(optionIndex);
-        onAskTutor?.(
+        if (!onAttempt) onAskTutor?.(
           `[QUIZ_RETRY] The pre-reader tapped "${data.options[optionIndex]}" on the question "${data.question}" — not correct. `
           + `Give ONE warm spoken hint without revealing the answer, and invite them to tap another picture.`,
         );
       }
     },
-    [answered, attempts, data, onAnswer, onAskTutor],
+    [answered, attempts, data, onAnswer, onAttempt, onAskTutor],
   );
 
   const wasCorrect = selectedIndex === data.correctIndex;
@@ -148,7 +153,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
       <BlockWrapper label={data.label} index={index} accent="amber" variant="compact">
         <div ref={blockRef} className="space-y-4">
           <div className="flex items-start gap-3">
-            <p className="text-slate-100 font-medium text-lg leading-relaxed flex-1">{data.question}</p>
+            <p className="text-slate-100 font-medium text-lg leading-relaxed flex-1"><LuminaMathText text={data.question} /></p>
             {onAskTutor && (
               <LuminaReadAloud
                 iconOnly
@@ -176,6 +181,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
               return (
                 <LuminaAnswerChoice
                   key={i}
+                  aria-label={data.options[i]}
                   state={state}
                   disabled={answered}
                   onClick={() => handleChoose(i)}
@@ -195,7 +201,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
               status={wasCorrect ? 'correct' : 'incorrect'}
               label={wasCorrect ? '🎉 You did it!' : '💛 Good try!'}
             >
-              {data.explanation}
+              <LuminaMathText text={data.explanation} />
             </LuminaFeedbackCard>
           )}
         </div>
@@ -207,7 +213,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
   return (
     <BlockWrapper label={data.label} index={index} accent="amber" variant="compact">
       <div className="space-y-4">
-        <p className="text-slate-100 font-medium text-[15px] leading-relaxed">{data.question}</p>
+        <p className="text-slate-100 font-medium text-[15px] leading-relaxed"><LuminaMathText text={data.question} /></p>
 
         <div className="space-y-2">
           {data.options.map((option, i) => {
@@ -225,6 +231,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
             return (
               <LuminaAnswerChoice
                 key={i}
+                aria-label={data.options[i]}
                 state={state}
                 disabled={answered}
                 onClick={() => handleSelect(i)}
@@ -234,7 +241,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
                   <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono">
                     {String.fromCharCode(65 + i)}
                   </span>
-                  {option}
+                  <LuminaMathText text={option} />
                 </span>
               </LuminaAnswerChoice>
             );
@@ -265,7 +272,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
                   : 'Answer revealed'
               }
             >
-              {data.explanation}
+              <LuminaMathText text={data.explanation} />
             </LuminaFeedbackCard>
             <p className="text-xs text-slate-500 px-1">
               {attempts} {attempts === 1 ? 'attempt' : 'attempts'}

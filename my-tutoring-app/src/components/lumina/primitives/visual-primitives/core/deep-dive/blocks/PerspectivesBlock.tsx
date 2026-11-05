@@ -7,8 +7,7 @@ import {
   LuminaAnswerChoice,
   LuminaActionButton,
   LuminaFeedbackCard,
-  type AnswerChoiceState,
-} from '../../../../../ui';
+  type AnswerChoiceState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 
@@ -17,6 +16,8 @@ interface PerspectivesBlockProps {
   index: number;
   /** Called when the student submits an answer (only fires when comprehension is present) */
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
   /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
@@ -27,6 +28,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
@@ -37,10 +39,10 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
     () => new Set(perspectives[0]?.id ? [perspectives[0].id] : []),
   );
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(answeredProp ? data.comprehension?.correctIndex ?? null : null);
   const [attempts, setAttempts] = useState(0);
   const [answered, setAnswered] = useState(answeredProp ?? false);
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(answeredProp ?? false);
 
   const activePerspective = useMemo(
     () => perspectives.find((p) => p.id === activeId) ?? perspectives[0],
@@ -75,12 +77,13 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 
+    onAttempt?.(selectedIndex === comprehension.correctIndex, `Chose "${comprehension.options[selectedIndex]}"`);
     if (selectedIndex === comprehension.correctIndex) {
       SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       onAnswer?.(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       SoundManager.playIncorrect();
       setAnswered(true);
       setShowExplanation(true);
@@ -90,7 +93,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
       SoundManager.playIncorrect();
       setSelectedIndex(null);
     }
-  }, [comprehension, selectedIndex, answered, attempts, onAnswer, data.id]);
+  }, [comprehension, selectedIndex, answered, attempts, onAnswer, onAttempt, data.id]);
 
   if (perspectives.length === 0 || !activePerspective) {
     return (
@@ -110,7 +113,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
           <div className="text-[10px] font-mono uppercase tracking-widest text-rose-300/60 mb-1">
             The event
           </div>
-          <p className="text-sm text-slate-200 leading-relaxed">{eventDescription}</p>
+          <p className="text-sm text-slate-200 leading-relaxed"><LuminaMathText text={eventDescription} /></p>
         </div>
 
         {/* Perspective tabs */}
@@ -158,7 +161,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
           <div className="space-y-3 border-l-2 border-rose-400/30 pl-4">
             {activePerspective.narrative.map((para, i) => (
               <p key={i} className="text-sm text-slate-300 leading-relaxed italic">
-                &ldquo;{para}&rdquo;
+                &ldquo;<LuminaMathText text={para} />&rdquo;
               </p>
             ))}
           </div>
@@ -184,7 +187,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
               ].join(' ')}
             >
               <p className="text-sm font-medium text-slate-100 leading-relaxed">
-                {comprehension.question}
+                <LuminaMathText text={comprehension.question} />
               </p>
 
               <div className="space-y-2">
@@ -203,6 +206,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
                   return (
                     <LuminaAnswerChoice
                       key={i}
+                      aria-label={comprehension.options[i]}
                       state={state}
                       disabled={answered || !enoughViewed}
                       onClick={() => handleSelect(i)}
@@ -212,7 +216,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
                         <span className="flex-shrink-0 w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] font-mono">
                           {String.fromCharCode(65 + i)}
                         </span>
-                        {option}
+                        <LuminaMathText text={option} />
                       </span>
                     </LuminaAnswerChoice>
                   );
@@ -245,7 +249,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
                         : 'Answer revealed'
                     }
                   >
-                    {comprehension.explanation}
+                    <LuminaMathText text={comprehension.explanation} />
                   </LuminaFeedbackCard>
                   <p className="text-xs text-slate-500 px-1">
                     {attempts} {attempts === 1 ? 'attempt' : 'attempts'}

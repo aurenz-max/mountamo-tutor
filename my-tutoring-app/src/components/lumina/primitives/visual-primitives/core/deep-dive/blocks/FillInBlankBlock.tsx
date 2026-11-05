@@ -9,8 +9,7 @@ import {
   LuminaFillBlankSlot,
   LuminaActionButton,
   LuminaFeedbackCard,
-  type FillBlankState,
-} from '../../../../../ui';
+  type FillBlankState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 
@@ -18,6 +17,8 @@ interface FillInBlankBlockProps {
   data: FillInBlankBlockData;
   index: number;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   answered?: boolean;
   /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
   onAskTutor?: (message: string) => void;
@@ -27,14 +28,15 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
   const { sentence, blankIndex, correctAnswer, wordBank, label } = data;
-  const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [selectedWord, setSelectedWord] = useState<string | null>(answeredProp ? correctAnswer : null);
   const [attempts, setAttempts] = useState(0);
   const [answered, setAnswered] = useState(answeredProp ?? false);
-  const [showResult, setShowResult] = useState(false);
+  const [showResult, setShowResult] = useState(answeredProp ?? false);
 
   // Split sentence into words for rendering with blank
   const words = sentence.split(' ');
@@ -56,13 +58,14 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
     setAttempts(newAttempts);
 
     const correct = selectedWord.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+    onAttempt?.(correct, `Chose "${selectedWord}"`);
 
     if (correct) {
       SoundManager.playCorrect();
       setAnswered(true);
       setShowResult(true);
       onAnswer(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       SoundManager.playIncorrect();
       setAnswered(true);
       setShowResult(true);
@@ -73,7 +76,7 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
       SoundManager.playIncorrect();
       setSelectedWord(null);
     }
-  }, [selectedWord, answered, attempts, correctAnswer, data.id, onAnswer]);
+  }, [selectedWord, answered, attempts, correctAnswer, data.id, onAnswer, onAttempt]);
 
   // Render the sentence with a blank slot
   const renderSentence = () => {
@@ -109,7 +112,10 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
               </span>
             );
           }
-          return <span key={i}>{word} </span>;
+          // Math may span words, so each run of words around the blank renders as one string.
+          if (i !== 0 && i !== blankIndex + 1) return null;
+          const run = words.slice(i, i === 0 ? blankIndex : undefined).join(' ');
+          return run ? <span key={i}><LuminaMathText text={run} /> </span> : null;
         })}
       </p>
     );
@@ -133,7 +139,7 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
                 onClick={() => handleWordSelect(word)}
                 disabled={answered}
               >
-                {word}
+                <LuminaMathText text={word} />
               </LuminaChip>
             ))}
           </LuminaChipBank>

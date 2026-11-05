@@ -481,6 +481,8 @@ export function computeBlockSizeHints(
   return blocks.map((block) => {
     switch (block.blockType) {
       case 'hero-image':
+      case 'drawer':
+      case 'display':
         return 'full' as SizeHint;
 
       case 'prose':

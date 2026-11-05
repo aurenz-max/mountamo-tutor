@@ -1,5 +1,6 @@
 'use client';
 
+import { isEvaluableBlock } from '../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
 import React, { useState, useMemo } from 'react';
 import { getPrimitive } from '../config/primitiveRegistry';
 import {
@@ -8,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
 import type { DeepDiveData, DeepDiveBlock, WrapperLayout } from '../primitives/visual-primitives/core/deep-dive/types';
 import { getTemplates } from '../primitives/visual-primitives/core/deep-dive/composition-templates';
 
@@ -237,9 +239,7 @@ const BlockInspector: React.FC<{ blocks: DeepDiveBlock[]; selectedIndex: number;
 // ── Orchestrator Plan Display ───────────────────────────────────────
 
 const OrchestratorPlanDisplay: React.FC<{ data: DeepDiveData; templateId?: string | null }> = ({ data, templateId }) => {
-  const evaluableCount = data.blocks.filter(
-    (b) => b.blockType === 'multiple-choice' || b.blockType === 'fill-in-blank',
-  ).length;
+  const evaluableCount = data.blocks.filter(isEvaluableBlock).length;
 
   // Count unique block types
   const blockTypes = new Set(data.blocks.map((b) => b.blockType));
@@ -289,6 +289,25 @@ const OrchestratorPlanDisplay: React.FC<{ data: DeepDiveData; templateId?: strin
       </div>
       {data.narrativeArc && (
         <p className="mt-2 text-[10px] text-slate-500 italic">{data.narrativeArc}</p>
+      )}
+      {data.agentDebug && (
+        <div className="mt-2 space-y-1 text-[10px] text-slate-400">
+          <div>
+            agent: {data.agentDebug.turns} turns, {data.agentDebug.seconds}s{data.agentDebug.deadline !== 'none' ? ` (${data.agentDebug.deadline} deadline)` : ''} · shape <span className="text-indigo-300">{data.agentDebug.shape}</span> from {data.agentDebug.shapeCandidates.join(', ')}
+          </div>
+          <div className="text-slate-300">objective: {data.agentDebug.objective}</div>
+          {data.agentDebug.advisories.map((a, i) => (
+            <div key={i} className="text-amber-400/80">advisory: {a}</div>
+          ))}
+          <details>
+            <summary className="cursor-pointer">{data.agentDebug.toolCalls.length} tool calls</summary>
+            {data.agentDebug.toolCalls.map((c, i) => (
+              <div key={i} className={c.ok ? '' : 'text-red-400'}>
+                t{c.turn} {c.name}{c.note ? ` — ${c.note}` : ''}
+              </div>
+            ))}
+          </details>
+        </div>
       )}
     </div>
   );
@@ -357,7 +376,10 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
   const [topic, setTopic] = useState('');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [evalMode, setEvalMode] = useState<EvalMode>('default');
+  // DeepDive is taught only on the workspace: offline plays the real runtime with no Live session (free).
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
   const [layoutChoice, setLayoutChoice] = useState<LayoutChoice>('auto');
+  const [pipeline, setPipeline] = useState<'agent' | 'legacy'>('agent');
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -368,6 +390,9 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
   const evaluationContext = useEvaluationContext();
   const primitiveConfig = getPrimitive('deep-dive');
   const DeepDiveComponent = primitiveConfig?.component;
+  // One instance per generated dive: the workspace keys its session on it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const previewInstanceId = useMemo(() => `deep-dive-${Date.now()}`, [generatedData]);
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
@@ -392,6 +417,7 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
               targetEvalMode: evalMode === 'default' ? undefined : evalMode,
               templateId: templateId || undefined,
               layoutOverride: layoutChoice === 'auto' ? undefined : layoutChoice,
+              pipeline,
               intent: `Generate a DeepDive exploration on "${topic}"`,
             },
           },
@@ -492,6 +518,19 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
               </p>
             </div>
 
+            {/* Pipeline */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-300 mb-1">Author</label>
+              <select
+                value={pipeline}
+                onChange={(e) => setPipeline(e.target.value as 'agent' | 'legacy')}
+                className="w-full px-3 py-2 text-sm bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="agent">Agent (one model, multi-turn)</option>
+                <option value="legacy">Staged (planner + parallel blocks)</option>
+              </select>
+            </div>
+
             {/* Layout Override */}
             <div className="mb-4">
               <label className="block text-xs font-medium text-slate-300 mb-1">Layout</label>
@@ -572,18 +611,33 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
         {/* Right Column: Full Render Preview */}
         <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-h-[calc(100vh-200px)]">
           {generatedData && DeepDiveComponent ? (
-            <div className="bg-slate-900/50 rounded-xl overflow-hidden">
-              <DeepDiveComponent
-                data={{
-                  ...generatedData,
-                  instanceId: `deep-dive-${Date.now()}`,
-                  exhibitId: evaluationContext?.exhibitId,
-                  skillId: 'topic-comprehension',
-                  subskillId: 'deep-dive-exploration',
-                  objectiveId: 'understand-topic',
-                  onEvaluationSubmit: handleEvaluationSubmit,
-                }}
-              />
+            <div className="space-y-3">
+              <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                {(['offline', 'live'] as const).map(m => (
+                  <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                    className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                    {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                  </button>
+                ))}
+              </div>
+              <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}
+                className="bg-slate-900/50 rounded-xl overflow-hidden">
+                <TesterWorkspace primitiveId="deep-dive" instanceId={previewInstanceId}
+                  evalMode={evalMode === 'default' ? null : evalMode} offline={tutorMode === 'offline'}
+                  data={generatedData} topic={topic} gradeLevel={gradeLevel} onEvaluationSubmit={handleEvaluationSubmit}>
+                  <DeepDiveComponent
+                    data={{
+                      ...generatedData,
+                      instanceId: previewInstanceId,
+                      exhibitId: evaluationContext?.exhibitId,
+                      skillId: 'topic-comprehension',
+                      subskillId: 'deep-dive-exploration',
+                      objectiveId: 'understand-topic',
+                      onEvaluationSubmit: handleEvaluationSubmit,
+                    }}
+                  />
+                </TesterWorkspace>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">

@@ -1,0 +1,86 @@
+{
+ "g2-leaves": {
+  "id": "block-2",
+  "blockType": "drawer",
+  "drawerId": "drawer-cause-chain",
+  "spec": {
+   "title": "Why Leaves Change Color",
+   "caption": "Can you guess what happens to the green color when the days get shorter?",
+   "nodes": [
+    {
+     "id": "node1",
+     "label": "Hours of sunlight"
+    },
+    {
+     "id": "node2",
+     "label": "Green chlorophyll"
+    },
+    {
+     "id": "node3",
+     "label": "Yellow and orange colors"
+    }
+   ],
+   "links": [
+    {
+     "from": "node1",
+     "to": "node2",
+     "effect": "same",
+     "because": "trees need sunlight to make green color"
+    },
+    {
+     "from": "node2",
+     "to": "node3",
+     "effect": "opposite",
+     "because": "fading green lets hidden colors show"
+    }
+   ]
+  },
+  "label": "The Fall Chain",
+  "tutoringBrief": "Guide the student to trace how less sunlight leads to changing leaf colors.",
+  "transitionCue": "Let us see what happens when we test this idea."
+ },
+ "g4-railroad": {
+  "id": "block-2",
+  "blockType": "drawer",
+  "drawerId": "drawer-perspective-lens",
+  "spec": {
+   "title": "The Underground Railroad",
+   "caption": "Brave people risked everything to guide enslaved people to freedom in the North.",
+   "event": "In the 1800s, freedom seekers, station masters, and conductors worked in secret to escape slavery.",
+   "prompts": [
+    "Why did you join the journey?",
+    "What danger did you face?",
+    "What kept your hope alive?"
+   ],
+   "views": [
+    {
+     "label": "A Freedom Seeker",
+     "answers": [
+      "I wanted to live free and own my life.",
+      "Slave catchers and wild dogs chased us through dark woods.",
+      "The North Star showed me the way every night."
+     ]
+    },
+    {
+     "label": "A Station Master",
+     "answers": [
+      "Every human being deserves to be free and safe.",
+      "The law said helping runaways was a terrible crime.",
+      "Seeing tired travelers reach safety gave me great strength."
+     ]
+    },
+    {
+     "label": "A Conductor",
+     "answers": [
+      "I knew secret paths that could lead people out of bondage.",
+      "Cold weather and hidden patrols threatened us on every trip.",
+      "Bravo souls whispering freedom songs kept my spirit strong."
+     ]
+    }
+   ]
+  },
+  "label": "Voices Along the Way",
+  "tutoringBrief": "Guide the student to see how each person took great risks for freedom.",
+  "transitionCue": "Now let us test your knowledge on the secret vocabulary used along the route."
+ }
+}

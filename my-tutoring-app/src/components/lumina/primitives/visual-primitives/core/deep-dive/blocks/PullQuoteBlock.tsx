@@ -3,7 +3,7 @@
 import React from 'react';
 import type { PullQuoteBlockData } from '../types';
 import { useTapTutor } from './TapTutor';
-import { LuminaReadAloud } from '../../../../../ui';
+import { LuminaReadAloud, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface PullQuoteBlockProps {
@@ -31,7 +31,7 @@ const PullQuoteBlock: React.FC<PullQuoteBlockProps> = ({ data, index, onAskTutor
   const quote = (
     <blockquote className="border-l-2 border-indigo-400/40 pl-6">
       <p className="text-xl font-serif italic text-slate-300 leading-relaxed">
-        &ldquo;{data.text}&rdquo;
+        &ldquo;<LuminaMathText text={data.text} />&rdquo;
       </p>
       {data.attribution && (
         <footer className="mt-3 text-sm text-slate-500 font-light">

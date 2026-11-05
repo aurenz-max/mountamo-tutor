@@ -13,8 +13,7 @@ import {
   LuminaBadge,
   LuminaDropZone,
   LuminaFeedbackCard,
-  type DropZoneState,
-} from '../../../../../ui';
+  type DropZoneState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 type Zone = 'pool' | 'iv' | 'dv' | 'control';
@@ -24,6 +23,8 @@ interface HypothesisLabBlockProps {
   data: HypothesisLabBlockData;
   index: number;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   answered?: boolean;
   /**
    * Optional bridge to the DeepDive live tutor. When provided, the "Ask the
@@ -64,6 +65,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
@@ -210,6 +212,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 
+    onAttempt?.(wrong.size === 0, `Checked the lab with ${variables.length - wrong.size} of ${variables.length} factors in the right zone`);
     if (wrong.size === 0) {
       SoundManager.playCorrect();
       setAnswered(true);
@@ -217,7 +220,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       setWrongIds(new Set());
       setWasCorrect(true);
       onAnswer(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       // Reveal answer key by snapping every chip to its correct zone.
       const corrected: Record<string, Zone> = {};
       for (const v of variables) corrected[v.id] = correctZoneFor(v.role);
@@ -232,7 +235,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       SoundManager.playIncorrect();
       setWrongIds(wrong);
     }
-  }, [canSubmit, variables, positions, attempts, onAnswer, data.id]);
+  }, [canSubmit, variables, positions, attempts, onAnswer, onAttempt, data.id]);
 
   // Hypothesis sentence assembled from correctly-classified variables —
   // shown only after submission.
@@ -292,7 +295,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
         disabled={answered}
         className={chipClasses}
       >
-        <span className="leading-tight">{v.label}</span>
+        <span className="leading-tight"><LuminaMathText text={v.label} /></span>
         {answered && positions[v.id] !== correctZoneFor(v.role) && (
           <span className="text-[10px] font-mono uppercase tracking-widest opacity-70">
             {v.role === 'irrelevant' ? 'not part of expt' : ZONE_LABEL[correctZoneFor(v.role) as Exclude<Zone, 'pool'>]}
@@ -368,7 +371,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
           <div className="text-[10px] font-mono uppercase tracking-widest text-teal-300/60 mb-1.5">
             The experiment
           </div>
-          <p className="text-sm text-slate-200 leading-relaxed">{scenario}</p>
+          <p className="text-sm text-slate-200 leading-relaxed"><LuminaMathText text={scenario} /></p>
         </div>
 
         {/* Prompt */}
@@ -494,7 +497,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
 
         {/* Explanation */}
         {showExplanation && (
-          <LuminaFeedbackCard status="insight">{explanation}</LuminaFeedbackCard>
+          <LuminaFeedbackCard status="insight"><LuminaMathText text={explanation} /></LuminaFeedbackCard>
         )}
       </div>
     </BlockWrapper>

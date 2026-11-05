@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TimelineBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaFeedbackCard, dropZoneStateClass } from '../../../../../ui';
+import { LuminaActionButton, LuminaFeedbackCard, dropZoneStateClass, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 import { useTapTutor, TapHint } from './TapTutor';
@@ -14,6 +14,8 @@ interface TimelineBlockProps {
   index: number;
   /** Called when the student completes the ordering challenge ('order' mode only) */
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
   /** Bridge to the DeepDive live tutor; tapping an event asks it to tell the story. */
@@ -42,8 +44,8 @@ const EventBody: React.FC<EventBodyProps> = ({ event, align, onTap, active }) =>
       <div className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/25 mb-2">
         <span className="text-xs font-mono text-rose-300/90">{event.date}</span>
       </div>
-      <h4 className="text-sm font-medium text-slate-100 mb-1">{event.title}</h4>
-      <p className="text-sm text-slate-400 leading-relaxed">{event.description}</p>
+      <h4 className="text-sm font-medium text-slate-100 mb-1"><LuminaMathText text={event.title} /></h4>
+      <p className="text-sm text-slate-400 leading-relaxed"><LuminaMathText text={event.description} /></p>
     </>
   );
   if (!onTap) return inner;
@@ -64,6 +66,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
@@ -113,13 +116,14 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
     const correctCount = sequence.filter((eventIdx, slot) => eventIdx === slot).length;
 
+    onAttempt?.(correctCount === events.length, `Checked an order with ${correctCount} of ${events.length} events in the right place`);
     if (correctCount === events.length) {
       SoundManager.playCorrect();
       setAnswered(true);
       setWasCorrect(true);
       setLastCheckMsg(null);
       onAnswer?.(data.id, true, newAttempts);
-    } else if (newAttempts >= MAX_ATTEMPTS) {
+    } else if (!onAttempt && newAttempts >= MAX_ATTEMPTS) {
       SoundManager.playIncorrect();
       setAnswered(true);
       setWasCorrect(false);
@@ -139,7 +143,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
         `${correctCount} of ${events.length} in the right spot. The correctly-placed events from the start stayed — try the rest again!`,
       );
     }
-  }, [allPlaced, answered, attempts, sequence, events.length, data.id, onAnswer]);
+  }, [allPlaced, answered, attempts, sequence, events.length, data.id, onAnswer, onAttempt]);
 
   // ── Tap-to-explore (static + post-answer view) ────────────────────
   const askAboutEvent = (i: number, event: TimelineEvent) => {
@@ -226,7 +230,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   className={`flex-1 text-left rounded-lg px-3 py-2 cursor-pointer transition-colors ${dropZoneStateClass('filled')}`}
                 >
                   <span className="text-sm font-medium text-slate-100 block">
-                    {events[eventIdx].title}
+                    <LuminaMathText text={events[eventIdx].title} />
                   </span>
                   <span className="text-xs text-slate-500">Tap to remove</span>
                 </button>
@@ -251,10 +255,10 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
               className="text-left rounded-lg px-3 py-2.5 bg-rose-500/5 border border-rose-500/20 cursor-pointer hover:bg-rose-500/10 hover:border-rose-400/30 transition-colors"
             >
               <span className="text-sm font-medium text-slate-100 block mb-0.5">
-                {events[eventIdx].title}
+                <LuminaMathText text={events[eventIdx].title} />
               </span>
               <span className="text-xs text-slate-400 leading-relaxed">
-                {events[eventIdx].description}
+                <LuminaMathText text={events[eventIdx].description} />
               </span>
             </button>
           ))}

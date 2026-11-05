@@ -90,6 +90,7 @@ import { threeDShapeExplorerBoss } from '../../primitives/visual-primitives/math
 import { calendarExplorerBoss } from '../../primitives/visual-primitives/calendar/calendarExplorer.boss';
 import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.boss';
 import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
+import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
 import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
@@ -270,6 +271,7 @@ export const LIVE_ADAPTERS = {
   'timeline-builder': bossAdapter(timelineBuilderBoss),
   'fast-fact': bossAdapter(fastFactBoss),
   'fact-file': bossAdapter(factFileBoss),
+  'deep-dive': bossAdapter(deepDiveBoss),
   'push-pull-arena': bossAdapter(pushPullArenaBoss),
   'race-track-lab': bossAdapter(raceTrackLabBoss),
   'habitat-diorama': bossAdapter(habitatDioramaBoss),

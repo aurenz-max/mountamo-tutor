@@ -11,8 +11,7 @@ import {
   LuminaFeedbackCard,
   LuminaBadge,
   LuminaReadAloud,
-  type AnswerChoiceState,
-} from '../../../../../ui';
+  type AnswerChoiceState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 
@@ -20,6 +19,8 @@ interface MiniSimBlockProps {
   data: MiniSimBlockData;
   index: number;
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   answered?: boolean;
   /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
   onAskTutor?: (message: string) => void;
@@ -37,6 +38,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
   preReader = false,
@@ -60,8 +62,8 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   // ── State ──────────────────────────────────────────────────────────
   const [toggleValue, setToggleValue] = useState(false);
   const [sliderValue, setSliderValue] = useState(sliderDefault ?? sliderMin);
-  const [predictionAnswer, setPredictionAnswer] = useState<number | null>(null);
-  const [predictionSubmitted, setPredictionSubmitted] = useState(false);
+  const [predictionAnswer, setPredictionAnswer] = useState<number | null>(answeredProp ? data.prediction?.correctIndex ?? null : null);
+  const [predictionSubmitted, setPredictionSubmitted] = useState(answeredProp ?? false);
   const [predictionAttempts, setPredictionAttempts] = useState(0);
   const [simUnlocked, setSimUnlocked] = useState(!prediction);
   const [answered, setAnswered] = useState(answeredProp ?? false);
@@ -154,6 +156,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     setPredictionAttempts(newAttempts);
 
     const isCorrect = predictionAnswer === prediction.correctIndex;
+    onAttempt?.(isCorrect, `Predicted "${prediction.options[predictionAnswer]}"`);
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -161,7 +164,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
       setSimUnlocked(true);
       setAnswered(true);
       onAnswer?.(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       SoundManager.playIncorrect();
       setPredictionSubmitted(true);
       setSimUnlocked(true);
@@ -171,7 +174,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
       SoundManager.playIncorrect();
       setPredictionAnswer(null);
     }
-  }, [predictionAnswer, prediction, predictionSubmitted, predictionAttempts, data.id, onAnswer]);
+  }, [predictionAnswer, prediction, predictionSubmitted, predictionAttempts, data.id, onAnswer, onAttempt]);
 
   // Pre-reader flow: single tap = choose (the selection is atomic, so no Check
   // button — reader-fit rule 2). Same two-attempt policy as the deliberate flow.
@@ -182,6 +185,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
       setPredictionAttempts(newAttempts);
       setPredictionAnswer(idx);
 
+      onAttempt?.(idx === prediction.correctIndex, `Predicted "${prediction.options[idx]}"`);
       if (idx === prediction.correctIndex) {
         SoundManager.playCorrect();
         setRetryIndex(null);
@@ -189,7 +193,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
         setSimUnlocked(true);
         setAnswered(true);
         onAnswer?.(data.id, true, newAttempts);
-      } else if (newAttempts >= 2) {
+      } else if (!onAttempt && newAttempts >= 2) {
         SoundManager.playIncorrect();
         setRetryIndex(null);
         setPredictionSubmitted(true);
@@ -201,13 +205,13 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
         // an eyes-free spoken hint (RECOVER beat), never revealing the answer.
         SoundManager.playIncorrect();
         setRetryIndex(idx);
-        onAskTutor?.(
+        if (!onAttempt) onAskTutor?.(
           `[SIM_PREDICT_RETRY] The pre-reader guessed "${prediction.options[idx]}" for what will happen — not right. `
           + `Give ONE warm spoken hint without revealing the answer, and invite them to tap another picture.`,
         );
       }
     },
-    [predictionSubmitted, prediction, predictionAttempts, data.id, onAnswer, onAskTutor],
+    [predictionSubmitted, prediction, predictionAttempts, data.id, onAnswer, onAttempt, onAskTutor],
   );
 
   const wasCorrect = prediction ? predictionAnswer === prediction.correctIndex : false;
@@ -279,7 +283,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
           </p>
         </div>
         <p className="text-[15px] text-slate-200 leading-relaxed">
-          {prediction.question}
+          <LuminaMathText text={prediction.question} />
         </p>
         <div className="grid gap-2">
           {prediction.options.map((opt, i) => {
@@ -297,6 +301,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             return (
               <LuminaAnswerChoice
                 key={i}
+                aria-label={prediction.options[i]}
                 state={state}
                 disabled={predictionSubmitted}
                 onClick={() => handlePredictionSelect(i)}
@@ -305,7 +310,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
                 <span className="text-slate-500 mr-2 font-mono text-xs">
                   {String.fromCharCode(65 + i)}.
                 </span>
-                {opt}
+                <LuminaMathText text={opt} />
               </LuminaAnswerChoice>
             );
           })}
@@ -337,7 +342,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
                   : 'Answer revealed'
               }
             >
-              {prediction.explanation}
+              <LuminaMathText text={prediction.explanation} />
             </LuminaFeedbackCard>
             <p className="text-xs text-cyan-400/60 mt-2 font-mono uppercase tracking-wider">
               Now try it yourself below
@@ -356,7 +361,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
       <div className="space-y-4">
         <div className="flex items-start gap-3">
           <p className="text-slate-100 font-medium text-lg leading-relaxed flex-1">
-            {prediction.question}
+            <LuminaMathText text={prediction.question} />
           </p>
           {onAskTutor && (
             <LuminaReadAloud
@@ -385,6 +390,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             return (
               <LuminaAnswerChoice
                 key={i}
+                aria-label={prediction.options[i]}
                 state={state}
                 disabled={predictionSubmitted}
                 onClick={() => handlePredictionChoose(i)}
@@ -404,7 +410,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             status={wasCorrect ? 'correct' : 'incorrect'}
             label={wasCorrect ? '🎉 You did it!' : '💛 Good try!'}
           >
-            {prediction.explanation}
+            <LuminaMathText text={prediction.explanation} />
           </LuminaFeedbackCard>
         )}
       </div>
@@ -436,15 +442,15 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             key={activeState.condition}
             className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 space-y-2 animate-in fade-in duration-300"
           >
-            <p className="text-sm font-semibold text-cyan-200">{activeState.title}</p>
+            <p className="text-sm font-semibold text-cyan-200"><LuminaMathText text={activeState.title} /></p>
             <p className="text-sm text-slate-300 leading-relaxed">
-              {activeState.description}
+              <LuminaMathText text={activeState.description} />
             </p>
             <div className="pt-2 border-t border-white/5">
               <p className="text-xs font-mono uppercase tracking-wider text-cyan-400/60 mb-1">
                 Key Observation
               </p>
-              <p className="text-sm text-slate-200 italic">{activeState.keyObservation}</p>
+              <p className="text-sm text-slate-200 italic"><LuminaMathText text={activeState.keyObservation} /></p>
             </div>
           </div>
         )}
@@ -471,9 +477,9 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             key={activeState.condition}
             className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2 animate-in fade-in duration-300"
           >
-            <p className="text-base font-semibold text-cyan-200">{activeState.title}</p>
+            <p className="text-base font-semibold text-cyan-200"><LuminaMathText text={activeState.title} /></p>
             <p className="text-base text-slate-100 leading-relaxed">
-              {activeState.description}
+              <LuminaMathText text={activeState.description} />
             </p>
           </div>
         )}
@@ -487,7 +493,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
       <BlockWrapper label={label} index={index} accent="cyan" variant="default">
         <div ref={blockRef} className="space-y-5">
           {/* Scenario — read aloud in the STIMULUS beat */}
-          <p className="text-[17px] text-slate-100 leading-relaxed">{scenario}</p>
+          <p className="text-[17px] text-slate-100 leading-relaxed"><LuminaMathText text={scenario} /></p>
 
           {/* Prediction (if present) */}
           {prediction && !answered && renderPreReaderPrediction()}
@@ -504,14 +510,14 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     <BlockWrapper label={label} index={index} accent="cyan" variant="default">
       <div className="space-y-5">
         {/* Scenario description */}
-        <p className="text-[15px] text-slate-300 leading-relaxed">{scenario}</p>
+        <p className="text-[15px] text-slate-300 leading-relaxed"><LuminaMathText text={scenario} /></p>
 
         {/* Prediction phase (if present) */}
         {prediction && !answered && renderPrediction()}
         {prediction && answered && (
           <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-400">
             <span className="font-medium text-slate-300">Your prediction:</span>{' '}
-            {prediction.options[predictionAnswer ?? prediction.correctIndex]}
+            <LuminaMathText text={prediction.options[predictionAnswer ?? prediction.correctIndex]} />
             {predictionAnswer === prediction.correctIndex ? (
               <LuminaBadge accent="emerald" className="ml-2 text-xs">
                 Correct

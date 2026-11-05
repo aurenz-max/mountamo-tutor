@@ -1,0 +1,153 @@
+{
+  "source": "qa/tutor-reports/deep-dive-runtime-recall-payload-2026-11-04.json",
+  "primitiveId": "deep-dive",
+  "evalMode": "recall",
+  "data": {
+    "title": "The Journey of a Water Drop: Understanding the Water Cycle",
+    "subtitle": "Discover how water moves endlessly around our planet through evaporation, condensation, and precipitation.",
+    "topic": "The water cycle",
+    "gradeLevel": "grade 4 student",
+    "narrativeArc": "Students begin by visualizing the Earth's continuous water system, explore the core stages of the water cycle through structured facts and a process diagram, test their vocabulary and comprehension with interactive checks, and reflect on the endless journey of water.",
+    "layout": "stack",
+    "blocks": [
+      {
+        "id": "block-0",
+        "blockType": "hero-image",
+        "label": "Water in Nature",
+        "tutoringBrief": "Help the student notice how water is everywhere in this picture, from the ocean to the clouds in the sky.",
+        "transitionCue": "Water never stays in one place. Let's look at the key facts that explain how it moves.",
+        "imageBase64": "",
+        "caption": "A vibrant, child-friendly digital illustration for grade 4 students showing a bright sunny day over a blue ocean, with fluffy clouds forming in the sky, rain falling over green mountains, and rivers f",
+        "altText": "Visual illustration for The water cycle"
+      },
+      {
+        "id": "block-1",
+        "blockType": "key-facts",
+        "label": "Core Water Cycle Facts",
+        "tutoringBrief": "Encourage the student to read each fact carefully and think about where they have seen these processes happen in real life.",
+        "transitionCue": "Now that we know the main steps, let's look at a diagram showing how they connect in a continuous circle.",
+        "facts": [
+          {
+            "icon": "☀️",
+            "text": "The sun heats up water in oceans, lakes, and rivers, turning it into an invisible gas called water vapor that floats up into the sky.",
+            "headline": "The Invisible Climb"
+          },
+          {
+            "icon": "☁️",
+            "text": "As the water vapor goes high up in the sky, it cools down and turns back into tiny liquid drops that bunch together to make fluffy clouds.",
+            "headline": "Floating Water Makers"
+          },
+          {
+            "icon": "🌧️",
+            "text": "When the clouds get too heavy with water drops, the water falls right back down to the ground as rain, snow, or even hail.",
+            "headline": "The Heavy Cloud"
+          },
+          {
+            "icon": "🌊",
+            "text": "All the fallen water gathers back together in rivers, lakes, and oceans, and then the whole amazing cycle starts all over again!"
+          }
+        ]
+      },
+      {
+        "id": "block-2",
+        "blockType": "diagram",
+        "label": "Water Cycle Diagram",
+        "tutoringBrief": "Guide the student through the cycle step-by-step, starting from the sun and following the arrows around.",
+        "transitionCue": "Great job exploring the diagram! Let's check your understanding of these important science words.",
+        "imageBase64": "",
+        "caption": "A diagram illustrating the four main stages of the water cycle: the sun heating the ocean, evaporation, condensation, and precipitation.",
+        "altText": "Scientific diagram of the water cycle featuring the sun, ocean, rising vapor, clouds, and rain over mountains on a dark background.",
+        "interactionMode": "explore",
+        "labels": [
+          {
+            "id": "label-0",
+            "text": "Sun",
+            "description": "The star at the center of our solar system that provides the thermal energy and heat required to drive the entire water cycle.",
+            "position": {
+              "x": 31.9,
+              "y": 95
+            }
+          },
+          {
+            "id": "label-1",
+            "text": "Evaporation",
+            "description": "The process where liquid water absorbs heat from the sun and transforms into an invisible gas called water vapor, rising into the air.",
+            "position": {
+              "x": 51.5,
+              "y": 95
+            }
+          },
+          {
+            "id": "label-2",
+            "text": "Condensation",
+            "description": "The process where rising water vapor cools down high in the atmosphere and turns back into tiny liquid water droplets, forming clouds.",
+            "position": {
+              "x": 95,
+              "y": 95
+            }
+          },
+          {
+            "id": "label-3",
+            "text": "Precipitation",
+            "description": "When condensed water droplets in clouds become too heavy to stay aloft, falling back to Earth as rain, snow, sleet, or hail.",
+            "position": {
+              "x": 95,
+              "y": 95
+            }
+          },
+          {
+            "id": "label-4",
+            "text": "Collection",
+            "description": "The stage where fallen precipitation flows across the landscape and gathers back into oceans, rivers, and lakes to restart the cycle.",
+            "position": {
+              "x": 95,
+              "y": 95
+            }
+          }
+        ],
+        "learningObjective": "Students will understand how water moves through Earth's systems via the continuous cycle of evaporation, condensation, and precipitation powered by the sun."
+      },
+      {
+        "id": "block-3",
+        "blockType": "fill-in-blank",
+        "label": "Vocabulary Check",
+        "tutoringBrief": "If the student struggles, remind them of the difference between changing into a gas versus turning back into a liquid cloud.",
+        "transitionCue": "Wonderful vocabulary recall! Let's reinforce the main takeaway before our final check.",
+        "sentence": "When water vapor in the air cools down and turns back into liquid water, it forms clouds through the process of ______.",
+        "blankIndex": 21,
+        "correctAnswer": "condensation",
+        "wordBank": [
+          "evaporation",
+          "collection",
+          "condensation",
+          "precipitation"
+        ]
+      },
+      {
+        "id": "block-4",
+        "blockType": "pull-quote",
+        "label": "Water Wisdom",
+        "tutoringBrief": "Ask the student to imagine how old and well-traveled every drop of water really is.",
+        "transitionCue": "With that amazing fact in mind, let's do a final quick quiz on how the cycle works.",
+        "text": "The water you drink today is the same water that dinosaurs drank millions of years ago because Earth's water is constantly recycled!",
+        "attribution": "Water Wisdom"
+      },
+      {
+        "id": "block-5",
+        "blockType": "multiple-choice",
+        "label": "Water Cycle Quiz",
+        "tutoringBrief": "Help the student trace the path starting from the sun heating the water up to the formation of clouds and falling rain.",
+        "transitionCue": "Congratulations! You have completed your journey through the water cycle.",
+        "question": "Which of the following describes the correct order of steps in the water cycle?",
+        "options": [
+          "Precipitation -> Evaporation -> Condensation",
+          "Condensation -> Precipitation -> Evaporation",
+          "Collection -> Precipitation -> Evaporation",
+          "Evaporation -> Condensation -> Precipitation"
+        ],
+        "correctIndex": 3,
+        "explanation": "The water cycle starts when the sun heats up water and turns it into gas through evaporation. Next, that vapor cools down and forms clouds through condensation. Finally, when the clouds get too heavy, the water falls back to Earth as precipitation."
+      }
+    ]
+  }
+}

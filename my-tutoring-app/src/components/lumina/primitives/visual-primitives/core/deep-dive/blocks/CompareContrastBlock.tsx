@@ -8,8 +8,7 @@ import {
   LuminaDropZone,
   LuminaFeedbackCard,
   answerStateClass,
-  type DropZoneState,
-} from '../../../../../ui';
+  type DropZoneState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 import { useTapTutor, TapHint } from './TapTutor';
@@ -20,6 +19,8 @@ interface CompareContrastBlockProps {
   index: number;
   /** Called when the student completes the sort challenge ('sort' mode only) */
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
   /** Bridge to the DeepDive live tutor. */
@@ -39,6 +40,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
@@ -121,13 +123,14 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
     });
     zoneFlashTimer.current = setTimeout(() => setZoneFlash(null), 900);
 
+    onAttempt?.(wrongIdxs.length === 0, `Checked a sort with ${pool.length - wrongIdxs.length} of ${pool.length} statements under the right heading`);
     if (wrongIdxs.length === 0) {
       SoundManager.playCorrect();
       setAnswered(true);
       setWasCorrect(true);
       setLastCheckMsg(null);
       onAnswer?.(data.id, true, newAttempts);
-    } else if (newAttempts >= MAX_ATTEMPTS) {
+    } else if (!onAttempt && newAttempts >= MAX_ATTEMPTS) {
       // Reveal: place everything correctly and mark incorrect
       SoundManager.playIncorrect();
       const revealed: Record<number, Side> = {};
@@ -150,7 +153,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
         `${rightCount} of ${pool.length} sorted correctly — the rest went back to the pile. Try again!`,
       );
     }
-  }, [allPlaced, answered, attempts, pool, placements, data.id, onAnswer]);
+  }, [allPlaced, answered, attempts, pool, placements, data.id, onAnswer, onAttempt]);
 
   // ── Tap-to-explore (static mode + post-answer) ────────────────────
   const askAboutPoint = (
@@ -197,7 +200,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/20 p-5">
           <h4 className="text-sm font-semibold text-indigo-200 mb-3 uppercase tracking-wide">
-            {itemA.title}
+            <LuminaMathText text={itemA.title} />
           </h4>
           <ul className="space-y-2">
             {itemA.points.map((point, i) => (
@@ -208,7 +211,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
 
         <div className="rounded-xl bg-purple-500/10 border border-purple-500/20 p-5">
           <h4 className="text-sm font-semibold text-purple-200 mb-3 uppercase tracking-wide">
-            {itemB.title}
+            <LuminaMathText text={itemB.title} />
           </h4>
           <ul className="space-y-2">
             {itemB.points.map((point, i) => (
@@ -242,7 +245,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
     return (
       <div className="flex min-w-0 flex-col gap-2">
         <h4 className={`text-center text-sm font-semibold uppercase tracking-wide ${titleTint}`}>
-          {item.title}
+          <LuminaMathText text={item.title} />
         </h4>
         <LuminaDropZone
           state={zoneState}
@@ -275,7 +278,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
                       answered ? '' : 'cursor-pointer'
                     }`}
                   >
-                    {pool[i].text}
+                    <LuminaMathText text={pool[i].text} />
                   </button>
                 </li>
               ))}
@@ -311,7 +314,7 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
                   : answerStateClass('idle')
               }`}
             >
-              {pool[i].text}
+              <LuminaMathText text={pool[i].text} />
             </button>
           ))}
         </div>

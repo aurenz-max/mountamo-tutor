@@ -11,6 +11,7 @@ import { curatorBriefCard } from '../../../primitives/curatorBrief.card';
 import { fastFactCard } from '../../../primitives/visual-primitives/core/fastFact.card';
 import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/core/vocabularyExplorer.card';
 import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
+import { deepDiveCard } from '../../../primitives/visual-primitives/core/deep-dive/deepDive.card';
 import { timelineExplorerCard } from '../../../primitives/visual-primitives/core/timelineExplorer.card';
 import { howItWorksCard } from '../../../primitives/visual-primitives/core/howItWorks.card';
 import { digitalSkillsSimCard } from '../../../primitives/visual-primitives/core/digitalSkillsSim.card';
@@ -548,11 +549,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       + 'or creating comprehensive topic overviews. ESSENTIAL for any topic requiring broad coverage with embedded comprehension checks.',
     constraints:
       'Requires orchestrator + parallel generation. Best for topics with enough depth for 5+ blocks.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate'], role: ['introduce', 'visualize', 'apply'], minutes: 7 },
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: ['introduce', 'visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
         evalMode: 'explore',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Explore (Tier 1)',
         beta: -1.5,
         scaffoldingMode: 1,
@@ -584,56 +585,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'Hard MC + synthesis questions alongside graded sorting, sequencing, and pattern-finding. Student must analyze, not just retrieve.',
       },
     ],
-    tutoring: {
-      taskDescription:
-        'Guide the student through an orchestrated DeepDive on "{{topic}}". The experience has {{blockCount}} blocks '
-        + 'including {{evaluableBlockCount}} interactive questions. Sections: {{blockLabels}}. Narrative arc: {{narrativeArc}}.',
-      contextKeys: ['title', 'topic', 'blockCount', 'evaluableBlockCount', 'narrativeArc', 'blockLabels'],
-      scaffoldingLevels: {
-        level1:
-          '"Look at the information presented in this section. What stands out to you?"',
-        level2:
-          '"Which section talks about this? Re-read it carefully — the answer connects to what you learned there."',
-        level3:
-          '"Here\'s what that section tells us: [restate the key idea in one simple sentence]. So — [re-ask the question in your own words] — what do you think?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student skips display blocks and jumps straight to questions', response: 'Encourage the student to read through each section before answering questions — the answers are embedded in the content above.' },
-        { pattern: 'Student answers MC without reading the explanation', response: 'Ask the student to read the explanation after answering — it reinforces the concept and connects back to the content.' },
-        { pattern: 'Student taps the same content card several times', response: 'Give a fresh angle each time — a new example, comparison, or story detail — never repeat the previous response.' },
-        { pattern: 'Student places sort/sequence items rapidly without reading (guess-and-check)', response: 'Slow them down: pick ONE statement or event and ask what it means in their own words before placing it.' },
-      ],
-      aiDirectives: [
-        {
-          title: 'TAP-TO-EXPLORE RESPONSES',
-          instruction:
-            'Messages tagged [FACT_EXPLORE], [COMPARE_EXPLORE], [TIMELINE_EXPLORE], [QUOTE_EXPLORE], [TABLE_EXPLORE], [DIAGRAM_EXPLORE], or [PROSE_EXPLORE] '
-            + 'mean the student tapped a content card (or diagram hotspot) to hear more. Respond with 2-3 short, conversational, grade-appropriate sentences '
-            + 'that expand on that exact content, then end with one inviting question. Never turn it into a quiz, never say "you tapped" '
-            + 'or refer to cards/buttons, and never reveal answers to the interactive questions elsewhere in this DeepDive.',
-        },
-        {
-          title: 'ANSWER MOMENTS',
-          instruction:
-            'On [ANSWER_CORRECT], celebrate in one sentence and point the student forward. On [ANSWER_INCORRECT], the correct answer was '
-            + 'already revealed on screen — encourage gently and restate the key idea in fresh words. On [ALL_COMPLETE], give brief, '
-            + 'phase-specific praise.',
-        },
-        {
-          title: 'PRE-READER READ-ALOUD (KINDERGARTEN)',
-          instruction:
-            'When the student is a kindergarten/pre-reader, the on-screen text is invisible to them — YOUR VOICE is the reading channel. '
-            + 'Messages tagged [QUIZ_READ_ALOUD], [BLOCK_READ_ALOUD], [SIM_READ_ALOUD], or [SIM_OBSERVE] contain content that MUST be read '
-            + 'aloud word for word, warmly and clearly, in full — this read-aloud IS your response and OVERRIDES any one-sentence or '
-            + 'keep-it-brief instruction. For [QUIZ_READ_ALOUD]: read the question, then each answer choice slowly, then ask which one they '
-            + 'pick — NEVER hint at or reveal which is correct. For [SIM_READ_ALOUD]: read the little experiment setup, then the question, '
-            + 'then each choice slowly, then ask which they think will happen — NEVER reveal which is right. For [SIM_OBSERVE]: read what the '
-            + 'child now sees after they changed the control, word for word. On explore taps ([FACT_EXPLORE] etc.) from a pre-reader, FIRST '
-            + 'read the card\'s text word for word, THEN add one lively sentence. On [QUIZ_RETRY] or [SIM_PREDICT_RETRY], give one warm '
-            + 'spoken hint without revealing the answer and invite another tap.',
-        },
-      ],
-    },
+    // The live wiring is deepDive.card.ts + deepDive.boss.ts; no session receives a catalog tutoring block.
+    ...bossEntry(deepDiveCard),
     supportsEvaluation: true,
   },
   {

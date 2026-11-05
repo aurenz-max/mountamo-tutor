@@ -36,6 +36,9 @@ import type {
   WrapperLayout,
 } from '../../primitives/visual-primitives/core/deep-dive/types';
 import { matchTemplate } from '../../primitives/visual-primitives/core/deep-dive/composition-templates';
+import { isEvaluableBlock } from '../../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
+import { drawerMenu, drawerMenuLine, generateDrawerBlock } from './deep-dive-agent/drawers';
+import { MATH_WRITING_RULE, repairMathDeep } from '../../utils/mathText';
 
 // ═══════════════════════════════════════════════════════════════════════
 // Stage 1: Orchestrator — plans the block layout
@@ -95,7 +98,7 @@ const ORCHESTRATOR_SCHEMA: Schema = {
  * signal class as the shared client-side isPreReaderGrade — duplicated here
  * because kindergartenMode.ts is a 'use client' module.
  */
-function isPreReaderAudience(gradeLevel: string): boolean {
+export function isPreReaderAudience(gradeLevel: string): boolean {
   return /(grade\s*k\b|kinder|preschool|pre-?k\b|prek)/i.test(gradeLevel);
 }
 
@@ -277,7 +280,7 @@ async function runOrchestrator(
 
 // ── Image generation ────────────────────────────────────────────────
 
-async function generateImage(prompt: string): Promise<string | null> {
+export async function generateImage(prompt: string): Promise<string | null> {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-lite-image',
@@ -1094,64 +1097,7 @@ IMPORTANT: Generate at least 5 labels. 3 is not enough — dig into the topic's 
   }
 
   // Step 3 (explore mode only): Vision model places labels on the image
-  if (interactionMode === 'explore') {
-    try {
-      const labelList = labels.map((l, i) => `${i + 1}. "${l.text}"`).join('\n');
-
-      const placementResponse = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg',
-                data: imageBase64.replace(/^data:image\/[^;]+;base64,/, ''),
-              },
-            },
-            {
-              text: `Look at this educational diagram image. Place each of these labels at the correct position on the image. Return X and Y as percentages (0-100) where 0,0 is the top-left corner.
-
-Labels to place:
-${labelList}
-
-For each label, identify the feature it describes in the image and return the center position of that feature as a percentage of the image dimensions.`,
-            },
-          ],
-        },
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: DIAGRAM_PLACEMENT_SCHEMA,
-        },
-      });
-
-      const placementText = placementResponse.text;
-      if (placementText) {
-        const positions = JSON.parse(placementText);
-        for (let i = 0; i < labels.length; i++) {
-          const x = positions[`label${i}X`];
-          const y = positions[`label${i}Y`];
-          if (typeof x === 'number' && typeof y === 'number') {
-            labels[i].position = {
-              x: Math.max(5, Math.min(95, x)),
-              y: Math.max(5, Math.min(95, y)),
-            };
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('[DeepDive] Diagram label placement failed, falling back to grid layout:', error);
-      // Fallback: distribute labels evenly across the image
-      labels.forEach((label, i) => {
-        const cols = Math.min(3, labels.length);
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        label.position = {
-          x: 20 + (col * 60) / Math.max(1, cols - 1),
-          y: 25 + (row * 50) / Math.max(1, Math.ceil(labels.length / cols) - 1),
-        };
-      });
-    }
-  }
+  if (interactionMode === 'explore') await placeDiagramLabels(imageBase64, labels);
 
   return {
     imageBase64,
@@ -1161,6 +1107,66 @@ For each label, identify the feature it describes in the image and return the ce
     interactionMode,
     labels,
   };
+}
+
+/** Explore-mode diagrams: a vision call places each label on the image; a grid is the fallback. Mutates `labels`. */
+export async function placeDiagramLabels(imageBase64: string, labels: DiagramBlockData['labels']): Promise<void> {
+  try {
+    const labelList = labels.map((l, i) => `${i + 1}. "${l.text}"`).join('\n');
+
+    const placementResponse = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg',
+              data: imageBase64.replace(/^data:image\/[^;]+;base64,/, ''),
+            },
+          },
+          {
+            text: `Look at this educational diagram image. Place each of these labels at the correct position on the image. Return X and Y as percentages (0-100) where 0,0 is the top-left corner.
+
+Labels to place:
+${labelList}
+
+For each label, identify the feature it describes in the image and return the center position of that feature as a percentage of the image dimensions.`,
+          },
+        ],
+      },
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: DIAGRAM_PLACEMENT_SCHEMA,
+      },
+    });
+
+    const placementText = placementResponse.text;
+    if (placementText) {
+      const positions = JSON.parse(placementText);
+      for (let i = 0; i < labels.length; i++) {
+        const x = positions[`label${i}X`];
+        const y = positions[`label${i}Y`];
+        if (typeof x === 'number' && typeof y === 'number') {
+          labels[i].position = {
+            x: Math.max(5, Math.min(95, x)),
+            y: Math.max(5, Math.min(95, y)),
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('[DeepDive] Diagram label placement failed, falling back to grid layout:', error);
+    // Fallback: distribute labels evenly across the image
+    labels.forEach((label, i) => {
+      const cols = Math.min(3, labels.length);
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      label.position = {
+        x: 20 + (col * 60) / Math.max(1, cols - 1),
+        y: 25 + (row * 50) / Math.max(1, Math.ceil(labels.length / cols) - 1),
+      };
+    });
+  }
 }
 
 // ── MiniSim generator ─────────────────────────────────────────────
@@ -1902,6 +1908,16 @@ export async function generateDeepDive(
     };
   }
 
+  // The live tutor teaches through the dive's checks (deepDive.boss.ts): a plan with none gets one, at the end.
+  if (!validBlocks.some(isEvaluableBlock)) {
+    const check = await generateBlock({
+      blockType: 'multiple-choice', label: 'Quick Check', transitionCue: '',
+      brief: `A comprehension question for ${gradeLevel} students about "${topic}", testing the central idea of this lesson: ${plan.narrativeArc}`,
+      tutoringBrief: 'Ask the student to choose the answer that fits what the sections above showed.',
+    }, plan.blocks.length, topic, gradeLevel, evalMode);
+    if (check) validBlocks.push(check);
+  }
+
   console.log(`[DeepDive] Successfully assembled ${validBlocks.length} blocks`);
 
   return {
@@ -1913,4 +1929,129 @@ export async function generateDeepDive(
     layout: resolvedLayout,
     blocks: validBlocks,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Follow-up: answer a student's question with new blocks
+// ═══════════════════════════════════════════════════════════════════════
+
+/** What the client sends when the student asks a question mid-dive. */
+export interface DeepDiveFollowUpRequest {
+  question: string;
+  topic: string;
+  gradeLevel: string;
+  title: string;
+  narrativeArc?: string;
+  /** Labels of the sections already on screen, so the answer builds on them instead of repeating them. */
+  sectionLabels: string[];
+  /** Questions of checks the student has not answered yet: the follow-up must never answer them. */
+  openChecks: string[];
+  /** Earlier questions in this dive, oldest first. */
+  priorQuestions: string[];
+}
+
+export type DeepDiveFollowUpResult =
+  | { kind: 'blocks'; reply: string; blocks: DeepDiveBlock[] }
+  | { kind: 'redirect'; reason: 'off_topic'; reply: string }
+  /** `check`: the index in `openChecks` of the check whose answer this question would give away. */
+  | { kind: 'redirect'; reason: 'answers_open_check'; check: number; reply: string };
+
+/** Blocks a follow-up may use: explanation and display first, at most one self-check. */
+const FOLLOW_UP_TYPES = ['key-facts', 'prose', 'diagram', 'data-table', 'compare-contrast', 'timeline', 'mini-sim', 'multiple-choice', 'drawer'] as const;
+const PRE_READER_FOLLOW_UP_TYPES = new Set<string>(['key-facts', 'prose', 'diagram', 'mini-sim', 'multiple-choice']);
+
+interface FollowUpPlan {
+  onTopic: boolean;
+  blockingCheck: number;
+  reply: string;
+  blocks: Array<{ blockType: string; label: string; brief: string; tutoringBrief: string; drawerId?: string }>;
+}
+
+const FOLLOW_UP_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    onTopic: { type: Type.BOOLEAN, description: 'True when the question is about the lesson topic or something it naturally leads to.' },
+    blockingCheck: { type: Type.INTEGER, description: 'The number of the unanswered check whose answer any answer to this question would give away; 0 when none would.' },
+    reply: { type: Type.STRING, description: 'One sentence the tutor says to the student, never the answer itself. When onTopic is false or blockingCheck is not 0, a friendly redirect that gives no answer.' },
+    blocks: {
+      type: Type.ARRAY,
+      description: 'One to three blocks that answer the question. Empty when onTopic is false or blockingCheck is not 0.',
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          blockType: { type: Type.STRING, enum: [...FOLLOW_UP_TYPES] },
+          label: { type: Type.STRING, description: 'Short display label' },
+          brief: { type: Type.STRING, description: 'Detailed content brief for the block generator, naming the topic, grade and exactly what this block must show to answer the question.' },
+          tutoringBrief: { type: Type.STRING, description: 'What the tutor should say about this block' },
+          drawerId: { type: Type.STRING, nullable: true, description: 'blockType "drawer" only: the id of the display to embed.' },
+        },
+        required: ['blockType', 'label', 'brief', 'tutoringBrief'],
+      },
+    },
+  },
+  required: ['onTopic', 'blockingCheck', 'reply', 'blocks'],
+};
+
+function buildFollowUpPrompt(req: DeepDiveFollowUpRequest, preReader: boolean): string {
+  const list = (items: string[]) => (items.length ? items.map(s => `- ${s}`).join('\n') : '- (none)');
+  const numbered = (items: string[]) => (items.length ? items.map((s, i) => `${i + 1}. ${s}`).join('\n') : '- (none)');
+  return `A ${req.gradeLevel} is working through a DeepDive lesson titled "${req.title}" on "${req.topic}".
+${req.narrativeArc ? `Lesson arc: ${req.narrativeArc}\n` : ''}
+Sections already on screen:
+${list(req.sectionLabels)}
+
+Earlier questions from this student:
+${list(req.priorQuestions)}
+
+Checks the student has NOT answered yet:
+${numbered(req.openChecks)}
+
+The student now asks: "${req.question}"
+
+Plan new sections that answer this question for this student.
+- onTopic: true when the question is about the topic or a natural next step from it. Curiosity that goes a little past the lesson is on topic; a question about something unrelated is not.
+- blockingCheck: the number of an unanswered check when any honest answer to the question would tell the student that check's answer (it would have to use the missing word, name the right choice, or give the outcome asked for); otherwise 0. When it is not 0, plan no blocks: the question will be answered right after the student tries that check, and the reply tells them so warmly, without saying the answer.
+- Otherwise plan 1-3 blocks. Prefer showing over telling: a diagram when the question is about how parts fit, a mini-sim when it is "what happens if", a data-table or compare-contrast when it is about differences, a timeline when it is about when or in what order, prose for why. Use key-facts for a quick factual answer. Add one multiple-choice self-check only after an explanation block, and only about what the new blocks teach; it asks something other than the student's own question (the next step, a new case, or the why).
+- Do not repeat a section already on screen; build on it.
+- Every brief must stand alone: name the topic, the grade, and what to show.
+- reply: one sentence the tutor says as the new sections appear, naming what they will look at ("Good question - let us look at what happens inside a leaf in autumn."). It never gives the answer: the sections teach it, and a self-check may ask it. Never state the answer to an unanswered check.
+${preReader ? '- The student CANNOT READ. Use only key-facts, prose, diagram, mini-sim, multiple-choice; keep every text very short.\n'
+    : `- A "drawer" block is an interactive display from the lesson catalog; set drawerId and say in brief what it must show. Use one when the question has that display's shape:\n${drawerMenu(false).map((d) => `  - ${drawerMenuLine(d)}`).join('\n')}\n`}`;
+}
+
+/** Answer a student's question with new blocks, generated by the same block generators as the dive. */
+export async function generateDeepDiveFollowUp(req: DeepDiveFollowUpRequest): Promise<DeepDiveFollowUpResult> {
+  const preReader = isPreReaderAudience(req.gradeLevel);
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-latest',
+    contents: buildFollowUpPrompt(req, preReader),
+    config: { responseMimeType: 'application/json', responseSchema: FOLLOW_UP_SCHEMA },
+  });
+  if (!response.text) throw new Error('Follow-up planner returned empty response');
+  const plan = JSON.parse(response.text) as FollowUpPlan;
+
+  // Code holds the policy: the model only reports whether the question is on topic or answers an open check.
+  if (!plan.onTopic) return { kind: 'redirect', reason: 'off_topic', reply: plan.reply };
+  const check = Number.isInteger(plan.blockingCheck) ? plan.blockingCheck - 1 : -1;
+  if (check >= 0 && check < req.openChecks.length) return { kind: 'redirect', reason: 'answers_open_check', check, reply: plan.reply };
+
+  const allowed = new Set<string>(preReader ? PRE_READER_FOLLOW_UP_TYPES : FOLLOW_UP_TYPES);
+  let checks = 0;
+  const planned = (plan.blocks ?? []).filter(b => {
+    if (!allowed.has(b.blockType)) return false;
+    // At most one self-check, and never as the only block: the question gets an explanation first.
+    if (b.blockType === 'multiple-choice') return ++checks === 1;
+    return true;
+  }).slice(0, 3);
+  if (!planned.some(b => b.blockType !== 'multiple-choice')) throw new Error('Follow-up planner produced no explanation block');
+
+  // Explore tier: diagrams keep their labels, timelines and comparisons stay display-only.
+  const generated = await Promise.all(planned.map((b, i) => (b.blockType === 'drawer'
+    ? generateDrawerBlock({ drawerId: b.drawerId ?? '', intent: b.brief, topic: req.topic, gradeLevel: req.gradeLevel, label: b.label, tutoringBrief: b.tutoringBrief })
+      .catch((error) => { console.warn('[DeepDive] follow-up drawer failed:', error); return null; })
+    : generateBlock({ ...b, brief: preReader ? b.brief : `${b.brief} ${MATH_WRITING_RULE}`, transitionCue: '' }, i, req.topic, req.gradeLevel, 'explore'))));
+  // No repair loop here: an expression that does not render shows as its plain source.
+  const blocks = generated.filter((b): b is DeepDiveBlock => b !== null).map((b) => repairMathDeep(b));
+  if (!blocks.some(b => b.blockType !== 'multiple-choice')) throw new Error('Follow-up blocks failed to generate');
+  return { kind: 'blocks', reply: plan.reply, blocks };
 }

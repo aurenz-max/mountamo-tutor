@@ -229,6 +229,19 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(exampleResult);
       }
 
+      // DeepDive follow-up: the student asked a question mid-dive; answer it with new blocks.
+      case 'deepDiveFollowUp': {
+        const { generateDeepDiveFollowUp } = await import('@/components/lumina/service/core/gemini-deep-dive');
+        const p = params ?? {};
+        const str = (v: unknown, max: number) => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
+        const strs = (v: unknown, n: number, max: number) => Array.isArray(v) && v.length <= n && v.every(s => typeof s === 'string' && s.length <= max);
+        if (!str(p.question, 400) || !str(p.topic, 300) || !str(p.gradeLevel, 400) || !str(p.title, 300)
+            || !(p.narrativeArc === undefined || typeof p.narrativeArc === 'string')
+            || !strs(p.sectionLabels, 40, 200) || !strs(p.openChecks, 20, 600) || !strs(p.priorQuestions, 20, 400))
+          return NextResponse.json({ error: 'Invalid follow-up request' }, { status: 400 });
+        return NextResponse.json(await generateDeepDiveFollowUp(p));
+      }
+
       // Practice Problem — lean two-stage pipeline (orchestrator + single
       // canonical-solution call). Replaces the AnnotatedExample pipeline for
       // canvas-only practice mode. Used by the tester and as the entry point

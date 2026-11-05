@@ -8,8 +8,7 @@ import {
   LuminaAnswerChoice,
   LuminaActionButton,
   LuminaFeedbackCard,
-  type AnswerChoiceState,
-} from '../../../../../ui';
+  type AnswerChoiceState, LuminaMathText } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 import { useTapTutor, TapHint } from './TapTutor';
@@ -19,6 +18,8 @@ interface DataTableBlockProps {
   index: number;
   /** Called when the student answers the pattern check (only when patternCheck present) */
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
+  /** On the tutor workspace: every check reports here, the block never shows the answer itself, and the host owns Try again. */
+  onAttempt?: (correct: boolean, work: string) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
   /** Bridge to the DeepDive live tutor; tapping a row asks it to explain that row. */
@@ -29,6 +30,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
   data,
   index,
   onAnswer,
+  onAttempt,
   answered: answeredProp,
   onAskTutor,
 }) => {
@@ -37,10 +39,10 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
   const hasCheck = !!patternCheck && !!onAnswer;
 
   // ── Pattern-check state (mirrors MultipleChoiceBlock conventions) ──
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(answeredProp ? data.patternCheck?.correctIndex ?? null : null);
   const [attempts, setAttempts] = useState(0);
   const [answered, setAnswered] = useState(answeredProp ?? false);
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(answeredProp ?? false);
 
   const handleSelect = useCallback(
     (optionIndex: number) => {
@@ -56,12 +58,13 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 
+    onAttempt?.(selectedIndex === patternCheck.correctIndex, `Chose "${patternCheck.options[selectedIndex]}"`);
     if (selectedIndex === patternCheck.correctIndex) {
       SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       onAnswer?.(data.id, true, newAttempts);
-    } else if (newAttempts >= 2) {
+    } else if (!onAttempt && newAttempts >= 2) {
       SoundManager.playIncorrect();
       setAnswered(true);
       setShowExplanation(true);
@@ -71,7 +74,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
       SoundManager.playIncorrect();
       setSelectedIndex(null);
     }
-  }, [patternCheck, selectedIndex, answered, attempts, data.id, onAnswer]);
+  }, [patternCheck, selectedIndex, answered, attempts, data.id, onAnswer, onAttempt]);
 
   const wasCorrect = patternCheck ? selectedIndex === patternCheck.correctIndex : false;
 
@@ -88,6 +91,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
 
   // First-column cells become tap targets when the tutor bridge is wired —
   // LuminaTable cells take ReactNode, so the tap affordance rides inside the cell.
+  const math = (cell: string, k: number) => <LuminaMathText key={k} text={cell} />;
   const rows: React.ReactNode[][] = enabled
     ? data.rows.map((row, ri) => [
         <button
@@ -98,18 +102,18 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
             activeKey === `row-${ri}` ? 'bg-white/10' : ''
           }`}
         >
-          {row[0]}
+          <LuminaMathText text={row[0]} />
         </button>,
-        ...row.slice(1),
+        ...row.slice(1).map((cell, k) => math(cell, k + 1)),
       ])
-    : data.rows;
+    : data.rows.map((row) => row.map(math));
 
   return (
     <BlockWrapper label={data.label} index={index} accent="emerald" variant="feature">
       <LuminaTable
         accent="emerald"
-        caption={data.caption}
-        columns={data.headers}
+        caption={data.caption ? <LuminaMathText text={data.caption} /> : undefined}
+        columns={data.headers.map(math)}
         rows={rows}
       />
       {enabled && <TapHint text="Tap a row name to hear what it means" />}
@@ -118,7 +122,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
       {hasCheck && patternCheck && (
         <div className="mt-5 pt-5 border-t border-white/10 space-y-4">
           <p className="text-slate-100 font-medium text-[15px] leading-relaxed">
-            {patternCheck.question}
+            <LuminaMathText text={patternCheck.question} />
           </p>
 
           <div className="space-y-2">
@@ -137,6 +141,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
               return (
                 <LuminaAnswerChoice
                   key={i}
+                  aria-label={patternCheck.options[i]}
                   state={state}
                   disabled={answered}
                   onClick={() => handleSelect(i)}
@@ -146,7 +151,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
                     <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono">
                       {String.fromCharCode(65 + i)}
                     </span>
-                    {option}
+                    <LuminaMathText text={option} />
                   </span>
                 </LuminaAnswerChoice>
               );
@@ -177,7 +182,7 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
                     : 'Answer revealed'
                 }
               >
-                {patternCheck.explanation}
+                <LuminaMathText text={patternCheck.explanation} />
               </LuminaFeedbackCard>
               <p className="text-xs text-slate-500 px-1">
                 {attempts} {attempts === 1 ? 'attempt' : 'attempts'}

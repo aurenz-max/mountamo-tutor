@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { LuminaCard, LuminaCardContent, LuminaReadAloud } from '../../../../../ui';
+import { LuminaCard, LuminaCardContent, LuminaMathText, LuminaReadAloud } from '../../../../../ui';
+import { hasMath } from '../../../../../utils/mathText';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import {
   layoutParagraphsAroundFigure,
@@ -221,7 +222,7 @@ const FigureRenderer: React.FC<FigureRendererProps> = ({ paragraphs, figure, rev
         </div>
         {figure.caption && (
           <p className="text-xs text-slate-500 mt-2 italic leading-relaxed">
-            {figure.caption}
+            <LuminaMathText text={figure.caption} />
           </p>
         )}
       </div>
@@ -497,12 +498,39 @@ const SimpleProse: React.FC<SimpleProseProps> = ({ paragraphs, showDropCap = tru
           }`}
           style={{ ...FONT_STYLE, ...getLineStyle(i) }}
         >
-          {paragraph}
+          <LuminaMathText text={paragraph} />
         </p>
       ))}
     </div>
   );
 };
+
+/** Prose whose text carries math: plain flowing paragraphs, a figure floated beside them, inset facts below. */
+const MathProse: React.FC<{
+  paragraphs: string[];
+  figure?: ProseBlockData['figure'];
+  insetFacts?: ProseBlockData['insetFacts'];
+  reveal: boolean;
+}> = ({ paragraphs, figure, insetFacts, reveal }) => (
+  <div className="flow-root">
+    {figure && (
+      <figure className={`mb-3 w-full sm:w-2/5 ${figure.placement === 'left' ? 'sm:float-left sm:mr-5' : 'sm:float-right sm:ml-5'}`}>
+        <img src={figure.imageBase64} alt={figure.altText} className="w-full h-auto rounded-xl border border-white/10" />
+        {figure.caption && <figcaption className="text-xs text-slate-500 mt-2 italic leading-relaxed"><LuminaMathText text={figure.caption} /></figcaption>}
+      </figure>
+    )}
+    <SimpleProse paragraphs={paragraphs} showDropCap={!figure} reveal={reveal} />
+    {insetFacts && (
+      <ul className="clear-both mt-4 grid gap-2 sm:grid-cols-2">
+        {insetFacts.facts.map((f, i) => (
+          <li key={i} className="flex gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
+            <span aria-hidden>{f.icon}</span><LuminaMathText text={f.text} />
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
 
 // ── Main Component ───────────────────────────────────────────────────
 
@@ -525,7 +553,12 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor, preRea
 
   useEffect(() => () => clearPrepareCache(), []);
 
+  // The positioned-line renderers measure and break raw text, which would split an expression across lines and
+  // mis-measure it; text with math flows as plain paragraphs, with the figure and inset facts beside them.
+  const math = useMemo(() => paragraphs.some(hasMath) || !!insetFacts?.facts?.some((f) => hasMath(f.text)), [paragraphs, insetFacts]);
+
   const resolvedLayout = useMemo(() => {
+    if (math) return 'math';
     if (layoutMode === 'masonry' && paragraphs.length >= MASONRY_MIN_PARAGRAPHS) return 'masonry';
     if (layoutMode === 'columns') return 'columns';
     if (hasInsetFacts) return 'inset-facts';
@@ -539,7 +572,7 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor, preRea
       return 'columns';
     }
     return 'flow';
-  }, [layoutMode, paragraphs, hasFigure, hasInsetFacts, containerWidth, reveal]);
+  }, [math, layoutMode, paragraphs, hasFigure, hasInsetFacts, containerWidth, reveal]);
 
   return (
     <LuminaCard
@@ -558,7 +591,9 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor, preRea
             lay out asynchronously in two passes, so the reveal IntersectionObserver
             attaches to a zero-height element and `visible` can never flip — leaving
             a tall, blank card. Always paint those at full opacity. */}
-        {resolvedLayout === 'masonry' ? (
+        {resolvedLayout === 'math' ? (
+          <MathProse paragraphs={paragraphs} figure={hasFigure ? figure : undefined} insetFacts={hasInsetFacts ? insetFacts : undefined} reveal={reveal} />
+        ) : resolvedLayout === 'masonry' ? (
           <MasonryRenderer paragraphs={paragraphs} reveal={false} />
         ) : resolvedLayout === 'columns' ? (
           <ColumnRenderer paragraphs={paragraphs} reveal={false} />

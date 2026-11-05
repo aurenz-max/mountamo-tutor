@@ -64,7 +64,7 @@ import { generateHowItWorks } from '../../core/gemini-how-it-works';
 import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
 import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
 import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
-import { generateDeepDive } from '../../core/gemini-deep-dive';
+import { generateDeepDiveEntry } from '../../core/deep-dive-agent/generate-deep-dive';
 import { generatePassageStudio } from '../../core/gemini-passage-studio';
 
 
@@ -461,7 +461,7 @@ registerContextGenerator('digital-skills-sim', async (ctx) => ({
 registerContextGenerator('deep-dive', async (ctx) => ({
   type: 'deep-dive',
   instanceId: ctx.instanceId,
-  data: await generateDeepDive(ctx),
+  data: await generateDeepDiveEntry(ctx),
 }));
 
 // PassageStudio (multi-block close-reading experience anchored to a stimulus)

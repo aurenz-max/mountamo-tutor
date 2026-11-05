@@ -1,0 +1,66 @@
+{
+  "id": "two-lines-meet-seed",
+  "title": "When do two lines meet?",
+  "idea": "Two lines with different slopes meet at exactly one point; lines with equal slopes never meet unless they are the same line.",
+  "tags": [
+    "linear equations",
+    "systems of equations",
+    "slope",
+    "intersection",
+    "graphing lines",
+    "grades 7-9"
+  ],
+  "source": "\nfunction Display({ params, lumina }) {\n  const [slope, setSlope] = useState(params.startSlope);\n  const fixed = { slope: params.fixedSlope, intercept: params.fixedIntercept };\n  const moving = { slope, intercept: params.movingIntercept };\n  const parallel = Math.abs(slope - fixed.slope) < 1e-9;\n  const x = parallel ? null : (fixed.intercept - moving.intercept) / (slope - fixed.slope);\n  const y = x === null ? null : fixed.slope * x + fixed.intercept;\n  const verdict = parallel ? (fixed.intercept === moving.intercept ? 'The lines are the same line.' : 'The lines never meet.') : 'The lines meet at one point.';\n  useEffect(() => { lumina.scene({ slope, parallel, meets: x === null ? null : { x: +x.toFixed(2), y: +y.toFixed(2) } }); }, [slope]);\n  return (\n    <Panel title=\"When do two lines meet?\" caption=\"Change the slope of the cyan line and watch where it crosses the amber one.\">\n      <Plane xMin={-10} xMax={10} yMin={-10} yMax={10}\n        lines={[{ ...fixed, color: 'amber', label: 'y = ' + fixed.slope + 'x + ' + fixed.intercept }, { ...moving, color: 'cyan', label: 'y = ' + slope + 'x + ' + moving.intercept }]}\n        points={x === null ? [] : [{ x, y, color: 'white', label: '(' + x.toFixed(1) + ', ' + y.toFixed(1) + ')' }]} />\n      <Slider label=\"Slope of the cyan line\" min={-3} max={5} step={0.5} value={slope} onChange={setSlope} />\n      <Text tone={parallel ? 'bad' : 'good'}>{verdict}</Text>\n    </Panel>\n  );\n}",
+  "params": {
+    "fixedSlope": {
+      "type": "number",
+      "description": "Slope of the fixed line",
+      "default": 2
+    },
+    "fixedIntercept": {
+      "type": "number",
+      "description": "Intercept of the fixed line",
+      "default": -1
+    },
+    "movingIntercept": {
+      "type": "number",
+      "description": "Intercept of the line the student turns",
+      "default": 5
+    },
+    "startSlope": {
+      "type": "number",
+      "description": "Starting slope of the turning line",
+      "default": 0.5
+    }
+  },
+  "probes": [
+    {
+      "name": "equal slopes never meet",
+      "set": {
+        "Slope of the cyan line": 2
+      },
+      "expect": {
+        "includes": [
+          "never meet"
+        ],
+        "excludes": [
+          "one point"
+        ]
+      }
+    },
+    {
+      "name": "slope 0 meets at (3, 5)",
+      "set": {
+        "Slope of the cyan line": 0
+      },
+      "expect": {
+        "includes": [
+          "one point",
+          "(3.0, 5.0)"
+        ]
+      }
+    }
+  ],
+  "createdAt": "seed (hand-written, harness-validated)",
+  "uses": 3
+}

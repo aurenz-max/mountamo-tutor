@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { LuminaMathText } from '../../../../../ui';
 import type { KeyFactsBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
 import { SoundManager } from '../../../../../utils/SoundManager';
@@ -112,7 +113,7 @@ const FlipFactCard: React.FC<FactCardProps> = ({ fact, tint, hero, onReveal, act
           <span className={hero ? 'text-3xl flex-shrink-0' : 'text-2xl'}>{fact.icon}</span>
           <div className="min-w-0">
             <p className={`font-semibold text-slate-100 ${hero ? 'text-lg' : 'text-[15px]'}`}>
-              {fact.headline}
+              <LuminaMathText text={fact.headline} />
             </p>
             <p className="text-xs text-slate-500 italic mt-1">Tap to reveal</p>
           </div>
@@ -125,7 +126,7 @@ const FlipFactCard: React.FC<FactCardProps> = ({ fact, tint, hero, onReveal, act
           <div className={hero ? 'flex items-start gap-4' : ''}>
             {hero && <span className="text-3xl flex-shrink-0 mt-0.5">{fact.icon}</span>}
             <p className={hero ? 'text-slate-100 text-[15px] leading-relaxed' : 'text-slate-200 text-sm leading-relaxed'}>
-              {fact.text}
+              <LuminaMathText text={fact.text} />
             </p>
           </div>
         </div>
