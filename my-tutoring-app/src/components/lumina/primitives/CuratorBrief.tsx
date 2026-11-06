@@ -73,6 +73,18 @@ const CAPTION_ROWS = [
   { id: 'today', accent: 'cyan', Icon: Target },
 ] as const;
 
+const pictures = new Map<string, Promise<string | null>>();
+const drawPicture = (prompt: string): Promise<string | null> => {
+  let drawn = pictures.get(prompt);
+  if (!drawn) {
+    drawn = generateConceptImage(prompt, '16:9').then(url => url || null);
+    // A failed draw may be retried by the next mount.
+    drawn.then(url => { if (!url) pictures.delete(prompt); }, () => pictures.delete(prompt));
+    pictures.set(prompt, drawn);
+  }
+  return drawn;
+};
+
 const CuratorBriefSurface: React.FC<CuratorBriefProps> = ({ data, className = '', runtimePlanItemId }) => {
   const brief = useMemo(() => (isIntroBriefingData(data) ? data : convertToIntroBriefing(data)), [data]);
   const raw = data as unknown as Record<string, unknown>;
@@ -106,18 +118,20 @@ const CuratorBriefSurface: React.FC<CuratorBriefProps> = ({ data, className = ''
   });
   useLayoutEffect(() => { surface.publish(); });
 
-  // The picture draws itself in the background; the screen never waits on it.
+  // The picture draws itself in the background; the screen never waits on it. Keyed on the prompt
+  // text, not the brief object: a parent re-render hands a new `data` object, and keying on it
+  // redrew a different picture each time. The cache keeps one picture per prompt across remounts.
+  const picturePrompt = hookPicturePrompt(brief);
   useEffect(() => {
-    const prompt = hookPicturePrompt(brief);
-    if (!prompt) return;
+    if (!picturePrompt) return;
     let alive = true;
     setDrawing(true);
-    generateConceptImage(prompt, '16:9')
+    drawPicture(picturePrompt)
       .then(url => { if (alive && url) setImage(url); })
       .catch(() => {})
       .finally(() => { if (alive) setDrawing(false); });
     return () => { alive = false; };
-  }, [brief]);
+  }, [picturePrompt]);
 
   const ringed = (id: string) => marked.includes(id)
     ? { 'data-tutor-ring': id, className: 'ring-2 ring-amber-300/70 ring-offset-2 ring-offset-slate-950' } : { className: '' };
