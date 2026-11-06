@@ -184,6 +184,7 @@ import GravityDropTower from '../primitives/visual-primitives/physics/GravityDro
 import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
 import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
+import MarbleRunPark from '../primitives/visual-primitives/physics/MarbleRunPark';
 import MachineWorkshop from '../primitives/visual-primitives/engineering/MachineWorkshop';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
@@ -2011,6 +2012,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'circuit-workbench': {
     component: CircuitWorkbench,
     sectionTitle: 'Circuit Workbench',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'marble-run-park': {
+    component: MarbleRunPark,
+    sectionTitle: 'Marble Run Park',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

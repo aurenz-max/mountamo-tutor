@@ -18,6 +18,7 @@ import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-towe
 import { generateBuoyancyHarbor } from '../../physics/buoyancy-harbor-generator';
 import { generateCircuitWorkbench } from '../../physics/circuit-workbench-generator';
 import { generateVolcanoIsland } from '../../physics/volcano-island-generator';
+import { generateMarbleRunPark } from '../../physics/marble-run-park-generator';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -82,3 +83,11 @@ registerContextGenerator('volcano-island', async (ctx) => ({
   instanceId: ctx.instanceId,
   data: await generateVolcanoIsland(ctx),
 }));
+
+// Marble Run Park - 3D marble run: find the start height that makes the loop (K-5). Code-only (Fork C): no model call.
+registerContextGenerator('marble-run-park', async (ctx) => ({
+  type: 'marble-run-park',
+  instanceId: ctx.instanceId,
+  data: await generateMarbleRunPark(ctx),
+}));
+

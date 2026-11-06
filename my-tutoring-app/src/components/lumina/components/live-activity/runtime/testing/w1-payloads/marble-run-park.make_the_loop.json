@@ -1,0 +1,68 @@
+{
+ "source": "qa/tutor-reports/marble-run-park-runtime-make_the_loop-payload-2026-11-03.json",
+ "primitiveId": "marble-run-park",
+ "evalMode": "make_the_loop",
+ "data": {
+  "title": "Just High Enough",
+  "description": "Higher starts go faster. Find the lowest start that still makes the loop.",
+  "challenges": [
+   {
+    "id": "loop-1",
+    "type": "make_the_loop",
+    "instruction": "Find the lowest peg that still sends the marble all the way round the loop to the bell.",
+    "loopR": 1.1,
+    "pegs": [
+     1.38,
+     1.84,
+     2.3,
+     2.76,
+     3.22,
+     3.68,
+     4.14,
+     4.6
+    ],
+    "carpet": false,
+    "goal": "lowest"
+   },
+   {
+    "id": "loop-2",
+    "type": "make_the_loop",
+    "instruction": "Find the lowest peg that still sends the marble all the way round the loop to the bell.",
+    "loopR": 1.2,
+    "pegs": [
+     0.92,
+     1.38,
+     1.84,
+     2.3,
+     2.76,
+     3.22,
+     3.68,
+     4.14
+    ],
+    "carpet": false,
+    "goal": "lowest"
+   },
+   {
+    "id": "loop-3",
+    "type": "make_the_loop",
+    "instruction": "Find the lowest peg that still sends the marble all the way round the loop to the bell.",
+    "loopR": 1,
+    "pegs": [
+     1,
+     1.5,
+     2,
+     2.5,
+     3,
+     3.5,
+     4,
+     4.5
+    ],
+    "carpet": false,
+    "goal": "lowest"
+   }
+  ],
+  "challengeType": "make_the_loop",
+  "gradeBand": "3-5",
+  "supportTier": "medium"
+ }
+}

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { buoyancyBand } from './buoyancy-harbor-generator';
 import { circuitBand } from './circuit-workbench-generator';
 import { volcanoBand } from './volcano-island-generator';
+import { marbleBand } from './marble-run-park-generator';
 
 describe('the science build worlds read the exact grade for their band', () => {
-  it.each([['buoyancy', buoyancyBand], ['circuit', circuitBand], ['volcano', volcanoBand]])('%s', (_n, band) => {
+  it.each([['buoyancy', buoyancyBand], ['circuit', circuitBand], ['volcano', volcanoBand], ['marble', marbleBand]])('%s', (_n, band) => {
     // 'elementary' covers grades 1-5: the exact grade decides.
     expect(band('elementary', '4')).toBe('3-5');
     expect(band('elementary', '1')).toBe('K-2');

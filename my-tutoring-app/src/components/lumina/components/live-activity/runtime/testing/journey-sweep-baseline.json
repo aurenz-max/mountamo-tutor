@@ -111,6 +111,9 @@
   "machine-workshop.spin_to_push": {
     "J1-drivable": "not yet: the boss has no W1 play; MachineWorkshop.workspace.test.tsx drives the commit through the part buttons"
   },
+  "marble-run-park.make_the_loop": {
+    "J1-drivable": "by design: the 3D marble run (WebGL) cannot be drawn by jsdom; MarbleRunPark.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
   "ecosystem-diorama.plant_needs": {
     "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
   },

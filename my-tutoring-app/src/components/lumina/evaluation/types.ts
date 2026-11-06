@@ -1157,6 +1157,20 @@ export interface MediaPlayerMetrics extends BasePrimitiveMetrics {
   skippedSegments: number;          // Number of segments skipped after max attempts
 }
 
+export interface MarbleRunParkMetrics extends BasePrimitiveMetrics {
+  type: 'marble-run-park';
+  challengeType: 'make_the_loop';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Marble runs across the session: how much the learner tested before settling. Recorded, never part of the score. */
+  runsCount: number;
+}
+
 export interface VolcanoIslandMetrics extends BasePrimitiveMetrics {
   type: 'volcano-island';
   challengeType: 'kitchen_volcano' | 'runny_or_sticky' | 'layers_over_time' | 'save_the_village' | 'cool_the_rock';
@@ -4096,6 +4110,7 @@ export type PrimitiveMetrics =
   | BuoyancyHarborMetrics
   | CircuitWorkbenchMetrics
   | VolcanoIslandMetrics
+  | MarbleRunParkMetrics
   // Chemistry
   | PeriodicTableMetrics
   | MatterExplorerMetrics

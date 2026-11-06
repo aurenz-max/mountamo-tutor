@@ -14,6 +14,7 @@ import { gravityDropTowerCard } from '../../../primitives/visual-primitives/phys
 import { buoyancyHarborCard } from '../../../primitives/visual-primitives/physics/buoyancyHarbor.card';
 import { circuitWorkbenchCard } from '../../../primitives/visual-primitives/physics/circuitWorkbench.card';
 import { volcanoIslandCard } from '../../../primitives/visual-primitives/physics/volcanoIsland.card';
+import { marbleRunParkCard } from '../../../primitives/visual-primitives/physics/marbleRunPark.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -259,6 +260,19 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     ...bossEntry(volcanoIslandCard),
   },
+  {
+    id: 'marble-run-park',
+    description: 'Marble run park: a 3D marble run on a table with a wooden ramp, 8 numbered start pegs beside it, a flat run, a loop-the-loop and a bell at the far end. The learner taps a peg to put the marble there, says whether it will make the loop, taps the marble to let it go, and watches: a track physics model decides whether it goes all the way round and rings the bell, falls off near the top of the loop, or rolls back. Higher starts give the marble more energy and more speed; a start level with the top of the loop is not enough, because the marble must still be moving fast at the top to stay on the track. The learner runs it from as many pegs as needed and settles on one (any that works, or the lowest that works). Perfect for lessons on stored energy from height turning into motion, speed and energy, how starting height changes how far and how fast something goes, friction slowing things down (carpet), and testing to find out. ESSENTIAL for 4-PS3-1 and 4-PS3-3 (energy and speed, height and energy), K-PS2-1/K-PS2-2 (pushes, ramps and motion), 3-PS2-1 (forces that change motion), and K-2-ETS1-3 (comparing test results).',
+    constraints: 'Grades K-5 (built for 3-5). Each session is 3 marble-run experiments. Code picks the loop size, the peg heights and what the marble does from each peg; config.difficulty sets the structure (easy = any peg that makes the loop; medium = the lowest peg that makes it, with a peg level with the loop top that still fails; hard = the same with a strip of carpet before the loop). The manifest must NOT supply peg heights or say which peg works.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: ['apply'], minutes: 6 },
+    evalModes: [
+      { evalMode: 'make_the_loop', label: 'Make the Loop', beta: 1.8, scaffoldingMode: 2, challengeTypes: ['make_the_loop'],
+        description: 'Run a marble from start pegs on a ramp and find a start (or the lowest start) that sends it all the way round a loop-the-loop: higher starts give more energy and speed, and level with the top of the loop is not high enough' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(marbleRunParkCard),
+  },
+  {
   // Additional physics primitives will be added here
   // Examples could include:
   // - force-diagram (visualize forces with arrows and magnitude)

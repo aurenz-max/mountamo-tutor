@@ -154,6 +154,7 @@ import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics
 import { buoyancyHarborBoss } from '../../primitives/visual-primitives/physics/buoyancyHarbor.boss';
 import { circuitWorkbenchBoss } from '../../primitives/visual-primitives/physics/circuitWorkbench.boss';
 import { volcanoIslandBoss } from '../../primitives/visual-primitives/physics/volcanoIsland.boss';
+import { marbleRunParkBoss } from '../../primitives/visual-primitives/physics/marbleRunPark.boss';
 import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { vehicleComparisonLabBoss } from '../../primitives/visual-primitives/engineering/vehicleComparisonLab.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
@@ -488,6 +489,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'buoyancy-harbor': bossJourney(buoyancyHarborBoss),
   'circuit-workbench': bossJourney(circuitWorkbenchBoss),
   'volcano-island': bossJourney(volcanoIslandBoss),
+  'marble-run-park': bossJourney(marbleRunParkBoss),
   'stoichiometry-lab': bossJourney(stoichiometryLabBoss),
   'constellation-builder': bossJourney(constellationBuilderBoss),
   'genre-explorer': bossJourney(genreExplorerBoss),

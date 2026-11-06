@@ -135,6 +135,7 @@ import { gravityDropTowerBoss } from '../../primitives/visual-primitives/physics
 import { buoyancyHarborBoss } from '../../primitives/visual-primitives/physics/buoyancyHarbor.boss';
 import { circuitWorkbenchBoss } from '../../primitives/visual-primitives/physics/circuitWorkbench.boss';
 import { volcanoIslandBoss } from '../../primitives/visual-primitives/physics/volcanoIsland.boss';
+import { marbleRunParkBoss } from '../../primitives/visual-primitives/physics/marbleRunPark.boss';
 import { soundWaveExplorerBoss } from '../../primitives/visual-primitives/physics/soundWaveExplorer.boss';
 import { rampLabBoss } from '../../primitives/visual-primitives/engineering/rampLab.boss';
 import { trainYardBoss } from '../../primitives/visual-primitives/engineering/trainYard.boss';
@@ -319,6 +320,7 @@ export const LIVE_ADAPTERS = {
   'buoyancy-harbor': bossAdapter(buoyancyHarborBoss),
   'circuit-workbench': bossAdapter(circuitWorkbenchBoss),
   'volcano-island': bossAdapter(volcanoIslandBoss),
+  'marble-run-park': bossAdapter(marbleRunParkBoss),
   'sound-wave-explorer': bossAdapter(soundWaveExplorerBoss),
   'you-and-me': bossAdapter(youAndMeBoss),
   'ramp-lab': bossAdapter(rampLabBoss),

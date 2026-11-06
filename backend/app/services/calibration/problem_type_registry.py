@@ -1034,6 +1034,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "machine-workshop": {
         "spin_to_push": PriorConfig(1.4, "Build the part of a real machine that turns spinning into up-and-down: crank and rod or cam and follower, sized to the stroke"),
     },
+    "marble-run-park": {
+        "make_the_loop": PriorConfig(1.8, "Run a marble from ramp pegs and find the (lowest) start that makes a loop-the-loop: level with the top is not enough"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),
