@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/wave-tank-runtime-knock_it_down-payload-2026-11-04.json",
+ "primitiveId": "wave-tank",
+ "evalMode": "knock_it_down",
+ "data": {
+  "title": "Waves That Knock Things Down",
+  "description": "Taller waves and closer-together waves carry more energy. Change one thing about the paddle, enough to knock the tower down.",
+  "challenges": [
+   {
+    "id": "wave-1",
+    "type": "knock_it_down",
+    "instruction": "The first wave did not knock the tower down. Change ONE thing about the paddle so the next wave does.",
+    "start": {
+     "size": 2,
+     "speed": 1
+    },
+    "sizeCap": 5,
+    "need": 5,
+    "blocks": 3,
+    "supportTier": "medium"
+   },
+   {
+    "id": "wave-2",
+    "type": "knock_it_down",
+    "instruction": "The first wave did not knock the tower down. Change ONE thing about the paddle so the next wave does.",
+    "start": {
+     "size": 2,
+     "speed": 2
+    },
+    "sizeCap": 5,
+    "need": 7,
+    "blocks": 4,
+    "supportTier": "medium"
+   },
+   {
+    "id": "wave-3",
+    "type": "knock_it_down",
+    "instruction": "The first wave did not knock the tower down. Change ONE thing about the paddle so the next wave does.",
+    "start": {
+     "size": 1,
+     "speed": 2
+    },
+    "sizeCap": 5,
+    "need": 5,
+    "blocks": 3,
+    "supportTier": "medium"
+   }
+  ],
+  "challengeType": "knock_it_down",
+  "gradeBand": "3-5",
+  "supportTier": "medium"
+ }
+}

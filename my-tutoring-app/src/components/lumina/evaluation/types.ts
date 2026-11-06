@@ -1171,6 +1171,20 @@ export interface MarbleRunParkMetrics extends BasePrimitiveMetrics {
   runsCount: number;
 }
 
+export interface WaveTankMetrics extends BasePrimitiveMetrics {
+  type: 'wave-tank';
+  challengeType: 'knock_it_down';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Waves sent across the session: how much the learner tested before settling. Recorded, never part of the score. */
+  wavesCount: number;
+}
+
 export interface VolcanoIslandMetrics extends BasePrimitiveMetrics {
   type: 'volcano-island';
   challengeType: 'kitchen_volcano' | 'runny_or_sticky' | 'layers_over_time' | 'save_the_village' | 'cool_the_rock';
@@ -4111,6 +4125,7 @@ export type PrimitiveMetrics =
   | CircuitWorkbenchMetrics
   | VolcanoIslandMetrics
   | MarbleRunParkMetrics
+  | WaveTankMetrics
   // Chemistry
   | PeriodicTableMetrics
   | MatterExplorerMetrics

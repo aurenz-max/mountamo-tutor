@@ -19,6 +19,7 @@ import { generateBuoyancyHarbor } from '../../physics/buoyancy-harbor-generator'
 import { generateCircuitWorkbench } from '../../physics/circuit-workbench-generator';
 import { generateVolcanoIsland } from '../../physics/volcano-island-generator';
 import { generateMarbleRunPark } from '../../physics/marble-run-park-generator';
+import { generateWaveTank } from '../../physics/wave-tank-generator';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -91,3 +92,9 @@ registerContextGenerator('marble-run-park', async (ctx) => ({
   data: await generateMarbleRunPark(ctx),
 }));
 
+// Wave Tank - 3D wave tank: paddle push size and speed, wave energy knocks a tower down (G3-5). Code-only (Fork C): no model call.
+registerContextGenerator('wave-tank', async (ctx) => ({
+  type: 'wave-tank',
+  instanceId: ctx.instanceId,
+  data: await generateWaveTank(ctx),
+}));

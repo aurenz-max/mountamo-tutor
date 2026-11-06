@@ -15,6 +15,7 @@ import { buoyancyHarborCard } from '../../../primitives/visual-primitives/physic
 import { circuitWorkbenchCard } from '../../../primitives/visual-primitives/physics/circuitWorkbench.card';
 import { volcanoIslandCard } from '../../../primitives/visual-primitives/physics/volcanoIsland.card';
 import { marbleRunParkCard } from '../../../primitives/visual-primitives/physics/marbleRunPark.card';
+import { waveTankCard } from '../../../primitives/visual-primitives/physics/waveTank.card';
 
 export const PHYSICS_CATALOG: ComponentDefinition[] = [
   {
@@ -273,6 +274,17 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
     ...bossEntry(marbleRunParkCard),
   },
   {
+    id: 'wave-tank',
+    description: 'Wave tank: a 3D glass wave tank with grid squares on the back glass, a paddle at one end with push-size (amplitude) and push-speed (frequency) knobs, a cork floating in the middle, and a block tower on a sand beach at the far end. The learner taps the knobs, says whether the wave will knock the tower down, taps the paddle, and watches: a wave model makes crests as tall as the push size and closer together the faster the paddle pushes (wavelength = wave speed / frequency), the cork bobs up and down in place while the wave passes (waves carry energy, not water), and a wave carrying enough energy knocks the tower over. The learner changes ONE setting from a first wave that left the tower standing, so the next wave knocks it down: a bigger push (taller waves) or a faster push (closer crests) both carry more energy. A lab notebook lists the settings of each wave, crest height and crest spacing in squares, and what happened. Perfect for lessons on wave properties (amplitude as wave height, wavelength as the distance between crests), how amplitude and wavelength relate to the energy a wave carries, comparing high and low amplitude or long and short wavelength waves, and fair tests that change one thing. ESSENTIAL for grade 4 science 4-PS4-1 (waves: amplitude, wavelength, waves can make objects move) and 4-PS3 (energy carried by waves).',
+    constraints: 'Grades 3-5 (built for 4). Each session is 3 wave experiments. Code picks the settings of the first wave and the tower; config.difficulty sets the structure (easy = one step up on either setting knocks it down; medium = one step is not enough on either; hard = the push size is stuck, so only pushing faster works). Sound waves, light and wave speed numbers are not shown. The manifest must NOT supply settings or say which setting works.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: ['apply'], minutes: 7 },
+    evalModes: [
+      { evalMode: 'knock_it_down', label: 'Knock It Down', beta: 2.2, scaffoldingMode: 2, challengeTypes: ['knock_it_down'],
+        description: 'Change ONE paddle setting (push size = amplitude, or push speed = frequency, which shortens the wavelength) so the next wave carries enough energy to knock a block tower down; the first wave left it standing' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(waveTankCard),
+  },
   // Additional physics primitives will be added here
   // Examples could include:
   // - force-diagram (visualize forces with arrows and magnitude)

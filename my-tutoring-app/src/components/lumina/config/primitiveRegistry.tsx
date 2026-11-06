@@ -186,6 +186,7 @@ import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWor
 import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
 import MarbleRunPark from '../primitives/visual-primitives/physics/MarbleRunPark';
 import MachineWorkshop from '../primitives/visual-primitives/engineering/MachineWorkshop';
+import WaveTank from '../primitives/visual-primitives/physics/WaveTank';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
@@ -2012,6 +2013,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'circuit-workbench': {
     component: CircuitWorkbench,
     sectionTitle: 'Circuit Workbench',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'wave-tank': {
+    component: WaveTank,
+    sectionTitle: 'Wave Tank',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

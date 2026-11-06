@@ -1037,6 +1037,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "marble-run-park": {
         "make_the_loop": PriorConfig(1.8, "Run a marble from ramp pegs and find the (lowest) start that makes a loop-the-loop: level with the top is not enough"),
     },
+    "wave-tank": {
+        "knock_it_down": PriorConfig(2.2, "Change ONE paddle setting (push size or push speed) so a wave carries enough energy to knock a tower down: taller and closer-together waves carry more"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),

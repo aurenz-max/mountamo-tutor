@@ -1743,6 +1743,7 @@ export type ComponentId =
   | 'gravity-drop-tower'  // Interactive gravity drop tower for physics experiments
   | 'buoyancy-harbor'  // 3D harbor water tank: sink or float drop tests run by a density model (K-5 science)
   | 'circuit-workbench'  // 3D workbench: wire a battery and bulbs into a closed loop, lit by a circuit model (K-5 science)
+  | 'wave-tank'  // 3D wave tank: paddle push size (amplitude) and speed (frequency) set wavelength and energy, run by a wave model (G3-5 science)
   | 'marble-run-park'  // 3D marble run: start height vs making a loop-the-loop, runs from a track physics model (K-5 science)
   | 'volcano-island'  // 3D volcanoes: baking soda and vinegar fair tests, foam height from a reaction model (K-5 science)
   | 'push-pull-arena'     // Interactive push and pull force exploration for physics concepts
@@ -2386,6 +2387,7 @@ export type { BuoyancyHarborData } from './primitives/visual-primitives/physics/
 export type { CircuitWorkbenchData } from './primitives/visual-primitives/physics/CircuitWorkbench';
 export type { VolcanoIslandData } from './primitives/visual-primitives/physics/VolcanoIsland';
 export type { MarbleRunParkData } from './primitives/visual-primitives/physics/MarbleRunPark';
+export type { WaveTankData } from './primitives/visual-primitives/physics/WaveTank';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
 export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';

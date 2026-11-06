@@ -175,6 +175,7 @@ export type {
   CircuitWorkbenchMetrics,
   VolcanoIslandMetrics,
   MarbleRunParkMetrics,
+  WaveTankMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,

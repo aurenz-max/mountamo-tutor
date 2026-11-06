@@ -11,6 +11,7 @@ import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarb
 import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
 import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
 import MarbleRunPark from '../primitives/visual-primitives/physics/MarbleRunPark';
+import WaveTank from '../primitives/visual-primitives/physics/WaveTank';
 import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
@@ -25,7 +26,7 @@ interface PhysicsPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower' | 'buoyancy-harbor' | 'circuit-workbench' | 'volcano-island' | 'marble-run-park';
+type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower' | 'buoyancy-harbor' | 'circuit-workbench' | 'volcano-island' | 'marble-run-park' | 'wave-tank';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -38,6 +39,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'circuit-workbench', label: 'Circuit Workbench (3D)', icon: '💡', topic: 'Make a bulb light: a closed loop' },
   { value: 'volcano-island', label: 'Volcano Island (3D)', icon: '🌋', topic: 'Baking soda volcanoes: a fair test' },
   { value: 'marble-run-park', label: 'Marble Run Park (3D)', icon: '🎢', topic: 'Marble run: how high to start for the loop' },
+  { value: 'wave-tank', label: 'Wave Tank (3D)', icon: '🌊', topic: 'Waves: amplitude, wavelength and energy' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -167,6 +169,17 @@ const PrimitiveRenderer: React.FC<{
             instanceId: (data as { instanceId: string }).instanceId,
             skillId: 'energy-and-motion',
             subskillId: 'make-the-loop',
+          }}
+        />
+      );
+    case 'wave-tank':
+      return (
+        <WaveTank
+          data={{
+            ...(data as Parameters<typeof WaveTank>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            skillId: 'waves-and-energy',
+            subskillId: 'knock-it-down',
           }}
         />
       );
