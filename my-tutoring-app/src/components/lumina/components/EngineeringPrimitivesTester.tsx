@@ -885,7 +885,10 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
     [generatedData],
   );
   const [error, setError] = useState<string | null>(null);
-  const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
+  // The legacy AI Tutor panel starts closed: bound primitives carry their own tutor in the preview.
+  const [tutorPanelOpen, setTutorPanelOpen] = useState(false);
+  /** The left controls fold to a thin rail once something is generated, so the primitive gets the page. */
+  const [sideOpen, setSideOpen] = useState(true);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
   // A family bound to the teaching workspace previews inside the tester workspace: offline (real runtime and
   // lever bench, free) or with a Live tutor (paid).
@@ -935,6 +938,7 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
 
       const result = await response.json();
       setGeneratedData(result.data || result);
+      setSideOpen(false);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -980,8 +984,19 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
 
       {/* Main Layout */}
       <div className="flex h-[calc(100vh-73px)]">
-        {/* Compact Left Panel */}
-        <div className="w-64 border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0">
+        {/* Compact Left Panel (folds to a rail once something is generated) */}
+        {!sideOpen && (
+          <button type="button" onClick={() => setSideOpen(true)} aria-label="Show controls"
+            className="w-9 flex-shrink-0 border-r border-slate-800 bg-slate-900/30 text-slate-400 hover:text-white flex flex-col items-center pt-4 gap-2">
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-[10px] uppercase tracking-widest [writing-mode:vertical-rl]">Controls</span>
+          </button>
+        )}
+        <div className={`${sideOpen ? '' : 'hidden'} w-64 border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0 relative`}>
+          {generatedData != null && (
+            <button type="button" onClick={() => setSideOpen(false)} aria-label="Hide controls"
+              className="absolute right-2 top-2 text-slate-500 hover:text-white"><ChevronLeft className="w-4 h-4" /></button>
+          )}
           <div className="space-y-4">
             {/* Primitive Selector grouped by strand */}
             <div>
