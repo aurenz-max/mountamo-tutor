@@ -36,7 +36,7 @@ updates = {
     'SS002-06-c': ('fast-fact', None),
     'SS003-01-a': ('foundation-explorer', None),
     'SS003-01-b': ('comparison-panel', ['explore']),
-    'SS003-01-c': ('custom-visual', None),
+    'SS003-01-c': ('map-explorer', ['find_by_direction', 'name_direction']),
     'SS003-01-d': ('fast-fact', None),
     'SS003-02-a': ('foundation-explorer', None),
     'SS003-02-b': ('matching-activity', None),

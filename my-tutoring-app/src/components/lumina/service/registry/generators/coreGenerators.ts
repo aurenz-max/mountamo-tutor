@@ -51,7 +51,6 @@ import { generateWordBuilder } from '../../word-builder/gemini-word-builder';
 // Specialized Visual/Interactive Component Imports (from dedicated service files)
 // ============================================================================
 import { generateMathVisual } from '../../math-visual/gemini-math-visual';
-import { generateCustomVisual } from '../../custom-visual/gemini-custom-visual';
 import { generateSentenceAnalyzer } from '../../sentence-analyzer/gemini-sentence-analyzer';
 
 // ============================================================================
@@ -331,31 +330,6 @@ registerContextGenerator('math-visual', async (ctx) => {
     type: 'math-visual',
     instanceId: ctx.instanceId,
     data
-  };
-});
-
-// Custom Visual (rich interactive HTML experiences)
-registerContextGenerator('custom-visual', async (ctx) => {
-  const config = ctx.raw as AnyConfig;
-  const data = await generateCustomVisual(ctx.topic, ctx.gradeContext, {
-    intent: ctx.intent,
-    title: ctx.title,
-    subject: config.subject,
-    unitTitle: config.unitTitle,
-    keyTerms: config.keyTerms,
-    conceptsCovered: config.conceptsCovered,
-    objectiveId: ctx.objective.id,
-    objectiveText: ctx.objective.text,
-    objectiveVerb: ctx.objective.verb
-  });
-  return {
-    type: 'custom-visual',
-    instanceId: ctx.instanceId,
-    data: {
-      type: 'custom-web' as const,
-      id: ctx.instanceId,
-      ...data,
-    }
   };
 });
 

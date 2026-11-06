@@ -78,7 +78,6 @@ export const ObjectiveComponentMap: React.FC<ObjectiveComponentMapProps> = ({
       'base-ten-blocks': '🧮',
       'fraction-circles': '🥧',
       'shape-builder': '📐',
-      'custom-visual': '🎨',
       'graph-board': '📈',
       'comparison-panel': '⚖️',
       'generative-table': '📋',

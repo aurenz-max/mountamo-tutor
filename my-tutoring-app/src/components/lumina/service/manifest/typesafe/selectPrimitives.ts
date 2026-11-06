@@ -179,7 +179,7 @@ export function suggestSpecialists(
 export const POLICY_SCAFFOLD_IDS: ReadonlySet<string> = new Set([
   'knowledge-check', 'flashcard-deck', 'annotated-example', 'concept-card-grid',
   'foundation-explorer', 'comparison-panel', 'fast-fact', 'di-spoken-practice',
-  'take-home-activity', 'deep-dive', 'custom-visual', 'how-it-works', 'feature-exhibit',
+  'take-home-activity', 'deep-dive', 'how-it-works', 'feature-exhibit',
   'generative-table', 'practice-problem',
 ]);
 

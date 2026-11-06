@@ -33,14 +33,6 @@
     "hasTutoring": false
   },
   {
-    "id": "custom-visual",
-    "domain": "core",
-    "description": "A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle. TIP: Provide config with subject, keyTerms, and concep",
-    "supportsEvaluation": false,
-    "evalModes": [],
-    "hasTutoring": false
-  },
-  {
     "id": "formula-card",
     "domain": "core",
     "description": "Mathematical formula display with LaTeX. Use for equations, theorems, or scientific formulas.",

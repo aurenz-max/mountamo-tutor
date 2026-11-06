@@ -181,11 +181,6 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     affordances: { representation: 'symbolic', role: 'visualize', minutes: 3 },
   },
   {
-    id: 'custom-visual',
-    description: 'A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle. TIP: Provide config with subject, keyTerms, and conceptsCovered for richer content.',
-    affordances: { representation: 'pictorial', role: 'visualize', minutes: 5 },
-  },
-  {
     id: 'formula-card',
     description: 'Mathematical formula display with LaTeX. Use for equations, theorems, or scientific formulas.',
     constraints: 'Requires mathematical formulas',

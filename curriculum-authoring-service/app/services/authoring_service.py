@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------ #
 
 LUMINA_PRIMITIVE_CATALOG = """
-## Available Lumina Primitives (151 total)
+## Available Lumina Primitives (150 total)
 
 Source of truth: my-tutoring-app/src/components/lumina/service/manifest/catalog/
 
-### Core (17)
-curator-brief, concept-card-grid, comparison-panel, generative-table, custom-visual, formula-card, feature-exhibit, annotated-example, nested-hierarchy, take-home-activity, graph-board, foundation-explorer, fast-fact, fact-file, how-it-works, timeline-explorer, vocabulary-explorer
+### Core (16)
+curator-brief, concept-card-grid, comparison-panel, generative-table, formula-card, feature-exhibit, annotated-example, nested-hierarchy, take-home-activity, graph-board, foundation-explorer, fast-fact, fact-file, how-it-works, timeline-explorer, vocabulary-explorer
 
 ### Math (42)
 bar-model, number-line, base-ten-blocks, fraction-circles, fraction-bar, place-value-chart, area-model, array-grid, double-number-line, tape-diagram, factor-tree, ratio-table, percent-bar, balance-scale, function-machine, coordinate-graph, slope-triangle, systems-equations-visualizer, matrix-display, dot-plot, histogram, two-way-table, ten-frame, counting-board, comparison-builder, pattern-builder, skip-counting-runner, regrouping-workbench, multiplication-explorer, measurement-tools, shape-builder, number-sequencer, number-bond, addition-subtraction-scene, ordinal-line, sorting-station, shape-sorter, 3d-shape-explorer, shape-tracer, math-fact-fluency, strategy-picker, number-tracer

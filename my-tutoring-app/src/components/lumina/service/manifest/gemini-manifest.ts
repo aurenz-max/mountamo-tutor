@@ -460,7 +460,7 @@ USE 'deep-dive' when:
 - The objective needs broad topic coverage or background knowledge
 - No specialist interactive primitive exists for the topic (e.g., history, social studies, general science overviews)
 - The objective verb is EXPLAIN or IDENTIFY and the content is informational
-- You would otherwise reach for 'feature-exhibit', 'custom-visual', or 'generative-table' — 'deep-dive' does what they do but better
+- You would otherwise reach for 'feature-exhibit' or 'generative-table' — 'deep-dive' does what they do but better
 
 DO NOT use 'deep-dive' when:
 - A specialist interactive primitive exists (e.g., use 'fraction-circles' for fractions, 'slope-triangle' for slope, 'lever-lab' for levers)

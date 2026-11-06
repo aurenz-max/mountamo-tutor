@@ -20,7 +20,6 @@ const componentIcons: Partial<Record<ComponentId, string>> = {
   'sentence-analyzer': '📝',
   'formula-card': '🔢',
   'math-visual': '🧮',
-  'custom-visual': '🎭',
   'knowledge-check': '✅'
 };
 
