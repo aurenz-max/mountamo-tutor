@@ -12,6 +12,7 @@ import { classificationSorterCard } from '../../../primitives/visual-primitives/
 import { bossEntry } from '../../../components/live-activity/boss';
 import { adaptationInvestigatorCard } from '../../../primitives/visual-primitives/biology/adaptationInvestigator.card';
 import { cellBuilderCard } from '../../../primitives/visual-primitives/biology/cellBuilder.card';
+import { bodyWorkshopCard } from '../../../primitives/visual-primitives/biology/bodyWorkshop.card';
 import { habitatDioramaCard } from '../../../primitives/visual-primitives/biology/habitatDiorama.card';
 import { ecosystemDioramaCard } from '../../../primitives/visual-primitives/biology/ecosystemDiorama.card';
 import { foodWebBuilderCard } from '../../../primitives/visual-primitives/biology/foodWebBuilder.card';
@@ -432,6 +433,21 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // An ungraded teaching surface: its wiring is the boss card (`adaptationInvestigator.card.ts`).
     ...bossEntry(adaptationInvestigatorCard),
+  },
+  {
+    id: 'body-workshop',
+    description: 'Body workshop: a 2D build of how animals get the oxygen they need. One row runs from where a real animal lives (land, sea, pond, soil, sky) to its body or a working muscle, and the learner taps body parts from a picture bench into the row in order (nose, mouth, blowhole, breathing holes, wet skin, windpipe, lungs, gills, air tubes, heart, blood tubes, with stomach and intestines as food parts that do not carry a breath). Breathe sends a breath along the row: it changes from air or water into oxygen in the blood and stops, with a reason, where a part cannot take what reached it (gills given air, lungs given water, the stomach, an inside part with no way in, blood with no heart to pump it). A path must also be one the real animal uses: a person, dog, bird, fish, whale (lives in the sea, breathes air), frog (lungs and wet skin), tadpole (gills), grasshopper (breathing holes and air tubes, no lungs) or earthworm (breathes through its skin). Perfect for lessons on how animals breathe, what animals need to survive, body parts and what they do, lungs versus gills, animals that live in water, structure and function, and how the breathing and blood systems work together to bring oxygen to muscles. A second mode builds the path FOOD takes: mouth, stomach and intestines into the blood (a bird swallows seeds whole and grinds them with stones in its gizzard; a cow softens grass in a four-part stomach; an earthworm grinds soil), on through the heart to a muscle for energy at grades 4-5. Perfect also for lessons on digestion, what animals eat, teeth and beaks, and how food gives the body energy. ESSENTIAL for K-5 life science: K-LS1-1 (what animals need), 1-LS1-1 (body parts that help animals survive), 3-LS4-3 (living in a habitat) and 4-LS1-1 (internal structures that support survival).',
+    constraints: 'Grades K-5 (not middle school). Each session is 3 animals (both modes: some of each). K-3 build the path into the blood (1-4 parts); grades 4-5 build it on to a muscle through the heart and blood tubes. config.difficulty sets the animals and the bench (oxygen: easy = person, dog, bird, fish; medium adds whale, frog, tadpole; hard adds grasshopper and earthworm. food: easy = person, dog, fish; medium adds frog, bird, cow; hard adds earthworm). The author agent picks animals that fit the lesson; code checks each path and owns the bench. The manifest must NOT supply animals, parts or paths.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: ['apply'], minutes: 7 },
+    evalModes: [
+      { evalMode: 'deliver_oxygen', label: 'Deliver Oxygen', beta: 0.2, scaffoldingMode: 2, challengeTypes: ['deliver_oxygen'],
+        description: 'Build, part by part, the path oxygen takes through a real animal from where it lives into its body (K-3) or to a working muscle (4-5)' },
+      { evalMode: 'fuel_the_body', label: 'Fuel the Body', beta: 0.4, scaffoldingMode: 2, challengeTypes: ['fuel_the_body'],
+        description: 'Build, part by part, the path food takes through a real animal from its mouth (mashed in a stomach, ground in a bird\'s gizzard, softened in a cow\'s four-part stomach) into its blood (K-3) or to a working muscle for energy (4-5)' },
+    ],
+    supportsEvaluation: true,
+    // How it is wired to the live tutor: `bodyWorkshop.card.ts` (behavior: `bodyWorkshop.boss.ts`).
+    ...bossEntry(bodyWorkshopCard),
   },
   {
     id: 'cell-builder',

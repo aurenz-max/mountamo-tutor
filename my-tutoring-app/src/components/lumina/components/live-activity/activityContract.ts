@@ -99,6 +99,7 @@ import { foodWebBuilderBoss } from '../../primitives/visual-primitives/biology/f
 import { lifeCycleSequencerBoss } from '../../primitives/visual-primitives/biology/lifeCycleSequencer.boss';
 import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
 import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
+import { bodyWorkshopBoss } from '../../primitives/visual-primitives/biology/bodyWorkshop.boss';
 import { towerStackerBoss } from '../../primitives/visual-primitives/engineering/towerStacker.boss';
 import { gearTrainBuilderBoss } from '../../primitives/visual-primitives/engineering/gearTrainBuilder.boss';
 import { matterExplorerBoss } from '../../primitives/visual-primitives/chemistry/matterExplorer.boss';
@@ -280,6 +281,7 @@ export const LIVE_ADAPTERS = {
   'life-cycle-sequencer': bossAdapter(lifeCycleSequencerBoss),
   'classification-sorter': bossAdapter(classificationSorterBoss),
   'cell-builder': bossAdapter(cellBuilderBoss),
+  'body-workshop': bossAdapter(bodyWorkshopBoss),
   'tower-stacker': bossAdapter(towerStackerBoss),
   'gear-train-builder': bossAdapter(gearTrainBuilderBoss),
   'matter-explorer': bossAdapter(matterExplorerBoss),

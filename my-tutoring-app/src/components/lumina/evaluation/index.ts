@@ -67,6 +67,7 @@ export type {
   TrainYardMetrics,
   AirplaneDioramaMetrics,
   ConstructionSiteDioramaMetrics,
+  BodyWorkshopMetrics,
   MapExplorerMetrics,
   EcosystemDioramaMetrics,
   // Creation metrics

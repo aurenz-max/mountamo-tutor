@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/body-workshop-runtime-deliver_oxygen-payload-2026-11-05.json",
+ "primitiveId": "body-workshop",
+ "evalMode": "deliver_oxygen",
+ "data": {
+  "title": "Oxygen Delivery",
+  "description": "Muscles need oxygen to move. Build the path oxygen takes from outside each animal to a working muscle.",
+  "challenges": [
+   {
+    "id": "animal-1",
+    "type": "deliver_oxygen",
+    "goal": "to_muscle",
+    "animal": "whale",
+    "name": "whale",
+    "emoji": "\ud83d\udc0b",
+    "habitat": "sea",
+    "medium": "outside_air",
+    "muscle": "tail muscle",
+    "intro": "Whales are giant ocean swimmers that glide through deep, chilly water.",
+    "instruction": "Build the path that gets oxygen to the whale's tail muscle.",
+    "principle": "A whale takes in fresh air at the ocean surface and sends oxygen through its blood to its tail muscle.",
+    "jobs": {
+     "blowhole": "Opening at the water surface to take in fresh air.",
+     "windpipe": "Guiding the air down into the chest.",
+     "lungs": "Putting oxygen from the air into the blood.",
+     "heart": "Pumping the blood full of oxygen with a mighty beat.",
+     "blood_tubes": "Carrying oxygen straight into the swimming muscle."
+    },
+    "bench": [
+     "mouth",
+     "heart",
+     "windpipe",
+     "nose",
+     "blowhole",
+     "lungs",
+     "stomach",
+     "wet_skin",
+     "gills",
+     "blood_tubes"
+    ]
+   },
+   {
+    "id": "animal-2",
+    "type": "deliver_oxygen",
+    "goal": "to_muscle",
+    "animal": "fish",
+    "name": "fish",
+    "emoji": "\ud83d\udc1f",
+    "habitat": "sea",
+    "medium": "outside_water",
+    "muscle": "tail muscle",
+    "intro": "Fish live in rivers, lakes, and oceans where they splash and swim all day long.",
+    "instruction": "Build the path that gets oxygen to the fish's tail muscle.",
+    "principle": "A fish takes oxygen from the water and carries it through blood to its swimming muscles.",
+    "jobs": {
+     "mouth": "Taking in water as the fish swims along.",
+     "gills": "Catching oxygen from the water and putting it into the blood.",
+     "heart": "Pumping the blood forward through the body.",
+     "blood_tubes": "Delivering oxygen right to the moving fin muscle."
+    },
+    "bench": [
+     "mouth",
+     "heart",
+     "windpipe",
+     "nose",
+     "blowhole",
+     "lungs",
+     "stomach",
+     "wet_skin",
+     "gills",
+     "blood_tubes"
+    ]
+   },
+   {
+    "id": "animal-3",
+    "type": "deliver_oxygen",
+    "goal": "to_muscle",
+    "animal": "human",
+    "name": "person",
+    "emoji": "\ud83e\uddd2",
+    "habitat": "land",
+    "medium": "outside_air",
+    "muscle": "leg muscle",
+    "intro": "Humans live on land and love to walk, run, and play games.",
+    "instruction": "Build the path that gets oxygen to the person's leg muscle.",
+    "principle": "A person breathes in air and moves oxygen through the blood to every working muscle.",
+    "jobs": {
+     "nose": "Taking in fresh air from the outside world.",
+     "mouth": "Lets air in.",
+     "windpipe": "Letting the air slide down toward the chest.",
+     "lungs": "Passing oxygen from the air into the blood.",
+     "heart": "Pumping the fresh blood onward with each beat.",
+     "blood_tubes": "Carrying oxygen all the way into the running muscle."
+    },
+    "bench": [
+     "mouth",
+     "heart",
+     "windpipe",
+     "nose",
+     "blowhole",
+     "lungs",
+     "stomach",
+     "wet_skin",
+     "gills",
+     "blood_tubes"
+    ]
+   }
+  ],
+  "challengeType": "deliver_oxygen",
+  "gradeBand": "3-5",
+  "supportTier": "medium",
+  "authoring": {
+   "calls": 1,
+   "sources": [
+    "whale:agent",
+    "fish:agent",
+    "human:agent"
+   ],
+   "rejected": [],
+   "repaired": []
+  }
+ }
+}

@@ -1047,6 +1047,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "bio-process-animator":       {"default": PriorConfig(3.5, "Animate and comprehend biological process")},
     "microscope-viewer":          {"default": PriorConfig(4.0, "Label structures under microscope")},
     "adaptation-investigator":    {"default": PriorConfig(3.5, "Connect trait to function to environment")},
+    "body-workshop": {
+        "deliver_oxygen": PriorConfig(0.2, "K-5: tap body parts into the path oxygen takes through a real animal (into the body K-3; on to a muscle 4-5)"),
+        "fuel_the_body": PriorConfig(0.4, "K-5: tap body parts into the path food takes through a real animal: mouth, stomach or gizzard, intestines, blood (heart to a muscle at 4-5)"),
+    },
     "cell-builder": {
         "cell_inventory":      PriorConfig(2.5, "Discriminate structures that belong in a target cell"),
         "organelle_placement": PriorConfig(3.5, "Place organelles in best-fit model regions"),

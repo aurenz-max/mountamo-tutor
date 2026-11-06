@@ -32,6 +32,7 @@ import { generateMicroscopeViewer } from '../../biology/gemini-microscope-viewer
 import { generateFoodWebBuilder } from '../../biology/gemini-food-web-builder';
 import { generateAdaptationInvestigator } from '../../biology/gemini-adaptation-investigator';
 import { generateCellBuilder } from '../../biology/gemini-cell-builder';
+import { generateBodyWorkshop } from '../../biology/body-workshop-generator';
 import { generateInheritanceLab } from '../../biology/gemini-inheritance-lab';
 import { generateDnaExplorer } from '../../biology/gemini-dna-explorer';
 import { generateProteinFolder } from '../../biology/gemini-protein-folder';
@@ -464,6 +465,14 @@ registerContextGenerator('adaptation-investigator', async (ctx) => ({
  * - 4-5: Simple vocabulary, 5-7 organelles + 2-3 distractors, everyday analogies
  * - 6-8: Scientific terminology, 7-10 organelles + 3-4 distractors, detailed functions
  */
+// Body Workshop - 2D row: build the path oxygen takes through a real animal (K-5). The author agent picks animals and
+// names their paths; code checks each path flows and is the real animal's, and owns the bench and the goal.
+registerContextGenerator('body-workshop', async (ctx) => ({
+  type: 'body-workshop',
+  instanceId: ctx.instanceId,
+  data: await generateBodyWorkshop(ctx),
+}));
+
 registerContextGenerator('cell-builder', async (ctx) => ({
   type: 'cell-builder',
   instanceId: ctx.instanceId,

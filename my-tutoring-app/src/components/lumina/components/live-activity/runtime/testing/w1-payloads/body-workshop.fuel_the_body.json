@@ -1,0 +1,133 @@
+{
+ "source": "qa/tutor-reports/body-workshop-runtime-fuel_the_body-payload-2026-11-05.json",
+ "primitiveId": "body-workshop",
+ "evalMode": "fuel_the_body",
+ "data": {
+  "title": "Fuel Delivery",
+  "description": "Muscles need food for energy. Build the path food takes from the mouth to a working muscle.",
+  "challenges": [
+   {
+    "id": "animal-1",
+    "type": "fuel_the_body",
+    "goal": "to_muscle",
+    "animal": "human",
+    "name": "person",
+    "emoji": "\ud83e\uddd2",
+    "habitat": "land",
+    "medium": "outside_food",
+    "food": "a sandwich",
+    "muscle": "leg muscle",
+    "intro": "A person lives in a home and runs around to play outside.",
+    "instruction": "Build the path that gets the person's food to its leg muscle.",
+    "principle": "Food gets broken down and passes into the blood. Then the blood carries the food to working muscles.",
+    "jobs": {
+     "mouth": "The mouth chews and swallows the food.",
+     "stomach": "The stomach mashes the swallowed food into liquid.",
+     "intestines": "The intestines soak up the mashed food into the blood.",
+     "heart": "The heart pumps the blood carrying the food.",
+     "blood_tubes": "The blood tubes deliver the food straight to working muscles."
+    },
+    "bench": [
+     "stomach",
+     "intestines",
+     "crop",
+     "heart",
+     "gizzard",
+     "lungs",
+     "mouth",
+     "nose",
+     "blood_tubes",
+     "windpipe",
+     "four_stomach"
+    ],
+    "startLevers": []
+   },
+   {
+    "id": "animal-2",
+    "type": "fuel_the_body",
+    "goal": "to_muscle",
+    "animal": "bird",
+    "name": "bird",
+    "emoji": "\ud83d\udc26",
+    "habitat": "sky",
+    "medium": "outside_food",
+    "food": "seeds",
+    "muscle": "wing muscle",
+    "intro": "A bird flies through the open sky and rests in tall trees.",
+    "instruction": "Build the path that gets the bird's food to its wing muscle.",
+    "principle": "Food is crushed inside and moves into the blood. Then the blood carries the food out to working muscles.",
+    "jobs": {
+     "mouth": "The mouth swallows the food down.",
+     "crop": "The crop stores the swallowed food to soften it.",
+     "gizzard": "The gizzard grinds the swallowed food into mash.",
+     "intestines": "The intestines take up the mashed food into the blood.",
+     "heart": "The heart pumps the blood filled with food.",
+     "blood_tubes": "The blood tubes carry the food right to working muscles."
+    },
+    "bench": [
+     "stomach",
+     "intestines",
+     "crop",
+     "heart",
+     "gizzard",
+     "lungs",
+     "mouth",
+     "nose",
+     "blood_tubes",
+     "windpipe",
+     "four_stomach"
+    ],
+    "startLevers": []
+   },
+   {
+    "id": "animal-3",
+    "type": "fuel_the_body",
+    "goal": "to_muscle",
+    "animal": "cow",
+    "name": "cow",
+    "emoji": "\ud83d\udc04",
+    "habitat": "land",
+    "medium": "outside_food",
+    "food": "grass",
+    "muscle": "leg muscle",
+    "intro": "A cow lives on a wide farm and walks across sunny pastures.",
+    "instruction": "Build the path that gets the cow's food to its leg muscle.",
+    "principle": "Food is mashed up and enters the blood. Then the blood carries the food to working muscles.",
+    "jobs": {
+     "mouth": "The mouth takes in food and swallows it.",
+     "four_stomach": "The four-part stomach breaks down and mashes the swallowed food.",
+     "intestines": "The intestines absorb the mashed food into the blood.",
+     "heart": "The heart pumps the blood with food across the body.",
+     "blood_tubes": "The blood tubes guide the food to working muscles."
+    },
+    "bench": [
+     "stomach",
+     "intestines",
+     "crop",
+     "heart",
+     "gizzard",
+     "lungs",
+     "mouth",
+     "nose",
+     "blood_tubes",
+     "windpipe",
+     "four_stomach"
+    ],
+    "startLevers": []
+   }
+  ],
+  "challengeType": "fuel_the_body",
+  "gradeBand": "3-5",
+  "supportTier": "medium",
+  "authoring": {
+   "calls": 1,
+   "sources": [
+    "fuel_the_body:human:agent",
+    "fuel_the_body:bird:agent",
+    "fuel_the_body:cow:agent"
+   ],
+   "rejected": [],
+   "repaired": []
+  }
+ }
+}

@@ -123,6 +123,7 @@ import MicroscopeViewer from '../primitives/visual-primitives/biology/Microscope
 import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
 import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
+import BodyWorkshop from '../primitives/visual-primitives/biology/BodyWorkshop';
 import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
 import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
@@ -1444,6 +1445,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true, // What If? scenario accuracy tracking
+  },
+
+  'body-workshop': {
+    component: BodyWorkshop,
+    sectionTitle: 'Body Workshop',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'cell-builder': {
