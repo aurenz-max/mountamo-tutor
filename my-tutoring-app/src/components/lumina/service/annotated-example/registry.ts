@@ -20,6 +20,7 @@ import { diagramPrimitive } from './generators/diagram';
 import { graphSketchPrimitive } from './generators/graph-sketch';
 import { caseSplitPrimitive } from './generators/case-split';
 import { geometryPrimitive } from './generators/geometry';
+import { chemistryPrimitive } from './generators/chemistry';
 
 export const PRIMITIVE_REGISTRY: Record<StepType, PrimitiveDef> = {
   algebra: algebraPrimitive,
@@ -28,6 +29,7 @@ export const PRIMITIVE_REGISTRY: Record<StepType, PrimitiveDef> = {
   'graph-sketch': graphSketchPrimitive,
   'case-split': caseSplitPrimitive,
   geometry: geometryPrimitive,
+  chemistry: chemistryPrimitive,
 };
 
 /** All registered step types, in catalog order. */

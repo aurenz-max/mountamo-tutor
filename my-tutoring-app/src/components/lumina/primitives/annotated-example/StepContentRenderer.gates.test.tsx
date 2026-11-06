@@ -53,6 +53,19 @@ describe('real worked-example renderer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Check' }));
     expect(screen.getByRole('img', { name: 'Six buttons in two groups' })).toBeTruthy();
   });
+  it('renders inline math in gate prompts and choices, including over-escaped LaTeX', () => {
+    const { container } = render(<StepContentRenderer content={{ type: 'algebra', result: '4', transitions: [
+      { from: { latex: '6 \\times \\frac{2}{3}' }, to: { latex: '4' }, operation: 'Multiply', challenge: { hide: 'operation', prompt: 'What is $6\\\\text{ moles of H}_2$ times $\\\\frac{2}{3}$?', acceptableAnswers: ['Multiply'], distractors: ['Divide by $\\frac{2}{3}$'], rationale: 'Use $\\\\frac{2}{3}$.' } },
+    ] }} />);
+    const prompt = screen.getByText((_, el) => !!el?.className?.includes?.('text-amber-300') && el.tagName === 'DIV');
+    expect(prompt.querySelectorAll('.katex').length).toBe(2);
+    // KaTeX keeps the source in a MathML annotation: it must be the collapsed, single-backslash form.
+    const sources = Array.from(prompt.querySelectorAll('annotation')).map((a) => a.textContent);
+    expect(sources).toEqual(['6\\text{ moles of H}_2', '\\frac{2}{3}']);
+    expect(prompt.querySelector('.katex-error')).toBeNull();
+    expect(prompt.textContent).not.toContain('$');
+    expect(container.querySelectorAll('button .katex').length).toBeGreaterThan(0);
+  });
   it('draws real number-line jumps and fraction partitions', () => {
     const { rerender } = render(<StructuredDiagram visual={{ kind: 'number-line', min: 0, max: 1, divisions: 10, start: 0, jumps: [0.4, 0.3] }} altText="Two jumps" />);
     expect(screen.getAllByTestId('number-line-jump')).toHaveLength(2);

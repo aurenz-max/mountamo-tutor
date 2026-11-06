@@ -6,7 +6,8 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { StructuredDiagram } from './StructuredDiagram';
 import { GeometryFigureView } from './GeometryFigureView';
-import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, Triangle, X } from 'lucide-react';
+import { ChemFigureView } from './ChemFigureView';
+import { ArrowRight, Atom, Check, GitBranch, Table2, Image, TrendingUp, Triangle, X } from 'lucide-react';
 import type {
   StepContent,
   AlgebraStepContent,
@@ -18,6 +19,7 @@ import type {
   GraphSketchStepContent,
   CaseSplitStepContent,
   GeometryStepContent,
+  ChemistryStepContent,
 } from './types';
 import {
   CANVAS_WIDTH,
@@ -75,7 +77,9 @@ function renderMixedContent(text: string): string {
     .map((part) => {
       if (part.startsWith('$') && part.endsWith('$')) {
         if (part.length > MAX_INLINE_MATH_LEN) return part;
-        const inner = part.slice(1, -1);
+        // Models often over-escape LaTeX in JSON (`\\text`, `\\frac`). A doubled
+        // backslash before a command name or brace is never meant as a line break inline.
+        const inner = part.slice(1, -1).replace(/\\\\(?=[a-zA-Z{])/g, '\\');
         return renderKatex(inner, false);
       }
       return part;
@@ -307,7 +311,7 @@ const ChallengeRow: React.FC<ChallengeRowProps> = ({
           </div>
         )}
         {challenge.rationale && (
-          <div className="text-slate-400 italic">{challenge.rationale}</div>
+          <div className="text-slate-400 italic"><MixedContent text={challenge.rationale} className="!text-slate-400" /></div>
         )}
       </div>
     );
@@ -315,7 +319,7 @@ const ChallengeRow: React.FC<ChallengeRowProps> = ({
 
   return (
     <div className="ml-6 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 space-y-2">
-      <div className="text-xs text-amber-300 font-medium">{challenge.prompt}</div>
+      <div className="text-xs text-amber-300 font-medium"><MixedContent text={challenge.prompt} className="!text-amber-300" /></div>
       {choices ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
           {choices.map((choice, i) => (
@@ -324,7 +328,7 @@ const ChallengeRow: React.FC<ChallengeRowProps> = ({
               onClick={() => submit(choice)}
               className="text-left text-xs px-3 py-2 rounded-md bg-slate-800/40 border border-slate-700/50 hover:border-amber-400/50 hover:bg-amber-500/10 transition-colors text-slate-200"
             >
-              {challenge.hide === 'to' ? <KaTeX latex={choice} display={false} /> : choice}
+              {challenge.hide === 'to' ? <KaTeX latex={choice} display={false} /> : <MixedContent text={choice} className="!text-slate-200" />}
             </button>
           ))}
         </div>
@@ -418,7 +422,7 @@ const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
           Predict before reveal
         </p>
         <div className="text-sm text-amber-200 font-medium leading-relaxed">
-          {challenge.prompt}
+          <MixedContent text={challenge.prompt} className="!text-amber-200" />
         </div>
         {choices ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -428,7 +432,7 @@ const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
                 onClick={() => submit(choice)}
                 className="text-left text-sm px-3 py-2 rounded-md bg-slate-800/40 border border-slate-700/50 hover:border-amber-400/50 hover:bg-amber-500/10 transition-colors text-slate-200"
               >
-                {useKatex ? <KaTeX latex={choice} display={false} /> : choice}
+                {useKatex ? <KaTeX latex={choice} display={false} /> : <MixedContent text={choice} className="!text-slate-200" />}
               </button>
             ))}
           </div>
@@ -489,7 +493,7 @@ const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
           </div>
         )}
         {challenge.rationale && (
-          <div className="text-slate-400 italic">{challenge.rationale}</div>
+          <div className="text-slate-400 italic"><MixedContent text={challenge.rationale} className="!text-slate-400" /></div>
         )}
       </div>
       {children}
@@ -788,6 +792,15 @@ const GeometryStepView: React.FC<{ content: GeometryStepContent }> = ({ content 
   <div className="space-y-2">
     <div className="rounded-lg bg-slate-950/50 border border-slate-800/50 p-2">
       <GeometryFigureView figure={content.figure} altText={content.altText} />
+    </div>
+    {content.caption && <p className="text-sm text-slate-400"><MixedContent text={content.caption} /></p>}
+  </div>
+);
+
+const ChemistryStepView: React.FC<{ content: ChemistryStepContent }> = ({ content }) => (
+  <div className="space-y-2">
+    <div className="rounded-lg bg-slate-950/50 border border-slate-800/50 p-2">
+      <ChemFigureView figure={content.figure} altText={content.altText} />
     </div>
     {content.caption && <p className="text-sm text-slate-400"><MixedContent text={content.caption} /></p>}
   </div>
@@ -1095,6 +1108,7 @@ const STEP_TYPE_ICONS: Record<string, React.ReactNode> = {
   'graph-sketch': <TrendingUp size={12} className="text-cyan-400" />,
   'case-split': <GitBranch size={12} className="text-amber-400" />,
   geometry: <Triangle size={12} className="text-cyan-400" />,
+  chemistry: <Atom size={12} className="text-cyan-400" />,
 };
 
 /**
@@ -1120,6 +1134,8 @@ function renderContentBody(
       return <CaseSplitStepView content={content} />;
     case 'geometry':
       return <GeometryStepView content={content} />;
+    case 'chemistry':
+      return <ChemistryStepView content={content} />;
   }
 }
 

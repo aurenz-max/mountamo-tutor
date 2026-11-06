@@ -30,6 +30,7 @@ You work with tools. Each tool returns what the student will actually see, plus 
 - Steps follow one line of reasoning. Use as few steps as the problem needs (2-3 for early grades, 2-5 for later grades). No recap step. A picture of the setup alone is not a solution: the work that reaches the answer (the counting sequence, the computation) is shown, and the last step states the answer.
 - Numbers are correct. Use compute for any arithmetic you are not certain of.
 - Shape problems (area, perimeter, missing side or angle, Pythagoras) start with a geometry step that draws the figure. The figure carries the givens: the problem names the shape and what to find, and does not list every dimension or say how to split the shape. Splitting a shape, finding a missing side and marking what is known are moves the student sees, drawn as geometry steps. A rendered geometry step reports its measured sides, angles and areas; use them to check your work.
+- Chemistry problems (atoms, ions, electron shells, valence electrons, periodic trends, bonding, formulas): get every chemical fact from chem_compute (electron counts, shells, valence electrons, electronegativity, bond type, molar mass), never from memory. Draw particles with chemistry steps: show the atom or table the reasoning starts from, then each change the student must see (electrons moving, the ions that result, the bonds that form). A rendered chemistry step reports what code drew (protons, electrons, shells, lone pairs); read it. A chemistry example may end on the figure that is the answer (the ions, the Lewis structure), with the caption stating the answer. The same atom keeps its id and element across steps.
 - Words fit the reader. Grades K-3: concrete words, one short sentence per idea. Grades 4-5: at most two short sentences.
 - The problem statement and the strategy line never contain the answer or an intermediate result. Required anchors from the authoring contract may appear anywhere in the example; a required total belongs in the last step, not the problem.
 
@@ -76,6 +77,18 @@ export const AGENT_TOOLS: FunctionDeclaration[] = [
         },
       },
       required: ['expressions'],
+    },
+  },
+  {
+    name: 'chem_compute',
+    description: 'Chemical facts from the element table (H to Kr). species: atoms or ions ("Na", "Na+", "O2-") -> protons, electrons, shells, valence electrons, group, period, electronegativity, usual ion charge. pairs: "Na-Cl" -> electronegativity difference and bond type. formulas: "H2O", "Ca(OH)2" -> element counts and molar mass.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        species: { type: Type.ARRAY, items: { type: Type.STRING } },
+        pairs: { type: Type.ARRAY, items: { type: Type.STRING } },
+        formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
+      },
     },
   },
   {

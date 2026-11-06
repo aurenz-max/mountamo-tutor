@@ -239,6 +239,19 @@ export interface GeometryStepContent {
   altText: string;
 }
 
+/**
+ * A chemistry figure: Bohr atoms and ions, a Lewis structure, or the periodic
+ * table H-Kr. The model names species and bonds; code computes every count
+ * (protons, electrons, shells, lone pairs) and rejects an atom without a full
+ * outer shell (chemFigure.ts).
+ */
+export interface ChemistryStepContent {
+  type: 'chemistry';
+  figure: import('./chemFigure').ChemFigure;
+  caption: string;
+  altText: string;
+}
+
 /** Union of all step content types */
 export type StepContent =
   | AlgebraStepContent
@@ -246,7 +259,8 @@ export type StepContent =
   | DiagramStepContent
   | GraphSketchStepContent
   | CaseSplitStepContent
-  | GeometryStepContent;
+  | GeometryStepContent
+  | ChemistryStepContent;
 
 export type StepType = StepContent['type'];
 

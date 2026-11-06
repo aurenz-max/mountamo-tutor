@@ -70,6 +70,7 @@ const STEP_TYPE_COLORS: Record<StepType, string> = {
   'graph-sketch': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
   'case-split': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
   geometry: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  chemistry: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
 };
 
 // ── Evaluation Results Panel ─────────────────────────────────────────

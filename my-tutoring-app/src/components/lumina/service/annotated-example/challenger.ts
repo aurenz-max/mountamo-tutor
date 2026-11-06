@@ -28,6 +28,7 @@
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
 import { geometrySummary } from '../../primitives/annotated-example/geometryFigure';
+import { chemSummary } from '../../primitives/annotated-example/chemFigure';
 import type { Inset } from '../../types';
 import { reviewPredictions } from './prediction-review';
 import type {
@@ -153,7 +154,7 @@ interface AlgebraStepSummary {
 }
 
 interface NonAlgebraStepSummary {
-  type: 'table' | 'graph-sketch' | 'case-split' | 'diagram' | 'geometry';
+  type: 'table' | 'graph-sketch' | 'case-split' | 'diagram' | 'geometry' | 'chemistry';
   stepIndex: number;
   title: string;
   misconception: string;
@@ -260,6 +261,10 @@ ${cases || '      (none)'}`;
     }
     case 'geometry': {
       return `figure: ${geometrySummary(content.figure)}
+    caption: "${content.caption}"`;
+    }
+    case 'chemistry': {
+      return `chemistry: ${chemSummary(content.figure)}
     caption: "${content.caption}"`;
     }
     case 'diagram': {

@@ -15,6 +15,7 @@
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
 import { geometrySummary } from '../../primitives/annotated-example/geometryFigure';
+import { chemSummary } from '../../primitives/annotated-example/chemFigure';
 import { serializeInsetForPrompt } from './inset-helpers';
 import type {
   AlgebraStepContent,
@@ -317,6 +318,8 @@ function stepBodySummary(content: StepContent): string {
     }
     case 'geometry':
       return `geometry figure: ${geometrySummary(content.figure)}`;
+    case 'chemistry':
+      return `chemistry figure: ${chemSummary(content.figure)}`;
     case 'diagram': {
       const labels = content.labels.map((l) => l.text).join(', ');
       return `diagram: ${content.altText}${labels ? `; labels: ${labels}` : ''}`;

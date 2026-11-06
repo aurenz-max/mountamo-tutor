@@ -44,6 +44,7 @@ import type {
 } from '../../../primitives/annotated-example/types';
 import type { Inset } from '../../../types';
 import { measureGeometry } from '../../../primitives/annotated-example/geometryFigure';
+import { bondBetween, elementFacts, formulaFacts, ionShells, measureChem, parseSpecies, speciesLabel } from '../../../primitives/annotated-example/chemFigure';
 
 const MODEL = 'gemini-flash-latest';
 const SOFT_DEADLINE_MS = Number(process.env.LUMINA_AE_AGENT_SOFT_MS ?? 50_000);
@@ -115,6 +116,38 @@ function compute(args: Args) {
   return { results, integrals };
 }
 
+/** Chemical facts from the element table: species, bond types between pairs, formula masses. */
+function chemCompute(args: Args) {
+  const species = strs(args.species).map((text) => {
+    const parsed = parseSpecies(text);
+    const el = parsed && elementFacts(parsed.symbol);
+    if (!parsed || !el) return { species: text, error: 'write an element symbol from H to Kr with an optional charge, e.g. Na, Na+, O2-' };
+    return {
+      species: speciesLabel(el.symbol, parsed.charge),
+      name: el.name,
+      atomicNumber: el.atomicNumber,
+      protons: el.atomicNumber,
+      electrons: el.atomicNumber - parsed.charge,
+      neutronsMostCommon: el.massNumber - el.atomicNumber,
+      atomicMass: el.atomicMass,
+      group: el.group,
+      period: el.period,
+      category: el.category,
+      shells: ionShells(el, parsed.charge),
+      valenceElectrons: el.valenceElectrons,
+      electronegativity: el.electronegativity,
+      usualIonCharge: el.commonCharge,
+    };
+  });
+  const pairs = strs(args.pairs).map((pair) => {
+    const [a, b] = pair.split(/[-–\s,]+/).map((s) => elementFacts(s));
+    if (!a || !b) return { pair, error: 'write a pair as two symbols, e.g. Na-Cl' };
+    return { pair: `${a.symbol}-${b.symbol}`, ...bondBetween(a, b), rule: 'metal + nonmetal = ionic; two nonmetals: difference < 0.4 nonpolar covalent, otherwise polar covalent' };
+  });
+  const formulas = strs(args.formulas).map((formula) => ({ formula, ...formulaFacts(formula) }));
+  return { species, pairs, formulas };
+}
+
 async function setProblem(state: AgentState, args: Args) {
   const statement = str(args.statement);
   if (!statement) return { error: 'statement is required' };
@@ -180,7 +213,8 @@ async function renderStep(state: AgentState, args: Args, position: number): Prom
 }
 
 function stepView(s: AgentStep, index: number) {
-  const measured = s.step.content.type === 'geometry' ? { measured: measureGeometry(s.step.content.figure) } : {};
+  const c = s.step.content;
+  const measured = c.type === 'geometry' ? { measured: measureGeometry(c.figure) } : c.type === 'chemistry' && c.figure.view !== 'periodic' ? { drawn: measureChem(c.figure) } : {};
   return { index, stepType: s.spec.stepType, title: s.spec.title, content: compact(s.step.content, 1500), checks: stepChecks(s.step), ...measured };
 }
 
@@ -395,6 +429,7 @@ export async function generateAnnotatedExampleAgentic(input: GenerateAnnotatedEx
     // Fixed phase order inside a turn: problem first, then structure edits,
     // then renders in parallel, then gates, then finish.
     for (const { i, c } of byName('compute')) await timed(i, () => compute(c.args ?? {}));
+    for (const { i, c } of byName('chem_compute')) await timed(i, () => chemCompute(c.args ?? {}));
     for (const { i, c } of byName('set_problem')) await timed(i, () => setProblem(state, c.args ?? {}));
     for (const { i, c } of byName('remove_step').sort((a, b) => Number(b.c.args?.index) - Number(a.c.args?.index))) {
       await timed(i, () => {

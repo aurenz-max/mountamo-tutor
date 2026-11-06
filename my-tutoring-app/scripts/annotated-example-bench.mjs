@@ -23,6 +23,9 @@ const CASES = {
   // Geometry: the figure carries the givens, so the drawing has to match the math.
   'g3-composite-area': { topic: 'Area of a composite rectilinear shape', gradeContext: 'Grade 3', grade: '3', intent: 'Worked example: find the area of an L-shaped figure by splitting it into two rectangles and adding their areas.' },
   'g8-pythagoras': { topic: 'Pythagorean theorem', gradeContext: 'Grade 8', grade: '8', intent: 'Worked example: find the missing side of a right triangle using the Pythagorean theorem, with the triangle drawn and labeled.' },
+  // Chemistry: code computes every electron, shell and lone pair; the agent arranges the moves.
+  'g8-ionic-bond': { topic: 'Ionic bonding', gradeContext: 'Grade 8', grade: '8', intent: 'Worked example: show how sodium and chlorine form sodium chloride by transferring an electron, and why each ion is stable.' },
+  'hs-lewis-water': { topic: 'Lewis structures of covalent molecules', gradeContext: 'High school chemistry', grade: '10', intent: 'Worked example: draw the Lewis structure of water, counting valence electrons, placing bonds and lone pairs.' },
 };
 const selected = arg('cases', Object.keys(CASES).join(',')).split(',');
 

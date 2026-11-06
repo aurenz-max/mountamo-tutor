@@ -1,5 +1,6 @@
 import { Type, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import { chemSummary } from '../../primitives/annotated-example/chemFigure';
 import type { GeneratedStep, StepGeneratorContext } from './generators/_shared';
 
 /** Semantic checks use the same thinking model as the solver/judge, not the
@@ -13,11 +14,13 @@ Reader: ${ctx.gradeContext}
 Intended move: ${ctx.pedagogicalGoal}
 Grounding: ${ctx.groundingProse}
 Constraints: ${ctx.authoringGuidance || 'none'}
-Candidate: ${JSON.stringify(candidate)}
+Candidate: ${JSON.stringify(candidate)}${candidate.content.type === 'chemistry' ? `
+Code facts: ${chemSummary(candidate.content.figure)}` : ''}
 Return only concrete errors in issues; an empty array means valid.
 For EVERY table, check EVERY cell's meaning against its column header, source quantities, units, and row labels. Recompute arithmetic, sums, running totals, comparisons, signs, and substitutions independently. An added amount is not a cumulative amount. Check that all requested rows/groups are covered. Do not demand a running total for a comparison, sign chart, or other valid table.
 For diagrams, structured visual is the actual figure: check bounds, jump start/direction/end, group counts, shaded fraction parts, and geometry against the source. Text/alt text cannot excuse an incorrect figure. The code derives dot counts and number-line landing positions from that data. Every group automatically receives its group-number label; scales and fractions also generate their own numeric labels. The legacy labels array may be empty because it is not needed for these structured visuals. Do not demand an image URL or a total label.
 For geometry, code has already checked every numeric label against the coordinates, and the figure is drawn to scale from them. Check that the figure is the problem's shape with the problem's givens, that the labeled lengths are enough to find every number the grounding uses (an unlabeled side the work needs is an error unless the work derives it from labeled sides), and that no value found in a later move is labeled yet. Do not demand labels on every side.
+For chemistry, code computed every count from the element and charge (protons, neutrons, electrons, shells, lone pairs) and has checked that each Lewis atom has a full outer shell; the Code facts line lists those numbers and they are correct. Check that the drawn species and bonds are the ones this move needs, that the caption and annotations agree with the Code facts, and that the figure does not show a value a later move finds (e.g. drawing the ions before the move that transfers the electron).
 Check annotations and the result agree with the content. Do not flag harmless paraphrases, equivalent math, or style. Do not invent errors. Explain each concrete error sufficiently to regenerate this same move.`,
     config: {
       ...(ctx.reviewTimeoutMs ? { abortSignal: AbortSignal.timeout(ctx.reviewTimeoutMs) } : {}),

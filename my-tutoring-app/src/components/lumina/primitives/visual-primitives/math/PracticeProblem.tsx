@@ -157,6 +157,7 @@ function buildStepContent(step: PracticeStep): StepContent {
     case 'diagram':
       return { type: 'diagram', imagePrompt: '', labels: [], altText: step.canonicalBody };
     case 'geometry':
+    case 'chemistry':
       return { type: 'diagram', imagePrompt: '', labels: [], altText: step.canonicalBody };
   }
 }
