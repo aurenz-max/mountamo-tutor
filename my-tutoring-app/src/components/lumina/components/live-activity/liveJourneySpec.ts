@@ -180,6 +180,7 @@ import { storyPlannerBoss } from '../../primitives/visual-primitives/literacy/st
 import { strategyPickerBoss } from '../../primitives/visual-primitives/math/strategyPicker.boss';
 import { airplaneDioramaBoss } from '../../primitives/visual-primitives/engineering/airplaneDiorama.boss';
 import { constructionSiteDioramaBoss } from '../../primitives/visual-primitives/engineering/constructionSiteDiorama.boss';
+import { skidSteerYardBoss } from '../../primitives/visual-primitives/engineering/skidSteerYard.boss';
 import { machineWorkshopBoss } from '../../primitives/visual-primitives/engineering/machineWorkshop.boss';
 import { flightForcesExplorerBoss } from '../../primitives/visual-primitives/engineering/flightForcesExplorer.boss';
 import { constructionSequencePlannerBoss } from '../../primitives/visual-primitives/engineering/constructionSequencePlanner.boss';
@@ -408,6 +409,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'ramp-lab': bossJourney(rampLabBoss),
   'train-yard': bossJourney(trainYardBoss),
   'construction-site-diorama': bossJourney(constructionSiteDioramaBoss),
+  'skid-steer-yard': bossJourney(skidSteerYardBoss),
   'machine-workshop': bossJourney(machineWorkshopBoss),
   'map-explorer': bossJourney(mapExplorerBoss),
   'timeline-explorer': bossJourney(timelineExplorerBoss),

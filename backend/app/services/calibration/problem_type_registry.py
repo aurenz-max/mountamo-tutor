@@ -951,6 +951,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "construction-site-diorama": {
         "load_truck": PriorConfig(-1.0, "Work the excavator to load a dump truck with the right number of scoops"),
     },
+    "skid-steer-yard": {
+        "match_attachment": PriorConfig(-1.5, "Pick the skid steer attachment a job needs"),
+        "set_levers": PriorConfig(-0.5, "Set a skid steer's left and right wheel levers to turn it to face a thing"),
+    },
     "airplane-diorama": {
         "find_part": PriorConfig(-1.5, "Find a part of a 3D jet and tap it"),
         "flight_plan": PriorConfig(0.5, "Load the fuel tanks a trip needs plus a spare, then fly it"),

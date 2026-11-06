@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/skid-steer-yard-runtime-match_attachment-payload-2026-11-04.json",
+ "primitiveId": "skid-steer-yard",
+ "evalMode": "match_attachment",
+ "data": {
+  "title": "The Right Tool for the Job",
+  "description": "A skid steer can swap its bucket for other tools. Pick the attachment each job needs.",
+  "challenges": [
+   {
+    "id": "ss-1",
+    "type": "match_attachment",
+    "job": "move_pallet",
+    "options": [
+     "broom",
+     "forks",
+     "auger"
+    ],
+    "instruction": "Lift the pallet of bricks off the ground. Pick the attachment for the job, then press Do the job."
+   },
+   {
+    "id": "ss-2",
+    "type": "match_attachment",
+    "job": "scoop_dirt",
+    "options": [
+     "bucket",
+     "broom",
+     "grapple"
+    ],
+    "instruction": "Scoop up the pile of dirt and carry it away. Pick the attachment for the job, then press Do the job."
+   },
+   {
+    "id": "ss-3",
+    "type": "match_attachment",
+    "job": "sweep_path",
+    "options": [
+     "auger",
+     "grapple",
+     "broom"
+    ],
+    "instruction": "Clean the dust and leaves off the concrete path. Pick the attachment for the job, then press Do the job."
+   },
+   {
+    "id": "ss-4",
+    "type": "match_attachment",
+    "job": "grab_branches",
+    "options": [
+     "grapple",
+     "snow_blade",
+     "auger"
+    ],
+    "instruction": "Pick up the pile of long branches. Pick the attachment for the job, then press Do the job."
+   },
+   {
+    "id": "ss-5",
+    "type": "match_attachment",
+    "job": "plant_tree",
+    "options": [
+     "broom",
+     "forks",
+     "auger"
+    ],
+    "instruction": "Dig a deep hole where the orange stake is, so the little tree can be planted. Pick the attachment for the job, then press Do the job."
+   }
+  ],
+  "challengeType": "match_attachment",
+  "gradeBand": "K-2",
+  "supportTier": "easy"
+ }
+}

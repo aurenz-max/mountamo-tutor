@@ -11,6 +11,7 @@ import { towerStackerCard } from '../../../primitives/visual-primitives/engineer
 import { gearTrainBuilderCard } from '../../../primitives/visual-primitives/engineering/gearTrainBuilder.card';
 import { airplaneDioramaCard } from '../../../primitives/visual-primitives/engineering/airplaneDiorama.card';
 import { constructionSiteDioramaCard } from '../../../primitives/visual-primitives/engineering/constructionSiteDiorama.card';
+import { skidSteerYardCard } from '../../../primitives/visual-primitives/engineering/skidSteerYard.card';
 import { machineWorkshopCard } from '../../../primitives/visual-primitives/engineering/machineWorkshop.card';
 import { flightForcesExplorerCard } from '../../../primitives/visual-primitives/engineering/flightForcesExplorer.card';
 import { constructionSequencePlannerCard } from '../../../primitives/visual-primitives/engineering/constructionSequencePlanner.card';
@@ -719,6 +720,34 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     ...bossEntry(constructionSiteDioramaCard),
+  },
+  {
+    id: 'skid-steer-yard',
+    description: 'A 3D construction yard with a skid steer loader, the small four-wheeled loader with lift arms and a bucket and no steering wheel. Students pick the attachment a job needs, clicking it onto the quick-attach plate on the arms (a bucket to scoop dirt, pallet forks to lift bricks, an auger to drill a hole for a tree, a broom to sweep, a snow blade to push snow, a grapple to grab branches), and watch the skid steer do the job, or fail at it with the wrong tool. Students also drive it the way a real operator does: they set the left wheels and the right wheels each to forward, stop or back, press Go, and watch it move and leave skid marks in the dirt. Both sides the same way drives straight; one side stopped pivots around it; one side forward and one back spins it in place, which needs the least room. Each turn asks them to face a thing in the yard (a hay bale, a dirt pile, a pallet of bricks), and tighter yards with concrete barriers leave room for fewer kinds of turn. Perfect for lessons on skid steers, compact loaders and construction machines, machine attachments and choosing the right tool for a job, how tracked or skid-steered vehicles (tanks, bulldozers) turn, left and right, cause and effect, and how machines help people work. ESSENTIAL for K-5 engineering and construction-machine lessons about skid steers: their attachments and how they move and turn.',
+    constraints: 'Grades K-5. Each session is 5 items; code picks every job, tool list, thing, side and barrier and writes every ask. config.difficulty sets how many tools are offered (easy: 3 very different; hard: 4 with one that almost works) and how tight the yard is (easy: mostly open; hard: mostly boxed in). The manifest must NOT supply jobs, tools, turns or lever settings.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'build'], role: ['apply'], minutes: 6 },
+    evalModes: [
+      {
+        evalMode: 'match_attachment',
+        affordances: { answers: ['tap'] },
+        label: 'Pick the Attachment',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['match_attachment'],
+        description: 'Pick the skid steer attachment a job needs (bucket, pallet forks, auger, broom, snow blade, grapple) and watch it do the job or fail',
+      },
+      {
+        evalMode: 'set_levers',
+        affordances: { answers: ['build'] },
+        label: 'Set the Levers',
+        beta: -0.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['set_levers'],
+        description: "Set the skid steer's left and right wheel levers and press Go to turn it to face a thing in the yard, in more and more cramped spots",
+      },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(skidSteerYardCard),
   },
   {
     id: 'airplane-diorama',

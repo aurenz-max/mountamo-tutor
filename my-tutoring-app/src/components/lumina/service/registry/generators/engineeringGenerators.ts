@@ -37,6 +37,7 @@ import { generateTransportChallenge } from '../../engineering/gemini-transport-c
 import { generateTrainYard } from '../../engineering/gemini-train-yard';
 import { generateAirplaneDiorama } from '../../engineering/gemini-airplane-diorama';
 import { generateConstructionSiteDiorama } from '../../engineering/gemini-construction-site-diorama';
+import { generateSkidSteerYard } from '../../engineering/skid-steer-yard-generator';
 import { generateMachineWorkshop } from '../../engineering/machine-workshop-generator';
 
 // ============================================================================
@@ -229,6 +230,13 @@ registerContextGenerator('construction-site-diorama', async (ctx) => ({
   type: 'construction-site-diorama',
   instanceId: ctx.instanceId,
   data: await generateConstructionSiteDiorama(ctx),
+}));
+
+// Skid Steer Yard (3D skid steer: set the two wheel levers to turn; code-only)
+registerContextGenerator('skid-steer-yard', async (ctx) => ({
+  type: 'skid-steer-yard',
+  instanceId: ctx.instanceId,
+  data: await generateSkidSteerYard(ctx),
 }));
 
 // ============================================================================

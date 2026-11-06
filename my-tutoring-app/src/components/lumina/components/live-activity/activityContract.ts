@@ -140,6 +140,7 @@ import { rampLabBoss } from '../../primitives/visual-primitives/engineering/ramp
 import { trainYardBoss } from '../../primitives/visual-primitives/engineering/trainYard.boss';
 import { airplaneDioramaBoss } from '../../primitives/visual-primitives/engineering/airplaneDiorama.boss';
 import { constructionSiteDioramaBoss } from '../../primitives/visual-primitives/engineering/constructionSiteDiorama.boss';
+import { skidSteerYardBoss } from '../../primitives/visual-primitives/engineering/skidSteerYard.boss';
 import { machineWorkshopBoss } from '../../primitives/visual-primitives/engineering/machineWorkshop.boss';
 import { mapExplorerBoss } from '../../primitives/visual-primitives/history/mapExplorer.boss';
 import { flightForcesExplorerBoss } from '../../primitives/visual-primitives/engineering/flightForcesExplorer.boss';
@@ -324,6 +325,7 @@ export const LIVE_ADAPTERS = {
   'train-yard': bossAdapter(trainYardBoss),
   'airplane-diorama': bossAdapter(airplaneDioramaBoss),
   'construction-site-diorama': bossAdapter(constructionSiteDioramaBoss),
+  'skid-steer-yard': bossAdapter(skidSteerYardBoss),
   'machine-workshop': bossAdapter(machineWorkshopBoss),
   'map-explorer': bossAdapter(mapExplorerBoss),
   'flight-forces-explorer': bossAdapter(flightForcesExplorerBoss),

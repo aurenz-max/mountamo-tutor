@@ -3449,6 +3449,18 @@ export interface MachineWorkshopMetrics extends BasePrimitiveMetrics {
   runsCount: number;
 }
 
+export interface SkidSteerYardMetrics extends BasePrimitiveMetrics {
+  type: 'skid-steer-yard';
+  challengeType: 'match_attachment' | 'set_levers';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface MapExplorerMetrics extends BasePrimitiveMetrics {
   type: 'map-explorer';
   challengeType: 'find_by_direction' | 'name_direction' | 'build_route' | 'find_on_globe' | 'world_direction';
@@ -3964,6 +3976,7 @@ export type PrimitiveMetrics =
   | TrainYardMetrics
   | AirplaneDioramaMetrics
   | ConstructionSiteDioramaMetrics
+  | SkidSteerYardMetrics
   | MachineWorkshopMetrics
   | BodyWorkshopMetrics
   | MapExplorerMetrics

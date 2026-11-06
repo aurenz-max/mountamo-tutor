@@ -160,6 +160,7 @@ import TransportChallenge from '../primitives/visual-primitives/engineering/Tran
 import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
 import AirplaneDiorama from '../primitives/visual-primitives/engineering/AirplaneDiorama';
 import ConstructionSiteDiorama from '../primitives/visual-primitives/engineering/ConstructionSiteDiorama';
+import SkidSteerYard from '../primitives/visual-primitives/engineering/SkidSteerYard';
 // Creation Primitives
 import OpenBuilder from '../primitives/visual-primitives/creation/OpenBuilder';
 // Astronomy Primitives
@@ -1820,6 +1821,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'machine-workshop': {
     component: MachineWorkshop,
     sectionTitle: 'Machine Workshop',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'skid-steer-yard': {
+    component: SkidSteerYard,
+    sectionTitle: 'Skid Steer Yard',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

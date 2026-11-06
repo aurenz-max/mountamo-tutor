@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/skid-steer-yard-runtime-set_levers-payload-2026-11-04.json",
+ "primitiveId": "skid-steer-yard",
+ "evalMode": "set_levers",
+ "data": {
+  "title": "Drive the Skid Steer",
+  "description": "A skid steer has no steering wheel. Set its left wheels and right wheels to turn it toward each job.",
+  "challenges": [
+   {
+    "id": "ss-1",
+    "type": "set_levers",
+    "goal": "log pile",
+    "side": "right",
+    "room": "open",
+    "barriers": [],
+    "instruction": "Turn the skid steer to face the log pile. Set the two levers, then press Go."
+   },
+   {
+    "id": "ss-2",
+    "type": "set_levers",
+    "goal": "dirt pile",
+    "side": "left",
+    "room": "open",
+    "barriers": [],
+    "instruction": "Turn the skid steer to face the dirt pile. Set the two levers, then press Go."
+   },
+   {
+    "id": "ss-3",
+    "type": "set_levers",
+    "goal": "pallet of bricks",
+    "side": "right",
+    "room": "open",
+    "barriers": [],
+    "instruction": "Turn the skid steer to face the pallet of bricks. Set the two levers, then press Go."
+   },
+   {
+    "id": "ss-4",
+    "type": "set_levers",
+    "goal": "little tree",
+    "side": "left",
+    "room": "wall_back",
+    "barriers": [
+     {
+      "cx": 0,
+      "cy": -2.1,
+      "hx": 5,
+      "hy": 0.3
+     }
+    ],
+    "instruction": "Turn the skid steer to face the little tree. Set the two levers, then press Go."
+   },
+   {
+    "id": "ss-5",
+    "type": "set_levers",
+    "goal": "hay bale",
+    "side": "left",
+    "room": "wall_front",
+    "barriers": [
+     {
+      "cx": 0,
+      "cy": 2.6,
+      "hx": 5,
+      "hy": 0.3
+     }
+    ],
+    "instruction": "Turn the skid steer to face the hay bale. Set the two levers, then press Go."
+   }
+  ],
+  "challengeType": "set_levers",
+  "gradeBand": "K-2",
+  "supportTier": "easy"
+ }
+}
