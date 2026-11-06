@@ -183,6 +183,7 @@ import GravityDropTower from '../primitives/visual-primitives/physics/GravityDro
 import BuoyancyHarbor from '../primitives/visual-primitives/physics/BuoyancyHarbor';
 import CircuitWorkbench from '../primitives/visual-primitives/physics/CircuitWorkbench';
 import VolcanoIsland from '../primitives/visual-primitives/physics/VolcanoIsland';
+import MachineWorkshop from '../primitives/visual-primitives/engineering/MachineWorkshop';
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
@@ -1810,6 +1811,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'construction-site-diorama': {
     component: ConstructionSiteDiorama,
     sectionTitle: 'Work Site',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'machine-workshop': {
+    component: MachineWorkshop,
+    sectionTitle: 'Machine Workshop',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

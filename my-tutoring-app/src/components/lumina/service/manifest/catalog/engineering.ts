@@ -11,6 +11,7 @@ import { towerStackerCard } from '../../../primitives/visual-primitives/engineer
 import { gearTrainBuilderCard } from '../../../primitives/visual-primitives/engineering/gearTrainBuilder.card';
 import { airplaneDioramaCard } from '../../../primitives/visual-primitives/engineering/airplaneDiorama.card';
 import { constructionSiteDioramaCard } from '../../../primitives/visual-primitives/engineering/constructionSiteDiorama.card';
+import { machineWorkshopCard } from '../../../primitives/visual-primitives/engineering/machineWorkshop.card';
 import { flightForcesExplorerCard } from '../../../primitives/visual-primitives/engineering/flightForcesExplorer.card';
 import { constructionSequencePlannerCard } from '../../../primitives/visual-primitives/engineering/constructionSequencePlanner.card';
 import { propulsionLabCard } from '../../../primitives/visual-primitives/engineering/propulsionLab.card';
@@ -746,5 +747,17 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     ...bossEntry(airplaneDioramaCard),
+  },
+  {
+    id: 'machine-workshop',
+    description: 'Machine workshop: a workbench drawn from the side where a real machine is built stage by stage the way power flows (a pump jack, a windmill water pump, a sewing machine, a jigsaw, an air compressor, a stamp mill, a trip hammer, a toy automaton): a motor, hand crank, windmill or water wheel spins a shaft through belts and gearboxes, and the working end (a pump, a needle, a saw blade, a stamp, a toy bird) has to go up and down. The part between them is missing. The learner builds it from picture buttons, one part on the spinning wheel (a crank disc, a cam, a gear) and one joining it to the working end (a connecting rod, a follower, a rack), runs the machine and watches what a machine model makes it do: a crank and rod or a cam and follower turn spinning into up-and-down and the machine does its job; a rod on a part with no pin, a follower on a round wheel, or a gear and rack (it pushes one way and runs out) fail; a crank too small or too big moves the working end too little or too far, a rod too short jams, and a bigger crank pushes farther but weaker. Perfect for lessons on simple and complex machines, how machines change motion (rotary to linear, the crank and the cam, the crankshaft idea behind engines), how parts of a system work together, energy transfer through a machine, mechanical trade-offs between distance and force, and engineering design by building and testing. ESSENTIAL for 3-5 and 6-8 engineering and physical science lessons on machines and mechanisms (3-5-ETS1, MS-ETS1, 4-PS3-4 energy transfer in devices) and for lessons about the real machines it builds.',
+    constraints: 'Grades 2-8 (built for 3-5). Each session is 3 machines. The author agent picks the machines and their parts; code checks each one assembles and is the real machine, and picks every part size. config.difficulty sets the structure (easy = only which parts pair up matters; medium = sizes matter: too short, too far, a rod that jams; hard = a bigger crank reaches far enough but is too weak). Only machines that turn spinning into up-and-down. The manifest must NOT supply parts, sizes or which parts work.',
+    affordances: { representation: 'pictorial', reader: 'developing', answers: ['manipulate'], role: ['apply'], minutes: 8 },
+    evalModes: [
+      { evalMode: 'spin_to_push', label: 'Spin to Push', beta: 1.4, scaffoldingMode: 2, challengeTypes: ['spin_to_push'],
+        description: 'Build the missing part of a real machine that turns spinning into up-and-down: a crank and connecting rod or a cam and follower, sized so the working end goes far enough and pushes hard enough' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(machineWorkshopCard),
   },
 ];

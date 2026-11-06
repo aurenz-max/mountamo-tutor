@@ -36,6 +36,7 @@ import TransportChallenge from '../primitives/visual-primitives/engineering/Tran
 import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
 import AirplaneDiorama from '../primitives/visual-primitives/engineering/AirplaneDiorama';
 import ConstructionSiteDiorama from '../primitives/visual-primitives/engineering/ConstructionSiteDiorama';
+import MachineWorkshop from '../primitives/visual-primitives/engineering/MachineWorkshop';
 import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 
 import {
@@ -64,7 +65,8 @@ type PrimitiveType =
   | 'transport-challenge'
   | 'train-yard'
   | 'airplane-diorama'
-  | 'construction-site-diorama';
+  | 'construction-site-diorama'
+  | 'machine-workshop';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -111,6 +113,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'train-yard', label: 'Train Yard', icon: '🚂', topic: 'Passenger trains and freight trains', strand: 'VF' },
   { value: 'airplane-diorama', label: 'Airplane (3D)', icon: '✈️', topic: 'The parts of an airplane and what each part does', strand: 'VF' },
   { value: 'construction-site-diorama', label: 'Work Site (3D)', icon: '🚜', topic: 'Loading a dump truck with an excavator', strand: 'VF' },
+  { value: 'machine-workshop', label: 'Machine Workshop', icon: '⚙️', topic: 'How machines turn spinning into up-and-down motion', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -424,6 +427,16 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'machine-workshop':
+      return (
+        <MachineWorkshop
+          data={{
+            ...(data as Parameters<typeof MachineWorkshop>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            onEvaluationSubmit,
+          }}
+        />
+      );
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -548,6 +561,16 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Attempts: {result.metrics.attemptsCount}</span>
                     <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
                     <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'machine-workshop' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Runs: {result.metrics.runsCount}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
                   </div>
                 )}

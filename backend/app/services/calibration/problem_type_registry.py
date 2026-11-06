@@ -1027,6 +1027,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "layers_over_time": PriorConfig(2.0, "Grade 4: erupt and watch the new layer go on top, then order a volcano cutaway's layers oldest first; a lava crack is younger than what it cuts"),
         "runny_or_sticky": PriorConfig(1.2, "Erupt real volcanoes' magma: runny flows, thick and gassy explodes, thick and calm makes a dome; call a new one"),
     },
+    "machine-workshop": {
+        "spin_to_push": PriorConfig(1.4, "Build the part of a real machine that turns spinning into up-and-down: crank and rod or cam and follower, sized to the stroke"),
+    },
     "ecosystem-diorama": {
         "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
         "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),

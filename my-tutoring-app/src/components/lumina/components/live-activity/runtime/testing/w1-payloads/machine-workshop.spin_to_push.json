@@ -1,0 +1,310 @@
+{
+ "source": "qa/tutor-reports/machine-workshop-runtime-spin_to_push-payload-2026-11-05.json",
+ "primitiveId": "machine-workshop",
+ "evalMode": "spin_to_push",
+ "data": {
+  "title": "The Right Size",
+  "description": "Build the part that turns spinning into up-and-down, and pick sizes that make the working end go just far enough.",
+  "challenges": [
+   {
+    "id": "machine-1",
+    "type": "spin_to_push",
+    "machine": "pump_jack",
+    "name": "Pump jack",
+    "where": "an oil field",
+    "intro": "This machine pumps heavy crude oil up from deep underground wells.",
+    "instruction": "The Pump jack's shaft only spins, but its pump has to go up and down. Build the missing part that turns spinning into up-and-down: one part on the shaft and one part to the slider, then run the machine.",
+    "stages": [
+     {
+      "kind": "motor",
+      "job": "Spins quickly using electricity to provide power."
+     },
+     {
+      "kind": "belt",
+      "job": "Carries the spinning motion smoothly over to the gears."
+     },
+     {
+      "kind": "gearbox",
+      "job": "Slows down the spinning speed to give the machine huge lifting strength."
+     },
+     {
+      "kind": "crank_rod",
+      "job": "Uses a spinning crank and heavy metal rod to push and pull."
+     },
+     {
+      "kind": "walking_beam",
+      "job": "Rocks up and down like a seesaw to pull the oil up."
+     },
+     {
+      "kind": "pump",
+      "job": "Sucks oil out of the ground with each upward stroke."
+     }
+    ],
+    "real": "crank_rod",
+    "principle": "A motor turns a crank around and around to push and pull on one end of a giant beam. The beam rocks up and down like a seesaw to lift oil out of the ground.",
+    "doesWord": "pumps oil up from underground",
+    "fluid": "oil",
+    "tray": [
+     {
+      "id": "crank-medium",
+      "part": "crank",
+      "size": "medium",
+      "value": 0.3
+     },
+     {
+      "id": "crank-large",
+      "part": "crank",
+      "size": "large",
+      "value": 0.45
+     },
+     {
+      "id": "crank-small",
+      "part": "crank",
+      "size": "small",
+      "value": 0.18
+     },
+     {
+      "id": "cam-one",
+      "part": "cam",
+      "size": "one",
+      "value": 0.6
+     },
+     {
+      "id": "pinion-one",
+      "part": "pinion",
+      "size": "one",
+      "value": 0.3
+     },
+     {
+      "id": "rod-long",
+      "part": "rod",
+      "size": "long",
+      "value": 1.35
+     },
+     {
+      "id": "rod-short",
+      "part": "rod",
+      "size": "short",
+      "value": 0.55
+     },
+     {
+      "id": "rack-one",
+      "part": "rack",
+      "size": "one",
+      "value": 0
+     },
+     {
+      "id": "follower-one",
+      "part": "follower",
+      "size": "one",
+      "value": 0
+     }
+    ],
+    "strokeMin": 0.48,
+    "strokeMax": 0.75,
+    "forceNeed": 0.1,
+    "slotTorque": 1,
+    "rackTravel": 0.35,
+    "supportTier": "medium"
+   },
+   {
+    "id": "machine-2",
+    "type": "spin_to_push",
+    "machine": "windmill_pump",
+    "name": "Windmill water pump",
+    "where": "a farm",
+    "intro": "This machine uses the wind to pump fresh water out of underground wells.",
+    "instruction": "The Windmill water pump's shaft only spins, but its pump has to go up and down. Build the missing part that turns spinning into up-and-down: one part on the shaft and one part to the slider, then run the machine.",
+    "stages": [
+     {
+      "kind": "windmill",
+      "job": "Catches the breeze and spins around in the air."
+     },
+     {
+      "kind": "gearbox",
+      "job": "Slows the spin down to create stronger pushing power."
+     },
+     {
+      "kind": "crank_rod",
+      "job": "Turns the round-and-round spin into an up-and-down push and pull with a crank and rod."
+     },
+     {
+      "kind": "pump",
+      "job": "Draws fresh water up from deep inside the ground."
+     }
+    ],
+    "real": "crank_rod",
+    "principle": "As the wind spins the big wheel, a crank changes that spinning into a straight up-and-down motion. This moves a long pump up and down inside the well pipe.",
+    "doesWord": "pumps water from a well",
+    "fluid": "water",
+    "tray": [
+     {
+      "id": "cam-one",
+      "part": "cam",
+      "size": "one",
+      "value": 0.54
+     },
+     {
+      "id": "pinion-one",
+      "part": "pinion",
+      "size": "one",
+      "value": 0.27
+     },
+     {
+      "id": "crank-small",
+      "part": "crank",
+      "size": "small",
+      "value": 0.16
+     },
+     {
+      "id": "crank-large",
+      "part": "crank",
+      "size": "large",
+      "value": 0.41
+     },
+     {
+      "id": "crank-medium",
+      "part": "crank",
+      "size": "medium",
+      "value": 0.27
+     },
+     {
+      "id": "rack-one",
+      "part": "rack",
+      "size": "one",
+      "value": 0
+     },
+     {
+      "id": "follower-one",
+      "part": "follower",
+      "size": "one",
+      "value": 0
+     },
+     {
+      "id": "rod-long",
+      "part": "rod",
+      "size": "long",
+      "value": 1.22
+     },
+     {
+      "id": "rod-short",
+      "part": "rod",
+      "size": "short",
+      "value": 0.5
+     }
+    ],
+    "strokeMin": 0.43,
+    "strokeMax": 0.68,
+    "forceNeed": 0.1,
+    "slotTorque": 1,
+    "rackTravel": 0.32,
+    "supportTier": "medium"
+   },
+   {
+    "id": "machine-3",
+    "type": "spin_to_push",
+    "machine": "air_compressor",
+    "name": "Air compressor",
+    "where": "a garage",
+    "intro": "This machine pumps air into a strong metal tank to power tools in a garage.",
+    "instruction": "The Air compressor's shaft only spins, but its pump has to go up and down. Build the missing part that turns spinning into up-and-down: one part on the shaft and one part to the slider, then run the machine.",
+    "stages": [
+     {
+      "kind": "motor",
+      "job": "Spins fast using electricity to drive the whole machine."
+     },
+     {
+      "kind": "belt",
+      "job": "Transfers the spinning motion over to the compressor wheel."
+     },
+     {
+      "kind": "crank_rod",
+      "job": "Uses a spinning crank and rod to push and pull."
+     },
+     {
+      "kind": "pump",
+      "job": "Squeezes air tightly into the storage tank."
+     }
+    ],
+    "real": "crank_rod",
+    "principle": "The spinning motor turns a crank that pushes and pulls a piston back and forth. That up-and-down movement squeezes air into the storage tank.",
+    "doesWord": "pumps air into a tank",
+    "fluid": "air",
+    "tray": [
+     {
+      "id": "crank-small",
+      "part": "crank",
+      "size": "small",
+      "value": 0.18
+     },
+     {
+      "id": "crank-large",
+      "part": "crank",
+      "size": "large",
+      "value": 0.45
+     },
+     {
+      "id": "crank-medium",
+      "part": "crank",
+      "size": "medium",
+      "value": 0.3
+     },
+     {
+      "id": "pinion-one",
+      "part": "pinion",
+      "size": "one",
+      "value": 0.3
+     },
+     {
+      "id": "cam-one",
+      "part": "cam",
+      "size": "one",
+      "value": 0.6
+     },
+     {
+      "id": "rod-long",
+      "part": "rod",
+      "size": "long",
+      "value": 1.35
+     },
+     {
+      "id": "rack-one",
+      "part": "rack",
+      "size": "one",
+      "value": 0
+     },
+     {
+      "id": "rod-short",
+      "part": "rod",
+      "size": "short",
+      "value": 0.55
+     },
+     {
+      "id": "follower-one",
+      "part": "follower",
+      "size": "one",
+      "value": 0
+     }
+    ],
+    "strokeMin": 0.48,
+    "strokeMax": 0.75,
+    "forceNeed": 0.1,
+    "slotTorque": 1,
+    "rackTravel": 0.35,
+    "supportTier": "medium"
+   }
+  ],
+  "challengeType": "spin_to_push",
+  "gradeBand": "3-5",
+  "supportTier": "medium",
+  "authoring": {
+   "calls": 1,
+   "sources": [
+    "pump_jack:agent",
+    "windmill_pump:agent",
+    "air_compressor:agent"
+   ],
+   "rejected": []
+  }
+ }
+}

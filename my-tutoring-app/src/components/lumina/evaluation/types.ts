@@ -3435,6 +3435,20 @@ export interface BodyWorkshopMetrics extends BasePrimitiveMetrics {
   breathsCount: number;
 }
 
+export interface MachineWorkshopMetrics extends BasePrimitiveMetrics {
+  type: 'machine-workshop';
+  challengeType: 'spin_to_push';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Machine runs across the session: how much the learner tested before settling. Recorded, never part of the score. */
+  runsCount: number;
+}
+
 export interface MapExplorerMetrics extends BasePrimitiveMetrics {
   type: 'map-explorer';
   challengeType: 'find_by_direction' | 'name_direction' | 'build_route' | 'find_on_globe' | 'world_direction';
@@ -3950,6 +3964,7 @@ export type PrimitiveMetrics =
   | TrainYardMetrics
   | AirplaneDioramaMetrics
   | ConstructionSiteDioramaMetrics
+  | MachineWorkshopMetrics
   | BodyWorkshopMetrics
   | MapExplorerMetrics
   | EcosystemDioramaMetrics

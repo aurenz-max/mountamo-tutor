@@ -37,6 +37,7 @@ import { generateTransportChallenge } from '../../engineering/gemini-transport-c
 import { generateTrainYard } from '../../engineering/gemini-train-yard';
 import { generateAirplaneDiorama } from '../../engineering/gemini-airplane-diorama';
 import { generateConstructionSiteDiorama } from '../../engineering/gemini-construction-site-diorama';
+import { generateMachineWorkshop } from '../../engineering/machine-workshop-generator';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -233,3 +234,11 @@ registerContextGenerator('construction-site-diorama', async (ctx) => ({
 // ============================================================================
 // Migration status: 24/24 engineering primitives registered (context-native)
 // ============================================================================
+
+// Machine Workshop - 2D workbench: build the part of a real machine that turns spinning into up-and-down (G2-8).
+// The author agent picks real machines and names their parts; code checks they assemble and are the real machine.
+registerContextGenerator('machine-workshop', async (ctx) => ({
+  type: 'machine-workshop',
+  instanceId: ctx.instanceId,
+  data: await generateMachineWorkshop(ctx),
+}));
