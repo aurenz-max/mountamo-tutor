@@ -13,6 +13,9 @@ import { switchWorks } from './switchModel';
 import { arrangementOf } from './twoBulbModel';
 import { DEVICES } from './deviceModel';
 import { magnetByKey, magnetFair, type MagnetThing } from './magnetModel';
+import { polesFair, type PolePair } from './poleModel';
+import { distanceFair } from './distanceModel';
+import { electroFair } from './electroModel';
 import { CIRCUIT_LEVERS, practiceItem, practiceParent } from './circuitLevers';
 
 /** A break item: one bulb or red-then-blue, its loop wires, and a fault that leaves it dark. */
@@ -46,6 +49,19 @@ function validItem(c: CircuitChallenge): boolean {
     const known = (t: MagnetThing) => !!t && magnetByKey(t.key)?.material === t.material;
     return Array.isArray(c.tested) && Array.isArray(c.toSort) && c.tested.length >= 2 && c.tested.length <= 3 && c.toSort.length >= 1
       && c.toSort.length <= 2 && [...c.tested, ...c.toSort].every(known) && magnetFair(c);
+  }
+  if (c.type === 'magnet_poles') {
+    const end = (p: unknown) => p === 'N' || p === 'S';
+    const side = (x: PolePair['a']) => !!x && ['bar', 'horseshoe', 'ring'].includes(x.kind) && end(x.end);
+    return end(c.aEnd) && (c.bStart === undefined || end(c.bStart)) && Array.isArray(c.toCall) && c.toCall.every(p => !!p && side(p.a) && side(p.b)) && polesFair(c);
+  }
+  if (c.type === 'magnet_distance') {
+    return ['reach', 'calls', 'stronger'].includes(c.ask) && Array.isArray(c.magnets) && Array.isArray(c.toCall)
+      && c.magnets.every(m => !!m) && c.toCall.every(k => !!k) && distanceFair(c);
+  }
+  if (c.type === 'electromagnet') {
+    return !!c.goal && !!c.start && (c.goal.kind === 'at_least' || c.goal.kind === 'exactly') && typeof c.spareBattery === 'boolean'
+      && typeof c.coreTray === 'boolean' && electroFair(c);
   }
   if (c.type === 'build_device') return c.device in DEVICES && Number.isInteger(c.maxWires) && c.maxWires >= 2;
   if (c.type === 'two_bulbs') {

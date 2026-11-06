@@ -14,6 +14,9 @@ import type { SwitchChallenge } from './switchModel';
 import type { TwoBulbChallenge } from './twoBulbModel';
 import type { DeviceChallenge } from './deviceModel';
 import type { MagnetChallenge } from './magnetModel';
+import type { PoleChallenge } from './poleModel';
+import type { DistanceChallenge } from './distanceModel';
+import type { ElectroChallenge } from './electroModel';
 
 /** A load on the table: a red or blue bulb, a motor with a fan, or a buzzer. Each has two clips and lets electricity
  *  through it, so any of them works (lights, spins, buzzes) on a closed loop. */
@@ -114,7 +117,7 @@ export function reachedFromPlus(bulbs: readonly BulbColor[], wires: readonly Wir
 
 export type Tier = 'easy' | 'medium' | 'hard';
 export type Rng = () => number;
-export const CIRCUIT_TASKS = ['light_it', 'find_the_break', 'conductor_test', 'magnet_test', 'add_a_switch', 'build_device', 'two_bulbs'] as const;
+export const CIRCUIT_TASKS = ['light_it', 'find_the_break', 'conductor_test', 'magnet_test', 'add_a_switch', 'magnet_poles', 'magnet_distance', 'electromagnet', 'build_device', 'two_bulbs'] as const;
 export type CircuitTask = typeof CIRCUIT_TASKS[number];
 
 export interface LightItChallenge {
@@ -134,7 +137,7 @@ export interface LightItChallenge {
   /** Help levers drawn from the start (the tier's starting position). Not a pull: nothing is recorded. */
   startLevers?: string[];
 }
-export type CircuitChallenge = LightItChallenge | BreakChallenge | ConductorChallenge | SwitchChallenge | TwoBulbChallenge | DeviceChallenge | MagnetChallenge;
+export type CircuitChallenge = LightItChallenge | BreakChallenge | ConductorChallenge | SwitchChallenge | TwoBulbChallenge | DeviceChallenge | MagnetChallenge | PoleChallenge | DistanceChallenge | ElectroChallenge;
 
 export const BULB_WORD: Record<BulbColor, string> = { red: 'red', blue: 'blue', motor: 'motor', buzzer: 'buzzer' };
 /** "the bulb" when it is the only bulb, "the red bulb" beside another; "the motor", "the buzzer". */

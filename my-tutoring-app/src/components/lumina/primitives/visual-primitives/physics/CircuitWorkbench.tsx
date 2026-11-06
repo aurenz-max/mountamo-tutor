@@ -36,9 +36,20 @@ import {
 import {
   MAGNET_MATERIAL_WORDS, describeMagnet, magnetFeedback, magnetMatches, magnetMiss, pulled, type MagnetThing, type PullCall,
 } from './magnetModel';
-import { breakScene, circuitScene, conductorScene, deviceScene, magnetScene, switchScene, twoBulbScene, type FixLog, type LightGuess } from './circuitWorkspace';
+import {
+  describePoles, flip, pairResult, pairWords, poleResult, polesFeedback, polesMatch, polesMiss, testedBothWays,
+  type Pole, type PoleResult, type PoleTest,
+} from './poleModel';
+import {
+  MARKS, callAnswer, callWords, describeDistance, distanceFeedback, distanceMatch, distanceMiss, magnetName, pullsAt, readyToDecide,
+  type DistTest,
+} from './distanceModel';
+import {
+  CORE_WORDS, MAX_TURNS, clipsLifted, strength, describeElectro, electroFeedback, electroMiss, type Core, type ElectroBuild,
+} from './electroModel';
+import { breakScene, circuitScene, conductorScene, deviceScene, distanceScene, electroScene, magnetScene, poleScene, switchScene, twoBulbScene, type FixLog, type LightGuess } from './circuitWorkspace';
 import { circuitWorkbenchBoss } from './circuitWorkbench.boss';
-import { CIRCUIT_LEVERS, MAGNET_TAGS_LEVER, PRACTICE_NOTE, XRAY_LEVER, type CircuitLeverCtx } from './circuitLevers';
+import { CIRCUIT_LEVERS, MAGNET_TAGS_LEVER, POLE_TAGS_LEVER, PRACTICE_NOTE, PULL_MARKS_LEVER, STRENGTH_METER_LEVER, XRAY_LEVER, type CircuitLeverCtx } from './circuitLevers';
 import { leverScene } from '../../../components/live-activity/bossLevers';
 
 export type { CircuitChallenge } from './circuitModel';
@@ -82,6 +93,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   two_bulbs: { label: 'Two bulbs', icon: '💡', accentColor: 'amber' },
   build_device: { label: 'Build a device', icon: '🛠️', accentColor: 'amber' },
   magnet_test: { label: 'Magnet test', icon: '🧲', accentColor: 'amber' },
+  magnet_poles: { label: 'Magnet poles', icon: '🧲', accentColor: 'amber' },
+  magnet_distance: { label: 'Magnet distance', icon: '🧲', accentColor: 'amber' },
+  electromagnet: { label: 'Electromagnet', icon: '🧲', accentColor: 'amber' },
 };
 
 const PROMPT = {
@@ -93,6 +107,15 @@ const PROMPT = {
   condSort: 'Without testing: will each thing on the right light the bulb? Then press Check.',
   magTest: 'Pick a thing: guess Pulls or Stays, and it goes under the magnet. Watch it.',
   magSort: 'Without testing: will the magnet pull each thing on the right? Then press Check.',
+  poleFirst: 'Will they pull together or push apart? Tell your tutor. Then tap the left magnet to slide them together.',
+  poleTurn: 'Now tap the right magnet to turn it round, and test again.',
+  poleCall: 'You tested both ways. Now answer the question below, then press Check.',
+  distFirst: 'Will the magnet pull the ball from there? Tell your tutor. Then tap the magnet to try it.',
+  distTest: 'Tap a mark to move the ball, then tap the magnet again. Try near and far.',
+  distTestTwo: 'Tap a mark to move a ball, then tap its magnet. Try near and far with both magnets.',
+  distDecide: 'You tried near and far. Now answer the question below, then press Check.',
+  emFirst: 'Will it pick up any clips? Tell your tutor. Then tap the clips to dip it in.',
+  emTest: 'Tap the core to wrap more wire, tap the switch, then tap the clips to test. Press "I\'m done!" when it picks up the right number.',
 };
 
 const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
@@ -137,6 +160,31 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
   const [held, setHeld] = useState<MagnetThing | null>(null);
   const [mtCalls, setMtCalls] = useState<Array<PullCall | null>>([null, null]);
   const [mtRevealed, setMtRevealed] = useState(false);
+  // Magnet poles: the right magnet's real pole facing the left one, the tests on the bench (the last one's number slides
+  // the magnet in the 3D bench), the calls on the untested pairs, the pole named for a striped end, and a right check.
+  const [pFacing, setPFacing] = useState<Pole>('N');
+  const [pTests, setPTests] = useState<PoleTest[]>([]);
+  const [pShown, setPShown] = useState<{ n: number; result: PoleResult } | null>(null);
+  const [pCalls, setPCalls] = useState<Array<PoleResult | null>>([null, null]);
+  const [pStriped, setPStriped] = useState<Pole | null>(null);
+  const [pRevealed, setPRevealed] = useState(false);
+  // Magnet distance: each ruler's ball mark and whether it is stuck to its magnet, the tries (the last one's number
+  // jiggles its magnet in the 3D bench), the mark named, the calls, the magnet picked, and a right check.
+  const [dBalls, setDBalls] = useState<Array<number | null>>([null, null]);
+  const [dStuck, setDStuck] = useState<boolean[]>([false, false]);
+  const [dTests, setDTests] = useState<DistTest[]>([]);
+  const [dShown, setDShown] = useState<{ n: number; ruler: number } | null>(null);
+  const [dReach, setDReach] = useState<number | null>(null);
+  const [dCalls, setDCalls] = useState<Array<boolean | null>>([null, null]);
+  const [dStronger, setDStronger] = useState<number | null>(null);
+  const [dRevealed, setDRevealed] = useState(false);
+  // Electromagnet: the build on the bench, each dip's build, the clips hanging now, the last dip (its number lowers the
+  // core in the 3D bench) and what the last action did.
+  const [emBuild, setEmBuild] = useState<ElectroBuild>({ core: 'steel', turns: 0, batteries: 1, on: false });
+  const [emTests, setEmTests] = useState<ElectroBuild[]>([]);
+  const [emHanging, setEmHanging] = useState(0);
+  const [emDip, setEmDip] = useState<{ n: number } | null>(null);
+  const [emStatus, setEmStatus] = useState<string | null>(null);
   // Shared
   const [verdict, setVerdict] = useState<'correct' | 'incorrect' | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; status: 'correct' | 'incorrect' } | null>(null);
@@ -152,6 +200,13 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
     setWires(c?.type === 'light_it' || c?.type === 'add_a_switch' || c?.type === 'two_bulbs' ? c.start.map(w => wire(w[0], w[1])) : []);
     setSwitchOn(false); setOutBulbs([]); setParts([]);
     setMtGuesses([null, null, null]); setMtTested([false, false, false]); setHeld(null); setMtCalls([null, null]); setMtRevealed(false);
+    // The item's starting side; without one, a striped magnet's striped end faces, a lettered one's same end.
+    setPFacing(c?.type === 'magnet_poles' ? (c.bStart ?? (c.mystery ? c.striped! : c.aEnd)) : 'N');
+    setPTests([]); setPShown(null); setPCalls([null, null]); setPStriped(null); setPRevealed(false);
+    setDBalls(c?.type === 'magnet_distance' ? c.magnets.map((_, i) => c.ballStart?.[i] ?? 4) : [null, null]);
+    if (c?.type === 'electromagnet') setEmBuild({ ...c.start, on: false });
+    setEmTests([]); setEmHanging(0); setEmDip(null); setEmStatus(null);
+    setDStuck([false, false]); setDTests([]); setDShown(null); setDReach(null); setDCalls([null, null]); setDStronger(null); setDRevealed(false);
     // A device's battery is in from the start: there is nothing to guess about an empty table.
     if (c?.type === 'build_device') setPowered(true);
     setBreakGuess(null); setFixes([]); setFixLog([]); setClaim(null);
@@ -186,10 +241,15 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
   const deviceItem = current?.type === 'build_device' ? current : null;
   const magnetItem = current?.type === 'magnet_test' ? current : null;
   const mtTesting = !!magnetItem && magnetItem.tested.some((_, i) => !mtTested[i]);
+  const poleItem = current?.type === 'magnet_poles' ? current : null;
+  const poleTesting = !!poleItem && !testedBothWays(pTests);
+  const distItem = current?.type === 'magnet_distance' ? current : null;
+  const distTesting = !!distItem && !readyToDecide(distItem, dTests);
+  const emItem = current?.type === 'electromagnet' ? current : null;
   const deviceLoads = parts.filter((x): x is BulbColor => x !== 'switch');
   const wiringItem = lightItem ?? switchItem ?? twoItem ?? (deviceItem ? { ...deviceItem, bulbs: deviceLoads } : null);
   /** The loads on the table: the item's, or the parts a device build took from the tray. */
-  const tableBulbs: BulbColor[] = magnetItem ? [] : deviceItem ? deviceLoads : current && 'bulbs' in current ? current.bulbs : [];
+  const tableBulbs: BulbColor[] = magnetItem || poleItem || distItem || emItem ? [] : deviceItem ? deviceLoads : current && 'bulbs' in current ? current.bulbs : [];
   /** A switch on the table: the add-a-switch item's, or one taken from the tray. */
   const hasSwitch = !!switchItem || (!!deviceItem && parts.includes('switch'));
   const target: BulbColor = lightItem?.target ?? 'red';
@@ -208,11 +268,11 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
         ? breakItem.wires[breakItem.fault.wire!] : null;
       return { wires: s.wires, loose: looseWire, faults: s.faults as Faults, ...evaluate(breakItem.bulbs, s.wires, s.faults) };
     }
-    if (magnetItem) return { wires: [] as Wire[], loose: null, faults: {} as Faults, lit: [] as BulbColor[], short: false };
+    if (magnetItem || poleItem || distItem || emItem) return { wires: [] as Wire[], loose: null, faults: {} as Faults, lit: [] as BulbColor[], short: false };
     if (condItem) return { wires: [wire('bat+', 'red.left')], loose: null, faults: {} as Faults, lit: (inGap && conducts(inGap) ? ['red'] : []) as BulbColor[], short: false };
     const faults: Faults = { switchClosed: hasSwitch && switchOn, burnt: twoItem ? outBulbs : undefined };
     return { wires, loose: null, faults, ...(wiringItem ? evaluate(wiringItem.bulbs, wires, faults) : { lit: [] as BulbColor[], short: false }) };
-  }, [magnetItem, breakItem, wiringItem, hasSwitch, twoItem, outBulbs, switchOn, condItem, inGap, fixes, wires]);
+  }, [magnetItem, poleItem, distItem, emItem, breakItem, wiringItem, hasSwitch, twoItem, outBulbs, switchOn, condItem, inGap, fixes, wires]);
 
   const phaseResults = usePhaseResults({
     challenges, results: challengeResults, isComplete: allChallengesComplete,
@@ -249,7 +309,17 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
     if (wires.some(x => sameWire(x, w)) || wires.length >= wiringItem.maxWires) { SoundManager.tap(); return; }
     setWires(ws => [...ws, w]); setFeedback(null); SoundManager.select();
   };
-  const onTap = (t: CircuitTarget) => tapClip(t.slice(5) as Clip);
+  const onTap = (t: CircuitTarget) => {
+    if (t === 'em:coil') wrap(1);
+    else if (t === 'em:switch') toggleEmSwitch();
+    else if (t === 'em:battery') toggleBattery();
+    else if (t === 'em:clips') dip();
+    else if (t.startsWith('core:')) pickCore(t.slice(5) as Core);
+    else if (t.startsWith('mark:')) { const [, r, k] = t.split(':').map(Number); placeBall(r, k); }
+    else if (t === 'mag:a') { if (distItem) tryMagnet(0); else slideTogether(); }
+    else if (t === 'mag:b') { if (distItem) tryMagnet(1); else turnMagnet(); }
+    else tapClip(t.slice(5) as Clip);
+  };
   const removeWire = (w: Wire) => {
     if (locked || !powered) return;
     setWires(ws => ws.filter(x => !sameWire(x, w))); setFeedback(null); SoundManager.tap();
@@ -375,6 +445,88 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
     else SoundManager.playIncorrect();
   };
 
+  // ── Magnet poles: turn the right magnet, slide it up to the left one, then call or name ──
+  const turnMagnet = () => {
+    if (!poleItem || locked) return;
+    setPFacing(f => flip(f)); setPShown(null); setFeedback(null); SoundManager.tap();
+  };
+  const slideTogether = () => {
+    if (!poleItem || locked) return;
+    const result = poleResult(poleItem.aEnd, pFacing);
+    setPTests(ts => [...ts, { facing: pFacing, result }]);
+    setPShown(v => ({ n: (v?.n ?? 0) + 1, result }));
+    setFeedback(null); SoundManager.select();
+  };
+  const pReady = !!poleItem && !poleTesting && (poleItem.mystery ? !!pStriped : poleItem.toCall.every((_, i) => pCalls[i]));
+  const checkPoles = () => {
+    if (!poleItem || locked || !pReady) return;
+    const answer = { calls: pCalls, striped: pStriped };
+    const correct = polesMatch(poleItem, answer);
+    setVerdict(correct ? 'correct' : 'incorrect');
+    setFeedback({ text: polesFeedback(poleItem, answer), status: correct ? 'correct' : 'incorrect' });
+    progress.commitCheck(describePoles(poleItem, answer), correct, polesMiss(poleItem, answer));
+    if (correct) { SoundManager.playCorrect(); setPRevealed(true); recordPass(); } else SoundManager.playIncorrect();
+  };
+
+  // ── Magnet distance: put a ball on a mark, try its magnet, then name, call or pick ──
+  const placeBall = (r: number, mark: number) => {
+    if (!distItem || locked) return;
+    setDBalls(bs => bs.map((b, i) => (i === r ? mark : b))); setDStuck(ss => ss.map((s, i) => (i === r ? false : s)));
+    setFeedback(null); SoundManager.tap();
+  };
+  const tryMagnet = (r: number) => {
+    if (!distItem || locked || !distItem.magnets[r]) return;
+    const mark = dBalls[r];
+    // A ball already at the magnet has nothing to show: move it to a mark first.
+    if (mark == null || dStuck[r]) { SoundManager.tap(); return; }
+    const pulled = pullsAt(distItem.magnets[r], mark);
+    setDTests(ts => [...ts, { magnet: r, mark, pulled }]);
+    if (pulled) setDStuck(ss => ss.map((s, i) => (i === r ? true : s)));
+    setDShown(v => ({ n: (v?.n ?? 0) + 1, ruler: r }));
+    setFeedback(null); SoundManager.select();
+  };
+  const dReady = !!distItem && !distTesting && (distItem.ask === 'reach' ? dReach !== null
+    : distItem.ask === 'calls' ? distItem.toCall.every((_, i) => dCalls[i] !== null && dCalls[i] !== undefined) : dStronger !== null);
+  const checkDistance = () => {
+    if (!distItem || locked || !dReady) return;
+    const answer = { reach: dReach, calls: dCalls, stronger: dStronger };
+    const correct = distanceMatch(distItem, answer);
+    setVerdict(correct ? 'correct' : 'incorrect');
+    setFeedback({ text: distanceFeedback(distItem, answer), status: correct ? 'correct' : 'incorrect' });
+    progress.commitCheck(describeDistance(distItem, answer), correct, distanceMiss(distItem, answer));
+    if (correct) { SoundManager.playCorrect(); setDRevealed(true); recordPass(); } else SoundManager.playIncorrect();
+  };
+
+  // ── Electromagnet: wrap, switch, battery, core; dip to test; I'm done! judges the build as it is ──
+  const changeBuild = (next: Partial<ElectroBuild>, status: string | null = null) => {
+    if (!emItem || locked) return;
+    setEmBuild(b => ({ ...b, ...next })); setEmHanging(0); setEmStatus(status); setFeedback(null);
+  };
+  const wrap = (delta: number) => {
+    const turns = Math.max(0, Math.min(MAX_TURNS, emBuild.turns + delta));
+    if (turns === emBuild.turns) { SoundManager.tap(); return; }
+    changeBuild({ turns }, emHanging ? 'The clips dropped.' : null); SoundManager.tap();
+  };
+  const toggleEmSwitch = () => { changeBuild({ on: !emBuild.on }, emBuild.on && emHanging ? 'Switched off: the clips dropped!' : null); SoundManager.select(); };
+  const toggleBattery = () => { if (emItem?.spareBattery) { changeBuild({ batteries: emBuild.batteries === 2 ? 1 : 2 }); SoundManager.select(); } };
+  const pickCore = (core: Core) => { if (emItem?.coreTray && core !== emBuild.core) { changeBuild({ core }); SoundManager.select(); } };
+  const dip = () => {
+    if (!emItem || locked) return;
+    const clips = clipsLifted(emBuild);
+    setEmTests(ts => [...ts, emBuild]); setEmHanging(clips);
+    setEmDip(v => ({ n: (v?.n ?? 0) + 1 }));
+    setEmStatus(clips ? `It picked up ${clips} clip${clips === 1 ? '' : 's'}!` : 'It picked up nothing.');
+    setFeedback(null); SoundManager.select();
+  };
+  const checkElectro = () => {
+    if (!emItem || locked || !emTests.length) return;
+    const miss = electroMiss(emItem, emBuild);
+    setVerdict(miss ? 'incorrect' : 'correct');
+    setFeedback({ text: electroFeedback(emItem, emBuild), status: miss ? 'incorrect' : 'correct' });
+    progress.commitCheck(describeElectro(emBuild), !miss, miss);
+    if (!miss) { SoundManager.playCorrect(); recordPass(); } else SoundManager.playIncorrect();
+  };
+
   // ── Evaluation: submit once, only under an evaluation provider ────────────
   useEffect(() => {
     if (!allChallengesComplete || hasSubmitted || challenges.length === 0 || !progress.recordsEvaluation) return;
@@ -395,7 +547,10 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
     if (!current || !sessionItem || allChallengesComplete) return;
-    const scene = magnetItem ? { ...magnetScene(magnetItem, { guesses: mtGuesses, tested: mtTested, held, calls: mtCalls, revealed: mtRevealed }) }
+    const scene = emItem ? { ...electroScene(emItem, { build: emBuild, tests: emTests, hanging: emHanging }) }
+      : distItem ? { ...distanceScene(distItem, { balls: dBalls, tests: dTests, reach: dReach, calls: dCalls, stronger: dStronger, revealed: dRevealed }) }
+      : poleItem ? { ...poleScene(poleItem, { facing: pFacing, tests: pTests, calls: pCalls, striped: pStriped, revealed: pRevealed }) }
+      : magnetItem ? { ...magnetScene(magnetItem, { guesses: mtGuesses, tested: mtTested, held, calls: mtCalls, revealed: mtRevealed }) }
       : deviceItem ? { ...deviceScene(deviceItem, { parts, wires, switchOn }) }
       : twoItem ? { ...twoBulbScene(twoItem, { guess, powered, wires, out: outBulbs }) }
       : switchItem ? { ...switchScene(switchItem, { guess, powered, wires, switchOn }) }
@@ -450,8 +605,17 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
       : reachedFromPlus(tableBulbs, table.wires, table.faults),
     flowing: table.lit.length > 0 || table.short, fast: table.short,
   } : null;
-  const step = magnetItem ? (mtTesting ? 'magTest' : 'magSort') : condItem ? (condTesting ? 'test' : 'sort') : breakItem ? (breakGuess ? 'test' : 'guess') : powered ? 'wire' : 'guess';
-  const stepPrompt = magnetItem ? PROMPT[mtTesting ? 'magTest' : 'magSort'] : condItem ? (condTesting ? PROMPT.condTest : PROMPT.condSort)
+  const lastPole = pShown && pTests.length ? pTests[pTests.length - 1] : null;
+  const poleStatus = poleItem && lastPole ? (lastPole.result === 'pull' ? 'They snapped together!' : 'They pushed apart!') : null;
+  /** Which ends face in a test or a pair, for the pole tags lever; a striped magnet's ends are what the learner finds. */
+  const sameOrDifferent = (a: Pole, b: Pole) => (a === b ? 'same ends' : 'different ends');
+  const poleStep = !poleItem ? null : poleTesting ? (pTests.length ? 'poleTurn' : 'poleFirst') : 'poleCall';
+  const distStep = !distItem ? null : !distTesting ? 'distDecide' : !dTests.length ? 'distFirst' : distItem.magnets.length > 1 ? 'distTestTwo' : 'distTest';
+  const lastDist = dShown && dTests.length ? dTests[dTests.length - 1] : null;
+  const distStatus = distItem && lastDist ? (lastDist.pulled ? 'The ball rolled to the magnet!' : 'The ball stayed put.') : null;
+  const emStep = !emItem ? null : emTests.length ? 'emTest' : 'emFirst';
+  const step = emStep ? emStep : distStep ? distStep : poleStep ? poleStep : magnetItem ? (mtTesting ? 'magTest' : 'magSort') : condItem ? (condTesting ? 'test' : 'sort') : breakItem ? (breakGuess ? 'test' : 'guess') : powered ? 'wire' : 'guess';
+  const stepPrompt = emStep ? PROMPT[emStep] : distStep ? PROMPT[distStep] : poleStep ? PROMPT[poleStep] : magnetItem ? PROMPT[mtTesting ? 'magTest' : 'magSort'] : condItem ? (condTesting ? PROMPT.condTest : PROMPT.condSort)
     : breakItem ? (breakGuess ? PROMPT.breakTest : PROMPT.breakGuess) : powered ? PROMPT.wire : PROMPT.guess;
 
   return (
@@ -486,10 +650,34 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
           <div className="relative overflow-hidden rounded-xl border border-white/10">
             <CircuitScene className="h-[min(56vh,480px)] min-h-[300px] w-full"
               bulbs={tableBulbs} partsKey={partsKey} wires={table.wires} loose={table.loose} gap={!!condItem} inGap={inGap} powered={on}
-              lit={table.lit} short={table.short} selected={selected} onTap={onTap} hasSwitch={hasSwitch} switchOn={switchOn} dim={table.dim ?? []} out={twoItem ? outBulbs : []} xray={xray} magnet={!!magnetItem} held={held} stuck={!!held && pulled(held)} disabled={locked || !wiringItem || !powered} />
+              lit={table.lit} short={table.short} selected={selected} onTap={onTap} hasSwitch={hasSwitch} switchOn={switchOn} dim={table.dim ?? []} out={twoItem ? outBulbs : []} xray={xray} magnet={!!magnetItem} held={held} stuck={!!held && pulled(held)}
+              poleBench={poleItem ? { aEnd: poleItem.aEnd, mystery: poleItem.mystery, striped: poleItem.striped } : null}
+              poles={poleItem ? { facing: pFacing, test: pShown } : null}
+              distBench={distItem ? { magnets: distItem.magnets.map(m => ({ size: m.size })) } : null}
+              dist={distItem ? { balls: distItem.magnets.map((_, i) => ({ mark: dBalls[i] ?? null, stuck: !!dStuck[i] })), test: dShown,
+                marks: leverOn(PULL_MARKS_LEVER) ? dTests.map(t => ({ ruler: t.magnet, mark: t.mark, pulled: t.pulled })) : null } : null}
+              electroBench={emItem ? { spareBattery: emItem.spareBattery, coreTray: emItem.coreTray } : null}
+              electro={emItem ? { build: emBuild, dip: emDip, hanging: emHanging,
+                meter: leverOn(STRENGTH_METER_LEVER) ? Math.min(1, strength(emBuild) / 10) : null } : null}
+              disabled={locked || (!poleItem && !distItem && !emItem && (!wiringItem || !powered))} />
             <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-slate-200">
-              {wiringItem && powered ? 'Tap a clip, then another · drag to turn' : 'Drag to turn · pinch to zoom'}
+              {emItem ? 'Tap the core to wrap wire · the switch · the clips to test'
+                : distItem ? 'Tap a mark to put the ball there · tap the magnet to try it'
+                : poleItem ? 'Tap the right magnet to turn it · tap the left one to slide them together'
+                : wiringItem && powered ? 'Tap a clip, then another · drag to turn' : 'Drag to turn · pinch to zoom'}
             </div>
+            {emItem && emStatus && (
+              <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-amber-200"
+                data-circuit-em-result={emHanging}>{emStatus}</div>
+            )}
+            {distStatus && (
+              <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-amber-200"
+                data-circuit-dist-result={lastDist!.pulled ? 'pulled' : 'stayed'}>{distStatus}</div>
+            )}
+            {poleStatus && (
+              <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-amber-200"
+                data-circuit-pole-result={lastPole!.result}>{poleStatus}</div>
+            )}
             {status && (
               <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-amber-200"
                 data-circuit-lit={table.lit.join(',') || (table.short ? 'short' : 'none')}>{status}</div>
@@ -550,6 +738,118 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
                 ))}
               </div>
             </LuminaPanel>
+          )}
+
+          {/* ── Electromagnet ── */}
+          {!allChallengesComplete && emItem && (
+            <LuminaPanel className="flex flex-wrap items-center gap-2 p-3" data-circuit-em-panel="" data-circuit-em-build={`${emBuild.core}:${emBuild.turns}:${emBuild.batteries}:${emBuild.on ? 'on' : 'off'}`}>
+              <span className="text-sm text-slate-200">{emBuild.turns} wrap{emBuild.turns === 1 ? '' : 's'}</span>
+              <LuminaButton tone="ghost" onClick={() => wrap(1)} disabled={locked || emBuild.turns >= MAX_TURNS}>Add a wrap</LuminaButton>
+              <LuminaButton tone="ghost" onClick={() => wrap(-1)} disabled={locked || emBuild.turns <= 0}>Take a wrap off</LuminaButton>
+              <LuminaButton tone="ghost" onClick={toggleEmSwitch} disabled={locked}>{emBuild.on ? 'Switch off' : 'Switch on'}</LuminaButton>
+              {emItem.spareBattery && (
+                <LuminaButton tone="ghost" onClick={toggleBattery} disabled={locked}>{emBuild.batteries === 2 ? 'Take out the spare battery' : 'Put in the spare battery'}</LuminaButton>
+              )}
+              {emItem.coreTray && (['steel', 'wood', 'aluminium'] as const).map(k => (
+                <LuminaChoiceChip key={k} accent="amber" label={cap(CORE_WORDS[k])} aria-label={`Wrap the wire round ${CORE_WORDS[k]}`}
+                  selected={emBuild.core === k} onClick={() => pickCore(k)} disabled={locked} />
+              ))}
+              <LuminaButton tone="ghost" onClick={dip} disabled={locked}>Dip in the clips</LuminaButton>
+            </LuminaPanel>
+          )}
+
+          {/* ── Magnet distance ── */}
+          {!allChallengesComplete && distItem && (
+            <div className="space-y-3" data-circuit-dist-panel="" data-circuit-dist-marks={leverOn(PULL_MARKS_LEVER) ? 'on' : undefined}>
+              {distItem.magnets.map((_, r) => (
+                <LuminaPanel key={r} className="flex flex-wrap items-center gap-2 p-3" data-circuit-dist-ruler={r}>
+                  <span className="text-sm text-slate-200">{cap(magnetName(distItem, r))}: ball on mark</span>
+                  {Array.from({ length: MARKS }, (_, k) => k + 1).map(k => (
+                    <LuminaChoiceChip key={k} accent="amber" label={String(k)} aria-label={`Put ${distItem.magnets.length > 1 ? `${magnetName(distItem, r)}'s` : 'the'} ball on mark ${k}`}
+                      selected={dBalls[r] === k && !dStuck[r]} onClick={() => placeBall(r, k)} disabled={locked} />
+                  ))}
+                  <LuminaButton tone="ghost" onClick={() => tryMagnet(r)} disabled={locked || dBalls[r] == null || dStuck[r]}>
+                    Try {magnetName(distItem, r)}
+                  </LuminaButton>
+                </LuminaPanel>
+              ))}
+              {!distTesting && (
+                <LuminaPanel className="space-y-2 p-3" data-circuit-dist-decide="">
+                  {distItem.ask === 'reach' ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-100">The farthest mark the magnet pulls the ball from:</span>
+                      {Array.from({ length: MARKS }, (_, k) => k + 1).map(k => (
+                        <LuminaChoiceChip key={k} accent="amber" label={String(k)} aria-label={`The farthest mark is ${k}`} selected={dReach === k}
+                          onClick={() => { if (!locked) { setDReach(k); setFeedback(null); SoundManager.select(); } }} disabled={locked || dRevealed} />
+                      ))}
+                    </div>
+                  ) : distItem.ask === 'calls' ? (
+                    <>
+                      <div className="text-xs uppercase tracking-wide text-slate-400">Decide without testing</div>
+                      {distItem.toCall.map((k, i) => (
+                        <div key={i} className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-slate-100">{callWords(k)}</span>
+                          {([true, false] as const).map(v => (
+                            <LuminaChoiceChip key={String(v)} accent="amber" label={v ? 'Yes' : 'No'} aria-label={`${callWords(k)} ${v ? 'Yes' : 'No'}`}
+                              selected={dCalls[i] === v} disabled={locked || dRevealed}
+                              onClick={() => { if (!locked) { setDCalls(cs => cs.map((x, n) => (n === i ? v : x))); setFeedback(null); SoundManager.select(); } }} />
+                          ))}
+                          {dRevealed && <span className="text-sm text-slate-400">{callAnswer(k) ? 'Yes, it would.' : 'No, it would not.'}</span>}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-100">Which magnet is stronger?</span>
+                      {distItem.magnets.map((_, r) => (
+                        <LuminaChoiceChip key={r} accent="amber" label={cap(magnetName(distItem, r))} aria-label={`${cap(magnetName(distItem, r))} is stronger`}
+                          selected={dStronger === r} disabled={locked || dRevealed}
+                          onClick={() => { if (!locked) { setDStronger(r); setFeedback(null); SoundManager.select(); } }} />
+                      ))}
+                    </div>
+                  )}
+                </LuminaPanel>
+              )}
+            </div>
+          )}
+
+          {/* ── Magnet poles ── */}
+          {!allChallengesComplete && poleItem && (
+            <div className="space-y-3" data-circuit-pole-panel="" data-circuit-pole-facing={poleItem.mystery ? (pFacing === poleItem.striped ? 'striped' : 'plain') : pFacing}>
+              <LuminaPanel className="flex flex-wrap items-center gap-2 p-3">
+                <span className="text-sm text-slate-200">
+                  {poleItem.mystery ? `The ${pFacing === poleItem.striped ? 'striped' : 'plain'} end faces the left magnet's ${poleItem.aEnd}.`
+                    : `The right magnet's ${pFacing} end faces the left magnet's ${poleItem.aEnd}.`}
+                </span>
+                <LuminaButton tone="ghost" onClick={turnMagnet} disabled={locked}>Turn the right magnet</LuminaButton>
+                <LuminaButton tone="ghost" onClick={slideTogether} disabled={locked}>Slide them together</LuminaButton>
+              </LuminaPanel>
+              {!poleTesting && (
+                <LuminaPanel className="space-y-2 p-3" data-circuit-pole-calls="">
+                  <div className="text-xs uppercase tracking-wide text-slate-400">Decide without testing</div>
+                  {poleItem.mystery ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-100">Is the striped end N or S?</span>
+                      {(['N', 'S'] as const).map(k => (
+                        <LuminaChoiceChip key={k} accent="amber" label={k} aria-label={`The striped end is ${k}`} selected={pStriped === k}
+                          onClick={() => { if (!locked) { setPStriped(k); setFeedback(null); SoundManager.select(); } }} disabled={locked || pRevealed} />
+                      ))}
+                    </div>
+                  ) : poleItem.toCall.map((p, i) => (
+                    <div key={i} className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-100">{cap(pairWords(p))}{leverOn(POLE_TAGS_LEVER) && <span className="ml-1 rounded bg-amber-400/20 px-1 text-xs text-amber-200" data-circuit-pole-tag="">{sameOrDifferent(p.a.end, p.b.end)}</span>}</span>
+                      {(['pull', 'push'] as const).map(k => (
+                        <LuminaChoiceChip key={k} accent="amber" label={k === 'pull' ? 'pull together' : 'push apart'}
+                          aria-label={`${cap(pairWords(p))}: ${k === 'pull' ? 'pull together' : 'push apart'}`} selected={pCalls[i] === k}
+                          onClick={() => { if (!locked) { setPCalls(cs => cs.map((x, n) => (n === i ? k : x))); setFeedback(null); SoundManager.select(); } }}
+                          disabled={locked || pRevealed} />
+                      ))}
+                      {pRevealed && <span className="text-sm text-slate-400">{pairResult(p) === 'pull' ? 'They pull together.' : 'They push apart.'}</span>}
+                    </div>
+                  ))}
+                </LuminaPanel>
+              )}
+            </div>
           )}
 
           {/* ── Magnet test ── */}
@@ -660,6 +960,15 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
             {!allChallengesComplete && breakItem && breakGuess && (
               <LuminaActionButton action="check" onClick={checkBreak} disabled={locked || !claim}>Check</LuminaActionButton>
             )}
+            {!allChallengesComplete && emItem && emTests.length > 0 && (
+              <LuminaActionButton action="check" onClick={checkElectro} disabled={locked}>I&apos;m done!</LuminaActionButton>
+            )}
+            {!allChallengesComplete && distItem && !distTesting && (
+              <LuminaActionButton action="check" onClick={checkDistance} disabled={locked || !dReady}>Check</LuminaActionButton>
+            )}
+            {!allChallengesComplete && poleItem && !poleTesting && (
+              <LuminaActionButton action="check" onClick={checkPoles} disabled={locked || !pReady}>Check</LuminaActionButton>
+            )}
             {!allChallengesComplete && magnetItem && !mtTesting && (
               <LuminaActionButton action="check" onClick={checkMagnet} disabled={locked || !mtReady}>Check</LuminaActionButton>
             )}
@@ -678,6 +987,29 @@ const CircuitWorkbenchSurface: React.FC<CircuitWorkbenchProps> = ({ data, classN
             <LuminaTable caption="Lab notebook" accent="amber" columns={['Thing', 'Made of', 'Guess', 'The bulb']}
               rows={condItem.tested.map((t, i) => [t.name, MATERIAL_WORDS[t.material],
                 ctGuesses[i] ? (ctGuesses[i] === 'lights' ? 'light' : 'off') : '—', ctTested[i] ? (conducts(t) ? 'Lit' : 'Off') : '—'])} />
+          )}
+          {!allChallengesComplete && emItem && emTests.length > 0 && (
+            <LuminaTable caption="Lab notebook" accent="amber"
+              columns={[...(emItem.coreTray ? ['Core'] : []), 'Wraps', ...(emItem.spareBattery ? ['Batteries'] : []), 'Switch', 'Clips picked up']}
+              rows={emTests.map(t => [...(emItem.coreTray ? [cap(CORE_WORDS[t.core])] : []), String(t.turns), ...(emItem.spareBattery ? [String(t.batteries)] : []),
+                t.on ? 'On' : 'Off', String(clipsLifted(t))])} />
+          )}
+          {!allChallengesComplete && distItem && dTests.length > 0 && (
+            <LuminaTable caption="Lab notebook" accent="amber"
+              columns={distItem.magnets.length > 1 ? ['Magnet', 'Ball on mark', 'What happened'] : ['Ball on mark', 'What happened']}
+              rows={dTests.map(t => {
+                const happened = t.pulled ? 'Rolled to the magnet' : 'Stayed put';
+                return distItem.magnets.length > 1 ? [cap(magnetName(distItem, t.magnet)), String(t.mark), happened] : [String(t.mark), happened];
+              })} />
+          )}
+          {!allChallengesComplete && poleItem && pTests.length > 0 && (
+            <LuminaTable caption="Lab notebook" accent="amber"
+              columns={leverOn(POLE_TAGS_LEVER) ? ['Left end', 'Right end', 'Which ends', 'What happened'] : ['Left end', 'Right end', 'What happened']}
+              rows={pTests.map(t => {
+                const right = poleItem.mystery ? (t.facing === poleItem.striped ? 'striped' : 'plain') : t.facing;
+                const happened = t.result === 'pull' ? 'Snapped together' : 'Pushed apart';
+                return leverOn(POLE_TAGS_LEVER) ? [poleItem.aEnd, right, sameOrDifferent(poleItem.aEnd, t.facing), happened] : [poleItem.aEnd, right, happened];
+              })} />
           )}
           {!allChallengesComplete && breakItem && fixLog.length > 0 && (
             <LuminaTable caption="Lab notebook" accent="amber" columns={['What I tried', 'What happened']}

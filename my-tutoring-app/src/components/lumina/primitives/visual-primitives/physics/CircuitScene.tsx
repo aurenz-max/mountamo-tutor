@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { buildWorkbench, CIRCUIT_VIEW, type CircuitSceneState, type CircuitTarget, type CircuitWorld } from './circuit3d';
+import { buildWorkbench, CIRCUIT_VIEW, type CircuitSceneState, type CircuitTarget, type CircuitWorld, type PoleBench, type DistBench } from './circuit3d';
+import type { ElectroBench } from './electro3d';
 import type { BulbColor, Clip, Wire } from './circuitModel';
 import type { CondThing } from './conductorModel';
 import type { MagnetThing } from './magnetModel';
@@ -28,6 +29,15 @@ export interface CircuitSceneProps {
   magnet?: boolean;
   held?: MagnetThing | null;
   stuck?: boolean;
+  /** A magnet-poles item's two magnets (fixed per item), and the right one's facing pole and last test. */
+  poleBench?: PoleBench | null;
+  poles?: CircuitSceneState['poles'];
+  /** A magnet-distance item's magnets (fixed per item), and the balls, last try and coloured marks. */
+  distBench?: DistBench | null;
+  dist?: CircuitSceneState['dist'];
+  /** An electromagnet item's bench (fixed per item), and its build, last dip, hanging clips and meter. */
+  electroBench?: ElectroBench | null;
+  electro?: CircuitSceneState['electro'];
   /** A switch item's switch, and whether it is on. */
   hasSwitch?: boolean;
   switchOn?: boolean;
@@ -36,7 +46,7 @@ export interface CircuitSceneProps {
   out?: readonly BulbColor[];
   /** The x-ray lever's charge dots (`circuitLevers.ts`). */
   xray?: CircuitSceneState['xray'];
-  /** A tap on a clip post. */
+  /** A tap on a clip post or a magnet. */
   onTap: (target: CircuitTarget) => void;
   disabled: boolean;
   className?: string;
@@ -53,7 +63,7 @@ const World: React.FC<Omit<CircuitSceneProps, 'className'>> = props => {
   const { gl, scene, camera, size } = useThree();
   const controls = useRef<OrbitControlsImpl | null>(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const world = useMemo<CircuitWorld>(() => buildWorkbench(props.bulbs, { gap: props.gap, switch: props.hasSwitch, magnet: props.magnet }), [props.partsKey]);
+  const world = useMemo<CircuitWorld>(() => buildWorkbench(props.bulbs, { gap: props.gap, switch: props.hasSwitch, magnet: props.magnet, poles: props.poleBench, dist: props.distBench, electro: props.electroBench }), [props.partsKey]);
   const live = useRef(props);
   live.current = props;
 
@@ -65,7 +75,7 @@ const World: React.FC<Omit<CircuitSceneProps, 'className'>> = props => {
 
   useFrame((_, dt) => {
     const p = live.current;
-    const state: CircuitSceneState = { bulbs: p.bulbs, wires: p.wires, powered: p.powered, lit: p.lit, short: p.short, selected: p.selected, loose: p.loose, inGap: p.inGap, switchOn: p.switchOn, dim: p.dim, out: p.out, xray: p.xray, held: p.held, stuck: p.stuck };
+    const state: CircuitSceneState = { bulbs: p.bulbs, wires: p.wires, powered: p.powered, lit: p.lit, short: p.short, selected: p.selected, loose: p.loose, inGap: p.inGap, switchOn: p.switchOn, dim: p.dim, out: p.out, xray: p.xray, held: p.held, stuck: p.stuck, poles: p.poles, dist: p.dist, electro: p.electro };
     world.tick(Math.min(dt, 0.25), state);
     controls.current?.update();
   });

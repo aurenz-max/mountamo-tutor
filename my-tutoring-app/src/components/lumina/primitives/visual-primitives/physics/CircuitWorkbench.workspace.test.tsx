@@ -35,6 +35,9 @@ import { makeSwitch } from './switchModel';
 import { makeTwoBulb } from './twoBulbModel';
 import { makeDevice } from './deviceModel';
 import { magnetByKey, makeMagnet } from './magnetModel';
+import { makePoles } from './poleModel';
+import { makeDistance } from './distanceModel';
+import { makeElectro } from './electroModel';
 
 beforeEach(() => { vi.clearAllMocks(); seam.evaluationContext = null; });
 afterEach(() => { cleanup(); });
@@ -258,5 +261,104 @@ it('magnet test: calling a copper coin pulled is "all metal sticks"; the right c
   h.dispatch('retry');
   h.click('The magnet does not pull the copper coin');
   h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+});
+
+it('magnet poles: calls open after both ways are tested; the same ends called a pull is "like ends pull"; a striped magnet is named', () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount([
+    makePoles('poles-1', 'N', [{ a: { kind: 'bar', end: 'S' }, b: { kind: 'bar', end: 'S' } }]),
+    makePoles('poles-2', 'S', [], 'N'),
+  ]);
+  // Starts with the same end facing: the first test pushes; no calls until the other way is tested too.
+  h.click('Slide them together');
+  expect(screen.getByText('They pushed apart!')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /pull together$/ })).toBeNull();
+  expect(h.demand()).not.toContain('after the check');
+  h.click('Turn the right magnet');
+  h.click('Slide them together');
+  expect(screen.getByText('They snapped together!')).toBeTruthy();
+  h.click("A bar magnet's S end facing a bar magnet's S end: pull together");
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  expect(h.state().task!.workspace!.attempts.at(-1)!.miss).toBe('like_ends_pull');
+  h.dispatch('retry');
+  h.click("A bar magnet's S end facing a bar magnet's S end: push apart");
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.next();
+  // The striped end is N and faces the left magnet's S: they pull; turned, they push. The real pole stays out of the scene.
+  h.click('Slide them together');
+  h.click('Turn the right magnet');
+  h.click('Slide them together');
+  expect(h.demand()).toContain('striped end');
+  expect(h.demand()).not.toMatch(/striped end is N/);
+  h.click('The striped end is N');
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+});
+
+it('magnet distance: the question opens after a pull and a miss; past the reach is "too far"; the big magnet picked by size', () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount([
+    makeDistance('distance-1', 'reach', [{ size: 'big', reach: 3 }]),
+    makeDistance('distance-2', 'stronger', [{ size: 'small', reach: 4 }, { size: 'big', reach: 2 }]),
+  ]);
+  // The ball starts on mark 4, past the reach: it stays. No question until a pull is seen too.
+  h.click('Try the magnet');
+  expect(screen.getByText('The ball stayed put.')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'The farthest mark is 3' })).toBeNull();
+  h.click('Put the ball on mark 2');
+  h.click('Try the magnet');
+  expect(screen.getByText('The ball rolled to the magnet!')).toBeTruthy();
+  expect(h.demand()).not.toContain('after the check');
+  h.click('The farthest mark is 4');
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  expect(h.state().task!.workspace!.attempts.at(-1)!.miss).toBe('reach_too_far');
+  h.dispatch('retry');
+  h.click('The farthest mark is 3');
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.next();
+  // Both balls on mark 4: the small magnet pulls, the big one does not.
+  h.click('Try the small magnet');
+  h.click('Try the big magnet');
+  expect(h.demand()).not.toMatch(/is stronger \(after/);
+  h.click('The big magnet is stronger');
+  h.click('Check');
+  expect(h.state().task!.workspace!.attempts.at(-1)!.miss).toBe('judged_by_size');
+  h.dispatch('retry');
+  h.click('The small magnet is stronger');
+  h.click('Check');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+});
+
+it('electromagnet: switched off it lifts nothing; the done button judges the build as it is; too many clips is a named miss', () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount([makeElectro('electro-1', { kind: 'exactly', clips: 3 }, { core: 'steel', turns: 4, batteries: 1, on: false })]);
+  expect(screen.queryByRole('button', { name: "I'm done!" })).toBeNull();
+  h.click('Dip in the clips');
+  expect(screen.getByText('It picked up nothing.')).toBeTruthy();
+  h.click('Switch on');
+  h.click('Dip in the clips');
+  expect(screen.getByText('It picked up 2 clips!')).toBeTruthy();
+  for (let k = 0; k < 4; k++) h.click('Add a wrap');
+  h.click('Dip in the clips');
+  expect(screen.getByText('It picked up 4 clips!')).toBeTruthy();
+  h.click("I'm done!");
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  expect(h.state().task!.workspace!.attempts.at(-1)!.miss).toBe('too_many_clips');
+  h.dispatch('retry');
+  h.click('Take a wrap off');
+  h.click('Take a wrap off');
+  h.click('Dip in the clips');
+  h.click('Switch off');
+  expect(screen.getByText('Switched off: the clips dropped!')).toBeTruthy();
+  h.click("I'm done!");
+  expect(h.state().task!.workspace!.attempts.at(-1)!.miss).toBe('switch_off');
+  h.dispatch('retry');
+  h.click('Switch on');
+  h.click("I'm done!");
   expect(h.state().task!.evidence.correctness).toBe('correct');
 });

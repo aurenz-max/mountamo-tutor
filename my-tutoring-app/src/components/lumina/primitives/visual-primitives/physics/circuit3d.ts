@@ -7,14 +7,23 @@
  * A conductor item adds a test gap: two wires end in clips on a pad at the front of the table, one from the bulb and one
  * from the battery's − end; the thing being tested lies across the pad between them.
  *
- * Tappable posts carry `userData.target` ('clip:<clip>'); everything else is looked through.
+ * A magnet-poles item replaces the circuit with two bar magnets lying end to end: the left one stays put, the right one
+ * turns round when tapped and slides up to the left one when the left one is tapped; `poleModel.ts` says whether they
+ * snap together or push apart.
+ *
+ * A magnet-distance item puts one or two rulers on the table, each with a bar magnet at its near end and a steel ball
+ * that goes on a mark; tried, the magnet rolls the ball to itself if it pulls it (`distanceModel.ts`).
+ * Tappable posts carry `userData.target` ('clip:<clip>'), the magnets 'mag:a' and 'mag:b', a ruler's marks 'mark:<ruler>:<mark>'; everything else is looked through.
  */
 import * as THREE from 'three';
 import { isBulb, type BulbColor, type Clip, type Wire } from './circuitModel';
 import type { CondThing } from './conductorModel';
 import type { MagnetThing } from './magnetModel';
+import type { Pole, PoleResult } from './poleModel';
+import { MARKS, type MagnetSize } from './distanceModel';
+import { buildElectroBench, type ElectroBench, type ElectroSceneState, type ElectroTarget } from './electro3d';
 
-export type CircuitTarget = `clip:${Clip}`;
+export type CircuitTarget = `clip:${Clip}` | 'mag:a' | 'mag:b' | `mark:${number}:${number}` | ElectroTarget;
 
 export interface CircuitSceneState {
   bulbs: readonly BulbColor[];
@@ -32,6 +41,14 @@ export interface CircuitSceneState {
   /** The magnet test: the thing under the magnet, and whether the magnet pulls it up. */
   held?: MagnetThing | null;
   stuck?: boolean;
+  /** Magnet poles: the right magnet's real pole facing the left one, and the last test (a new `n` slides it up). */
+  poles?: { facing: Pole; test: { n: number; result: PoleResult } | null } | null;
+  /** Magnet distance: each ruler's ball (its mark, or off the ruler; stuck = pulled to the magnet), the last try (a new
+   *  `n` jiggles that magnet), and the pull-marks lever's coloured marks. */
+  dist?: { balls: ReadonlyArray<{ mark: number | null; stuck: boolean }>; test: { n: number; ruler: number } | null;
+    marks: ReadonlyArray<{ ruler: number; mark: number; pulled: boolean }> | null } | null;
+  /** The electromagnet bench (`electro3d.ts`). */
+  electro?: ElectroSceneState | null;
   /** The switch (add_a_switch): on = closed, its lever down on the far clip. */
   switchOn?: boolean;
   /** Lit bulbs that glow dimly (in a row), and bulbs taken out of their holders. */
@@ -116,7 +133,19 @@ function buildCondThing(t: Pick<CondThing, 'shape' | 'color'> & { shiny?: boolea
 /** The test gap's two clips on the pad (conductor_test). */
 export const GAP = { a: new THREE.Vector3(-0.85, 0, 2.3), b: new THREE.Vector3(0.85, 0, 2.3) };
 
-export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolean; switch?: boolean; magnet?: boolean } = {}): CircuitWorld {
+/** Two bar magnets end to end (magnet_poles); the right magnet's striped end, when its letters rubbed off. */
+export interface PoleBench { aEnd: Pole; mystery: boolean; striped?: Pole }
+const POLE = { z: 0.6, y: 0.4, half: 1.7, aX: -2.6, rest: 3.4, near: 2.2 };
+const POLE_TOUCH = POLE.aX + 2 * POLE.half + 0.02;
+
+/** One or two rulers, each with a bar magnet (magnet_distance). */
+export interface DistBench { magnets: ReadonlyArray<{ size: MagnetSize }> }
+const DIST = { magEnd: -3.0, step: 1.3, park: 5.6, ballR: 0.42 };
+const distLanes = (n: number) => (n > 1 ? [-0.9, 2.1] : [0.6]);
+const markX = (mark: number) => DIST.magEnd + DIST.step * mark;
+const magHalf = (size: MagnetSize) => (size === 'big' ? 1.4 : 0.75);
+
+export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolean; switch?: boolean; magnet?: boolean; poles?: PoleBench | null; dist?: DistBench | null; electro?: ElectroBench | null } = {}): CircuitWorld {
   const root = new THREE.Group();
   const disposables: Array<{ dispose(): void }> = [];
   const keep = <T extends { dispose(): void }>(x: T) => { disposables.push(x); return x; };
@@ -147,9 +176,13 @@ export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolea
   const holder = new THREE.Mesh(keep(new THREE.BoxGeometry(3.4, 0.25, 1.3)), keep(new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.7 })));
   holder.position.set(BATTERY.x, 0.12, BATTERY.z); holder.receiveShadow = true;
   root.add(holder, battery);
+  // A magnet item has no circuit: the battery stays off the table.
+  const noCircuit = !!opts.magnet || !!opts.poles || !!opts.dist || !!opts.electro;
+  holder.visible = battery.visible = !noCircuit;
   const plusLabel = labelSprite('+', '#ff6b6b'), minusLabel = labelSprite('−', '#e2e8f0');
   plusLabel.position.set(BATTERY.x + 1.0, 1.55, BATTERY.z); minusLabel.position.set(BATTERY.x - 1.0, 1.55, BATTERY.z);
   root.add(plusLabel, minusLabel);
+  plusLabel.visible = minusLabel.visible = !noCircuit;
   disposables.push(plusLabel.material.map!, plusLabel.material, minusLabel.material.map!, minusLabel.material);
 
   // Bulbs in holders.
@@ -206,7 +239,7 @@ export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolea
   }
 
   // Clip posts: the tappable things.
-  const clips: Clip[] = ['bat+', 'bat-', ...bulbs.flatMap(b => [`${b}.left`, `${b}.right`] as Clip[]), ...(opts.switch ? ['sw.left', 'sw.right'] as Clip[] : [])];
+  const clips: Clip[] = noCircuit ? [] : ['bat+', 'bat-', ...bulbs.flatMap(b => [`${b}.left`, `${b}.right`] as Clip[]), ...(opts.switch ? ['sw.left', 'sw.right'] as Clip[] : [])];
   const postGeo = keep(new THREE.CylinderGeometry(0.2, 0.24, POST_TOP, 16));
   const postMats = {
     'bat+': keep(new THREE.MeshStandardMaterial({ color: 0xd8423a, roughness: 0.4, metalness: 0.3 })),
@@ -282,6 +315,87 @@ export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolea
     }
     root.add(pad, arc);
   }
+  // Magnet poles: two bar magnets, N half red and S half blue with their letters; the right one's letters rubbed off on a
+  // mystery item (both halves grey, a yellow stripe on one end).
+  const poleA = new THREE.Group(), poleB = new THREE.Group();
+  if (opts.poles) {
+    const P = opts.poles;
+    const halfGeo = keep(new THREE.BoxGeometry(POLE.half, 0.7, 0.95));
+    const mats = { N: keep(new THREE.MeshStandardMaterial({ color: 0xd8423a, roughness: 0.45 })), S: keep(new THREE.MeshStandardMaterial({ color: 0x3a6fd8, roughness: 0.45 })),
+      plain: keep(new THREE.MeshStandardMaterial({ color: 0x8c949c, roughness: 0.4, metalness: 0.5 })) };
+    /** A bar magnet whose local +x end is `front`. */
+    const bar = (g: THREE.Group, front: Pole, target: CircuitTarget, plain: boolean) => {
+      for (const [p, sx] of [[front, 1], [front === 'N' ? 'S' : 'N', -1]] as Array<[Pole, number]>) {
+        const m = new THREE.Mesh(halfGeo, plain ? mats.plain : mats[p]);
+        m.position.x = (sx * POLE.half) / 2; m.castShadow = true; m.userData.target = target;
+        g.add(m);
+        if (plain) continue;
+        const label = labelSprite(p, '#ffffff');
+        label.position.set((sx * POLE.half) / 2, 0.75, 0); label.scale.setScalar(0.8);
+        disposables.push(label.material.map!, label.material);
+        g.add(label);
+      }
+    };
+    bar(poleA, P.aEnd, 'mag:a', false);
+    poleA.position.set(POLE.aX, POLE.y, POLE.z);
+    // The right magnet: N at local +x; turned (rotation.y = pi) its N end faces the left magnet.
+    bar(poleB, 'N', 'mag:b', P.mystery);
+    if (P.mystery && P.striped) {
+      const stripe = new THREE.Mesh(keep(new THREE.BoxGeometry(0.2, 0.72, 0.97)), keep(new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.5 })));
+      stripe.position.x = (P.striped === 'N' ? 1 : -1) * (POLE.half - 0.3);
+      stripe.userData.target = 'mag:b';
+      poleB.add(stripe);
+    }
+    poleB.position.set(POLE.rest, POLE.y, POLE.z);
+    root.add(poleA, poleB);
+  }
+  let poleTestN = -1, poleT = 0;
+  // Magnet distance: per ruler a bar magnet (N red, S blue; the big one longer and taller), the ruler with a plate per
+  // mark and its number, and a steel ball.
+  const distMags: THREE.Group[] = [], distBalls: THREE.Mesh[] = [], distPlates: THREE.MeshStandardMaterial[][] = [];
+  const ballV: number[] = [];
+  if (opts.dist) {
+    const lanes = distLanes(opts.dist.magnets.length);
+    const red = keep(new THREE.MeshStandardMaterial({ color: 0xd8423a, roughness: 0.45 })), blue = keep(new THREE.MeshStandardMaterial({ color: 0x3a6fd8, roughness: 0.45 }));
+    const rulerMat = keep(new THREE.MeshStandardMaterial({ color: 0xe9c46a, roughness: 0.8 }));
+    const steel = keep(new THREE.MeshStandardMaterial({ color: 0xe3e8ee, metalness: 0.45, roughness: 0.25 }));
+    const plateGeo = keep(new THREE.BoxGeometry(0.7, 0.05, 1.0)), ballGeo = keep(new THREE.SphereGeometry(DIST.ballR, 24, 16));
+    opts.dist.magnets.forEach((m, r) => {
+      const z = lanes[r];
+      const half = magHalf(m.size), h = m.size === 'big' ? 1.0 : 0.55, d = m.size === 'big' ? 1.2 : 0.7;
+      const g = new THREE.Group(), halfGeo = keep(new THREE.BoxGeometry(half, h, d));
+      for (const [p, sx] of [['N', 1], ['S', -1]] as Array<[Pole, number]>) {
+        const mesh = new THREE.Mesh(halfGeo, p === 'N' ? red : blue);
+        mesh.position.set((sx * half) / 2, h / 2, 0); mesh.castShadow = true; mesh.userData.target = r ? 'mag:b' : 'mag:a';
+        const label = labelSprite(p, '#ffffff');
+        label.position.set((sx * half) / 2, h + 0.3, 0); label.scale.setScalar(m.size === 'big' ? 0.9 : 0.65);
+        disposables.push(label.material.map!, label.material);
+        g.add(mesh, label);
+      }
+      g.position.set(DIST.magEnd - half, 0, z);
+      const ruler = new THREE.Mesh(keep(new THREE.BoxGeometry(markX(MARKS) - DIST.magEnd + 0.5, 0.05, 1.2)), rulerMat);
+      ruler.position.set((DIST.magEnd + markX(MARKS) + 0.5) / 2, 0.025, z); ruler.receiveShadow = true;
+      const plates: THREE.MeshStandardMaterial[] = [];
+      for (let k = 1; k <= MARKS; k++) {
+        const mat = keep(new THREE.MeshStandardMaterial({ color: 0xf6f1e4, roughness: 0.7 }));
+        const plate = new THREE.Mesh(plateGeo, mat);
+        plate.position.set(markX(k), 0.06, z); plate.userData.target = `mark:${r}:${k}`;
+        const num = labelSprite(String(k), '#fde68a');
+        num.position.set(markX(k), 0.3, z + 1.0); num.scale.setScalar(0.7);
+        disposables.push(num.material.map!, num.material);
+        plates.push(mat); root.add(plate, num);
+      }
+      const ball = new THREE.Mesh(ballGeo, steel);
+      ball.position.set(DIST.park, DIST.ballR + 0.05, z); ball.castShadow = true;
+      distMags.push(g); distBalls.push(ball); distPlates.push(plates); ballV.push(0);
+      root.add(g, ruler, ball);
+    });
+  }
+  let distTestN = -1, distT = 9;
+  // The electromagnet bench draws its own battery, switch and wires.
+  const electro = opts.electro ? buildElectroBench(opts.electro, keep) : null;
+  if (electro) root.add(electro.root);
+
   function setGapThing(t: CondThing | MagnetThing | null | undefined) {
     const key = t?.key ?? '';
     if (key === gapKey) return;
@@ -363,6 +477,49 @@ export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolea
       setWires(s.wires, s.loose ?? null);
       setGapThing(s.inGap ?? s.held);
       if (opts.magnet) gapThing.position.y = THREE.MathUtils.damp(gapThing.position.y, s.stuck ? MAG_Y - 0.25 : 0, 6, dt);
+      if (opts.poles && s.poles) {
+        const want = s.poles.facing === 'N' ? Math.PI : 0;
+        poleB.rotation.y = THREE.MathUtils.damp(poleB.rotation.y, want, 8, dt);
+        const test = s.poles.test;
+        if (test && test.n !== poleTestN) { poleTestN = test.n; poleT = 0; }
+        poleT += dt;
+        let x = POLE.rest;
+        if (test && test.result === 'pull') x = POLE.rest + (POLE_TOUCH - POLE.rest) * Math.min(1, (poleT / 0.7) ** 2);
+        else if (test) {
+          // Slid up close, then pushed away, overshooting and settling back.
+          x = poleT < 0.5 ? POLE.rest + (POLE.near - POLE.rest) * (poleT / 0.5)
+            : poleT < 0.85 ? POLE.near + (POLE.rest + 0.5 - POLE.near) * ((poleT - 0.5) / 0.35)
+              : POLE.rest + 0.5 * Math.max(0, 1 - (poleT - 0.85) / 0.6);
+          poleA.position.x = POLE.aX - (poleT > 0.45 && poleT < 0.85 ? 0.06 * Math.sin((poleT - 0.45) * 40) : 0);
+        }
+        if (!test) x = THREE.MathUtils.damp(poleB.position.x, POLE.rest, 6, dt);
+        poleB.position.x = x;
+      }
+      if (opts.dist && s.dist) {
+        const d = s.dist;
+        if (d.test && d.test.n !== distTestN) { distTestN = d.test.n; distT = 0; }
+        distT += dt;
+        distBalls.forEach((ball, r) => {
+          const b = d.balls[r] ?? { mark: null, stuck: false };
+          if (b.stuck) {
+            // Pulled: the ball speeds up as it nears the magnet, then sticks.
+            ballV[r] += 14 * dt;
+            ball.position.x = Math.max(DIST.magEnd + DIST.ballR + 0.02, ball.position.x - ballV[r] * dt);
+          } else {
+            ballV[r] = 0;
+            ball.position.x = THREE.MathUtils.damp(ball.position.x, b.mark == null ? DIST.park : markX(b.mark), 10, dt);
+          }
+          ball.rotation.z = -ball.position.x / DIST.ballR;
+          // A try jiggles the magnet, pull or not.
+          const tried = d.test?.ruler === r && distT < 0.35;
+          distMags[r].position.x = DIST.magEnd - magHalf(opts.dist!.magnets[r].size) + (tried ? 0.05 * Math.sin(distT * 60) : 0);
+          distPlates[r].forEach((mat, k) => {
+            const hit = d.marks?.filter(x => x.ruler === r && x.mark === k + 1) ?? [];
+            mat.color.setHex(!hit.length ? 0xf6f1e4 : hit.some(x => x.pulled) ? 0x3fbf6a : 0x7b8494);
+          });
+        });
+      }
+      if (electro && s.electro) electro.tick(dt, s.electro);
       setDots(s.xray ?? null);
       if (s.xray) {
         const speed = s.xray.flowing ? (s.xray.fast ? 1.6 : 0.45) : 0;
@@ -393,6 +550,14 @@ export function buildWorkbench(bulbs: readonly BulbColor[], opts: { gap?: boolea
       } else ring.visible = false;
     },
     pickPoint(target) {
+      if (electro && (target.startsWith('em:') || target.startsWith('core:'))) return electro.pickPoint(target as ElectroTarget);
+      if (opts.dist) {
+        const lanes = distLanes(opts.dist.magnets.length);
+        if (target === 'mag:a' || target === 'mag:b') return new THREE.Vector3(DIST.magEnd - 0.3, 0.35, lanes[target === 'mag:b' ? 1 : 0]);
+        if (target.startsWith('mark:')) { const [, r, k] = target.split(':').map(Number); return new THREE.Vector3(markX(k), 0.08, lanes[r]); }
+      }
+      if (target === 'mag:a') return poleA.position.clone().setY(POLE.y + 0.3);
+      if (target === 'mag:b') return poleB.position.clone().setY(POLE.y + 0.3);
       return postAt(bulbs, target.slice(5) as Clip).setY(POST_TOP * 0.8);
     },
     targetFromHit(obj) {

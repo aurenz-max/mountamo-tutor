@@ -17,7 +17,13 @@ import { defineCard } from '../../../components/live-activity/boss';
  * two_bulbs, from `twoBulbMiss` in `twoBulbModel.ts`: `not_both_lit`, `made_a_row` (asked side by side),
  * `made_side_by_side` (asked in a row), `short_circuit`. build_device, from `deviceMiss` in `deviceModel.ts`: `missing_part`,
  * `extra_part`, `short_circuit`, `not_working` (a needed part does not run), `switch_does_nothing`. magnet_test, from
- * `magnetMiss` in `magnetModel.ts`: `all_metal_sticks` (a non-iron metal called pulled), `sort_slip` (another).
+ * `magnetMiss` in `magnetModel.ts`: `all_metal_sticks` (a non-iron metal called pulled), `sort_slip` (another). magnet_poles,
+ * from `polesMiss` in `poleModel.ts`: `like_ends_pull` (the same ends called a pull), `unlike_ends_push` (different ends
+ * called a push), `mystery_backwards` (the wrong pole named for a magnet whose letters rubbed off). magnet_distance,
+ * from `distanceMiss` in `distanceModel.ts`: `reach_too_far` / `reach_too_near` (the farthest mark named past or short of
+ * it), `farther_pulled` / `nearer_not_pulled` (a call against closer-is-stronger), `judged_by_size` (the big magnet
+ * picked when the small one is stronger), `picked_weaker`. electromagnet, from `electroMiss` in `electroModel.ts`:
+ * `no_coil`, `switch_off`, `not_iron_core` (wood or aluminium inside), `too_few_clips`, `too_many_clips`.
  */
 export const CIRCUIT_MISSES_BY_MODE = {
   light_it: ['open_loop', 'both_on_one_end', 'short_circuit', 'wrong_bulb', 'lit_both'],
@@ -27,6 +33,9 @@ export const CIRCUIT_MISSES_BY_MODE = {
   two_bulbs: ['not_both_lit', 'made_a_row', 'made_side_by_side', 'short_circuit'],
   build_device: ['missing_part', 'extra_part', 'short_circuit', 'not_working', 'switch_does_nothing'],
   magnet_test: ['all_metal_sticks', 'sort_slip'],
+  magnet_poles: ['like_ends_pull', 'unlike_ends_push', 'mystery_backwards'],
+  magnet_distance: ['reach_too_far', 'reach_too_near', 'farther_pulled', 'nearer_not_pulled', 'judged_by_size', 'picked_weaker'],
+  electromagnet: ['switch_off', 'no_coil', 'not_iron_core', 'too_few_clips', 'too_many_clips'],
 } as const;
 export type CircuitMissName = typeof CIRCUIT_MISSES_BY_MODE[keyof typeof CIRCUIT_MISSES_BY_MODE][number];
 
@@ -36,29 +45,33 @@ export const circuitWorkbenchCard = defineCard<CircuitMissName>({
   grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
   modes: {
     light_it: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.light_it,
-      moves: 'guesses if it lights as it is, then taps one clip and another to add a wire (or removes one), watches what '
-        + 'lights, and presses "I\'m done!"' },
+      moves: 'guesses, adds or removes wires clip to clip, and presses "I\'m done!"' },
     find_the_break: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.find_the_break,
-      moves: 'guesses which part is broken, tries a new battery, a new bulb or clipping a loose wire back on, one at a time, '
-        + 'taps what was broken, and presses Check' },
+      moves: 'guesses, tries one fix at a time (battery, bulb, loose clip), taps what was broken, and presses Check' },
     conductor_test: { answer: 'tap', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.conductor_test,
-      moves: 'puts each test thing in the gap after a guess, then, untested, calls whether each other thing would light the '
-        + 'bulb, and presses Check; a right check tests them' },
+      moves: 'tests each thing in the gap after a guess, calls the untested things, and presses Check' },
     add_a_switch: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.add_a_switch,
-      moves: 'wires as in light_it with a switch on the table, may flip the switch to test, and presses "I\'m done!"' },
+      moves: 'wires a switch into the loop, may flip it to test, and presses "I\'m done!"' },
     two_bulbs: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.two_bulbs,
-      moves: 'wires two bulbs as in light_it, may take a bulb out to test, and presses "I\'m done!"' },
+      moves: 'wires two bulbs, may take one out to test, and presses "I\'m done!"' },
     build_device: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.build_device,
-      moves: 'chooses parts from the tray, wires them as in light_it, flips any switch to test, and presses "I\'m done!"' },
+      moves: 'picks parts from the tray, wires them, and presses "I\'m done!"' },
     magnet_test: { answer: 'tap', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.magnet_test,
-      moves: 'holds the magnet over each test thing after a guess, then, untested, calls whether the magnet pulls each other '
-        + 'thing, and presses Check' },
+      moves: 'holds the magnet over each thing after a guess, calls the untested things, and presses Check' },
+    magnet_poles: { answer: 'tap', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.magnet_poles,
+      moves: 'says a guess, turns and slides the right magnet both ways, calls the untested pairs (or names the striped '
+        + 'end), and presses Check' },
+    magnet_distance: { answer: 'tap', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.magnet_distance,
+      moves: 'says a guess, tries the ball near and far, names the farthest mark (or calls another magnet, or picks the '
+        + 'stronger), and presses Check' },
+    electromagnet: { answer: 'build', judge: 'activity', flow: 'one-at-a-time', misses: CIRCUIT_MISSES_BY_MODE.electromagnet,
+      moves: 'wraps wire, switches on, dips in the clips to test, may add a battery or swap the core, and presses "I\'m done!"' },
   },
   words: {
-    job: 'wire a battery and a bulb into a closed loop on a workbench so the bulb lights (with two bulbs, only the named one, or with a switch that turns it on and off), build a device that works, test what a magnet pulls, '
-      + 'find and fix the broken part of a dark circuit, or test which things let electricity through',
-    answer: 'the wires the learner clips on, the part named as broken, or the calls on untested things',
-    question: 'the parts on the table, the wires on, what is lit, the fixes or tests so far, and what each thing is made of',
+    job: 'wire a loop that lights, build a device, find a broken part, test what conducts, what a magnet pulls, which ends '
+      + 'push or pull, how far it pulls, or build an electromagnet',
+    answer: 'the wires the learner clips on, the part named as broken, the calls on untested things, or the pole, mark or magnet named',
+    question: 'the parts on the table, the wires on, what is lit, the tests so far, and what each thing is made of',
   },
   levers: true,
 });

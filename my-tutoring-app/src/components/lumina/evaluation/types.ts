@@ -1201,7 +1201,7 @@ export interface VolcanoIslandMetrics extends BasePrimitiveMetrics {
 
 export interface CircuitWorkbenchMetrics extends BasePrimitiveMetrics {
   type: 'circuit-workbench';
-  challengeType: 'light_it' | 'find_the_break' | 'conductor_test' | 'magnet_test' | 'add_a_switch' | 'build_device' | 'two_bulbs';
+  challengeType: 'light_it' | 'find_the_break' | 'conductor_test' | 'magnet_test' | 'magnet_poles' | 'magnet_distance' | 'electromagnet' | 'add_a_switch' | 'build_device' | 'two_bulbs';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

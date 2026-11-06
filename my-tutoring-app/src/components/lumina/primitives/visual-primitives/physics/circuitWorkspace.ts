@@ -9,6 +9,9 @@ import { bulbName, evaluate, wireWords, type BulbColor, type LightItChallenge, t
 import { switchStates, type SwitchChallenge } from './switchModel';
 import type { TwoBulbChallenge } from './twoBulbModel';
 import { MAGNET_MATERIAL_WORDS, pulled, type MagnetChallenge, type MagnetThing, type PullCall } from './magnetModel';
+import { pairResult, pairWords, type Pole, type PoleChallenge, type PoleResult, type PoleTest } from './poleModel';
+import { MARKS, callAnswer, callWords, magnetName, strongest, type DistanceChallenge, type DistTest } from './distanceModel';
+import { buildWords, clipsLifted, goalWords, type ElectroBuild, type ElectroChallenge } from './electroModel';
 import { PART_WORDS, deviceStates, type DeviceChallenge, type TrayPart } from './deviceModel';
 import { MATERIAL_WORDS, conducts, type CondThing, type ConductorChallenge, type LightCall } from './conductorModel';
 import { breakLit, breakState, fixWords, partWords, type BreakChallenge, type BreakFix, type BrokenPart } from './breakModel';
@@ -171,6 +174,69 @@ export function magnetScene(c: MagnetChallenge, view: MagnetView): SceneOf {
       + (view.guesses[i] ? ` (guessed ${view.guesses[i] === 'pulls' ? 'pulled' : 'not pulled'})` : '')).join('; '),
     toDecide: c.toSort.map((t, i) => `${made(t)}: ${view.revealed ? (pulled(t) ? 'pulled after the check' : 'not pulled after the check') : 'not tested'}; `
       + `the learner ${view.calls[i] ? `says ${view.calls[i] === 'pulls' ? 'pulled' : 'not pulled'}` : 'has not called it'}`).join('; '),
+  };
+  return { objects: [], facts };
+}
+
+export interface PoleView { facing: Pole; tests: readonly PoleTest[]; calls: ReadonlyArray<PoleResult | null>; striped: Pole | null; revealed: boolean }
+
+/** A magnet-poles item's scene: the two magnets, which ends face, and what each test did. A pair to call's result is
+ *  never in it before a right check, and neither is the real pole of a striped end. */
+export function poleScene(c: PoleChallenge, view: PoleView): SceneOf {
+  const rightEnd = (p: Pole) => (c.mystery ? `its ${p === c.striped ? 'striped' : 'plain'} end` : `its ${p} end`);
+  const result = (r: PoleResult) => (r === 'pull' ? 'they pulled together' : 'they pushed apart');
+  const facts: Record<string, string | number> = {
+    table: 'a workbench drawn in 3D with two bar magnets lying end to end; the left one stays put, the right one can be turned round and slid up to it',
+    step: c.mystery ? (view.striped ? 'has named the striped end' : 'testing, then naming the striped end')
+      : view.calls.every(Boolean) ? 'ready to check' : 'testing both ways, then calling the untested pairs',
+    goal: c.instruction,
+    leftMagnet: `a bar magnet with N and S written on its ends; its ${c.aEnd} end faces the right magnet`,
+    rightMagnet: c.mystery ? `a bar magnet whose letters rubbed off; one end has a yellow stripe; ${rightEnd(view.facing)} faces the left magnet`
+      : `a bar magnet with N and S written on its ends; ${rightEnd(view.facing)} faces the left magnet`,
+    tests: view.tests.length ? view.tests.map((t, i) => `test ${i + 1}: the left ${c.aEnd} end and the right magnet's ${rightEnd(t.facing).slice(4)}: ${result(t.result)}`).join('; ') : 'no tests yet',
+  };
+  if (c.mystery) facts.call = view.revealed ? `the striped end is ${c.striped} (after the check)` : view.striped ? `the learner says the striped end is ${view.striped}` : 'not named yet';
+  else facts.toDecide = c.toCall.map((p, i) => `${pairWords(p)}: ${view.revealed ? `${result(pairResult(p))} after the check` : 'not tested'}; the learner `
+    + (view.calls[i] ? `says ${view.calls[i] === 'pull' ? 'they pull together' : 'they push apart'}` : 'has not called it')).join('; ');
+  return { objects: [], facts };
+}
+
+export interface DistanceView { balls: ReadonlyArray<number | null>; tests: readonly DistTest[]; reach: number | null; calls: ReadonlyArray<boolean | null>; stronger: number | null; revealed: boolean }
+
+/** A magnet-distance item's scene: the magnets, where each ball sits, and what each test did. A magnet's reach, a call's
+ *  answer and which magnet is stronger are never in it before a right check. */
+export function distanceScene(c: DistanceChallenge, view: DistanceView): SceneOf {
+  const name = (i: number) => magnetName(c, i);
+  const facts: Record<string, string | number> = {
+    table: `a workbench drawn in 3D with ${c.magnets.length > 1 ? 'two rulers, each with a bar magnet at its near end' : 'a ruler with a bar magnet at its near end'}; `
+      + `the marks run 1 (next to the magnet) to ${MARKS}; a steel ball goes on a mark, and when the magnet is tried the ball rolls to it if the magnet pulls it`,
+    step: view.revealed ? 'checked' : c.ask === 'reach' ? 'testing, then naming the farthest mark the magnet pulls from'
+      : c.ask === 'calls' ? 'testing near and far, then deciding about another magnet' : 'testing both magnets, then saying which is stronger',
+    goal: c.instruction,
+    magnets: c.magnets.map((m, i) => `${name(i)}: a ${m.size} bar magnet; its ball is ${view.balls[i] == null ? 'not on the ruler yet' : `on mark ${view.balls[i]}`}`).join('; '),
+    tests: view.tests.length ? view.tests.map((t, i) => `test ${i + 1}: ${name(t.magnet)} with the ball on mark ${t.mark}: ${t.pulled ? 'it rolled to the magnet' : 'it stayed put'}`).join('; ') : 'no tests yet',
+  };
+  if (c.ask === 'reach') facts.answer = view.revealed ? `the farthest mark is ${c.magnets[0].reach} (after the check)` : view.reach ? `the learner says mark ${view.reach}` : 'not named yet';
+  else if (c.ask === 'calls') facts.toDecide = c.toCall.map((k, i) => `${callWords(k)} ${view.revealed ? `(${callAnswer(k) ? 'yes' : 'no'}, after the check)` : ''}`
+    + `the learner ${view.calls[i] === null || view.calls[i] === undefined ? 'has not called it' : `says ${view.calls[i] ? 'yes' : 'no'}`}`).join('; ');
+  else facts.answer = view.revealed ? `${name(strongest(c))} is stronger (after the check)` : view.stronger !== null ? `the learner says ${name(view.stronger)} is stronger` : 'not picked yet';
+  return { objects: [], facts };
+}
+
+export interface ElectroView { build: ElectroBuild; tests: readonly ElectroBuild[]; hanging: number }
+
+/** An electromagnet item's scene: the build on the bench and what each dip lifted. How many wraps or batteries the goal
+ *  needs is never in it. */
+export function electroScene(c: ElectroChallenge, view: ElectroView): SceneOf {
+  const lifted = (b: ElectroBuild) => `${clipsLifted(b)} clip${clipsLifted(b) === 1 ? '' : 's'}`;
+  const facts: Record<string, string | number> = {
+    table: 'a workbench drawn in 3D: a battery and a switch wired to a coil of copper wire wrapped round a core that hangs from a crane '
+      + 'over a tray of paper clips' + (c.spareBattery ? '; a spare battery to put in' : '') + (c.coreTray ? '; a tray of other cores to wrap the wire round instead' : ''),
+    step: view.tests.length ? 'changing the build and testing' : 'building, then dipping it in the clips to test',
+    goal: `pick up ${goalWords(c.goal)}`,
+    build: buildWords(view.build),
+    tests: view.tests.length ? view.tests.map((t, i) => `test ${i + 1}: ${buildWords(t)}: lifted ${lifted(t)}`).join('; ') : 'no tests yet',
+    hanging: view.hanging ? `${view.hanging} clip${view.hanging === 1 ? '' : 's'} hanging from the core` : 'nothing hanging from the core',
   };
   return { objects: [], facts };
 }

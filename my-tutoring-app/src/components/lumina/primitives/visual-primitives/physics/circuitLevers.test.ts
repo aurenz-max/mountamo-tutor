@@ -22,8 +22,8 @@ describe('the x-ray reach', () => {
 describe('circuit levers', () => {
   it('x-ray once the battery is in, then the easier item; every miss of every mode is answered', () => {
     for (const c of items()) {
-      // No circuit in a magnet test, so no x-ray: magnetModel.test.ts covers its levers.
-      if (c.type === 'magnet_test') continue;
+      // No circuit in a magnet item, so no x-ray: magnetModel.test.ts and poleModel.test.ts cover their levers.
+      if (c.type === 'magnet_test' || c.type === 'magnet_poles' || c.type === 'magnet_distance' || c.type === 'electromagnet') continue;
       const ids = CIRCUIT_LEVERS.declare(c, { powered: true }, []).map(l => l.id);
       expect(ids[0]).toBe(XRAY_LEVER);
       expect(CIRCUIT_LEVERS.declare(c, { powered: false }, []).map(l => l.id)).not.toContain(XRAY_LEVER);

@@ -10,6 +10,9 @@ import { pickSwitches } from "../../primitives/visual-primitives/physics/switchM
 import { pickTwoBulbs } from "../../primitives/visual-primitives/physics/twoBulbModel";
 import { pickDevices } from "../../primitives/visual-primitives/physics/deviceModel";
 import { pickMagnets } from "../../primitives/visual-primitives/physics/magnetModel";
+import { pickPoles } from "../../primitives/visual-primitives/physics/poleModel";
+import { pickDistance } from "../../primitives/visual-primitives/physics/distanceModel";
+import { pickElectro } from "../../primitives/visual-primitives/physics/electroModel";
 import { seeded } from "../../primitives/visual-primitives/physics/buoyancyModel";
 import { XRAY_LEVER } from "../../primitives/visual-primitives/physics/circuitLevers";
 
@@ -24,8 +27,8 @@ export type { CircuitWorkbenchData };
  * pinned or resolved from the lesson intent; unresolved (mixed) runs some of each.
  */
 
-const SINGLE_COUNT: Record<CircuitTask, number> = { light_it: 5, find_the_break: 4, conductor_test: 4, magnet_test: 4, add_a_switch: 4, build_device: 3, two_bulbs: 4 };
-const MIXED_COUNT: Record<CircuitTask, number> = { light_it: 3, find_the_break: 2, conductor_test: 2, magnet_test: 1, add_a_switch: 1, build_device: 1, two_bulbs: 1 };
+const SINGLE_COUNT: Record<CircuitTask, number> = { light_it: 5, find_the_break: 4, conductor_test: 4, magnet_test: 4, magnet_poles: 4, magnet_distance: 3, electromagnet: 3, add_a_switch: 4, build_device: 3, two_bulbs: 4 };
+const MIXED_COUNT: Record<CircuitTask, number> = { light_it: 3, find_the_break: 2, conductor_test: 2, magnet_test: 1, magnet_poles: 1, magnet_distance: 1, electromagnet: 1, add_a_switch: 1, build_device: 1, two_bulbs: 1 };
 
 const CHALLENGE_TYPE_DOCS: Record<CircuitTask, ChallengeTypeDoc> = {
   light_it: {
@@ -43,6 +46,18 @@ const CHALLENGE_TYPE_DOCS: Record<CircuitTask, ChallengeTypeDoc> = {
   magnet_test: {
     promptDoc: '"magnet_test": hold a magnet over everyday things (steel, iron, aluminium foil, a copper coin, a brass key, plastic) to see which it pulls, then decide about untested things: magnets pull iron and steel, not every metal.',
     schemaDescription: "'magnet_test' (which things a magnet pulls)",
+  },
+  magnet_poles: {
+    promptDoc: '"magnet_poles": turn one bar magnet and slide it up to another to find that different ends (N and S) pull together and the same ends push apart, then use the rule on untested pairs or on a magnet whose letters rubbed off.',
+    schemaDescription: "'magnet_poles' (N and S ends: which pull together, which push apart)",
+  },
+  magnet_distance: {
+    promptDoc: '"magnet_distance": put a steel ball on a ruler mark and try a magnet near and far to find that a magnet pulls harder the closer a thing is: the farthest mark it pulls from, calls on another magnet, or which of two magnets is stronger (size does not tell).',
+    schemaDescription: "'magnet_distance' (how a magnet's pull changes with distance)",
+  },
+  electromagnet: {
+    promptDoc: '"electromagnet": wrap wire round a core, wire it to a battery and switch, and dip it in paper clips: a magnet only while on, stronger with more wraps or batteries, and only on iron or steel.',
+    schemaDescription: "'electromagnet' (build an electromagnet that lifts paper clips)",
   },
   add_a_switch: {
     promptDoc: '"add_a_switch": wire a switch into a battery-and-bulb loop so the switch turns the bulb on and off.',
@@ -79,6 +94,21 @@ const FRAMING: Record<CircuitTask, Record<Tier, { title: string; description: st
     easy: { title: "Magnet Hunt", description: "Hold the magnet over things. Which ones jump up to it?" },
     medium: { title: "What Does a Magnet Pull?", description: "Test some things, then use your tests to decide about the rest." },
     hard: { title: "Not Every Metal", description: "Some metal things stay put. Test, and find out which metal a magnet pulls." },
+  },
+  magnet_poles: {
+    easy: { title: "Push or Pull?", description: "Turn a magnet and slide it up to the other one. Do they snap together or push apart?" },
+    medium: { title: "Magnet Ends", description: "Test two bar magnets both ways, then use what you found on other magnets." },
+    hard: { title: "The Rubbed-Off Magnet", description: "One magnet lost its letters. Test it, and work out which end is which." },
+  },
+  magnet_distance: {
+    easy: { title: "How Far Can It Pull?", description: "Put the ball near the magnet, then far away. Where does the pull stop?" },
+    medium: { title: "Near and Far", description: "Test a magnet near and far, then use what you found on another magnet." },
+    hard: { title: "Which Magnet Is Stronger?", description: "A small magnet and a big one. Test them both. Is bigger always stronger?" },
+  },
+  electromagnet: {
+    easy: { title: "Make a Magnet", description: "Wrap wire round a nail and switch it on. Can it pick up paper clips?" },
+    medium: { title: "Just Enough Clips", description: "Build an electromagnet that picks up exactly the right number of clips." },
+    hard: { title: "Super Electromagnet", description: "Lots of clips! Choose the battery and what to wrap the wire round." },
   },
   add_a_switch: {
     easy: { title: "Add a Switch", description: "Finish the loop through the switch, then flip it. Does the bulb turn on and off?" },
@@ -119,6 +149,9 @@ export function buildCircuitWorkbench(
   if (tasks.includes("build_device")) challenges.push(...pickDevices(counts.build_device, tier, rng, "device"));
   if (tasks.includes("two_bulbs")) challenges.push(...pickTwoBulbs(counts.two_bulbs, tier, rng, "two"));
   if (tasks.includes("magnet_test")) challenges.push(...pickMagnets(counts.magnet_test, tier, rng, "magnet"));
+  if (tasks.includes("magnet_poles")) challenges.push(...pickPoles(counts.magnet_poles, tier, rng, "poles"));
+  if (tasks.includes("magnet_distance")) challenges.push(...pickDistance(counts.magnet_distance, tier, rng, "distance"));
+  if (tasks.includes("electromagnet")) challenges.push(...pickElectro(counts.electromagnet, tier, rng, "electro"));
   if (tasks.includes("add_a_switch")) challenges.push(...pickSwitches(counts.add_a_switch, tier, rng, "switch"));
   if (tasks.includes("conductor_test")) challenges.push(...pickConductors(counts.conductor_test, tier, rng, "cond"));
   // Where the levers start: at easy the charge dots are drawn from the start. A starting position is not a pull.
