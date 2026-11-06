@@ -90,11 +90,21 @@ function taskLine(ch: Record<string, unknown>): string {
   return [type, prompt.join(' / ') || '(no prompt text)', values.join(' ')].filter(Boolean).join(' | ');
 }
 
+const TASK_KEYS = ['challenges', 'problems', 'items', 'questions', 'rounds', 'tasks'];
+
+/** A payload whose task list is present but empty: a generator that refused all its content. */
+export function hasEmptyTaskList(payload: unknown): boolean {
+  const root = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
+  const data = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>;
+  const lists = TASK_KEYS.filter((k) => Array.isArray(data[k]));
+  return lists.length > 0 && lists.every((k) => (data[k] as unknown[]).length === 0);
+}
+
 /** The task list of a payload: `challenges`, else the first array of objects, else the payload itself. */
 function taskObjects(data: Record<string, unknown>): Record<string, unknown>[] {
   const isObjArray = (v: unknown): v is Record<string, unknown>[] =>
     Array.isArray(v) && v.length > 0 && v.every((x) => x && typeof x === 'object' && !Array.isArray(x));
-  for (const key of ['challenges', 'problems', 'items', 'questions', 'rounds', 'tasks']) {
+  for (const key of TASK_KEYS) {
     if (isObjArray(data[key])) return data[key];
   }
   const first = Object.values(data).find(isObjArray);

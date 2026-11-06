@@ -24,7 +24,7 @@ import 'server-only';
 import { systemOne, typesafeConfigured, type Question } from '../manifest/typesafe/typesafeClient';
 import { CONTENT_ORACLES } from '../qa/oracles';
 import type { OracleViolation } from '../qa/oracles';
-import { activityView, type ActivityView } from './activityView';
+import { activityView, hasEmptyTaskList, type ActivityView } from './activityView';
 import { appendFitLedger } from './fitLedger';
 
 export interface FitTarget {
@@ -93,8 +93,11 @@ export function decideFit(
   answers: Record<string, any> | null,
   oracleFailing: OracleViolation[],
   t = FIT_THRESHOLDS,
+  empty = false,
 ): Pick<FitVerdict, 'pass' | 'notes' | 'teaches' | 'numbers' | 'gradeFit'> {
   const notes: string[] = [];
+  // Judges score the tasks they are shown; with none to show they score the title and pass it.
+  if (empty) notes.push('The activity has no tasks. Generate the tasks the objective asks for.');
   const teaches = answers?.teaches?.noul ?? null;
   if (teaches !== null && teaches < t.teaches) {
     notes.push('The tasks practise a different skill from the objective. Every task must make the learner do exactly what the objective says.');
@@ -149,8 +152,9 @@ async function askJev(view: ActivityView, target: FitTarget): Promise<Record<str
 export async function judgeFit(payload: unknown, target: FitTarget, attempt = 0): Promise<FitVerdict> {
   const t0 = Date.now();
   const view = activityView(payload);
-  const [oracle, answers] = await Promise.all([Promise.resolve(runOracle(payload, target)), askJev(view, target)]);
-  const decided = decideFit(answers, oracle.failing);
+  const empty = hasEmptyTaskList(payload);
+  const [oracle, answers] = await Promise.all([Promise.resolve(runOracle(payload, target)), empty ? null : askJev(view, target)]);
+  const decided = decideFit(answers, oracle.failing, FIT_THRESHOLDS, empty);
   const verdict: FitVerdict = { ...decided, oracle: { checked: oracle.checked, failing: oracle.failing.map((v) => v.check) },
     attempt, ms: Date.now() - t0 };
   appendFitLedger({ at: new Date().toISOString(), ...target, verdict, view });

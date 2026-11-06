@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activityView } from './activityView';
+import { activityView, hasEmptyTaskList } from './activityView';
 import { decideFit } from './fitGate';
 
 describe('activityView', () => {
@@ -46,5 +46,18 @@ describe('decideFit', () => {
 
   it('never fails for lack of a judgment', () => {
     expect(decideFit(null, []).pass).toBe(true);
+  });
+
+  it('fails an activity with no tasks, so the slot is redrawn', () => {
+    expect(decideFit(null, [], undefined, true).pass).toBe(false);
+  });
+});
+
+describe('hasEmptyTaskList', () => {
+  it('reads a present-but-empty task list as empty, wrapped or not', () => {
+    expect(hasEmptyTaskList({ title: 'Say Why', items: [] })).toBe(true);
+    expect(hasEmptyTaskList({ data: { challenges: [] } })).toBe(true);
+    expect(hasEmptyTaskList({ items: [{ ask: 'Why?' }] })).toBe(false);
+    expect(hasEmptyTaskList({ title: 'A card with no list' })).toBe(false);
   });
 });
