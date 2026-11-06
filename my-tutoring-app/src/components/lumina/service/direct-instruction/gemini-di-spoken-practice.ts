@@ -314,6 +314,11 @@ ${concept
   by twos"). Every anchor must name the SPECIFIC unit or amount of THIS instance ("plus two", "red then
   blue") — never a generic that fits any pattern ("it repeats", "alternating", "it goes up"); a generic is
   half an answer and the reviewer rejects it. None of them may be the instance read back.`}
+- HOW-IT-WORKS / WHY-IT-HAPPENS IDEAS (how a machine turns, why plants need light): the instance is a
+  situation where the idea is AT WORK, described by what you would SEE happen ("A skid steer spins around
+  in a narrow alley", "A plant by the window grows tall and green"), and the ask asks how or why. The
+  scene never describes the mechanism or names the cause — wheels locking, sides moving, a dark box, dry
+  dirt — because that is the answer, and the child supplies it.
 - WHY-QUESTIONS ABOUT EVERYDAY SCENES (social studies, science, choices): the instance is a short scene a
   child can picture, 4-14 words ("Mia's grandma cooks food from Mexico", "Sam has one dollar for a snack").
   The ask repeats the scene WORD FOR WORD (an ask that drops or rewords a scene word is rejected), then
@@ -388,11 +393,22 @@ Return the JSON only.`;
  * empties it, and the retry loop draws again once. Two failures ship `items: []`
  * — pedagogy over runnability.
  */
-const reviewConceptItems = async (
+export const reviewConceptItems = async (
   items: SpokenPracticeItem[],
   context: { topic: string; gradeLevel: string; objectiveText?: string; intent?: string },
+  planned = false,
 ): Promise<{ kept: SpokenPracticeItem[]; rejected: string[]; reason: string }> => {
   if (!items.length) return { kept: [], rejected: [], reason: '' };
+  // A planned concept passed the plan review already; re-judging it per item rejected true items
+  // over wording, so the item review checks only what the items add: the instance and the ask.
+  const conceptCheck = planned
+    ? `The concept sentence and anchors were ALREADY checked against the objective and are shared by every
+item; do not re-judge them. For EACH item: does THIS instance show that idea, and does the ask give the
+idea away? Reject the ITEM (by id) on a no.`
+    : `For EACH item: is conceptStatement a TRUE, grade-appropriate statement of what the objective asks the
+child to explain, for THIS instance? Does every anchor mean the same thing as the concept sentence?
+Would a child who says only an anchor have shown the understanding the objective names? Does the ask
+give the idea away? Reject the ITEM (by id) on any no.`;
   const response = await ai.models.generateContent({
     model: REVIEW_MODEL,
     contents: `Independently check these spoken EXPLAIN items against the objective.
@@ -401,10 +417,7 @@ ITEMS: ${JSON.stringify(items.map((i) => ({
       id: i.id, instance: i.stimulusText, ask: i.ask, conceptStatement: i.conceptStatement,
       anchors: [i.expectedAnswer, ...i.alternates], acceptRule: i.acceptRule, signatureError: i.signatureError,
     })))}
-For EACH item: is conceptStatement a TRUE, grade-appropriate statement of what the objective asks the
-child to explain, for THIS instance? Does every anchor mean the same thing as the concept sentence?
-Would a child who says only an anchor have shown the understanding the objective names? Does the ask
-give the idea away? Reject the ITEM (by id) on any no. A why-question about an everyday scene may have
+${conceptCheck} A why-question about an everyday scene may have
 several right reasons: conceptStatement names one of them, which is correct, and is not grounds for
 rejection. An ask that names every option and asks which AND why is an explanation ask; an ask for the
 choice alone is not. Reject the SESSION only if two items show the
@@ -590,6 +603,9 @@ const generateSessionContent = async (
   const askCount = explain ? Math.min(MAX_ITEM_COUNT + 2, count + 3) : sparing ? count + 2 : count;
   let spares: SpokenPracticeItem[] = [];
   let pool: SpokenPracticeItem[] = [];
+  // Why the last draft lost items, handed to the retry. A blind redraw repeated the same
+  // over-long concept sentences and leaky asks (the skid-steer lesson lost 2 draws to them).
+  let retryNote = '';
 
   // One retry: a truncated or leaky first pass is common enough on flash-lite
   // that a second ask is cheaper than shipping a short session. The seed pool
@@ -606,7 +622,8 @@ const generateSessionContent = async (
       seeds = seeded.seeds;
       const parsed = await callModel(
         buildPrompt(topic, gradeLevel, mode, askCount,
-          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section, menu, concept),
+          [config?.objectiveText, intent].filter(Boolean).join(' — ') || undefined, seeded.section, menu, concept)
+          + retryNote,
         askCount,
       );
       if (typeof parsed.title === 'string' && parsed.title.trim()) title = parsed.title.trim();
@@ -629,14 +646,16 @@ const generateSessionContent = async (
       }
       dropped = result.dropped;
       if (dropped.length) console.warn('[DiSpokenPractice] gate drops:', result.reasons);
+      const lost = Object.values(result.reasons).flat();
       // The semantic half of the concept gate — shape passed, now meaning.
       if (explain) {
         const review = result.kept.length
-          ? await reviewConceptItems(result.kept, { topic, gradeLevel, objectiveText: config?.objectiveText, intent })
+          ? await reviewConceptItems(result.kept, { topic, gradeLevel, objectiveText: config?.objectiveText, intent }, !!concept)
           : { kept: [], rejected: [], reason: '' };
         if (review.rejected.length) {
           console.warn(`[DiSpokenPractice] explain review rejected ${review.rejected.join(', ')}: ${review.reason}`);
           dropped = [...dropped, ...review.rejected];
+          lost.push(`reviewer: ${review.reason}`);
         }
         const seen = new Set(pool.map((i) => i.stimulusText.trim().toLowerCase()));
         for (const item of review.kept) {
@@ -649,8 +668,9 @@ const generateSessionContent = async (
         items = plain.slice(0, count).map((item, i) => ({ ...item, id: `dsp-${i + 1}` }));
         spares = [...plain.slice(count), ...pool.filter((i) => i.easier)].map((i, k) => ({ ...i, id: `dsp-spare-${k + 1}` }));
       }
-      if (items.length > 0 && attempt > 0) {
-        console.warn('[DiSpokenPractice] first attempt yielded no usable items; retry succeeded');
+      if (lost.length) {
+        retryNote = '\n\nYOUR LAST DRAFT LOST ITEMS FOR THESE REASONS. Write new items that avoid every one:\n- '
+          + Array.from(new Set(lost)).slice(0, 8).join('\n- ');
       }
     } catch (error) {
       console.error('[DiSpokenPractice] generation failed:', error);
@@ -685,7 +705,7 @@ const generateSessionContent = async (
     // practice needs 3-6 instances to measure anything (mastery-over-demo).
     console.warn(
       `[DiSpokenPractice] THIN SESSION — ${items.length} of ${count} items survived the gates `
-      + `(dropped: ${dropped.join(', ') || 'none for leaks'}); the rest failed the response-class clamp.`,
+      + `(dropped by the gates or the review: ${dropped.join(', ') || 'none'}).`,
     );
     items = [];
   }
@@ -699,7 +719,7 @@ const generateSessionContent = async (
     seeds: seeds.slice(0, 8).join(','),
     answers: items.map((i) => i.expectedAnswer),
     kept: items.length,
-    droppedForLeak: dropped.length,
+    dropped: dropped.length,
     droppedIds: dropped,
     menu: menu.join(',') || undefined,
     concept: concept?.conceptStatement ?? (mode === 'explain_concept' ? 'per-item' : undefined),

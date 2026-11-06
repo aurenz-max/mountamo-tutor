@@ -408,14 +408,20 @@ describe('explain_concept — the first open proposition, and what code can gate
     expect(findUnspokenStimulus([explainItem()])).toEqual([]);
   });
 
-  it('refuses an item with no concept sentence, or one outside 4-12 words', () => {
+  it('refuses an item with no concept sentence, or one outside 4-16 words', () => {
     expect(findConceptDefects([explainItem({ conceptStatement: '' })]).map((d) => d.reason))
       .toEqual(['missing_concept']);
     expect(findConceptDefects([explainItem({ conceptStatement: 'Equal means same.' })]).map((d) => d.reason))
-      .toEqual(['missing_concept']);
+      .toEqual(['concept_length']);
     expect(findConceptDefects([explainItem({
-      conceptStatement: 'The equal sign means that the amount on the left is exactly the amount on the right side.',
-    })]).map((d) => d.reason)).toEqual(['missing_concept']);
+      conceptStatement: 'The equal sign means that the amount on the left side is exactly the very same amount as the amount on the right side.',
+    })]).map((d) => d.reason)).toEqual(['concept_length']);
+  });
+
+  it('keeps a 13-word mechanism sentence (the skid-steer lesson lost every item at 12)', () => {
+    expect(findConceptDefects([explainItem({
+      conceptStatement: 'Locking the right wheels while the left wheels roll turns the skid steer right.',
+    })])).toEqual([]);
   });
 
   it('refuses a concept sentence that opens with a verdict sentinel — it is SPOKEN in the affirm', () => {

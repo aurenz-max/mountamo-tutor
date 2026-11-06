@@ -141,13 +141,15 @@ export function diStageMetrics<C extends string>(result: TeachingEvaluationResul
 export default function DiTeachingStage<Item extends { id: string }, M extends PrimitiveMetrics>(
     props: DiTeachingStageProps<Item, M>) {
   const runtime = useLiveRuntime();
-  if (!runtime || !catalogBindsWorkspace(props.primitiveId, props.runtimeEvalMode)) return <NeedsTutor primitiveId={props.primitiveId} evalMode={props.runtimeEvalMode}
-    title={props.data.title || props.copy.title} className={props.className} />;
+  // Empty first: a refused session never binds (workspaceBinding counts zero items), so checking the
+  // runtime first would blame the tutor for a session the generator emptied.
   if (!props.items.length) {
     return <LuminaCard className={props.className}><LuminaCardContent>
       <p>{props.copy.empty}</p>
     </LuminaCardContent></LuminaCard>;
   }
+  if (!runtime || !catalogBindsWorkspace(props.primitiveId, props.runtimeEvalMode)) return <NeedsTutor primitiveId={props.primitiveId} evalMode={props.runtimeEvalMode}
+    title={props.data.title || props.copy.title} className={props.className} />;
   // A credited practice item shows as in every bound mount (VB-F1).
   return <WorkspacePin pin={props.runtimeEvalMode}><PracticeCreditScope>
     <StageWorkspace key={props.data.instanceId} {...props} />

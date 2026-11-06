@@ -40,6 +40,7 @@ None open.
 
 ## Changelog
 
+- 2026-11-04: explain_concept robustness. The planner names ONE session idea for how-it-works/why-it-happens objectives too (not only a symbol) and states the true idea when the objective's premise is wrong; concept sentence cap 12 -> 16 words (new `concept_length` defect); the item retry is told why the last draft lost items; a planned idea is not re-judged per item; mechanism scenes show the effect, never the cause. Math, pattern and choice shapes unchanged (bench 4/4 each, `qa/di-bench/harness-bench-2026-11-04/`). An empty session now fails the fit gate.
 - 2026-10-18 (later): the catalog `tutoring` block is deleted (bound sessions send `tutoring: null`; the live-activity route no longer echoes it). Four `special` sentences moved to the shared doctrine (`JUDGED_BY.tutor`: what the key names; the reading-is-the-answer rule; the screen rule; `LEVER_TYPE_DOCTRINE.model`), one was the meaning key's own text; this changes the guidance (one replay sample owed).
 - 2026-10-18: moved onto the boss framework — `diSpokenPractice.card.ts` (facts, catalog) + `diSpokenPractice.boss.ts` (`spokenBoss`); key via shared `spokenKeyText`, leak gate via `spokenKeyLeaks`, generator key fields via `spokenKeyProperties`; levers as one `SPOKEN_LEVERS` set. Tutor input byte-identical (R1-R6 unchanged; lever ids, order, words and facts kept).
 - 2026-10-17: explain_concept also serves why-questions about everyday scenes (social studies reasons, choose-and-give-the-reason); math instance shapes unchanged (explain probe 9/9). DSP-SS1.

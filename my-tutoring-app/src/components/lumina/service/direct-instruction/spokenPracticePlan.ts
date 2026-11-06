@@ -59,7 +59,7 @@ const planSchema = (sources: string[]): Schema => ({
     closedSet: { type: Type.BOOLEAN },
     conceptStatement: {
       type: Type.STRING,
-      description: 'explain_concept with ONE named concept only: the idea in one sentence, 4-12 words. '
+      description: `explain_concept with ONE named concept only: the idea in one sentence, ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} words. `
         + 'Empty string for every other case.',
     },
     targets: {
@@ -210,11 +210,16 @@ TASKS:
 - explain_concept: the child says, IN THEIR OWN WORDS, what something means, why it is so, or what
   rule governs it ("what does = mean?", "what is the rule of this pattern?"). The answer is an IDEA,
   1-10 words, with many correct wordings. Choose this for an explain/describe/tell-why objective whose
-  answer is a short proposition. When the objective names ONE concept (the equal sign, a ten rod),
-  emit ONE target whose stimulusId is the named symbol/picture, whose expectedAnswer is the shortest
-  correct statement of the concept (1-${CONCEPT_ANCHOR_MAX_WORDS} words), with alsoAccept holding 1-2 more short
-  wordings, and put the idea as one ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} word sentence in conceptStatement. When the
-  concept varies per instance (the rule of a pattern), targets is empty, closedSet false, and
+  answer is a short proposition. When the objective names ONE idea to explain — what a symbol means
+  (the equal sign, a ten rod), OR how one thing works or why one thing happens (how a skid steer
+  turns, why plants need light) — emit ONE target whose stimulusId is the token naming that thing
+  (or "picture" with its emoji), whose expectedAnswer is the shortest correct statement of the idea
+  (1-${CONCEPT_ANCHOR_MAX_WORDS} words), with alsoAccept holding 1-2 more short wordings, and put the idea as one
+  ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} word sentence in conceptStatement. One stated idea makes every item the same idea over a
+  different instance, so prefer it whenever the objective has one answer. The idea must be TRUE: if
+  the objective's wording is factually off ("turn by locking their wheels"), state the true idea
+  closest to it ("one side's wheels go while the other side's stop or go backward"). Only when
+  the idea varies per instance (the rule of each pattern) is targets empty, closedSet false, and
   conceptStatement empty — the item generator writes each instance and its rule. A PROCEDURE
   ("explain how to solve", the steps of a method) is not one proposition: use unsupported.
   explain_concept ALSO covers a WHY question about an everyday scene (social studies, science,
@@ -291,7 +296,8 @@ absence here is correct and is NOT grounds for rejection) — and explain_concep
 concept, where the single target only NAMES the concept (a token from the text, or a picture) as a
 grounding hook — the instances the child actually sees are written later, so the hook's glyph or
 picture is NOT grounds for rejection; judge only that conceptStatement is TRUE and grade-appropriate
-and that every anchor MEANS the same thing as it, and reject on any no. An open explain_concept plan
+and that every anchor MEANS the same thing as it, and reject on any no. A conceptStatement that
+corrects a factually wrong premise in the objective is right, not out of scope. An open explain_concept plan
 (the rule varies per instance) has no targets and no conceptStatement, which is correct. So does
 an explain_concept plan for a why-question about everyday scenes, a reflection whose child turn is a
 short reason, or a choose-and-give-the-reason objective: saying the reason aloud IS that learner action.

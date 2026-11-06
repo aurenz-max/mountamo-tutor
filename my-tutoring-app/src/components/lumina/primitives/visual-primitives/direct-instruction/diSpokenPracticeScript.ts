@@ -176,7 +176,9 @@ export const CONCEPT_ANCHOR_MAX_WORDS = 4;
 /** The one sentence the judge holds and speaks back as the affirmation. Long
  *  enough to be a proposition, short enough to be a firm-up rather than a lecture. */
 export const CONCEPT_STATEMENT_MIN_WORDS = 4;
-export const CONCEPT_STATEMENT_MAX_WORDS = 12;
+// 16, not 12: a mechanism sentence ("Locking the right wheels while the left wheels roll turns it
+// right.") runs 13; the 12 cap dropped whole skid-steer sessions over one word.
+export const CONCEPT_STATEMENT_MAX_WORDS = 16;
 
 const isNumberWord = (text: string): boolean =>
   NUMBER_WORDS.includes(text.trim().toLowerCase());
@@ -439,7 +441,8 @@ export function findChoiceMenuDefects(items: readonly SpokenPracticeItem[]): Cho
 export interface ConceptDefect {
   itemId: string;
   reason:
-    | 'missing_concept'        // no conceptStatement, or outside 4-12 words
+    | 'missing_concept'        // no conceptStatement
+    | 'concept_length'         // a conceptStatement outside the word bounds
     | 'anchor_too_long'        // an anchor over 4 words is a sentence, not an example
     | 'too_many_anchors'       // > 3 anchors is a word list, not a concept
     | 'anchors_not_distinct'   // two anchors the ear cannot tell apart add nothing
@@ -497,9 +500,13 @@ export function findConceptDefects(items: readonly SpokenPracticeItem[]): Concep
     if (item.mode !== 'explain_concept') continue;
     const concept = (item.conceptStatement ?? '').trim();
     const conceptWords = wordCount(concept);
-    if (!concept || conceptWords < CONCEPT_STATEMENT_MIN_WORDS
-      || conceptWords > CONCEPT_STATEMENT_MAX_WORDS) {
+    if (!concept) {
       defects.push({ itemId: item.id, reason: 'missing_concept', detail: [concept] });
+      continue;
+    }
+    if (conceptWords < CONCEPT_STATEMENT_MIN_WORDS || conceptWords > CONCEPT_STATEMENT_MAX_WORDS) {
+      defects.push({ itemId: item.id, reason: 'concept_length',
+        detail: [`${conceptWords} words, needs ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS}: ${concept}`] });
       continue;
     }
     if (opensWithSentinel(concept)) {
