@@ -1,0 +1,302 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-spell-word-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "spell-word",
+ "data": {
+  "title": "Spell CVC Words",
+  "bigIdea": "Every short word is made of sounds we can spell with letters.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "spell-word",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Say each sound slowly to find the first letter.",
+    "narration": "Look at the warm yellow sun in the sky! It has three sounds.",
+    "ask": "Can you put the letters in order to spell sun?",
+    "why": "Stretch out the word slowly. Listen for each sound.",
+    "challengeType": "spell-word",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "u",
+       "sounds": [
+        "AH"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "s",
+       "sounds": [
+        "S"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "n",
+       "sounds": [
+        "N"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "spelling",
+      "of": "r1",
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "L.K.2c-d, RF.K.3a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "spell 3 sounds (+1.5)"
+     ]
+    },
+    "sceneWords": [
+     "sun"
+    ],
+    "sceneEmoji": [
+     "\u2600\ufe0f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   },
+   {
+    "id": "stop-2",
+    "idea": "Listen for the middle vowel sound next.",
+    "narration": "Here is a happy cat! Listen to each sound it makes.",
+    "ask": "Can you put the letters in order to spell cat?",
+    "why": "Say the word slowly. Listen for each sound.",
+    "challengeType": "spell-word",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "a",
+       "sounds": [
+        "AE"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "c",
+       "sounds": [
+        "K"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "t",
+       "sounds": [
+        "T"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "spelling",
+      "of": "r1",
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "L.K.2c-d, RF.K.3a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "spell 3 sounds (+1.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   },
+   {
+    "id": "stop-3",
+    "idea": "Put all the sounds in order from start to end.",
+    "narration": "A pink pig is in the mud! We can spell its name with letters.",
+    "ask": "Can you put the letters in order to spell pig?",
+    "why": "Say the word slowly. Hear the start, middle, and end.",
+    "challengeType": "spell-word",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "g",
+       "sounds": [
+        "G"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "i",
+       "sounds": [
+        "IH"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "p",
+       "sounds": [
+        "P"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "spelling",
+      "of": "r1",
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "L.K.2c-d, RF.K.3a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "spell 3 sounds (+1.5)"
+     ]
+    },
+    "sceneWords": [
+     "pig"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc37"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 17.4,
+   "modes": [
+    "spell-word"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

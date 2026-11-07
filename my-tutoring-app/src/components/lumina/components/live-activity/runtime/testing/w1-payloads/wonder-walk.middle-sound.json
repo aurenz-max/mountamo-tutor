@@ -1,0 +1,445 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-middle-sound-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "middle-sound",
+ "data": {
+  "title": "Magic Middle Sounds",
+  "bigIdea": "Words have a middle sound hiding between the first and last sounds.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "middle-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Short words have a vowel sound right in the middle.",
+    "narration": "Every short word has a sound right in the middle. In a cat, the middle sound is a.",
+    "ask": "Which picture has ihh in the middle?",
+    "why": "Stretch the word out slowly. Listen for the sound in the very middle.",
+    "challengeType": "middle-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "middle",
+       "is": "IH"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "near_sound"
+      }
+     },
+     "say": "ihh"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice sounds close (+1)",
+      "the middle sound (+2)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can listen for the middle sound in different words.",
+    "narration": "Listen to the middle of each word. We can hear different sounds.",
+    "ask": "Which picture has ahh in the middle?",
+    "why": "Say each word slowly. Listen for the sound in the middle.",
+    "challengeType": "middle-sound",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pot",
+       "emoji": "\ud83c\udf72",
+       "phones": [
+        "P",
+        "AA",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "p",
+        "o",
+        "t"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "middle",
+       "is": "AA"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "near_sound",
+       "t3": "other"
+      }
+     },
+     "say": "ahh"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice sounds close (+1)",
+      "the middle sound (+2)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort words by their middle vowel sound.",
+    "narration": "Pan has a in the middle. Bug has u in the middle.",
+    "ask": "Can you sort the words by their middle sound?",
+    "why": "Stretch each word slowly. Listen for the sound in the middle.",
+    "challengeType": "middle-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "pan",
+       "emoji": "\ud83c\udf73",
+       "phones": [
+        "P",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "p",
+        "a",
+        "n"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "bug",
+       "emoji": "\ud83d\udc1b",
+       "phones": [
+        "B",
+        "AH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "u",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bus",
+       "emoji": "\ud83d\ude8c",
+       "phones": [
+        "B",
+        "AH",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "vehicle",
+       "letters": [
+        "b",
+        "u",
+        "s"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "fan",
+       "emoji": "\ud83e\udead",
+       "phones": [
+        "F",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "tool",
+       "letters": [
+        "f",
+        "a",
+        "n"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t4",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "phones": [
+        "N",
+        "AH",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "food",
+       "letters": [
+        "n",
+        "u",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_a",
+        "label": "r1",
+        "rule": {
+         "type": "same-sound",
+         "at": "middle",
+         "as": "r1"
+        }
+       },
+       {
+        "id": "b_u",
+        "label": "r2",
+        "rule": {
+         "type": "same-sound",
+         "at": "middle",
+         "as": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "the middle sound (+2)",
+      "find the sound in a heard word first (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "pan",
+     "bug"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf73",
+     "\ud83d\udc1b"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 11.8,
+   "modes": [
+    "middle-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: why: a sentence over 12 words (\"Stretch each word to hear the vowel sound in the middle, then match it to the basket.\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

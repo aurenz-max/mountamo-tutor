@@ -1,0 +1,548 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-word-kinds-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "word-kinds",
+ "data": {
+  "title": "Sorting Words: Animals, Foods, and Doing-Words",
+  "bigIdea": "Words can be sorted into groups like animals, foods, and things we do.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "word-kinds",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Some words name animals that live and breathe.",
+    "narration": "See the frog on the log. A frog is a green animal.",
+    "ask": "Which one is an animal?",
+    "why": "Look for a living pet or wild beast. It breathes and eats.",
+    "challengeType": "word-kinds",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "phones": [
+        "F",
+        "R",
+        "AA",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "f",
+        "r",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "drum",
+       "emoji": "\ud83e\udd41",
+       "phones": [
+        "D",
+        "R",
+        "AH",
+        "M"
+       ],
+       "syllables": 1,
+       "category": "music",
+       "letters": [
+        "d",
+        "r",
+        "u",
+        "m"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "kind",
+       "is": "animal"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "L.K.5a, L.K.1b",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Some words name yummy foods that we eat.",
+    "narration": "An apple is red and sweet. An apple is a food we bite.",
+    "ask": "Which one is a food we can eat?",
+    "why": "Look for something you can chew and eat at lunch.",
+    "challengeType": "word-kinds",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "phones": [
+        "AE",
+        "P",
+        "AH",
+        "L"
+       ],
+       "syllables": 2,
+       "category": "food"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bell",
+       "emoji": "\ud83d\udd14",
+       "phones": [
+        "B",
+        "EH",
+        "L"
+       ],
+       "syllables": 1,
+       "category": "school"
+      },
+      {
+       "id": "t2",
+       "word": "bread",
+       "emoji": "\ud83c\udf5e",
+       "phones": [
+        "B",
+        "R",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "food"
+      },
+      {
+       "id": "t3",
+       "word": "truck",
+       "emoji": "\ud83d\ude9a",
+       "phones": [
+        "T",
+        "R",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "vehicle"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "kind",
+       "is": "food"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.5a, L.K.1b",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-3",
+    "idea": "Some words are action words that show things we can do.",
+    "narration": "Look at the boy run. Run is something we do with our legs.",
+    "ask": "Which picture shows something we can do?",
+    "why": "Look for a person doing something fun with feet.",
+    "challengeType": "word-kinds",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "run",
+       "emoji": "\ud83c\udfc3",
+       "phones": [
+        "R",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "action",
+       "letters": [
+        "r",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "tree",
+       "emoji": "\ud83c\udf33",
+       "phones": [
+        "T",
+        "R",
+        "IY"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t2",
+       "word": "hop",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "HH",
+        "AA",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "action",
+       "letters": [
+        "h",
+        "o",
+        "p"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "clock",
+       "emoji": "\ud83d\udd50",
+       "phones": [
+        "K",
+        "L",
+        "AA",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "home"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "kind",
+       "is": "action"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.5a, L.K.1b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "doing-words (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "run"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udfc3"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-4",
+    "idea": "Some words name animals that live and breathe.",
+    "narration": "We have two baskets today. One is for animals and one is for foods.",
+    "ask": "Can you sort the animals and foods into their baskets?",
+    "why": "Put animals with the cat. Put things we eat with the banana.",
+    "challengeType": "word-kinds",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "banana",
+       "emoji": "\ud83c\udf4c",
+       "phones": [
+        "B",
+        "AH",
+        "N",
+        "AE",
+        "N",
+        "AH"
+       ],
+       "syllables": 3,
+       "category": "food"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "phones": [
+        "K",
+        "AE",
+        "R",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "food"
+      },
+      {
+       "id": "t4",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "phones": [
+        "K",
+        "UH",
+        "K",
+        "IY"
+       ],
+       "syllables": 2,
+       "category": "food"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_animal",
+        "label": "r1",
+        "rule": {
+         "type": "kind",
+         "is": "animal"
+        }
+       },
+       {
+        "id": "b_food",
+        "label": "r2",
+        "rule": {
+         "type": "kind",
+         "is": "food"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "L.K.5a, L.K.1b",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat",
+     "banana"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31",
+     "\ud83c\udf4c"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 16.7,
+   "modes": [
+    "word-kinds"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": [
+    "stop 3: check these words are known at K: into"
+   ]
+  }
+ }
+}

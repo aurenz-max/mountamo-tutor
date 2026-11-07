@@ -1,0 +1,372 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-story-order-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "story-order",
+ "data": {
+  "title": "Story Order",
+  "bigIdea": "Stories happen in order from first to last.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "story-order",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Stories have parts that happen first and last.",
+    "narration": "Here is a story. First, the dog saw a bone. Then, the dog ran to the tree.",
+    "ask": "Can you put the story in order?",
+    "why": "Think about what came first and what came after.",
+    "challengeType": "story-order",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t2",
+       "word": "tree",
+       "emoji": "\ud83c\udf33",
+       "phones": [
+        "T",
+        "R",
+        "IY"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t1",
+       "word": "bone",
+       "emoji": "\ud83e\uddb4",
+       "phones": [
+        "B",
+        "OW",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "body"
+      }
+     ],
+     "story": [
+      {
+       "who": "dog",
+       "did": "saw",
+       "what": "bone"
+      },
+      {
+       "who": "dog",
+       "did": "ran to",
+       "where": "tree"
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "story",
+      "things": [
+       "t1",
+       "t2"
+      ]
+     }
+    },
+    "standards": "RL.K.2",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "put 2 story events in order (+1)"
+     ]
+    },
+    "sceneWords": [
+     "dog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc36"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can tell what happens from start to end.",
+    "narration": "A big bear was hungry. First, the bear ate an apple. Then, the bear found a fish.",
+    "ask": "Can you put the story in order?",
+    "why": "Remember what the bear ate first, then next.",
+    "challengeType": "story-order",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bear",
+       "emoji": "\ud83d\udc3b",
+       "phones": [
+        "B",
+        "EH",
+        "R"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "fish",
+       "emoji": "\ud83d\udc1f",
+       "phones": [
+        "F",
+        "IH",
+        "SH"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "phones": [
+        "AE",
+        "P",
+        "AH",
+        "L"
+       ],
+       "syllables": 2,
+       "category": "food"
+      }
+     ],
+     "story": [
+      {
+       "who": "bear",
+       "did": "ate",
+       "what": "apple"
+      },
+      {
+       "who": "bear",
+       "did": "found",
+       "what": "fish"
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "story",
+      "things": [
+       "t1",
+       "t2"
+      ]
+     }
+    },
+    "standards": "RL.K.2",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "put 2 story events in order (+1)"
+     ]
+    },
+    "sceneWords": [
+     "bear"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc3b"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can put three story parts in order.",
+    "narration": "First, a frog saw a bug. Next, the frog went to the lake. Last, the frog sat on a log.",
+    "ask": "Can you put the story in order?",
+    "why": "Think about what happened first, next, and last.",
+    "challengeType": "story-order",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "phones": [
+        "F",
+        "R",
+        "AA",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "f",
+        "r",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "lake",
+       "emoji": "\ud83c\udfde\ufe0f",
+       "phones": [
+        "L",
+        "EY",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t2",
+       "word": "bug",
+       "emoji": "\ud83d\udc1b",
+       "phones": [
+        "B",
+        "AH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "u",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "log",
+       "emoji": "\ud83e\udeb5",
+       "phones": [
+        "L",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "l",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "story": [
+      {
+       "who": "frog",
+       "did": "saw",
+       "what": "bug"
+      },
+      {
+       "who": "frog",
+       "did": "went to",
+       "where": "lake"
+      },
+      {
+       "who": "frog",
+       "did": "sat on",
+       "where": "log"
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "story",
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "RL.K.2",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "put 3 story events in order (+1)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 16.6,
+   "modes": [
+    "story-order"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

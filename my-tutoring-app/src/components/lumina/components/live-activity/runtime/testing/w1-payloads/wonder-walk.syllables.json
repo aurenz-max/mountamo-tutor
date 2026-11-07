@@ -1,0 +1,427 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-syllables-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "syllables",
+ "data": {
+  "title": "Clap the Beats",
+  "bigIdea": "Words have beats called syllables that we can clap.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "syllables",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Some words have two claps.",
+    "narration": "Cat gets one clap. Rab-bit gets two claps!",
+    "ask": "Which word has two claps?",
+    "why": "Say each animal name and clap each beat slowly.",
+    "challengeType": "syllables",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "rabbit",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "R",
+        "AE",
+        "B",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "monkey",
+       "emoji": "\ud83d\udc35",
+       "phones": [
+        "M",
+        "AH",
+        "NG",
+        "K",
+        "IY"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "phones": [
+        "F",
+        "R",
+        "AA",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "f",
+        "r",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "fish",
+       "emoji": "\ud83d\udc1f",
+       "phones": [
+        "F",
+        "IH",
+        "SH"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "syllables",
+       "n": 2
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "RF.K.2b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "2 claps (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "rabbit"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc30"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Some words have three claps.",
+    "narration": "Some words are long. Ba-na-na gets three whole claps!",
+    "ask": "Which word has three claps?",
+    "why": "Say each animal name out loud and count your claps.",
+    "challengeType": "syllables",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "banana",
+       "emoji": "\ud83c\udf4c",
+       "phones": [
+        "B",
+        "AH",
+        "N",
+        "AE",
+        "N",
+        "AH"
+       ],
+       "syllables": 3,
+       "category": "food"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "dinosaur",
+       "emoji": "\ud83e\udd95",
+       "phones": [
+        "D",
+        "AY",
+        "N",
+        "AH",
+        "S",
+        "AO",
+        "R"
+       ],
+       "syllables": 3,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "phones": [
+        "T",
+        "ER",
+        "T",
+        "AH",
+        "L"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "syllables",
+       "n": 3
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "near_sound"
+      }
+     }
+    },
+    "standards": "RF.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice sounds close (+1)",
+      "3 claps (+1)"
+     ]
+    },
+    "sceneWords": [
+     "banana"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4c"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort words by how many claps they have.",
+    "narration": "Pig gets one clap. Ti-ger gets two claps.",
+    "ask": "Can you sort the animals into the right clap baskets?",
+    "why": "Clap each animal name. Count the beats.",
+    "challengeType": "syllables",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "tiger",
+       "emoji": "\ud83d\udc2f",
+       "phones": [
+        "T",
+        "AY",
+        "G",
+        "ER"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bear",
+       "emoji": "\ud83d\udc3b",
+       "phones": [
+        "B",
+        "EH",
+        "R"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "zebra",
+       "emoji": "\ud83e\udd93",
+       "phones": [
+        "Z",
+        "IY",
+        "B",
+        "R",
+        "AH"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      },
+      {
+       "id": "t4",
+       "word": "monkey",
+       "emoji": "\ud83d\udc35",
+       "phones": [
+        "M",
+        "AH",
+        "NG",
+        "K",
+        "IY"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b1",
+        "label": "r1",
+        "rule": {
+         "type": "syllables",
+         "n": 1
+        }
+       },
+       {
+        "id": "b2",
+        "label": "r2",
+        "rule": {
+         "type": "syllables",
+         "n": 2
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "1 claps (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "pig",
+     "tiger"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc37",
+     "\ud83d\udc2f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 12.6,
+   "modes": [
+    "syllables"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": [
+    "stop 0: check these words are known at K: rab",
+    "stop 2: check these words are known at K: ger, into"
+   ]
+  }
+ }
+}

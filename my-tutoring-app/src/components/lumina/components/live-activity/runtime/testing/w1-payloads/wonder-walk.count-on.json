@@ -1,0 +1,373 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-count-on-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "count-on",
+ "data": {
+  "title": "Count On!",
+  "bigIdea": "You can start at a number and keep counting up.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "count-on",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Start with what is hidden and count on.",
+    "narration": "Four frogs hide under the cup. Some more frogs wait in a line.",
+    "ask": "How many frogs are there in all?",
+    "why": "Start at four and count up for each frog you see.",
+    "challengeType": "count-on",
+    "world": {
+     "places": [
+      {
+       "id": "cup_a",
+       "kind": "cup",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      },
+      {
+       "id": "group_b",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-cup_a-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "cup_a"
+      },
+      {
+       "id": "s0-cup_a-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "cup_a"
+      },
+      {
+       "id": "s0-cup_a-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "cup_a"
+      },
+      {
+       "id": "s0-cup_a-3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "cup_a"
+      },
+      {
+       "id": "s0-group_b-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "group_b"
+      },
+      {
+       "id": "s0-group_b-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "group_b"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "cup_a",
+       "group_b"
+      ],
+      "choices": [
+       5,
+       7,
+       6
+      ],
+      "answer": 6
+     }
+    },
+    "standards": "K.CC.A.2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 6 (+1)",
+      "count on from a hidden group (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "options": [],
+    "correctOptionId": "num-6",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Keep counting the new things that come next.",
+    "narration": "Five ducks hide under the cup. Other ducks swim in a row.",
+    "ask": "How many ducks are there in all?",
+    "why": "Start at five and count up one by one.",
+    "challengeType": "count-on",
+    "world": {
+     "places": [
+      {
+       "id": "cup_a",
+       "kind": "cup",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      },
+      {
+       "id": "group_b",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-cup_a-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "cup_a"
+      },
+      {
+       "id": "s1-cup_a-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "cup_a"
+      },
+      {
+       "id": "s1-cup_a-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "cup_a"
+      },
+      {
+       "id": "s1-cup_a-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "cup_a"
+      },
+      {
+       "id": "s1-cup_a-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "cup_a"
+      },
+      {
+       "id": "s1-group_b-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "group_b"
+      },
+      {
+       "id": "s1-group_b-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "group_b"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "cup_a",
+       "group_b"
+      ],
+      "choices": [
+       8,
+       6,
+       7
+      ],
+      "answer": 7
+     }
+    },
+    "standards": "K.CC.A.2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "count on from a hidden group (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-7",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "Count on to find how many in all.",
+    "narration": "Six apples hide under the cup. Fresh apples sit on the plate.",
+    "ask": "How many apples are there in all?",
+    "why": "Start at six and keep counting each one.",
+    "challengeType": "count-on",
+    "world": {
+     "places": [
+      {
+       "id": "cup_a",
+       "kind": "cup",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      },
+      {
+       "id": "group_b",
+       "kind": "plate",
+       "arrangement": "rows",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-cup_a-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-cup_a-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-cup_a-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-cup_a-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-cup_a-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-cup_a-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "cup_a"
+      },
+      {
+       "id": "s2-group_b-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "group_b"
+      },
+      {
+       "id": "s2-group_b-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "group_b"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "cup_a",
+       "group_b"
+      ],
+      "choices": [
+       7,
+       8,
+       9
+      ],
+      "answer": 8
+     }
+    },
+    "standards": "K.CC.A.2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 8 (+1)",
+      "count on from a hidden group (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "num-8",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 16.9,
+   "modes": [
+    "count-on"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

@@ -1,0 +1,375 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-how-many-respond-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "how-many",
+ "data": {
+  "title": "Counting on the Farm",
+  "bigIdea": "You can count animals one by one up to ten.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "how-many",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Touch and count farm animals lined up to five.",
+    "narration": "Let's visit the muddy pig pen. The pigs are standing in a line.",
+    "ask": "How many pigs are in the mud?",
+    "why": "Touch each pig once as you say the numbers. The last number tells how many.",
+    "respond": "say",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       5,
+       4,
+       3
+      ],
+      "answer": 4
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "pig"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc37"
+    ],
+    "options": [],
+    "correctOptionId": "num-4",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Count farm animals in a line up to eight.",
+    "narration": "Look at the goats by the big barn. They stand in a row.",
+    "ask": "How many goats are by the barn?",
+    "why": "Point to each goat one by one. The last number you count tells how many.",
+    "respond": "say",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-6",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       8,
+       7,
+       6
+      ],
+      "answer": 7
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "goat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc10"
+    ],
+    "options": [],
+    "correctOptionId": "num-7",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "Count farm animals scattered in a pen up to ten.",
+    "narration": "Look at the ducks swimming in the water. They swim here and there.",
+    "ask": "How many ducks are in the pond?",
+    "why": "Touch each duck once as you count. The last number tells how many.",
+    "respond": "say",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "scattered",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-a-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.897,
+        0.826
+       ]
+      },
+      {
+       "id": "s2-a-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.106,
+        0.382
+       ]
+      },
+      {
+       "id": "s2-a-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.147,
+        0.138
+       ]
+      },
+      {
+       "id": "s2-a-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.601,
+        0.147
+       ]
+      },
+      {
+       "id": "s2-a-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.405,
+        0.658
+       ]
+      },
+      {
+       "id": "s2-a-5",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.652,
+        0.603
+       ]
+      },
+      {
+       "id": "s2-a-6",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.083,
+        0.649
+       ]
+      },
+      {
+       "id": "s2-a-7",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.414,
+        0.363
+       ]
+      },
+      {
+       "id": "s2-a-8",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a",
+       "position": [
+        0.631,
+        0.85
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       9,
+       8,
+       10
+      ],
+      "answer": 9
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 9 (+1)",
+      "a scattered group (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-9",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 19.6,
+   "modes": [
+    "how-many"
+   ],
+   "countMax": 10,
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true,
+     "note": "blocked: place a: no picture for \"sheep\"; pick a word from the picture list"
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: around, scattered, everywhere, carefully, any; use everyday words"
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

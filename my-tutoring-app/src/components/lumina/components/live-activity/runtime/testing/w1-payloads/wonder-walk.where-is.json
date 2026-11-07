@@ -1,0 +1,443 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-where-is-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "where-is",
+ "data": {
+  "title": "Where Is It?",
+  "bigIdea": "Words like in, on, under, and next to tell us where things are.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "where-is",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Something can be in or on a place.",
+    "narration": "Look at the cat. It plays by the box.",
+    "ask": "Which picture shows the cat in the box?",
+    "why": "Look at the box. Find the cat inside.",
+    "challengeType": "where-is",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "box",
+       "emoji": "\ud83d\udce6",
+       "phones": [
+        "B",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "home"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ],
+       "rel": "in",
+       "landmark": {
+        "word": "box",
+        "emoji": "\ud83d\udce6"
+       }
+      },
+      {
+       "id": "t2",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ],
+       "rel": "under",
+       "landmark": {
+        "word": "box",
+        "emoji": "\ud83d\udce6"
+       }
+      },
+      {
+       "id": "t3",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ],
+       "rel": "on",
+       "landmark": {
+        "word": "box",
+        "emoji": "\ud83d\udce6"
+       }
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "where",
+       "rel": "in"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.1e",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "in and on side by side (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "box"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udce6"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Something can be under a place.",
+    "narration": "The dog plays hide and seek. Where is the dog?",
+    "ask": "Which picture shows the dog under the bed?",
+    "why": "Look low. Find the dog down by the rug.",
+    "challengeType": "where-is",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ],
+       "rel": "next-to",
+       "landmark": {
+        "word": "bed",
+        "emoji": "\ud83d\udecf\ufe0f"
+       }
+      },
+      {
+       "id": "t2",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ],
+       "rel": "under",
+       "landmark": {
+        "word": "bed",
+        "emoji": "\ud83d\udecf\ufe0f"
+       }
+      },
+      {
+       "id": "t3",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ],
+       "rel": "on",
+       "landmark": {
+        "word": "bed",
+        "emoji": "\ud83d\udecf\ufe0f"
+       }
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "where",
+       "rel": "under"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.1e",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "bed"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udecf\ufe0f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-3",
+    "idea": "Something can be next to a place.",
+    "narration": "A rabbit is in the park. It wants to rest.",
+    "ask": "Which picture shows the rabbit next to the tree?",
+    "why": "Look by the tree. Find the rabbit at the side.",
+    "challengeType": "where-is",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "tree",
+       "emoji": "\ud83c\udf33",
+       "phones": [
+        "T",
+        "R",
+        "IY"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "rabbit",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "R",
+        "AE",
+        "B",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "animal",
+       "rel": "on",
+       "landmark": {
+        "word": "tree",
+        "emoji": "\ud83c\udf33"
+       }
+      },
+      {
+       "id": "t2",
+       "word": "rabbit",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "R",
+        "AE",
+        "B",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "animal",
+       "rel": "next-to",
+       "landmark": {
+        "word": "tree",
+        "emoji": "\ud83c\udf33"
+       }
+      },
+      {
+       "id": "t3",
+       "word": "rabbit",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "R",
+        "AE",
+        "B",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "animal",
+       "rel": "under",
+       "landmark": {
+        "word": "tree",
+        "emoji": "\ud83c\udf33"
+       }
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "where",
+       "rel": "next-to"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.1e",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "tree"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf33"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 14.4,
+   "modes": [
+    "where-is"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: little, loves, exploring, around, carefully; use everyday words"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: hopped, into, grassy; use everyday words"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

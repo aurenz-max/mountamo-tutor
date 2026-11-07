@@ -1474,6 +1474,7 @@ export type ComponentId =
   | 'timeline-explorer'  // Interactive timeline explorer
   | 'vocabulary-explorer' // Interactive vocabulary exploration
   | 'deep-dive'          // Orchestrated multi-block learning experience
+  | 'wonder-walk'        // Agent-authored K picture walk: scene, narration, tap the picture that fits the idea
   | 'passage-studio'     // Multi-block orchestrator anchored to a text stimulus
 
   // Data & Analysis
@@ -2369,6 +2370,7 @@ export type { FastFactData } from './primitives/visual-primitives/core/FastFact'
 export type { TimelineExplorerData } from './primitives/visual-primitives/core/TimelineExplorer';
 export type { VocabularyExplorerData } from './primitives/visual-primitives/core/VocabularyExplorer';
 export type { DeepDiveData } from './primitives/visual-primitives/core/deep-dive/types';
+export type { WonderWalkData } from './primitives/visual-primitives/core/wonder-walk/WonderWalk';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';

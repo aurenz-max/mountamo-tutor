@@ -1,0 +1,338 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-add-take-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "add-take",
+ "data": {
+  "title": "More Come, Some Go!",
+  "bigIdea": "When more come, we add; when some go away, we take away!",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "add-take",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "When more join in, there are more than before.",
+    "narration": "Three frogs sit by a pond. Two more frogs hop in!",
+    "ask": "How many frogs are there now?",
+    "why": "Count all the frogs together. Touch each one.",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-pond-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond"
+      },
+      {
+       "id": "s0-pond-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond"
+      },
+      {
+       "id": "s0-pond-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond"
+      },
+      {
+       "id": "s0-pond-3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "event": "join"
+      },
+      {
+       "id": "s0-pond-4",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "event": "join"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       5,
+       6,
+       4
+      ],
+      "answer": 5
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "options": [],
+    "correctOptionId": "num-5",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "When some leave, there are fewer than before.",
+    "narration": "Five birds sit in a nest. Two birds fly away!",
+    "ask": "How many birds are left now?",
+    "why": "Count the birds that stay in the nest.",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "nest",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-nest-0",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "nest"
+      },
+      {
+       "id": "s1-nest-1",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "nest"
+      },
+      {
+       "id": "s1-nest-2",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "nest"
+      },
+      {
+       "id": "s1-nest-3",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "nest",
+       "event": "leave"
+      },
+      {
+       "id": "s1-nest-4",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "nest",
+       "event": "leave"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "nest"
+      ],
+      "choices": [
+       3,
+       4,
+       2
+      ],
+      "answer": 3
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "a story: some leave (+1.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "bird"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc26"
+    ],
+    "options": [],
+    "correctOptionId": "num-3",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can count how many are left or how many in all.",
+    "narration": "Five toy cars sit in a box. A boy adds one more car!",
+    "ask": "How many cars are in the box now?",
+    "why": "Count every car in the box. Touch each one.",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "box",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-box-0",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-1",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-2",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-3",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-4",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-5",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "box",
+       "event": "join"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "box"
+      ],
+      "choices": [
+       7,
+       6,
+       5
+      ],
+      "answer": 6
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 6 (+1)",
+      "ten-frames (-0.5)",
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "car"
+    ],
+    "sceneEmoji": [
+     "\ud83d\ude97"
+    ],
+    "options": [],
+    "correctOptionId": "num-6",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 6,
+   "seconds": 18.7,
+   "modes": [
+    "add-take"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

@@ -1,0 +1,446 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-rhyme-respond-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "rhyme",
+ "data": {
+  "title": "Farm Animal Rhymes",
+  "bigIdea": "Words that rhyme end with the same sound.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "rhyme",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Rhyming words sound the same at the very end.",
+    "narration": "A dog sits by a hog. Dog and hog end the same way.",
+    "ask": "Which picture rhymes with dog?",
+    "why": "Listen to the end of the word. We want a word that ends with og.",
+    "respond": "say",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "log",
+       "emoji": "\ud83e\udeb5",
+       "phones": [
+        "L",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "l",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "bone",
+       "emoji": "\ud83e\uddb4",
+       "phones": [
+        "B",
+        "OW",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "body"
+      },
+      {
+       "id": "t3",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "meaning"
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "dog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc36"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can match words that rhyme with different farm animals.",
+    "narration": "Look at the hen and the goat. They have two baskets. Let us sort by rhyme!",
+    "ask": "Where does each picture go?",
+    "why": "Say each word slowly. Listen to the ending sound to find where it goes.",
+    "respond": "show",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "hen",
+       "emoji": "\ud83d\udc14",
+       "phones": [
+        "HH",
+        "EH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "h",
+        "e",
+        "n"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "phones": [
+        "G",
+        "OW",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pen",
+       "emoji": "\ud83d\udd8a\ufe0f",
+       "phones": [
+        "P",
+        "EH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "school",
+       "letters": [
+        "p",
+        "e",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "boat",
+       "emoji": "\u26f5",
+       "phones": [
+        "B",
+        "OW",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "vehicle"
+      },
+      {
+       "id": "t3",
+       "word": "coat",
+       "emoji": "\ud83e\udde5",
+       "phones": [
+        "K",
+        "OW",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_hen",
+        "label": "r1",
+        "rule": {
+         "type": "rhymes",
+         "with": "r1"
+        }
+       },
+       {
+        "id": "b_goat",
+        "label": "r2",
+        "rule": {
+         "type": "rhymes",
+         "with": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "hear the ending (+0.5)",
+      "3 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "hen",
+     "goat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc14",
+     "\ud83d\udc10"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can think of our own words that rhyme.",
+    "narration": "A farm cat chases a rat. Cat and rat end with the same sound!",
+    "ask": "Can you think of a word that rhymes with cat?",
+    "why": "Say cat slowly. Think of a word that ends with at.",
+    "respond": "say-any",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": "meaning",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3",
+    "sayAny": [
+     "at",
+     "bat",
+     "chat",
+     "fat",
+     "pat",
+     "sat"
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 22.7,
+   "modes": [
+    "rhyme"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: wig: no picture for \"wig\"; pick a word from the picture list"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: narration: a sentence over 12 words (\"A hen sits on her nest, and a goat climbs on a rock.\")"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the why says \"hat\", the answer"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: among names \"stick\", which is not a thing"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

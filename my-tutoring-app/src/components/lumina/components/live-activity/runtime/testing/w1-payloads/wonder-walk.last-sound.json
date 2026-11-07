@@ -1,0 +1,466 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-last-sound-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "last-sound",
+ "data": {
+  "title": "Catch the Ending Sound",
+  "bigIdea": "Words have a sound right at the very end.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "last-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "We can listen for the sound at the very end of a word.",
+    "narration": "Say the word cup. Hear the sound right at the end? Now listen for the sound at the end of these words.",
+    "ask": "Which one ends with tuh?",
+    "why": "Say each word slowly. Listen to the very last sound you make.",
+    "challengeType": "last-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "last",
+       "is": "T"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     },
+     "say": "tuh"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "the last sound (+1)",
+      "a quick sound that cannot be stretched (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cup"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd64"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Different words can end with the exact same sound.",
+    "narration": "A bed is soft and cozy. Say bed slowly and hear the sound at the very end.",
+    "ask": "Which one ends with the same sound as bed?",
+    "why": "Say bed and listen to the end. Then say each word and listen for that same ending sound.",
+    "challengeType": "last-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bus",
+       "emoji": "\ud83d\ude8c",
+       "phones": [
+        "B",
+        "AH",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "vehicle",
+       "letters": [
+        "b",
+        "u",
+        "s"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "leaf",
+       "emoji": "\ud83c\udf43",
+       "phones": [
+        "L",
+        "IY",
+        "F"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t3",
+       "word": "hand",
+       "emoji": "\u270b",
+       "phones": [
+        "HH",
+        "AE",
+        "N",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "body",
+       "letters": [
+        "h",
+        "a",
+        "n",
+        "d"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "same-sound",
+       "at": "last",
+       "as": "r1"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "the last sound (+1)",
+      "a quick sound that cannot be stretched (+0.5)",
+      "find the sound in a heard word first (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "bed"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udecf\ufe0f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort words by their ending sound.",
+    "narration": "Look at the tub and the net. Listen to their ending sounds. Put each picture with the matching sound!",
+    "ask": "Can you sort each picture by its ending sound?",
+    "why": "Say each word slowly and stretch out the ending sound. Then match it to tub or net.",
+    "challengeType": "last-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "tub",
+       "emoji": "\ud83d\udec1",
+       "phones": [
+        "T",
+        "AH",
+        "B"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "t",
+        "u",
+        "b"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "net",
+       "emoji": "\ud83e\udd45",
+       "phones": [
+        "N",
+        "EH",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "sport",
+       "letters": [
+        "n",
+        "e",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "crab",
+       "emoji": "\ud83e\udd80",
+       "phones": [
+        "K",
+        "R",
+        "AE",
+        "B"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "r",
+        "a",
+        "b"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "web",
+       "emoji": "\ud83d\udd78\ufe0f",
+       "phones": [
+        "W",
+        "EH",
+        "B"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "w",
+        "e",
+        "b"
+       ]
+      },
+      {
+       "id": "t4",
+       "word": "pot",
+       "emoji": "\ud83c\udf72",
+       "phones": [
+        "P",
+        "AA",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "p",
+        "o",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b1",
+        "label": "r1",
+        "rule": {
+         "type": "same-sound",
+         "at": "last",
+         "as": "r1"
+        }
+       },
+       {
+        "id": "b2",
+        "label": "r2",
+        "rule": {
+         "type": "same-sound",
+         "at": "last",
+         "as": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "the last sound (+1)",
+      "a quick sound that cannot be stretched (+0.5)",
+      "find the sound in a heard word first (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "tub",
+     "net"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udec1",
+     "\ud83e\udd45"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 13,
+   "modes": [
+    "last-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

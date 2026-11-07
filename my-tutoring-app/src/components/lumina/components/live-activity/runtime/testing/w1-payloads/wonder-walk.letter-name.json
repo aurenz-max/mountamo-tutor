@@ -1,0 +1,292 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-letter-name-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "letter-name",
+ "data": {
+  "title": "Big and Small Letters",
+  "bigIdea": "Letters can be big capitals or small lowercase letters.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "letter-name",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "A capital letter and a lowercase letter are two shapes for the same letter.",
+    "narration": "Letters can be big or small. Look at the big letters here.",
+    "ask": "Which tile is big C?",
+    "why": "Look at the shapes. Find big C.",
+    "challengeType": "letter-name",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "C",
+       "sounds": [
+        "K"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "O",
+       "sounds": [
+        "AA",
+        "AO"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "S",
+       "sounds": [
+        "S"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "letter-name",
+       "is": "C"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "look_alike",
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "RF.K.1d",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a letter that looks alike (+1)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Some small letters look like mini versions of the big capital letter.",
+    "narration": "Some small letters look just like big ones. Big O is a big round loop.",
+    "ask": "Which small letter matches this big letter?",
+    "why": "Look for a small round loop.",
+    "challengeType": "letter-name",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "letter": "O",
+       "sounds": [
+        "AA",
+        "AO"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "o",
+       "sounds": [
+        "AA",
+        "AO"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "v",
+       "sounds": [
+        "V"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "z",
+       "sounds": [
+        "Z"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "same-letter",
+       "as": "r1"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "RF.K.1d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0,
+     "reasons": [
+      "three choices (+0.5)",
+      "both cases one shape (-0.5)"
+     ]
+    },
+    "sceneWords": [
+     "O"
+    ],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-3",
+    "idea": "Some small letters look quite different from their big capital partner.",
+    "narration": "Some small letters look new. Big B has two bumps. The small one has one bump.",
+    "ask": "Which small letter matches this big letter?",
+    "why": "Look for the small letter with the bump on the right side.",
+    "challengeType": "letter-name",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "letter": "B",
+       "sounds": [
+        "B"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "p",
+       "sounds": [
+        "P"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "b",
+       "sounds": [
+        "B"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "d",
+       "sounds": [
+        "D"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "same-letter",
+       "as": "r1"
+      },
+      "traps": {
+       "t1": "look_alike",
+       "t2": null,
+       "t3": "look_alike"
+      }
+     }
+    },
+    "standards": "RF.K.1d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a letter that looks alike (+1)",
+      "the two cases look different (+1)"
+     ]
+    },
+    "sceneWords": [
+     "B"
+    ],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 17,
+   "modes": [
+    "letter-name"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: narration: a sentence over 12 words (\"Letters can stand tall as big capital letters or sit small as lowercase letters.\")"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: narration: a sentence over 12 words (\"Big S has curvy bends, and little s curls the exact same way.\")"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: partner, lowercase, tummy, straight; use everyday words"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

@@ -1,0 +1,386 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-story-detail-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "story-detail",
+ "data": {
+  "title": "A Farm Story",
+  "bigIdea": "A story tells who is in it, what they do, and where they go.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "story-detail",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "A story tells who does something.",
+    "narration": "A pig saw a bug. A duck ate bread.",
+    "ask": "Who did see the bug first?",
+    "why": "Listen to who saw the bug first.",
+    "challengeType": "story-detail",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "cow",
+       "emoji": "\ud83d\udc2e",
+       "phones": [
+        "K",
+        "AW"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "story": [
+      {
+       "who": "pig",
+       "did": "see",
+       "what": "bug"
+      },
+      {
+       "who": "duck",
+       "did": "eat",
+       "what": "bread"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "story",
+       "event": 0,
+       "role": "who"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "not_heard",
+       "t3": "in_story"
+      }
+     }
+    },
+    "standards": "RL.K.1, RL.K.3, SL.K.2",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a story of 2 events (+0.5)",
+      "not the last thing heard (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "A story tells what happens.",
+    "narration": "The hen found an egg. The horse ate an apple.",
+    "ask": "What did the horse eat?",
+    "why": "Think about what the horse ate in the story.",
+    "challengeType": "story-detail",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bread",
+       "emoji": "\ud83c\udf5e",
+       "phones": [
+        "B",
+        "R",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "food"
+      },
+      {
+       "id": "t2",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "phones": [
+        "EH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "food"
+      },
+      {
+       "id": "t3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "phones": [
+        "AE",
+        "P",
+        "AH",
+        "L"
+       ],
+       "syllables": 2,
+       "category": "food"
+      }
+     ],
+     "story": [
+      {
+       "who": "hen",
+       "did": "find",
+       "what": "egg"
+      },
+      {
+       "who": "horse",
+       "did": "eat",
+       "what": "apple"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "story",
+       "event": 1,
+       "role": "what"
+      },
+      "traps": {
+       "t1": "not_heard",
+       "t2": "in_story",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RL.K.1, RL.K.3, SL.K.2",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "a story of 2 events (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-3",
+    "idea": "A story tells where it happens.",
+    "narration": "A dog slept by the tree. A goat ran to the lake.",
+    "ask": "Where did the goat run?",
+    "why": "Listen for the place the goat ran to.",
+    "challengeType": "story-detail",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "tent",
+       "emoji": "\u26fa",
+       "phones": [
+        "T",
+        "EH",
+        "N",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "t",
+        "e",
+        "n",
+        "t"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "tree",
+       "emoji": "\ud83c\udf33",
+       "phones": [
+        "T",
+        "R",
+        "IY"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t3",
+       "word": "lake",
+       "emoji": "\ud83c\udfde\ufe0f",
+       "phones": [
+        "L",
+        "EY",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      }
+     ],
+     "story": [
+      {
+       "who": "dog",
+       "did": "sleep",
+       "where": "tree"
+      },
+      {
+       "who": "goat",
+       "did": "run",
+       "where": "lake"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "story",
+       "event": 1,
+       "role": "where"
+      },
+      "traps": {
+       "t1": "not_heard",
+       "t2": "in_story",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RL.K.1, RL.K.3, SL.K.2",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a story of 2 events (+0.5)",
+      "where it happened (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 27.1,
+   "modes": [
+    "story-detail"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: story: no picture for what \"mud\""
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: corn: no picture for \"corn\"; pick a word from the picture list"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the ask must point at the event: say \"see\" or first/last"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: no wrong picture is from the story: a child can pick the only thing they heard; offer another thing from the story"
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [
+    {
+     "stop": 0,
+     "pick": "pig",
+     "alsoFits": [],
+     "note": ""
+    },
+    {
+     "stop": 1,
+     "pick": "apple",
+     "alsoFits": [],
+     "note": ""
+    },
+    {
+     "stop": 2,
+     "pick": "lake",
+     "alsoFits": [],
+     "note": ""
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

@@ -1,0 +1,349 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-one-many-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "one-many",
+ "data": {
+  "title": "One or More Than One?",
+  "bigIdea": "Adding an s sound tells us there is more than one.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "one-many",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "When we hear more than one, we add an s sound at the end.",
+    "narration": "Look at the pets. One puppy is playing.",
+    "ask": "Where are the cats?",
+    "why": "Listen for the s sound at the end of the word.",
+    "challengeType": "one-many",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ],
+       "count": 3
+      },
+      {
+       "id": "t3",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ],
+       "count": 3
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "number",
+       "is": "many",
+       "word": "cat"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "L.K.1c",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-2",
+    "idea": "When we hear one thing, we say its plain name.",
+    "narration": "Down at the pond, frogs hop on logs.",
+    "ask": "Where is the duck?",
+    "why": "Listen to the end. If you hear no s sound, there is just one.",
+    "challengeType": "one-many",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "count": 3
+      },
+      {
+       "id": "t3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "phones": [
+        "F",
+        "R",
+        "AA",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "f",
+        "r",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "number",
+       "is": "one",
+       "word": "duck"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "L.K.1c",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "find the one, not the many (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can listen closely to the end of a word to know how many there are.",
+    "narration": "The farm is noisy today. A hen pecks at grass.",
+    "ask": "Where are the pigs?",
+    "why": "Listen for the s sound at the end. It means more than one.",
+    "challengeType": "one-many",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "hen",
+       "emoji": "\ud83d\udc14",
+       "phones": [
+        "HH",
+        "EH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "h",
+        "e",
+        "n"
+       ],
+       "count": 3
+      },
+      {
+       "id": "t2",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ],
+       "count": 3
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "number",
+       "is": "many",
+       "word": "pig"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "L.K.1c",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 18.8,
+   "modes": [
+    "one-many"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: why: a sentence over 12 words (\"Listen closely for that buzzing z or s sound at the end to find more than one.\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

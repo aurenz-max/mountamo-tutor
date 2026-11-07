@@ -1,0 +1,445 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-first-sound-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "first-sound",
+ "data": {
+  "title": "First Sounds",
+  "bigIdea": "Words start with a first sound you can hear.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "first-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Every word has a sound right at the beginning.",
+    "narration": "Listen close as we say words. Words have a very first sound!",
+    "ask": "Which one starts with sss?",
+    "why": "Say the word slowly. Listen to the very first sound at the start.",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "seal",
+       "emoji": "\ud83e\uddad",
+       "phones": [
+        "S",
+        "IY",
+        "L"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "moon",
+       "emoji": "\ud83c\udf19",
+       "phones": [
+        "M",
+        "UW",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      },
+      {
+       "id": "t2",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "first",
+       "is": "S"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null
+      }
+     },
+     "say": "sss"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0,
+     "reasons": [
+      "two choices, a first sound, recognise only"
+     ]
+    },
+    "sceneWords": [
+     "seal"
+    ],
+    "sceneEmoji": [
+     "\ud83e\uddad"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-2",
+    "idea": "You can find pictures that start with a sound you hear.",
+    "narration": "We can catch the sound right at the start of a word.",
+    "ask": "Which one starts with fff?",
+    "why": "Say each word out loud. Catch the first sound your mouth makes.",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "fan",
+       "emoji": "\ud83e\udead",
+       "phones": [
+        "F",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "tool",
+       "letters": [
+        "f",
+        "a",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "fish",
+       "emoji": "\ud83d\udc1f",
+       "phones": [
+        "F",
+        "IH",
+        "SH"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "bus",
+       "emoji": "\ud83d\ude8c",
+       "phones": [
+        "B",
+        "AH",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "vehicle",
+       "letters": [
+        "b",
+        "u",
+        "s"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "cap",
+       "emoji": "\ud83e\udde2",
+       "phones": [
+        "K",
+        "AE",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "c",
+        "a",
+        "p"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "first",
+       "is": "F"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     },
+     "say": "fff"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "fan"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udead"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-3",
+    "idea": "You can sort words into groups by their first sound.",
+    "narration": "Here is a mop, and here is a tub. Each basket collects words with the same first sound!",
+    "ask": "Can you sort the pictures by their first sound?",
+    "why": "Say the name of each basket. Match each picture to the same starting sound.",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "mop",
+       "emoji": "\ud83e\uddf9",
+       "phones": [
+        "M",
+        "AA",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "tool",
+       "letters": [
+        "m",
+        "o",
+        "p"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "tub",
+       "emoji": "\ud83d\udec1",
+       "phones": [
+        "T",
+        "AH",
+        "B"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "t",
+        "u",
+        "b"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "mouse",
+       "emoji": "\ud83d\udc2d",
+       "phones": [
+        "M",
+        "AW",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "tiger",
+       "emoji": "\ud83d\udc2f",
+       "phones": [
+        "T",
+        "AY",
+        "G",
+        "ER"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "tent",
+       "emoji": "\u26fa",
+       "phones": [
+        "T",
+        "EH",
+        "N",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "t",
+        "e",
+        "n",
+        "t"
+       ]
+      },
+      {
+       "id": "t4",
+       "word": "milk",
+       "emoji": "\ud83e\udd5b",
+       "phones": [
+        "M",
+        "IH",
+        "L",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "drink",
+       "letters": [
+        "m",
+        "i",
+        "l",
+        "k"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_m",
+        "label": "r1",
+        "rule": {
+         "type": "same-sound",
+         "at": "first",
+         "as": "r1"
+        }
+       },
+       {
+        "id": "b_t",
+        "label": "r2",
+        "rule": {
+         "type": "same-sound",
+         "at": "first",
+         "as": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "find the sound in a heard word first (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "mop",
+     "tub"
+    ],
+    "sceneEmoji": [
+     "\ud83e\uddf9",
+     "\ud83d\udec1"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 6,
+   "seconds": 26.7,
+   "modes": [
+    "first-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": false,
+     "note": "no stop at index 0"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": false,
+     "note": "no stop at index 1"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": false,
+     "note": "no stop at index 2"
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

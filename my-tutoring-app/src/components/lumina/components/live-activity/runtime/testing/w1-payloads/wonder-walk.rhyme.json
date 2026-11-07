@@ -1,0 +1,462 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-rhyme-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "rhyme",
+ "data": {
+  "title": "Rhyme Time Fun",
+  "bigIdea": "Rhyming words sound the same at the very end!",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "rhyme",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Words rhyme when their ending sounds match.",
+    "narration": "Look at the cat on the mat. Cat and mat rhyme!",
+    "ask": "Which picture rhymes with cat?",
+    "why": "Say each word out loud. Listen for the ending that matches cat.",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "meaning"
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Different beginning sounds can share the same ending sound.",
+    "narration": "Here is a frog on a log. Frog and log rhyme at the end!",
+    "ask": "Which picture rhymes with frog?",
+    "why": "Listen to the end of frog. Find the word that ends the same way.",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "phones": [
+        "F",
+        "R",
+        "AA",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "f",
+        "r",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "meaning",
+       "t3": "meaning"
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort words into rhyming families.",
+    "narration": "Look at the pan and the sun. Let us sort words that rhyme with them!",
+    "ask": "Can you sort each picture to the word it rhymes with?",
+    "why": "Say each word slowly. Listen for the ending sounds that match.",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "pan",
+       "emoji": "\ud83c\udf73",
+       "phones": [
+        "P",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "p",
+        "a",
+        "n"
+       ]
+      },
+      {
+       "id": "r2",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "van",
+       "emoji": "\ud83d\ude90",
+       "phones": [
+        "V",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "vehicle",
+       "letters": [
+        "v",
+        "a",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "run",
+       "emoji": "\ud83c\udfc3",
+       "phones": [
+        "R",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "action",
+       "letters": [
+        "r",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bun",
+       "emoji": "\ud83c\udf5e",
+       "phones": [
+        "B",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "food",
+       "letters": [
+        "b",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t4",
+       "word": "can",
+       "emoji": "\ud83e\udd6b",
+       "phones": [
+        "K",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "food",
+       "letters": [
+        "c",
+        "a",
+        "n"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b1",
+        "label": "r1",
+        "rule": {
+         "type": "rhymes",
+         "with": "r1"
+        }
+       },
+       {
+        "id": "b2",
+        "label": "r2",
+        "rule": {
+         "type": "rhymes",
+         "with": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "hear the ending (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "pan",
+     "sun"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf73",
+     "\u2600\ufe0f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 20.5,
+   "modes": [
+    "rhyme"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

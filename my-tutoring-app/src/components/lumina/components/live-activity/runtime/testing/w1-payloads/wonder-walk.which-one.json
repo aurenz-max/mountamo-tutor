@@ -1,0 +1,122 @@
+{
+  "source": "code-built from checks.buildStops (2026-11-05; the Gemini spend cap blocked save_payload.py) - replace with a saved generation",
+  "primitiveId": "wonder-walk",
+  "evalMode": "which-one",
+  "data": {
+    "title": "Alive or Not?",
+    "bigIdea": "Living things eat, drink and grow; nonliving things do not.",
+    "domain": "science",
+    "gradeBand": "K",
+    "challengeType": "which-one",
+    "challenges": [
+      {
+        "id": "stop-1",
+        "challengeType": "which-one",
+        "idea": "Living things eat, drink and grow.",
+        "narration": "A puppy eats and drinks. It grows into a big dog. It is alive!",
+        "ask": "Which one is alive too?",
+        "why": "Living things eat, drink and grow.",
+        "sceneWords": [
+          "puppy"
+        ],
+        "sceneEmoji": [
+          "🐶"
+        ],
+        "sceneImage": null,
+        "options": [
+          {
+            "id": "s0-a",
+            "word": "frog",
+            "emoji": "🐸",
+            "trap": null
+          },
+          {
+            "id": "s0-c",
+            "word": "car",
+            "emoji": "🚗",
+            "trap": "looks_like"
+          },
+          {
+            "id": "s0-b",
+            "word": "rock",
+            "emoji": "🪨",
+            "trap": "other"
+          }
+        ],
+        "correctOptionId": "s0-a"
+      },
+      {
+        "id": "stop-2",
+        "challengeType": "which-one",
+        "idea": "Nonliving things do not eat, drink or grow.",
+        "narration": "A rock sits in the yard. It does not eat. It does not grow.",
+        "ask": "Which one is not alive?",
+        "why": "Things that are not alive do not eat or grow.",
+        "sceneWords": [
+          "rock"
+        ],
+        "sceneEmoji": [
+          "🪨"
+        ],
+        "sceneImage": null,
+        "options": [
+          {
+            "id": "s1-a",
+            "word": "ball",
+            "emoji": "⚽",
+            "trap": null
+          },
+          {
+            "id": "s1-c",
+            "word": "tree",
+            "emoji": "🌳",
+            "trap": "goes_with"
+          },
+          {
+            "id": "s1-b",
+            "word": "cat",
+            "emoji": "🐱",
+            "trap": "other"
+          }
+        ],
+        "correctOptionId": "s1-a"
+      },
+      {
+        "id": "stop-3",
+        "challengeType": "which-one",
+        "idea": "Living things eat, drink and grow.",
+        "narration": "A seed gets water and sun. It grows into a flower. Plants are alive too!",
+        "ask": "Which one grows like the flower?",
+        "why": "Living things grow. Plants grow too.",
+        "sceneWords": [
+          "flower"
+        ],
+        "sceneEmoji": [
+          "🌸"
+        ],
+        "sceneImage": null,
+        "options": [
+          {
+            "id": "s2-b",
+            "word": "sun",
+            "emoji": "☀️",
+            "trap": "goes_with"
+          },
+          {
+            "id": "s2-a",
+            "word": "tree",
+            "emoji": "🌳",
+            "trap": null
+          },
+          {
+            "id": "s2-c",
+            "word": "kite",
+            "emoji": "🪁",
+            "trap": "other"
+          }
+        ],
+        "correctOptionId": "s2-a"
+      }
+    ]
+  }
+}

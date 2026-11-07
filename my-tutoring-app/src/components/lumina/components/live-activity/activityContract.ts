@@ -91,6 +91,7 @@ import { calendarExplorerBoss } from '../../primitives/visual-primitives/calenda
 import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.boss';
 import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
+import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
 import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
@@ -277,6 +278,7 @@ export const LIVE_ADAPTERS = {
   'fast-fact': bossAdapter(fastFactBoss),
   'fact-file': bossAdapter(factFileBoss),
   'deep-dive': bossAdapter(deepDiveBoss),
+  'wonder-walk': bossAdapter(wonderWalkBoss),
   'push-pull-arena': bossAdapter(pushPullArenaBoss),
   'race-track-lab': bossAdapter(raceTrackLabBoss),
   'habitat-diorama': bossAdapter(habitatDioramaBoss),

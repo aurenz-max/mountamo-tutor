@@ -1,0 +1,341 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-blend-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "blend",
+ "data": {
+  "title": "Blending Sounds Together",
+  "bigIdea": "We can put small sounds together to make a whole word.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "blend",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "We can blend the starting sound and the rest of the word together.",
+    "narration": "Listen to the parts come together. When we slide two parts together, they make one word.",
+    "ask": "Listen, sss - un, which picture is it?",
+    "why": "Say the two parts together fast. Listen to how they make one word.",
+    "challengeType": "blend",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "sock",
+       "emoji": "\ud83e\udde6",
+       "phones": [
+        "S",
+        "AA",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "clothing"
+      },
+      {
+       "id": "t2",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bun",
+       "emoji": "\ud83c\udf5e",
+       "phones": [
+        "B",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "food",
+       "letters": [
+        "b",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "blend",
+       "word": "sun",
+       "parts": "onset-rime"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     },
+     "say": "sss - un"
+    },
+    "standards": "RF.K.2b-d",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "blend a start and an ending (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can blend every little sound together in order to make a word.",
+    "narration": "Now listen to three sounds. When we join the sounds, they make a word!",
+    "ask": "Listen, kuh - aaa - tuh, which picture is it?",
+    "why": "Say the sounds in a row fast. Listen to what word they make.",
+    "challengeType": "blend",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "cow",
+       "emoji": "\ud83d\udc2e",
+       "phones": [
+        "K",
+        "AW"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "blend",
+       "word": "cat",
+       "parts": "phonemes"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     },
+     "say": "kuh - aaa - tuh"
+    },
+    "standards": "RF.K.2b-d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "blend every sound (+1.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can blend every little sound together in order to make a word.",
+    "narration": "We can catch each sound we hear. Push them together to find the picture!",
+    "ask": "Listen, duh - ahh - guh, which picture is it?",
+    "why": "Slide the sounds together from first to last. Hear the word they make.",
+    "challengeType": "blend",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "log",
+       "emoji": "\ud83e\udeb5",
+       "phones": [
+        "L",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "l",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "blend",
+       "word": "dog",
+       "parts": "phonemes"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     },
+     "say": "duh - ahh - guh"
+    },
+    "standards": "RF.K.2b-d",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "blend every sound (+1.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 14.1,
+   "modes": [
+    "blend"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: closely, little, appears; use everyday words"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

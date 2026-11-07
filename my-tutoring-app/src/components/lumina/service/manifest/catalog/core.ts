@@ -12,6 +12,7 @@ import { fastFactCard } from '../../../primitives/visual-primitives/core/fastFac
 import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/core/vocabularyExplorer.card';
 import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
 import { deepDiveCard } from '../../../primitives/visual-primitives/core/deep-dive/deepDive.card';
+import { wonderWalkCard } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalk.card';
 import { timelineExplorerCard } from '../../../primitives/visual-primitives/core/timelineExplorer.card';
 import { howItWorksCard } from '../../../primitives/visual-primitives/core/howItWorks.card';
 import { digitalSkillsSimCard } from '../../../primitives/visual-primitives/core/digitalSkillsSim.card';
@@ -582,6 +583,105 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     ],
     // The live wiring is deepDive.card.ts + deepDive.boss.ts; no session receives a catalog tutoring block.
     ...bossEntry(deepDiveCard),
+    supportsEvaluation: true,
+  },
+  {
+    id: 'wonder-walk',
+    description:
+      'Kindergarten picture walk for children who cannot read yet: 3-5 stops on one big idea. At each stop a picture and the tutor’s '
+      + 'narration teach the idea with one example, then the child taps which of 2-3 pictures fits the idea (always a new example, '
+      + 'never the one shown). Perfect for introducing Kindergarten science ideas: living and nonliving things, what plants and '
+      + 'animals need, animals and their homes, weather and seasons, day and night, the senses. ESSENTIAL for Kindergarten science '
+      + 'knowledge taught by listening and looking. Math walks are small worlds of everyday things (groups, piles, a basket, coloured plates, ten-frames, a cup hiding '
+      + 'some) with a story (some join, some leave): count how many, compare groups, count out, add and take away, split a '
+      + 'number into parts, make ten, teen numbers as ten and some more, sort and count, count on. ESSENTIAL for Kindergarten '
+      + 'counting, cardinality and operations within 10 taught by listening, touching and moving. Language walks are small word worlds of '
+      + 'picture cards and letter tiles: rhyme, first, last and middle sounds, clapping syllables, blending sounds into a word, changing a '
+      + 'sound, letter names and letter sounds, spelling a CVC word with tiles, sorting words by kind and doing-words, one and many (cat, '
+      + 'cats), in/on/under/next to, and listening to a short story (who, what, where, what came first). ESSENTIAL for Kindergarten '
+      + 'phonological awareness, letters and phonics, vocabulary and grammar, and story listening taught by hearing, tapping and sorting.',
+    constraints:
+      'Kindergarten only (pre-readers). The idea must be shown with pictures of everyday things. No printed words: letters appear only '
+      + 'as letter tiles on language stops, and numerals 0-20 only as number answers to tap (K.CC.A.3). Not for shapes, measuring, sight '
+      + 'words, opposites or reading a passage. '
+      + 'The manifest must NOT supply stops, pictures or answers: an author agent writes them under code checks.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 5 },
+    evalModes: [
+      {
+        evalMode: 'which-one',
+        label: 'Which One Fits',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['which-one'],
+        description: 'After a scene teaches the idea with one example, tap which of 2-3 pictures fits the idea.',
+      },
+      {
+        evalMode: 'how-many',
+        label: 'How Many (math)',
+        beta: 0.8,
+        scaffoldingMode: 2,
+        challengeTypes: ['how-many'],
+        description: 'Count a group (line, rows, ten-frame or scattered): tap the group with the number the tutor says, or tap how many (K.CC.B.4-5).',
+      },
+      {
+        evalMode: 'more-fewer',
+        label: 'More or Fewer (math)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['more-fewer'],
+        description: 'Tap which of 2-3 drawn groups has more or fewer, or the same as, one more or one fewer than the scene group (K.CC.B.4c, K.CC.C.6).',
+      },
+      {
+        evalMode: 'count-out',
+        label: 'Count Out (math)',
+        beta: 1.2,
+        scaffoldingMode: 2,
+        challengeTypes: ['count-out'],
+        description: 'Move objects from a pile into a basket until it holds the number the tutor says, then tap Done (K.CC.B.4a, K.CC.B.5).',
+      },
+      { evalMode: 'add-take', label: 'Join and Leave (math)', beta: 1.5, scaffoldingMode: 2, challengeTypes: ['add-take'],
+        description: 'A story: some join a group or some leave it; tap how many now (K.OA.A.1-2).' },
+      { evalMode: 'parts', label: 'Parts and Make Ten (math)', beta: 2.0, scaffoldingMode: 2, challengeTypes: ['parts'],
+        description: 'Split a number onto two plates any way, or fill a ten-frame to 10 (K.OA.A.3-4).' },
+      { evalMode: 'teens', label: 'Ten and Some More (math)', beta: 2.0, scaffoldingMode: 2, challengeTypes: ['teens'],
+        description: 'A full ten-frame and some more: how many, or build a teen number (K.NBT.A.1).' },
+      { evalMode: 'sort-count', label: 'Sort and Count (math)', beta: 1.0, scaffoldingMode: 2, challengeTypes: ['sort-count'],
+        description: 'Sort things by colour or kind onto plates, or count only one kind (K.MD.B.3).' },
+      { evalMode: 'count-on', label: 'Count On (math)', beta: 1.8, scaffoldingMode: 2, challengeTypes: ['count-on'],
+        description: 'Some hide under a cup and the tutor says how many; count on with the rest (K.CC.A.2).' },
+      { evalMode: 'rhyme', label: 'Rhyme (language)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['rhyme'],
+        description: 'Tap the picture that rhymes with a heard word, or sort pictures by the word they rhyme with (RF.K.2a).' },
+      { evalMode: 'first-sound', label: 'First Sound (language)', beta: -0.3, scaffoldingMode: 2, challengeTypes: ['first-sound'],
+        description: 'Tap or sort pictures by their first sound, said by the tutor or heard in a word (RF.K.2d).' },
+      { evalMode: 'last-sound', label: 'Last Sound (language)', beta: 0.6, scaffoldingMode: 2, challengeTypes: ['last-sound'],
+        description: 'Tap or sort pictures by their last sound (RF.K.2d).' },
+      { evalMode: 'middle-sound', label: 'Middle Sound (language)', beta: 1.4, scaffoldingMode: 2, challengeTypes: ['middle-sound'],
+        description: 'Tap the CVC picture with the vowel sound the tutor says in the middle (RF.K.2d).' },
+      { evalMode: 'syllables', label: 'Syllables (language)', beta: 0.0, scaffoldingMode: 2, challengeTypes: ['syllables'],
+        description: 'Tap or sort pictures by how many claps their word has (RF.K.2b).' },
+      { evalMode: 'blend', label: 'Blend Sounds (language)', beta: 0.8, scaffoldingMode: 2, challengeTypes: ['blend'],
+        description: 'The tutor says a word in parts (onset and rime, or every sound); tap the picture it makes (RF.K.2b-d).' },
+      { evalMode: 'change-sound', label: 'Change a Sound (language)', beta: 1.8, scaffoldingMode: 2, challengeTypes: ['change-sound'],
+        description: 'Say a word, change one sound, tap the new word (RF.K.2e).' },
+      { evalMode: 'letter-name', label: 'Letter Names (language)', beta: -0.8, scaffoldingMode: 2, challengeTypes: ['letter-name'],
+        description: 'Tap the letter the tutor names, or the small letter that matches a big one (RF.K.1d).' },
+      { evalMode: 'letter-sound', label: 'Letter Sounds (language)', beta: 0.3, scaffoldingMode: 2, challengeTypes: ['letter-sound'],
+        description: 'Tap the letter for a sound, or for the first sound of a picture (RF.K.3a-b).' },
+      { evalMode: 'spell-word', label: 'Spell a Word (language)', beta: 1.6, scaffoldingMode: 2, challengeTypes: ['spell-word'],
+        description: 'Put letter tiles in order to spell a pictured CVC word (L.K.2c-d).' },
+      { evalMode: 'word-kinds', label: 'Word Kinds (language)', beta: -1.0, scaffoldingMode: 2, challengeTypes: ['word-kinds'],
+        description: 'Sort or tap pictures by kind (food, animals, things we wear), or doing-words from things (L.K.5a, L.K.1b).' },
+      { evalMode: 'one-many', label: 'One and Many (language)', beta: -0.2, scaffoldingMode: 2, challengeTypes: ['one-many'],
+        description: 'Hear cat or cats; tap the card that shows one or many (L.K.1c).' },
+      { evalMode: 'where-is', label: 'Position Words (language)', beta: -0.4, scaffoldingMode: 2, challengeTypes: ['where-is'],
+        description: 'Hear in, on, under or next to; tap the card that shows it (L.K.1e).' },
+      { evalMode: 'story-detail', label: 'Story Details (language)', beta: 0.2, scaffoldingMode: 2, challengeTypes: ['story-detail'],
+        description: 'The tutor tells a 2-3 event story; tap who, what or where (RL.K.1, RL.K.3, SL.K.2).' },
+      { evalMode: 'story-order', label: 'Story Order (language)', beta: 0.9, scaffoldingMode: 2, challengeTypes: ['story-order'],
+        description: 'Put the story pictures on a track in the order they happened (RL.K.2).' },
+    ],
+    // The live wiring is wonderWalk.card.ts + wonderWalk.boss.ts.
+    ...bossEntry(wonderWalkCard),
     supportsEvaluation: true,
   },
   {

@@ -258,7 +258,7 @@ describe('the ask never says the answer (askLeaks)', () => {
 
   it('say-or-show and a tap with a commit press are card values the doctrine and the tap preset read', () => {
     const words = { job: 'answer', answer: 'the answer', question: 'the prompt' };
-    expect(ROTATION_DOCTRINE({ words, modes: { m: SAY_OR_SHOW } })).toContain('The learner may say the answer out loud or show it on screen');
+    expect(ROTATION_DOCTRINE({ words, modes: { m: SAY_OR_SHOW } })).toContain('The learner may say the answer aloud or show it.');
     const tap = tapBoss<{ title: string }, { id: string }, string>({
       card: { id: 't', grades: [], modes: { m: { ...TAP_ONE, moves: 'taps a choice, then presses Check', misses: [] } },
         words: { job: '', answer: '', question: '' } } as unknown as Card,

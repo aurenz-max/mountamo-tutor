@@ -1,0 +1,350 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-count-out-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "count-out",
+ "data": {
+  "title": "Count Out Just Right!",
+  "bigIdea": "We can count things one by one to get the exact amount we need.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "count-out",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Move things one at a time and stop when you reach your number.",
+    "narration": "Let us pick a snack! We need red apples. Count each one as you drop it in.",
+    "ask": "Can you put three apples in the basket?",
+    "why": "Say each number as you drop one apple. Stop when you say three!",
+    "challengeType": "count-out",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "b",
+       "kind": "basket",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "b"
+        ],
+        "count": 3
+       }
+      ]
+     }
+    },
+    "standards": "K.CC.B.4a, K.CC.B.5",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "the child makes it (+1)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Check your group by counting each one inside.",
+    "narration": "The pet bunnies want food! Put carrots in the big basket. Count each one to be right.",
+    "ask": "Can you put four carrots in the basket?",
+    "why": "Count the carrots you put in. Stop when you have four!",
+    "challengeType": "count-out",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "b",
+       "kind": "basket",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "b"
+        ],
+        "count": 4
+       }
+      ]
+     }
+    },
+    "standards": "K.CC.B.4a, K.CC.B.5",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 6 (+1)",
+      "the child makes it (+1)"
+     ]
+    },
+    "sceneWords": [
+     "carrot"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd55"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "Leave the extra things behind in the pile.",
+    "narration": "The shop has good cookies! Put some on the plate to eat. Keep the other cookies in the row.",
+    "ask": "Can you put five cookies on the plate?",
+    "why": "Count each cookie as you set it down. Stop when you count five!",
+    "challengeType": "count-out",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "b",
+       "kind": "plate",
+       "arrangement": "rows",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-a-0",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-1",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-2",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-3",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-4",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-5",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-6",
+       "word": "cookie",
+       "emoji": "\ud83c\udf6a",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "b"
+        ],
+        "count": 5
+       }
+      ]
+     }
+    },
+    "standards": "K.CC.B.4a, K.CC.B.5",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "the child makes it (+1)"
+     ]
+    },
+    "sceneWords": [
+     "cookie"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf6a"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 15.3,
+   "modes": [
+    "count-out"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

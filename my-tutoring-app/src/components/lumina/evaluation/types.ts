@@ -3679,6 +3679,21 @@ export interface NetFolderMetrics extends BasePrimitiveMetrics {
   accuracy: number;
 }
 
+/** Wonder walk: the canonical 9-field session shape (one stop = one challenge). */
+export interface WonderWalkMetrics extends BasePrimitiveMetrics {
+  type: 'wonder-walk';
+  challengeType: 'which-one' | 'how-many' | 'more-fewer' | 'count-out' | 'add-take' | 'parts' | 'teens' | 'sort-count' | 'count-on'
+    | 'rhyme' | 'first-sound' | 'last-sound' | 'middle-sound' | 'syllables' | 'blend' | 'change-sound'
+    | 'letter-name' | 'letter-sound' | 'spell-word' | 'word-kinds' | 'one-many' | 'where-is' | 'story-detail' | 'story-order';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface DeepDiveMetrics extends BasePrimitiveMetrics {
   type: 'deep-dive';
   totalBlocks: number;
@@ -4198,6 +4213,7 @@ export type PrimitiveMetrics =
   | ShapeComposerMetrics
   | NetFolderMetrics
   | DeepDiveMetrics
+  | WonderWalkMetrics
   | PassageStudioMetrics
   // Calendar
   | CalendarExplorerMetrics

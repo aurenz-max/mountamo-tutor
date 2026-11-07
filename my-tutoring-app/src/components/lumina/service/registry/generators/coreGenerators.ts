@@ -64,6 +64,7 @@ import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
 import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
 import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
 import { generateDeepDiveEntry } from '../../core/deep-dive-agent/generate-deep-dive';
+import { generateWonderWalk } from '../../core/wonder-walk/agent-wonder-walk';
 import { generatePassageStudio } from '../../core/gemini-passage-studio';
 
 
@@ -436,6 +437,13 @@ registerContextGenerator('deep-dive', async (ctx) => ({
   type: 'deep-dive',
   instanceId: ctx.instanceId,
   data: await generateDeepDiveEntry(ctx),
+}));
+
+// WonderWalk (agent-authored Kindergarten picture walk)
+registerContextGenerator('wonder-walk', async (ctx) => ({
+  type: 'wonder-walk',
+  instanceId: ctx.instanceId,
+  data: await generateWonderWalk(ctx),
 }));
 
 // PassageStudio (multi-block close-reading experience anchored to a stimulus)

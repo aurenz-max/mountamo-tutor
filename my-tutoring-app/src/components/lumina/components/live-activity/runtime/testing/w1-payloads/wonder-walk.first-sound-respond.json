@@ -1,0 +1,433 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-first-sound-respond-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "first-sound",
+ "data": {
+  "title": "Farm Animal First Sounds",
+  "bigIdea": "Words start with sounds we can hear and match.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "first-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "We can hear the first sound in farm animal names.",
+    "narration": "Listen to the word duck. Duck starts with d.",
+    "ask": "Which farm animal starts with puh?",
+    "why": "Say each animal name slowly. Listen to the very first sound you make.",
+    "respond": "say",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "phones": [
+        "D",
+        "AH",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "hen",
+       "emoji": "\ud83d\udc14",
+       "phones": [
+        "HH",
+        "EH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "h",
+        "e",
+        "n"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "first",
+       "is": "P"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     },
+     "say": "puh"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "a quick sound that cannot be stretched (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can hear the first sound in farm animal names.",
+    "narration": "A dog can run fast on the farm. Dog starts with d.",
+    "ask": "Which farm animal starts with hhh?",
+    "why": "Say the animal names out loud. Listen for the very first sound.",
+    "respond": "say",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "cow",
+       "emoji": "\ud83d\udc2e",
+       "phones": [
+        "K",
+        "AW"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "goat",
+       "emoji": "\ud83d\udc10",
+       "phones": [
+        "G",
+        "OW",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t3",
+       "word": "horse",
+       "emoji": "\ud83d\udc34",
+       "phones": [
+        "HH",
+        "AO",
+        "R",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "first",
+       "is": "HH"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     },
+     "say": "hhh"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "dog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc36"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort farm animals by the sound they start with.",
+    "narration": "Look at these two friends. Bee starts with b, and seal starts with s.",
+    "ask": "Can you sort these animals by their first sound?",
+    "why": "Say the animal name and listen to its first sound. Match it to the friend that starts with the same sound.",
+    "respond": "show",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bee",
+       "emoji": "\ud83d\udc1d",
+       "phones": [
+        "B",
+        "IY"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "r2",
+       "word": "seal",
+       "emoji": "\ud83e\uddad",
+       "phones": [
+        "S",
+        "IY",
+        "L"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "spider",
+       "emoji": "\ud83d\udd77\ufe0f",
+       "phones": [
+        "S",
+        "P",
+        "AY",
+        "D",
+        "ER"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "skunk",
+       "emoji": "\ud83e\udda8",
+       "phones": [
+        "S",
+        "K",
+        "AH",
+        "NG",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t4",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "phones": [
+        "B",
+        "ER",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_basket",
+        "label": "r1",
+        "rule": {
+         "type": "same-sound",
+         "at": "first",
+         "as": "r1"
+        }
+       },
+       {
+        "id": "s_basket",
+        "label": "r2",
+        "rule": {
+         "type": "same-sound",
+         "at": "first",
+         "as": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "a quick sound that cannot be stretched (+0.5)",
+      "find the sound in a heard word first (+0.5)",
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "bee",
+     "seal"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc1d",
+     "\ud83e\uddad"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": ""
+   }
+  ],
+  "agentDebug": {
+   "turns": 5,
+   "seconds": 28.9,
+   "modes": [
+    "first-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: near, duh, beginning; use everyday words"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: bull: no picture for \"bull\"; pick a word from the picture list"
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": [
+    "stop 2: check these words are known at K: friends, friend"
+   ]
+  }
+ }
+}

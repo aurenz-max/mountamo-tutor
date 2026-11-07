@@ -116,8 +116,8 @@ const JUDGED_BY: Record<BossMode['judge'], (answer: string) => string> = {
   activity: answer => `The activity checks ${answer} against the lesson's key, which you are not told; that is the answer.`,
   tutor: answer => `The learner answers out loud, and you judge ${answer} against the key the task gives you; the key is the answer, and it `
     + 'names what else counts and the wrong answer that sounds right.',
-  either: answer => `The learner may say ${answer} out loud or show it on screen. A spoken answer you judge against the key the task `
-    + 'gives you, which names what else counts; a shown answer the activity checks itself. Either way, the key is the answer.',
+  either: answer => `The learner may say ${answer} aloud or show it. Judge a spoken answer by the task's key, which names what `
+    + 'else counts; the activity checks a shown one, and a task with no key is shown only. Either way, the key is the answer.',
 };
 const FLOW: Record<BossMode['flow'], string> = {
   'one-at-a-time': '',

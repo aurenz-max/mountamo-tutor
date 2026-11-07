@@ -170,7 +170,7 @@ const sentText = (from: number) => seam.send.mock.calls.slice(from).map(c => typ
 const SUBMITS = /^(submit|check|check answer|check my answer|enter|done|go|i'm done!?)$/i;
 const STEPS = /^(one more|one less)$/i;
 /** A button that does something (adds a coin, pours, joins) or only says where it is ("Coin 1"): no answer to say. */
-const NOT_AN_ANSWER = /^((add|put|pour|join|pick|split|cut|unroll|tap|drag|show|make|move|clear)\b|(coin|group|clock face|picture|option|card|slot|cell|tick|part|slice)\s+\w+$)/i;
+const NOT_AN_ANSWER = /^((add|put|pour|join|pick|split|cut|unroll|tap|drag|show|make|move|clear)\b|(coin|group|clock face|picture|option|card|slot|cell|tick|part|slice|spot)\s+\w+$)/i;
 /**
  * J14: the one answer a gesture item's correct input names, when a learner could just say it: a number, a time, a
  * fraction, a comparison sign, or a word or short phrase (at most three words) on the button pressed or the text typed.

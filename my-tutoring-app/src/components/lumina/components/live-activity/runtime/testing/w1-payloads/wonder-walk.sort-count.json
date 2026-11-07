@@ -1,0 +1,411 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-sort-count-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "sort-count",
+ "data": {
+  "title": "Sort and Count by Color",
+  "bigIdea": "We can sort things by color and count each group.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "sort-count",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Count how many things match one color.",
+    "narration": "Look at the stars in neat rows. Some are yellow and some are blue.",
+    "ask": "How many yellow stars do you see?",
+    "why": "Touch each yellow star. The last number tells how many.",
+    "challengeType": "sort-count",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "rows",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-a-4",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-a-5",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s0-a-6",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s0-a-7",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "color": "blue"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "countColor": "yellow",
+      "choices": [
+       6,
+       5,
+       4
+      ],
+      "answer": 5
+     }
+    },
+    "standards": "K.MD.B.3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 8 (+1)",
+      "only some of them count (+0.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "star"
+    ],
+    "sceneEmoji": [
+     "\u2b50"
+    ],
+    "options": [],
+    "correctOptionId": "num-5",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Put matching things in their own place.",
+    "narration": "Cars are parked together. The yellow plate needs yellow cars.",
+    "ask": "Can you put 4 yellow cars on the yellow plate?",
+    "why": "Look at each car. Put the yellow cars on the matching plate.",
+    "challengeType": "sort-count",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "b",
+       "kind": "plate",
+       "arrangement": "line",
+       "color": "yellow",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "yellow"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "place": "a",
+       "color": "blue"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "b"
+        ],
+        "count": 4,
+        "only": true,
+        "color": "yellow"
+       }
+      ]
+     }
+    },
+    "standards": "K.MD.B.3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 6 (+1)",
+      "only some of them count (+0.5)",
+      "the child makes it (+1)"
+     ]
+    },
+    "sceneWords": [
+     "car"
+    ],
+    "sceneEmoji": [
+     "\ud83d\ude97"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "Count how many things match one color.",
+    "narration": "Birds sit in neat rows. Some are blue and some are red.",
+    "ask": "How many blue birds do you see?",
+    "why": "Touch each blue bird. The last number tells how many.",
+    "challengeType": "sort-count",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "rows",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-a-0",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s2-a-1",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s2-a-2",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s2-a-3",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "blue"
+      },
+      {
+       "id": "s2-a-4",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "red"
+      },
+      {
+       "id": "s2-a-5",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "red"
+      },
+      {
+       "id": "s2-a-6",
+       "word": "bird",
+       "emoji": "\ud83d\udc26",
+       "place": "a",
+       "color": "red"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "countColor": "blue",
+      "choices": [
+       5,
+       4,
+       3
+      ],
+      "answer": 4
+     }
+    },
+    "standards": "K.MD.B.3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "only some of them count (+0.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "bird"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc26"
+    ],
+    "options": [],
+    "correctOptionId": "num-4",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 21.9,
+   "modes": [
+    "sort-count"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "remove_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

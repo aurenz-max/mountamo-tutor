@@ -74,6 +74,7 @@ import { multiplicationExplorerBoss } from '../../primitives/visual-primitives/m
 import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.boss';
 import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
+import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
 import { arrayGridBoss } from '../../primitives/visual-primitives/math/arrayGrid.boss';
 import { polygonAreaBuilderBoss } from '../../primitives/visual-primitives/math/polygonAreaBuilder.boss';
 import { paragraphArchitectBoss } from '../../primitives/visual-primitives/literacy/paragraphArchitect.boss';
@@ -457,6 +458,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'fast-fact': bossJourney(fastFactBoss),
   'fact-file': bossJourney(factFileBoss),
   'deep-dive': bossJourney(deepDiveBoss),
+  'wonder-walk': bossJourney(wonderWalkBoss),
   'race-track-lab': bossJourney(raceTrackLabBoss),
   'push-pull-arena': bossJourney(pushPullArenaBoss),
   'ecosystem-diorama': bossJourney(ecosystemDioramaBoss),

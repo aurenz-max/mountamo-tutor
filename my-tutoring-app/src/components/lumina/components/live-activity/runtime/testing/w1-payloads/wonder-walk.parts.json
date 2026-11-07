@@ -1,0 +1,443 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-parts-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "parts",
+ "data": {
+  "title": "Making Five and Ten",
+  "bigIdea": "Numbers can be broken into parts and put together to make five or ten.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "parts",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "We can split a group of five into two smaller parts.",
+    "narration": "Five apples sit here. Put them on the two plates. Put some on each plate!",
+    "ask": "Can you put all five apples on the two plates?",
+    "why": "Put each apple on a plate. Check that both plates have some.",
+    "challengeType": "parts",
+    "world": {
+     "places": [
+      {
+       "id": "basket",
+       "kind": "basket",
+       "arrangement": "scattered",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "plate1",
+       "kind": "plate",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "plate2",
+       "kind": "plate",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-basket-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "basket",
+       "position": [
+        0.412,
+        0.904
+       ]
+      },
+      {
+       "id": "s0-basket-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "basket",
+       "position": [
+        0.125,
+        0.351
+       ]
+      },
+      {
+       "id": "s0-basket-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "basket",
+       "position": [
+        0.403,
+        0.378
+       ]
+      },
+      {
+       "id": "s0-basket-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "basket",
+       "position": [
+        0.881,
+        0.174
+       ]
+      },
+      {
+       "id": "s0-basket-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "basket",
+       "position": [
+        0.583,
+        0.124
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "plate1",
+         "plate2"
+        ],
+        "count": 5
+       },
+       {
+        "places": [
+         "plate1"
+        ],
+        "atLeast": 1
+       },
+       {
+        "places": [
+         "plate2"
+        ],
+        "atLeast": 1
+       }
+      ]
+     }
+    },
+    "standards": "K.OA.A.3-4",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "a scattered group (+1)",
+      "the child makes it (+1)",
+      "two parts make the whole (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can fill a frame to make ten altogether.",
+    "narration": "Look at the box with shiny stars. Count the stars you see. Put more stars in to make ten!",
+    "ask": "Can you fill the box to make ten stars?",
+    "why": "Put a star in each empty spot. That makes ten.",
+    "challengeType": "parts",
+    "world": {
+     "places": [
+      {
+       "id": "frame",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "line",
+       "kind": "pile",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-frame-0",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-1",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-2",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-3",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-4",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-5",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-6",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-frame-7",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "frame"
+      },
+      {
+       "id": "s1-line-0",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "line"
+      },
+      {
+       "id": "s1-line-1",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "line"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "frame"
+        ],
+        "full": true
+       }
+      ]
+     }
+    },
+    "standards": "K.OA.A.3-4",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 8 (+1)",
+      "the child makes it (+1)",
+      "fill to ten (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "star"
+    ],
+    "sceneEmoji": [
+     "\u2b50"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can fill a frame to make ten altogether.",
+    "narration": "Look at the box with little nuts. Count the nuts you see. Put more nuts in to make ten!",
+    "ask": "Can you fill the box to make ten nuts?",
+    "why": "Touch each empty spot as you count. Put a nut in each spot.",
+    "challengeType": "parts",
+    "world": {
+     "places": [
+      {
+       "id": "frame",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": true
+      },
+      {
+       "id": "line",
+       "kind": "pile",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": true
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-frame-0",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-1",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-2",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-3",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-4",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-5",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-frame-6",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "frame"
+      },
+      {
+       "id": "s2-line-0",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "line"
+      },
+      {
+       "id": "s2-line-1",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "line"
+      },
+      {
+       "id": "s2-line-2",
+       "word": "nut",
+       "emoji": "\ud83e\udd5c",
+       "place": "line"
+      }
+     ],
+     "answer": {
+      "kind": "move",
+      "goal": [
+       {
+        "places": [
+         "frame"
+        ],
+        "full": true
+       }
+      ]
+     }
+    },
+    "standards": "K.OA.A.3-4",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "the child makes it (+1)",
+      "fill to ten (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "nut"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd5c"
+    ],
+    "options": [],
+    "correctOptionId": "",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 23,
+   "modes": [
+    "parts"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": [
+    "stop 2: check these words are known at K: little"
+   ]
+  }
+ }
+}

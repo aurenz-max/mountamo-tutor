@@ -1,0 +1,563 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-more-fewer-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "more-fewer",
+ "data": {
+  "title": "More or Fewer",
+  "bigIdea": "We can count groups to see which has more or fewer.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "more-fewer",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Count each group to find which one has more.",
+    "narration": "Look at all the red apples. Count each basket to see how many are inside.",
+    "ask": "Which basket has the most apples?",
+    "why": "Touch each apple as you count. The basket with the big number has the most.",
+    "challengeType": "more-fewer",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "basket",
+       "arrangement": "line",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "b",
+       "kind": "basket",
+       "arrangement": "line",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "c",
+       "kind": "basket",
+       "arrangement": "line",
+       "choosable": true,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-6",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-b-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-b-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-b-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-b-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-b-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-b-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s0-c-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s0-c-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s0-c-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s0-c-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s0-c-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "rule": "most",
+      "traps": {
+       "a": null,
+       "b": "one_off",
+       "c": "reversed"
+      }
+     }
+    },
+    "standards": "K.CC.B.4c, K.CC.C.6",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "nearest wrong choice 1 away (+1)",
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "place-a",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Count each group to find which one has fewer.",
+    "narration": "The rabbits left snacks on their plates. Count to see who ate the most!",
+    "ask": "Which plate has the fewest carrots?",
+    "why": "Touch each carrot as you count. The plate with the small number has the fewest.",
+    "challengeType": "more-fewer",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "plate",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "b",
+       "kind": "plate",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "c",
+       "kind": "plate",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-6",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-7",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "a"
+      },
+      {
+       "id": "s1-b-0",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-1",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-2",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-3",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-4",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-5",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "b"
+      },
+      {
+       "id": "s1-c-0",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-1",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-2",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-3",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-4",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-5",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-6",
+       "word": "carrot",
+       "emoji": "\ud83e\udd55",
+       "place": "c"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "rule": "fewest",
+      "traps": {
+       "a": "reversed",
+       "b": null,
+       "c": "one_off"
+      }
+     }
+    },
+    "standards": "K.CC.B.4c, K.CC.C.6",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 8 (+1)",
+      "nearest wrong choice 1 away (+1)",
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "carrot"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd55"
+    ],
+    "options": [],
+    "correctOptionId": "place-b",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "One more means counting forward by one.",
+    "narration": "Green frogs sit by the pond. Look at the first log to see the frogs.",
+    "ask": "Which log has one more frog?",
+    "why": "Count the frogs on the first log. One more is the next count.",
+    "challengeType": "more-fewer",
+    "world": {
+     "places": [
+      {
+       "id": "ref",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      },
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "b",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": true,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-ref-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "ref"
+      },
+      {
+       "id": "s2-ref-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "ref"
+      },
+      {
+       "id": "s2-ref-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "ref"
+      },
+      {
+       "id": "s2-ref-3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "ref"
+      },
+      {
+       "id": "s2-a-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "a"
+      },
+      {
+       "id": "s2-a-4",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "a"
+      },
+      {
+       "id": "s2-b-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "b"
+      },
+      {
+       "id": "s2-b-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "b"
+      },
+      {
+       "id": "s2-b-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "b"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "rule": "one-more-than",
+      "ref": "ref",
+      "traps": {
+       "a": null,
+       "b": "far_off"
+      }
+     }
+    },
+    "standards": "K.CC.B.4c, K.CC.C.6",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "nearest wrong choice 2 away (+0.5)",
+      "one more than (+1)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "options": [],
+    "correctOptionId": "place-a",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 16.2,
+   "modes": [
+    "more-fewer"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": [
+    "stop 1: check these words are known at K: fewest"
+   ]
+  }
+ }
+}

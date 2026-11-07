@@ -1,0 +1,492 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-how-many-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "how-many",
+ "data": {
+  "title": "Counting to 10",
+  "bigIdea": "When we count objects, the last number we say tells how many in all.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "how-many",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "We say one number for each object in order.",
+    "narration": "Yellow ducks swim in a neat line. Touch each duck as you count.",
+    "ask": "How many ducks are in the pond?",
+    "why": "Touch each duck as you count. The last number you say tells how many.",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-5",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-6",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       6,
+       8,
+       7
+      ],
+      "answer": 7
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-7",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can count things in a line or in rows to find the total.",
+    "narration": "Look at the apples in the baskets. Each basket has apples in neat rows.",
+    "ask": "Which group has eight apples?",
+    "why": "Count the apples in each basket one by one. Find the basket with eight.",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "basket",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "b",
+       "kind": "basket",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      },
+      {
+       "id": "c",
+       "kind": "basket",
+       "arrangement": "rows",
+       "choosable": true,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-6",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-7",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s1-b-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-b-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "b"
+      },
+      {
+       "id": "s1-c-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      },
+      {
+       "id": "s1-c-6",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "c"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "rule": "has",
+      "number": 8,
+      "traps": {
+       "a": null,
+       "b": "far_off",
+       "c": "one_off"
+      }
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 8 (+1)",
+      "nearest wrong choice 1 away (+1)",
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "place-a",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can count things that are scattered around to find how many.",
+    "narration": "Bright stars shine all over the night sky. Count every star you see!",
+    "ask": "How many stars are in the sky?",
+    "why": "Touch each star as you count. The last number tells how many.",
+    "challengeType": "how-many",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "group",
+       "arrangement": "scattered",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-a-0",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.095,
+        0.631
+       ]
+      },
+      {
+       "id": "s2-a-1",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.147,
+        0.136
+       ]
+      },
+      {
+       "id": "s2-a-2",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.611,
+        0.915
+       ]
+      },
+      {
+       "id": "s2-a-3",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.614,
+        0.351
+       ]
+      },
+      {
+       "id": "s2-a-4",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.828,
+        0.075
+       ]
+      },
+      {
+       "id": "s2-a-5",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.372,
+        0.583
+       ]
+      },
+      {
+       "id": "s2-a-6",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.401,
+        0.914
+       ]
+      },
+      {
+       "id": "s2-a-7",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.912,
+        0.829
+       ]
+      },
+      {
+       "id": "s2-a-8",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a",
+       "position": [
+        0.665,
+        0.076
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       9,
+       10,
+       8
+      ],
+      "answer": 9
+     }
+    },
+    "standards": "K.CC.B.4-5",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 9 (+1)",
+      "a scattered group (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "star"
+    ],
+    "sceneEmoji": [
+     "\u2b50"
+    ],
+    "options": [],
+    "correctOptionId": "num-9",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 20.4,
+   "modes": [
+    "how-many"
+   ],
+   "countMax": 10,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

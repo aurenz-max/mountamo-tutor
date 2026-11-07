@@ -998,6 +998,33 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Biology primitives
     # -----------------------------------------------------------------
+    "wonder-walk": {
+        "which-one": PriorConfig(-1.5, "After a scene teaches the idea, tap which picture fits it"),
+        "how-many":  PriorConfig(0.8, "Tap the drawn group with the number the tutor says (K.CC.B.5)"),
+        "more-fewer": PriorConfig(1.5, "Tap the drawn group with more, fewer, the same or one more than another (K.CC.C.6)"),
+        "count-out": PriorConfig(1.2, "Move a number of objects from a pile into a basket (K.CC.B.5)"),
+        "add-take":  PriorConfig(1.5, "A join or leave story; tap how many now (K.OA.A.1-2)"),
+        "parts":     PriorConfig(2.0, "Split a number onto two plates, or fill a ten-frame to 10 (K.OA.A.3-4)"),
+        "teens":     PriorConfig(2.0, "A full ten-frame and some more (K.NBT.A.1)"),
+        "sort-count": PriorConfig(1.0, "Sort by colour or kind, then count (K.MD.B.3)"),
+        "count-on":  PriorConfig(1.8, "Count on from a hidden group (K.CC.A.2)"),
+        "rhyme": PriorConfig(-0.5, "Tap the picture that rhymes with a heard word, or sort pictures by the word they rhyme with (RF.K.2a)."),
+        "first-sound": PriorConfig(-0.3, "Tap or sort pictures by their first sound, said by the tutor or heard in a word (RF.K.2d)."),
+        "last-sound": PriorConfig(0.6, "Tap or sort pictures by their last sound (RF.K.2d)."),
+        "middle-sound": PriorConfig(1.4, "Tap the CVC picture with the vowel sound the tutor says in the middle (RF.K.2d)."),
+        "syllables": PriorConfig(0.0, "Tap or sort pictures by how many claps their word has (RF.K.2b)."),
+        "blend": PriorConfig(0.8, "The tutor says a word in parts (onset and rime, or every sound); tap the picture it makes (RF.K.2b-d)."),
+        "change-sound": PriorConfig(1.8, "Say a word, change one sound, tap the new word (RF.K.2e)."),
+        "letter-name": PriorConfig(-0.8, "Tap the letter the tutor names, or the small letter that matches a big one (RF.K.1d)."),
+        "letter-sound": PriorConfig(0.3, "Tap the letter for a sound, or for the first sound of a picture (RF.K.3a-b)."),
+        "spell-word": PriorConfig(1.6, "Put letter tiles in order to spell a pictured CVC word (L.K.2c-d)."),
+        "word-kinds": PriorConfig(-1.0, "Sort or tap pictures by kind (food, animals, things we wear), or doing-words from things (L.K.5a, L.K.1b)."),
+        "one-many": PriorConfig(-0.2, "Hear cat or cats; tap the card that shows one or many (L.K.1c)."),
+        "where-is": PriorConfig(-0.4, "Hear in, on, under or next to; tap the card that shows it (L.K.1e)."),
+        "story-detail": PriorConfig(0.2, "The tutor tells a 2-3 event story; tap who, what or where (RL.K.1, RL.K.3, SL.K.2)."),
+        "story-order": PriorConfig(0.9, "Put the story pictures on a track in the order they happened (RL.K.2)."),
+        "default":   PriorConfig(-1.5, "Kindergarten picture walk"),
+    },
     "classification-sorter": {
         "sort":    PriorConfig(2.5, "Sort each organism or trait into its group by the rule"),
         # Sessions generated before the mode was registered (no pinned mode) are the same task.

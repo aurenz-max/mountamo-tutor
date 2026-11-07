@@ -1,0 +1,384 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-letter-sound-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "letter-sound",
+ "data": {
+  "title": "Listen to the Letters",
+  "bigIdea": "Letters make special sounds that we can hear and say.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "letter-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Each letter has its own sound.",
+    "narration": "Letters make sounds when we read them. Let's find the letter for this sound.",
+    "ask": "Which letter says mmm?",
+    "why": "Press your lips together and hum. Look for the letter that makes that sound.",
+    "challengeType": "letter-sound",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "m",
+       "sounds": [
+        "M"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "s",
+       "sounds": [
+        "S"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2"
+      ],
+      "rule": {
+       "type": "letter-sound",
+       "is": "M"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other"
+      }
+     },
+     "say": "mmm"
+    },
+    "standards": "RF.K.3a-b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "the letter for a sound (+1)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Each letter has its own sound.",
+    "narration": "Here are some new letter cards. Listen to this sound.",
+    "ask": "Which letter says tuh?",
+    "why": "Tap your tongue to make that sound. Look for the letter that makes it.",
+    "challengeType": "letter-sound",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "f",
+       "sounds": [
+        "F"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "t",
+       "sounds": [
+        "T"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "p",
+       "sounds": [
+        "P"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "letter-sound",
+       "is": "T"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     },
+     "say": "tuh"
+    },
+    "standards": "RF.K.3a-b",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "the letter for a sound (+1)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   },
+   {
+    "id": "stop-3",
+    "idea": "Words start with a letter sound we can hear.",
+    "narration": "The warm sun is in the sky. Hear the sound at the start of sun.",
+    "ask": "Which letter makes the first sound in sun?",
+    "why": "Say sun very slowly. Listen for the sound right at the start.",
+    "challengeType": "letter-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "b",
+       "sounds": [
+        "B"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "m",
+       "sounds": [
+        "M"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "s",
+       "sounds": [
+        "S"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "first-letter",
+       "of": "r1"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.3a-b",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "hear the first sound, then find its letter (+1.5)"
+     ]
+    },
+    "sceneWords": [
+     "sun"
+    ],
+    "sceneEmoji": [
+     "\u2600\ufe0f"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-4",
+    "idea": "Words start with a letter sound we can hear.",
+    "narration": "A bat flies at night. Listen to its first sound.",
+    "ask": "Which letter makes the first sound in bat?",
+    "why": "Say bat out loud and feel your lips pop. Find the letter for that first sound.",
+    "challengeType": "letter-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "letter": "p",
+       "sounds": [
+        "P"
+       ]
+      },
+      {
+       "id": "t2",
+       "letter": "d",
+       "sounds": [
+        "D"
+       ]
+      },
+      {
+       "id": "t3",
+       "letter": "b",
+       "sounds": [
+        "B"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "first-letter",
+       "of": "r1"
+      },
+      "traps": {
+       "t1": "look_alike",
+       "t2": "look_alike",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.3a-b",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "three choices (+0.5)",
+      "a letter that looks alike (+1)",
+      "hear the first sound, then find its letter (+1.5)"
+     ]
+    },
+    "sceneWords": [
+     "bat"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd87"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 18.5,
+   "modes": [
+    "letter-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the narration or ask must say \"sun\": the child compares with a word they hear"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the narration or ask must say \"bat\": the child compares with a word they hear"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

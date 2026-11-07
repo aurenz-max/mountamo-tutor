@@ -1,0 +1,490 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-teens-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "teens",
+ "data": {
+  "title": "Ten and Some More",
+  "bigIdea": "A teen number is ten and some more.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "teens",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Ten fill a frame, and extra ones sit beside it.",
+    "narration": "Look at the spots! Ten red apples fill one row. Some extra apples sit below.",
+    "ask": "How many apples are there in all?",
+    "why": "Count ten in the full part. Then count the extra ones.",
+    "challengeType": "teens",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-a-0",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-1",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-2",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-3",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-4",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-5",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-6",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-7",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-8",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-9",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-10",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-11",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      },
+      {
+       "id": "s0-a-12",
+       "word": "apple",
+       "emoji": "\ud83c\udf4e",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       14,
+       12,
+       13
+      ],
+      "answer": 13
+     }
+    },
+    "standards": "K.NBT.A.1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 13 (+2)",
+      "ten-frames (-0.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "apple"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf4e"
+    ],
+    "options": [],
+    "correctOptionId": "num-13",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "Counting ten and some more tells us how many in all.",
+    "narration": "Ten bright stars fill the top part. More stars shine below them!",
+    "ask": "How many stars are there in all?",
+    "why": "Start at ten. Count on for each extra star.",
+    "challengeType": "teens",
+    "world": {
+     "places": [
+      {
+       "id": "a",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-a-0",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-1",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-2",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-3",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-4",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-5",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-6",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-7",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-8",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-9",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-10",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-11",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-12",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-13",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      },
+      {
+       "id": "s1-a-14",
+       "word": "star",
+       "emoji": "\u2b50",
+       "place": "a"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "a"
+      ],
+      "choices": [
+       16,
+       15,
+       14
+      ],
+      "answer": 15
+     }
+    },
+    "standards": "K.NBT.A.1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "numbers to 15 (+2)",
+      "ten-frames (-0.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "star"
+    ],
+    "sceneEmoji": [
+     "\u2b50"
+    ],
+    "options": [],
+    "correctOptionId": "num-15",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can build a teen number by filling ten and adding more.",
+    "narration": "A big box is full of eggs. More eggs rest in a line on the dish!",
+    "ask": "How many eggs are there in all?",
+    "why": "Count the eggs in the big box. Then count the eggs on the dish.",
+    "challengeType": "teens",
+    "world": {
+     "places": [
+      {
+       "id": "box",
+       "kind": "ten-frame",
+       "arrangement": "ten-frame",
+       "choosable": false,
+       "droppable": false
+      },
+      {
+       "id": "plate",
+       "kind": "plate",
+       "arrangement": "line",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-box-0",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-1",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-2",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-3",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-4",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-5",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-6",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-7",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-8",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-box-9",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "box"
+      },
+      {
+       "id": "s2-plate-0",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "plate"
+      },
+      {
+       "id": "s2-plate-1",
+       "word": "egg",
+       "emoji": "\ud83e\udd5a",
+       "place": "plate"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "box",
+       "plate"
+      ],
+      "choices": [
+       12,
+       13,
+       11
+      ],
+      "answer": 12
+     }
+    },
+    "standards": "K.NBT.A.1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 12 (+2)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "egg"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd5a"
+    ],
+    "options": [],
+    "correctOptionId": "num-12",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 6,
+   "seconds": 41,
+   "modes": [
+    "teens"
+   ],
+   "countMax": 20,
+   "tier": "medium",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}

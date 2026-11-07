@@ -228,6 +228,7 @@ export type {
   ShapeComposerMetrics,
   NetFolderMetrics,
   DeepDiveMetrics,
+  WonderWalkMetrics,
   // Calendar metrics
   CalendarExplorerMetrics,
   TimelineBuilderMetrics,

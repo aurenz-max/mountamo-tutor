@@ -1,0 +1,430 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-change-sound-payload-2026-11-06.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "change-sound",
+ "data": {
+  "title": "Sound Switch Magic",
+  "bigIdea": "When you swap one sound in a word, you get a brand new word!",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "change-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Changing the first sound in a word makes a new word.",
+    "narration": "We can play a sound game! Look at the cat sitting by our side.",
+    "ask": "Say cat, change kuh to hhh, which picture is it now?",
+    "why": "Take away the first sound. Put in the new sound to hear the word.",
+    "challengeType": "change-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "change",
+       "from": "r1",
+       "at": "first",
+       "to": "HH"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "meaning"
+      }
+     },
+     "say": "kuh to hhh"
+    },
+    "standards": "RF.K.2e",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "change the first sound (+2)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1"
+   },
+   {
+    "id": "stop-2",
+    "idea": "Changing the last sound in a word makes a new word.",
+    "narration": "Listen to the end of a word. Here is a wooden bat!",
+    "ask": "Say bat, change tuh to guh, which picture is it now?",
+    "why": "Listen to the very last sound. Swap it with the new sound to find it.",
+    "challengeType": "change-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "bug",
+       "emoji": "\ud83d\udc1b",
+       "phones": [
+        "B",
+        "AH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "u",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bag",
+       "emoji": "\ud83d\udc5c",
+       "phones": [
+        "B",
+        "AE",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "b",
+        "a",
+        "g"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "change",
+       "from": "r1",
+       "at": "last",
+       "to": "G"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "meaning",
+       "t3": null
+      }
+     },
+     "say": "tuh to guh"
+    },
+    "standards": "RF.K.2e",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "change the last sound (+2.5)"
+     ]
+    },
+    "sceneWords": [
+     "bat"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd87"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3"
+   },
+   {
+    "id": "stop-3",
+    "idea": "Changing the middle vowel sound in a word makes a new word.",
+    "narration": "You can switch the sound in the middle! Look at this shiny pan.",
+    "ask": "Say pan, change aaa to ihh, which picture is it now?",
+    "why": "Stretch out the middle sound. Swap in the new sound to hear it.",
+    "challengeType": "change-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "pan",
+       "emoji": "\ud83c\udf73",
+       "phones": [
+        "P",
+        "AE",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "p",
+        "a",
+        "n"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "pin",
+       "emoji": "\ud83d\udccc",
+       "phones": [
+        "P",
+        "IH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "tool",
+       "letters": [
+        "p",
+        "i",
+        "n"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "pen",
+       "emoji": "\ud83d\udd8a\ufe0f",
+       "phones": [
+        "P",
+        "EH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "school",
+       "letters": [
+        "p",
+        "e",
+        "n"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "change",
+       "from": "r1",
+       "at": "middle",
+       "to": "IH"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": null,
+       "t3": "other"
+      }
+     },
+     "say": "aaa to ihh"
+    },
+    "standards": "RF.K.2e",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "change the middle sound (+3)"
+     ]
+    },
+    "sceneWords": [
+     "pan"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf73"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2"
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 20.1,
+   "modes": [
+    "change-sound"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: ask has 3 sentences; at most 1"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: ask has 3 sentences; at most 1"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: ask has 3 sentences; at most 1"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "review": [],
+   "advisories": []
+  }
+ }
+}
