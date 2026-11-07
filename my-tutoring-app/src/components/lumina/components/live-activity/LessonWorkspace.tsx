@@ -8,6 +8,7 @@ import { RuntimeTransport, runtimePacket, type ComposedDemonstration, type Demon
 import { demonstrationEvidence, requestDemonstration } from './demo/demonstrationEvidence';
 import { lessonPrimitiveContext, lessonWorkspaceItems, type LessonWorkspaceItem } from './lessonWorkspacePlan';
 import { waitForVisible } from './runtime/waitForVisible';
+import { POSE_TASK } from './runtime/contract';
 import { LiveRuntimeActiveContext, LiveRuntimeConnectionContext, LiveRuntimeContext } from './runtime/LiveRuntimeContext';
 import { LiveRuntimeSurface } from './runtime/LiveRuntimeSurface';
 
@@ -160,7 +161,7 @@ function LessonWorkspaceBridge({ handler, progress }: {
       // Speech first, tool second: a turn whose only speech is the reply to observe_runtime's result
       // came back as `<no speech>{pause}` in 4 of 8 lesson openings on 2026-09-28 (counting-board,
       // phoneme-explorer). The task is already in this turn's attached state, so the tool can follow.
-      aiRef.current.sendText('The learner is viewing the current lesson workspace. In this turn, say one short sentence that poses the current task to the learner, then call observe_runtime to receive ongoing updates. If completed, let the learner use Next.', { silent: true });
+      aiRef.current.sendText(`The learner is viewing the current lesson workspace; its current task is on screen. In this turn, before any tool call: ${POSE_TASK} Then call observe_runtime to receive ongoing updates. If completed, let the learner use Next.`, { silent: true });
     };
     const off = host.runtime.subscribe(() => { void introduce(); });
     void introduce();

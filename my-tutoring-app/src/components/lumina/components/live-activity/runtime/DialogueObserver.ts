@@ -1,4 +1,4 @@
-import type { RuntimeSnapshot, TutorCommand } from './contract';
+import { POSE_TASK, type RuntimeSnapshot, type TutorCommand } from './contract';
 import { abstain, type DialogueDecision, type DialogueRequest } from './dialogueContract';
 import { OBSERVATION_TIMEOUT_MS, postObservation, sameItemScope, snapshotScopeKey } from './observationContract';
 
@@ -166,7 +166,7 @@ export class DialogueObserver {
           if (next.status === 'active' && next.task?.phase === 'working' && next.instanceId === request.scope.instanceId
               && next.task.itemId !== request.scope.itemId)
             this.report({ type: 'text', scripted: false, source: 'dialogue_progression',
-              content: 'The next task is on screen.' });
+              content: `The next task is on screen. ${POSE_TASK}` });
         }
       }
       // RP-2 (user ruling 09-28): the reply credited nothing, so nothing above committed.

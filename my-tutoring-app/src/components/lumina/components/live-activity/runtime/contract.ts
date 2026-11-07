@@ -217,6 +217,13 @@ export interface DemonstrationSupport {
 export type SupportArtifact = CounterSupport | ContrastPairSupport | StepSequenceSupport | GeneratedImageSupport | DemonstrationSupport;
 
 /** What each shape is FOR, in the tutor's words. Sent as the choice's `purpose` so the model picks by purpose. */
+/**
+ * How the tutor poses a task that has just come on screen, said the same way at the lesson's opening and at every
+ * advance. The task is all of `liveRuntime.task`: a pre-reader's task names its pictures, and a tutor told only "the
+ * next task is on screen" said the ask and dropped the picture names on a wonder-walk sort (2026-11-06, c000f213e092).
+ */
+export const POSE_TASK = 'Pose it to the learner, saying everything liveRuntime.task says: a learner who cannot read hears it only from you.';
+
 export const SUPPORT_PURPOSE: Record<SupportArtifact['kind'], string> = {
   'counter-example': 'Worked example',
   'contrast-pair': 'Contrast',

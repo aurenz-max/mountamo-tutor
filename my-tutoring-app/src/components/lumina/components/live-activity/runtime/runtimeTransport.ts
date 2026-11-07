@@ -4,7 +4,7 @@ import { helpBeforeLastWrong, leverTrigger, type LeverEvent } from './observerLe
 import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
 import type { LearnerObservation } from './learnerIntentContract';
 import { itemScopeKey, warmObservationRoutes } from './observationContract';
-import { parseTutorCommand, type RuntimeSnapshot } from './contract';
+import { parseTutorCommand, POSE_TASK, type RuntimeSnapshot } from './contract';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
 import type { Demonstration } from '../demo/demoContract';
@@ -147,7 +147,7 @@ export class RuntimeTransport {
     if (status !== 'visible' || this.closed) return;
     const next = this.runtime.getSnapshot();
     if (next.status === 'active' && next.task?.phase === 'working') this.send({ type: 'text', scripted: false,
-      content: type === 'advance' ? 'The learner opened the next task. It is on screen.'
+      content: type === 'advance' ? `The learner opened the next task. It is on screen. ${POSE_TASK}`
         : 'The learner chose to try this task again.' });
   }
   /**
