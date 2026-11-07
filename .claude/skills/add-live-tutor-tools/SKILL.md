@@ -156,6 +156,11 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
    - taps the activity checks (one, or several in order): `TAP_ONE` and `tapBoss({ choice: { ask, targets } })`, model
      `biology/classificationSorter.{card,boss}.ts`;
    - otherwise bespoke `defineBoss`, model `biology/cellBuilder.{card,boss}.ts` (board).
+   - **an agent primitive** (a generator that runs a model in a tool loop: wonder-walk, deep-dive): the agent designs
+     what the child produces per item (say the value, make any word that fits, show it), and code derives the key, the
+     misses and the play; the preset is `spokenBoss`, sayable modes `SAY_OR_SHOW`, shown items `key: null`.
+     `/agent-primitive` "How the child answers" owns the design and its derivation table (reference:
+     `wonderWalkSpoken.ts`); this step builds it. Do not put an agent primitive with sayable answers on `tapBoss`.
 
    The preset builds the assignment the component passes on (`<x>Boss.assignment`) and the harness play. A spoken
    key is `spokenKeyText(...)`. Levers are one `leverSet` on the boss (`bossLevers.ts`; `/add-support-tiers` designs them). Write no prose guidance: `ROTATION_DOCTRINE`

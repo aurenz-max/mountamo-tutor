@@ -5,9 +5,12 @@ description: >-
   checks: wonder-walk, deep-dive, annotated-example). Holds the invariants that make an agent primitive stronger than a
   schema primitive: the agent describes a world and a goal (no writer per mode, no task menu), code derives every
   answer and names the skill from the structure, solves every item for shortcuts, computes difficulty from what was
-  built, and every part has a render, a tool and a tutor face. Use when building a new agent primitive, when an agent primitive
-  feels no stronger than an on-rails schema, or to audit one. Not for which primitive a lesson gets (the manifest owns
-  that), a schema generator with no tool loop (/primitive, /add-eval-modes), or levers alone (/add-support-tiers).
+  built, and every part has a render, a tool and a tutor face, including how the child answers: the agent designs what
+  the child produces (say the value, make any word that fits, show it) by the nature of the problem, and code derives
+  the boss wiring, key, misses and harness from it (/add-live-tutor-tools does the mechanics). Use when building a new
+  agent primitive, when an agent primitive feels no stronger than an on-rails schema, to wire or rewire one to the
+  tutor, or to audit one. Not for which primitive a lesson gets (the manifest owns that), a schema generator with no
+  tool loop (/primitive, /add-eval-modes), or levers alone (/add-support-tiers).
 ---
 
 # Agent Primitives
@@ -99,6 +102,18 @@ widens it (teens open means 20). When the agent declines, read why: the 11-06 te
 default range of 10.
 *Check:* each mode generates at least once without a decline on a topic that names it.
 
+**I11. The agent designs what the child produces; code derives how it is judged.** The answer channel is part of
+the problem, like the answer's kind (I3), not a menu of channels. Math and language have different spoken designs
+(table in "How the child answers"): a number is said; a rhyme can be made; a sort is shown. The agent sets the
+production per item, by the nature of the problem; code checks that it fits the answer, derives the boss wiring, the
+spoken key, the misses and the harness play, and returns the key in words with every write. The agent never writes
+a key, an `alsoAccept` list or a miss. Production is breadth (I2): some standards are reached only by voice (produce
+a rhyme, name words that start with a sound, segment a word), so a walk-level rule (I7) requires it where the
+objective asks for it.
+*Check:* the item tool has the production field and no key or miss field; one pure module derives the key from the
+stored world and the production (boss, author checks and tests share it); a production that does not fit the answer
+blocks with a sentence the agent can act on; a real generation per production kind shows the agent choosing it.
+
 The domain a world serves is stated with what it does not cover. Wonder Walk's math world does counting, operations
 and sorting; shapes and measuring need a different world and stay with other primitives the manifest picks.
 
@@ -122,8 +137,92 @@ pre-reader contract where it applies.
    mount, so reset it only for a new item or a retry after a committed answer (wonder-walk 11-06: early moves vanished).
 6. **Labels.** Accessible labels on tap targets are keys to the journey sweep (J3): make them distinct from words the
    narration, why-card and learner work use (`spot a`, `apple 3`, not `the plate`, `a star`).
-7. **Answers that can be said** (a number, a word) are J14 items: they need voice beside the tap (USER 10-13). Plan
-   the voice rung with the answer kind, not after.
+7. **What the child produces** is designed with the block, not after ("How the child answers" below). A sayable
+   answer is a J14 item: it needs voice beside the tap (USER 10-13).
+
+## How the child answers (wiring to the tutor)
+
+An agent primitive is wired once, at the family level, so every item the agent can build already has a channel; the
+agent then chooses per item. The boss framework handles a per-item choice through `spokenBoss` (an item with a key is
+said; an item with `key: null` is shown and checked by the activity, the di-shapes precedent), so this needs no new
+framework code. `/add-live-tutor-tools` step 3 and `review-live-wiring/references/boss-framework.md` are the
+mechanics; this section is the design. Reference implementation: wonder-walk (`wonderWalkSpoken.ts`, 2026-11-06).
+
+**1. List the productions the domain has.** Before any schema, write what a child in this domain can produce, per
+answer kind. The domains differ, so the list is the domain's, not a generic channel list:
+
+| Production | Math | Language | Judged by | Key shape (`SpokenKey`) |
+|---|---|---|---|---|
+| Say the one value | "seven", "ten and three" | the word a blend or a changed sound makes; who or what in a story; a letter's name | tutor; the tap still counts | `answer` + `alsoAccept` (its other forms) |
+| Make any that fits | two numbers that make five | a word that rhymes with cat, starts with /s/, is an animal | tutor; the one fitting card still counts | `answer` (the card) + `alsoAccept` (library examples) + `acceptRule` + `signatureError` |
+| Say the parts in order | count on aloud from the hidden group | segment: /k/ /a/ /t/ | tutor | `answer` (the parts) + `acceptRule` |
+| Choose aloud from named choices | the plate with more, when the plates hold different things | "hat, dog or sun?" | tutor | `menu` + `given` |
+| Say while doing | count each one aloud as it moves | say each sound as its box is tapped | activity (the result); the saying is coaching | none |
+| Show | a place, moves, a sort | a sort, a track, cards told apart by position or number | activity | none (`key: null`) |
+| Explain | "how do you know there are more?" | "why did the bear go home?" | tutor | `meaning` |
+
+Mark which rows the primitive builds and which are queued. A row is built when its render, its key derivation, its
+checks and a coverage row exist. Wonder-walk 11-06 builds say-the-value (math and language), make-any (language:
+rhymes, first or last sound, kind) and show; segment, choose-aloud and explain are queued.
+
+**2. Give the agent one production field per item**, in the domain's terms, with a "How the child answers" prompt
+section that says, per domain, when each fits (by the nature of the problem, not a rule per mode). Wonder-walk's field
+is `respond: show | say | say-any`. Code defaults a sayable answer to `say` (USER 10-13: voice beside the tap) and
+blocks `show` on it, so the agent's real choice is between productions, not whether to allow voice.
+
+**3. Code derives everything else, in one pure module** beside the checks (`<x>Spoken.ts`), read by the boss, the
+author's checks and the tests:
+
+| Derived | From |
+|---|---|
+| Whether the answer can be said at all (a number, a picture's name, a letter; not a place, moves, a sort, a track, or cards that share one picture) | the stored world |
+| `respondError(item)`: the production does not fit, as a sentence ("the answer is moves, which a child cannot say: respond show") | the world + the production |
+| `speech.key(item)`: `null` when shown; otherwise the `SpokenKey` for the production (table above) | the world + the production |
+| Examples for make-any: library words the rule holds for, minus the cards, the refs and words the child already heard; computed at build and stored on the item | the word library + the rule |
+| `speech.misses(item)`: `KnownMiss[]` with distinct ids, most specific first (a part of the story, then one away; the near-sound card, the meaning card) | the world + the traps code computed (I5) |
+| `speech.given(item)`: what the ask says by design (a letter-name ask names its letter) | the rule |
+| `speech.say` and `speech.show`: the harness's spoken answers and its taps | the same solver the checks use |
+
+The author's write result adds `answeredBy`: the production and the key text the tutor will judge
+(`spokenKeyText`), so the agent sees what a child must say. `boss.validate` runs `respondError` too, so a stored item
+whose production does not fit never launches.
+
+**4. Wire the card from what each mode's items can be.** A mode whose answer can be said is `SAY_OR_SHOW`; a mode whose
+answers are always shown is `TAP_ONE`; the card sets `audio: SPOKEN_AUDIO`; the catalog's `affordances.answers` gains
+`spoken`. A production-only row (segment, explain) needs its own `SPOKEN` mode, or a stepped mode (`{ steps }` with
+`stepOf`), with its own β: plan it as a new eval mode, not as a variant inside a `SAY_OR_SHOW` mode.
+
+**5. A walk-level rule for production.** Agents pick recognition when it is allowed: on 11-06 three real walks set
+`say` and `show` correctly and never `say-any`. Where the objective asks the child to produce (RF.K.2a produce rhymes;
+name words by a sound), a walk of 3+ items whose rules allow it must include one, blocked with a sentence that shows
+the ask ("Can you think of a word that rhymes with cat?"). With that rule, the next real walk chose `say-any` itself.
+
+**Limits:**
+- Wiring is per mode; the item narrows it. A said item in a `TAP_ONE` mode is a card bug. A keyless item in a
+  `SAY_OR_SHOW` mode is a shown item (the shared doctrine says "a task with no key is shown only").
+- No speech-only item inside a `SAY_OR_SHOW` mode: the tap stays (USER 10-13). Speech-only is its own mode.
+- Difficulty: a production offered beside the tap scores as the tap, since the child may still tap. A
+  production-only item scores as production.
+- The guidance cap is 4000 characters (`OFFER_GUIDANCE_MAX`). Two wirings list every mode twice, so card words stay
+  short.
+
+**Checks before calling it wired:**
+1. `node scripts/boss-card.mjs <id>`: each mode's wiring matches what its items can be; guidance under the cap.
+2. The workspace test asserts the channel on every saved item: a said item publishes `response: 'speech'`,
+   `acceptsGesture: true` and a key, and sits in a `SAY_OR_SHOW` mode; a shown item publishes a gesture with no key.
+   The tap path still solves every item.
+3. Author tests: each production fits where it should and is refused where it does not; the key, the examples and the
+   misses are derived; the walk rule fires; the scripted loop fixes a refused production.
+4. `npm run test:primitive -- <id>`: the boss guards, the journey sweep (J14 clears), `askLeaks` on every saved payload.
+   Then JEV's spoken-miss observer on the real model (TypeSafe, no Gemini): the sweep with `SPOKEN_MISS_OUT=<f>` and
+   `node scripts/spoken-miss-probe.mjs --requests <f>`; false positives must be 0. Miss patterns name the exact wrong
+   answer on screen and why a child gives it: wonder-walk's first, generic patterns ("a card whose sound is close")
+   scored under the fit gate on 7/188 cases; concrete ones on 2/188.
+5. One real generation per production kind (`save_payload.py --name <x>`), read item by item: the production the
+   agent chose, the ask, the derived examples. Report the spend.
+6. Moving a primitive onto the spoken path, or adding a `words.special` sentence, changes what the tutor receives:
+   hand the user ONE `--samples 1` Live command on a make-any item, with the question it answers.
+7. `/review-live-wiring <id>` closes it.
 
 ## Testing
 
@@ -154,8 +253,9 @@ Live tutor journeys stay with the user (`backend/tests/tutor_live/LIVE_TESTING.m
    not add another writer.
 2. **Design** the blocks (steps 2-4 above), keeping every passing behaviour (read the primitive's contract first:
    `docs/contracts/<id>.md`, `/primitive-contract --check`).
-3. **Build** code first (blocks, solver, difficulty, variety), then the tool and prompt, then the component and
-   workspace, then catalog, priors and tester.
+3. **Build** code first (blocks, solver, difficulty, variety, key derivation), then the tool and prompt (with
+   `respond`/`speak`), then the component and workspace, then the card and boss ("Wiring to the tutor"), then
+   catalog, priors and tester.
 4. **Test** free, then paid (above). Replace any code-built W1 payload with a saved generation.
 5. **Record** on the primitive's birth certificate: the invariant table before and after, the breadth verdict, spend.
    Queue what remains (blocks not built, levers) with its executor skill.
@@ -170,3 +270,8 @@ Live tutor journeys stay with the user (`backend/tests/tutor_live/LIVE_TESTING.m
 - Replacing a 2-item menu with a 4×4 menu (wonder-walk 11-06, first revision). Fails I3: 5 of ~22 standards.
 - A default range that silently rules out a mode (count to 10 for teens). Fails I10; the agent declined, correctly.
 - Generic labels on targets ("the plate") that the why-card also uses: the sweep reads them as a revealed answer.
+- Wiring an agent primitive on `tapBoss` because its first blocks were taps (wonder-walk 11-06): every sayable number
+  and word failed J14 (7 hits), and voice became a separate slice. Fails I11: the production is designed with the block.
+- A generic channel menu (`respond: show | say-or-show`, this skill's own first draft on 11-06). It lets the agent turn
+  voice on or off; it does not let the agent design what the child says. Fails I3 and I11 the way a task menu does.
+- The agent writing the key, `alsoAccept` or the misses into the tool call. Fails I4 and I11: code derives all three.
