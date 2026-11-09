@@ -108,3 +108,4 @@ my-tutoring-app/qa/**/*.html
 
 # Daily Gemini spend ledger (spendMeter.ts)
 .gemini-spend/
+backend/tests/tutor_live/replay/
