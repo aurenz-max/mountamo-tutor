@@ -89,6 +89,7 @@ import TimelineExplorer from '../primitives/visual-primitives/core/TimelineExplo
 import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyExplorer';
 import DeepDive from '../primitives/visual-primitives/core/deep-dive/DeepDive';
 import WonderWalk from '../primitives/visual-primitives/core/wonder-walk/WonderWalk';
+import PracticeStudio from '../primitives/visual-primitives/core/practice-studio/PracticeStudio';
 import PassageStudio from '../primitives/visual-primitives/core/passage-studio/PassageStudio';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
@@ -125,8 +126,8 @@ import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuild
 import AdaptationInvestigator from '../primitives/visual-primitives/biology/AdaptationInvestigator';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import BodyWorkshop from '../primitives/visual-primitives/biology/BodyWorkshop';
-import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import LifeLab from '../primitives/visual-primitives/biology/life-lab/LifeLab';
+import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
 import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
 import EnergyCycleEngine from '../primitives/visual-primitives/biology/EnergyCycleEngine';
@@ -1453,7 +1454,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true, // What If? scenario accuracy tracking
   },
 
-  'body-workshop': {
   'life-lab': {
     component: LifeLab,
     sectionTitle: 'Life Lab',
@@ -1464,6 +1464,7 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'body-workshop': {
     component: BodyWorkshop,
     sectionTitle: 'Body Workshop',
     showDivider: true,
@@ -2092,6 +2093,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'deep-dive': {
     component: DeepDive,
     sectionTitle: 'Deep Dive',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Practice Studio: the general agent primitive (items assembled from kit surfaces and displays)
+  'practice-studio': {
+    component: PracticeStudio,
+    sectionTitle: 'Practice Studio',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

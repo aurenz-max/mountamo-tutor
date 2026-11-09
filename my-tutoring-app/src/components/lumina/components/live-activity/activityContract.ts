@@ -92,6 +92,7 @@ import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.b
 import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
 import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
+import { practiceStudioBoss } from '../../primitives/visual-primitives/core/practice-studio/practiceStudio.boss';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
 import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
@@ -101,8 +102,8 @@ import { lifeCycleSequencerBoss } from '../../primitives/visual-primitives/biolo
 import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
 import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
 import { bodyWorkshopBoss } from '../../primitives/visual-primitives/biology/bodyWorkshop.boss';
-import { towerStackerBoss } from '../../primitives/visual-primitives/engineering/towerStacker.boss';
 import { lifeLabBoss } from '../../primitives/visual-primitives/biology/life-lab/lifeLab.boss';
+import { towerStackerBoss } from '../../primitives/visual-primitives/engineering/towerStacker.boss';
 import { gearTrainBuilderBoss } from '../../primitives/visual-primitives/engineering/gearTrainBuilder.boss';
 import { matterExplorerBoss } from '../../primitives/visual-primitives/chemistry/matterExplorer.boss';
 import { statesOfMatterBoss } from '../../primitives/visual-primitives/chemistry/statesOfMatter.boss';
@@ -280,6 +281,7 @@ export const LIVE_ADAPTERS = {
   'fact-file': bossAdapter(factFileBoss),
   'deep-dive': bossAdapter(deepDiveBoss),
   'wonder-walk': bossAdapter(wonderWalkBoss),
+  'practice-studio': bossAdapter(practiceStudioBoss),
   'push-pull-arena': bossAdapter(pushPullArenaBoss),
   'race-track-lab': bossAdapter(raceTrackLabBoss),
   'habitat-diorama': bossAdapter(habitatDioramaBoss),
@@ -289,9 +291,9 @@ export const LIVE_ADAPTERS = {
   'classification-sorter': bossAdapter(classificationSorterBoss),
   'cell-builder': bossAdapter(cellBuilderBoss),
   'body-workshop': bossAdapter(bodyWorkshopBoss),
+  'life-lab': bossAdapter(lifeLabBoss),
   'tower-stacker': bossAdapter(towerStackerBoss),
   'gear-train-builder': bossAdapter(gearTrainBuilderBoss),
-  'life-lab': bossAdapter(lifeLabBoss),
   'matter-explorer': bossAdapter(matterExplorerBoss),
   'molecule-constructor': bossAdapter(moleculeConstructorBoss),
   'atom-builder': bossAdapter(atomBuilderBoss),

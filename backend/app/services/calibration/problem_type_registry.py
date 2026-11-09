@@ -1087,6 +1087,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "bio-process-animator":       {"default": PriorConfig(3.5, "Animate and comprehend biological process")},
     "microscope-viewer":          {"default": PriorConfig(4.0, "Label structures under microscope")},
     "adaptation-investigator":    {"default": PriorConfig(3.5, "Connect trait to function to environment")},
+    "practice-studio": {
+        "practice": PriorConfig(0.5, "K-5: items an agent assembles for the objective (choose, sort, order)"),
+    },
     "life-lab": {
         "world": PriorConfig(0.8, "K-5: a living world an agent builds for the objective; the learner changes it until the goal holds"),
     },

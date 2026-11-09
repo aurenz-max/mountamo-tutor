@@ -3694,6 +3694,21 @@ export interface NetFolderMetrics extends BasePrimitiveMetrics {
   accuracy: number;
 }
 
+/** Practice studio: one mode; each item's surface is the agent's choice (recorded in `surfaces`). */
+export interface PracticeStudioMetrics extends BasePrimitiveMetrics {
+  type: 'practice-studio';
+  challengeType: 'practice';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** The answer surfaces the session used, comma-separated. */
+  surfaces: string;
+}
+
 /** Wonder walk: the canonical 9-field session shape (one stop = one challenge). */
 export interface WonderWalkMetrics extends BasePrimitiveMetrics {
   type: 'wonder-walk';
@@ -4037,6 +4052,7 @@ export type PrimitiveMetrics =
   | SkidSteerYardMetrics
   | MachineWorkshopMetrics
   | BodyWorkshopMetrics
+  | LifeLabMetrics
   | MapExplorerMetrics
   | EcosystemDioramaMetrics
   // Creation
@@ -4052,7 +4068,6 @@ export type PrimitiveMetrics =
   | ShortAnswerMetrics
   | ComparisonPanelMetrics
   | FeatureExhibitMetrics
-  | LifeLabMetrics
 
   // Math
   | BalanceScaleMetrics
@@ -4230,6 +4245,7 @@ export type PrimitiveMetrics =
   | NetFolderMetrics
   | DeepDiveMetrics
   | WonderWalkMetrics
+  | PracticeStudioMetrics
   | PassageStudioMetrics
   // Calendar
   | CalendarExplorerMetrics

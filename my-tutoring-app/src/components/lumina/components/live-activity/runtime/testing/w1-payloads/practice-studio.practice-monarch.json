@@ -1,0 +1,765 @@
+{
+ "source": "qa/tutor-reports/practice-studio-runtime-practice-monarch-payload-2026-11-08.json",
+ "primitiveId": "practice-studio",
+ "evalMode": "practice",
+ "data": {
+  "title": "Monarch Butterflies and Their Young",
+  "description": "Young monarch caterpillars look and act differently from adult monarch butterflies, but they grow up to be just like their parents.",
+  "gradeBand": "grade 1",
+  "challengeType": "practice",
+  "challenges": [
+   {
+    "id": "studio-1",
+    "surface": "choose",
+    "prompt": "Touch the young caterpillar that belongs to this monarch butterfly.",
+    "stimulus": [
+     {
+      "kind": "svg",
+      "svg": "<svg viewBox='0 0 200 160' width='200' height='160'><rect width='200' height='160' fill='#f0f9ff'/><path d='M100 80 Q60 20 20 50 Q10 100 70 110 Q95 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 80 Q140 20 180 50 Q190 100 130 110 Q105 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q70 100 50 135 Q85 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q130 100 150 135 Q115 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><ellipse cx='100' cy='90' rx='6' ry='30' fill='#1e293b'/><circle cx='100' cy='56' r='6' fill='#1e293b'/><line x1='98' y1='52' x2='85' y2='35' stroke='#1e293b' stroke-width='2'/><line x1='102' y1='52' x2='115' y2='35' stroke='#1e293b' stroke-width='2'/><circle cx='28' cy='52' r='2' fill='#ffffff'/><circle cx='38' cy='45' r='2' fill='#ffffff'/><circle cx='172' cy='52' r='2' fill='#ffffff'/><circle cx='162' cy='45' r='2' fill='#ffffff'/></svg>"
+     }
+    ],
+    "options": [
+     {
+      "id": "opt_monarch",
+      "label": "Striped",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#1e293b'/><line x1='30' y1='50' x2='22' y2='34' stroke='#1e293b' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#1e293b' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+      }
+     },
+     {
+      "id": "opt_green",
+      "label": "Green",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#15803d'/><line x1='30' y1='50' x2='22' y2='34' stroke='#15803d' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#15803d' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+      }
+     },
+     {
+      "id": "opt_brown",
+      "label": "Brown",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#92400e' stroke='#78350f' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#92400e' stroke='#78350f' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#78350f'/><line x1='30' y1='50' x2='22' y2='34' stroke='#78350f' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#78350f' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+      }
+     }
+    ],
+    "key": "opt_monarch",
+    "misconceptions": {
+     "opt_green": "A green caterpillar grows into a green butterfly or moth. Monarch young have black and bright stripes.",
+     "opt_brown": "A brown caterpillar grows into a brown moth. Look for the bold black stripes."
+    },
+    "tier": "easy",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Look at the dark black parts on the parent butterfly. The young monarch caterpillar has dark black stripes to match!",
+      "item": {
+       "id": "studio-1-help_1",
+       "surface": "choose",
+       "prompt": "Touch the young caterpillar that belongs to this monarch butterfly.",
+       "stimulus": [
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 200 160' width='200' height='160'><rect width='200' height='160' fill='#f0f9ff'/><path d='M100 80 Q60 20 20 50 Q10 100 70 110 Q95 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 80 Q140 20 180 50 Q190 100 130 110 Q105 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q70 100 50 135 Q85 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q130 100 150 135 Q115 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><ellipse cx='100' cy='90' rx='6' ry='30' fill='#1e293b'/><circle cx='100' cy='56' r='6' fill='#1e293b'/><line x1='98' y1='52' x2='85' y2='35' stroke='#1e293b' stroke-width='2'/><line x1='102' y1='52' x2='115' y2='35' stroke='#1e293b' stroke-width='2'/><circle cx='28' cy='52' r='2' fill='#ffffff'/><circle cx='38' cy='45' r='2' fill='#ffffff'/><circle cx='172' cy='52' r='2' fill='#ffffff'/><circle cx='162' cy='45' r='2' fill='#ffffff'/></svg>"
+        },
+        {
+         "kind": "text",
+         "text": "Parent and young both have bold black colors."
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_monarch",
+         "label": "Striped",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#1e293b'/><line x1='30' y1='50' x2='22' y2='34' stroke='#1e293b' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#1e293b' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "opt_green",
+         "label": "Green",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#15803d'/><line x1='30' y1='50' x2='22' y2='34' stroke='#15803d' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#15803d' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "opt_brown",
+         "label": "Brown",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#92400e' stroke='#78350f' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#92400e' stroke='#78350f' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#d97706' stroke='#78350f' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#78350f'/><line x1='30' y1='50' x2='22' y2='34' stroke='#78350f' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#78350f' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+         }
+        }
+       ],
+       "key": "opt_monarch",
+       "misconceptions": {
+        "opt_green": "A green caterpillar grows into a green butterfly or moth. Monarch young have black and bright stripes.",
+        "opt_brown": "A brown caterpillar grows into a brown moth. Look for the bold black stripes."
+       },
+       "tier": "easy",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "Brown caterpillars become moths. Choose between the striped caterpillar and the green caterpillar.",
+      "item": {
+       "id": "studio-1-simpler_1",
+       "surface": "choose",
+       "prompt": "Touch the young caterpillar that belongs to this monarch butterfly.",
+       "stimulus": [
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 200 160' width='200' height='160'><rect width='200' height='160' fill='#f0f9ff'/><path d='M100 80 Q60 20 20 50 Q10 100 70 110 Q95 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 80 Q140 20 180 50 Q190 100 130 110 Q105 105 100 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q70 100 50 135 Q85 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><path d='M100 85 Q130 100 150 135 Q115 150 100 95 Z' fill='#ea580c' stroke='#1e293b' stroke-width='3'/><ellipse cx='100' cy='90' rx='6' ry='30' fill='#1e293b'/><circle cx='100' cy='56' r='6' fill='#1e293b'/><line x1='98' y1='52' x2='85' y2='35' stroke='#1e293b' stroke-width='2'/><line x1='102' y1='52' x2='115' y2='35' stroke='#1e293b' stroke-width='2'/><circle cx='28' cy='52' r='2' fill='#ffffff'/><circle cx='38' cy='45' r='2' fill='#ffffff'/><circle cx='172' cy='52' r='2' fill='#ffffff'/><circle cx='162' cy='45' r='2' fill='#ffffff'/></svg>"
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_monarch",
+         "label": "Striped",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#1e293b' stroke='#1e293b' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#facc15' stroke='#1e293b' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#1e293b'/><line x1='30' y1='50' x2='22' y2='34' stroke='#1e293b' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#1e293b' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "opt_green",
+         "label": "Green",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 160 120' width='160' height='120'><rect width='160' height='120' fill='#ffffff'/><circle cx='130' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='110' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='90' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='70' cy='58' r='14' fill='#22c55e' stroke='#15803d' stroke-width='2'/><circle cx='50' cy='62' r='14' fill='#86efac' stroke='#15803d' stroke-width='2'/><circle cx='32' cy='58' r='12' fill='#15803d'/><line x1='30' y1='50' x2='22' y2='34' stroke='#15803d' stroke-width='2.5'/><line x1='36' y1='48' x2='34' y2='32' stroke='#15803d' stroke-width='2.5'/><circle cx='28' cy='56' r='2' fill='#ffffff'/></svg>"
+         }
+        }
+       ],
+       "key": "opt_monarch",
+       "misconceptions": {
+        "opt_green": "A green caterpillar grows into a green butterfly or moth. Monarch young have black and bright stripes."
+       },
+       "tier": "easy",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-2",
+    "surface": "order",
+    "prompt": "Put the monarch butterfly's life stages in order from youngest to adult.",
+    "stimulus": [],
+    "options": [
+     {
+      "id": "stage_caterpillar",
+      "label": "Caterpillar",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M20 65 Q50 48 75 65 Q100 48 120 65' fill='none' stroke='#1e293b' stroke-width='16' stroke-linecap='round'/><path d='M23 65 Q50 50 75 65 Q100 50 117 65' fill='none' stroke='#facc15' stroke-width='10' stroke-linecap='round'/><line x1='45' y1='54' x2='45' y2='72' stroke='#ffffff' stroke-width='3'/><line x1='75' y1='56' x2='75' y2='74' stroke='#ffffff' stroke-width='3'/><line x1='100' y1='54' x2='100' y2='72' stroke='#ffffff' stroke-width='3'/></svg>"
+      }
+     },
+     {
+      "id": "stage_chrysalis",
+      "label": "Chrysalis",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><line x1='20' y1='25' x2='120' y2='25' stroke='#78350f' stroke-width='4'/><path d='M70 25 L70 38 Q88 55 82 85 Q75 105 70 110 Q65 105 58 85 Q52 55 70 38 Z' fill='#4ade80' stroke='#16a34a' stroke-width='2'/><circle cx='62' cy='46' r='2' fill='#facc15'/><circle cx='70' cy='46' r='2' fill='#facc15'/><circle cx='78' cy='46' r='2' fill='#facc15'/></svg>"
+      }
+     },
+     {
+      "id": "stage_adult",
+      "label": "Open wings",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M70 60 Q45 20 20 40 Q15 75 55 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M70 60 Q95 20 120 40 Q125 75 85 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='70' cy='65' rx='4' ry='20' fill='#1e293b'/><line x1='68' y1='48' x2='58' y2='32' stroke='#1e293b' stroke-width='1.5'/><line x1='72' y1='48' x2='82' y2='32' stroke='#1e293b' stroke-width='1.5'/></svg>"
+      }
+     },
+     {
+      "id": "stage_egg",
+      "label": "Egg",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M15 90 Q70 30 125 70 Q70 115 15 90 Z' fill='#86efac' stroke='#22c55e' stroke-width='2'/><ellipse cx='65' cy='68' rx='6' ry='9' fill='#fef08a' stroke='#ca8a04' stroke-width='1.5'/></svg>"
+      }
+     },
+     {
+      "id": "stage_emerging",
+      "label": "Wrinkled wings",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><line x1='20' y1='20' x2='120' y2='20' stroke='#78350f' stroke-width='4'/><path d='M50 20 L50 32 Q62 44 58 65 Q54 80 50 85 Q46 80 42 65 Q38 44 50 32 Z' fill='#e2e8f0' stroke='#94a3b8' stroke-width='1.5'/><ellipse cx='80' cy='65' rx='4' ry='16' fill='#1e293b'/><circle cx='80' cy='46' r='4' fill='#1e293b'/><path d='M80 58 Q95 50 96 68 Q90 82 80 75 Z' fill='#ea580c' stroke='#1e293b' stroke-width='2'/><line x1='76' y1='58' x2='58' y2='52' stroke='#1e293b' stroke-width='1.5'/><line x1='76' y1='66' x2='58' y2='60' stroke='#1e293b' stroke-width='1.5'/></svg>"
+      }
+     }
+    ],
+    "key": [
+     "stage_egg",
+     "stage_caterpillar",
+     "stage_chrysalis",
+     "stage_emerging",
+     "stage_adult"
+    ],
+    "misconceptions": {
+     "stage_emerging": "When the butterfly first climbs out of its chrysalis, its wings are soft and wrinkled. It must pump fluid into them before it can spread them open and fly.",
+     "stage_adult": "The butterfly can only spread large, open wings after its wrinkled wings expand and dry.",
+     "stage_chrysalis": "The caterpillar must rest and transform inside the chrysalis before the butterfly emerges."
+    },
+    "tier": "medium",
+    "difficulty": {
+     "band": "hard",
+     "score": 2.75,
+     "reasons": [
+      "5 to order +2",
+      "3 wrong options from a named misconception +0.75"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "A monarch butterfly cannot fly the second it leaves the chrysalis. First its wings are small and wrinkled, then they expand wide!",
+      "item": {
+       "id": "studio-2-help_1",
+       "surface": "order",
+       "prompt": "Put the monarch butterfly's life stages in order from youngest to adult.",
+       "stimulus": [
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 200 90' width='200' height='90'><rect width='200' height='90' fill='#ffffff'/><text x='15' y='20' font-size='12' fill='#475569' font-family='sans-serif'>1. Wrinkled</text><path d='M40 45 Q52 35 54 52 Q48 66 40 60 Z' fill='#ea580c' stroke='#1e293b' stroke-width='2'/><ellipse cx='38' cy='52' rx='3' ry='12' fill='#1e293b'/><text x='95' y='55' font-size='18' fill='#94a3b8' font-family='sans-serif'>\u2794</text><text x='125' y='20' font-size='12' fill='#475569' font-family='sans-serif'>2. Open wings</text><path d='M165 52 Q150 25 130 40 Q128 65 155 70 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M165 52 Q180 25 200 40 Q202 65 175 70 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='165' cy='55' rx='3' ry='14' fill='#1e293b'/></svg>"
+        }
+       ],
+       "options": [
+        {
+         "id": "stage_caterpillar",
+         "label": "Caterpillar",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M20 65 Q50 48 75 65 Q100 48 120 65' fill='none' stroke='#1e293b' stroke-width='16' stroke-linecap='round'/><path d='M23 65 Q50 50 75 65 Q100 50 117 65' fill='none' stroke='#facc15' stroke-width='10' stroke-linecap='round'/><line x1='45' y1='54' x2='45' y2='72' stroke='#ffffff' stroke-width='3'/><line x1='75' y1='56' x2='75' y2='74' stroke='#ffffff' stroke-width='3'/><line x1='100' y1='54' x2='100' y2='72' stroke='#ffffff' stroke-width='3'/></svg>"
+         }
+        },
+        {
+         "id": "stage_chrysalis",
+         "label": "Chrysalis",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><line x1='20' y1='25' x2='120' y2='25' stroke='#78350f' stroke-width='4'/><path d='M70 25 L70 38 Q88 55 82 85 Q75 105 70 110 Q65 105 58 85 Q52 55 70 38 Z' fill='#4ade80' stroke='#16a34a' stroke-width='2'/><circle cx='62' cy='46' r='2' fill='#facc15'/><circle cx='70' cy='46' r='2' fill='#facc15'/><circle cx='78' cy='46' r='2' fill='#facc15'/></svg>"
+         }
+        },
+        {
+         "id": "stage_adult",
+         "label": "Open wings",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M70 60 Q45 20 20 40 Q15 75 55 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M70 60 Q95 20 120 40 Q125 75 85 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='70' cy='65' rx='4' ry='20' fill='#1e293b'/><line x1='68' y1='48' x2='58' y2='32' stroke='#1e293b' stroke-width='1.5'/><line x1='72' y1='48' x2='82' y2='32' stroke='#1e293b' stroke-width='1.5'/></svg>"
+         }
+        },
+        {
+         "id": "stage_egg",
+         "label": "Egg",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M15 90 Q70 30 125 70 Q70 115 15 90 Z' fill='#86efac' stroke='#22c55e' stroke-width='2'/><ellipse cx='65' cy='68' rx='6' ry='9' fill='#fef08a' stroke='#ca8a04' stroke-width='1.5'/></svg>"
+         }
+        },
+        {
+         "id": "stage_emerging",
+         "label": "Wrinkled wings",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><line x1='20' y1='20' x2='120' y2='20' stroke='#78350f' stroke-width='4'/><path d='M50 20 L50 32 Q62 44 58 65 Q54 80 50 85 Q46 80 42 65 Q38 44 50 32 Z' fill='#e2e8f0' stroke='#94a3b8' stroke-width='1.5'/><ellipse cx='80' cy='65' rx='4' ry='16' fill='#1e293b'/><circle cx='80' cy='46' r='4' fill='#1e293b'/><path d='M80 58 Q95 50 96 68 Q90 82 80 75 Z' fill='#ea580c' stroke='#1e293b' stroke-width='2'/><line x1='76' y1='58' x2='58' y2='52' stroke='#1e293b' stroke-width='1.5'/><line x1='76' y1='66' x2='58' y2='60' stroke='#1e293b' stroke-width='1.5'/></svg>"
+         }
+        }
+       ],
+       "key": [
+        "stage_egg",
+        "stage_caterpillar",
+        "stage_chrysalis",
+        "stage_emerging",
+        "stage_adult"
+       ],
+       "misconceptions": {
+        "stage_emerging": "When the butterfly first climbs out of its chrysalis, its wings are soft and wrinkled. It must pump fluid into them before it can spread them open and fly.",
+        "stage_adult": "The butterfly can only spread large, open wings after its wrinkled wings expand and dry.",
+        "stage_chrysalis": "The caterpillar must rest and transform inside the chrysalis before the butterfly emerges."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "hard",
+        "score": 2.75,
+        "reasons": [
+         "5 to order +2",
+         "3 wrong options from a named misconception +0.75"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "Let us take away the wrinkled wings step. Now put the egg, caterpillar, chrysalis, and open-winged butterfly in order.",
+      "item": {
+       "id": "studio-2-simpler_1",
+       "surface": "order",
+       "prompt": "Put the monarch butterfly's life stages in order from youngest to adult.",
+       "stimulus": [],
+       "options": [
+        {
+         "id": "stage_chrysalis",
+         "label": "Chrysalis",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><line x1='20' y1='25' x2='120' y2='25' stroke='#78350f' stroke-width='4'/><path d='M70 25 L70 38 Q88 55 82 85 Q75 105 70 110 Q65 105 58 85 Q52 55 70 38 Z' fill='#4ade80' stroke='#16a34a' stroke-width='2'/><circle cx='62' cy='46' r='2' fill='#facc15'/><circle cx='70' cy='46' r='2' fill='#facc15'/><circle cx='78' cy='46' r='2' fill='#facc15'/></svg>"
+         }
+        },
+        {
+         "id": "stage_caterpillar",
+         "label": "Caterpillar",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M20 65 Q50 48 75 65 Q100 48 120 65' fill='none' stroke='#1e293b' stroke-width='16' stroke-linecap='round'/><path d='M23 65 Q50 50 75 65 Q100 50 117 65' fill='none' stroke='#facc15' stroke-width='10' stroke-linecap='round'/><line x1='45' y1='54' x2='45' y2='72' stroke='#ffffff' stroke-width='3'/><line x1='75' y1='56' x2='75' y2='74' stroke='#ffffff' stroke-width='3'/><line x1='100' y1='54' x2='100' y2='72' stroke='#ffffff' stroke-width='3'/></svg>"
+         }
+        },
+        {
+         "id": "stage_adult",
+         "label": "Open wings",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M70 60 Q45 20 20 40 Q15 75 55 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M70 60 Q95 20 120 40 Q125 75 85 80 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='70' cy='65' rx='4' ry='20' fill='#1e293b'/><line x1='68' y1='48' x2='58' y2='32' stroke='#1e293b' stroke-width='1.5'/><line x1='72' y1='48' x2='82' y2='32' stroke='#1e293b' stroke-width='1.5'/></svg>"
+         }
+        },
+        {
+         "id": "stage_egg",
+         "label": "Egg",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 140 120' width='140' height='120'><rect width='140' height='120' fill='#f0fdf4'/><path d='M15 90 Q70 30 125 70 Q70 115 15 90 Z' fill='#86efac' stroke='#22c55e' stroke-width='2'/><ellipse cx='65' cy='68' rx='6' ry='9' fill='#fef08a' stroke='#ca8a04' stroke-width='1.5'/></svg>"
+         }
+        }
+       ],
+       "key": [
+        "stage_egg",
+        "stage_caterpillar",
+        "stage_chrysalis",
+        "stage_adult"
+       ],
+       "misconceptions": {
+        "stage_adult": "The butterfly can only spread large, open wings after its wrinkled wings expand and dry.",
+        "stage_chrysalis": "The caterpillar must rest and transform inside the chrysalis before the butterfly emerges."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "4 to order +1.5",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-3",
+    "surface": "categorize",
+    "prompt": "Sort each action into young caterpillar or adult butterfly.",
+    "stimulus": [],
+    "options": [
+     {
+      "id": "card_chew",
+      "label": "Chews leaves",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M20 75 Q60 15 105 35 Q85 70 58 60 Q48 80 20 75 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><circle cx='86' cy='48' r='9' fill='#ffffff'/><circle cx='72' cy='58' r='7' fill='#ffffff'/></svg>"
+      }
+     },
+     {
+      "id": "card_egg",
+      "label": "Lays eggs",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M15 80 Q60 30 105 60 Q65 95 15 80 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><ellipse cx='60' cy='62' rx='6' ry='8' fill='#fef08a' stroke='#ca8a04' stroke-width='1.5'/><circle cx='60' cy='60' r='1.5' fill='#ffffff'/></svg>"
+      }
+     },
+     {
+      "id": "card_chrysalis",
+      "label": "Forms a chrysalis",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><line x1='15' y1='20' x2='105' y2='20' stroke='#78350f' stroke-width='4'/><path d='M60 20 L60 32 Q76 46 70 72 Q64 90 60 94 Q56 90 50 72 Q44 46 60 32 Z' fill='#4ade80' stroke='#15803d' stroke-width='2'/><circle cx='53' cy='40' r='2' fill='#facc15'/><circle cx='60' cy='40' r='2' fill='#facc15'/><circle cx='67' cy='40' r='2' fill='#facc15'/></svg>"
+      }
+     },
+     {
+      "id": "card_nectar",
+      "label": "Sips flower nectar",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><circle cx='60' cy='45' r='12' fill='#facc15'/><circle cx='60' cy='24' r='9' fill='#f472b6'/><circle cx='60' cy='66' r='9' fill='#f472b6'/><circle cx='39' cy='45' r='9' fill='#f472b6'/><circle cx='81' cy='45' r='9' fill='#f472b6'/><line x1='60' y1='66' x2='60' y2='92' stroke='#16a34a' stroke-width='3'/><path d='M60 45 Q75 35 70 25' fill='none' stroke='#38bdf8' stroke-width='2.5' stroke-linecap='round'/></svg>"
+      }
+     }
+    ],
+    "categories": [
+     "Young caterpillar",
+     "Adult butterfly"
+    ],
+    "key": {
+     "card_egg": "Adult butterfly",
+     "card_chrysalis": "Young caterpillar",
+     "card_chew": "Young caterpillar",
+     "card_nectar": "Adult butterfly"
+    },
+    "misconceptions": {
+     "card_egg": "Only the grown-up parent butterfly can lay eggs. The young caterpillar hatches from an egg, but cannot lay eggs yet.",
+     "card_chrysalis": "The young caterpillar forms the chrysalis when it finishes growing. The grown butterfly emerges out of it.",
+     "card_chew": "The young caterpillar has chewing mouthparts to eat solid leaves, while the grown butterfly only drinks liquids.",
+     "card_nectar": "Only the adult butterfly has a straw-like proboscis to sip flower nectar. The caterpillar eats leaves instead."
+    },
+    "tier": "medium",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "4 cards to sort +1",
+      "4 wrong options from a named misconception +1"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Think about what each stage can do. The grown-up parent butterfly lays eggs and sips sweet nectar. The young caterpillar chews leaves to grow and then makes the chrysalis.",
+      "item": {
+       "id": "studio-3-help_1",
+       "surface": "categorize",
+       "prompt": "Sort each action into young caterpillar or adult butterfly.",
+       "stimulus": [
+        {
+         "kind": "text",
+         "text": "Young caterpillar: chews leaves, forms the chrysalis. Adult butterfly: lays eggs, sips nectar."
+        }
+       ],
+       "options": [
+        {
+         "id": "card_chew",
+         "label": "Chews leaves",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M20 75 Q60 15 105 35 Q85 70 58 60 Q48 80 20 75 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><circle cx='86' cy='48' r='9' fill='#ffffff'/><circle cx='72' cy='58' r='7' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "card_egg",
+         "label": "Lays eggs",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M15 80 Q60 30 105 60 Q65 95 15 80 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><ellipse cx='60' cy='62' rx='6' ry='8' fill='#fef08a' stroke='#ca8a04' stroke-width='1.5'/><circle cx='60' cy='60' r='1.5' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "card_chrysalis",
+         "label": "Forms a chrysalis",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><line x1='15' y1='20' x2='105' y2='20' stroke='#78350f' stroke-width='4'/><path d='M60 20 L60 32 Q76 46 70 72 Q64 90 60 94 Q56 90 50 72 Q44 46 60 32 Z' fill='#4ade80' stroke='#15803d' stroke-width='2'/><circle cx='53' cy='40' r='2' fill='#facc15'/><circle cx='60' cy='40' r='2' fill='#facc15'/><circle cx='67' cy='40' r='2' fill='#facc15'/></svg>"
+         }
+        },
+        {
+         "id": "card_nectar",
+         "label": "Sips flower nectar",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><circle cx='60' cy='45' r='12' fill='#facc15'/><circle cx='60' cy='24' r='9' fill='#f472b6'/><circle cx='60' cy='66' r='9' fill='#f472b6'/><circle cx='39' cy='45' r='9' fill='#f472b6'/><circle cx='81' cy='45' r='9' fill='#f472b6'/><line x1='60' y1='66' x2='60' y2='92' stroke='#16a34a' stroke-width='3'/><path d='M60 45 Q75 35 70 25' fill='none' stroke='#38bdf8' stroke-width='2.5' stroke-linecap='round'/></svg>"
+         }
+        }
+       ],
+       "categories": [
+        "Young caterpillar",
+        "Adult butterfly"
+       ],
+       "key": {
+        "card_egg": "Adult butterfly",
+        "card_chrysalis": "Young caterpillar",
+        "card_chew": "Young caterpillar",
+        "card_nectar": "Adult butterfly"
+       },
+       "misconceptions": {
+        "card_egg": "Only the grown-up parent butterfly can lay eggs. The young caterpillar hatches from an egg, but cannot lay eggs yet.",
+        "card_chrysalis": "The young caterpillar forms the chrysalis when it finishes growing. The grown butterfly emerges out of it.",
+        "card_chew": "The young caterpillar has chewing mouthparts to eat solid leaves, while the grown butterfly only drinks liquids.",
+        "card_nectar": "Only the adult butterfly has a straw-like proboscis to sip flower nectar. The caterpillar eats leaves instead."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "4 cards to sort +1",
+         "4 wrong options from a named misconception +1"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-4",
+    "surface": "choose",
+    "prompt": "A student says: 'The young caterpillar is NOT like its parent butterfly at all.' Touch the picture that shows how they ARE alike.",
+    "stimulus": [
+     {
+      "kind": "svg",
+      "svg": "<svg viewBox='0 0 240 140' width='240' height='140'><rect width='240' height='140' fill='#f8fafc' rx='8'/><line x1='120' y1='15' x2='120' y2='125' stroke='#cbd5e1' stroke-width='2' stroke-dasharray='4 4'/><path d='M15 105 Q60 65 105 100 Q65 125 15 105 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><path d='M30 92 Q55 72 80 88 Q95 76 100 86' fill='none' stroke='#1e293b' stroke-width='14' stroke-linecap='round'/><path d='M32 92 Q55 74 80 88 Q95 78 98 86' fill='none' stroke='#facc15' stroke-width='9' stroke-linecap='round'/><line x1='50' y1='78' x2='50' y2='92' stroke='#ffffff' stroke-width='3'/><line x1='68' y1='79' x2='68' y2='93' stroke='#ffffff' stroke-width='3'/><line x1='86' y1='80' x2='86' y2='94' stroke='#ffffff' stroke-width='3'/><circle cx='98' cy='85' r='5' fill='#1e293b'/><path d='M96 82 Q92 65 86 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M100 82 Q103 65 108 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M175 75 Q145 35 130 50 Q130 85 165 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M175 75 Q205 35 220 50 Q220 85 185 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='175' cy='78' rx='4' ry='18' fill='#1e293b'/><circle cx='175' cy='58' r='4' fill='#1e293b'/><path d='M173 55 Q165 42 158 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='157' cy='34' r='2' fill='#1e293b'/><path d='M177 55 Q185 42 192 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='193' cy='34' r='2' fill='#1e293b'/></svg>"
+     }
+    ],
+    "options": [
+     {
+      "id": "opt_wings",
+      "label": "Wings for flying",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M60 55 Q35 20 15 38 Q12 72 50 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/><path d='M60 55 Q85 20 105 38 Q108 72 70 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/></svg>"
+      }
+     },
+     {
+      "id": "opt_chew",
+      "label": "Chewing leaves",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M25 75 Q60 25 95 45 Q75 80 50 70 Q40 85 25 75 Z' fill='#4ade80' stroke='#16a34a' stroke-width='2'/><circle cx='80' cy='52' r='9' fill='#ffffff'/><circle cx='65' cy='62' r='7' fill='#ffffff'/></svg>"
+      }
+     },
+     {
+      "id": "opt_feelers",
+      "label": "Head feelers",
+      "display": {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><circle cx='60' cy='65' r='18' fill='#1e293b'/><circle cx='54' cy='62' r='3' fill='#ffffff'/><circle cx='66' cy='62' r='3' fill='#ffffff'/><path d='M52 50 Q42 32 34 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='33' cy='21' r='3' fill='#1e293b'/><path d='M68 50 Q78 32 86 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='87' cy='21' r='3' fill='#1e293b'/></svg>"
+      }
+     }
+    ],
+    "key": "opt_feelers",
+    "misconceptions": {
+     "opt_wings": "Only the grown butterfly has wings. The young caterpillar crawls and cannot fly.",
+     "opt_chew": "Only the caterpillar chews leaves. The grown butterfly sips nectar from flowers."
+    },
+    "tier": "hard",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Look at the heads of both animals. Both the caterpillar and the butterfly have feelers pointing up to sense what is around them!",
+      "item": {
+       "id": "studio-4-help_1",
+       "surface": "choose",
+       "prompt": "A student says: 'The young caterpillar is NOT like its parent butterfly at all.' Touch the picture that shows how they ARE alike.",
+       "stimulus": [
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 240 140' width='240' height='140'><rect width='240' height='140' fill='#f8fafc' rx='8'/><line x1='120' y1='15' x2='120' y2='125' stroke='#cbd5e1' stroke-width='2' stroke-dasharray='4 4'/><path d='M15 105 Q60 65 105 100 Q65 125 15 105 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><path d='M30 92 Q55 72 80 88 Q95 76 100 86' fill='none' stroke='#1e293b' stroke-width='14' stroke-linecap='round'/><path d='M32 92 Q55 74 80 88 Q95 78 98 86' fill='none' stroke='#facc15' stroke-width='9' stroke-linecap='round'/><line x1='50' y1='78' x2='50' y2='92' stroke='#ffffff' stroke-width='3'/><line x1='68' y1='79' x2='68' y2='93' stroke='#ffffff' stroke-width='3'/><line x1='86' y1='80' x2='86' y2='94' stroke='#ffffff' stroke-width='3'/><circle cx='98' cy='85' r='5' fill='#1e293b'/><path d='M96 82 Q92 65 86 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M100 82 Q103 65 108 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M175 75 Q145 35 130 50 Q130 85 165 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M175 75 Q205 35 220 50 Q220 85 185 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='175' cy='78' rx='4' ry='18' fill='#1e293b'/><circle cx='175' cy='58' r='4' fill='#1e293b'/><path d='M173 55 Q165 42 158 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='157' cy='34' r='2' fill='#1e293b'/><path d='M177 55 Q185 42 192 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='193' cy='34' r='2' fill='#1e293b'/></svg>"
+        },
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 200 80' width='200' height='80'><rect width='200' height='80' fill='#eff6ff' rx='6'/><circle cx='50' cy='55' r='14' fill='#1e293b'/><path d='M44 43 Q38 28 32 18' fill='none' stroke='#2563eb' stroke-width='3' stroke-linecap='round'/><path d='M56 43 Q62 28 68 18' fill='none' stroke='#2563eb' stroke-width='3' stroke-linecap='round'/><circle cx='150' cy='55' r='14' fill='#1e293b'/><path d='M144 43 Q138 28 132 18' fill='none' stroke='#2563eb' stroke-width='3' stroke-linecap='round'/><path d='M156 43 Q162 28 168 18' fill='none' stroke='#2563eb' stroke-width='3' stroke-linecap='round'/></svg>"
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_wings",
+         "label": "Wings for flying",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M60 55 Q35 20 15 38 Q12 72 50 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/><path d='M60 55 Q85 20 105 38 Q108 72 70 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/></svg>"
+         }
+        },
+        {
+         "id": "opt_chew",
+         "label": "Chewing leaves",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M25 75 Q60 25 95 45 Q75 80 50 70 Q40 85 25 75 Z' fill='#4ade80' stroke='#16a34a' stroke-width='2'/><circle cx='80' cy='52' r='9' fill='#ffffff'/><circle cx='65' cy='62' r='7' fill='#ffffff'/></svg>"
+         }
+        },
+        {
+         "id": "opt_feelers",
+         "label": "Head feelers",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><circle cx='60' cy='65' r='18' fill='#1e293b'/><circle cx='54' cy='62' r='3' fill='#ffffff'/><circle cx='66' cy='62' r='3' fill='#ffffff'/><path d='M52 50 Q42 32 34 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='33' cy='21' r='3' fill='#1e293b'/><path d='M68 50 Q78 32 86 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='87' cy='21' r='3' fill='#1e293b'/></svg>"
+         }
+        }
+       ],
+       "key": "opt_feelers",
+       "misconceptions": {
+        "opt_wings": "Only the grown butterfly has wings. The young caterpillar crawls and cannot fly.",
+        "opt_chew": "Only the caterpillar chews leaves. The grown butterfly sips nectar from flowers."
+       },
+       "tier": "hard",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "The grown butterfly drinks nectar and does not chew leaves. Look at the wings versus the head feelers.",
+      "item": {
+       "id": "studio-4-simpler_1",
+       "surface": "choose",
+       "prompt": "A student says: 'The young caterpillar is NOT like its parent butterfly at all.' Touch the picture that shows how they ARE alike.",
+       "stimulus": [
+        {
+         "kind": "svg",
+         "svg": "<svg viewBox='0 0 240 140' width='240' height='140'><rect width='240' height='140' fill='#f8fafc' rx='8'/><line x1='120' y1='15' x2='120' y2='125' stroke='#cbd5e1' stroke-width='2' stroke-dasharray='4 4'/><path d='M15 105 Q60 65 105 100 Q65 125 15 105 Z' fill='#86efac' stroke='#16a34a' stroke-width='2'/><path d='M30 92 Q55 72 80 88 Q95 76 100 86' fill='none' stroke='#1e293b' stroke-width='14' stroke-linecap='round'/><path d='M32 92 Q55 74 80 88 Q95 78 98 86' fill='none' stroke='#facc15' stroke-width='9' stroke-linecap='round'/><line x1='50' y1='78' x2='50' y2='92' stroke='#ffffff' stroke-width='3'/><line x1='68' y1='79' x2='68' y2='93' stroke='#ffffff' stroke-width='3'/><line x1='86' y1='80' x2='86' y2='94' stroke='#ffffff' stroke-width='3'/><circle cx='98' cy='85' r='5' fill='#1e293b'/><path d='M96 82 Q92 65 86 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M100 82 Q103 65 108 52' fill='none' stroke='#1e293b' stroke-width='2.5' stroke-linecap='round'/><path d='M175 75 Q145 35 130 50 Q130 85 165 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><path d='M175 75 Q205 35 220 50 Q220 85 185 88 Z' fill='#f97316' stroke='#1e293b' stroke-width='2'/><ellipse cx='175' cy='78' rx='4' ry='18' fill='#1e293b'/><circle cx='175' cy='58' r='4' fill='#1e293b'/><path d='M173 55 Q165 42 158 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='157' cy='34' r='2' fill='#1e293b'/><path d='M177 55 Q185 42 192 35' fill='none' stroke='#1e293b' stroke-width='2' stroke-linecap='round'/><circle cx='193' cy='34' r='2' fill='#1e293b'/></svg>"
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_feelers",
+         "label": "Head feelers",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><circle cx='60' cy='65' r='18' fill='#1e293b'/><circle cx='54' cy='62' r='3' fill='#ffffff'/><circle cx='66' cy='62' r='3' fill='#ffffff'/><path d='M52 50 Q42 32 34 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='33' cy='21' r='3' fill='#1e293b'/><path d='M68 50 Q78 32 86 22' fill='none' stroke='#1e293b' stroke-width='3' stroke-linecap='round'/><circle cx='87' cy='21' r='3' fill='#1e293b'/></svg>"
+         }
+        },
+        {
+         "id": "opt_wings",
+         "label": "Wings for flying",
+         "display": {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 120 100' width='120' height='100'><rect width='120' height='100' fill='#ffffff'/><path d='M60 55 Q35 20 15 38 Q12 72 50 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/><path d='M60 55 Q85 20 105 38 Q108 72 70 78 Z' fill='#f97316' stroke='#1e293b' stroke-width='2.5'/></svg>"
+         }
+        }
+       ],
+       "key": "opt_feelers",
+       "misconceptions": {
+        "opt_wings": "Only the grown butterfly has wings. The young caterpillar crawls and cannot fly."
+       },
+       "tier": "hard",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       }
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "seconds": 175,
+   "items": [
+    {
+     "id": "studio-1",
+     "surface": "choose",
+     "tier": "easy",
+     "computed": "easy",
+     "solver": "medium",
+     "rounds": 2,
+     "kept": true,
+     "blocking": [],
+     "advisory": [
+      "shortcut: Card 1 is the only multi-colored/striped caterpillar, while the other two are solid colors.",
+      "you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not more reading."
+     ],
+     "refusedLevers": []
+    },
+    {
+     "id": "studio-2",
+     "surface": "order",
+     "tier": "medium",
+     "computed": "hard",
+     "solver": "medium",
+     "rounds": 1,
+     "kept": true,
+     "blocking": [],
+     "advisory": [],
+     "refusedLevers": []
+    },
+    {
+     "id": "studio-3",
+     "surface": "categorize",
+     "tier": "medium",
+     "computed": "medium",
+     "solver": "medium",
+     "rounds": 1,
+     "kept": true,
+     "blocking": [],
+     "advisory": [
+      "issue: A caterpillar only forms a chrysalis when it is fully grown (mature), so classifying 'Forms a chrysalis' under 'Young caterpillar' is technically a bit misleading, though it clearly belongs to the caterpillar stage rather than the adult butterfly."
+     ],
+     "refusedLevers": [
+      "simplify: categorize: 3-8 options (it has 2)"
+     ]
+    },
+    {
+     "id": "studio-4",
+     "surface": "choose",
+     "tier": "hard",
+     "computed": "easy",
+     "solver": "medium",
+     "rounds": 1,
+     "kept": true,
+     "blocking": [],
+     "advisory": [
+      "issue: Scientifically inaccurate representation: real caterpillars do not have long, antenna-like head feelers (antennae are microscopic, though some have fleshy filaments), but the illustration draws both the caterpillar and butterfly with identical prominent feelers.",
+      "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+     ],
+     "refusedLevers": []
+    }
+   ],
+   "tiers": [
+    "easy",
+    "medium",
+    "medium",
+    "hard"
+   ]
+  }
+ }
+}

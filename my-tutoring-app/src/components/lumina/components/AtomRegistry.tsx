@@ -181,6 +181,7 @@ const PRIMITIVE_TO_PANEL: Record<string, string> = {
   'feature-exhibit': 'feature-exhibit-tester',
   'deep-dive': 'deep-dive-tester',
   'wonder-walk': 'wonder-walk-tester',
+  'practice-studio': 'practice-studio-tester',
   'passage-studio': 'passage-studio-tester',
   'annotated-example': 'annotated-example-tester',
   'practice-problem': 'practice-problem-tester',

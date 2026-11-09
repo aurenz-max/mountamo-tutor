@@ -13,6 +13,7 @@ import { vocabularyExplorerCard } from '../../../primitives/visual-primitives/co
 import { factFileCard } from '../../../primitives/visual-primitives/core/factFile.card';
 import { deepDiveCard } from '../../../primitives/visual-primitives/core/deep-dive/deepDive.card';
 import { wonderWalkCard } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalk.card';
+import { practiceStudioCard } from '../../../primitives/visual-primitives/core/practice-studio/practiceStudio.card';
 import { timelineExplorerCard } from '../../../primitives/visual-primitives/core/timelineExplorer.card';
 import { howItWorksCard } from '../../../primitives/visual-primitives/core/howItWorks.card';
 import { digitalSkillsSimCard } from '../../../primitives/visual-primitives/core/digitalSkillsSim.card';
@@ -584,6 +585,34 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     // The live wiring is deepDive.card.ts + deepDive.boss.ts; no session receives a catalog tutoring block.
     ...bossEntry(deepDiveCard),
     supportsEvaluation: true,
+  },
+  {
+    id: 'practice-studio',
+    description:
+      'Practice items built for the lesson objective by an author agent: 3-4 short items, each one the learner answers by '
+      + 'choosing one card, sorting cards into 2-3 boxes, or putting cards in order. The agent draws the pictures itself or uses '
+      + 'code-drawn bar graphs, number lines and tables, and short texts, picks wrong options from real misconceptions, and looks at '
+      + 'each item as the learner will see it, fixing anything a child could guess. Use for K-5 practice on an objective that can be '
+      + 'checked by choosing, sorting or ordering and that no more specific primitive fits: comparing groups, reading a graph, placing '
+      + 'fractions, sorting by a property, traits shared with parents, sequencing events or stages.',
+    constraints:
+      'Grades K-5. Items are choose, sort or order only: not for answers a learner must say, write, draw, build or measure. '
+      + 'The manifest must NOT supply items, pictures or answers: the author agent writes them and code checks them. '
+      + 'config.difficulty sets the target tier. Authoring takes 1-3 minutes.',
+    affordances: { representation: 'pictorial', reader: 'emerging', answers: ['tap'], role: ['apply'], minutes: 5 },
+    evalModes: [
+      {
+        evalMode: 'practice',
+        label: 'Practice',
+        beta: 0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['practice'],
+        description: 'Items the agent assembles for the objective: choose, sort or order, at the tier the lesson asks for.',
+      },
+    ],
+    supportsEvaluation: true,
+    // How it is wired to the live tutor: `practice-studio/practiceStudio.card.ts` (behavior: `practiceStudio.boss.ts`).
+    ...bossEntry(practiceStudioCard),
   },
   {
     id: 'wonder-walk',

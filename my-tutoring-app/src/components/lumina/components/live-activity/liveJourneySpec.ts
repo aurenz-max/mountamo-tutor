@@ -76,6 +76,7 @@ import { fastFactBoss } from '../../primitives/visual-primitives/core/fastFact.b
 import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.boss';
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
 import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
+import { practiceStudioBoss } from '../../primitives/visual-primitives/core/practice-studio/practiceStudio.boss';
 import { arrayGridBoss } from '../../primitives/visual-primitives/math/arrayGrid.boss';
 import { polygonAreaBuilderBoss } from '../../primitives/visual-primitives/math/polygonAreaBuilder.boss';
 import { paragraphArchitectBoss } from '../../primitives/visual-primitives/literacy/paragraphArchitect.boss';
@@ -298,9 +299,9 @@ const bossJourney = (boss: Boss): LiveJourney => (boss.card.ungraded ? {
   leakTokens: [...(boss.drive.leakTokens ?? [])],
   prompts: WORKSPACE_PROMPTS,
   inputsFor: (intent, ctx) => {
+    if (intent === 'warmup') return boss.drive.warmup?.(ctx) ?? [];
     if (intent !== 'correct' && intent !== 'wrong') return [];
     const item = boss.drive.current ? boss.drive.current(ctx)
-    if (intent === 'warmup') return boss.drive.warmup?.(ctx) ?? [];
       : boss.items(ctx.data).find((i: { id?: string }) => i.id === ctx.itemId);
     if (!item) throw new Error(`${boss.card.id}: no current item ${ctx.itemId}`);
     return boss.drive.play(intent === 'correct', item, ctx);
@@ -461,6 +462,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'fact-file': bossJourney(factFileBoss),
   'deep-dive': bossJourney(deepDiveBoss),
   'wonder-walk': bossJourney(wonderWalkBoss),
+  'practice-studio': bossJourney(practiceStudioBoss),
   'race-track-lab': bossJourney(raceTrackLabBoss),
   'push-pull-arena': bossJourney(pushPullArenaBoss),
   'ecosystem-diorama': bossJourney(ecosystemDioramaBoss),
@@ -468,9 +470,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'classification-sorter': bossJourney(classificationSorterBoss),
   'cell-builder': bossJourney(cellBuilderBoss),
   'body-workshop': bossJourney(bodyWorkshopBoss),
+  'life-lab': bossJourney(lifeLabBoss),
   'food-web-builder': bossJourney(foodWebBuilderBoss),
   'gear-train-builder': bossJourney(gearTrainBuilderBoss),
-  'life-lab': bossJourney(lifeLabBoss),
   'tower-stacker': bossJourney(towerStackerBoss),
   'matter-explorer': bossJourney(matterExplorerBoss),
   'molecule-constructor': bossJourney(moleculeConstructorBoss),

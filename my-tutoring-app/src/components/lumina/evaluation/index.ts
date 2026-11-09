@@ -230,6 +230,7 @@ export type {
   NetFolderMetrics,
   DeepDiveMetrics,
   WonderWalkMetrics,
+  PracticeStudioMetrics,
   // Calendar metrics
   CalendarExplorerMetrics,
   TimelineBuilderMetrics,

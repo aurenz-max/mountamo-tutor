@@ -1,0 +1,780 @@
+{
+ "source": "qa/tutor-reports/practice-studio-runtime-practice-payload-2026-11-08.json",
+ "primitiveId": "practice-studio",
+ "evalMode": "practice",
+ "data": {
+  "title": "Solving Problems with Bar Graphs",
+  "description": "Read bar heights to add categories together or find the difference between them.",
+  "gradeBand": "grade 2",
+  "challengeType": "practice",
+  "challenges": [
+   {
+    "id": "studio-1",
+    "surface": "choose",
+    "prompt": "How many children chose dogs or cats altogether?",
+    "stimulus": [
+     {
+      "kind": "bar_graph",
+      "title": "Favorite Pets",
+      "y_label": "Children",
+      "labels": [
+       "Dogs",
+       "Cats",
+       "Fish"
+      ],
+      "values": [
+       5,
+       3,
+       2
+      ]
+     }
+    ],
+    "options": [
+     {
+      "id": "opt_8",
+      "label": "8"
+     },
+     {
+      "id": "opt_10",
+      "label": "10"
+     },
+     {
+      "id": "opt_2",
+      "label": "2"
+     },
+     {
+      "id": "opt_5",
+      "label": "5"
+     }
+    ],
+    "key": "opt_8",
+    "misconceptions": {
+     "opt_5": "That is only the children who chose dogs. Remember to add cats too.",
+     "opt_2": "That is the difference between dogs and cats, not both together.",
+     "opt_10": "That is the total for all three pets. Add only dogs and cats."
+    },
+    "tier": "easy",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.35,
+     "reasons": [
+      "4 options +1.2",
+      "3 wrong options from a named misconception +0.75",
+      "reading a graph, number line or table +0.4"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Find the height of the Dogs bar and the Cats bar, then add them together.",
+      "item": {
+       "id": "studio-1-help_1",
+       "surface": "choose",
+       "prompt": "How many children chose dogs or cats altogether?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Favorite Pets",
+         "y_label": "Children",
+         "labels": [
+          "Dogs",
+          "Cats",
+          "Fish"
+         ],
+         "values": [
+          5,
+          3,
+          2
+         ]
+        },
+        {
+         "kind": "text",
+         "text": "Dogs = 5, Cats = 3. Add: 5 + 3."
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_8",
+         "label": "8"
+        },
+        {
+         "id": "opt_10",
+         "label": "10"
+        },
+        {
+         "id": "opt_2",
+         "label": "2"
+        },
+        {
+         "id": "opt_5",
+         "label": "5"
+        }
+       ],
+       "key": "opt_8",
+       "misconceptions": {
+        "opt_5": "That is only the children who chose dogs. Remember to add cats too.",
+        "opt_2": "That is the difference between dogs and cats, not both together.",
+        "opt_10": "That is the total for all three pets. Add only dogs and cats."
+       },
+       "tier": "easy",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.35,
+        "reasons": [
+         "4 options +1.2",
+         "3 wrong options from a named misconception +0.75",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "Let's take away two choices.",
+      "item": {
+       "id": "studio-1-simpler_1",
+       "surface": "choose",
+       "prompt": "How many children chose dogs or cats altogether?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Favorite Pets",
+         "y_label": "Children",
+         "labels": [
+          "Dogs",
+          "Cats",
+          "Fish"
+         ],
+         "values": [
+          5,
+          3,
+          2
+         ]
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_5",
+         "label": "5"
+        },
+        {
+         "id": "opt_8",
+         "label": "8"
+        }
+       ],
+       "key": "opt_8",
+       "misconceptions": {
+        "opt_5": "That is only the children who chose dogs. Remember to add cats too."
+       },
+       "tier": "easy",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.95,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-2",
+    "surface": "choose",
+    "prompt": "How many more red crayons are there than blue crayons?",
+    "stimulus": [
+     {
+      "kind": "bar_graph",
+      "title": "Crayons in a Box",
+      "y_label": "Crayons",
+      "labels": [
+       "Red",
+       "Blue",
+       "Green"
+      ],
+      "values": [
+       9,
+       4,
+       6
+      ]
+     }
+    ],
+    "options": [
+     {
+      "id": "opt_3",
+      "label": "3"
+     },
+     {
+      "id": "opt_9",
+      "label": "9"
+     },
+     {
+      "id": "opt_5",
+      "label": "5"
+     },
+     {
+      "id": "opt_13",
+      "label": "13"
+     }
+    ],
+    "key": "opt_5",
+    "misconceptions": {
+     "opt_13": "You added red and blue together. To find how many more, subtract.",
+     "opt_3": "That is how many more red crayons than green crayons. Look at blue.",
+     "opt_9": "That is the total number of red crayons, not the difference."
+    },
+    "tier": "medium",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.35,
+     "reasons": [
+      "4 options +1.2",
+      "3 wrong options from a named misconception +0.75",
+      "reading a graph, number line or table +0.4"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Find the top of Red and the top of Blue. Subtract the smaller number from the larger number.",
+      "item": {
+       "id": "studio-2-help_1",
+       "surface": "choose",
+       "prompt": "How many more red crayons are there than blue crayons?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Crayons in a Box",
+         "y_label": "Crayons",
+         "labels": [
+          "Red",
+          "Blue",
+          "Green"
+         ],
+         "values": [
+          9,
+          4,
+          6
+         ]
+        },
+        {
+         "kind": "text",
+         "text": "Red = 9, Blue = 4. Subtract: 9 \u2212 4."
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_3",
+         "label": "3"
+        },
+        {
+         "id": "opt_9",
+         "label": "9"
+        },
+        {
+         "id": "opt_5",
+         "label": "5"
+        },
+        {
+         "id": "opt_13",
+         "label": "13"
+        }
+       ],
+       "key": "opt_5",
+       "misconceptions": {
+        "opt_13": "You added red and blue together. To find how many more, subtract.",
+        "opt_3": "That is how many more red crayons than green crayons. Look at blue.",
+        "opt_9": "That is the total number of red crayons, not the difference."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.35,
+        "reasons": [
+         "4 options +1.2",
+         "3 wrong options from a named misconception +0.75",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "Let's remove two choices.",
+      "item": {
+       "id": "studio-2-simpler_1",
+       "surface": "choose",
+       "prompt": "How many more red crayons are there than blue crayons?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Crayons in a Box",
+         "y_label": "Crayons",
+         "labels": [
+          "Red",
+          "Blue",
+          "Green"
+         ],
+         "values": [
+          9,
+          4,
+          6
+         ]
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_5",
+         "label": "5"
+        },
+        {
+         "id": "opt_13",
+         "label": "13"
+        }
+       ],
+       "key": "opt_5",
+       "misconceptions": {
+        "opt_13": "You added red and blue together. To find how many more, subtract."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.95,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-3",
+    "surface": "categorize",
+    "prompt": "Sort each sentence into True or Not True based on the graph.",
+    "stimulus": [
+     {
+      "kind": "bar_graph",
+      "title": "Snacks Chosen",
+      "y_label": "Students",
+      "labels": [
+       "Apples",
+       "Carrots",
+       "Grapes"
+      ],
+      "values": [
+       7,
+       4,
+       3
+      ]
+     }
+    ],
+    "options": [
+     {
+      "id": "stmt2",
+      "label": "There are 3 more Apples than Carrots."
+     },
+     {
+      "id": "stmt4",
+      "label": "There are 2 more Carrots than Grapes."
+     },
+     {
+      "id": "stmt3",
+      "label": "Carrots and Grapes make 8 in all."
+     },
+     {
+      "id": "stmt1",
+      "label": "Apples and Grapes make 10 in all."
+     }
+    ],
+    "categories": [
+     "True",
+     "Not True"
+    ],
+    "key": {
+     "stmt1": "True",
+     "stmt2": "True",
+     "stmt3": "Not True",
+     "stmt4": "Not True"
+    },
+    "misconceptions": {
+     "stmt1": "Check the graph: Apples = 7, Grapes = 3. Add 7 + 3.",
+     "stmt2": "Check the graph: Apples = 7, Carrots = 4. Subtract 7 \u2212 4.",
+     "stmt3": "Check the graph: Carrots = 4, Grapes = 3. Add 4 + 3.",
+     "stmt4": "Check the graph: Carrots = 4, Grapes = 3. Subtract 4 \u2212 3."
+    },
+    "tier": "medium",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.4,
+     "reasons": [
+      "4 cards to sort +1",
+      "4 wrong options from a named misconception +1",
+      "reading a graph, number line or table +0.4"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "Use this table of values to test each statement.",
+      "item": {
+       "id": "studio-3-help_1",
+       "surface": "categorize",
+       "prompt": "Sort each sentence into True or Not True based on the graph.",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Snacks Chosen",
+         "y_label": "Students",
+         "labels": [
+          "Apples",
+          "Carrots",
+          "Grapes"
+         ],
+         "values": [
+          7,
+          4,
+          3
+         ]
+        },
+        {
+         "kind": "table",
+         "headers": [
+          "Snack",
+          "Count"
+         ],
+         "rows": [
+          [
+           "Apples",
+           "7"
+          ],
+          [
+           "Carrots",
+           "4"
+          ],
+          [
+           "Grapes",
+           "3"
+          ]
+         ]
+        }
+       ],
+       "options": [
+        {
+         "id": "stmt2",
+         "label": "There are 3 more Apples than Carrots."
+        },
+        {
+         "id": "stmt4",
+         "label": "There are 2 more Carrots than Grapes."
+        },
+        {
+         "id": "stmt3",
+         "label": "Carrots and Grapes make 8 in all."
+        },
+        {
+         "id": "stmt1",
+         "label": "Apples and Grapes make 10 in all."
+        }
+       ],
+       "categories": [
+        "True",
+        "Not True"
+       ],
+       "key": {
+        "stmt1": "True",
+        "stmt2": "True",
+        "stmt3": "Not True",
+        "stmt4": "Not True"
+       },
+       "misconceptions": {
+        "stmt1": "Check the graph: Apples = 7, Grapes = 3. Add 7 + 3.",
+        "stmt2": "Check the graph: Apples = 7, Carrots = 4. Subtract 7 \u2212 4.",
+        "stmt3": "Check the graph: Carrots = 4, Grapes = 3. Add 4 + 3.",
+        "stmt4": "Check the graph: Carrots = 4, Grapes = 3. Subtract 4 \u2212 3."
+       },
+       "tier": "medium",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.4,
+        "reasons": [
+         "4 cards to sort +1",
+         "4 wrong options from a named misconception +1",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "studio-4",
+    "surface": "choose",
+    "prompt": "How many more books did Class A and Class D read together than Class B?",
+    "stimulus": [
+     {
+      "kind": "bar_graph",
+      "title": "Books Read",
+      "y_label": "Books",
+      "labels": [
+       "Class A",
+       "Class B",
+       "Class C",
+       "Class D"
+      ],
+      "values": [
+       6,
+       9,
+       4,
+       5
+      ]
+     }
+    ],
+    "options": [
+     {
+      "id": "opt_3",
+      "label": "3"
+     },
+     {
+      "id": "opt_11",
+      "label": "11"
+     },
+     {
+      "id": "opt_2",
+      "label": "2"
+     },
+     {
+      "id": "opt_4",
+      "label": "4"
+     }
+    ],
+    "key": "opt_2",
+    "misconceptions": {
+     "opt_3": "That only compares Class B and Class A (9 \u2212 6). Put Class A and Class D together first.",
+     "opt_4": "That only compares Class B and Class D (9 \u2212 5). Put Class A and Class D together first.",
+     "opt_11": "You found the total for Class A and Class D (6 + 5 = 11). Now subtract Class B (9) to find how many more."
+    },
+    "tier": "hard",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.35,
+     "reasons": [
+      "4 options +1.2",
+      "3 wrong options from a named misconception +0.75",
+      "reading a graph, number line or table +0.4"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "the learner misses once or is stuck",
+      "says": "First add the bars for Class A and Class D. Then subtract the Class B bar from that sum.",
+      "item": {
+       "id": "studio-4-help_1",
+       "surface": "choose",
+       "prompt": "How many more books did Class A and Class D read together than Class B?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Books Read",
+         "y_label": "Books",
+         "labels": [
+          "Class A",
+          "Class B",
+          "Class C",
+          "Class D"
+         ],
+         "values": [
+          6,
+          9,
+          4,
+          5
+         ]
+        },
+        {
+         "kind": "table",
+         "headers": [
+          "Step 1: Put Together",
+          "Step 2: Compare"
+         ],
+         "rows": [
+          [
+           "Class A (6) + Class D (5) = 11",
+           "11 \u2212 Class B (9) = ?"
+          ]
+         ]
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_3",
+         "label": "3"
+        },
+        {
+         "id": "opt_11",
+         "label": "11"
+        },
+        {
+         "id": "opt_2",
+         "label": "2"
+        },
+        {
+         "id": "opt_4",
+         "label": "4"
+        }
+       ],
+       "key": "opt_2",
+       "misconceptions": {
+        "opt_3": "That only compares Class B and Class A (9 \u2212 6). Put Class A and Class D together first.",
+        "opt_4": "That only compares Class B and Class D (9 \u2212 5). Put Class A and Class D together first.",
+        "opt_11": "You found the total for Class A and Class D (6 + 5 = 11). Now subtract Class B (9) to find how many more."
+       },
+       "tier": "hard",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.35,
+        "reasons": [
+         "4 options +1.2",
+         "3 wrong options from a named misconception +0.75",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "the learner misses twice",
+      "says": "Let's remove two of the choices.",
+      "item": {
+       "id": "studio-4-simpler_1",
+       "surface": "choose",
+       "prompt": "How many more books did Class A and Class D read together than Class B?",
+       "stimulus": [
+        {
+         "kind": "bar_graph",
+         "title": "Books Read",
+         "y_label": "Books",
+         "labels": [
+          "Class A",
+          "Class B",
+          "Class C",
+          "Class D"
+         ],
+         "values": [
+          6,
+          9,
+          4,
+          5
+         ]
+        }
+       ],
+       "options": [
+        {
+         "id": "opt_2",
+         "label": "2"
+        },
+        {
+         "id": "opt_11",
+         "label": "11"
+        }
+       ],
+       "key": "opt_2",
+       "misconceptions": {
+        "opt_11": "You found the total for Class A and Class D (6 + 5 = 11). Now subtract Class B (9) to find how many more."
+       },
+       "tier": "hard",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.95,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "reading a graph, number line or table +0.4"
+        ]
+       }
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "seconds": 111,
+   "items": [
+    {
+     "id": "studio-1",
+     "surface": "choose",
+     "tier": "easy",
+     "computed": "medium",
+     "solver": "easy",
+     "rounds": 0,
+     "kept": true,
+     "blocking": [],
+     "advisory": [],
+     "refusedLevers": []
+    },
+    {
+     "id": "studio-2",
+     "surface": "choose",
+     "tier": "medium",
+     "computed": "medium",
+     "solver": "medium",
+     "rounds": 0,
+     "kept": true,
+     "blocking": [],
+     "advisory": [],
+     "refusedLevers": []
+    },
+    {
+     "id": "studio-3",
+     "surface": "categorize",
+     "tier": "medium",
+     "computed": "medium",
+     "solver": "medium",
+     "rounds": 0,
+     "kept": true,
+     "blocking": [],
+     "advisory": [],
+     "refusedLevers": [
+      "simplify: categorize: 3-8 options (it has 2)"
+     ]
+    },
+    {
+     "id": "studio-4",
+     "surface": "choose",
+     "tier": "hard",
+     "computed": "medium",
+     "solver": "medium",
+     "rounds": 2,
+     "kept": true,
+     "blocking": [],
+     "advisory": [
+      "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+     ],
+     "refusedLevers": []
+    }
+   ],
+   "tiers": [
+    "easy",
+    "medium",
+    "medium",
+    "hard"
+   ]
+  }
+ }
+}

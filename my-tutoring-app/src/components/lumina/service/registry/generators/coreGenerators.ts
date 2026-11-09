@@ -65,6 +65,7 @@ import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explore
 import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
 import { generateDeepDiveEntry } from '../../core/deep-dive-agent/generate-deep-dive';
 import { generateWonderWalk } from '../../core/wonder-walk/agent-wonder-walk';
+import { generatePracticeStudio } from '../../core/practice-studio/agent-practice-studio';
 import { generatePassageStudio } from '../../core/gemini-passage-studio';
 
 
@@ -440,6 +441,14 @@ registerContextGenerator('deep-dive', async (ctx) => ({
 }));
 
 // WonderWalk (agent-authored Kindergarten picture walk)
+// Practice Studio - the general agent primitive: an author assembles each item from the kit's surfaces and displays,
+// looks at it as the child would, and revises it (service/agent-kit/itemLoop.ts).
+registerContextGenerator('practice-studio', async (ctx) => ({
+  type: 'practice-studio',
+  instanceId: ctx.instanceId,
+  data: await generatePracticeStudio(ctx),
+}));
+
 registerContextGenerator('wonder-walk', async (ctx) => ({
   type: 'wonder-walk',
   instanceId: ctx.instanceId,
