@@ -28,9 +28,11 @@ export const deepDiveCard = defineCard<DeepDiveMiss>({
   grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
   modes: { explore: mode, recall: mode, apply: mode, analyze: mode },
   words: {
-    job: 'read the sections of a deep dive and answer its checks one at a time, each on screen below the sections it is about',
+    job: 'go through the sections of a deep dive with you, one at a time, and answer the check that follows them',
     answer: 'their choice',
     question: 'the check on screen and its choices',
+    special: 'Before each check the lesson stops on each section in turn. While facts.stage names a teaching section, you '
+      + 'teach it as facts.howToTeach says, no tool is offered and none is needed, and the learner taps Next to go on.',
   },
   audio: SPOKEN_AUDIO,
 });

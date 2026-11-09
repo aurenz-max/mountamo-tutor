@@ -9,6 +9,9 @@
  * runs in at this eval mode, and the structural and leak checks below.
  */
 
+import { displayErrors, displayIssues, readDisplays, type Display, type DisplayCapability } from '../../agent-kit/displays';
+import { viewBoxOf } from '../../../primitives/visual-primitives/core/deep-dive/blocks/drawnDiagram';
+import { visibleStrings, visibleText } from '../../../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
 import { Type, type FunctionDeclaration, type Schema } from '@google/genai';
 import { shuffleIndexedChoices } from '../../../utils/choiceOrder';
 import { hasMath, mathIssues, splitMath } from '../../../utils/mathText';
@@ -27,6 +30,7 @@ import type {
   DataTableBlockData,
   DeepDiveBlock,
   DiagramBlockData,
+  FigureBlockData,
   FillInBlankBlockData,
   HeroImageBlockData,
   HypothesisLabBlockData,
@@ -107,6 +111,12 @@ function blockTool(name: string, description: string, properties: Record<string,
   return { name, description, parameters: { type: Type.OBJECT, properties: { ...properties, ...COMMON }, required: [...required, ...COMMON_REQUIRED] } };
 }
 
+/**
+ * The kit displays a figure can hold. A deep dive covers any subject, so every domain is open. The ones it leaves out
+ * repeat a richer block it already has: chart, number line, data table, timeline, process, prose.
+ */
+export const DEEP_DIVE_DISPLAYS: DisplayCapability = { domains: 'all', without: ['svg', 'text', 'table', 'bar_graph', 'number_line', 'timeline', 'flow'] };
+
 /** Function declarations for the block tools, filtered to what this audience can use. */
 export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
   const modes = tierModes(ctx.evalMode);
@@ -127,7 +137,7 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
       layout: { type: Type.STRING, enum: ['flow', 'masonry', 'columns'], nullable: true, description: 'flow (default); masonry = each short paragraph becomes a card (3-4+ one-to-two-sentence paragraphs); columns = newspaper columns for longer text.' },
       reveal: { type: Type.BOOLEAN, nullable: true, description: 'Lines animate in on scroll; for a dramatic or climactic passage.' },
       insetFacts: { type: Type.ARRAY, nullable: true, description: 'Optional 3 takeaways shown in a card beside the text.', items: { type: Type.OBJECT, properties: { icon: S('Emoji'), text: S('Takeaway') }, required: ['icon', 'text'] } },
-      figurePrompt: { type: Type.STRING, nullable: true, description: 'Optional inline illustration: the scene to draw. Leave empty unless a picture explains something the words cannot.' },
+      figurePrompt: { type: Type.STRING, nullable: true, description: 'Optional painted illustration from the image model, which is slow and costly. Leave empty unless only a realistic picture will do; write_figure draws anything simpler.' },
       figureCaption: { type: Type.STRING, nullable: true, description: 'Caption for the figure.' },
     }, ['paragraphs'])],
     ['pull-quote', blockTool('write_pull_quote', 'One or two sentences that state the key insight of the blocks just before it, set large. Display only.', {
@@ -155,13 +165,20 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
       itemA: { type: Type.OBJECT, properties: { title: S('Item A'), points: strings('3-4 points') }, required: ['title', 'points'] },
       itemB: { type: Type.OBJECT, properties: { title: S('Item B'), points: strings('3-4 points') }, required: ['title', 'points'] },
     }, ['itemA', 'itemB'])],
-    ['diagram', blockTool('write_diagram', `A generated picture with 4-6 labelled parts, for when how parts sit together IS the idea. ${modes.diagramLabel ? 'At this level the student drags the labels onto the picture (evaluable).' : 'At this level labels are placed and the student taps them to read (display).'} The image renders in the background.`, {
-      imagePrompt: S('The picture: each labelled part spatially distinct, dark background, bright elements, NO text in the image.'),
+    ['diagram', blockTool('write_diagram', `A picture with 4-6 labelled parts, for when how parts sit together IS the idea. ${modes.diagramLabel ? 'At this level the student drags the labels onto the picture (evaluable).' : 'At this level numbered pins sit on the parts and the student taps them to read (display).'} Draw it yourself with svg; use imagePrompt instead only when the parts cannot be told apart in a drawing.`, {
+      svg: { type: Type.STRING, nullable: true, description: `Your drawing: one complete <svg viewBox='0 0 400 300'>...</svg> on a white page, flat shapes, each part clearly separate and a different shape or color. A label marks one place: where a part repeats (petals, legs), draw one copy in full color and the others faded gray, so a student can only mean that one. No scripts or outside images. Do not write any part's name in it; the pins carry the names.` },
+      imagePrompt: { type: Type.STRING, nullable: true, description: 'Only when you do not give svg: the picture for the image model, each part spatially distinct, dark background, bright elements, NO text in the image.' },
       caption: S('Caption.'),
       altText: S('Accessible description.'),
       learningObjective: S('What the student should understand from the diagram.'),
-      labels: { type: Type.ARRAY, description: '4-6 labels.', items: { type: Type.OBJECT, properties: { text: S('Part name.'), description: S('What it is and why it matters, 1-2 sentences.') }, required: ['text', 'description'] } },
-    }, ['imagePrompt', 'caption', 'altText', 'learningObjective', 'labels'])],
+      labels: { type: Type.ARRAY, description: '4-6 labels.', items: { type: Type.OBJECT, properties: { text: S('Part name.'), description: S('What it is and why it matters, 1-2 sentences.'), x: { type: Type.NUMBER, nullable: true, description: 'With svg: the center of this part, in viewBox units.' }, y: { type: Type.NUMBER, nullable: true, description: 'With svg: the center of this part, in viewBox units.' } }, required: ['text', 'description'] } },
+    }, ['caption', 'altText', 'learningObjective', 'labels'])],
+    ['figure', blockTool('write_figure', 'A picture that teaches an idea with no labels to tap: how something moves, what it looks like, a before and after, a cut-away, or a code-drawn display. Display only. Give display when one of the code-drawn displays can show it; otherwise draw it with svg and you get a screenshot back to check it.', {
+      display: { type: Type.STRING, nullable: true, description: 'A code-drawn display as JSON text, from the list under "Pictures". You write the values and code draws it.' },
+      svg: { type: Type.STRING, nullable: true, description: `Only when no code-drawn display fits: one complete <svg viewBox='0 0 400 300'>...</svg> on a white page: flat shapes, clear at a glance, no scripts or outside images. Short labels are fine, as long as none of them answers a check below it.` },
+      caption: S('One sentence on what to notice.'),
+      altText: S('What the picture shows, in a sentence or two. The tutor reads this, so name what is drawn.'),
+    }, ['caption', 'altText'])],
     ['mini-sim', blockTool('write_mini_sim', 'A "what if" experiment (evaluable): the student predicts first, then moves ONE control and sees each state.', {
       scenario: S('The setup, 2-3 sentences.'),
       controlType: { type: Type.STRING, enum: ['toggle', 'slider'] },
@@ -249,6 +266,7 @@ export const TOOL_TO_BLOCK: Record<string, BlockType> = {
   write_timeline: 'timeline',
   write_compare_contrast: 'compare-contrast',
   write_diagram: 'diagram',
+  write_figure: 'figure',
   write_mini_sim: 'mini-sim',
   write_perspectives: 'perspectives',
   write_hypothesis_lab: 'hypothesis-lab',
@@ -394,10 +412,24 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
     case 'diagram': {
       const labels = objs(args.labels).map((l, i) => ({ id: `label-${i}`, text: str(l.text), description: str(l.description) })).filter((l) => l.text);
       if (labels.length < 3) return { error: 'a diagram needs 4-6 labels' };
+      const svg = str(args.svg);
+      if (!svg === !str(args.imagePrompt)) return { error: 'give exactly one of svg (your drawing) or imagePrompt' };
+      const placed = svg ? placeDrawnLabels(svg, objs(args.labels), labels) : undefined;
+      if (placed && 'error' in placed) return placed;
       return {
         ...base, blockType: 'diagram', imageBase64: '', caption: str(args.caption), altText: str(args.altText),
-        learningObjective: str(args.learningObjective), interactionMode: modes.diagramLabel ? 'label' : 'explore', labels,
+        learningObjective: str(args.learningObjective), interactionMode: modes.diagramLabel ? 'label' : 'explore', labels: placed?.labels ?? labels,
+        ...(svg ? { svg } : {}),
       } as DiagramBlockData;
+    }
+    case 'figure': {
+      // A display written by the agent, or its own drawing when no display fits.
+      const written = args.display ? readDisplays(args.display)[0] : undefined;
+      const display: Display = written ?? { kind: 'svg', svg: str(args.svg) };
+      const bad = written ? displayIssues([written], DEEP_DIVE_DISPLAYS) : displayErrors(display);
+      if (bad.length) return { error: bad[0] };
+      if (!str(args.altText)) return { error: 'a figure needs altText: what the picture shows, in words' };
+      return { ...base, blockType: 'figure', display, caption: str(args.caption), altText: str(args.altText) } as FigureBlockData;
     }
     case 'mini-sim': {
       const controlType = str(args.controlType) === 'slider' ? 'slider' : 'toggle';
@@ -538,6 +570,30 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
   }
 }
 
+/** How far apart two parts must be, in percent of the picture, for a dropped label to mean one of them. */
+const MIN_PART_GAP = 10;
+
+/** Each label's position from the author's coordinates, or what must change. */
+function placeDrawnLabels(svg: string, raw: Args[], labels: DiagramBlockData['labels']): { labels: DiagramBlockData['labels'] } | { error: string } {
+  const bad = displayErrors({ kind: 'svg', svg });
+  if (bad.length) return { error: bad[0] };
+  const box = viewBoxOf(svg);
+  if (!box) return { error: 'the drawing needs a viewBox, so code can read where each part sits' };
+  const named = raw.filter((l) => str(l.text));
+  const out: DiagramBlockData['labels'] = [];
+  for (let i = 0; i < labels.length; i++) {
+    const [x, y] = [named[i]?.x, named[i]?.y].map((v) => (v === undefined || v === null || v === '' ? NaN : Number(v)));
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { error: `"${labels[i].text}" needs x and y: the center of that part in viewBox units` };
+    const pos = { x: ((x - box.x) / box.width) * 100, y: ((y - box.y) / box.height) * 100 };
+    if (pos.x < 0 || pos.x > 100 || pos.y < 0 || pos.y > 100) return { error: `"${labels[i].text}" is at (${x}, ${y}), outside the viewBox` };
+    out.push({ ...labels[i], position: { x: +pos.x.toFixed(1), y: +pos.y.toFixed(1) } });
+  }
+  for (let a = 0; a < out.length; a++) for (let b = a + 1; b < out.length; b++) {
+    if (Math.hypot(out[a].position!.x - out[b].position!.x, out[a].position!.y - out[b].position!.y) < MIN_PART_GAP) return { error: `"${out[a].text}" and "${out[b].text}" sit too close together for a student to tell which is meant; spread the parts out` };
+  }
+  return { labels: out };
+}
+
 function checkSlider(slider: Args | undefined, states: Array<{ condition: string }>): string | undefined {
   if (!slider) return 'a slider needs slider {min, max, step, unit, start}';
   const min = Number(slider.min);
@@ -651,6 +707,15 @@ export function blockIssues(block: DeepDiveBlock, ctx: BlockContext): { blocking
     case 'pull-quote':
       if ((block as PullQuoteBlockData).text.length > 240) blocking.push('a pull quote is at most 2 short sentences');
       break;
+    case 'diagram': {
+      const b = block as DiagramBlockData;
+      if (b.svg) {
+        const written = Array.from(b.svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)).map((m) => m[1].replace(/<[^>]+>/g, ' ')).join(' ');
+        const named = b.labels.find((l) => ` ${norm(written)} `.includes(` ${norm(l.text)} `));
+        if (named) blocking.push(`the drawing writes "${named.text}" on the picture; take the name out, the pins carry the names`);
+      }
+      break;
+    }
     case 'definition': {
       const d = (block as DefinitionBlockData).inset;
       if (contains(d.definition, d.term)) blocking.push(`the definition uses the word "${d.term}" itself; say what it means in other words`);
@@ -689,21 +754,4 @@ export function blockIssues(block: DeepDiveBlock, ctx: BlockContext): { blocking
   return { blocking, advisory };
 }
 
-/** Each string the student reads in a block. */
-export function visibleStrings(block: DeepDiveBlock): string[] {
-  const b = block as unknown as Record<string, unknown>;
-  const parts: string[] = [];
-  const walk = (v: unknown, key = '') => {
-    if (typeof v === 'string') {
-      if (!/^(id|blockType|drawerId|displayId|html|expr|ideas|imageBase64|tutoringBrief|transitionCue|interactionMode|controlType|condition|role|placement|layout|insetType|chartType|format|kind|icon)$/.test(key)) parts.push(v);
-    } else if (Array.isArray(v)) v.forEach((x) => walk(x, key));
-    else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => walk(x, k));
-  };
-  walk(b);
-  return parts;
-}
-
-/** Everything the student reads in a block, for length and overlap checks. */
-export function visibleText(block: DeepDiveBlock): string {
-  return visibleStrings(block).map((p) => (/[.!?]$/.test(p) ? p : `${p}.`)).join(' ');
-}
+export { visibleStrings, visibleText };

@@ -278,7 +278,7 @@ export interface LiveJourney {
 /** What a learner says to ask for each action on any shared-workspace surface. */
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
 
-/** The journey row of a boss (`boss.ts`): every field comes from its `drive`, and warmup asks for nothing. An ungraded
+/** The journey row of a boss (`boss.ts`): every field comes from its `drive`, and warmup asks for `drive.warmup`, if any. An ungraded
  *  boss is a teaching journey: the learner looks at one thing, then finishes with the surface's own Done. */
 const bossJourney = (boss: Boss): LiveJourney => (boss.card.ungraded ? {
   execution: 'teaching',
@@ -299,6 +299,7 @@ const bossJourney = (boss: Boss): LiveJourney => (boss.card.ungraded ? {
   inputsFor: (intent, ctx) => {
     if (intent !== 'correct' && intent !== 'wrong') return [];
     const item = boss.drive.current ? boss.drive.current(ctx)
+    if (intent === 'warmup') return boss.drive.warmup?.(ctx) ?? [];
       : boss.items(ctx.data).find((i: { id?: string }) => i.id === ctx.itemId);
     if (!item) throw new Error(`${boss.card.id}: no current item ${ctx.itemId}`);
     return boss.drive.play(intent === 'correct', item, ctx);

@@ -415,9 +415,9 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     const item = h.state().task!.itemId;
     result.items++; itemsSeen.push(item);
     noteLevers();
-    const expected = h.state().task!.workspace?.expectedAnswer;
     const warmup = inputs('warmup', item);
     if (warmup?.length) try { perform(h, warmup); h.settle(); } catch (e) { find('J1-drivable', `${item} warmup: ${(e as Error).message}`); break; }
+    const expected = h.state().task!.workspace?.expectedAnswer;
     // The clean program never answers wrong, so a family with no wrong input still gets its record checked.
     const wrong = program === 'clean' ? [] : inputs('wrong', item), correct = inputs('correct', item);
     if (!wrong || !correct) break;

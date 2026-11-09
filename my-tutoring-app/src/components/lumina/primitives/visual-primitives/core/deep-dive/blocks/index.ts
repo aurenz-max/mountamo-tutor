@@ -18,3 +18,4 @@ export { default as InsetBlock } from './InsetBlock';
 export { default as WorkedExampleBlock } from './WorkedExampleBlock';
 export { default as ProcessBlock } from './ProcessBlock';
 export { default as MisconceptionBlock } from './MisconceptionBlock';
+export { default as FigureBlock } from './FigureBlock';

@@ -122,6 +122,8 @@ export interface BossDrive<I = any> {
   /** The current item, when it is not one of `items(data)` by id (an easier practice item rebuilt from its parent). */
   current?: (ctx: JourneyContext) => I | undefined;
   play: (right: boolean, item: I, ctx: JourneyContext) => DriverInput[];
+  /** What the learner does on an item before it can be answered, when the item opens on something else (a taught section). */
+  warmup?: (ctx: JourneyContext) => DriverInput[];
   /** An ungraded boss: how the harness looks at one thing (`explore`) and finishes with the surface's own Done. */
   teach?: (intent: 'explore' | 'finish', ctx: JourneyContext) => DriverInput[];
   /** What the learner says to ask for each action, when this surface's own words fit better than the shared ones. */

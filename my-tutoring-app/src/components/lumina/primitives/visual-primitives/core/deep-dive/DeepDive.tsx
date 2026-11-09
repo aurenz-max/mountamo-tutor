@@ -24,14 +24,15 @@ import type { TeachingEvaluationResult } from '../../../../components/live-activ
 import { withWorkspaceOnly } from '../../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../../components/live-activity/runtime/useWorkspaceProgress';
 import { deepDiveBoss } from './deepDive.boss';
-import { deepDiveItems, isEvaluableBlock, workspaceScene, choiceOf, deepDiveMiss, type DeepDiveView } from './deepDiveWorkspace';
+import { POSE_TASK } from '../../../../components/live-activity/runtime/contract';
+import { deepDiveItems, deepDiveSectionAsk, isEvaluableBlock, sectionScene, sectionsLeft, workspaceScene, choiceOf, deepDiveMiss, type DeepDiveView } from './deepDiveWorkspace';
 
 import type {
   DeepDiveData, DeepDiveBlock, WrapperLayout, DiagramBlockData, MiniSimBlockData, PerspectivesBlockData,
 } from './types';
 import {
   HeroImageBlock, KeyFactsBlock, DataTableBlock, MultipleChoiceBlock, PullQuoteBlock, ProseBlock, TimelineBlock,
-  FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock, PerspectivesBlock, HypothesisLabBlock, DrawerBlock, GenDisplayBlock, InsetBlock, WorkedExampleBlock, ProcessBlock, MisconceptionBlock,
+  FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock, PerspectivesBlock, HypothesisLabBlock, DrawerBlock, GenDisplayBlock, InsetBlock, WorkedExampleBlock, ProcessBlock, MisconceptionBlock, FigureBlock,
 } from './blocks';
 
 // ── Phase config for evaluable blocks ───────────────────────────────
@@ -74,8 +75,9 @@ function checkText(block: DeepDiveBlock): string {
  * What the tutor is asked when the learner taps a card to hear more. The blocks' own messages were written for the
  * scripted tutor and end by asking the learner a question; on the workspace the checks are the only questions.
  */
-const hearAbout = (message: string) => `${spokenMath(message)}\n(On this lesson: answer in two or three short sentences and ask no `
-  + 'question of your own; the checks on screen are the only questions.)';
+const hearAbout = (message: string, teaching: boolean) => `${spokenMath(message)}\n(On this lesson: answer in two or three short sentences `
+  + (teaching ? 'and connect it to the section you are teaching; do not ask the check that comes later.)'
+    : 'and ask no question of your own; the checks on screen are the only questions.)');
 
 // ── Transition cue component ─────────────────────────────────────────
 const TransitionCue: React.FC<{ text: string }> = ({ text }) => (
@@ -87,11 +89,12 @@ const TransitionCue: React.FC<{ text: string }> = ({ text }) => (
 );
 
 // ── Progress segments ─────────────────────────────────────────────────
-const ProgressBar: React.FC<{ blocks: DeepDiveBlock[]; answeredIds: Set<string> }> = ({ blocks, answeredIds }) => (
+const ProgressBar: React.FC<{ blocks: DeepDiveBlock[]; answeredIds: Set<string>; passedIds: ReadonlySet<string> }> = ({ blocks, answeredIds, passedIds }) => (
   <div className="flex gap-1">
     {blocks.map((block) => {
       const evaluable = isEvaluableBlock(block);
-      const color = evaluable && answeredIds.has(block.id) ? 'bg-emerald-400/70' : evaluable ? 'bg-amber-400/30' : 'bg-white/15';
+      const color = evaluable && answeredIds.has(block.id) ? 'bg-emerald-400/70' : evaluable ? 'bg-amber-400/30'
+        : passedIds.has(block.id) ? 'bg-cyan-400/50' : 'bg-white/15';
       return <div key={block.id} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${color}`} />;
     })}
   </div>
@@ -135,11 +138,18 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The teaching sections the learner has gone through with the tutor (Next). A check opens when its sections are passed. */
+  const [passed, setPassed] = useState<ReadonlySet<string>>(() => new Set());
   const progress = useDeepDiveProgress({
     challenges: items,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: deepDiveBoss.assignment,
+    workspace,
+    // Same item id throughout, so nothing is recorded for a section. No key and no spoken answer until the check opens.
+    assignment: (item) => {
+      const next = sectionsLeft(blocks, item.id, passed)[0];
+      return next ? { id: item.id, task: deepDiveSectionAsk(next), response: 'gesture' } : deepDiveBoss.assignment(item);
+    },
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
     onSolved: index => solvedAloud.current(index),
@@ -149,7 +159,10 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   const solvedIds = useMemo(() => new Set(progress.results.filter(r => r.correct).map(r => r.challengeId)), [progress.results]);
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
-  const hear = useCallback((message: string) => progress.requestHear?.(hearAbout(message)), [progress]);
+  const remaining = current && !allComplete ? sectionsLeft(blocks, current.id, passed) : [];
+  const section = remaining[0] ?? null;
+  const teaching = !!section;
+  const hear = useCallback((message: string) => progress.requestHear?.(hearAbout(message, teaching)), [progress, teaching]);
 
   /** The learner's last checked work on the current item, for the scene. */
   const [work, setWork] = useState('');
@@ -203,8 +216,9 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   const summaryScore = practiceScore(progress.practiceSummary) ?? submittedResult?.score
     ?? (items.length ? Math.round((solvedIds.size / items.length) * 100) : 0);
 
-  // ── What is on screen: the sections up to the current check, then every section once all are done ──
-  const cut = allComplete || !current ? blocks.length : blocks.findIndex(b => b.id === current.id) + 1;
+  // ── What is on screen: the sections up to the open section or check, then every section once all are done ──
+  const focusId = allComplete ? null : (section ?? current)?.id ?? null;
+  const cut = focusId === null ? blocks.length : blocks.findIndex(b => b.id === focusId) + 1;
   const visible = useMemo(() => blocks.slice(0, Math.max(cut, 1)), [blocks, cut]);
 
   // ── Student questions: each one grows the dive with new blocks ─
@@ -288,6 +302,10 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   // ── What the tutor and the observer are shown, republished every render ─
   useLayoutEffect(() => {
     if (!current) return;
+    if (section) {
+      workspace.current = { ...spokenMathDeep(sectionScene(data, section, remaining.length, preReader)), teaching: true };
+      return;
+    }
     const view: DeepDiveView = {
       work,
       preReader,
@@ -297,6 +315,24 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
     // The tutor speaks what it is shown, so math reaches it as words ("x squared"), never as LaTeX.
     workspace.current = spokenMathDeep(workspaceScene(data, current, view));
   });
+
+  // ── Next: the tutor moves with the learner. After the runner's publish above, so the new scene is what it is sent. ──
+  const cuedPassed = useRef(0);
+  useEffect(() => {
+    if (passed.size === cuedPassed.current) return;
+    cuedPassed.current = passed.size;
+    progress.requestHear?.(`The learner tapped Next. The next ${section ? 'section' : 'task'} is on screen. ${POSE_TASK}`
+      + (section ? ' Then teach it as facts.howToTeach says.' : ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passed]);
+
+  // Bring the newly opened section or check into view; the first one is already there.
+  const scrolledTo = useRef(focusId);
+  useEffect(() => {
+    if (focusId === scrolledTo.current) return;
+    scrolledTo.current = focusId;
+    if (focusId) containerRef.current?.querySelector('[data-deep-dive-focus]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [focusId]);
 
   // ── Pretext size hints (for grid_2col and masonry) ────────────
   const [containerWidth, setContainerWidth] = useState(700);
@@ -380,6 +416,8 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
       case 'worked-example':
         return <WorkedExampleBlock data={block} index={idx} onAnswer={block.tryStep ? onAnswer : undefined} onAttempt={onAttempt}
           answered={answered} onAskTutor={onAskTutor} />;
+      case 'figure':
+        return <FigureBlock data={block} index={idx} onAskTutor={onAskTutor} />;
       case 'chart': case 'number-line': case 'definition': case 'passage':
         return <InsetBlock data={block} index={idx} onAskTutor={onAskTutor} />;
       default:
@@ -396,11 +434,12 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
     const isCurrent = block.id === current?.id && !allComplete;
     // Remounted for a spoken credit (it then shows its answer) and, for a diagram, on each Try again.
     const key = `${block.id}${aloud.has(block.id) ? ':aloud' : ''}${isCurrent && block.blockType === 'diagram' ? `:${tries}` : ''}`;
+    if (block.id === focusId && !isCurrent) return <div key={key} data-deep-dive-focus className="scroll-mt-6">{renderBlock(block, idx)}</div>;
     if (!isCurrent) return <React.Fragment key={key}>{renderBlock(block, idx)}</React.Fragment>;
     const closed = progress.canAttempt === false;
     return (
-      <fieldset key={key} disabled={closed} data-deep-dive-check={block.id}
-        className={`m-0 min-w-0 border-0 p-0 ${closed ? 'pointer-events-none' : ''}`}>
+      <fieldset key={key} disabled={closed} data-deep-dive-check={block.id} data-deep-dive-focus=""
+        className={`m-0 min-w-0 scroll-mt-6 border-0 p-0 ${closed ? 'pointer-events-none' : ''}`}>
         {renderBlock(block, idx)}
       </fieldset>
     );
@@ -489,7 +528,7 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
           )}
           <LuminaCardTitle className="text-2xl font-light text-white tracking-tight"><LuminaMathText text={title} /></LuminaCardTitle>
           {subtitle && <p className="text-slate-400 text-sm mt-1 font-light"><LuminaMathText text={subtitle} /></p>}
-          <div className="mt-4"><ProgressBar blocks={blocks} answeredIds={solvedIds} /></div>
+          <div className="mt-4"><ProgressBar blocks={blocks} answeredIds={solvedIds} passedIds={passed} /></div>
           {/* Contents: the sections reached so far link to their heading; the rest open as the checks are answered */}
           {sections.length > 0 && !preReader && (
             <ol className="mt-4 space-y-1 text-sm" aria-label="Contents">
@@ -510,6 +549,11 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
       <PipDock />
       <PipWorkspace className="space-y-5">
         {renderLayout()}
+        {section && (
+          <div className="sticky bottom-4 z-10 flex justify-center">
+            <LuminaButton onClick={() => setPassed(prev => new Set(prev).add(section.id))}>Next</LuminaButton>
+          </div>
+        )}
       </PipWorkspace>
 
       {showSummary && (

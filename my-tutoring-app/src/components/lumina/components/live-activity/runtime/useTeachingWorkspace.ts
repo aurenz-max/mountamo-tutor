@@ -50,6 +50,11 @@ export interface TeachingWorkspace {
   demonstration?: string[];
   /** Default true. False while a stimulus is still pending (a flash not yet shown, a die not yet rolled). */
   readyForResponse?: boolean;
+  /**
+   * An ungraded stretch on the way to this item (a section taught before its check). The tutor is offered nothing that
+   * would count as help on the item, and speech heard here is no answer to it. Default false.
+   */
+  teaching?: boolean;
   /** The tutor may mark `objects` (`mark`). Default false. */
   canDemonstrate?: boolean;
   /** A timed stimulus the tutor may present (`onPresentStimulus`). Default false. */
@@ -228,7 +233,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
       },
       getAffordances: () => {
         const s = session.getSnapshot(), i = currentItem(), w = latest.current.workspace.current;
-        if (!mounted.current || !activeRef.current || suspended.current || s.phase === 'completed') return [];
+        if (!mounted.current || !activeRef.current || suspended.current || s.phase === 'completed' || w?.teaching) return [];
         const actions: ExecutableAffordance[] = [];
         const operation = (name: string, description: string, execute: ExecutableAffordance['execute'], assisted = false, exposure: 'none' | 'full' = 'none') => {
           actions.push({ action: { type: 'workspace', operation: name }, description, execute,
@@ -414,7 +419,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   }), [ai.sharedVoiceTurns, changed]);
   const publishWorkspace = () => {
     if (!activeRef.current) return;
-    const ready = isReady(latest.current.workspace.current);
+    const ready = isReady(latest.current.workspace.current) && !latest.current.workspace.current?.teaching;
     if (ready && !wasReady.current) speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = ready;
     // Spoken input supplies context. Completed tutor feedback owns its judgment;
@@ -447,7 +452,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     // A lever's note and the practice flag are the host's, not the learner's.
     const { onScreen: _onScreen, practice: _practice, ...facts } = scene?.facts ?? {};
     const sig = JSON.stringify([(scene?.objects ?? []).map(o => [o.id, o.label, o.selected, o.group ?? '']), facts]);
-    const key = `${currentItem().id}:${s.practice ?? ''}`;
+    // The task too: a new task on the same item (a taught section, then its check) is the host's change, not work.
+    const key = `${currentItem().id}:${s.practice ?? ''}:${currentItem().task}`;
     const numbers = Object.entries(facts).filter((e): e is [string, number] => typeof e[1] === 'number');
     if (w.key !== key) {
       Object.assign(w, { key, sig, touched: false, noted: '', history: Object.fromEntries(numbers.map(([k, v]) => [k, [v]])) });

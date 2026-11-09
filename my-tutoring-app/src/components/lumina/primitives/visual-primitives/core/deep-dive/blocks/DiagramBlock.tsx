@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { DiagramBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
 import {
@@ -12,6 +12,8 @@ import {
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
+import { sanitizeSvg } from '../../../../../service/agent-kit/displays';
+import { gradeDrawnLabels } from './drawnDiagram';
 
 // Strategy-only scaffold. Diagram content is instance-specific, so the hint
 // teaches an approach (place-what-you-know → eliminate) without pointing at any
@@ -46,6 +48,33 @@ interface LabelPlacement {
   text: string;
   position: { x: number; y: number };
 }
+
+/**
+ * The diagram's picture: the author's drawing on white paper, or a generated image on the dark ground it was made for.
+ * The drawing fills the box exactly, so a label's percent position is a point on it. The markup object stays the same
+ * between renders: a new one rewrites the drawing and drops the node under the finger.
+ */
+const DiagramPicture: React.FC<{ data: DiagramBlockData }> = ({ data }) => {
+  const markup = useMemo(() => ({ __html: sanitizeSvg(data.svg ?? '') }), [data.svg]);
+  if (data.svg) {
+    return <div role="img" aria-label={data.altText} className="pointer-events-none bg-white [&>svg]:block [&>svg]:h-auto [&>svg]:w-full [&>svg]:max-w-none" dangerouslySetInnerHTML={markup} />;
+  }
+  return (
+    <>
+      <img
+        src={data.imageBase64}
+        alt={data.altText}
+        className="w-full h-auto object-contain"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}
+        draggable={false}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,23,42,0.6) 100%)' }}
+      />
+    </>
+  );
+};
 
 // ── Flyout card positioning helper ─────────────────────────────────
 
@@ -139,22 +168,7 @@ const ExploreMode: React.FC<{
     <div className="space-y-3">
       {/* Image container with vignette + spotlight */}
       <div className="relative rounded-xl overflow-hidden">
-        {/* The diagram image */}
-        <img
-          src={data.imageBase64}
-          alt={data.altText}
-          className="w-full h-auto object-contain"
-          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}
-          draggable={false}
-        />
-
-        {/* Vignette overlay — blends image edges into card */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,23,42,0.6) 100%)',
-          }}
-        />
+        <DiagramPicture data={data} />
 
         {/* Spotlight dimming — when a label is active, dim everything else */}
         {activeLabelId && activeLabel?.position && (
@@ -385,23 +399,25 @@ const LabelMode: React.FC<{
     setIsEvaluating(true);
 
     try {
-      const response = await fetch('/api/lumina', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'evaluateDiagramLabels',
-          params: {
-            imageBase64: data.imageBase64,
-            labels: data.labels.map((l) => ({ id: l.id, text: l.text, description: l.description })),
-            studentPlacements: placements,
-            learningObjective: data.learningObjective || `Identify key features in the diagram: ${data.caption}`,
-          },
-        }),
-      });
-
-      if (!response.ok) throw new Error('Evaluation request failed');
-
-      const result = await response.json();
+      // A drawing's parts are known, so code grades it; only a generated image needs a model to look.
+      const judgeImage = async () => {
+        const response = await fetch('/api/lumina', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'evaluateDiagramLabels',
+            params: {
+              imageBase64: data.imageBase64,
+              labels: data.labels.map((l) => ({ id: l.id, text: l.text, description: l.description })),
+              studentPlacements: placements,
+              learningObjective: data.learningObjective || `Identify key features in the diagram: ${data.caption}`,
+            },
+          }),
+        });
+        if (!response.ok) throw new Error('Evaluation request failed');
+        return response.json();
+      };
+      const result = data.svg ? gradeDrawnLabels(data.labels, placements) : await judgeImage();
       const perLabel = result.labelResults || [];
       const correctCount = perLabel.filter((r: { correct: boolean }) => r.correct).length;
       const score = data.labels.length > 0 ? Math.round((correctCount / data.labels.length) * 100) : 0;
@@ -457,19 +473,7 @@ const LabelMode: React.FC<{
             onDragLeave={() => setImageDragOver(false)}
             className="relative block min-h-0 overflow-hidden p-0"
           >
-            <img
-              src={data.imageBase64}
-              alt={data.altText}
-              className="w-full h-auto object-contain"
-              style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}
-              draggable={false}
-            />
-
-            {/* Vignette */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,23,42,0.6) 100%)' }}
-            />
+            <DiagramPicture data={data} />
 
             {/* Placed label markers */}
             {placements.map((placement, i) => {

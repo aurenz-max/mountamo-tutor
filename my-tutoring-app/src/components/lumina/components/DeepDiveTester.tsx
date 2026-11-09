@@ -1,7 +1,7 @@
 'use client';
 
 import { isEvaluableBlock } from '../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { getPrimitive } from '../config/primitiveRegistry';
 import {
   EvaluationProvider,
@@ -10,6 +10,10 @@ import {
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { TesterWorkspace } from './live-activity/TesterWorkspace';
+import { EventLine, RunProgress, readKitStream } from './KitRunProgress';
+import { CurriculumBrowser } from './CurriculumBrowser';
+import { useAuth } from '@/contexts/AuthContext';
+import type { KitEvent } from '../service/agent-kit/trace';
 import type { DeepDiveData, DeepDiveBlock, WrapperLayout } from '../primitives/visual-primitives/core/deep-dive/types';
 import { getTemplates } from '../primitives/visual-primitives/core/deep-dive/composition-templates';
 
@@ -17,7 +21,7 @@ interface DeepDiveTesterProps {
   onBack: () => void;
 }
 
-type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
+type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'grade 1' | 'grade 2' | 'grade 3' | 'grade 4' | 'grade 5' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 type EvalMode = 'default' | 'explore' | 'recall' | 'apply' | 'analyze';
 type LayoutChoice = 'auto' | WrapperLayout;
 
@@ -33,7 +37,12 @@ const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
   { value: 'toddler', label: 'Toddler' },
   { value: 'preschool', label: 'Preschool' },
   { value: 'kindergarten', label: 'Kindergarten' },
-  { value: 'elementary', label: 'Elementary' },
+  { value: 'grade 1', label: 'Grade 1' },
+  { value: 'grade 2', label: 'Grade 2' },
+  { value: 'grade 3', label: 'Grade 3' },
+  { value: 'grade 4', label: 'Grade 4' },
+  { value: 'grade 5', label: 'Grade 5' },
+  { value: 'elementary', label: 'Elementary (no exact grade)' },
   { value: 'middle-school', label: 'Middle School' },
   { value: 'high-school', label: 'High School' },
   { value: 'undergraduate', label: 'Undergraduate' },
@@ -48,6 +57,14 @@ const EVAL_MODE_OPTIONS: Array<{ value: EvalMode; label: string; description: st
   { value: 'apply', label: 'Apply', description: 'Cross-referencing + multi-step' },
   { value: 'analyze', label: 'Analyze', description: 'Synthesis + analysis questions' },
 ];
+
+/** A curriculum grade ("K", "Kindergarten", "1", "Grade 5") as a grade this tester offers, or null when it has none. */
+const curriculumGrade = (g?: string): GradeLevel | null => {
+  const value = (g ?? '').trim().toLowerCase();
+  if (value === 'k' || value.includes('kindergarten')) return 'kindergarten';
+  const n = value.match(/\d+/)?.[0];
+  return n && Number(n) >= 1 && Number(n) <= 5 ? (`grade ${n}` as GradeLevel) : null;
+};
 
 // ── Block type accent colors (matches block components) ─────────────
 
@@ -293,8 +310,13 @@ const OrchestratorPlanDisplay: React.FC<{ data: DeepDiveData; templateId?: strin
       {data.agentDebug && (
         <div className="mt-2 space-y-1 text-[10px] text-slate-400">
           <div>
-            agent: {data.agentDebug.turns} turns, {data.agentDebug.seconds}s{data.agentDebug.deadline !== 'none' ? ` (${data.agentDebug.deadline} deadline)` : ''} · shape <span className="text-indigo-300">{data.agentDebug.shape}</span> from {data.agentDebug.shapeCandidates.join(', ')}
+            agent: {data.agentDebug.turns} turns, {data.agentDebug.seconds}s{data.agentDebug.deadline !== 'none' ? ` (${data.agentDebug.deadline} deadline)` : ''} · <span className="text-cyan-300">about ${data.agentDebug.cost?.usd.toFixed(3)}</span> over {data.agentDebug.cost?.calls} calls ({data.agentDebug.imagesStarted} images, {data.agentDebug.imagesDiscarded} wasted, {data.agentDebug.reviews} reviews) · shape <span className="text-indigo-300">{data.agentDebug.shape}</span> from {data.agentDebug.shapeCandidates.join(', ')}
           </div>
+          {data.agentDebug.cost && (
+            <div>
+              by model: {Object.entries(data.agentDebug.cost.byModel).sort(([, a], [, b]) => b.usd - a.usd).map(([model, row]) => `${model} $${row.usd.toFixed(3)} (${row.calls})`).join(' · ')}
+            </div>
+          )}
           <div className="text-slate-300">objective: {data.agentDebug.objective}</div>
           {data.agentDebug.advisories.map((a, i) => (
             <div key={i} className="text-amber-400/80">advisory: {a}</div>
@@ -374,6 +396,10 @@ const EvaluationResultsPanel: React.FC = () => {
 
 const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
   const [topic, setTopic] = useState('');
+  const [intent, setIntent] = useState('');
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [evalMode, setEvalMode] = useState<EvalMode>('default');
   // DeepDive is taught only on the workspace: offline plays the real runtime with no Live session (free).
@@ -386,6 +412,16 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
   const [generatedData, setGeneratedData] = useState<DeepDiveData | null>(null);
   const [inspectorIndex, setInspectorIndex] = useState(0);
   const [generateTimeMs, setGenerateTimeMs] = useState<number | null>(null);
+  const [events, setEvents] = useState<KitEvent[]>([]);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!isGenerating) return;
+    const started = Date.now();
+    setElapsed(0);
+    const timer = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [isGenerating]);
 
   const evaluationContext = useEvaluationContext();
   const primitiveConfig = getPrimitive('deep-dive');
@@ -401,6 +437,9 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
     setError(null);
     setGeneratedData(null);
     setInspectorIndex(0);
+    setEvents([]);
+    // Generate sits far down the left column; the steps appear at the top of the preview.
+    previewRef.current?.scrollIntoView({ block: 'start' });
     const startTime = Date.now();
 
     try {
@@ -410,6 +449,7 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
         body: JSON.stringify({
           action: 'generateComponentContent',
           params: {
+            stream: true,
             componentId: 'deep-dive',
             topic: topic,
             gradeLevel: gradeLevel,
@@ -418,17 +458,13 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
               templateId: templateId || undefined,
               layoutOverride: layoutChoice === 'auto' ? undefined : layoutChoice,
               pipeline,
-              intent: `Generate a DeepDive exploration on "${topic}"`,
+              intent: intent.trim() || `Generate a DeepDive exploration on "${topic}"`,
             },
           },
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const result = await readKitStream<{ data?: DeepDiveData } & DeepDiveData>(response, (event) => setEvents((prev) => [...prev, event]));
       setGeneratedData(result.data || result);
       setGenerateTimeMs(Date.now() - startTime);
     } catch (err) {
@@ -475,15 +511,43 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
             {/* Topic */}
             <div className="mb-4">
               <label className="block text-xs font-medium text-slate-300 mb-1">Topic</label>
-              <input
-                type="text"
+              <textarea
+                rows={3}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="e.g. photosynthesis, the civil war, volcanoes..."
                 className="w-full px-3 py-2 text-sm bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleGenerate();
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isGenerating) handleGenerate();
+                  }
                 }}
+              />
+            </div>
+
+            {/* Curriculum */}
+            <details open={browseOpen} onToggle={(e) => setBrowseOpen(e.currentTarget.open)} className="mb-4 rounded-lg border border-slate-700 p-2">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-300">Pick from the curriculum</summary>
+              <div className="mt-3">
+                {user ? (
+                  <CurriculumBrowser
+                    onActiveSubjectChange={(subject) => { const g = curriculumGrade(subject?.grade); if (g) setGradeLevel(g); }}
+                    onSelectTopic={(picked) => { setTopic(picked); setBrowseOpen(false); }}
+                  />
+                ) : <p className="text-xs text-slate-500">Sign in to browse the curriculum.</p>}
+              </div>
+            </details>
+
+            {/* Lesson job */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-300 mb-1" htmlFor="dd-intent">Lesson job (optional)</label>
+              <input
+                id="dd-intent"
+                value={intent}
+                onChange={(e) => setIntent(e.target.value)}
+                placeholder="defaults to exploring the topic"
+                className="w-full px-3 py-2 text-sm bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
               />
             </div>
 
@@ -581,6 +645,15 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
                 Generated in {(generateTimeMs / 1000).toFixed(1)}s
               </p>
             )}
+
+            {!isGenerating && events.length > 0 && (
+              <details open={!!error || events.some((e) => e.level === 'error')} className="mt-3 text-[11px]">
+                <summary className="cursor-pointer text-slate-300">
+                  Run log: {events.length} steps, {events[events.length - 1].seconds}s, about ${events[events.length - 1].costUsd.toFixed(2)}
+                </summary>
+                <ol className="mt-2 space-y-1 max-h-80 overflow-y-auto">{events.map((e, i) => <EventLine key={i} event={e} />)}</ol>
+              </details>
+            )}
           </div>
 
           {/* Orchestrator Plan */}
@@ -609,7 +682,7 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
         </div>
 
         {/* Right Column: Full Render Preview */}
-        <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-h-[calc(100vh-200px)]">
+        <div ref={previewRef} className="scroll-mt-20 bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-h-[calc(100vh-200px)]">
           {generatedData && DeepDiveComponent ? (
             <div className="space-y-3">
               <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
@@ -640,9 +713,11 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500">
-              <span className="text-6xl mb-4">{isGenerating ? '' : '\uD83D\uDD2D'}</span>
-              {isGenerating ? (
+            <div className={`flex flex-col items-center h-full text-slate-500 ${isGenerating && events.length > 0 ? 'justify-start' : 'justify-center'}`}>
+              {!isGenerating && <span className="text-6xl mb-4">{'\uD83D\uDD2D'}</span>}
+              {isGenerating && events.length > 0 ? (
+                <RunProgress events={events} elapsed={elapsed} />
+              ) : isGenerating ? (
                 <div className="text-center space-y-3">
                   <div className="w-10 h-10 border-3 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mx-auto" />
                   <p className="text-slate-300">Orchestrating blocks...</p>

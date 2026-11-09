@@ -9,6 +9,8 @@
 import type { PrimitiveEvaluationResult } from '../../../../evaluation';
 import type { DeepDiveMetrics } from '../../../../evaluation/types';
 import type { ChartInset, DefinitionBoxInset, NumberLineInset, PassageInset } from '../../../../types';
+import type { KitEvent } from '../../../../service/agent-kit/trace';
+import type { Display } from '../../../../service/agent-kit/displays';
 
 // ── Wrapper Layout Strategies ──────────────────────────────────────
 export type WrapperLayout = 'stack' | 'grid_2col' | 'reveal_progressive' | 'masonry';
@@ -47,7 +49,9 @@ export type BlockType =
   // Stages of a one-way process in order (a cycle is the catalog's cycle wheel)
   | 'process'
   // A common wrong idea set against what is true
-  | 'misconception';
+  | 'misconception'
+  // A picture the author drew (kit display), shown to the student and to the author's screenshot alike
+  | 'figure';
 
 // ── Base Block Data ─────────────────────────────────────────────────
 export interface BaseBlockData {
@@ -200,13 +204,15 @@ export interface DiagramBlockData extends BaseBlockData {
   imageBase64: string;
   caption: string;
   altText: string;
+  /** A drawing by the author, instead of `imageBase64`. Its labels carry positions the author gave, and code grades them. */
+  svg?: string;
   /** 'explore' = AI places labels, student clicks to learn; 'label' = student drags labels, LLM evaluates */
   interactionMode: 'explore' | 'label';
   labels: Array<{
     id: string;
     text: string;
     description: string;
-    /** Percentage-based position (0-100). Only present in 'explore' mode — AI-placed via vision model. */
+    /** Percentage-based position (0-100). On an image: 'explore' only, placed by a vision model. On a drawing: always, from the author. */
     position?: { x: number; y: number };
   }>;
   /** Context for LLM evaluation in 'label' mode */
@@ -403,6 +409,15 @@ export interface MisconceptionBlockData extends BaseBlockData {
   why: string;
 }
 
+/** A picture drawn for this lesson (today the author's SVG; the kit's other displays fit the same field). Ungraded. */
+export interface FigureBlockData extends BaseBlockData {
+  blockType: 'figure';
+  display: Display;
+  caption: string;
+  /** What the picture shows, in words: for screen readers and the tutor. */
+  altText: string;
+}
+
 /** A related question the learner can open below the lesson; it runs through the follow-up path. */
 export interface SeeAlsoLink {
   label: string;
@@ -432,7 +447,8 @@ export type DeepDiveBlock =
   | PassageBlockData
   | WorkedExampleBlockData
   | ProcessBlockData
-  | MisconceptionBlockData;
+  | MisconceptionBlockData
+  | FigureBlockData;
 
 // ── Evaluable block type guard ──────────────────────────────────────
 
@@ -459,6 +475,14 @@ export interface DeepDiveAgentDebug {
   /** Advisory checks still open when the lesson shipped. */
   advisories: string[];
   toolCalls: Array<{ turn: number; name: string; ms: number; ok: boolean; note?: string }>;
+  /** Estimated spend of this lesson: every model call it made, images and drawers included. */
+  cost: { usd: number; calls: number; byModel: Record<string, { calls: number; usd: number }> };
+  /** Reviewer calls, images started, and images started for a block the agent then replaced or removed. */
+  reviews: number;
+  imagesStarted: number;
+  imagesDiscarded: number;
+  /** What the author did, step by step. */
+  events?: KitEvent[];
 }
 
 // ── DeepDive Data (Top-Level) ───────────────────────────────────────

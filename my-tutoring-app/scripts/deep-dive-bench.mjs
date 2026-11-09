@@ -26,6 +26,9 @@ const CASES = {
   'g4-water-cycle': { topic: 'The water cycle', grade: '4', gradeContext: 'elementary', evalMode: 'recall' },
   'g5-bill-law': { topic: 'How a bill becomes a law', grade: '5', gradeContext: 'elementary', evalMode: 'recall' },
   'g7-equations': { topic: 'Solving two-step equations', grade: '7', gradeContext: 'middle-school', evalMode: 'apply' },
+  'g4-flower': { topic: 'The parts of a flower and what each part does', grade: '4', gradeContext: 'elementary', evalMode: 'apply' },
+  'g5-seasons': { topic: 'Why Earth has seasons', grade: '5', gradeContext: 'elementary', evalMode: 'recall' },
+  'g2-time': { topic: 'Telling time to the half hour on a clock', grade: '2', gradeContext: 'elementary', evalMode: undefined },
   'g8-systems': { topic: 'Systems of linear equations', grade: '8', gradeContext: 'middle-school', evalMode: 'apply' },
 };
 const selected = arg('cases', Object.keys(CASES).join(',')).split(',');
@@ -89,6 +92,7 @@ try {
       sections: d?.sections?.map(s => `${s.heading} (${d.blocks.filter(b => b.section === d.sections.indexOf(s)).length})`),
       evaluable: d?.blocks?.filter(isEvaluableBlock).length,
       advisories: d?.agentDebug?.advisories?.length, error: r.error,
+      reviews: d?.agentDebug?.reviews, imagesStarted: d?.agentDebug?.imagesStarted, imagesDiscarded: d?.agentDebug?.imagesDiscarded, costByModel: d?.agentDebug?.cost?.byModel,
       // Typeset expressions in what the student reads, and any the page could not typeset.
       math: d && (() => { const strs = d.blocks.flatMap(b => (b.blockType === 'drawer' || b.blockType === 'display' ? [] : visibleStrings(b))); return { expressions: strs.flatMap(splitMath).filter(x => x.kind === 'math').length, issues: strs.flatMap(mathIssues) }; })(),
     };

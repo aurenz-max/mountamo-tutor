@@ -7,6 +7,7 @@
  */
 import type { DeepDiveData } from './types';
 import { spokenBoss, hasText } from '../../../../components/live-activity/boss';
+import type { DriverInput, JourneyContext } from '../../../../components/live-activity/liveJourneySpec';
 import { deepDiveCard, type DeepDiveMiss } from './deepDive.card';
 import {
   deepDiveAsk, deepDiveHarnessAnswers, deepDiveItems, deepDiveKey, deepDiveSpokenMisses, type DeepDiveItem,
@@ -26,6 +27,10 @@ export function validateDeepDiveData(value: unknown): DeepDiveData {
   }
   return d;
 }
+
+/** The learner's taps through the sections still standing before the open check. */
+const throughSections = (ctx: JourneyContext): DriverInput[] =>
+  Array.from({ length: Number(ctx.demand?.sectionsLeftBeforeCheck ?? 0) }, () => ({ type: 'choose' as const, label: 'Next' }));
 
 export const deepDiveBoss = spokenBoss<DeepDiveData, DeepDiveItem, DeepDiveMiss>({
   card: deepDiveCard,
@@ -53,6 +58,7 @@ export const deepDiveBoss = spokenBoss<DeepDiveData, DeepDiveItem, DeepDiveMiss>
     component: 'primitives/visual-primitives/core/deep-dive/DeepDive.tsx',
     instanceId: 'deep-dive',
     defaults: { grade: 'Grade 4', mode: 'recall', topic: 'The water cycle' },
+    warmup: throughSections,
     mounted: '[data-pip-object="workspace"]',
     // The scripted cue tags the component sent before the workspace; the tutor must never say one.
     leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'DEEP_DIVE_START', 'ALL_COMPLETE', 'STUDENT_QUESTION', 'FOLLOW_UP_READY'],
